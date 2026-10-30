@@ -1,0 +1,331 @@
+{
+  "source": "design/design_handoff_spuzl/design/spuzl3d.js (three@0.160.0)",
+  "pieces": {
+    "size": 192,
+    "files": [
+      "pieces/bB.webp",
+      "pieces/bK.webp",
+      "pieces/bN.webp",
+      "pieces/bP.webp",
+      "pieces/bQ.webp",
+      "pieces/bR.webp",
+      "pieces/wB.webp",
+      "pieces/wK.webp",
+      "pieces/wN.webp",
+      "pieces/wP.webp",
+      "pieces/wQ.webp",
+      "pieces/wR.webp"
+    ]
+  },
+  "icons": {
+    "size": 216,
+    "files": [
+      {
+        "id": "crownfall",
+        "icon": "crown-simple",
+        "world": "logic",
+        "file": "icons/crownfall.webp"
+      },
+      {
+        "id": "dusk",
+        "icon": "sun-horizon",
+        "world": "logic",
+        "file": "icons/dusk.webp"
+      },
+      {
+        "id": "sixer",
+        "icon": "grid-nine",
+        "world": "logic",
+        "file": "icons/sixer.webp"
+      },
+      {
+        "id": "nine",
+        "icon": "number-square-nine",
+        "world": "logic",
+        "file": "icons/nine.webp"
+      },
+      {
+        "id": "pixl",
+        "icon": "checkerboard",
+        "world": "logic",
+        "file": "icons/pixl.webp"
+      },
+      {
+        "id": "blackout",
+        "icon": "lightbulb-filament",
+        "world": "logic",
+        "file": "icons/blackout.webp"
+      },
+      {
+        "id": "tripwire",
+        "icon": "bomb",
+        "world": "logic",
+        "file": "icons/tripwire.webp"
+      },
+      {
+        "id": "weave",
+        "icon": "path",
+        "world": "line",
+        "file": "icons/weave.webp"
+      },
+      {
+        "id": "flowline",
+        "icon": "drop",
+        "world": "line",
+        "file": "icons/flowline.webp"
+      },
+      {
+        "id": "isles",
+        "icon": "circles-three",
+        "world": "line",
+        "file": "icons/isles.webp"
+      },
+      {
+        "id": "pairup",
+        "icon": "link-simple",
+        "world": "line",
+        "file": "icons/pairup.webp"
+      },
+      {
+        "id": "lost",
+        "icon": "signpost",
+        "world": "line",
+        "file": "icons/lost.webp"
+      },
+      {
+        "id": "quilt",
+        "icon": "layout",
+        "world": "shape",
+        "file": "icons/quilt.webp"
+      },
+      {
+        "id": "snug",
+        "icon": "puzzle-piece",
+        "world": "shape",
+        "file": "icons/snug.webp"
+      },
+      {
+        "id": "shuffle",
+        "icon": "arrows-out-cardinal",
+        "world": "shape",
+        "file": "icons/shuffle.webp"
+      },
+      {
+        "id": "reflect",
+        "icon": "flip-horizontal",
+        "world": "shape",
+        "file": "icons/reflect.webp"
+      },
+      {
+        "id": "squint",
+        "icon": "eye",
+        "world": "shape",
+        "file": "icons/squint.webp"
+      },
+      {
+        "id": "deadon",
+        "icon": "target",
+        "world": "number",
+        "file": "icons/deadon.webp"
+      },
+      {
+        "id": "merge",
+        "icon": "arrows-merge",
+        "world": "number",
+        "file": "icons/merge.webp"
+      },
+      {
+        "id": "sums",
+        "icon": "plus-minus",
+        "world": "number",
+        "file": "icons/sums.webp"
+      },
+      {
+        "id": "equal",
+        "icon": "equals",
+        "world": "number",
+        "file": "icons/equal.webp"
+      },
+      {
+        "id": "coil",
+        "icon": "scribble-loop",
+        "world": "word",
+        "file": "icons/coil.webp"
+      },
+      {
+        "id": "rungs",
+        "icon": "ladder",
+        "world": "word",
+        "file": "icons/rungs.webp"
+      },
+      {
+        "id": "quads",
+        "icon": "squares-four",
+        "world": "word",
+        "file": "icons/quads.webp"
+      },
+      {
+        "id": "seven",
+        "icon": "asterisk",
+        "world": "word",
+        "file": "icons/seven.webp"
+      },
+      {
+        "id": "minicross",
+        "icon": "grid-four",
+        "world": "word",
+        "file": "icons/minicross.webp"
+      },
+      {
+        "id": "buried",
+        "icon": "shovel",
+        "world": "word",
+        "file": "icons/buried.webp"
+      },
+      {
+        "id": "remix",
+        "icon": "shuffle",
+        "world": "word",
+        "file": "icons/remix.webp"
+      },
+      {
+        "id": "hunch",
+        "icon": "question",
+        "world": "clue",
+        "file": "icons/hunch.webp"
+      },
+      {
+        "id": "quickfire",
+        "icon": "timer",
+        "world": "clue",
+        "file": "icons/quickfire.webp"
+      },
+      {
+        "id": "pinned",
+        "icon": "map-pin",
+        "world": "clue",
+        "file": "icons/pinned.webp"
+      },
+      {
+        "id": "flagged",
+        "icon": "flag",
+        "world": "clue",
+        "file": "icons/flagged.webp"
+      },
+      {
+        "id": "echo",
+        "icon": "music-notes",
+        "world": "reflex",
+        "file": "icons/echo.webp"
+      },
+      {
+        "id": "twins",
+        "icon": "cards",
+        "world": "reflex",
+        "file": "icons/twins.webp"
+      },
+      {
+        "id": "flinch",
+        "icon": "hand-tap",
+        "world": "reflex",
+        "file": "icons/flinch.webp"
+      },
+      {
+        "id": "gotcha",
+        "icon": "skull",
+        "world": "rage",
+        "file": "icons/gotcha.webp"
+      },
+      {
+        "id": "dash",
+        "icon": "person-simple-run",
+        "world": "rage",
+        "file": "icons/dash.webp"
+      },
+      {
+        "id": "flipside",
+        "icon": "arrows-down-up",
+        "world": "rage",
+        "file": "icons/flipside.webp"
+      },
+      {
+        "id": "ricochet",
+        "icon": "arrow-bend-up-right",
+        "world": "rage",
+        "file": "icons/ricochet.webp"
+      },
+      {
+        "id": "stacked",
+        "icon": "stack",
+        "world": "rage",
+        "file": "icons/stacked.webp"
+      },
+      {
+        "id": "wobble",
+        "icon": "scales",
+        "world": "rage",
+        "file": "icons/wobble.webp"
+      },
+      {
+        "id": "grapple",
+        "icon": "anchor-simple",
+        "world": "rage",
+        "file": "icons/grapple.webp"
+      },
+      {
+        "id": "ghosted",
+        "icon": "ghost",
+        "world": "rage",
+        "file": "icons/ghosted.webp"
+      },
+      {
+        "id": "slip",
+        "icon": "sneaker-move",
+        "world": "rage",
+        "file": "icons/slip.webp"
+      },
+      {
+        "id": "gauntlet",
+        "icon": "flag-checkered",
+        "world": "rage",
+        "file": "icons/gauntlet.webp"
+      },
+      {
+        "id": "chess",
+        "icon": "horse",
+        "world": "board",
+        "file": "icons/chess.webp"
+      },
+      {
+        "id": "draughts",
+        "icon": "circles-four",
+        "world": "board",
+        "file": "icons/draughts.webp"
+      },
+      {
+        "id": "oware",
+        "icon": "dots-nine",
+        "world": "board",
+        "file": "icons/oware.webp"
+      },
+      {
+        "id": "ludo",
+        "icon": "dice-six",
+        "world": "board",
+        "file": "icons/ludo.webp"
+      },
+      {
+        "id": "fourup",
+        "icon": "circles-three-plus",
+        "world": "board",
+        "file": "icons/fourup.webp"
+      },
+      {
+        "id": "flip",
+        "icon": "circle-half",
+        "world": "board",
+        "file": "icons/flip.webp"
+      }
+    ]
+  }
+}

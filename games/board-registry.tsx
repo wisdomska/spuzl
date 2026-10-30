@@ -16,4 +16,10 @@ export const BOARDS: Record<string, AnyBoard> = {
   pixl: dynamic(() => import("./pixl/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   blackout: dynamic(() => import("./blackout/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   tripwire: dynamic(() => import("./tripwire/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  chess: dynamic(() => import("./chess/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  draughts: dynamic(() => import("./draughts/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  oware: dynamic(() => import("./oware/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  fourup: dynamic(() => import("./fourup/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  flip: dynamic(() => import("./flip/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  ludo: dynamic(() => import("./ludo/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
 };
