@@ -11,6 +11,7 @@ export const LOGIC: Record<string, Loader> = {
   gotcha: () => import("./gotcha/logic"),
   dash: () => import("./dash/logic"),
   flipside: () => import("./flipside/logic"),
+  ricochet: () => import("./ricochet/logic"),
 };
 
 export function hasLogic(id: string) {

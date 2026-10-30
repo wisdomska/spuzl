@@ -13,4 +13,5 @@ export const BOARDS: Record<string, AnyBoard> = {
   gotcha: dynamic(() => import("./gotcha/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   dash: dynamic(() => import("./dash/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   flipside: dynamic(() => import("./flipside/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  ricochet: dynamic(() => import("./ricochet/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
 };

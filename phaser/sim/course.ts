@@ -46,6 +46,8 @@ export interface CourseLogicOptions {
   scoring: "deaths" | "score";
   /** draw a seeded parameter for the course */
   seeded?: boolean;
+  /** custom course pick (score games choose one arena per difficulty) */
+  pick?(rng: Rng, difficulty: Difficulty): string[];
   /** hint copy for the level being played (index into the course) */
   hint?(p: CoursePuzzle, level: number): string;
 }
@@ -77,13 +79,13 @@ export function makeCourseLogic(o: CourseLogicOptions) {
 
   const generate = (rng: Rng, difficulty: Difficulty): Generated<CoursePuzzle, CourseSolution> => {
     const n = Math.min(o.pool.length, lengths[difficulty]);
-    const picked = rng.shuffle(o.pool.map((_, i) => i)).slice(0, n);
-    if (o.ramp !== false) picked.sort((a, b) => a - b);
+    const picked = o.pick ? o.pick(rng, difficulty).map((id) => o.pool.indexOf(id)) : rng.shuffle(o.pool.map((_, i) => i)).slice(0, n);
+    if (o.ramp !== false && !o.pick) picked.sort((a, b) => a - b);
     const levels = picked.map((i) => o.pool[i]);
     const seed = o.seeded ? rng.int(1, 2 ** 31 - 1) : undefined;
     const puzzle: CoursePuzzle = seed === undefined ? { levels } : { levels, seed };
     const avg = picked.reduce((a, b) => a + b, 0) / Math.max(1, picked.length) / Math.max(1, o.pool.length - 1);
-    const grade = Math.max(0, Math.min(100, Math.round(n * 7 + avg * 40)));
+    const grade = Math.max(0, Math.min(100, Math.round(picked.length * 7 + avg * 40)));
     return { puzzle, solution: { ...puzzle, levels: levels.slice() }, grade };
   };
 
@@ -97,6 +99,7 @@ export function makeCourseLogic(o: CourseLogicOptions) {
   const progress = (p: CoursePuzzle, s: CourseSolution, state: RageState): number => {
     if (!sameCourse(p, s) || !isRageState(state)) return 0;
     const core = replayPartial(o.sim(p), state.log);
+    if (o.scoring === "score") return core.progress();
     return core.finished ? 1 : Math.min(0.99, core.cleared() / p.levels.length);
   };
 
@@ -104,7 +107,7 @@ export function makeCourseLogic(o: CourseLogicOptions) {
     if (!sameCourse(p, s)) return { ok: false, progress: 0, reason: "course does not match the schedule" };
     if (!isRageState(state)) return { ok: false, progress: 0, reason: "malformed state" };
     const r = replay(o.sim(p), state.log);
-    const prog = r.ok ? 1 : Math.min(0.99, r.cleared / p.levels.length);
+    const prog = r.ok ? 1 : o.scoring === "score" ? Math.min(0.99, r.progress) : Math.min(0.99, r.cleared / p.levels.length);
     if (!r.ok) return { ok: false, progress: prog, reason: r.reason };
     if (r.deaths !== state.deaths) return { ok: false, progress: prog, reason: "deaths do not match the replay" };
     if (r.timeMs !== state.timeMs) return { ok: false, progress: prog, reason: "time does not match the replay" };
