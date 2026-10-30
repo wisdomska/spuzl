@@ -34,4 +34,13 @@ export const BOARDS: Record<string, AnyBoard> = {
   quickfire: dynamic(() => import("./quickfire/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   flagged: dynamic(() => import("./flagged/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   pinned: dynamic(() => import("./pinned/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  quilt: dynamic(() => import("./quilt/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  deadon: dynamic(() => import("./deadon/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  snug: dynamic(() => import("./snug/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  shuffle: dynamic(() => import("./shuffle/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  reflect: dynamic(() => import("./reflect/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  squint: dynamic(() => import("./squint/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  merge: dynamic(() => import("./merge/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  sums: dynamic(() => import("./sums/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  equal: dynamic(() => import("./equal/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
 };

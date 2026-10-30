@@ -393,8 +393,10 @@ function progressOf(p: CrownfallPuzzle, sol: CrownfallSolution, state: Crownfall
   return correct / n;
 }
 
-export function hint(p: CrownfallPuzzle, sol: CrownfallSolution, state: CrownfallState): Hint | null {
+export function hint(p: CrownfallPuzzle, sol: CrownfallSolution, given: CrownfallState | undefined): Hint | null {
   const n = p.size;
+  // Hints can be asked for before the first move: treat a missing state as the empty board.
+  const state = Array.isArray(given) && given.length === n * n ? given : new Array<number>(n * n).fill(EMPTY);
   // First fix a wrong crown, if any.
   for (let i = 0; i < n * n; i++) {
     if (state[i] === CROWN && sol[Math.floor(i / n)] !== i % n) return { target: i, text: "This crown does not belong here." };

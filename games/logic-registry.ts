@@ -32,6 +32,15 @@ export const LOGIC: Record<string, Loader> = {
   quickfire: () => import("./quickfire/logic"),
   flagged: () => import("./flagged/logic"),
   pinned: () => import("./pinned/logic"),
+  quilt: () => import("./quilt/logic"),
+  deadon: () => import("./deadon/logic"),
+  snug: () => import("./snug/logic"),
+  shuffle: () => import("./shuffle/logic"),
+  reflect: () => import("./reflect/logic"),
+  squint: () => import("./squint/logic"),
+  merge: () => import("./merge/logic"),
+  sums: () => import("./sums/logic"),
+  equal: () => import("./equal/logic"),
 };
 
 export function hasLogic(id: string) {
