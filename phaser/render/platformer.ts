@@ -13,7 +13,12 @@ import { SCENE, type Painter } from "./types";
 /** Rows of world shown on screen. */
 export const VIEW_ROWS = 7;
 
-export function createPlatformerPainter(): Painter<PlatformerCourse> {
+export interface PainterOptions {
+  /** Dash look: one continuous ground slab, raised blocks in the ledge colour */
+  slab?: boolean;
+}
+
+export function createPlatformerPainter(opts: PainterOptions = {}): Painter<PlatformerCourse> {
   let parts: Particle[] = [];
   let deathAt = -1e9;
   let respawnAt = -1e9;
@@ -108,7 +113,17 @@ export function createPlatformerPainter(): Painter<PlatformerCourse> {
         for (let cx = x0; cx <= x1; cx++) {
           const i = cy * lvl.w + cx;
           const c = lvl.cells[i];
-          if (c === Cell.Solid) block(cx, cy, solidAt(cx, cy - 1) ? SCENE.groundDeep : SCENE.ground);
+          if (c === Cell.Solid && opts.slab) {
+            g.fillStyle(cy < lvl.h - 2 ? SCENE.ledge : SCENE.ground, 1);
+            const top = !solidAt(cx, cy - 1);
+            g.fillRoundedRect(
+              X(cx * TILE_PX) - 0.5,
+              Y(cy * TILE_PX),
+              T + 1,
+              T + (cy < lvl.h - 1 ? 1 : 0),
+              top && cy < lvl.h - 2 ? { tl: 8 * s * 0.5, tr: 8 * s * 0.5, bl: 0, br: 0 } : 0,
+            );
+          } else if (c === Cell.Solid) block(cx, cy, solidAt(cx, cy - 1) ? SCENE.groundDeep : SCENE.ground);
           else if (c === Cell.Ledge) {
             g.fillStyle(SCENE.ledge, 1);
             g.fillRoundedRect(X(cx * TILE_PX) + gap / 2, Y(cy * TILE_PX) + gap / 2, T - gap, T - gap, 6 * s);
