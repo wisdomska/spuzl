@@ -107,3 +107,50 @@ export interface ControlSpec {
   /** primary uses the world colour fill with ink text */
   tone?: "default" | "world" | "gold";
 }
+
+/* ---------- Content games (Word Woods, Clue Cave) ---------- */
+/**
+ * Games built from human-written content also export, from logic.ts, a `generateAt(index, difficulty)`
+ * used by the Daily scheduler so consecutive days never repeat an entry. `generate(rng)` (Free play)
+ * may pick any entry or build a variant. Content lives in games/<id>/content.ts with `needsReview: true`
+ * until the owner approves it in /admin.
+ */
+export interface ContentLogic<P, S, St> extends GameLogic<P, S, St> {
+  contentCount: number;
+  generateAt(index: number, difficulty: Difficulty): Generated<P, S>;
+}
+
+/* ---------- Board Bay matches (live and async), server-validated ---------- */
+export interface MatchStatus {
+  over: boolean;
+  /** seat index of the winner, null for a draw or while running */
+  winner: number | null;
+  reason?: string;
+}
+export interface BoardGameRules<S, M> {
+  id: string;
+  seats: { min: number; max: number };
+  initial(seats: number, rng: Rng): S;
+  /** whose turn (seat index) */
+  turn(state: S): number;
+  legalMoves(state: S, seat: number): M[];
+  isLegal(state: S, seat: number, move: M): boolean;
+  /** pure; throws on an illegal move */
+  apply(state: S, seat: number, move: M, rng: Rng): S;
+  status(state: S): MatchStatus;
+  /** optional simple AI for the clearly labelled "Practice bot" fallback */
+  botMove?(state: S, seat: number, rng: Rng): M;
+}
+
+/* ---------- Action games (Rage Ridge) ---------- */
+/**
+ * Action games submit an input log, not a board. logic.verify re-simulates the run with a deterministic
+ * fixed-step simulation (phaser/sim), so a forged time or death count is rejected. Phaser only renders.
+ */
+export interface InputLog {
+  /** fixed simulation step in ms (1000 / 60) */
+  step: number;
+  /** [frame, buttonsBitmask] pairs, only when buttons change */
+  events: [number, number][];
+  frames: number;
+}
