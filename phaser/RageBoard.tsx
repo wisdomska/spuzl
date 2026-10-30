@@ -37,6 +37,8 @@ export interface RageGameSpec<S extends SimCore> {
   startHint: string;
   /** dev fixtures: a scripted run of this course (ghost=demo, autoplay=1) */
   demoLog?(p: CoursePuzzle): Promise<InputLog>;
+  /** taller canvas (Flipside shows floor and ceiling, Slip climbs) */
+  tall?: boolean;
   /** a server hint arrived for the current level (reveal its traps) */
   reveal?(sim: S): void;
   /** shown in the feedback line once the run ends */
@@ -55,6 +57,7 @@ export function deathCopy(n: number) {
 
 const SEEN_KEY = "spuzl.photosensitive.seen";
 const chip: CSSProperties = {
+  whiteSpace: "nowrap",
   height: 40,
   padding: "0 12px",
   borderRadius: 12,
@@ -248,14 +251,14 @@ export function RageBoard<S extends SimCore>({
     if (!el) return;
     const on = () => {
       const w = Math.floor(el.clientWidth);
-      const h = Math.round(Math.max(230, Math.min(320, w * 0.7)));
+      const h = spec.tall ? Math.round(Math.max(300, Math.min(400, w * 0.9))) : Math.round(Math.max(230, Math.min(320, w * 0.7)));
       setSize((s) => (s.w === w && s.h === h ? s : { w, h }));
     };
     on();
     const ro = new ResizeObserver(on);
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [spec.tall]);
 
   // Lazy Phaser.
   const stageRef = useRef<Stage | null>(null);
@@ -447,9 +450,15 @@ export function RageBoard<S extends SimCore>({
             {ghostOn && hud.delta !== null ? (
               <div style={{ ...chip, fontSize: 15, fontWeight: 600, whiteSpace: "nowrap" }}>
                 <Icon name="ghost" size={16} style={{ color: "#A2A6C2" }} />
-                {ctl.ghost!.name} is
-                <span style={{ ...mono, fontSize: 15, color: "#B8F23A" }}>{Math.abs(hud.delta).toFixed(1)} s</span>
-                {hud.delta > 0 ? "ahead" : "behind"}
+                {Math.abs(hud.delta) < 0.05 ? (
+                  `Level with ${ctl.ghost!.name}`
+                ) : (
+                  <>
+                    {ctl.ghost!.name} is
+                    <span style={{ ...mono, fontSize: 15, color: "#B8F23A" }}>{Math.abs(hud.delta).toFixed(1)} s</span>
+                    {hud.delta > 0 ? "ahead" : "behind"}
+                  </>
+                )}
               </div>
             ) : (
               wide &&

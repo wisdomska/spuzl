@@ -12,4 +12,5 @@ export const BOARDS: Record<string, AnyBoard> = {
   crownfall: dynamic(() => import("./crownfall/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   gotcha: dynamic(() => import("./gotcha/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   dash: dynamic(() => import("./dash/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  flipside: dynamic(() => import("./flipside/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
 };

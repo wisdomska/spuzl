@@ -16,6 +16,8 @@ export const VIEW_ROWS = 7;
 export interface PainterOptions {
   /** Dash look: one continuous ground slab, raised blocks in the ledge colour */
   slab?: boolean;
+  /** rows of world on screen (default 7) */
+  viewRows?: number;
 }
 
 export function createPlatformerPainter(opts: PainterOptions = {}): Painter<PlatformerCourse> {
@@ -47,9 +49,10 @@ export function createPlatformerPainter(opts: PainterOptions = {}): Painter<Plat
       const { g, w, h, now, reduced, palette } = ctx;
       const world = sim.world;
       const lvl = world.lvl;
-      const s = h / (VIEW_ROWS * TILE_PX); // device px per world px
+      const rows = opts.viewRows ?? VIEW_ROWS;
+      const s = h / (rows * TILE_PX); // device px per world px
       const viewW = w / s,
-        viewH = VIEW_ROWS * TILE_PX;
+        viewH = rows * TILE_PX;
       const lvlW = lvl.w * TILE_PX,
         lvlH = lvl.h * TILE_PX;
       const b = world.body;

@@ -10,6 +10,7 @@ export const LOGIC: Record<string, Loader> = {
   crownfall: () => import("./crownfall/logic"),
   gotcha: () => import("./gotcha/logic"),
   dash: () => import("./dash/logic"),
+  flipside: () => import("./flipside/logic"),
 };
 
 export function hasLogic(id: string) {
