@@ -10,4 +10,10 @@ type AnyBoard = ComponentType<BoardProps<any, any>>; // eslint-disable-line @typ
 
 export const BOARDS: Record<string, AnyBoard> = {
   crownfall: dynamic(() => import("./crownfall/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  dusk: dynamic(() => import("./dusk/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  sixer: dynamic(() => import("./sixer/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  nine: dynamic(() => import("./nine/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  pixl: dynamic(() => import("./pixl/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  blackout: dynamic(() => import("./blackout/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  tripwire: dynamic(() => import("./tripwire/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
 };
