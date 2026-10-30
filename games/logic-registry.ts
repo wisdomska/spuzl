@@ -13,6 +13,7 @@ export const LOGIC: Record<string, Loader> = {
   nine: () => import("./nine/logic"),
   pixl: () => import("./pixl/logic"),
   blackout: () => import("./blackout/logic"),
+  tripwire: () => import("./tripwire/logic"),
 };
 
 export function hasLogic(id: string) {
