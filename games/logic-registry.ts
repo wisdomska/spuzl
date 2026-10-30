@@ -12,6 +12,7 @@ export const LOGIC: Record<string, Loader> = {
   draughts: () => import("./draughts/logic"),
   oware: () => import("./oware/logic"),
   fourup: () => import("./fourup/logic"),
+  flip: () => import("./flip/logic"),
 };
 
 export function hasLogic(id: string) {
