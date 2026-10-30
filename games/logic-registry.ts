@@ -13,6 +13,7 @@ export const LOGIC: Record<string, Loader> = {
   twins: () => import("./twins/logic"),
   flinch: () => import("./flinch/logic"),
   quickfire: () => import("./quickfire/logic"),
+  flagged: () => import("./flagged/logic"),
 };
 
 export function hasLogic(id: string) {
