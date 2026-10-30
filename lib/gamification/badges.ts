@@ -1,0 +1,51 @@
+/**
+ * Badges (SRS 4.7): families with bronze, silver, gold and prism tiers, plus 6 secret badges.
+ * `rule` is evaluated server-side in lib/gamification/evaluate.ts.
+ */
+export type Tier = "bronze" | "silver" | "gold" | "prism";
+export interface BadgeDef {
+  id: string;
+  family: string;
+  tier: Tier;
+  name: string;
+  description: string;
+  secret?: boolean;
+  sparks: number;
+  icon: string;
+  rule: { kind: string; n?: number; world?: string; game?: string };
+}
+
+const SPARKS: Record<Tier, number> = { bronze: 10, silver: 25, gold: 50, prism: 100 };
+const T: Tier[] = ["bronze", "silver", "gold", "prism"];
+const ladder = (family: string, icon: string, name: (n: number) => string, desc: (n: number) => string, kind: string, ns: number[]): BadgeDef[] =>
+  ns.map((n, i) => ({ id: `${family}-${n}`, family, tier: T[Math.min(i, 3)], name: name(n), description: desc(n), sparks: SPARKS[T[Math.min(i, 3)]], icon, rule: { kind, n } }));
+
+const WORLD_NAMES: [string, string, string][] = [
+  ["logic", "Logic Lab", "flask"], ["line", "Line Lane", "path"], ["shape", "Shape Shed", "cube"], ["number", "Number Den", "hash"],
+  ["word", "Word Woods", "tree"], ["clue", "Clue Cave", "magnifying-glass"], ["reflex", "Reflex Rink", "lightning"], ["rage", "Rage Ridge", "fire"], ["board", "Board Bay", "horse"],
+];
+
+export const BADGES: BadgeDef[] = [
+  { id: "first-clear", family: "starter", tier: "bronze", name: "First Clear", description: "Clear your first puzzle.", sparks: 10, icon: "seal-check", rule: { kind: "clears", n: 1 } },
+  ...WORLD_NAMES.map(([w, name, icon]) => ({ id: `explorer-${w}`, family: "explorer", tier: "gold" as Tier, name: `${name} Explorer`, description: `Clear every game in ${name}.`, sparks: 50, icon, rule: { kind: "world_all", world: w } })),
+  ...ladder("streak", "fire", (n) => `${n} Day Flame`, (n) => `Keep a ${n} day streak.`, "streak", [7, 30, 100, 365]),
+  ...ladder("speed", "lightning", (n) => `Speed Demon ${n}`, (n) => `Beat the day's median time by half in ${n} Dailies.`, "fast_clears", [10, 50, 200]),
+  ...ladder("clean", "hand-palm", (n) => `Clean Hands ${n}`, (n) => `${n} Daily clears without a hint.`, "no_hint_clears", [10, 50, 250]),
+  ...ladder("fullspuzl", "crown", (n) => `Full Spuzl ${n}`, (n) => `Clear every Daily on ${n} ${n === 1 ? "day" : "days"}.`, "full_spuzl_days", [1, 10, 50, 100]),
+  ...[100, 50, 20, 5].map((n, i) => ({ id: `rage-${n}`, family: "rage", tier: T[i], name: `Rage Survivor ${n}`, description: `Clear Gauntlet with ${n} deaths or fewer.`, sparks: SPARKS[T[i]], icon: "skull", rule: { kind: "gauntlet_deaths", n } })),
+  { id: "social-5", family: "social", tier: "bronze", name: "Squad Up", description: "Add 5 friends.", sparks: 10, icon: "users-three", rule: { kind: "friends", n: 5 } },
+  { id: "social-beat-10", family: "social", tier: "silver", name: "Rival", description: "Beat a friend's time 10 times.", sparks: 25, icon: "sword", rule: { kind: "beat_friend", n: 10 } },
+  { id: "social-school", family: "social", tier: "gold", name: "Top of the Class", description: "Top your school board for a day.", sparks: 50, icon: "graduation-cap", rule: { kind: "school_top", n: 1 } },
+  { id: "duel-10", family: "duel", tier: "silver", name: "Duellist", description: "Win 10 Duels.", sparks: 25, icon: "sword", rule: { kind: "duel_wins", n: 10 } },
+  { id: "party-1", family: "party", tier: "bronze", name: "Life of the Party", description: "Win a Party Race.", sparks: 10, icon: "trophy", rule: { kind: "party_wins", n: 1 } },
+  { id: "board-mate", family: "board", tier: "bronze", name: "Checkmate", description: "Solve a chess Daily.", sparks: 10, icon: "horse", rule: { kind: "game_clears", game: "chess", n: 1 } },
+  { id: "night-owl", family: "time", tier: "silver", name: "Night Owl", description: "Clear a Daily after midnight, local time.", sparks: 25, icon: "moon", rule: { kind: "night_owl", n: 1 } },
+  { id: "early-bird", family: "time", tier: "silver", name: "Early Bird", description: "Clear a Daily before 6 am, local time.", sparks: 25, icon: "sun", rule: { kind: "early_bird", n: 1 } },
+  // Secret badges: hidden until unlocked
+  { id: "secret-blink", family: "secret", tier: "prism", name: "Blink", description: "Clear a puzzle in under 10 seconds.", secret: true, sparks: 100, icon: "lightning", rule: { kind: "under_ms", n: 10000 } },
+  { id: "secret-comeback", family: "secret", tier: "gold", name: "Comeback", description: "Win a Duel after losing round one.", secret: true, sparks: 50, icon: "arrows-clockwise", rule: { kind: "duel_comeback", n: 1 } },
+  { id: "secret-photo", family: "secret", tier: "gold", name: "Photo Finish", description: "Win a Party Race by under a second.", secret: true, sparks: 50, icon: "flag-checkered", rule: { kind: "photo_finish", n: 1 } },
+  { id: "secret-undo", family: "secret", tier: "silver", name: "Second Thoughts", description: "Undo 50 times in one puzzle and still clear it.", secret: true, sparks: 25, icon: "arrow-counter-clockwise", rule: { kind: "undo_50", n: 1 } },
+  { id: "secret-midnight", family: "secret", tier: "gold", name: "Last Second", description: "Clear a Daily in the final minute before reset.", secret: true, sparks: 50, icon: "hourglass", rule: { kind: "last_minute", n: 1 } },
+  { id: "secret-pacifist", family: "secret", tier: "prism", name: "Untouched", description: "Clear a Rage Ridge course with zero deaths.", secret: true, sparks: 100, icon: "ghost", rule: { kind: "zero_deaths", n: 1 } },
+];

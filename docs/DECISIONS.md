@@ -14,3 +14,9 @@ Design wins for UI, UX, game list and product rules. SRS wins for backend rules,
 | 8 | Handoff sound names (`tick_soft`, `buzz_low`, ...) alias the kit names in `spuzl-audio.js`. Added `synth`, `jump`, `land` and `spike` for Line Lane and Rage Ridge. | The Handoff sound map lists them; the kit didn't have them. |
 | 9 | Every sound dispatches a `spuzl:fx` event and every haptic a `spuzl:haptic` event. | Lets E2E assert the animation + sound + haptic pairing without real audio. |
 | 10 | Daily numbering starts at #1 on 2026-04-01, so the designed "Daily #214" lands on 2026-10-31. | Keeps the design's copy plausible. |
+| 11 | Daily clear Sparks: 5 base + 10 no-hint + 10 perfect. | SRS says 5 per Daily clear; the designed Results screen shows +25 for a no-hint, no-slip clear. This reconciles both. XP follows the SRS exactly (the design's +120 equals 50 + 25 + 20 + 25 speed). |
+| 12 | Level curve follows the SRS (100 × n^1.4, rounded to 10), not the design's sample "1,560 / 2,000" at level 14. | SRS wins on gamification maths; the design number is illustrative. |
+| 13 | All score-, reward- and rating-changing writes go through server routes using the service role, or `svc_*` functions granted only to `service_role`. Clients have SELECT-only RLS on their own rows and public boards. | Server-authoritative rule; smallest attack surface. |
+| 14 | Guests are Supabase anonymous users. Linking Google or email later keeps the same user id, so progress merges without loss (FR-AC-04). | Native Supabase feature, free tier. |
+| 15 | Daily rollover and league rollover run in Postgres via pg_cron (00:00 and Monday 00:05 GMT). | Runs even if Vercel is cold; Vercel Hobby cron is limited. |
+| 16 | 42 badges (SRS asks for 40): 36 visible plus 6 secret. | Every SRS family is covered; World Explorer covers all 9 worlds including Board Bay. |
