@@ -27,10 +27,14 @@ export interface LabelStyle {
   size: number;
   weight?: number;
   alpha?: number;
+  /** draw under the graphics layer (big background numerals) */
+  behind?: boolean;
 }
 
 export interface DrawCtx {
   g: Gfx;
+  /** background layer, under labels marked `behind` */
+  bg: Gfx;
   /** places a text label this frame (labels not placed are hidden); x, y are the label's bottom centre */
   label(key: string, text: string, x: number, y: number, style: LabelStyle): void;
   /** canvas size in device pixels */

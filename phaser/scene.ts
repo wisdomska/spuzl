@@ -32,11 +32,14 @@ export function startStage<S>(Phaser: PhaserModule, o: StageOptions<S>): Stage {
 
   class RageScene extends Phaser.Scene {
     gfx!: PhaserNS.GameObjects.Graphics;
+    bg!: PhaserNS.GameObjects.Graphics;
     labels = new Map<string, PhaserNS.GameObjects.Text>();
     constructor() {
       super("rage");
     }
     create() {
+      this.bg = this.add.graphics();
+      this.bg.setDepth(-2);
       this.gfx = this.add.graphics();
     }
     update(_time: number, delta: number) {
@@ -44,6 +47,7 @@ export function startStage<S>(Phaser: PhaserModule, o: StageOptions<S>): Stage {
       const used = new Set<string>();
       const ctx: DrawCtx = {
         g: this.gfx,
+        bg: this.bg,
         w,
         h,
         dpr,
@@ -63,7 +67,7 @@ export function startStage<S>(Phaser: PhaserModule, o: StageOptions<S>): Stage {
               padding: st.bg ? { x: 8 * dpr, y: 2 * dpr } : undefined,
             });
             t.setOrigin(0.5, 1);
-            t.setDepth(10);
+            t.setDepth(st.behind ? -1 : 10);
             this.labels.set(key, t);
           }
           if (t.text !== text) t.setText(text);
@@ -73,6 +77,7 @@ export function startStage<S>(Phaser: PhaserModule, o: StageOptions<S>): Stage {
         },
       };
       this.gfx.clear();
+      this.bg.clear();
       o.painter.draw(ctx, sim, ghost);
       for (const [k, t] of this.labels) if (!used.has(k)) t.setVisible(false);
     }

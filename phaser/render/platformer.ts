@@ -74,12 +74,12 @@ export function createPlatformerPainter(opts: PainterOptions = {}): Painter<Plat
       const pulse = 0.5 + 0.5 * Math.sin((now / 1000) * Math.PI * 2); // 1 Hz
 
       // Background and dot grid (20 css px), slow parallax.
-      g.fillStyle(SCENE.bg, 1);
-      g.fillRect(0, 0, w, h);
-      g.fillStyle(SCENE.dot, 1);
+      ctx.bg.fillStyle(SCENE.bg, 1);
+      ctx.bg.fillRect(0, 0, w, h);
+      ctx.bg.fillStyle(SCENE.dot, 1);
       const step = 20 * ctx.dpr;
       const off = (-(camX * s) * 0.3) % step;
-      for (let y = step / 2; y < h; y += step) for (let x = off; x < w; x += step) g.fillCircle(x, y, 1.5 * ctx.dpr);
+      for (let y = step / 2; y < h; y += step) for (let x = off; x < w; x += step) ctx.bg.fillCircle(x, y, 1.5 * ctx.dpr);
 
       const x0 = Math.max(0, Math.floor(camX / TILE_PX) - 1),
         x1 = Math.min(lvl.w - 1, Math.ceil((camX + viewW) / TILE_PX) + 1);

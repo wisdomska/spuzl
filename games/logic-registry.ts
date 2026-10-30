@@ -12,6 +12,7 @@ export const LOGIC: Record<string, Loader> = {
   dash: () => import("./dash/logic"),
   flipside: () => import("./flipside/logic"),
   ricochet: () => import("./ricochet/logic"),
+  stacked: () => import("./stacked/logic"),
 };
 
 export function hasLogic(id: string) {

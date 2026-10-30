@@ -23,17 +23,17 @@ export function createRicochetPainter(): Painter<RicochetSim> {
         oy = (h - a.h * s) / 2 + h * 0.02;
       const X = (px: number) => ox + px * s;
       const Y = (py: number) => oy + py * s;
-      g.fillStyle(SCENE.bg, 1);
-      g.fillRect(0, 0, w, h);
-      g.fillStyle(SCENE.dot, 1);
+      ctx.bg.fillStyle(SCENE.bg, 1);
+      ctx.bg.fillRect(0, 0, w, h);
+      ctx.bg.fillStyle(SCENE.dot, 1);
       const step = 20 * ctx.dpr;
-      for (let y = step / 2; y < h; y += step) for (let x = step / 2; x < w; x += step) g.fillCircle(x, y, 1.5 * ctx.dpr);
+      for (let y = step / 2; y < h; y += step) for (let x = step / 2; x < w; x += step) ctx.bg.fillCircle(x, y, 1.5 * ctx.dpr);
       // walls
       g.fillStyle(SCENE.ground, 1);
       g.fillRoundedRect(X(0) - 8 * s, Y(0), 8 * s, a.h * s, { tl: 4 * s, tr: 0, bl: 4 * s, br: 0 });
       g.fillRoundedRect(X(a.w), Y(0), 8 * s, a.h * s, { tl: 0, tr: 4 * s, bl: 0, br: 4 * s });
       // score behind the action
-      ctx.label("score", String(sim.points), w / 2, h / 2 + 40 * ctx.dpr, { color: "#3A1A22", size: 96, weight: 900 });
+      ctx.label("score", String(sim.points), w / 2, h / 2 + 40 * ctx.dpr, { color: "#3A1A22", size: 96, weight: 900, behind: true });
       // top and bottom spike strips
       g.fillStyle(palette.rage, 1);
       const n = Math.floor(a.w / 10);
