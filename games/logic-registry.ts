@@ -10,6 +10,7 @@ export const LOGIC: Record<string, Loader> = {
   crownfall: () => import("./crownfall/logic"),
   weave: () => import("./weave/logic"),
   flowline: () => import("./flowline/logic"),
+  isles: () => import("./isles/logic"),
 };
 
 export function hasLogic(id: string) {

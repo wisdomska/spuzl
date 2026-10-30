@@ -12,4 +12,5 @@ export const BOARDS: Record<string, AnyBoard> = {
   crownfall: dynamic(() => import("./crownfall/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   weave: dynamic(() => import("./weave/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   flowline: dynamic(() => import("./flowline/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  isles: dynamic(() => import("./isles/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
 };

@@ -16,6 +16,8 @@ const CSS = `
 .ll-head { animation: ll-head 1s ease-in-out infinite; }
 .ll-trail { animation: ll-trail 300ms var(--ease-out) both; pointer-events: none; }
 .ll-flow { animation: ll-flow 420ms var(--ease-out) both; }
+.ll-ink { background: var(--world); }
+[data-theme="light"] .ll-ink { background: var(--world-ink); }
 .ll-turn { transition: transform var(--dur-fast) var(--spring-press); }
 .ll-fog { transition: opacity 260ms var(--ease-out); }
 .ll-cam { transition: transform var(--dur-ui) var(--ease-out); }
