@@ -39,7 +39,7 @@ interface Loaded {
 }
 
 export async function loadDaily(admin: SupabaseClient, gameId: string, date: string): Promise<Loaded> {
-  const { data } = await admin.from("dailies").select("puzzle_id, puzzles(data, solution, difficulty)").eq("game_id", gameId).eq("date", date).maybeSingle();
+  const { data } = await admin.from("dailies").select("puzzle_id, puzzles!dailies_puzzle_id_fkey(data, solution, difficulty)").eq("game_id", gameId).eq("date", date).maybeSingle();
   const p = data?.puzzles as unknown as { data: unknown; solution: unknown; difficulty: Difficulty } | undefined;
   if (data && p) return { puzzleId: data.puzzle_id, puzzle: p.data, solution: p.solution, difficulty: p.difficulty };
   // Safety net: no scheduled Daily (should never happen; the rollover alerts). Generate deterministically

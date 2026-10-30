@@ -17,8 +17,8 @@
     "test:visual": "playwright test tests/visual",
     "test:db": "supabase test db",
     "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
-    "gen:puzzles": "tsx scripts/generate-puzzles.ts",
-    "validate:dailies": "tsx scripts/validate-dailies.ts",
+    "gen:puzzles": "tsx scripts/generate-puzzles.mts",
+    "validate:dailies": "tsx scripts/validate-dailies.mts",
     "prerender:3d": "node scripts/prerender-3d.mjs",
     "prepare": "husky || true"
   },
