@@ -28,7 +28,8 @@ export default function CrownfallBoard({ puzzle, initialState, hint, disabled, m
   const streak = useRef(0);
   const cellsRef = useRef(cells);
   const painting = useRef<null | { value: number }>(null);
-  const cell = useCellSize(n, GAP);
+  const gap = n <= 4 ? 4 : GAP;
+  const cell = useCellSize(n, gap, 6, n <= 4 ? 72 : 64);
   const a = analyze(puzzle, cells);
 
   const commit = useCallback(
@@ -139,7 +140,7 @@ export default function CrownfallBoard({ puzzle, initialState, hint, disabled, m
         aria-colcount={n}
         onKeyDown={keys.onKeyDown}
         className="grid rounded-[20px] p-1.5"
-        style={{ gridTemplateColumns: `repeat(${n}, ${cell}px)`, gap: GAP, background: "var(--board-bg)", boxShadow: "0 0 0 2px var(--line)", perspective: 600 }}
+        style={{ gridTemplateColumns: `repeat(${n}, ${cell}px)`, gap, background: "var(--board-bg)", boxShadow: "0 0 0 2px var(--line)", perspective: 600 }}
       >
         {Array.from({ length: n }, (_, r) => (
           <div role="row" key={r} className="contents">

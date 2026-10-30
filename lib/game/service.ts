@@ -57,6 +57,10 @@ export async function loadDaily(admin: SupabaseClient, gameId: string, date: str
 }
 
 export async function loadFree(gameId: string, seed: string, difficulty: Difficulty): Promise<Loaded> {
+  if (seed === "tutorial:crownfall") {
+    const { TUTORIAL_PUZZLE, TUTORIAL_SOLUTION } = await import("@/games/crownfall/tutorial");
+    return { puzzleId: null, puzzle: TUTORIAL_PUZZLE, solution: TUTORIAL_SOLUTION, difficulty: "easy" };
+  }
   const logic = await loadLogic(gameId);
   const g = logic.generate(createRng(seed), difficulty);
   return { puzzleId: null, puzzle: g.puzzle, solution: g.solution, difficulty };
@@ -201,7 +205,10 @@ export async function finishAttempt(admin: SupabaseClient, playerId: string, id:
 
   // Anti-cheat (SRS 12.3): impossible speed and client time exceeding server wall time are flagged, not ranked.
   let flag: string | null = null;
-  if (timeMs < meta.minTimeMs) flag = `below human floor (${timeMs} < ${meta.minTimeMs} ms)`;
+  // The tutorial is played before the profile exists, so its attempt is created after the clear;
+  // its reward is fixed and granted once, so wall-clock checks do not apply.
+  if (a.mode === "tutorial") flag = null;
+  else if (timeMs < meta.minTimeMs) flag = `below human floor (${timeMs} < ${meta.minTimeMs} ms)`;
   else if (timeMs > wallMs + WALL_SLACK_MS) flag = `client time ${timeMs} exceeds server wall time ${wallMs}`;
   else if (input.offline && a.mode === "daily" && a.daily_date && finishedAt.toISOString().slice(0, 10) !== a.daily_date) flag = "offline clear outside its day";
 
@@ -277,8 +284,14 @@ export async function finishAttempt(admin: SupabaseClient, playerId: string, id:
     reward = dailyClearReward({ timeMs, hints: a.hints, mistakes: input.mistakes, medianMs: null, firstClearOfGameEver: false, archive: true });
     await admin.rpc("svc_grant_reward", { p_player: playerId, p_source: "archive", p_ref: `${a.game_id}:${a.daily_date}`, p_xp: reward.xp, p_sparks: 0 });
   } else if (a.mode === "tutorial") {
-    reward = { xp: 100, sparks: 10, lines: [{ label: "First clear", xp: 100, sparks: 10 }] };
-    await admin.rpc("svc_grant_reward", { p_player: playerId, p_source: "tutorial", p_ref: "first", p_xp: reward.xp, p_sparks: reward.sparks });
+    // Designed first-clear screen: +150 XP, +50 Sparks (40 here + 10 from the First Clear badge).
+    reward = { xp: 150, sparks: 50, lines: [{ label: "First clear", xp: 150, sparks: 50 }] };
+    await admin.rpc("svc_grant_reward", { p_player: playerId, p_source: "tutorial", p_ref: "first", p_xp: 150, p_sparks: 40 });
+    // The first-ever clear lights the streak (design O3 shows Streak 1).
+    const today = new Date().toISOString().slice(0, 10);
+    const { data: s } = await admin.from("streaks").select("current").eq("player_id", playerId).maybeSingle();
+    if (!s?.current) await admin.from("streaks").upsert({ player_id: playerId, current: 1, best: 1, last_clear_date: today });
+    streak = { current: 1, extended: true, milestone: null, freezeEarned: false };
   }
 
   const unlocks = await evaluateAfterClear(admin, playerId, { gameId: a.game_id, world: meta.world, mode: a.mode, timeMs, hints: a.hints, mistakes: input.mistakes, deaths: input.deaths ?? 0, date: a.daily_date, localHour: input.localHour, fullSpuzl, streak: streak?.current ?? 0 });

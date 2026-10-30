@@ -133,3 +133,5 @@ input, textarea, select { font-size: max(16px, 1rem); } /* no zoom on focus (iOS
 /* RM: marks fade in 80 ms, no pop, no shake, clear cross-fades */
 [data-motion="reduce"] .cell-pop-a, [data-motion="reduce"] .cell-pop-b { animation: fade-in 80ms linear; }
 [data-motion="reduce"] .cell-shake-a, [data-motion="reduce"] .cell-shake-b, [data-motion="reduce"] .board-pulse, [data-motion="reduce"] .hint-ring { animation: none; }
+/* Island bob: 5 to 6 px, slow (Solo Screens). Ambient, paused in low-data and reduced motion. */
+[data-motion="reduce"] .ambient { animation: none !important; }

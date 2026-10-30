@@ -52,6 +52,8 @@ async function stats(admin: SupabaseClient, playerId: string): Promise<Stats> {
 
 async function badgeEarned(b: BadgeDef, c: ClearContext, s: Stats): Promise<boolean> {
   const n = b.rule.n ?? 1;
+  // The 4 × 4 tutorial only ever earns First Clear.
+  if (c.mode === "tutorial") return b.rule.kind === "clears" && s.clears >= n;
   switch (b.rule.kind) {
     case "clears": return s.clears >= n;
     case "streak": return c.streak >= n;
