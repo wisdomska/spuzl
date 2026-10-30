@@ -144,7 +144,10 @@ export default function TripwireBoard({ puzzle, initialState, hint, disabled, mo
     [commit, locked],
   );
 
-  const act = useCallback((i: number) => (flagTool && cellsRef.current[i] !== OPEN ? toggleFlag(i) : reveal(i)), [flagTool, reveal, toggleFlag]);
+  const act = useCallback(
+    (i: number) => (flagTool && cellsRef.current[i] !== OPEN ? toggleFlag(i) : reveal(i)),
+    [flagTool, reveal, toggleFlag],
+  );
 
   const undo = useCallback(() => {
     setHist((hh) => {
@@ -167,7 +170,11 @@ export default function TripwireBoard({ puzzle, initialState, hint, disabled, mo
   }, [api, undo, hist.length, done, flagTool]);
 
   useEffect(() => {
-    api.feedback(mode === "tutorial" ? "Tap anywhere to start. The first tap is always safe." : "Tap to reveal, hold to flag. First tap is safe.", "info", "hand-pointing");
+    api.feedback(
+      mode === "tutorial" ? "Tap anywhere to start. The first tap is always safe." : "Tap to reveal, hold to flag. First tap is safe.",
+      "info",
+      "hand-pointing",
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -194,7 +201,8 @@ export default function TripwireBoard({ puzzle, initialState, hint, disabled, mo
 
   // Keyboard: Space flags, Enter reveals.
   const keys = useGridKeys(h, w, toggleFlag, reveal);
-  const lastR = Math.floor(last / w), lastC = last % w;
+  const lastR = Math.floor(last / w),
+    lastC = last % w;
   const hintTarget = typeof hint?.target === "number" ? hint.target : -1;
 
   return (
@@ -221,7 +229,14 @@ export default function TripwireBoard({ puzzle, initialState, hint, disabled, mo
           aria-colcount={w}
           onKeyDown={keys.onKeyDown}
           className="grid rounded-[16px] select-none"
-          style={{ gridTemplateColumns: `repeat(${w}, ${cell}px)`, gap: GAP, padding: PAD, background: "var(--board-bg)", boxShadow: "0 0 0 2px var(--line)", perspective: 600 }}
+          style={{
+            gridTemplateColumns: `repeat(${w}, ${cell}px)`,
+            gap: GAP,
+            padding: PAD,
+            background: "var(--board-bg)",
+            boxShadow: "0 0 0 2px var(--line)",
+            perspective: 600,
+          }}
         >
           {Array.from({ length: h }, (_, r) => (
             <div role="row" key={r} className="contents">
@@ -255,17 +270,39 @@ export default function TripwireBoard({ puzzle, initialState, hint, disabled, mo
                     style={{
                       width: cell,
                       height: cell,
-                      background: trip ? "var(--danger-tint)" : isOpen ? "var(--surface)" : "color-mix(in srgb, var(--text-muted) 30%, var(--surface))",
-                      boxShadow: glow ? "inset 0 0 0 4px var(--accent)" : trip ? "inset 0 0 0 3px var(--danger)" : !isOpen ? "inset 0 -4px 0 rgb(0 0 0 / .22)" : undefined,
+                      background: trip
+                        ? "var(--danger-tint)"
+                        : isOpen
+                          ? "var(--surface)"
+                          : "color-mix(in srgb, var(--text-muted) 30%, var(--surface))",
+                      boxShadow: glow
+                        ? "inset 0 0 0 4px var(--accent)"
+                        : trip
+                          ? "inset 0 0 0 3px var(--danger)"
+                          : !isOpen
+                            ? "inset 0 -4px 0 rgb(0 0 0 / .22)"
+                            : undefined,
                       color: trip ? "var(--danger)" : v === FLAG ? "var(--gold)" : undefined,
                     }}
                   >
-                    {done && <span aria-hidden className="absolute inset-0" style={waveStyle(dist, n < 0 ? "var(--gold)" : "var(--world)", 10)} />}
+                    {done && (
+                      <span aria-hidden className="absolute inset-0" style={waveStyle(dist, n < 0 ? "var(--gold)" : "var(--world)", 10)} />
+                    )}
                     {trip && <span aria-hidden className="hatch absolute inset-0 rounded-[10px]" />}
                     {trip && <Icon name="bomb" size={Math.round(cell * 0.5)} className="relative" />}
-                    {v === FLAG && <Icon name="flag" size={Math.round(cell * 0.45)} className="relative" style={done ? { color: "#0E0F1A" } : undefined} />}
+                    {v === FLAG && (
+                      <Icon
+                        name="flag"
+                        size={Math.round(cell * 0.45)}
+                        className="relative"
+                        style={done ? { color: "#0E0F1A" } : undefined}
+                      />
+                    )}
                     {isOpen && n > 0 && (
-                      <span className={`relative ${done ? "" : "text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]"}`} style={done ? { color: "#0E0F1A" } : undefined}>
+                      <span
+                        className={`relative ${done ? "" : "text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]"}`}
+                        style={done ? { color: "#0E0F1A" } : undefined}
+                      >
                         {n}
                       </span>
                     )}

@@ -45,7 +45,8 @@ export function geometry(size: number, boxW: number, boxH: number): Geo {
   for (let c = 0; c < size; c++) units.push({ cells: Array.from({ length: size }, (_, r) => r * size + c), kind: "column", index: c });
   const perRow = size / boxW;
   for (let b = 0; b < size; b++) {
-    const r0 = Math.floor(b / perRow) * boxH, c0 = (b % perRow) * boxW;
+    const r0 = Math.floor(b / perRow) * boxH,
+      c0 = (b % perRow) * boxW;
     const cells: number[] = [];
     for (let r = 0; r < boxH; r++) for (let c = 0; c < boxW; c++) cells.push((r0 + r) * size + c0 + c);
     units.push({ cells, kind: "box", index: b });
@@ -69,7 +70,8 @@ const bits = (m: number) => {
 };
 const digitOf = (m: number) => 31 - Math.clz32(m) + 1;
 export const boxOf = (p: SudokuPuzzle, i: number) => {
-  const r = Math.floor(i / p.size), c = i % p.size;
+  const r = Math.floor(i / p.size),
+    c = i % p.size;
   return Math.floor(r / p.boxH) * (p.size / p.boxW) + Math.floor(c / p.boxW);
 };
 
@@ -105,7 +107,13 @@ export function analyze(p: SudokuPuzzle, values: number[]): Analysis {
     }
   }
   const filled = values.filter(Boolean).length;
-  return { filled, bad, rule, message: rule ? ruleCopy(rule, digit, p.boxW, p.boxH) : "", clear: filled === p.size * p.size && bad.size === 0 };
+  return {
+    filled,
+    bad,
+    rule,
+    message: rule ? ruleCopy(rule, digit, p.boxW, p.boxH) : "",
+    clear: filled === p.size * p.size && bad.size === 0,
+  };
 }
 
 /** Candidate masks from placed digits only. */
@@ -138,7 +146,9 @@ function search(p: SudokuPuzzle, values: number[], limit: number, out: number[][
   let count = 0;
   const rec = () => {
     if (count >= limit) return;
-    let best = -1, bestMask = 0, bestBits = 99;
+    let best = -1,
+      bestMask = 0,
+      bestBits = 99;
     for (let i = 0; i < n; i++) {
       if (values[i]) continue;
       let m = g.all;
@@ -242,7 +252,8 @@ function singles(p: SudokuPuzzle, values: number[], masks: number[]): Deduction 
       const bit = 1 << (d - 1);
       if (u.cells.some((i) => values[i] === d)) continue;
       const spots = u.cells.filter((i) => !values[i] && masks[i] & bit);
-      if (spots.length === 1) return { cell: spots[0], value: d, why: `This is the only spot for ${d} in ${unitName(u, p)}.`, level: TECHNIQUE.hiddenSingle };
+      if (spots.length === 1)
+        return { cell: spots[0], value: d, why: `This is the only spot for ${d} in ${unitName(u, p)}.`, level: TECHNIQUE.hiddenSingle };
     }
   }
   return null;
@@ -262,7 +273,8 @@ export function nextDeduction(p: SudokuPuzzle, values: number[], maxLevel: numbe
 /** Solves with techniques only. Returns the hardest level used, or TECHNIQUE.guess when stuck. */
 export function logicLevel(p: SudokuPuzzle, maxLevel: number = TECHNIQUE.nakedPair): { level: number; steps: number } {
   const values = p.givens.slice();
-  let level = 0, steps = 0;
+  let level = 0,
+    steps = 0;
   for (;;) {
     const d = nextDeduction(p, values, maxLevel);
     if (!d) break;
@@ -354,7 +366,9 @@ export function verify(p: SudokuPuzzle, sol: SudokuSolution, state: SudokuState)
   const progress = progressOf(p, sol, state);
   const a = analyze(p, v);
   if (!a.clear) return { ok: false, progress, reason: a.rule ?? "incomplete" };
-  return v.every((d, i) => d === sol[i]) ? { ok: true, progress: 1 } : { ok: false, progress, reason: "valid but not the scheduled solution" };
+  return v.every((d, i) => d === sol[i])
+    ? { ok: true, progress: 1 }
+    : { ok: false, progress, reason: "valid but not the scheduled solution" };
 }
 
 export function progressOf(p: SudokuPuzzle, sol: SudokuSolution, state: SudokuState): number {

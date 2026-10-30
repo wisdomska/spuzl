@@ -31,10 +31,22 @@ function useSudokuCell(size: number) {
  * toggles pencil marks. Givens are bolder and locked; your digits use the world colour. Peers of the
  * selected cell and matching digits are tinted so the eye can scan.
  */
-export function SudokuBoard({ puzzle, initialState, hint, disabled, mode, api, title }: BoardProps<SudokuPuzzle, SudokuState> & { title: string }) {
+export function SudokuBoard({
+  puzzle,
+  initialState,
+  hint,
+  disabled,
+  mode,
+  api,
+  title,
+}: BoardProps<SudokuPuzzle, SudokuState> & { title: string }) {
   const n = puzzle.size;
   const g = geometry(n, puzzle.boxW, puzzle.boxH);
-  const [st, setSt] = useState<SudokuState>(() => (initialState ? { values: initialState.values.slice(), notes: initialState.notes?.slice() ?? new Array(n * n).fill(0) } : emptyState(puzzle)));
+  const [st, setSt] = useState<SudokuState>(() =>
+    initialState
+      ? { values: initialState.values.slice(), notes: initialState.notes?.slice() ?? new Array(n * n).fill(0) }
+      : emptyState(puzzle),
+  );
   const [hist, setHist] = useState<SudokuState[]>([]);
   const [notesMode, setNotesMode] = useState(false);
   const [selected, setSelected] = useState(-1);
@@ -49,15 +61,12 @@ export function SudokuBoard({ puzzle, initialState, hint, disabled, mode, api, t
   const given = (i: number) => puzzle.givens[i] !== 0;
   const locked = disabled || done;
 
-  const push = useCallback(
-    (next: SudokuState) => {
-      const prev = stRef.current;
-      stRef.current = next;
-      setSt(next);
-      setHist((h) => [...h, prev]);
-    },
-    [],
-  );
+  const push = useCallback((next: SudokuState) => {
+    const prev = stRef.current;
+    stRef.current = next;
+    setSt(next);
+    setHist((h) => [...h, prev]);
+  }, []);
 
   const where = (i: number) => `Row ${Math.floor(i / n) + 1}, column ${(i % n) + 1}`;
 
@@ -168,7 +177,13 @@ export function SudokuBoard({ puzzle, initialState, hint, disabled, mode, api, t
     api.setControls([
       { id: "undo", label: "Undo", icon: "arrow-counter-clockwise", onPress: undo, disabled: !hist.length || done },
       { id: "erase", label: "Erase", icon: "eraser", onPress: erase, disabled: done },
-      { id: "notes", label: notesMode ? "Notes on" : "Notes", icon: "pencil-simple", onPress: () => setNotesMode((m) => !m), active: notesMode },
+      {
+        id: "notes",
+        label: notesMode ? "Notes on" : "Notes",
+        icon: "pencil-simple",
+        onPress: () => setNotesMode((m) => !m),
+        active: notesMode,
+      },
       { id: "hint", label: "Hint", icon: "lightbulb", onPress: () => {}, tone: "gold" },
     ]);
   }, [api, undo, erase, hist.length, done, notesMode]);
@@ -204,19 +219,26 @@ export function SudokuBoard({ puzzle, initialState, hint, disabled, mode, api, t
     }
     keys.onKeyDown(e);
     if (e.key.startsWith("Arrow") || e.key === "Home" || e.key === "End") {
-      const r = Math.floor(keys.focus / n), c = keys.focus % n;
+      const r = Math.floor(keys.focus / n),
+        c = keys.focus % n;
       const next =
-        e.key === "ArrowUp" ? Math.max(0, r - 1) * n + c
-        : e.key === "ArrowDown" ? Math.min(n - 1, r + 1) * n + c
-        : e.key === "ArrowLeft" ? r * n + Math.max(0, c - 1)
-        : e.key === "ArrowRight" ? r * n + Math.min(n - 1, c + 1)
-        : e.key === "Home" ? r * n
-        : r * n + n - 1;
+        e.key === "ArrowUp"
+          ? Math.max(0, r - 1) * n + c
+          : e.key === "ArrowDown"
+            ? Math.min(n - 1, r + 1) * n + c
+            : e.key === "ArrowLeft"
+              ? r * n + Math.max(0, c - 1)
+              : e.key === "ArrowRight"
+                ? r * n + Math.min(n - 1, c + 1)
+                : e.key === "Home"
+                  ? r * n
+                  : r * n + n - 1;
       setSelected(next);
     }
   };
 
-  const lastR = Math.floor(last / n), lastC = last % n;
+  const lastR = Math.floor(last / n),
+    lastC = last % n;
   const hintTarget = typeof hint?.target === "number" ? hint.target : -1;
   const selVal = selected >= 0 ? st.values[selected] : 0;
   const peerSet = new Set(selected >= 0 ? g.peers[selected] : []);
@@ -251,7 +273,13 @@ export function SudokuBoard({ puzzle, initialState, hint, disabled, mode, api, t
               const dist = Math.abs(r - lastR) + Math.abs(c - lastC);
               let anim = "";
               if (!done && i === last) anim = bad ? shakeClass(shakeN) : popClass(tapN);
-              const ring = glow ? "inset 0 0 0 4px var(--accent)" : bad ? "inset 0 0 0 3px var(--danger)" : sel ? "inset 0 0 0 3px var(--world)" : undefined;
+              const ring = glow
+                ? "inset 0 0 0 4px var(--accent)"
+                : bad
+                  ? "inset 0 0 0 3px var(--danger)"
+                  : sel
+                    ? "inset 0 0 0 3px var(--world)"
+                    : undefined;
               const notes = st.notes[i];
               const noteList = notes ? Array.from({ length: n }, (_, k) => k + 1).filter((d) => notes & (1 << (d - 1))) : [];
               return (
@@ -277,7 +305,13 @@ export function SudokuBoard({ puzzle, initialState, hint, disabled, mode, api, t
                     fontSize: Math.round(cell * 0.5),
                   }}
                 >
-                  {tint && <span aria-hidden className="absolute inset-0 rounded-[8px]" style={{ background: "color-mix(in srgb, var(--world) 10%, transparent)" }} />}
+                  {tint && (
+                    <span
+                      aria-hidden
+                      className="absolute inset-0 rounded-[8px]"
+                      style={{ background: "color-mix(in srgb, var(--world) 10%, transparent)" }}
+                    />
+                  )}
                   {done && <span aria-hidden className="absolute inset-0" style={waveStyle(dist, "var(--world)", 8)} />}
                   {bad && <span aria-hidden className="hatch absolute inset-0 rounded-[8px]" />}
                   {v ? (
@@ -288,7 +322,12 @@ export function SudokuBoard({ puzzle, initialState, hint, disabled, mode, api, t
                     <span
                       aria-hidden
                       className="relative grid h-full w-full p-[3px] text-[var(--text-muted)]"
-                      style={{ gridTemplateColumns: `repeat(${noteCols}, 1fr)`, gridTemplateRows: `repeat(${noteRows}, 1fr)`, fontSize: Math.max(9, Math.round(cell / (n <= 6 ? 4.2 : 3.8))), lineHeight: 1 }}
+                      style={{
+                        gridTemplateColumns: `repeat(${noteCols}, 1fr)`,
+                        gridTemplateRows: `repeat(${noteRows}, 1fr)`,
+                        fontSize: Math.max(9, Math.round(cell / (n <= 6 ? 4.2 : 3.8))),
+                        lineHeight: 1,
+                      }}
                     >
                       {Array.from({ length: n }, (_, k) => (
                         <span key={k} className="flex items-center justify-center">
@@ -305,7 +344,12 @@ export function SudokuBoard({ puzzle, initialState, hint, disabled, mode, api, t
       </div>
 
       {/* Number pad */}
-      <div className="grid gap-2" style={{ width, gridTemplateColumns: `repeat(${padCols}, minmax(0, 1fr))` }} role="group" aria-label={notesMode ? "Number pad, notes mode" : "Number pad"}>
+      <div
+        className="grid gap-2"
+        style={{ width, gridTemplateColumns: `repeat(${padCols}, minmax(0, 1fr))` }}
+        role="group"
+        aria-label={notesMode ? "Number pad, notes mode" : "Number pad"}
+      >
         {Array.from({ length: n }, (_, k) => {
           const d = k + 1;
           const full = placed(d) >= n;
@@ -317,7 +361,12 @@ export function SudokuBoard({ puzzle, initialState, hint, disabled, mode, api, t
               onClick={() => enter(d)}
               aria-label={notesMode ? `Note ${d}` : `Number ${d}${full ? ", all placed" : ""}`}
               className={`toy num relative flex h-12 items-center justify-center rounded-[14px] text-[22px] font-semibold ${notesMode ? "text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]" : ""}`}
-              style={{ background: "var(--surface-raised)", ["--btn-depth" as string]: "var(--depth)", boxShadow: "0 5px 0 var(--depth)", opacity: full && !notesMode ? 0.4 : 1 }}
+              style={{
+                background: "var(--surface-raised)",
+                ["--btn-depth" as string]: "var(--depth)",
+                boxShadow: "0 5px 0 var(--depth)",
+                opacity: full && !notesMode ? 0.4 : 1,
+              }}
             >
               {d}
               {notesMode && <Icon name="pencil-simple" size={11} className="absolute top-1.5 right-1.5" />}

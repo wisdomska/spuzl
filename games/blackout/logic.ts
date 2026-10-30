@@ -28,7 +28,8 @@ const PAR_RANGE: Record<Difficulty, [number, number]> = { easy: [3, 5], medium: 
 /* ---------------- Board mechanics ---------------- */
 
 export function neighbourhood(n: number, i: number): number[] {
-  const r = Math.floor(i / n), c = i % n;
+  const r = Math.floor(i / n),
+    c = i % n;
   const out = [i];
   if (r > 0) out.push(i - n);
   if (r < n - 1) out.push(i + n);
@@ -166,7 +167,10 @@ export function hint(p: BlackoutPuzzle, _sol: BlackoutSolution, state: BlackoutS
   const min = minimalPresses(p.size, replay(p, ps))!;
   if (!min.length) return null;
   const i = min[0];
-  return { target: i, text: `Tap row ${Math.floor(i / p.size) + 1}, column ${(i % p.size) + 1}. ${min.length} ${min.length === 1 ? "tap" : "taps"} left at best.` };
+  return {
+    target: i,
+    text: `Tap row ${Math.floor(i / p.size) + 1}, column ${(i % p.size) + 1}. ${min.length} ${min.length === 1 ? "tap" : "taps"} left at best.`,
+  };
 }
 
 const logic: GameLogic<BlackoutPuzzle, BlackoutSolution, BlackoutState> = {

@@ -66,7 +66,8 @@ export const UNKNOWN = -1;
  * `line`. Returns null when no arrangement fits.
  */
 export function solveLine(clue: number[], line: number[]): number[] | null {
-  const n = line.length, m = clue.length;
+  const n = line.length,
+    m = clue.length;
   const memo = new Map<number, boolean>();
   const key = (i: number, k: number) => i * (m + 1) + k;
   const fits = (i: number, k: number): boolean => {
@@ -219,7 +220,11 @@ export function nextDeduction(p: PixlPuzzle, state: PixlState): Deduction | null
     const k = next.findIndex((v, j) => v !== cur[j]);
     if (k >= 0) {
       const clue = l.clue.length ? l.clue.join(" ") : "0";
-      return { cell: l.cells[k], value: next[k] as Deduction["value"], why: `${l.label}, clue ${clue}: this cell ${next[k] === FILL ? "must be filled" : "stays empty"}.` };
+      return {
+        cell: l.cells[k],
+        value: next[k] as Deduction["value"],
+        why: `${l.label}, clue ${clue}: this cell ${next[k] === FILL ? "must be filled" : "stays empty"}.`,
+      };
     }
   }
   return null;
@@ -250,10 +255,12 @@ function pattern(w: number, h: number, rng: Rng): number[] {
   const next = cells.slice();
   for (let r = 0; r < h; r++) {
     for (let c = 0; c < w; c++) {
-      let on = 0, all = 0;
+      let on = 0,
+        all = 0;
       for (let dr = -1; dr <= 1; dr++)
         for (let dc = -1; dc <= 1; dc++) {
-          const rr = r + dr, cc = c + dc;
+          const rr = r + dr,
+            cc = c + dc;
           if (rr < 0 || cc < 0 || rr >= h || cc >= w) continue;
           all++;
           on += cells[rr * w + cc];
@@ -276,7 +283,8 @@ function makeDecisive(w: number, h: number, cells: number[], rng: Rng, budget: n
     if (solved) return cells;
     const stuck = grid.flatMap((v, i) => (v === UNKNOWN ? [i] : []));
     const i = rng.pick(stuck);
-    const r = Math.floor(i / w), c = i % w;
+    const r = Math.floor(i / w),
+      c = i % w;
     const v = cells[i] ? 0 : 1;
     cells[i] = v;
     cells[r * w + (w - 1 - c)] = v;

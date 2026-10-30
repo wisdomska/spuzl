@@ -35,7 +35,13 @@ describe("dusk", () => {
     a = analyze(p, t);
     expect(a.rule).toBe("count");
     expect(a.message).toBe(RULE_COPY.count);
-    const q: DuskPuzzle = { ...p, links: [{ a: 0, b: 1, same: true }, { a: 6, b: 12, same: false }] };
+    const q: DuskPuzzle = {
+      ...p,
+      links: [
+        { a: 0, b: 1, same: true },
+        { a: 6, b: 12, same: false },
+      ],
+    };
     const u = new Array(36).fill(EMPTY);
     u[0] = SUN;
     u[1] = MOON;

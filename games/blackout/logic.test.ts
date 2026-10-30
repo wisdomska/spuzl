@@ -9,10 +9,11 @@ function bruteMin(n: number, lights: number[]): number {
   for (let mask = 0; mask < 1 << (n * n); mask++) {
     let l = lights.slice();
     let k = 0;
-    for (let i = 0; i < n * n; i++) if (mask & (1 << i)) {
-      l = press(n, l, i);
-      k++;
-    }
+    for (let i = 0; i < n * n; i++)
+      if (mask & (1 << i)) {
+        l = press(n, l, i);
+        k++;
+      }
     if (!lit(l)) best = Math.min(best, k);
   }
   return best;

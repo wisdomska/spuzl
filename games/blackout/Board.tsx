@@ -95,12 +95,17 @@ export default function BlackoutBoard({ puzzle, initialState, hint, disabled, mo
   }, [api, undo, reset, presses.length, done]);
 
   useEffect(() => {
-    api.feedback(mode === "tutorial" ? `Tap a tile to flip it and its neighbours. Par ${puzzle.par}.` : `Par ${puzzle.par}. Turn every light off.`, "info", "lightbulb-filament");
+    api.feedback(
+      mode === "tutorial" ? `Tap a tile to flip it and its neighbours. Par ${puzzle.par}.` : `Par ${puzzle.par}. Turn every light off.`,
+      "info",
+      "lightbulb-filament",
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const keys = useGridKeys(n, n, tap);
-  const lastR = Math.floor(last / n), lastC = last % n;
+  const lastR = Math.floor(last / n),
+    lastC = last % n;
   const hintTarget = typeof hint?.target === "number" ? hint.target : -1;
 
   return (
@@ -126,7 +131,14 @@ export default function BlackoutBoard({ puzzle, initialState, hint, disabled, mo
         aria-colcount={n}
         onKeyDown={keys.onKeyDown}
         className="grid rounded-[16px]"
-        style={{ gridTemplateColumns: `repeat(${n}, ${cell}px)`, gap: GAP, padding: PAD, background: "var(--board-bg)", boxShadow: "0 0 0 2px var(--line)", perspective: 600 }}
+        style={{
+          gridTemplateColumns: `repeat(${n}, ${cell}px)`,
+          gap: GAP,
+          padding: PAD,
+          background: "var(--board-bg)",
+          boxShadow: "0 0 0 2px var(--line)",
+          perspective: 600,
+        }}
       >
         {Array.from({ length: n }, (_, r) => (
           <div role="row" key={r} className="contents">
@@ -154,12 +166,21 @@ export default function BlackoutBoard({ puzzle, initialState, hint, disabled, mo
                     height: cell,
                     background: v ? "var(--world)" : "var(--surface-raised)",
                     color: v ? "#0E0F1A" : "color-mix(in srgb, var(--text-muted) 60%, transparent)",
-                    boxShadow: glow ? "inset 0 0 0 4px var(--accent)" : v ? "0 0 18px color-mix(in srgb, var(--world) 45%, transparent)" : undefined,
+                    boxShadow: glow
+                      ? "inset 0 0 0 4px var(--accent)"
+                      : v
+                        ? "0 0 18px color-mix(in srgb, var(--world) 45%, transparent)"
+                        : undefined,
                     transition: "background-color 120ms var(--ease-out), box-shadow 120ms var(--ease-out)",
                   }}
                 >
                   {done && <span aria-hidden className="absolute inset-0" style={waveStyle(dist, "var(--world)", 12)} />}
-                  <Icon name={v ? "lightbulb-filament" : "lightbulb"} size={Math.round(cell * (v ? 0.48 : 0.36))} className="relative" style={done ? { color: "#0E0F1A" } : undefined} />
+                  <Icon
+                    name={v ? "lightbulb-filament" : "lightbulb"}
+                    size={Math.round(cell * (v ? 0.48 : 0.36))}
+                    className="relative"
+                    style={done ? { color: "#0E0F1A" } : undefined}
+                  />
                 </div>
               );
             })}

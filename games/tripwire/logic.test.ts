@@ -51,7 +51,9 @@ describe("tripwire", () => {
     // A satisfied number frees its hidden neighbours.
     const q: TripwirePuzzle = { w: 3, h: 1, mines: [0], start: 2 };
     const fq = field(q);
-    expect(deduce(q, fq, [false, true, false], [true, false, false])).toEqual([{ cell: 2, mine: false, why: expect.stringContaining("already has its mines") }]);
+    expect(deduce(q, fq, [false, true, false], [true, false, false])).toEqual([
+      { cell: 2, mine: false, why: expect.stringContaining("already has its mines") },
+    ]);
     // Mine total: none left means the rest is safe.
     const r: TripwirePuzzle = { w: 3, h: 1, mines: [], start: 0 };
     expect(deduce(r, field(r), [true, false, false], [false, false, false]).every((d) => !d.mine)).toBe(true);

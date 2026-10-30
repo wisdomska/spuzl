@@ -98,7 +98,13 @@ describe("pixl", () => {
     const n = g.solution.length;
     const good: number[] = g.solution.map((v) => (v ? FILL : CROSS));
     expect(verify(g.puzzle, g.solution, good)).toEqual({ ok: true, progress: 1 });
-    expect(verify(g.puzzle, g.solution, g.solution.map((v) => (v ? FILL : EMPTY))).ok).toBe(true);
+    expect(
+      verify(
+        g.puzzle,
+        g.solution,
+        g.solution.map((v) => (v ? FILL : EMPTY)),
+      ).ok,
+    ).toBe(true);
     const miss = good.slice();
     miss[g.solution.indexOf(1)] = EMPTY;
     expect(verify(g.puzzle, g.solution, miss).ok).toBe(false);
@@ -125,7 +131,8 @@ describe("pixl", () => {
   it("hints fix mistakes first and then lead to the picture", () => {
     const g = generate(createRng("hints"), "hard");
     const s = new Array(g.solution.length).fill(EMPTY);
-    const off = g.solution.indexOf(0), on = g.solution.indexOf(1);
+    const off = g.solution.indexOf(0),
+      on = g.solution.indexOf(1);
     s[off] = FILL;
     expect(hint(g.puzzle, g.solution, s)).toEqual({ target: off, text: "This cell stays empty." });
     s[off] = EMPTY;

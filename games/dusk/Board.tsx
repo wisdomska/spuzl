@@ -125,7 +125,8 @@ export default function DuskBoard({ puzzle, initialState, hint, disabled, mode, 
   }, []);
 
   const keys = useGridKeys(n, n, cycle);
-  const lastR = Math.floor(last / n), lastC = last % n;
+  const lastR = Math.floor(last / n),
+    lastC = last % n;
   const hintTarget = typeof hint?.target === "number" ? hint.target : -1;
   const step = cell + GAP;
 
@@ -138,7 +139,14 @@ export default function DuskBoard({ puzzle, initialState, hint, disabled, mode, 
         aria-colcount={n}
         onKeyDown={keys.onKeyDown}
         className="relative grid rounded-[16px]"
-        style={{ gridTemplateColumns: `repeat(${n}, ${cell}px)`, gap: GAP, padding: PAD, background: "var(--board-bg)", boxShadow: "0 0 0 2px var(--line)", perspective: 600 }}
+        style={{
+          gridTemplateColumns: `repeat(${n}, ${cell}px)`,
+          gap: GAP,
+          padding: PAD,
+          background: "var(--board-bg)",
+          boxShadow: "0 0 0 2px var(--line)",
+          perspective: 600,
+        }}
       >
         {Array.from({ length: n }, (_, r) => (
           <div role="row" key={r} className="contents">
@@ -152,7 +160,10 @@ export default function DuskBoard({ puzzle, initialState, hint, disabled, mode, 
               if (!done && i === last) anim = bad ? shakeClass(shakeN) : popClass(tapN);
               const glow = i === hintTarget && !done;
               const look = v === SUN ? LOOK.sun : v === MOON ? LOOK.moon : LOOK.empty;
-              const rings = [fixed ? `inset 0 0 0 2px ${GIVEN_RING}` : "", glow ? "inset 0 0 0 4px var(--accent)" : bad ? "inset 0 0 0 3px var(--danger)" : ""].filter(Boolean);
+              const rings = [
+                fixed ? `inset 0 0 0 2px ${GIVEN_RING}` : "",
+                glow ? "inset 0 0 0 4px var(--accent)" : bad ? "inset 0 0 0 3px var(--danger)" : "",
+              ].filter(Boolean);
               const links = linkAt(i)
                 .map((l) => {
                   const other = l.a === i ? l.b : l.a;
@@ -177,15 +188,20 @@ export default function DuskBoard({ puzzle, initialState, hint, disabled, mode, 
                 >
                   {done && <span aria-hidden className="absolute inset-0" style={waveStyle(dist, "var(--world)")} />}
                   {bad && <span aria-hidden className="hatch absolute inset-0 rounded-[10px]" />}
-                  {v === SUN && <Icon name="sun" size={Math.round(cell * 0.55)} className="relative" style={done ? { color: "#0E0F1A" } : undefined} />}
-                  {v === MOON && <Icon name="moon" size={Math.round(cell * 0.5)} className="relative" style={done ? { color: "#0E0F1A" } : undefined} />}
+                  {v === SUN && (
+                    <Icon name="sun" size={Math.round(cell * 0.55)} className="relative" style={done ? { color: "#0E0F1A" } : undefined} />
+                  )}
+                  {v === MOON && (
+                    <Icon name="moon" size={Math.round(cell * 0.5)} className="relative" style={done ? { color: "#0E0F1A" } : undefined} />
+                  )}
                 </div>
               );
             })}
           </div>
         ))}
         {puzzle.links.map((l) => {
-          const r = Math.floor(l.a / n), c = l.a % n;
+          const r = Math.floor(l.a / n),
+            c = l.a % n;
           const horiz = l.b === l.a + 1;
           const x = horiz ? PAD + (c + 1) * step - GAP / 2 - MARK / 2 : PAD + c * step + cell / 2 - MARK / 2;
           const y = horiz ? PAD + r * step + cell / 2 - MARK / 2 : PAD + (r + 1) * step - GAP / 2 - MARK / 2;
@@ -193,8 +209,16 @@ export default function DuskBoard({ puzzle, initialState, hint, disabled, mode, 
             <span
               key={`${l.a}-${l.b}`}
               aria-hidden
-              className={`pointer-events-none absolute z-10 flex items-center justify-center rounded-[6px] text-[13px] font-bold num `}
-              style={{ left: x, top: y, width: MARK, height: MARK, background: "var(--text)", color: "var(--bg)", boxShadow: "0 0 0 2px var(--board-bg)" }}
+              className={`num pointer-events-none absolute z-10 flex items-center justify-center rounded-[6px] text-[13px] font-bold`}
+              style={{
+                left: x,
+                top: y,
+                width: MARK,
+                height: MARK,
+                background: "var(--text)",
+                color: "var(--bg)",
+                boxShadow: "0 0 0 2px var(--board-bg)",
+              }}
             >
               {l.same ? "=" : "×"}
             </span>

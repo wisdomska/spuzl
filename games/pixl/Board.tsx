@@ -45,7 +45,14 @@ export default function PixlBoard({ puzzle, initialState, hint, disabled, mode, 
   const [done, setDone] = useState(false);
   const cellsRef = useRef(cells);
   const streak = useRef(0);
-  const stroke = useRef<null | { start: number; value: number | null; moved: boolean; before: PixlState; timer: ReturnType<typeof setTimeout> | null; broke: boolean }>(null);
+  const stroke = useRef<null | {
+    start: number;
+    value: number | null;
+    moved: boolean;
+    before: PixlState;
+    timer: ReturnType<typeof setTimeout> | null;
+    broke: boolean;
+  }>(null);
   const maxRow = Math.max(1, ...puzzle.rows.map((r) => Math.max(1, r.length)));
   const maxCol = Math.max(1, ...puzzle.cols.map((c) => Math.max(1, c.length)));
   const clueW = maxRow * CLUE_PX + 10;
@@ -124,7 +131,7 @@ export default function PixlBoard({ puzzle, initialState, hint, disabled, mode, 
   };
   const onPointerEnter = (i: number) => () => {
     const s = stroke.current;
-    if (!s || locked || i === s.start && !s.moved) return;
+    if (!s || locked || (i === s.start && !s.moved)) return;
     if (s.timer) {
       clearTimeout(s.timer);
       s.timer = null;
@@ -176,7 +183,11 @@ export default function PixlBoard({ puzzle, initialState, hint, disabled, mode, 
   }, [api, undo, hist.length, done, tool]);
 
   useEffect(() => {
-    api.feedback(mode === "tutorial" ? "Tap to fill. Hold to mark X. Drag to paint." : "Tap fills, hold marks X, drag paints.", "info", "hand-pointing");
+    api.feedback(
+      mode === "tutorial" ? "Tap to fill. Hold to mark X. Drag to paint." : "Tap fills, hold marks X, drag paints.",
+      "info",
+      "hand-pointing",
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -198,7 +209,8 @@ export default function PixlBoard({ puzzle, initialState, hint, disabled, mode, 
     },
   );
 
-  const lastR = Math.floor(last / w), lastC = last % w;
+  const lastR = Math.floor(last / w),
+    lastC = last % w;
   const hintTarget = typeof hint?.target === "number" ? hint.target : -1;
   const step = cell + GAP;
   const gridW = w * cell + (w - 1) * GAP + PAD * 2;
@@ -217,7 +229,14 @@ export default function PixlBoard({ puzzle, initialState, hint, disabled, mode, 
               <div
                 key={c}
                 className="num absolute bottom-1 flex flex-col items-center justify-end font-semibold"
-                style={{ left: PAD + c * step, width: cell, fontSize: 13, lineHeight: `${CLUE_PX + 2}px`, color: clueColor(dl), textDecoration: dl ? "line-through" : undefined }}
+                style={{
+                  left: PAD + c * step,
+                  width: cell,
+                  fontSize: 13,
+                  lineHeight: `${CLUE_PX + 2}px`,
+                  color: clueColor(dl),
+                  textDecoration: dl ? "line-through" : undefined,
+                }}
               >
                 {(clue.length ? clue : [0]).map((n, k) => (
                   <span key={k}>{n}</span>
@@ -234,7 +253,13 @@ export default function PixlBoard({ puzzle, initialState, hint, disabled, mode, 
               <div
                 key={r}
                 className="num absolute right-2 flex items-center justify-end gap-[5px] font-semibold"
-                style={{ top: PAD + r * step, height: cell, fontSize: 13, color: clueColor(dl), textDecoration: dl ? "line-through" : undefined }}
+                style={{
+                  top: PAD + r * step,
+                  height: cell,
+                  fontSize: 13,
+                  color: clueColor(dl),
+                  textDecoration: dl ? "line-through" : undefined,
+                }}
               >
                 {(clue.length ? clue : [0]).map((n, k) => (
                   <span key={k}>{n}</span>
@@ -250,7 +275,14 @@ export default function PixlBoard({ puzzle, initialState, hint, disabled, mode, 
           aria-colcount={w}
           onKeyDown={keys.onKeyDown}
           className="relative grid touch-none rounded-[14px] select-none"
-          style={{ gridTemplateColumns: `repeat(${w}, ${cell}px)`, gap: GAP, padding: PAD, background: "var(--board-bg)", boxShadow: "0 0 0 2px var(--line)", perspective: 600 }}
+          style={{
+            gridTemplateColumns: `repeat(${w}, ${cell}px)`,
+            gap: GAP,
+            padding: PAD,
+            background: "var(--board-bg)",
+            boxShadow: "0 0 0 2px var(--line)",
+            perspective: 600,
+          }}
         >
           {Array.from({ length: h }, (_, r) => (
             <div role="row" key={r} className="contents">
@@ -284,7 +316,13 @@ export default function PixlBoard({ puzzle, initialState, hint, disabled, mode, 
                       boxShadow: glow ? "inset 0 0 0 3px var(--accent)" : bad ? "inset 0 0 0 3px var(--danger)" : undefined,
                     }}
                   >
-                    {done && <span aria-hidden className="absolute inset-0" style={waveStyle(dist, v === FILL ? "var(--world)" : "var(--board-bg)", 6)} />}
+                    {done && (
+                      <span
+                        aria-hidden
+                        className="absolute inset-0"
+                        style={waveStyle(dist, v === FILL ? "var(--world)" : "var(--board-bg)", 6)}
+                      />
+                    )}
                     {bad && <span aria-hidden className="hatch absolute inset-0 rounded-[6px]" />}
                     {v === CROSS && !done && <Icon name="x" size={Math.round(cell * 0.45)} className="relative" />}
                   </div>
@@ -293,12 +331,38 @@ export default function PixlBoard({ puzzle, initialState, hint, disabled, mode, 
             </div>
           ))}
           {/* Thicker guide every 5 cells */}
-          {!done && Array.from({ length: Math.floor((w - 1) / 5) }, (_, k) => (
-            <span key={`v${k}`} aria-hidden className="pointer-events-none absolute" style={{ left: PAD + (k + 1) * 5 * step - GAP, top: PAD, width: GAP, height: gridH - PAD * 2, background: "var(--text-muted)", opacity: 0.6 }} />
-          ))}
-          {!done && Array.from({ length: Math.floor((h - 1) / 5) }, (_, k) => (
-            <span key={`h${k}`} aria-hidden className="pointer-events-none absolute" style={{ top: PAD + (k + 1) * 5 * step - GAP, left: PAD, height: GAP, width: gridW - PAD * 2, background: "var(--text-muted)", opacity: 0.6 }} />
-          ))}
+          {!done &&
+            Array.from({ length: Math.floor((w - 1) / 5) }, (_, k) => (
+              <span
+                key={`v${k}`}
+                aria-hidden
+                className="pointer-events-none absolute"
+                style={{
+                  left: PAD + (k + 1) * 5 * step - GAP,
+                  top: PAD,
+                  width: GAP,
+                  height: gridH - PAD * 2,
+                  background: "var(--text-muted)",
+                  opacity: 0.6,
+                }}
+              />
+            ))}
+          {!done &&
+            Array.from({ length: Math.floor((h - 1) / 5) }, (_, k) => (
+              <span
+                key={`h${k}`}
+                aria-hidden
+                className="pointer-events-none absolute"
+                style={{
+                  top: PAD + (k + 1) * 5 * step - GAP,
+                  left: PAD,
+                  height: GAP,
+                  width: gridW - PAD * 2,
+                  background: "var(--text-muted)",
+                  opacity: 0.6,
+                }}
+              />
+            ))}
         </div>
       </div>
     </div>

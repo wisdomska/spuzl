@@ -79,7 +79,8 @@ export function analyze(p: DuskPuzzle, cells: DuskState): Analysis {
     }
   }
   for (const l of p.links) {
-    const x = cells[l.a], y = cells[l.b];
+    const x = cells[l.a],
+      y = cells[l.b];
     if (!x || !y) continue;
     if (l.same && x !== y) flag("same", [l.a, l.b]);
     if (!l.same && x === y) flag("differ", [l.a, l.b]);
@@ -104,9 +105,20 @@ export interface Deduction {
 export function nextDeduction(p: DuskPuzzle, cells: DuskState): Deduction | null {
   const n = p.size;
   for (const l of p.links) {
-    const x = cells[l.a], y = cells[l.b];
-    if (x && !y) return { cell: l.b, value: (l.same ? x : opp(x)) as Deduction["value"], why: l.same ? `= copies the ${name(x)} next door.` : `× flips the ${name(x)} next door.` };
-    if (y && !x) return { cell: l.a, value: (l.same ? y : opp(y)) as Deduction["value"], why: l.same ? `= copies the ${name(y)} next door.` : `× flips the ${name(y)} next door.` };
+    const x = cells[l.a],
+      y = cells[l.b];
+    if (x && !y)
+      return {
+        cell: l.b,
+        value: (l.same ? x : opp(x)) as Deduction["value"],
+        why: l.same ? `= copies the ${name(x)} next door.` : `× flips the ${name(x)} next door.`,
+      };
+    if (y && !x)
+      return {
+        cell: l.a,
+        value: (l.same ? y : opp(y)) as Deduction["value"],
+        why: l.same ? `= copies the ${name(y)} next door.` : `× flips the ${name(y)} next door.`,
+      };
   }
   const ls = lines(n);
   for (const { cells: L } of ls) {
@@ -127,7 +139,11 @@ export function nextDeduction(p: DuskPuzzle, cells: DuskState): Deduction | null
     if (!empties.length) continue;
     for (const v of [SUN, MOON]) {
       if (L.filter((i) => cells[i] === v).length === n / 2) {
-        return { cell: empties[0], value: opp(v) as Deduction["value"], why: `${label[0].toUpperCase()}${label.slice(1)} already has all its ${plural(v)}.` };
+        return {
+          cell: empties[0],
+          value: opp(v) as Deduction["value"],
+          why: `${label[0].toUpperCase()}${label.slice(1)} already has all its ${plural(v)}.`,
+        };
       }
     }
   }
@@ -292,7 +308,9 @@ export function verify(p: DuskPuzzle, sol: DuskSolution, state: DuskState): Veri
   const progress = progressOf(p, sol, state);
   const a = analyze(p, state);
   if (!a.clear) return { ok: false, progress, reason: a.rule ?? "incomplete" };
-  return state.every((v, i) => v === sol[i]) ? { ok: true, progress: 1 } : { ok: false, progress, reason: "valid but not the scheduled solution" };
+  return state.every((v, i) => v === sol[i])
+    ? { ok: true, progress: 1 }
+    : { ok: false, progress, reason: "valid but not the scheduled solution" };
 }
 
 /** Share of open cells filled correctly. */
