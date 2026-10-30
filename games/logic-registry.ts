@@ -17,6 +17,7 @@ export const LOGIC: Record<string, Loader> = {
   grapple: () => import("./grapple/logic"),
   ghosted: () => import("./ghosted/logic"),
   slip: () => import("./slip/logic"),
+  gauntlet: () => import("./gauntlet/logic"),
 };
 
 export function hasLogic(id: string) {
