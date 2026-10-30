@@ -25,6 +25,13 @@ export const LOGIC: Record<string, Loader> = {
   isles: () => import("./isles/logic"),
   pairup: () => import("./pairup/logic"),
   lost: () => import("./lost/logic"),
+  hunch: () => import("./hunch/logic"),
+  echo: () => import("./echo/logic"),
+  twins: () => import("./twins/logic"),
+  flinch: () => import("./flinch/logic"),
+  quickfire: () => import("./quickfire/logic"),
+  flagged: () => import("./flagged/logic"),
+  pinned: () => import("./pinned/logic"),
 };
 
 export function hasLogic(id: string) {

@@ -27,4 +27,11 @@ export const BOARDS: Record<string, AnyBoard> = {
   isles: dynamic(() => import("./isles/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   pairup: dynamic(() => import("./pairup/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   lost: dynamic(() => import("./lost/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  hunch: dynamic(() => import("./hunch/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  echo: dynamic(() => import("./echo/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  twins: dynamic(() => import("./twins/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  flinch: dynamic(() => import("./flinch/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  quickfire: dynamic(() => import("./quickfire/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  flagged: dynamic(() => import("./flagged/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  pinned: dynamic(() => import("./pinned/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
 };

@@ -308,7 +308,11 @@ function ToolButton({ c }: { c: ControlSpec }) {
       disabled={c.disabled}
       aria-pressed={c.active ?? undefined}
       className="toy flex h-16 flex-col items-center justify-center gap-[3px] rounded-[18px]"
-      style={{ background: look.bg, color: look.fg, ["--btn-depth" as string]: look.sh, boxShadow: `0 5px 0 ${look.sh}` }}
+      style={
+        c.disabled
+          ? undefined
+          : { background: look.bg, color: look.fg, ["--btn-depth" as string]: look.sh, boxShadow: `0 5px 0 ${look.sh}` }
+      }
     >
       <Icon name={c.icon} size={22} />
       <span className="text-[13px] font-semibold">{c.label}</span>
