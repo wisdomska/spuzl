@@ -16,4 +16,5 @@ export const BOARDS: Record<string, AnyBoard> = {
   flinch: dynamic(() => import("./flinch/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   quickfire: dynamic(() => import("./quickfire/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   flagged: dynamic(() => import("./flagged/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  pinned: dynamic(() => import("./pinned/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
 };

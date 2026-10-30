@@ -14,6 +14,7 @@ export const LOGIC: Record<string, Loader> = {
   flinch: () => import("./flinch/logic"),
   quickfire: () => import("./quickfire/logic"),
   flagged: () => import("./flagged/logic"),
+  pinned: () => import("./pinned/logic"),
 };
 
 export function hasLogic(id: string) {
