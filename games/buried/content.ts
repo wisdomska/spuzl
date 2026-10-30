@@ -1,0 +1,77 @@
+/**
+ * Buried themes. Original SPUZL content, needs owner review. The generator hides as many of the words as fit
+ * the grid for the day, so the leftover squares spell the secret phrase exactly, read left to right, top to
+ * bottom. About 1 in 5 themes is Ghanaian or West African.
+ */
+export interface BuriedEntry {
+  theme: string;
+  /** secret phrase, words separated by single spaces */
+  phrase: string;
+  /** candidate words, most important first */
+  words: string[];
+}
+
+export const needsReview = true;
+
+export const CONTENT: BuriedEntry[] = [
+  { theme: "Market day", phrase: "AKWAABA FRIEND", words: ["KENTE", "BEADS", "YAMS", "OKRA", "SALT", "PALM", "ONION", "TOMATO", "PEPPER", "GINGER", "BASKET", "SCALE", "COINS", "SELLER"] },
+  { theme: "In the kitchen", phrase: "COOK WITH LOVE", words: ["SPOON", "WHISK", "LADLE", "TONGS", "OVEN", "KETTLE", "PAN", "POT", "GRATER", "SIEVE", "APRON", "BOWL", "JUG", "FORK"] },
+  { theme: "Weather", phrase: "RAIN OR SHINE", words: ["STORM", "CLOUD", "SLEET", "HAIL", "WIND", "FROST", "MIST", "FOG", "THUNDER", "SUNNY", "BREEZE", "DRIZZLE", "GALE", "HAZE"] },
+  { theme: "Ghanaian food", phrase: "CHOP TIME NOW", words: ["JOLLOF", "BANKU", "FUFU", "KENKEY", "WAAKYE", "GARI", "SHITO", "KOOSE", "SUYA", "YAM", "STEW", "SOUP", "RICE", "BEANS"] },
+  { theme: "At the beach", phrase: "SURF IS UP TODAY", words: ["SAND", "WAVES", "SHELLS", "TOWEL", "CRAB", "BUCKET", "SPADE", "TIDE", "SWIM", "BOAT", "SUN", "PALM", "REEF", "SURF"] },
+  { theme: "Night sky", phrase: "LOOK UP HIGH", words: ["MOON", "STARS", "COMET", "PLANET", "METEOR", "ORBIT", "NOVA", "MARS", "VENUS", "DUST", "GALAXY", "SPACE", "COSMOS", "SKY"] },
+  { theme: "Garden", phrase: "GROW SLOWLY", words: ["SPADE", "RAKE", "HOSE", "SEEDS", "ROSE", "LILY", "TULIP", "SOIL", "WORM", "SHED", "PATH", "HEDGE", "LAWN", "POND"] },
+  { theme: "Music", phrase: "PLAY IT LOUD", words: ["PIANO", "DRUM", "FLUTE", "HARP", "VIOLIN", "CELLO", "TUBA", "BAND", "SONG", "NOTE", "CHORD", "TEMPO", "BEAT", "TUNE"] },
+  { theme: "Around Ghana", phrase: "SEE GHANA", words: ["ACCRA", "KUMASI", "TEMA", "VOLTA", "TAMALE", "AXIM", "ELMINA", "BUSUA", "ADA", "KETA", "YENDI", "AFLAO", "WINNEBA"] },
+  { theme: "Football", phrase: "GOAL GOAL GOAL", words: ["PITCH", "BALL", "KICK", "NET", "CORNER", "KEEPER", "SHOT", "PASS", "TACKLE", "SCORE", "TEAM", "COACH", "BOOT", "CUP"] },
+  { theme: "Fruits", phrase: "EAT YOUR FRUIT", words: ["MANGO", "PAPAYA", "GUAVA", "LEMON", "BANANA", "LIME", "APPLE", "PEAR", "PLUM", "GRAPE", "MELON", "KIWI", "FIG", "DATE"] },
+  { theme: "Ocean life", phrase: "DEEP BLUE SEA", words: ["WHALE", "SHARK", "OCTOPUS", "CORAL", "SQUID", "EEL", "SEAL", "CRAB", "SHRIMP", "TUNA", "RAY", "CLAM", "KELP", "STAR"] },
+  { theme: "Camping", phrase: "SLEEP UNDER STARS", words: ["TENT", "LANTERN", "COMPASS", "KETTLE", "TORCH", "MAP", "ROPE", "FIRE", "LOGS", "BOOTS", "PACK", "TRAIL", "HIKE", "CAMP"] },
+  { theme: "Birds", phrase: "FREE AS A BIRD", words: ["ROBIN", "HERON", "FALCON", "PELICAN", "WREN", "KITE", "EAGLE", "OWL", "CROW", "DOVE", "HAWK", "DUCK", "SWAN", "PARROT"] },
+  { theme: "Tools", phrase: "FIX IT UP", words: ["HAMMER", "WRENCH", "PLIERS", "CHISEL", "DRILL", "SAW", "NAIL", "SCREW", "BOLT", "FILE", "LEVEL", "TAPE", "CLAMP", "AXE"] },
+  { theme: "Space", phrase: "TO THE MOON", words: ["ROCKET", "PLANET", "ORBIT", "MOON", "STAR", "COMET", "ALIEN", "SATURN", "MARS", "PROBE", "LAUNCH", "CRATER", "SUN", "ASTEROID"] },
+  { theme: "Farm", phrase: "EARLY TO RISE", words: ["TRACTOR", "BARN", "GOAT", "SHEEP", "COW", "HEN", "PIG", "FIELD", "CROP", "HAY", "SILO", "PLOUGH", "SEED", "FENCE"] },
+  { theme: "School", phrase: "LEARN EVERY DAY", words: ["PENCIL", "RULER", "ERASER", "BOOK", "DESK", "CHALK", "BOARD", "CLASS", "TEST", "GRADE", "LESSON", "PEN", "BAG", "TEACHER"] },
+  { theme: "Trotro ride", phrase: "MIND YOUR STEP", words: ["DRIVER", "MATE", "FARE", "STATION", "SEAT", "HORN", "ROUTE", "STOP", "BUS", "ROAD", "TRAFFIC", "CHANGE", "QUEUE", "RADIO"] },
+  { theme: "Sweet treats", phrase: "SWEET TOOTH", words: ["CANDY", "COOKIE", "TOFFEE", "MUFFIN", "DONUT", "CAKE", "PIE", "FUDGE", "TART", "JELLY", "HONEY", "SUGAR", "CREAM", "BUN"] },
+  { theme: "Insects", phrase: "BUSY AS A BEE", words: ["BEETLE", "CRICKET", "LOCUST", "TERMITE", "WASP", "ANT", "BEE", "MOTH", "GNAT", "FLEA", "FLY", "MANTIS", "LADYBIRD", "MIDGE"] },
+  { theme: "Pets", phrase: "BEST FRIENDS", words: ["PUPPY", "KITTEN", "HAMSTER", "PARROT", "RABBIT", "FISH", "TORTOISE", "MOUSE", "LEASH", "COLLAR", "BOWL", "TOY", "CAGE", "TANK"] },
+  { theme: "Fabrics", phrase: "SEW AND SEW", words: ["COTTON", "SILK", "WOOL", "DENIM", "LINEN", "VELVET", "LACE", "SATIN", "KENTE", "BATIK", "TWEED", "FELT", "NYLON", "CLOTH"] },
+  { theme: "Spices", phrase: "SPICE IT UP", words: ["GINGER", "PEPPER", "GARLIC", "CLOVES", "NUTMEG", "BASIL", "CUMIN", "THYME", "MINT", "SAGE", "CHILLI", "ANISE", "CURRY", "SALT"] },
+  { theme: "Hats", phrase: "HATS OFF", words: ["BERET", "BOWLER", "FEDORA", "TURBAN", "BEANIE", "HELMET", "CAP", "CROWN", "BONNET", "VISOR", "HOOD", "WRAP", "SUNHAT", "STRAW"] },
+  { theme: "Celebrations", phrase: "HAPPY DAYS", words: ["WEDDING", "BIRTHDAY", "PARADE", "FEAST", "GALA", "PARTY", "DANCE", "CAKE", "GIFT", "SONG", "DRUMS", "GUESTS", "TOAST", "FUN"] },
+  { theme: "Board games", phrase: "YOUR MOVE", words: ["CHESS", "LUDO", "OWARE", "DRAUGHTS", "DICE", "BOARD", "PAWN", "KING", "SEEDS", "TURN", "WIN", "ROLL", "SCORE", "QUEEN"] },
+  { theme: "Bakery", phrase: "FRESH BREAD", words: ["LOAF", "BREAD", "SCONE", "BAGEL", "BUN", "ROLL", "TART", "PIE", "CAKE", "FLOUR", "YEAST", "OVEN", "DOUGH", "CRUST"] },
+  { theme: "Shapes", phrase: "ROUND AND ROUND", words: ["CIRCLE", "SQUARE", "OVAL", "TRIANGLE", "STAR", "CUBE", "CONE", "SPHERE", "HEART", "ARROW", "CROSS", "KITE", "RING", "DOT"] },
+  { theme: "Time", phrase: "TIME FLIES", words: ["SECOND", "MINUTE", "HOUR", "WEEK", "MONTH", "YEAR", "DAY", "NOON", "DUSK", "DAWN", "CLOCK", "WATCH", "TICK", "DATE"] },
+  { theme: "Kente colours", phrase: "WOVEN WITH CARE", words: ["GOLD", "GREEN", "BLACK", "RED", "BLUE", "WHITE", "SILVER", "MAROON", "LOOM", "THREAD", "STRIP", "WEAVE", "PATTERN", "SILK"] },
+  { theme: "Wild Africa", phrase: "INTO THE WILD", words: ["LION", "ZEBRA", "GIRAFFE", "HIPPO", "RHINO", "KUDU", "HYENA", "BUFFALO", "EAGLE", "BABOON", "ELAND", "IMPALA", "CROC", "JACKAL"] },
+  { theme: "Rivers", phrase: "GO WITH THE FLOW", words: ["NILE", "NIGER", "VOLTA", "CONGO", "ZAMBEZI", "TANA", "PRA", "DENSU", "AMAZON", "THAMES", "RHINE", "INDUS", "GANGES", "OTI"] },
+  { theme: "Feelings", phrase: "KEEP SMILING", words: ["HAPPY", "PROUD", "NERVOUS", "CALM", "BORED", "EAGER", "GLAD", "SAD", "ANGRY", "BRAVE", "SHY", "JOY", "HOPE", "COOL"] },
+  { theme: "Body", phrase: "STAY HEALTHY", words: ["ELBOW", "ANKLE", "KNEE", "SHOULDER", "WRIST", "CHIN", "HEEL", "NOSE", "EAR", "HAND", "FOOT", "TOE", "NECK", "HIP"] },
+  { theme: "Sports", phrase: "GAME ON", words: ["TENNIS", "RUGBY", "HOCKEY", "BOXING", "GOLF", "CRICKET", "JUDO", "SWIM", "ROWING", "DARTS", "POLO", "SKIING", "CHESS", "NETBALL"] },
+  { theme: "Jobs", phrase: "WORK HARD", words: ["DOCTOR", "NURSE", "FARMER", "BAKER", "PILOT", "CHEF", "TEACHER", "TAILOR", "DRIVER", "PAINTER", "JUDGE", "BANKER", "POLICE", "SINGER"] },
+  { theme: "Town", phrase: "BUSY STREETS", words: ["SHOP", "BANK", "SCHOOL", "MARKET", "PARK", "CLINIC", "STATION", "LIBRARY", "HOTEL", "MALL", "CAFE", "OFFICE", "BRIDGE", "ROAD"] },
+  { theme: "House", phrase: "HOME SWEET HOME", words: ["KITCHEN", "BEDROOM", "DOOR", "WINDOW", "ROOF", "WALL", "STAIRS", "PORCH", "GARDEN", "GATE", "FENCE", "HALL", "FLOOR", "LAMP"] },
+  { theme: "Colours", phrase: "PAINT THE TOWN", words: ["RED", "BLUE", "GREEN", "YELLOW", "PINK", "PURPLE", "ORANGE", "BROWN", "BLACK", "WHITE", "GREY", "GOLD", "TEAL", "CYAN"] },
+  { theme: "Instruments of Ghana", phrase: "BEAT THE DRUM", words: ["DJEMBE", "KORA", "BALAFON", "ATUMPAN", "GONG", "BELL", "RATTLE", "FLUTE", "HORN", "SHAKER", "XYLOPHONE", "DONNO", "KETE", "DRUM"] },
+  { theme: "Breakfast", phrase: "RISE AND SHINE", words: ["TOAST", "EGGS", "PORRIDGE", "BACON", "CEREAL", "MILK", "TEA", "COFFEE", "JAM", "HONEY", "BREAD", "JUICE", "OATS", "KOKO"] },
+  { theme: "Cars", phrase: "DRIVE SAFELY", words: ["WHEEL", "TYRE", "ENGINE", "BRAKE", "HORN", "BOOT", "BONNET", "SEAT", "GEAR", "CLUTCH", "MIRROR", "LIGHTS", "RADIO", "KEYS"] },
+  { theme: "Computers", phrase: "SAVE YOUR WORK", words: ["MOUSE", "SCREEN", "KEYBOARD", "LAPTOP", "FILE", "FOLDER", "EMAIL", "PRINT", "CODE", "DATA", "CHIP", "WIFI", "DISK", "CLOUD"] },
+  { theme: "Library", phrase: "READ A BOOK", words: ["NOVEL", "POEM", "STORY", "CHAPTER", "AUTHOR", "PAGE", "SHELF", "INDEX", "TITLE", "COVER", "PLOT", "HERO", "MAP", "QUIET"] },
+  { theme: "Nature walk", phrase: "BREATHE DEEPLY", words: ["TREE", "LEAF", "ROCK", "MOSS", "FERN", "BARK", "STREAM", "HILL", "VALLEY", "PATH", "BIRD", "TRAIL", "CREEK", "LOG"] },
+  { theme: "Cocoa farm", phrase: "FROM BEAN TO BAR", words: ["COCOA", "BEANS", "POD", "MACHETE", "HARVEST", "FARMER", "SHADE", "SUN", "DRY", "SACK", "TREE", "SEED", "CHOCOLATE", "FERMENT"] },
+  { theme: "Cleaning", phrase: "SPICK AND SPAN", words: ["MOP", "BROOM", "SPONGE", "DUSTER", "SOAP", "BUCKET", "CLOTH", "RAG", "BRUSH", "WATER", "POLISH", "VACUUM", "SCRUB", "WIPE"] },
+  { theme: "Ghana festivals", phrase: "COME CELEBRATE", words: ["HOMOWO", "ABOAKYER", "ODWIRA", "KUNDUM", "FETU", "DAMBA", "DURBAR", "DRUMS", "DANCE", "CHIEFS", "KENTE", "PARADE", "FEAST", "SONG"] },
+  { theme: "Clothes", phrase: "DRESS TO IMPRESS", words: ["SHIRT", "SKIRT", "DRESS", "JACKET", "SOCKS", "SHOES", "BELT", "SCARF", "COAT", "TIE", "GLOVES", "JEANS", "VEST", "SMOCK"] },
+  { theme: "Drinks", phrase: "STAY COOL", words: ["WATER", "JUICE", "MILK", "TEA", "COCOA", "SOBOLO", "SODA", "LEMONADE", "SMOOTHIE", "ICE", "STRAW", "CUP", "GLASS", "BOTTLE"] },
+  { theme: "Ocean trip", phrase: "ANCHORS AWAY", words: ["SHIP", "SAIL", "MAST", "DECK", "ANCHOR", "CAPTAIN", "CREW", "WAVE", "PORT", "HARBOUR", "COMPASS", "ROPE", "OAR", "CANOE"] },
+  { theme: "Weather tools", phrase: "CHECK THE SKY", words: ["BAROMETER", "RAIN", "GAUGE", "VANE", "CHART", "SATELLITE", "RADAR", "FORECAST", "CLOUD", "WIND", "SUN", "HEAT", "COLD", "STORM"] },
+  { theme: "Art class", phrase: "BE CREATIVE", words: ["PAINT", "BRUSH", "EASEL", "CANVAS", "CRAYON", "CHALK", "CLAY", "PENCIL", "INK", "SKETCH", "COLOUR", "GLUE", "PAPER", "FRAME"] },
+  { theme: "Shopping", phrase: "SPEND WISELY", words: ["CART", "BASKET", "RECEIPT", "CASH", "COIN", "PRICE", "SALE", "BAG", "QUEUE", "TILL", "SHOP", "STORE", "DEAL", "CEDI"] },
+  { theme: "Dance", phrase: "FEEL THE BEAT", words: ["AZONTO", "ADOWA", "SALSA", "TANGO", "WALTZ", "BALLET", "RUMBA", "DISCO", "TWIST", "STEP", "SPIN", "SWAY", "BOW", "LEAP"] },
+  { theme: "Picnic", phrase: "SHARE YOUR FOOD", words: ["BASKET", "BLANKET", "SANDWICH", "JUICE", "FRUIT", "GRASS", "ANTS", "SHADE", "TREE", "PLATE", "CUP", "NAPKIN", "PIE", "CAKE"] },
+  { theme: "Mountains", phrase: "CLIMB HIGHER", words: ["PEAK", "SUMMIT", "VALLEY", "CLIFF", "RIDGE", "SLOPE", "ROCK", "SNOW", "CAVE", "TRAIL", "ROPE", "HIKE", "BOOTS", "VIEW"] },
+  { theme: "Ananse stories", phrase: "ONCE UPON A TIME", words: ["ANANSE", "SPIDER", "WEB", "TALE", "TRICK", "POT", "WISDOM", "PYTHON", "LEOPARD", "HORNET", "SKY", "STORY", "KING", "DRUM"] },
+  { theme: "Toys", phrase: "PLAY ALL DAY", words: ["DOLL", "KITE", "YOYO", "BALL", "TEDDY", "PUZZLE", "BLOCKS", "TRAIN", "ROBOT", "MARBLE", "TOP", "DRUM", "SKIPPING", "WHISTLE"] },
+];

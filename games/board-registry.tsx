@@ -15,4 +15,5 @@ export const BOARDS: Record<string, AnyBoard> = {
   rungs: dynamic(() => import("./rungs/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   minicross: dynamic(() => import("./minicross/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   seven: dynamic(() => import("./seven/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  buried: dynamic(() => import("./buried/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
 };

@@ -13,6 +13,7 @@ export const LOGIC: Record<string, Loader> = {
   rungs: () => import("./rungs/logic"),
   minicross: () => import("./minicross/logic"),
   seven: () => import("./seven/logic"),
+  buried: () => import("./buried/logic"),
 };
 
 export function hasLogic(id: string) {
