@@ -41,6 +41,16 @@ export const LOGIC: Record<string, Loader> = {
   merge: () => import("./merge/logic"),
   sums: () => import("./sums/logic"),
   equal: () => import("./equal/logic"),
+  gotcha: () => import("./gotcha/logic"),
+  dash: () => import("./dash/logic"),
+  flipside: () => import("./flipside/logic"),
+  ricochet: () => import("./ricochet/logic"),
+  stacked: () => import("./stacked/logic"),
+  wobble: () => import("./wobble/logic"),
+  grapple: () => import("./grapple/logic"),
+  ghosted: () => import("./ghosted/logic"),
+  slip: () => import("./slip/logic"),
+  gauntlet: () => import("./gauntlet/logic"),
 };
 
 export function hasLogic(id: string) {
