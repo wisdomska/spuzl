@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Unbounded, Geist, Geist_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Providers } from "@/components/shell/Providers";
 import { settingsBootScript } from "@/lib/settings/store";
 import "./globals.css";
@@ -39,6 +41,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body>
         <Providers>{children}</Providers>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
