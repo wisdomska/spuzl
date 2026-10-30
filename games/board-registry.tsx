@@ -13,4 +13,5 @@ export const BOARDS: Record<string, AnyBoard> = {
   quilt: dynamic(() => import("./quilt/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   deadon: dynamic(() => import("./deadon/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   snug: dynamic(() => import("./snug/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  shuffle: dynamic(() => import("./shuffle/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
 };

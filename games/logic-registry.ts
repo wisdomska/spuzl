@@ -11,6 +11,7 @@ export const LOGIC: Record<string, Loader> = {
   quilt: () => import("./quilt/logic"),
   deadon: () => import("./deadon/logic"),
   snug: () => import("./snug/logic"),
+  shuffle: () => import("./shuffle/logic"),
 };
 
 export function hasLogic(id: string) {
