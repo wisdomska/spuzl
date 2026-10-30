@@ -1,0 +1,632 @@
+[
+  {
+    "file": "SPUZL Admin.dc.html",
+    "label": "Admin calendar",
+    "name": "spuzl-admin__admin-calendar.png",
+    "w": 1280,
+    "h": 800
+  },
+  {
+    "file": "SPUZL Admin.dc.html",
+    "label": "Admin preview",
+    "name": "spuzl-admin__admin-preview.png",
+    "w": 1280,
+    "h": 800
+  },
+  {
+    "file": "SPUZL Admin.dc.html",
+    "label": "Admin moderation",
+    "name": "spuzl-admin__admin-moderation.png",
+    "w": 1280,
+    "h": 800
+  },
+  {
+    "file": "SPUZL Admin.dc.html",
+    "label": "Admin live ops",
+    "name": "spuzl-admin__admin-live-ops.png",
+    "w": 1280,
+    "h": 800
+  },
+  {
+    "file": "SPUZL Art Direction.dc.html",
+    "label": "01 Brand",
+    "name": "spuzl-art-direction__01-brand.png",
+    "w": 1552,
+    "h": 632
+  },
+  {
+    "file": "SPUZL Art Direction.dc.html",
+    "label": "02 Spuz moods",
+    "name": "spuzl-art-direction__02-spuz-moods.png",
+    "w": 1552,
+    "h": 1158
+  },
+  {
+    "file": "SPUZL Art Direction.dc.html",
+    "label": "03 The Grid",
+    "name": "spuzl-art-direction__03-the-grid.png",
+    "w": 1552,
+    "h": 1325
+  },
+  {
+    "file": "SPUZL Art Direction.dc.html",
+    "label": "04 Colour",
+    "name": "spuzl-art-direction__04-colour.png",
+    "w": 1552,
+    "h": 806
+  },
+  {
+    "file": "SPUZL Art Direction.dc.html",
+    "label": "05 Type",
+    "name": "spuzl-art-direction__05-type.png",
+    "w": 1552,
+    "h": 327
+  },
+  {
+    "file": "SPUZL Art Direction.dc.html",
+    "label": "06 Motion",
+    "name": "spuzl-art-direction__06-motion.png",
+    "w": 1552,
+    "h": 949
+  },
+  {
+    "file": "SPUZL Board Games.dc.html",
+    "label": "Board Bay intro",
+    "name": "spuzl-board-games__board-bay-intro.png",
+    "w": 1860,
+    "h": 430
+  },
+  {
+    "file": "SPUZL Board Games.dc.html",
+    "label": "Board Bay screens",
+    "name": "spuzl-board-games__board-bay-screens.png",
+    "w": 1860,
+    "h": 1936
+  },
+  {
+    "file": "SPUZL Board Games.dc.html",
+    "label": "B1 World view",
+    "name": "spuzl-board-games__b1-world-view.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Board Games.dc.html",
+    "label": "B2 Chess Daily",
+    "name": "spuzl-board-games__b2-chess-daily.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Board Games.dc.html",
+    "label": "B3 Chess Duel",
+    "name": "spuzl-board-games__b3-chess-duel.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Board Games.dc.html",
+    "label": "B4 Draughts Daily",
+    "name": "spuzl-board-games__b4-draughts-daily.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Board Games.dc.html",
+    "label": "B5 Oware",
+    "name": "spuzl-board-games__b5-oware.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Board Games.dc.html",
+    "label": "B6 Ludo",
+    "name": "spuzl-board-games__b6-ludo.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Board Games.dc.html",
+    "label": "B7 Your move",
+    "name": "spuzl-board-games__b7-your-move.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Board Games.dc.html",
+    "label": "Board Bay rules",
+    "name": "spuzl-board-games__board-bay-rules.png",
+    "w": 1860,
+    "h": 289
+  },
+  {
+    "file": "SPUZL Components.dc.html",
+    "label": "Buttons",
+    "name": "spuzl-components__buttons.png",
+    "w": 1760,
+    "h": 534
+  },
+  {
+    "file": "SPUZL Components.dc.html",
+    "label": "Controls",
+    "name": "spuzl-components__controls.png",
+    "w": 1760,
+    "h": 661
+  },
+  {
+    "file": "SPUZL Components.dc.html",
+    "label": "Game pieces",
+    "name": "spuzl-components__game-pieces.png",
+    "w": 1760,
+    "h": 649
+  },
+  {
+    "file": "SPUZL Components.dc.html",
+    "label": "Player and social",
+    "name": "spuzl-components__player-and-social.png",
+    "w": 1760,
+    "h": 988
+  },
+  {
+    "file": "SPUZL Components.dc.html",
+    "label": "System",
+    "name": "spuzl-components__system.png",
+    "w": 1760,
+    "h": 613
+  },
+  {
+    "file": "SPUZL Game Boards.dc.html",
+    "label": "Crownfall states",
+    "name": "spuzl-game-boards__crownfall-states.png",
+    "w": 1960,
+    "h": 582
+  },
+  {
+    "file": "SPUZL Game Boards.dc.html",
+    "label": "Grid games",
+    "name": "spuzl-game-boards__grid-games.png",
+    "w": 1960,
+    "h": 2598
+  },
+  {
+    "file": "SPUZL Game Boards.dc.html",
+    "label": "Board template",
+    "name": "spuzl-game-boards__board-template.png",
+    "w": 1960,
+    "h": 840
+  },
+  {
+    "file": "SPUZL Game Boards.dc.html",
+    "label": "Game icons",
+    "name": "spuzl-game-boards__game-icons.png",
+    "w": 1960,
+    "h": 1452
+  },
+  {
+    "file": "SPUZL Multiplayer.dc.html",
+    "label": "D1 Matchmaking",
+    "name": "spuzl-multiplayer__d1-matchmaking.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Multiplayer.dc.html",
+    "label": "D2 Versus",
+    "name": "spuzl-multiplayer__d2-versus.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Multiplayer.dc.html",
+    "label": "D3 In match",
+    "name": "spuzl-multiplayer__d3-in-match.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Multiplayer.dc.html",
+    "label": "D4 Match end",
+    "name": "spuzl-multiplayer__d4-match-end.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Multiplayer.dc.html",
+    "label": "P1 Lobby",
+    "name": "spuzl-multiplayer__p1-lobby.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Multiplayer.dc.html",
+    "label": "P2 Race",
+    "name": "spuzl-multiplayer__p2-race.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Multiplayer.dc.html",
+    "label": "P3 Podium",
+    "name": "spuzl-multiplayer__p3-podium.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Multiplayer.dc.html",
+    "label": "L1 League",
+    "name": "spuzl-multiplayer__l1-league.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Multiplayer.dc.html",
+    "label": "T1 TV mode",
+    "name": "spuzl-multiplayer__t1-tv-mode.png",
+    "w": 1280,
+    "h": 720
+  },
+  {
+    "file": "SPUZL Onboarding and Overlays.dc.html",
+    "label": "Onboarding",
+    "name": "spuzl-onboarding-and-overlays__onboarding.png",
+    "w": 2700,
+    "h": 972
+  },
+  {
+    "file": "SPUZL Onboarding and Overlays.dc.html",
+    "label": "O1 Age band",
+    "name": "spuzl-onboarding-and-overlays__o1-age-band.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Onboarding and Overlays.dc.html",
+    "label": "O2 Tutorial",
+    "name": "spuzl-onboarding-and-overlays__o2-tutorial.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Onboarding and Overlays.dc.html",
+    "label": "O3 First clear",
+    "name": "spuzl-onboarding-and-overlays__o3-first-clear.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Onboarding and Overlays.dc.html",
+    "label": "O4 Nickname",
+    "name": "spuzl-onboarding-and-overlays__o4-nickname.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Onboarding and Overlays.dc.html",
+    "label": "Overlays",
+    "name": "spuzl-onboarding-and-overlays__overlays.png",
+    "w": 2700,
+    "h": 972
+  },
+  {
+    "file": "SPUZL Onboarding and Overlays.dc.html",
+    "label": "R1 Rank up",
+    "name": "spuzl-onboarding-and-overlays__r1-rank-up.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Onboarding and Overlays.dc.html",
+    "label": "R2 Badge",
+    "name": "spuzl-onboarding-and-overlays__r2-badge.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Onboarding and Overlays.dc.html",
+    "label": "R3 Streak milestone",
+    "name": "spuzl-onboarding-and-overlays__r3-streak-milestone.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Onboarding and Overlays.dc.html",
+    "label": "R4 Streak lost",
+    "name": "spuzl-onboarding-and-overlays__r4-streak-lost.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Onboarding and Overlays.dc.html",
+    "label": "R5 Full Spuzl",
+    "name": "spuzl-onboarding-and-overlays__r5-full-spuzl.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Onboarding and Overlays.dc.html",
+    "label": "G1 Pause",
+    "name": "spuzl-onboarding-and-overlays__g1-pause.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Onboarding and Overlays.dc.html",
+    "label": "Multiplayer extras",
+    "name": "spuzl-onboarding-and-overlays__multiplayer-extras.png",
+    "w": 2700,
+    "h": 1878
+  },
+  {
+    "file": "SPUZL Onboarding and Overlays.dc.html",
+    "label": "M1 Duel entry",
+    "name": "spuzl-onboarding-and-overlays__m1-duel-entry.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Onboarding and Overlays.dc.html",
+    "label": "M2 Round end",
+    "name": "spuzl-onboarding-and-overlays__m2-round-end.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Onboarding and Overlays.dc.html",
+    "label": "M3 Opp disconnected",
+    "name": "spuzl-onboarding-and-overlays__m3-opp-disconnected.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Onboarding and Overlays.dc.html",
+    "label": "A1 Challenge card",
+    "name": "spuzl-onboarding-and-overlays__a1-challenge-card.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Onboarding and Overlays.dc.html",
+    "label": "A2 Challenge result",
+    "name": "spuzl-onboarding-and-overlays__a2-challenge-result.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Onboarding and Overlays.dc.html",
+    "label": "P0 Create room",
+    "name": "spuzl-onboarding-and-overlays__p0-create-room.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Onboarding and Overlays.dc.html",
+    "label": "GR Ghost Race",
+    "name": "spuzl-onboarding-and-overlays__gr-ghost-race.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Onboarding and Overlays.dc.html",
+    "label": "L2 Ceremony",
+    "name": "spuzl-onboarding-and-overlays__l2-ceremony.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Prototype.dc.html",
+    "label": "Prototype phone",
+    "name": "spuzl-prototype__prototype-phone.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Social and Meta.dc.html",
+    "label": "Compete",
+    "name": "spuzl-social-and-meta__compete.png",
+    "w": 2078,
+    "h": 972
+  },
+  {
+    "file": "SPUZL Social and Meta.dc.html",
+    "label": "S1 Leaderboards",
+    "name": "spuzl-social-and-meta__s1-leaderboards.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Social and Meta.dc.html",
+    "label": "S2 Profile",
+    "name": "spuzl-social-and-meta__s2-profile.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Social and Meta.dc.html",
+    "label": "S3 Friend profile",
+    "name": "spuzl-social-and-meta__s3-friend-profile.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Social and Meta.dc.html",
+    "label": "S4 Quests",
+    "name": "spuzl-social-and-meta__s4-quests.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Social and Meta.dc.html",
+    "label": "S5 Shop",
+    "name": "spuzl-social-and-meta__s5-shop.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Social and Meta.dc.html",
+    "label": "Social",
+    "name": "spuzl-social-and-meta__social.png",
+    "w": 2078,
+    "h": 972
+  },
+  {
+    "file": "SPUZL Social and Meta.dc.html",
+    "label": "F1 Friends",
+    "name": "spuzl-social-and-meta__f1-friends.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Social and Meta.dc.html",
+    "label": "F2 Feed report",
+    "name": "spuzl-social-and-meta__f2-feed-report.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Social and Meta.dc.html",
+    "label": "C1 Crew",
+    "name": "spuzl-social-and-meta__c1-crew.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Social and Meta.dc.html",
+    "label": "K1 Settings",
+    "name": "spuzl-social-and-meta__k1-settings.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Social and Meta.dc.html",
+    "label": "K2 Archive",
+    "name": "spuzl-social-and-meta__k2-archive.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Social and Meta.dc.html",
+    "label": "School Cup",
+    "name": "spuzl-social-and-meta__school-cup.png",
+    "w": 2078,
+    "h": 972
+  },
+  {
+    "file": "SPUZL Social and Meta.dc.html",
+    "label": "T1 Teacher setup",
+    "name": "spuzl-social-and-meta__t1-teacher-setup.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Social and Meta.dc.html",
+    "label": "T2 Class board TV",
+    "name": "spuzl-social-and-meta__t2-class-board-tv.png",
+    "w": 1280,
+    "h": 720
+  },
+  {
+    "file": "SPUZL Solo Screens.dc.html",
+    "label": "01 Splash",
+    "name": "spuzl-solo-screens__01-splash.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Solo Screens.dc.html",
+    "label": "02 Home map",
+    "name": "spuzl-solo-screens__02-home-map.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Solo Screens.dc.html",
+    "label": "03 World view",
+    "name": "spuzl-solo-screens__03-world-view.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Solo Screens.dc.html",
+    "label": "04 Game Crownfall",
+    "name": "spuzl-solo-screens__04-game-crownfall.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Solo Screens.dc.html",
+    "label": "05 Results",
+    "name": "spuzl-solo-screens__05-results.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL Solo Screens.dc.html",
+    "label": "06 Level up",
+    "name": "spuzl-solo-screens__06-level-up.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL States Share Light Desktop.dc.html",
+    "label": "States",
+    "name": "spuzl-states-share-light-desktop__states.png",
+    "w": 2600,
+    "h": 972
+  },
+  {
+    "file": "SPUZL States Share Light Desktop.dc.html",
+    "label": "Share cards",
+    "name": "spuzl-states-share-light-desktop__share-cards.png",
+    "w": 2600,
+    "h": 1040
+  },
+  {
+    "file": "SPUZL States Share Light Desktop.dc.html",
+    "label": "Light theme",
+    "name": "spuzl-states-share-light-desktop__light-theme.png",
+    "w": 2600,
+    "h": 972
+  },
+  {
+    "file": "SPUZL States Share Light Desktop.dc.html",
+    "label": "Light Home",
+    "name": "spuzl-states-share-light-desktop__light-home.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL States Share Light Desktop.dc.html",
+    "label": "Light Results",
+    "name": "spuzl-states-share-light-desktop__light-results.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL States Share Light Desktop.dc.html",
+    "label": "Light Lobby",
+    "name": "spuzl-states-share-light-desktop__light-lobby.png",
+    "w": 390,
+    "h": 844
+  },
+  {
+    "file": "SPUZL States Share Light Desktop.dc.html",
+    "label": "Desktop",
+    "name": "spuzl-states-share-light-desktop__desktop.png",
+    "w": 2600,
+    "h": 928
+  },
+  {
+    "file": "SPUZL States Share Light Desktop.dc.html",
+    "label": "Desktop Home",
+    "name": "spuzl-states-share-light-desktop__desktop-home.png",
+    "w": 1280,
+    "h": 800
+  },
+  {
+    "file": "SPUZL States Share Light Desktop.dc.html",
+    "label": "Desktop Race",
+    "name": "spuzl-states-share-light-desktop__desktop-race.png",
+    "w": 1280,
+    "h": 800
+  }
+]

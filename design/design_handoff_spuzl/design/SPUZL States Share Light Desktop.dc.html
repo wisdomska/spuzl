@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800;900&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
+<style>
+body{margin:0;background:#0A0B14;color:#F4F5FB;font-family:Geist,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#B8F23A}a:hover{color:#D4FF7A}
+@keyframes skel{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+@keyframes isle{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important}}
+</style>
+</helmet>
+<div style="display:flex;flex-direction:column;gap:56px;padding:56px;background:#0A0B14;width:max-content">
+
+<section data-screen-label="States" style="display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-direction:column;gap:6px"><div style="font:900 40px Unbounded,sans-serif;letter-spacing:-0.03em">Empty, loading, error, offline</div><div style="font:400 17px Geist,sans-serif;color:#A2A6C2">Spuz shows up in every one. No spinners anywhere.</div></div>
+<div style="display:flex;gap:32px;align-items:flex-start">
+  <sc-for list="{{ stateScreens }}" as="st" hint-placeholder-count="4">
+    <div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">{{ st.label }}</div>
+    <div style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column;padding:56px 16px 24px;box-sizing:border-box;gap:14px">
+      <div style="padding:10px 14px;border-radius:14px;background:#2A2410;box-shadow:inset 0 0 0 2px #FFC93C;display:{{ st.bannerD }};gap:10px;align-items:center;font:500 15px Geist,sans-serif"><i class="ph-bold ph-wifi-slash" style="color:#FFC93C;font-size:20px"></i>{{ st.banner }}</div>
+      <span style="font:900 26px Unbounded,sans-serif">{{ st.title }}</span>
+      <div style="display:{{ st.skelD }};flex-direction:column;gap:12px">
+          <sc-for list="{{ st.skelRows }}" as="s" hint-placeholder-count="5"><div style="position:relative;height:{{ s.h }}px;width:{{ s.w }}%;border-radius:{{ s.r }}px;background:#171929;overflow:hidden"><div style="position:absolute;inset:0;background:linear-gradient(90deg,transparent,#20233A,transparent);animation:skel 1.4s ease-in-out infinite"></div></div></sc-for>
+        </div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center">
+        <dc-import name="Spuz" mood="{{ st.mood }}" size="{{ 160 }}" hint-size="160px,160px"></dc-import>
+        <span style="font:800 20px/1.25 Unbounded,sans-serif;max-width:300px">{{ st.head }}</span>
+        <span style="font:400 16px/1.5 Geist,sans-serif;color:#A2A6C2;max-width:300px">{{ st.body }}</span>
+      </div>
+      <button style="display:{{ st.ctaD }};align-items:center;justify-content:center;height:60px;border:0;border-radius:20px;background:#B8F23A;color:#0E0F1A;box-shadow:0 6px 0 #6F9A1C;font:900 17px Unbounded,sans-serif">{{ st.cta }}</button>
+    </div></div>
+  </sc-for>
+  <div style="display:flex;flex-direction:column;gap:12px;width:620px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">State copy for every screen</div>
+    <div style="display:grid;grid-template-columns:110px 1fr 1fr 1fr;border-radius:20px;overflow:hidden;background:#171929">
+      <sc-for list="{{ stHead }}" as="h" hint-placeholder-count="4"><div style="padding:12px;background:#20233A;font:600 13px Geist Mono,monospace;color:#A2A6C2">{{ h }}</div></sc-for>
+      <sc-for list="{{ stTable }}" as="r" hint-placeholder-count="10">
+        <div style="padding:10px 12px;border-top:1px solid #2B2F4A;font:700 14px Geist,sans-serif">{{ r.s }}</div>
+        <div style="padding:10px 12px;border-top:1px solid #2B2F4A;font:400 13px/1.4 Geist,sans-serif;color:#A2A6C2">{{ r.e }}</div>
+        <div style="padding:10px 12px;border-top:1px solid #2B2F4A;font:400 13px/1.4 Geist,sans-serif;color:#A2A6C2">{{ r.x }}</div>
+        <div style="padding:10px 12px;border-top:1px solid #2B2F4A;font:400 13px/1.4 Geist,sans-serif;color:#A2A6C2">{{ r.o }}</div>
+      </sc-for>
+    </div>
+    <div style="font:400 14px/1.5 Geist,sans-serif;color:#A2A6C2">Loading is the same everywhere: skeletons in the final layout plus Spuz Thinking in the empty area, shown after 300 ms (never flash a skeleton for fast loads).</div>
+  </div>
+</div>
+</section>
+
+<section data-screen-label="Share cards" style="display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-direction:column;gap:6px"><div style="font:900 40px Unbounded,sans-serif;letter-spacing:-0.03em">Share cards</div><div style="font:400 17px Geist,sans-serif;color:#A2A6C2">Designed at 1080 × 1920 and 1080 × 1080, shown at 30%. Spoiler-free: no solution ever appears.</div></div>
+<div style="display:flex;gap:24px;align-items:flex-start">
+  <sc-for list="{{ cards }}" as="c" hint-placeholder-count="4">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">{{ c.label }}</div>
+      <div style="width:324px;height:576px;overflow:hidden;border-radius:12px">
+        <div style="width:1080px;height:1920px;transform:scale(.3);transform-origin:0 0;background:{{ c.bg }};position:relative;display:flex;flex-direction:column;align-items:center;padding:120px 90px;box-sizing:border-box;gap:40px;color:{{ c.fg }}">
+          <div style="position:absolute;inset:0;background-image:radial-gradient({{ c.dot }} 5px,transparent 5px);background-size:64px 64px"></div>
+          <div style="position:relative;display:flex;align-items:flex-end;font:900 120px/0.9 Unbounded,sans-serif;letter-spacing:-0.05em"><span>SPU</span><span style="color:{{ c.z }}">Z</span><span>L</span></div>
+          <div style="position:relative;font:700 52px Unbounded,sans-serif;opacity:.85">{{ c.kicker }}</div>
+          <div style="position:relative"><dc-import name="Spuz" mood="{{ c.mood }}" size="{{ 560 }}" color="{{ c.spuz }}" still="{{ true }}" hint-size="560px,560px"></dc-import></div>
+          <div style="position:relative;font:900 {{ c.bigFs }}px/1 Unbounded,sans-serif;letter-spacing:-0.04em;text-align:center">{{ c.big }}</div>
+          <div style="position:relative;font:600 54px/1.3 Geist,sans-serif;text-align:center">{{ c.line }}</div>
+          <div style="position:relative;margin-top:auto;display:flex;gap:28px;font:600 48px Geist Mono,monospace">{{ c.foot }}</div>
+          <div style="position:relative;font:600 40px Geist Mono,monospace;opacity:.8">spuzl.gg</div>
+        </div>
+      </div>
+      <div style="width:324px;height:324px;overflow:hidden;border-radius:12px">
+        <div style="width:1080px;height:1080px;transform:scale(.3);transform-origin:0 0;background:{{ c.bg }};position:relative;display:grid;grid-template-columns:1fr 1fr;align-items:center;padding:90px;box-sizing:border-box;gap:30px;color:{{ c.fg }}">
+          <div style="position:absolute;inset:0;background-image:radial-gradient({{ c.dot }} 5px,transparent 5px);background-size:64px 64px"></div>
+          <div style="position:relative;display:flex;flex-direction:column;gap:30px">
+            <div style="display:flex;align-items:flex-end;font:900 90px/0.9 Unbounded,sans-serif;letter-spacing:-0.05em"><span>SPU</span><span style="color:{{ c.z }}">Z</span><span>L</span></div>
+            <div style="font:700 44px Unbounded,sans-serif;opacity:.85">{{ c.kicker }}</div>
+            <div style="font:900 {{ c.sqFs }}px/1 Unbounded,sans-serif;letter-spacing:-0.04em">{{ c.big }}</div>
+            <div style="font:600 42px/1.3 Geist,sans-serif">{{ c.line }}</div>
+            <div style="font:600 36px Geist Mono,monospace;opacity:.8">spuzl.gg</div>
+          </div>
+          <div style="position:relative;display:flex;justify-content:center"><dc-import name="Spuz" mood="{{ c.mood }}" size="{{ 440 }}" color="{{ c.spuz }}" still="{{ true }}" hint-size="440px,440px"></dc-import></div>
+        </div>
+      </div>
+    </div>
+  </sc-for>
+  <div style="display:flex;flex-direction:column;gap:12px;width:360px">
+    <div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">Emoji-grid text format</div>
+    <sc-for list="{{ texts }}" as="t" hint-placeholder-count="3">
+      <div style="border-radius:20px;background:#171929;padding:16px;display:flex;flex-direction:column;gap:8px">
+        <span style="font:600 13px Geist,sans-serif;color:#A2A6C2">{{ t.l }}</span>
+        <pre style="margin:0;font:500 16px/1.45 Geist Mono,monospace;white-space:pre-wrap;color:#F4F5FB">{{ t.v }}</pre>
+      </div>
+    </sc-for>
+    <div style="font:400 14px/1.5 Geist,sans-serif;color:#A2A6C2">Grid rows = time split into fifths. 🟩 clean, 🟨 hint used, 🟥 slip, ⬛ not reached. Shows effort, never the answer.</div>
+  </div>
+</div>
+</section>
+
+<section data-screen-label="Light theme" style="display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-direction:column;gap:6px"><div style="font:900 40px Unbounded,sans-serif;letter-spacing:-0.03em">Light theme</div><div style="font:400 17px Geist,sans-serif;color:#A2A6C2">Same layout, light tokens. Lime becomes #437A00 with white text; world hues get darker text shades.</div></div>
+<div style="display:flex;gap:32px;align-items:flex-start">
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">Home, morning, light</div>
+<div data-screen-label="Light Home" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#F5F6FA;position:relative;box-shadow:0 0 0 1px #D8DCE8;color:#12131D">
+  <div style="position:absolute;inset:0;background-image:radial-gradient(#D8DCE8 1.5px,transparent 1.5px);background-size:24px 24px"></div>
+  <div style="position:absolute;left:0;right:0;top:0;padding:52px 16px 12px;display:flex;align-items:center;justify-content:space-between;z-index:5">
+    <div style="position:relative;width:48px;height:48px;border-radius:50%;background:conic-gradient(#437A00 0 68%,#D8DCE8 68% 100%);display:flex;align-items:center;justify-content:center"><div style="width:40px;height:40px;border-radius:12px;background:#2FD3E0;display:flex;align-items:center;justify-content:center;font:900 18px Unbounded,sans-serif;color:#0E0F1A">A</div><div style="position:absolute;right:-4px;bottom:-4px;min-width:22px;height:22px;border-radius:8px;background:#437A00;color:#fff;font:700 12px Geist Mono,monospace;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px #F5F6FA">14</div></div>
+    <div style="display:flex;gap:8px">
+      <div style="height:40px;padding:0 12px;border-radius:14px;background:#FFFFFF;box-shadow:0 0 0 1px #D8DCE8;display:flex;align-items:center;gap:6px"><i class="ph-bold ph-fire" style="font-size:20px;color:#C2410C"></i><span style="font:600 17px Geist Mono,monospace">13</span></div>
+      <div style="height:40px;padding:0 12px;border-radius:14px;background:#FFFFFF;box-shadow:0 0 0 1px #D8DCE8;display:flex;align-items:center;gap:6px"><i class="ph-bold ph-lightning" style="font-size:18px;color:#8F5E00"></i><span style="font:600 17px Geist Mono,monospace;color:#8F5E00">1,309</span></div>
+    </div>
+  </div>
+  <div style="position:absolute;left:0;right:0;top:120px;height:420px">
+    <sc-for list="{{ lightIsles }}" as="w" hint-placeholder-count="4">
+      <div style="position:absolute;left:{{ w.x }}px;top:{{ w.y }}px;width:136px;display:flex;flex-direction:column;align-items:center;gap:6px">
+        <div style="position:relative;width:136px;height:100px;animation:isle {{ w.dur }}s ease-in-out infinite">
+          <div style="position:absolute;left:34px;top:54px;width:68px;height:44px;clip-path:polygon(0 0,100% 0,62% 100%,40% 86%);background:{{ w.deep }}"></div>
+          <div style="position:absolute;left:10px;top:40px;width:116px;height:30px;border-radius:50%;background:{{ w.c }};box-shadow:inset 0 -7px 0 rgba(0,0,0,.18)"></div>
+          <div style="position:absolute;left:{{ w.tl }}px;top:0;width:44px;height:52px;border-radius:13px 13px 9px 9px;background:{{ w.c }};box-shadow:inset -4px -4px 0 rgba(0,0,0,.18),0 0 0 3px #F5F6FA;display:flex;align-items:center;justify-content:center;font-size:24px;color:#0E0F1A"><i class="ph-bold {{ w.icon }}"></i></div><sc-if value="{{ w.spuz }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:{{ w.sl }}px;top:{{ w.st }}px;pointer-events:none"><dc-import name="Spuz" mood="{{ w.mood }}" size="{{ w.ss }}" color="{{ w.sc }}" hint-size="64px,64px"></dc-import></div></sc-if>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:#FFFFFF;box-shadow:0 0 0 1px #D8DCE8"><span style="font:700 13px Unbounded,sans-serif;white-space:nowrap;color:{{ w.t }}">{{ w.name }}</span><span style="font:600 12px Geist Mono,monospace;color:#5A5E78">{{ w.prog }}</span></div>
+      </div>
+    </sc-for>
+    
+  </div>
+  <div style="position:absolute;left:12px;right:12px;bottom:92px;display:flex;flex-direction:column;gap:10px;z-index:6">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0 4px"><div style="font:600 15px Geist,sans-serif">Today <span style="font-family:Geist Mono,monospace;color:#437A00">0</span><span style="color:#5A5E78"> of 15 cleared</span></div><div style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:#437A00"></span><span style="font:500 14px Geist,sans-serif;color:#5A5E78">2 online</span></div></div>
+    <div style="display:grid;grid-template-columns:1fr 64px 64px;gap:10px">
+      <button style="height:64px;border:0;border-radius:20px;background:#437A00;color:#FFFFFF;box-shadow:0 6px 0 #2B5000;display:flex;align-items:center;justify-content:center;gap:10px"><i class="ph-bold ph-play" style="font-size:20px"></i><span style="display:flex;flex-direction:column;align-items:flex-start"><span style="font:900 18px Unbounded,sans-serif">Play Crownfall</span><span style="font:500 13px Geist,sans-serif">Good morning, Ama</span></span></button>
+      <button aria-label="Duel" style="height:64px;border:0;border-radius:20px;background:#FFFFFF;color:#12131D;box-shadow:0 6px 0 #D8DCE8,0 0 0 1px #D8DCE8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><i class="ph-bold ph-sword" style="font-size:22px"></i><span style="font:600 12px Geist,sans-serif">Duel</span></button>
+      <button aria-label="Party" style="height:64px;border:0;border-radius:20px;background:#FFFFFF;color:#12131D;box-shadow:0 6px 0 #D8DCE8,0 0 0 1px #D8DCE8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><i class="ph-bold ph-users-three" style="font-size:22px"></i><span style="font:600 12px Geist,sans-serif">Party</span></button>
+    </div>
+  </div>
+  <div style="position:absolute;left:0;right:0;bottom:0;height:80px;background:#FFFFFF;border-top:1px solid #D8DCE8;display:grid;grid-template-columns:repeat(5,1fr);padding-bottom:12px;z-index:6">
+    <sc-for list="{{ lightNav }}" as="n" hint-placeholder-count="5"><div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:{{ n.col }}"><i class="ph-bold {{ n.i }}" style="font-size:24px"></i><span style="font:600 12px Geist,sans-serif">{{ n.l }}</span></div></sc-for>
+  </div>
+</div></div>
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">Results, light</div>
+<div data-screen-label="Light Results" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#F5F6FA;position:relative;box-shadow:0 0 0 1px #D8DCE8;display:flex;flex-direction:column;color:#12131D">
+  <div style="height:250px;background:#E9E6FF;display:flex;align-items:flex-end;justify-content:center;padding-bottom:16px"><dc-import name="Spuz" mood="cheer" size="{{ 140 }}" hint-size="140px,140px"></dc-import></div>
+  <div style="padding:16px 20px 0;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center">
+      <div style="font:600 17px Geist,sans-serif">Clean. 1:12, no hints. Who taught you?</div>
+      <div style="font:600 56px Geist Mono,monospace;color:#437A00;line-height:1">01:12</div>
+      <div style="font:500 15px Geist,sans-serif;color:#5A5E78">Faster than <span style="color:#12131D">82%</span> of Spuzlers today</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div style="background:#FFFFFF;box-shadow:0 0 0 1px #D8DCE8;border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;justify-content:space-between;font:600 15px Geist,sans-serif"><span>XP</span><span style="font-family:Geist Mono,monospace;color:#437A00">+120</span></div><div style="height:12px;border-radius:6px;background:#D8DCE8;overflow:hidden"><div style="width:78%;height:100%;background:#437A00;border-radius:6px"></div></div></div>
+      <div style="background:#FFFFFF;box-shadow:0 0 0 1px #D8DCE8;border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;font:600 15px Geist,sans-serif"><span>Sparks</span><span style="font-family:Geist Mono,monospace;color:#8F5E00">+25</span></div><span style="font:500 14px Geist,sans-serif;color:#5A5E78">0 hints · 0 slips</span></div>
+    </div>
+    <div style="background:#FFFFFF;box-shadow:0 0 0 1px #D8DCE8;border-radius:16px;padding:6px 14px">
+      <sc-for list="{{ lightFriends }}" as="f" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:10px;height:44px;border-top:{{ f.bt }}"><span style="width:18px;font:600 14px Geist Mono,monospace;color:#5A5E78">{{ f.pos }}</span><span style="width:28px;height:28px;border-radius:9px;background:{{ f.c }};font:900 12px Unbounded,sans-serif;color:#0E0F1A;display:flex;align-items:center;justify-content:center">{{ f.i }}</span><span style="flex:1;font:{{ f.w }} 16px Geist,sans-serif">{{ f.n }}</span><span style="font:600 16px Geist Mono,monospace">{{ f.t }}</span></div></sc-for>
+    </div>
+  </div>
+  <div style="margin-top:auto;padding:12px 16px 28px;display:grid;grid-template-columns:1fr 64px;gap:10px">
+    <button style="height:60px;border:0;border-radius:20px;background:#437A00;color:#FFFFFF;box-shadow:0 6px 0 #2B5000;font:900 17px Unbounded,sans-serif;display:flex;align-items:center;justify-content:center;gap:10px"><i class="ph-bold ph-sword"></i>Challenge Kofi</button>
+    <button aria-label="Share" style="height:60px;border:0;border-radius:20px;background:#FFFFFF;color:#12131D;box-shadow:0 6px 0 #D8DCE8,0 0 0 1px #D8DCE8;font-size:22px"><i class="ph-bold ph-share-fat"></i></button>
+  </div>
+</div></div>
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">Party lobby, light</div>
+<div data-screen-label="Light Lobby" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#F5F6FA;position:relative;box-shadow:0 0 0 1px #D8DCE8;display:flex;flex-direction:column;padding:56px 16px 28px;box-sizing:border-box;gap:14px;color:#12131D">
+  <div style="font:800 20px Unbounded,sans-serif;text-align:center">Party room</div>
+  <div style="padding:16px;border-radius:22px;background:#FFFFFF;box-shadow:0 0 0 1px #D8DCE8;display:flex;flex-direction:column;gap:12px">
+    <span style="font:500 14px Geist,sans-serif;color:#5A5E78">Room code</span>
+    <div style="display:flex;gap:8px"><sc-for list="{{ code }}" as="c" hint-placeholder-count="4"><div style="flex:1;height:62px;border-radius:16px;background:#EEF0F6;box-shadow:inset 0 -5px 0 #D8DCE8;display:flex;align-items:center;justify-content:center;font:900 32px Unbounded,sans-serif;color:#437A00">{{ c }}</div></sc-for></div>
+    <button style="height:48px;border:0;border-radius:14px;background:#437A00;color:#FFFFFF;font:600 15px Geist,sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 0 #2B5000"><i class="ph-bold ph-whatsapp-logo"></i>Share on WhatsApp</button>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+    <sc-for list="{{ lightLobby }}" as="p" hint-placeholder-count="8"><div style="height:104px;border-radius:18px;background:{{ p.bg }};box-shadow:{{ p.ring }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;position:relative"><div style="width:44px;height:44px;border-radius:14px;background:{{ p.c }};font:900 18px Unbounded,sans-serif;color:#0E0F1A;display:flex;align-items:center;justify-content:center">{{ p.i }}</div><span style="font:600 14px Geist,sans-serif;color:{{ p.nc }}">{{ p.n }}</span><sc-if value="{{ p.ready }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;right:6px;top:6px;width:22px;height:22px;border-radius:8px;background:#437A00;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px"><i class="ph-bold ph-check"></i></span></sc-if></div></sc-for>
+  </div>
+  <button style="margin-top:auto;height:60px;border:0;border-radius:20px;background:#437A00;color:#FFFFFF;box-shadow:0 6px 0 #2B5000;display:flex;align-items:center;justify-content:center;gap:10px"><span style="font:900 17px Unbounded,sans-serif">Start</span><span style="font:500 14px Geist,sans-serif">4 of 5 ready</span></button>
+</div></div>
+
+</div>
+</section>
+
+<section data-screen-label="Desktop" style="display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-direction:column;gap:6px"><div style="font:900 40px Unbounded,sans-serif;letter-spacing:-0.03em">Desktop 1280</div><div style="font:400 17px Geist,sans-serif;color:#A2A6C2">Map stays the hero; the bottom dock becomes a left rail; race leaderboard moves to a side rail.</div></div>
+<div style="display:flex;gap:40px;align-items:flex-start">
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">Home, desktop, dark</div>
+<div data-screen-label="Desktop Home" style="width:1280px;height:800px;border-radius:20px;overflow:hidden;background:#0E0F1A;box-shadow:0 0 0 1px #2B2F4A;display:grid;grid-template-columns:88px 1fr 360px">
+  <div style="background:#171929;border-right:1px solid #2B2F4A;display:flex;flex-direction:column;align-items:center;padding:24px 0;gap:10px">
+    <div style="font:900 22px Unbounded,sans-serif;color:#B8F23A;margin-bottom:16px">Z</div>
+    <sc-for list="{{ deskNav }}" as="n" hint-placeholder-count="5"><div style="width:64px;height:64px;border-radius:18px;background:{{ n.bg }};color:{{ n.col }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px"><i class="ph-bold {{ n.i }}" style="font-size:24px"></i><span style="font:600 11px Geist,sans-serif">{{ n.l }}</span></div></sc-for>
+  </div>
+  <div style="position:relative;overflow:hidden">
+    <div style="position:absolute;inset:0;background-image:radial-gradient(#22253C 1.5px,transparent 1.5px);background-size:28px 28px"></div>
+    <div style="position:absolute;left:28px;top:24px;display:flex;align-items:flex-end;font:900 36px/0.9 Unbounded,sans-serif;letter-spacing:-0.05em"><span>SPU</span><span style="color:#B8F23A">Z</span><span>L</span></div>
+    <sc-for list="{{ deskIsles }}" as="w" hint-placeholder-count="8">
+      <div style="position:absolute;left:{{ w.x }}px;top:{{ w.y }}px;width:150px;display:flex;flex-direction:column;align-items:center;gap:6px">
+        <div style="position:relative;width:150px;height:110px;animation:isle {{ w.dur }}s ease-in-out infinite">
+          <div style="position:absolute;left:38px;top:60px;width:74px;height:48px;clip-path:polygon(0 0,100% 0,62% 100%,40% 86%);background:{{ w.deep }}"></div>
+          <div style="position:absolute;left:10px;top:44px;width:130px;height:32px;border-radius:50%;background:{{ w.c }};box-shadow:inset 0 -7px 0 rgba(0,0,0,.22)"></div>
+          <div style="position:absolute;left:{{ w.tl }}px;top:0;width:48px;height:56px;border-radius:14px 14px 10px 10px;background:{{ w.c }};box-shadow:inset -4px -4px 0 rgba(0,0,0,.2),0 0 0 3px #0E0F1A;display:flex;align-items:center;justify-content:center;font-size:26px;color:#0E0F1A"><i class="ph-bold {{ w.icon }}"></i></div><sc-if value="{{ w.spuz }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:{{ w.sl }}px;top:{{ w.st }}px;pointer-events:none"><dc-import name="Spuz" mood="{{ w.mood }}" size="{{ w.ss }}" color="{{ w.sc }}" hint-size="64px,64px"></dc-import></div></sc-if>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:#171929"><span style="font:700 13px Unbounded,sans-serif;white-space:nowrap">{{ w.name }}</span><span style="font:600 12px Geist Mono,monospace;color:#A2A6C2">{{ w.prog }}</span></div>
+      </div>
+    </sc-for>
+    
+  </div>
+  <div style="background:#171929;border-left:1px solid #2B2F4A;padding:24px;display:flex;flex-direction:column;gap:16px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="position:relative;width:56px;height:56px;border-radius:50%;background:conic-gradient(#B8F23A 0 68%,#2B2F4A 68% 100%);display:flex;align-items:center;justify-content:center"><div style="width:46px;height:46px;border-radius:14px;background:#2FD3E0;display:flex;align-items:center;justify-content:center;font:900 20px Unbounded,sans-serif;color:#0E0F1A">A</div></div>
+      <div style="flex:1;display:flex;flex-direction:column"><span style="font:800 17px Unbounded,sans-serif">AmaTheGreat</span><span style="font:500 14px Geist,sans-serif;color:#A2A6C2">Level 14 · Thinker</span></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="height:52px;border-radius:14px;background:#20233A;display:flex;align-items:center;justify-content:center;gap:8px"><i class="ph-bold ph-fire" style="font-size:22px;color:#FFC93C"></i><span style="font:600 20px Geist Mono,monospace">12</span></div>
+      <div style="height:52px;border-radius:14px;background:#20233A;display:flex;align-items:center;justify-content:center;gap:8px"><i class="ph-bold ph-lightning" style="font-size:20px;color:#FFC93C"></i><span style="font:600 20px Geist Mono,monospace;color:#FFC93C">1,284</span></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px"><div style="display:flex;justify-content:space-between;font:600 15px Geist,sans-serif"><span>Today</span><span style="font-family:Geist Mono,monospace"><span style="color:#B8F23A">6</span> / 15</span></div><div style="display:grid;grid-template-columns:repeat(15,1fr);gap:3px"><sc-for list="{{ today }}" as="t" hint-placeholder-count="15"><span style="height:20px;border-radius:5px;background:{{ t }}"></span></sc-for></div></div>
+    <button style="height:64px;border:0;border-radius:20px;background:#B8F23A;color:#0E0F1A;box-shadow:0 6px 0 #6F9A1C;display:flex;align-items:center;justify-content:center;gap:10px"><i class="ph-bold ph-play" style="font-size:20px"></i><span style="font:900 18px Unbounded,sans-serif">Play Dusk</span></button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <button style="height:56px;border:0;border-radius:18px;background:#20233A;color:#F4F5FB;box-shadow:0 5px 0 #0A0B12;font:800 15px Unbounded,sans-serif;display:flex;align-items:center;justify-content:center;gap:8px"><i class="ph-bold ph-sword"></i>Duel</button>
+      <button style="height:56px;border:0;border-radius:18px;background:#20233A;color:#F4F5FB;box-shadow:0 5px 0 #0A0B12;font:800 15px Unbounded,sans-serif;display:flex;align-items:center;justify-content:center;gap:8px"><i class="ph-bold ph-users-three"></i>Party</button>
+    </div>
+    <div style="font:700 15px Geist,sans-serif;margin-top:4px">Friends online</div>
+    <sc-for list="{{ deskFriends }}" as="f" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:10px"><span style="position:relative;width:34px;height:34px;border-radius:11px;background:{{ f.c }};font:900 13px Unbounded,sans-serif;color:#0E0F1A;display:flex;align-items:center;justify-content:center">{{ f.i }}<span style="position:absolute;right:-3px;bottom:-3px;width:11px;height:11px;border-radius:50%;background:#B8F23A;box-shadow:0 0 0 3px #171929"></span></span><span style="flex:1;display:flex;flex-direction:column"><span style="font:600 14px Geist,sans-serif">{{ f.n }}</span><span style="font:500 12px Geist,sans-serif;color:#A2A6C2">{{ f.st }}</span></span><span style="width:36px;height:36px;border-radius:10px;background:#20233A;display:flex;align-items:center;justify-content:center;color:#B8F23A"><i class="ph-bold ph-sword"></i></span></div></sc-for>
+  </div>
+</div></div>
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">Party Race, desktop, side rail</div>
+<div data-screen-label="Desktop Race" style="width:1280px;height:800px;border-radius:20px;overflow:hidden;background:#0E0F1A;box-shadow:0 0 0 1px #2B2F4A;display:grid;grid-template-columns:1fr 340px">
+  <div style="padding:28px 40px;display:flex;flex-direction:column;gap:20px;align-items:center">
+    <div style="align-self:stretch;display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;gap:10px"><div style="width:44px;height:44px;border-radius:14px;background:#20233A;display:flex;align-items:center;justify-content:center;font-size:20px"><i class="ph-bold ph-x"></i></div><div style="height:44px;padding:0 16px;border-radius:14px;background:#171929;display:flex;align-items:center;gap:8px;font:600 22px Geist Mono,monospace">02:14</div></div>
+      <span style="font:900 26px Unbounded,sans-serif;color:#8B7CFF">Crownfall · game 2 of 3</span>
+      <div style="display:flex;gap:6px"><sc-for list="{{ emotes }}" as="e" hint-placeholder-count="4"><span style="width:52px;height:44px;border-radius:12px;background:#20233A;display:flex;align-items:center;justify-content:center;font:900 16px Unbounded,sans-serif">{{ e }}</span></sc-for></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(8,72px);gap:4px;padding:8px;border-radius:24px;background:#0A0B12;box-shadow:0 0 0 2px #2B2F4A">
+      <sc-for list="{{ bigBoard }}" as="c" hint-placeholder-count="64"><div style="width:72px;height:72px;border-radius:12px;background:{{ c.bg }};color:{{ c.fg }};font-size:34px;display:flex;align-items:center;justify-content:center"><i class="ph-bold {{ c.i }}"></i></div></sc-for>
+    </div>
+    <div style="font:500 15px Geist,sans-serif;color:#A2A6C2">Keyboard: arrows move · Space marks · Enter places · Z undo</div>
+  </div>
+  <div style="background:#171929;border-left:1px solid #2B2F4A;padding:24px;display:flex;flex-direction:column;gap:10px">
+    <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:800 18px Unbounded,sans-serif">Live</span><span style="font:600 14px Geist Mono,monospace;color:#A2A6C2">K7QX</span></div>
+    <sc-for list="{{ rail }}" as="r" hint-placeholder-count="6">
+      <div style="display:flex;align-items:center;gap:10px;height:68px;padding:0 12px;border-radius:16px;background:{{ r.bg }};box-shadow:{{ r.ring }};transform:{{ r.t }}">
+        <span style="width:36px;height:28px;border-radius:9px;background:{{ r.pbg }};color:{{ r.pfg }};font:700 13px Geist Mono,monospace;display:flex;align-items:center;justify-content:center">{{ r.pos }}</span>
+        <span style="width:34px;height:34px;border-radius:11px;background:{{ r.c }};font:900 13px Unbounded,sans-serif;color:#0E0F1A;display:flex;align-items:center;justify-content:center">{{ r.i }}</span>
+        <div style="flex:1;display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;font:600 15px Geist,sans-serif"><span>{{ r.n }}</span><span style="font:500 13px Geist Mono,monospace;color:#A2A6C2">{{ r.g }}</span></div><div style="height:8px;border-radius:4px;background:#2B2F4A;overflow:hidden"><div style="width:{{ r.p }}%;height:100%;background:{{ r.bar }};border-radius:4px"></div></div></div>
+      </div>
+    </sc-for>
+    <div style="margin-top:auto;padding:12px;border-radius:14px;background:#20233A;font:500 14px Geist,sans-serif;display:flex;gap:8px;align-items:center"><i class="ph-bold ph-arrow-fat-lines-up" style="color:#FF8A3D"></i>Kofi passed Zainab</div>
+  </div>
+</div></div>
+
+</div>
+</section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const mix = (c, k = 42, b = '#0E0F1A') => `color-mix(in oklch, ${c} ${k}%, ${b})`;
+class Component extends DCLogic {
+  renderVals() {
+    const v = this.vals();
+    v.stateScreens = v.stateScreens.map(st => ({ ...st, bannerD: st.banner ? 'flex' : 'none', skelD: st.skel ? 'flex' : 'none', ctaD: st.cta ? 'flex' : 'none', skelRows: st.skelRows.length ? st.skelRows : [{ h: 1, w: 1, r: 0 }] }));
+    return v;
+  }
+  vals() {
+    const sk = (arr) => arr.map(([h, w, r]) => ({ h, w, r }));
+    const REG = ['AABBBBCC', 'AABBDDCC', 'EAADDDCC', 'EEFFDDGG', 'EFFFHHGG', 'EFHHHHGG', 'EEHHHGGG', 'EEEHHGGG'];
+    const RC = { A: '#4A3F8F', B: '#1F5468', C: '#6B3A6E', D: '#3F5A2E', E: '#7A4A2A', F: '#2B3F80', G: '#5A2E4A', H: '#2E5A5A' };
+    const marks = { '0,2': 'c', '1,6': 'c', '2,0': 'x', '0,0': 'x', '0,1': 'x', '1,1': 'x', '3,4': 'c', '5,5': 'x', '4,0': 'x' };
+    const bigBoard = [];
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) { const m = marks[`${r},${c}`]; bigBoard.push({ bg: RC[REG[r][c]], fg: m === 'x' ? '#8A8EB0' : '#F4F5FB', i: m === 'c' ? 'ph-crown-simple' : m === 'x' ? 'ph-x' : '' }); }
+    const W = [['Logic Lab', '#8B7CFF', 'ph-flask', '#5B4BD6'], ['Line Lane', '#2FD3E0', 'ph-path', '#0B7F8A'], ['Shape Shed', '#FF8A3D', 'ph-cube', '#B4520F'], ['Number Den', '#FFD23F', 'ph-hash', '#8A6A00'], ['Word Woods', '#3DDC84', 'ph-tree', '#167A45'], ['Clue Cave', '#FF6B6B', 'ph-question', '#B83232'], ['Reflex Rink', '#4D8BFF', 'ph-lightning', '#1F5BD6'], ['Rage Ridge', '#FF3B3B', 'ph-mountains', '#B81E1E']];
+    const pos = [[40, 90], [230, 40], [420, 110], [620, 50], [90, 330], [300, 440], [520, 330], [640, 520]];
+    const prog = ['1/3', '2/2', '1/1', '0/1', '2/4', '0/2', '0/1', '0/2'];
+    return {
+      stateScreens: [
+        { label: 'Loading · Home', title: 'The Grid', mood: 'thinking', head: 'Spuz is fetching today\'s puzzles', body: 'Same puzzles for everyone. Worth the wait.', cta: '', skel: true, skelRows: sk([[44, 100, 14], [180, 100, 24], [180, 100, 24], [64, 100, 20]]), banner: '' },
+        { label: 'Empty · Friends', title: 'Friends', mood: 'sad', head: 'No rivals yet. Send a link, start beef.', body: 'Friends you add show up here with their streaks and who\'s online.', cta: 'Invite on WhatsApp', skel: false, skelRows: [], banner: '' },
+        { label: 'Error · Puzzle failed', title: 'Crownfall', mood: 'squish', head: 'That puzzle didn\'t load', body: 'Your streak is safe. Tap to try again, or play another Daily while we sort it.', cta: 'Try again', skel: false, skelRows: [], banner: '' },
+        { label: 'Offline · Home', title: 'The Grid', mood: 'sleepy', head: 'You\'re offline. Dailies still work.', body: 'Today\'s 13 puzzles are saved on your phone. Duels and Party need a connection.', cta: 'Play offline', skel: false, skelRows: [], banner: 'Offline. Times sync when you\'re back.' }
+      ],
+
+      stHeadX: 0,
+      stHead: ['Screen', 'Empty', 'Error', 'Offline'],
+      stTable: [
+        { s: 'Home', e: 'New day, nothing cleared: Spuz Wave, "Fresh puzzles. Go first."', x: 'Squish, retry', o: 'Cached Dailies playable, MP buttons disabled with reason' },
+        { s: 'Game', e: 'n/a', x: 'Squish, "Your streak is safe", retry', o: 'Banner, solve continues, time syncs later' },
+        { s: 'Results', e: 'n/a', x: 'Result saved locally, retry submit', o: '"Percentile when you\'re back"' },
+        { s: 'Duel', e: 'No one found in 20 s: Practice bot offer', x: 'Match failed, no rating lost', o: 'Disabled: "Duels need signal"' },
+        { s: 'Party', e: 'Lobby alone: Wave, "Share the code"', x: 'Room closed by host', o: 'Disabled with reason' },
+        { s: 'Leagues', e: 'Before first week: Thinking, "Clear 1 Daily to join"', x: 'Retry', o: 'Last cached table, timestamped' },
+        { s: 'Leaderboard', e: '"Nobody yet. Be first."', x: 'Retry', o: 'Cached, timestamped' },
+        { s: 'Friends', e: '"No rivals yet. Send a link, start beef."', x: 'Retry', o: 'List cached, presence hidden' },
+        { s: 'Badges', e: 'All locked, first one highlighted', x: 'Retry', o: 'Cached' },
+        { s: 'Shop', e: 'Category sold out: "Back Monday"', x: 'Purchase failed, Sparks not taken', o: 'Browse only' }
+      ],
+      cards: [
+        { label: 'Daily clear', bg: '#1B1835', dot: '#2E2858', fg: '#F4F5FB', z: '#B8F23A', kicker: 'Crownfall #214', mood: 'cheer', spuz: '#B8F23A', big: '1:12', bigFs: 220, sqFs: 150, line: 'No hints. Faster than 82%.', foot: '🔥 12 days' },
+        { label: 'Full Spuzl', bg: '#B8F23A', dot: '#A3DB2A', fg: '#0E0F1A', z: '#0E0F1A', kicker: 'Thu 30 Oct', mood: 'party', spuz: '#2FD3E0', big: 'Full Spuzl', bigFs: 120, sqFs: 80, line: 'All 15 Dailies in 38:12', foot: '🔥 12 · Lv 15' },
+        { label: 'Duel win', bg: '#0E0F1A', dot: '#22253C', fg: '#F4F5FB', z: '#B8F23A', kicker: 'Duel · Sixer', mood: 'proud', spuz: '#B8F23A', big: '2 - 1', bigFs: 220, sqFs: 150, line: 'Beat Tunde. Rating 1,438.', foot: '+18 rating' },
+        { label: 'Party podium', bg: '#FFC93C', dot: '#F0B820', fg: '#0E0F1A', z: '#0E0F1A', kicker: 'Party · 5 Spuzlers', mood: 'party', spuz: '#FF8A3D', big: '1st', bigFs: 220, sqFs: 150, line: 'Kofi took the room. 3 games.', foot: 'Room K7QX' }
+      ],
+      texts: [
+        { l: 'Daily clear', v: 'SPUZL #214 · Crownfall · 1:12 🔥12\n🟩🟩🟩🟩🟩\n🟩🟩🟨🟩🟩\nspuzl.gg' },
+        { l: 'Full Spuzl', v: 'SPUZL #214 · FULL SPUZL 15/15 · 38:12 🔥12\n🟪🟪🟪🟦🟦🟧🟨🟩🟩🟩🟩🟥🔷🔴🔴\nspuzl.gg' },
+        { l: 'Duel', v: 'SPUZL Duel · Sixer\nAma 2 - 1 Tunde\n🟩🟥🟩 · rating 1,438\nspuzl.gg' }
+      ],
+      lightIsles: [
+        { name: 'Logic Lab', prog: '0/3', c: '#8B7CFF', t: '#5B4BD6', icon: 'ph-flask', x: 200, y: 40, dur: 5 },
+        { name: 'Line Lane', prog: '0/2', c: '#2FD3E0', t: '#0B7F8A', icon: 'ph-path', x: 30, y: 10, dur: 5.6 },
+        { name: 'Shape Shed', prog: '0/1', c: '#FF8A3D', t: '#B4520F', icon: 'ph-cube', x: 220, y: 200, dur: 4.8 },
+        { name: 'Word Woods', prog: '0/4', c: '#3DDC84', t: '#167A45', icon: 'ph-tree', x: 40, y: 280, dur: 6 }
+      ].map(w => ({ ...w, deep: mix(w.c, 55, '#5A5E78'), ...(w.name === 'Line Lane' ? { tl: 78, spuz: true, sl: 6, st: -8, ss: 64, sc: '#B8F23A', mood: 'wave' } : { tl: 46, spuz: false }) })),
+      lightNav: [{ i: 'ph-map-trifold', l: 'Grid', col: '#437A00' }, { i: 'ph-trophy', l: 'Leagues', col: '#5A5E78' }, { i: 'ph-users', l: 'Friends', col: '#5A5E78' }, { i: 'ph-storefront', l: 'Shop', col: '#5A5E78' }, { i: 'ph-user', l: 'Me', col: '#5A5E78' }],
+      lightFriends: [{ pos: 1, i: 'K', c: '#FF8A3D', n: 'Kofi', t: '1:05', w: 500, bt: 'none' }, { pos: 2, i: 'A', c: '#2FD3E0', n: 'You', t: '1:12', w: 700, bt: '1px solid #D8DCE8' }, { pos: 3, i: 'E', c: '#8B7CFF', n: 'Efua', t: '1:40', w: 500, bt: '1px solid #D8DCE8' }],
+      code: ['K', '7', 'Q', 'X'],
+      lightLobby: [['You', 'A', '#2FD3E0', 1], ['Kofi', 'K', '#FF8A3D', 1], ['Efua', 'E', '#8B7CFF', 1], ['Yaw', 'Y', '#3DDC84', 0], ['Zainab', 'Z', '#FFD23F', 1], ['', '', '', -1], ['', '', '', -1], ['', '', '', -1]].map(([n, i, c, r]) => r < 0 ? { n: 'Open', i: '', c: 'transparent', bg: 'transparent', ring: 'inset 0 0 0 2px #D8DCE8', nc: '#5A5E78', ready: false } : { n, i, c, bg: '#FFFFFF', ring: r ? 'inset 0 0 0 2px #437A00' : '0 0 0 1px #D8DCE8', nc: '#12131D', ready: !!r }),
+      deskNav: [{ i: 'ph-map-trifold', l: 'Grid', col: '#0E0F1A', bg: '#B8F23A' }, { i: 'ph-trophy', l: 'Leagues', col: '#A2A6C2', bg: 'transparent' }, { i: 'ph-users', l: 'Friends', col: '#A2A6C2', bg: 'transparent' }, { i: 'ph-storefront', l: 'Shop', col: '#A2A6C2', bg: 'transparent' }, { i: 'ph-user', l: 'Me', col: '#A2A6C2', bg: 'transparent' }],
+      deskIsles: W.map(([name, c, icon], k) => ({ name, c, icon, x: pos[k][0], y: pos[k][1] + 40, prog: prog[k], dur: 4.6 + (k % 4) * .4, deep: mix(c), ...(k === 0 ? { tl: 88, spuz: true, sl: 8, st: -10, ss: 70, sc: '#B8F23A', mood: 'fire' } : { tl: 51, spuz: false }) })),
+      today: Array.from({ length: 15 }, (_, i) => i < 6 ? '#B8F23A' : '#2B2F4A'),
+      deskFriends: [{ n: 'Kofi', i: 'K', c: '#FF8A3D', st: 'Playing Crownfall' }, { n: 'Efua', i: 'E', c: '#8B7CFF', st: 'In a Party Race' }, { n: 'Yaw', i: 'Y', c: '#3DDC84', st: 'Online' }, { n: 'Zainab', i: 'Z', c: '#FFD23F', st: 'Online' }],
+      emotes: ['🔥', '😂', '😤', 'GG'],
+      bigBoard,
+      rail: [['Kofi', 'K', '#FF8A3D', 72, '5/8'], ['Ama', 'A', '#2FD3E0', 61, '4/8'], ['Zainab', 'Z', '#FFD23F', 48, '3/8'], ['Efua', 'E', '#8B7CFF', 30, '2/8'], ['Yaw', 'Y', '#3DDC84', 12, '1/8'], ['Chidi', 'C', '#4D8BFF', 8, '0/8']].map(([n, i, c, p, g], k) => {
+        const pc = k === 0 ? ['#FFC93C', '#0E0F1A'] : k === 1 ? ['#D7DAE8', '#0E0F1A'] : k === 2 ? ['#E09A5C', '#0E0F1A'] : ['#20233A', '#A2A6C2'];
+        const me = n === 'Ama';
+        return { n: me ? 'You' : n, i, c, p, g, pos: ['1st', '2nd', '3rd', '4th', '5th', '6th'][k], pbg: pc[0], pfg: pc[1], bg: me ? '#24331A' : '#0E0F1A', ring: me ? 'inset 0 0 0 2px #B8F23A' : 'none', bar: me ? '#B8F23A' : '#5A5E78', t: k === 0 ? 'translateX(-4px)' : 'none' };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

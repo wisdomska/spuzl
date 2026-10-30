@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800;900&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
+<style>
+body{margin:0;background:#0A0B14;color:#F4F5FB;font-family:Geist,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#B8F23A}a:hover{color:#D4FF7A}
+@keyframes spinY{0%{transform:perspective(500px) rotateY(0)}100%{transform:perspective(500px) rotateY(360deg)}}
+@keyframes shine{0%{transform:translateX(-140%) skewX(-20deg)}60%,100%{transform:translateX(240%) skewX(-20deg)}}
+@keyframes ember{0%{transform:translateY(0);opacity:1}100%{transform:translateY(-60px);opacity:0}}
+@keyframes smoke{0%{transform:translateY(0) scale(.6);opacity:.8}100%{transform:translateY(-50px) scale(1.4);opacity:0}}
+@keyframes ringBurst{0%{transform:scale(.5);opacity:1}100%{transform:scale(1.7);opacity:0}}
+@keyframes slideUp{0%{transform:translateY(100%)}100%{transform:none}}
+@keyframes coach{0%,100%{transform:translate(0,0)}50%{transform:translate(-6px,-6px)}}
+@keyframes ghostTick{0%,100%{opacity:.5}50%{opacity:1}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important}}
+</style>
+</helmet>
+<div style="display:flex;flex-direction:column;gap:48px;padding:56px;background:#0A0B14;width:max-content">
+
+<section data-screen-label="Onboarding" style="display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-direction:column;gap:6px"><div style="font:900 40px Unbounded,sans-serif;letter-spacing:-0.03em">Onboarding, first run to first clear</div><div style="font:400 17px Geist,sans-serif;color:#A2A6C2">Four steps, under 90 seconds. Account creation waits until after the first clear.</div></div>
+<div style="display:flex;gap:32px;align-items:flex-start">
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">O1 Age band</div>
+<div data-screen-label="O1 Age band" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column;padding:60px 20px 28px;box-sizing:border-box;gap:18px">
+  <div style="display:flex;gap:6px"><span style="flex:1;height:6px;border-radius:3px;background:#B8F23A"></span><span style="flex:1;height:6px;border-radius:3px;background:#2B2F4A"></span><span style="flex:1;height:6px;border-radius:3px;background:#2B2F4A"></span><span style="flex:1;height:6px;border-radius:3px;background:#2B2F4A"></span></div>
+  <div style="display:flex;justify-content:center;margin-top:10px"><dc-import name="Spuz" mood="wave" size="{{ 150 }}" hint-size="150px,150px"></dc-import></div>
+  <div style="font:900 30px/1.1 Unbounded,sans-serif;letter-spacing:-0.02em;text-align:center;align-self:stretch">Akwaaba, Spuzler.<br>How old are you?</div>
+  <div style="font:400 16px/1.5 Geist,sans-serif;color:#A2A6C2;text-align:center;align-self:stretch">So we can keep things safe and fair. We never show it to anyone.</div>
+  <div style="display:flex;flex-direction:column;gap:10px;margin-top:6px">
+    <sc-for list="{{ ages }}" as="a" hint-placeholder-count="3">
+      <div style="height:64px;border-radius:20px;background:{{ a.bg }};box-shadow:{{ a.ring }};display:flex;align-items:center;gap:14px;padding:0 18px">
+        <span style="width:24px;height:24px;border-radius:50%;box-shadow:inset 0 0 0 2px {{ a.dot }};display:flex;align-items:center;justify-content:center"><span style="width:12px;height:12px;border-radius:50%;background:{{ a.fill }}"></span></span>
+        <span style="flex:1;display:flex;flex-direction:column"><span style="font:600 17px Geist,sans-serif">{{ a.t }}</span><span style="font:400 14px Geist,sans-serif;color:#A2A6C2">{{ a.d }}</span></span>
+      </div>
+    </sc-for>
+  </div>
+  <button style="margin-top:auto;height:60px;border:0;border-radius:20px;background:#B8F23A;color:#0E0F1A;box-shadow:0 6px 0 #6F9A1C;font:900 17px Unbounded,sans-serif;cursor:pointer" style-active="transform:translateY(5px);box-shadow:0 1px 0 #6F9A1C">Continue</button>
+</div></div>
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">O2 Tutorial puzzle, Crownfall 4 × 4, coach overlay</div>
+<div data-screen-label="O2 Tutorial" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column;padding:60px 20px 28px;box-sizing:border-box;gap:16px">
+  <div style="display:flex;gap:6px"><span style="flex:1;height:6px;border-radius:3px;background:#B8F23A"></span><span style="flex:1;height:6px;border-radius:3px;background:#B8F23A"></span><span style="flex:1;height:6px;border-radius:3px;background:#2B2F4A"></span><span style="flex:1;height:6px;border-radius:3px;background:#2B2F4A"></span></div>
+  <div style="font:900 24px Unbounded,sans-serif;color:#8B7CFF">Crownfall</div>
+  <div style="display:flex;flex-direction:column;gap:8px;align-self:stretch">
+    <sc-for list="{{ tutRules }}" as="r" hint-placeholder-count="3">
+      <div style="display:flex;gap:10px;align-items:center;font:500 16px Geist,sans-serif;color:{{ r.c }}"><i class="ph-bold {{ r.i }}" style="font-size:18px"></i>{{ r.t }}</div>
+    </sc-for>
+  </div>
+  <div style="position:relative;align-self:center;display:grid;grid-template-columns:repeat(4,72px);gap:4px;padding:8px;border-radius:22px;background:#0A0B12;box-shadow:0 0 0 2px #2B2F4A;margin-top:8px">
+    <sc-for list="{{ tut }}" as="c" hint-placeholder-count="16">
+      <div style="width:72px;height:72px;border-radius:12px;background:{{ c.bg }};box-shadow:{{ c.ring }};display:flex;align-items:center;justify-content:center;font-size:34px;color:{{ c.fg }}"><i class="ph-bold {{ c.i }}"></i></div>
+    </sc-for>
+    <div style="position:absolute;left:205px;top:150px;font-size:44px;color:#F4F5FB;animation:coach 1.2s ease-in-out infinite;filter:drop-shadow(0 4px 0 #0E0F1A)"><i class="ph-bold ph-hand-pointing"></i></div>
+  </div>
+  <div style="margin-top:auto;display:flex;align-items:flex-end;gap:4px">
+    <dc-import name="Spuz" mood="thinking" size="{{ 90 }}" hint-size="90px,90px"></dc-import>
+    <div style="flex:1;padding:14px 16px;border-radius:20px 20px 20px 6px;background:#20233A;font:500 16px/1.4 Geist,sans-serif;margin-bottom:20px">The violet region still needs a crown. Only one spot is safe. Tap it.</div>
+  </div>
+</div></div>
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">O3 First clear celebration</div>
+<div data-screen-label="O3 First clear" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#1B1835;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column;align-items:center;padding:80px 20px 28px;box-sizing:border-box;gap:14px">
+  <div style="position:absolute;left:50%;top:250px;width:240px;height:240px;margin:-120px 0 0 -120px;border-radius:50%;box-shadow:0 0 0 6px #8B7CFF;animation:ringBurst 1.4s cubic-bezier(.23,1,.32,1) infinite"></div>
+  <div style="font:900 40px Unbounded,sans-serif;letter-spacing:-0.03em;text-align:center;align-self:stretch;line-height:1">First clear!</div>
+  <div style="position:relative;margin-top:6px"><dc-import name="Spuz" mood="cheer" size="{{ 200 }}" hint-size="200px,200px"></dc-import></div>
+  <div style="font:600 18px/1.4 Geist,sans-serif;text-align:center;align-self:stretch;max-width:300px">0:41 on your first ever puzzle. Okay, big brain.</div>
+  <div style="display:flex;gap:10px;margin-top:4px">
+    <div style="padding:12px 16px;border-radius:16px;background:#0E0F1A;display:flex;flex-direction:column;align-items:center"><span style="font:600 24px Geist Mono,monospace;color:#B8F23A">+150</span><span style="font:500 13px Geist,sans-serif;color:#A2A6C2">XP</span></div>
+    <div style="padding:12px 16px;border-radius:16px;background:#0E0F1A;display:flex;flex-direction:column;align-items:center"><span style="font:600 24px Geist Mono,monospace;color:#FFC93C">+50</span><span style="font:500 13px Geist,sans-serif;color:#A2A6C2">Sparks</span></div>
+    <div style="padding:12px 16px;border-radius:16px;background:#0E0F1A;display:flex;flex-direction:column;align-items:center"><span style="font:600 24px Geist Mono,monospace;color:#FFC93C;display:flex;gap:4px;align-items:center"><i class="ph-bold ph-fire"></i>1</span><span style="font:500 13px Geist,sans-serif;color:#A2A6C2">Streak</span></div>
+  </div>
+  <button style="margin-top:auto;align-self:stretch;height:60px;border:0;border-radius:20px;background:#B8F23A;color:#0E0F1A;box-shadow:0 6px 0 #6F9A1C;font:900 17px Unbounded,sans-serif;cursor:pointer" style-active="transform:translateY(5px);box-shadow:0 1px 0 #6F9A1C">Make it official</button>
+  <div style="font:500 14px Geist,sans-serif;color:#C9C4FF">Tap anywhere to skip the party</div>
+</div></div>
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">O4 Nickname and Spuz colour</div>
+<div data-screen-label="O4 Nickname" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column;padding:60px 20px 28px;box-sizing:border-box;gap:16px">
+  <div style="display:flex;gap:6px"><span style="flex:1;height:6px;border-radius:3px;background:#B8F23A"></span><span style="flex:1;height:6px;border-radius:3px;background:#B8F23A"></span><span style="flex:1;height:6px;border-radius:3px;background:#B8F23A"></span><span style="flex:1;height:6px;border-radius:3px;background:#B8F23A"></span></div>
+  <div style="font:900 28px/1.1 Unbounded,sans-serif;letter-spacing:-0.02em">Make Spuz yours</div>
+  <div style="align-self:center;width:220px;height:220px;border-radius:50%;background:#171929;display:flex;align-items:center;justify-content:center"><dc-import name="Spuz" mood="proud" size="{{ 190 }}" color="#2FD3E0" hint-size="190px,190px"></dc-import></div>
+  <div style="display:flex;justify-content:center;gap:10px">
+    <sc-for list="{{ skins }}" as="k" hint-placeholder-count="6">
+      <div aria-label="{{ k.n }}" style="width:44px;height:44px;border-radius:14px;background:{{ k.c }};box-shadow:{{ k.ring }};display:flex;align-items:center;justify-content:center;color:#0E0F1A;font-size:20px"><i class="ph-bold {{ k.i }}"></i></div>
+    </sc-for>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px">
+    <label style="font:600 15px Geist,sans-serif">Nickname</label>
+    <div style="height:56px;border-radius:16px;background:#20233A;box-shadow:inset 0 0 0 2px #B8F23A;display:flex;align-items:center;padding:0 16px;gap:10px"><span style="flex:1;font:600 18px Geist,sans-serif">AmaTheGreat</span><i class="ph-bold ph-check-circle" style="color:#B8F23A;font-size:22px"></i></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <sc-for list="{{ nickIdeas }}" as="n" hint-placeholder-count="3"><span style="padding:8px 12px;border-radius:12px;background:#171929;font:500 14px Geist,sans-serif;color:#A2A6C2;display:flex;gap:6px;align-items:center"><i class="ph-bold ph-shuffle"></i>{{ n }}</span></sc-for>
+    </div>
+    <div style="font:400 14px Geist,sans-serif;color:#A2A6C2">Free and yours. No real names, no phone numbers.</div>
+  </div>
+  <button style="margin-top:auto;height:60px;border:0;border-radius:20px;background:#B8F23A;color:#0E0F1A;box-shadow:0 6px 0 #6F9A1C;font:900 17px Unbounded,sans-serif;cursor:pointer" style-active="transform:translateY(5px);box-shadow:0 1px 0 #6F9A1C">Enter The Grid</button>
+</div></div>
+
+</div>
+</section>
+
+<section data-screen-label="Overlays" style="display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-direction:column;gap:6px"><div style="font:900 40px Unbounded,sans-serif;letter-spacing:-0.03em">Reward overlays and game shell</div><div style="font:400 17px Geist,sans-serif;color:#A2A6C2">All celebrations skip on tap. Reduced motion: same info, fade only.</div></div>
+<div style="display:flex;gap:32px;align-items:flex-start">
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">R1 Rank up</div>
+<div data-screen-label="R1 Rank up" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#06070D;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column;align-items:center;padding:110px 20px 28px;box-sizing:border-box;gap:16px">
+  <div style="font:700 16px Unbounded,sans-serif;color:#A2A6C2;white-space:nowrap">Rank up · Logic Lab</div>
+  <div style="display:flex;align-items:center;gap:16px">
+    <div style="width:72px;height:80px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:#2B2F4A;display:flex;align-items:center;justify-content:center;color:#A2A6C2;font-size:30px;opacity:.6"><i class="ph-bold ph-student"></i></div>
+    <i class="ph-bold ph-arrow-right" style="font-size:26px;color:#A2A6C2"></i>
+    <div style="position:relative;width:150px;height:166px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:#8B7CFF;display:flex;align-items:center;justify-content:center;color:#0E0F1A;font-size:64px;overflow:hidden"><i class="ph-bold ph-brain"></i><div style="position:absolute;top:0;bottom:0;width:40px;background:rgba(255,255,255,.45);animation:shine 2s ease-in-out infinite"></div></div>
+  </div>
+  <div style="font:900 40px Unbounded,sans-serif;letter-spacing:-0.03em;white-space:nowrap">Thinker</div>
+  <div style="font:600 18px Geist,sans-serif;text-align:center;align-self:stretch">Rookie no more. Welcome to Thinker.</div>
+  <div style="display:flex;gap:6px;margin-top:8px"><sc-for list="{{ rankLadder }}" as="r" hint-placeholder-count="6"><div style="display:flex;flex-direction:column;align-items:center;gap:6px;width:54px"><span style="width:16px;height:16px;border-radius:5px;background:{{ r.c }}"></span><span style="font:500 11px Geist,sans-serif;color:{{ r.t }};text-align:center;align-self:stretch">{{ r.n }}</span></div></sc-for></div>
+  <div style="position:absolute;right:20px;bottom:110px"><dc-import name="Spuz" mood="proud" size="{{ 100 }}" color="#8B7CFF" hint-size="100px,100px"></dc-import></div>
+  <button style="margin-top:auto;align-self:stretch;height:60px;border:0;border-radius:20px;background:#B8F23A;color:#0E0F1A;box-shadow:0 6px 0 #6F9A1C;font:900 17px Unbounded,sans-serif;cursor:pointer">Nice</button>
+</div></div>
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">R2 Badge unlock, gold tier</div>
+<div data-screen-label="R2 Badge" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#06070D;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column;align-items:center;padding:110px 20px 28px;box-sizing:border-box;gap:16px">
+  <div style="font:700 16px Unbounded,sans-serif;color:#FFC93C;white-space:nowrap">Badge unlocked</div>
+  <div style="position:relative;width:200px;height:220px;display:flex;align-items:center;justify-content:center">
+    <div style="position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 4px #FFC93C;animation:ringBurst 1.4s cubic-bezier(.23,1,.32,1) infinite"></div>
+    <div style="width:170px;height:190px;animation:spinY 2.6s cubic-bezier(.77,0,.175,1) infinite">
+      <div style="position:relative;width:100%;height:100%;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:#FFC93C;display:flex;align-items:center;justify-content:center;overflow:hidden">
+        <div style="width:130px;height:146px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:#C99412;display:flex;align-items:center;justify-content:center;color:#0E0F1A;font-size:64px"><i class="ph-bold ph-sun-horizon"></i></div>
+        <div style="position:absolute;top:0;bottom:0;width:40px;background:rgba(255,255,255,.5);animation:shine 2s ease-in-out infinite"></div>
+      </div>
+    </div>
+  </div>
+  <div style="font:900 30px Unbounded,sans-serif;letter-spacing:-0.02em;text-align:center;align-self:stretch">Night Owl</div>
+  <div style="font:500 16px/1.45 Geist,sans-serif;color:#A2A6C2;text-align:center;align-self:stretch;max-width:290px">Clear 30 Dusk puzzles with no hints. Gold tier. 4% of Spuzlers have it.</div>
+  <div style="display:flex;gap:8px"><span style="padding:6px 12px;border-radius:10px;background:#20233A;font:600 14px Geist,sans-serif;color:#C08A4A">Bronze</span><span style="padding:6px 12px;border-radius:10px;background:#20233A;font:600 14px Geist,sans-serif;color:#C9CCDD">Silver</span><span style="padding:6px 12px;border-radius:10px;background:#FFC93C;font:600 14px Geist,sans-serif;color:#0E0F1A">Gold</span><span style="padding:6px 12px;border-radius:10px;background:#20233A;font:600 14px Geist,sans-serif;color:#5A5E78">Prism</span></div>
+  <div style="margin-top:auto;align-self:stretch;display:grid;grid-template-columns:1fr 60px;gap:10px">
+    <button style="height:60px;border:0;border-radius:20px;background:#B8F23A;color:#0E0F1A;box-shadow:0 6px 0 #6F9A1C;font:900 17px Unbounded,sans-serif">Pin to profile</button>
+    <button aria-label="Share" style="height:60px;border:0;border-radius:20px;background:#20233A;color:#F4F5FB;box-shadow:0 6px 0 #0A0B12;font-size:22px"><i class="ph-bold ph-share-fat"></i></button>
+  </div>
+</div></div>
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">R3 Streak milestone, 30 days</div>
+<div data-screen-label="R3 Streak milestone" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#1A0F08;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column;align-items:center;padding:100px 20px 28px;box-sizing:border-box;gap:14px">
+  <div style="position:relative;width:200px;height:240px;display:flex;align-items:flex-end;justify-content:center">
+    <sc-for list="{{ embers }}" as="e" hint-placeholder-count="6"><div style="position:absolute;left:{{ e.x }}px;bottom:{{ e.y }}px;width:{{ e.s }}px;height:{{ e.s }}px;border-radius:50%;background:{{ e.c }};animation:ember {{ e.d }}s ease-out {{ e.dl }}s infinite"></div></sc-for>
+    <div style="width:170px;height:170px;border-radius:50% 0 50% 50%;transform:rotate(-45deg);background:linear-gradient(45deg,#FF6B2C,#FFC93C);display:flex;align-items:center;justify-content:center;margin-bottom:24px">
+      <span style="transform:rotate(45deg);font:900 64px Unbounded,sans-serif;color:#0E0F1A;letter-spacing:-0.04em">30</span>
+    </div>
+  </div>
+  <div style="font:900 32px Unbounded,sans-serif;letter-spacing:-0.02em;text-align:center;align-self:stretch;white-space:nowrap">30-day streak</div>
+  <div style="font:600 17px/1.4 Geist,sans-serif;text-align:center;align-self:stretch;max-width:300px">A whole month. Spuz's tuft is officially on fire.</div>
+  <div style="display:flex;gap:10px">
+    <div style="padding:10px 14px;border-radius:14px;background:#2A1A10;display:flex;align-items:center;gap:8px;font:600 15px Geist,sans-serif"><i class="ph-bold ph-lightning" style="color:#FFC93C"></i><span style="font-family:Geist Mono,monospace;color:#FFC93C">+300</span></div>
+    <div style="padding:10px 14px;border-radius:14px;background:#2A1A10;display:flex;align-items:center;gap:8px;font:600 15px Geist,sans-serif"><i class="ph-bold ph-snowflake" style="color:#6FB6FF"></i>+1 Freeze</div>
+  </div>
+  <div style="position:absolute;left:20px;bottom:110px"><dc-import name="Spuz" mood="fire" size="{{ 100 }}" hint-size="100px,100px"></dc-import></div>
+  <button style="margin-top:auto;align-self:stretch;height:60px;border:0;border-radius:20px;background:#B8F23A;color:#0E0F1A;box-shadow:0 6px 0 #6F9A1C;font:900 17px Unbounded,sans-serif">Keep it lit</button>
+</div></div>
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">R4 Streak lost + Freeze offer</div>
+<div data-screen-label="R4 Streak lost" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column;align-items:center;padding:100px 20px 0;box-sizing:border-box;gap:12px">
+  <div style="position:relative;width:120px;height:140px;display:flex;align-items:flex-end;justify-content:center">
+    <div style="position:absolute;left:40px;bottom:60px;width:30px;height:30px;border-radius:50%;background:#5A5E78;animation:smoke 2s ease-out infinite"></div>
+    <div style="position:absolute;left:58px;bottom:66px;width:22px;height:22px;border-radius:50%;background:#5A5E78;animation:smoke 2s ease-out .7s infinite"></div>
+    <div style="width:56px;height:56px;border-radius:50% 0 50% 50%;transform:rotate(-45deg);background:#3A3F63"></div>
+  </div>
+  <div style="font:900 28px Unbounded,sans-serif;letter-spacing:-0.02em;text-align:center;align-self:stretch">Your 12-day streak went out</div>
+  <dc-import name="Spuz" mood="sad" size="{{ 130 }}" hint-size="130px,130px"></dc-import>
+  <div style="position:absolute;left:0;right:0;bottom:0;background:#171929;border-radius:32px 32px 0 0;padding:14px 20px 28px;display:flex;flex-direction:column;gap:14px;animation:slideUp .4s cubic-bezier(.23,1,.32,1);box-shadow:0 -12px 40px rgba(0,0,0,.5)">
+    <div style="align-self:center;width:44px;height:5px;border-radius:3px;background:#2B2F4A"></div>
+    <div style="display:flex;gap:14px;align-items:center">
+      <div style="width:64px;height:64px;border-radius:20px;background:#163049;color:#6FB6FF;font-size:34px;display:flex;align-items:center;justify-content:center"><i class="ph-bold ph-snowflake"></i></div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font:800 18px Unbounded,sans-serif">Freeze it back</span><span style="font:400 15px/1.4 Geist,sans-serif;color:#A2A6C2">Use a Streak Freeze and yesterday counts. Offer ends at midnight GMT.</span></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:12px 14px;border-radius:14px;background:#20233A;font:500 15px Geist,sans-serif"><span>You have</span><span style="font-family:Geist Mono,monospace;display:flex;gap:6px;align-items:center"><i class="ph-bold ph-snowflake" style="color:#6FB6FF"></i>1 Freeze</span></div>
+    <button style="height:60px;border:0;border-radius:20px;background:#B8F23A;color:#0E0F1A;box-shadow:0 6px 0 #6F9A1C;font:900 17px Unbounded,sans-serif">Use Freeze</button>
+    <button style="height:48px;border:0;border-radius:16px;background:transparent;color:#A2A6C2;font:600 16px Geist,sans-serif">Start fresh</button>
+  </div>
+</div></div>
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">R5 Full Spuzl</div>
+<div data-screen-label="R5 Full Spuzl" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column;align-items:center;padding:80px 20px 28px;box-sizing:border-box;gap:14px">
+  <div style="font:900 44px/0.95 Unbounded,sans-serif;letter-spacing:-0.04em;text-align:center;align-self:stretch">Full<br><span style="color:#B8F23A">Spuzl!</span></div>
+  <div style="font:600 17px Geist,sans-serif;text-align:center;align-self:stretch">All 15 Dailies. You ate.</div>
+  <div style="display:grid;grid-template-columns:repeat(5,58px);gap:8px;margin-top:6px">
+    <sc-for list="{{ full }}" as="f" hint-placeholder-count="15">
+      <div style="width:58px;height:58px;border-radius:18px;background:{{ f.c }};color:#0E0F1A;font-size:26px;display:flex;align-items:center;justify-content:center;box-shadow:inset -4px -4px 0 rgba(0,0,0,.2)"><i class="ph-bold {{ f.i }}"></i></div>
+    </sc-for>
+  </div>
+  <dc-import name="Spuz" mood="party" size="{{ 150 }}" hint-size="150px,150px"></dc-import>
+  <div style="display:flex;gap:10px">
+    <div style="padding:10px 14px;border-radius:14px;background:#171929;font:600 15px Geist Mono,monospace;color:#B8F23A">+150 XP</div>
+    <div style="padding:10px 14px;border-radius:14px;background:#171929;font:600 15px Geist Mono,monospace">Total 38:12</div>
+  </div>
+  <button style="margin-top:auto;align-self:stretch;height:60px;border:0;border-radius:20px;background:#B8F23A;color:#0E0F1A;box-shadow:0 6px 0 #6F9A1C;font:900 17px Unbounded,sans-serif;display:flex;align-items:center;justify-content:center;gap:10px"><i class="ph-bold ph-share-fat"></i>Share the flex</button>
+</div></div>
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">G1 Pause sheet + offline banner</div>
+<div data-screen-label="G1 Pause" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A">
+  <div style="position:absolute;left:12px;right:12px;top:52px;padding:10px 14px;border-radius:14px;background:#2A2410;box-shadow:inset 0 0 0 2px #FFC93C;display:flex;gap:10px;align-items:center;font:500 15px Geist,sans-serif;z-index:3"><i class="ph-bold ph-wifi-slash" style="color:#FFC93C;font-size:20px"></i>Offline. Keep solving, we'll sync your time.</div>
+  <div style="position:absolute;left:0;right:0;top:120px;display:flex;justify-content:center;filter:blur(10px);opacity:.5">
+    <div style="display:grid;grid-template-columns:repeat(6,56px);gap:3px"><sc-for list="{{ blurCells }}" as="b" hint-placeholder-count="36"><div style="width:56px;height:56px;border-radius:10px;background:{{ b }}"></div></sc-for></div>
+  </div>
+  <div style="position:absolute;inset:0;background:rgba(6,7,13,.6)"></div>
+  <div style="position:absolute;left:0;right:0;bottom:0;background:#171929;border-radius:32px 32px 0 0;padding:14px 20px 28px;display:flex;flex-direction:column;gap:12px">
+    <div style="align-self:center;width:44px;height:5px;border-radius:3px;background:#2B2F4A"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:900 24px Unbounded,sans-serif">Paused</span><span style="font:600 20px Geist Mono,monospace;color:#A2A6C2">00:48</span></div>
+    <div style="font:400 15px Geist,sans-serif;color:#A2A6C2">Board hidden while paused. No peeking, Spuzler.</div>
+    <button style="height:60px;border:0;border-radius:20px;background:#B8F23A;color:#0E0F1A;box-shadow:0 6px 0 #6F9A1C;font:900 17px Unbounded,sans-serif">Resume</button>
+    <sc-for list="{{ pauseRows }}" as="p" hint-placeholder-count="4">
+      <div style="height:52px;border-radius:16px;background:#20233A;display:flex;align-items:center;gap:12px;padding:0 16px;font:600 16px Geist,sans-serif;color:{{ p.c }}"><i class="ph-bold {{ p.i }}" style="font-size:20px"></i><span style="flex:1">{{ p.t }}</span><span style="font:500 14px Geist,sans-serif;color:#A2A6C2">{{ p.v }}</span></div>
+    </sc-for>
+  </div>
+</div></div>
+
+</div>
+</section>
+
+<section data-screen-label="Multiplayer extras" style="display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-direction:column;gap:6px"><div style="font:900 40px Unbounded,sans-serif;letter-spacing:-0.03em">Duel edges, async challenge, Ghost Race, rooms, leagues</div><div style="font:400 17px Geist,sans-serif;color:#A2A6C2">The states that make multiplayer feel solid when the network or the other player does something weird.</div></div>
+<div style="display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap;max-width:2700px">
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">M1 Duel entry sheet</div>
+<div data-screen-label="M1 Duel entry" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A">
+  <div style="position:absolute;inset:0;background:rgba(6,7,13,.55)"></div>
+  <div style="position:absolute;left:0;right:0;bottom:0;background:#171929;border-radius:32px 32px 0 0;padding:14px 20px 28px;display:flex;flex-direction:column;gap:14px">
+    <div style="align-self:center;width:44px;height:5px;border-radius:3px;background:#2B2F4A"></div>
+    <div style="display:flex;align-items:center;gap:12px"><i class="ph-bold ph-sword" style="font-size:28px;color:#B8F23A"></i><span style="font:900 26px Unbounded,sans-serif">Duel</span></div>
+    <div style="display:flex;gap:8px;padding:4px;border-radius:16px;background:#0E0F1A">
+      <span style="flex:1;height:44px;border-radius:12px;background:#20233A;display:flex;align-items:center;justify-content:center;font:600 15px Geist,sans-serif">Sixer</span>
+      <span style="flex:1;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font:600 15px Geist,sans-serif;color:#A2A6C2">Any game</span>
+    </div>
+    <div style="border-radius:22px;background:#B8F23A;color:#0E0F1A;padding:18px;display:flex;align-items:center;gap:14px;box-shadow:0 6px 0 #6F9A1C">
+      <i class="ph-bold ph-lightning" style="font-size:32px"></i>
+      <div style="flex:1;display:flex;flex-direction:column"><span style="font:900 19px Unbounded,sans-serif">Quick Match</span><span style="font:500 15px Geist,sans-serif">Ranked. Rating 1,420. Best of 3.</span></div>
+      <i class="ph-bold ph-caret-right" style="font-size:20px"></i>
+    </div>
+    <div style="border-radius:22px;background:#20233A;padding:18px;display:flex;align-items:center;gap:14px;box-shadow:0 6px 0 #0A0B12">
+      <i class="ph-bold ph-user-plus" style="font-size:32px;color:#B8F23A"></i>
+      <div style="flex:1;display:flex;flex-direction:column"><span style="font:900 19px Unbounded,sans-serif">Challenge a friend</span><span style="font:500 15px Geist,sans-serif;color:#A2A6C2">Unranked. 4 friends online.</span></div>
+      <i class="ph-bold ph-caret-right" style="font-size:20px;color:#A2A6C2"></i>
+    </div>
+    <div style="display:flex;gap:-6px;align-items:center;gap:8px;padding:4px 2px">
+      <sc-for list="{{ online }}" as="o" hint-placeholder-count="4"><div style="position:relative;width:44px;height:44px;border-radius:14px;background:{{ o.c }};font:900 16px Unbounded,sans-serif;color:#0E0F1A;display:flex;align-items:center;justify-content:center">{{ o.i }}<span style="position:absolute;right:-3px;bottom:-3px;width:12px;height:12px;border-radius:50%;background:#B8F23A;box-shadow:0 0 0 3px #171929"></span></div></sc-for>
+    </div>
+  </div>
+</div></div>
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">M2 Round end</div>
+<div data-screen-label="M2 Round end" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column;align-items:center;padding:90px 20px 28px;box-sizing:border-box;gap:16px">
+  <div style="font:600 15px Geist,sans-serif;color:#A2A6C2">Round 2 of 3</div>
+  <div style="font:900 34px Unbounded,sans-serif;letter-spacing:-0.02em;text-align:center;align-self:stretch;white-space:nowrap">Tunde took it</div>
+  <div style="font:600 17px Geist,sans-serif;text-align:center;align-self:stretch">You lost by 0.8 seconds. Rematch is literally next.</div>
+  <div style="display:flex;gap:14px;align-items:flex-end;margin-top:10px">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:8px;opacity:.7"><dc-import name="Spuz" mood="shocked" size="{{ 110 }}" hint-size="110px,110px"></dc-import><span style="font:600 16px Geist,sans-serif">You</span><span style="font:600 22px Geist Mono,monospace">2:40.6</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="color:#FFC93C;font-size:34px;margin-bottom:-14px"><i class="ph-bold ph-crown-simple"></i></div><dc-import name="Spuz" mood="cheer" size="{{ 130 }}" color="#FF8A3D" hint-size="130px,130px"></dc-import><span style="font:600 16px Geist,sans-serif">Tunde</span><span style="font:600 22px Geist Mono,monospace;color:#B8F23A">2:39.8</span></div>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:8px"><span style="width:18px;height:18px;border-radius:6px;background:#B8F23A"></span><span style="width:18px;height:18px;border-radius:6px;background:#FF8A3D"></span><span style="width:18px;height:18px;border-radius:6px;box-shadow:inset 0 0 0 2px #F4F5FB"></span></div>
+  <div style="font:500 15px Geist,sans-serif;color:#A2A6C2">1 - 1. Decider in</div>
+  <div style="font:600 64px Geist Mono,monospace;color:#B8F23A;line-height:1">5</div>
+  <div style="margin-top:auto;display:flex;gap:8px"><sc-for list="{{ emoteBar }}" as="e" hint-placeholder-count="4"><div style="width:64px;height:48px;border-radius:14px;background:#20233A;display:flex;align-items:center;justify-content:center;font:900 18px Unbounded,sans-serif">{{ e }}</div></sc-for></div>
+</div></div>
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">M3 Opponent disconnected</div>
+<div data-screen-label="M3 Opp disconnected" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column">
+  <div style="padding:50px 12px 12px;background:#171929;display:flex;align-items:center;gap:10px">
+    <div style="width:40px;height:40px;border-radius:12px;background:#FF8A3D;opacity:.4;font:900 16px Unbounded,sans-serif;color:#0E0F1A;display:flex;align-items:center;justify-content:center">T</div>
+    <div style="flex:1;display:flex;flex-direction:column;gap:4px"><span style="font:600 14px Geist,sans-serif;display:flex;gap:6px;align-items:center">Tunde <i class="ph-bold ph-wifi-slash" style="color:#FFC93C"></i></span><div style="height:10px;border-radius:5px;background:#2B2F4A;position:relative;overflow:hidden"><div style="position:absolute;left:0;top:0;bottom:0;width:48%;background:#5A5E78;border-radius:5px"></div></div></div>
+  </div>
+  <div style="margin:16px;padding:20px;border-radius:24px;background:#171929;box-shadow:inset 0 0 0 2px #FFC93C;display:flex;flex-direction:column;align-items:center;gap:10px">
+    <div style="position:relative;width:96px;height:96px;border-radius:50%;background:conic-gradient(#FFC93C 0 62%,#2B2F4A 62% 100%);display:flex;align-items:center;justify-content:center"><div style="width:80px;height:80px;border-radius:50%;background:#171929;display:flex;align-items:center;justify-content:center;font:600 30px Geist Mono,monospace">12</div></div>
+    <div style="font:800 18px Unbounded,sans-serif;text-align:center;align-self:stretch">Tunde lost signal</div>
+    <div style="font:400 15px/1.45 Geist,sans-serif;color:#A2A6C2;text-align:center;align-self:stretch">Your clock is paused. If they're not back in 20 s, the round is yours.</div>
+  </div>
+  <div style="flex:1;display:flex;justify-content:center;align-items:flex-start;opacity:.4;padding-top:6px"><div style="display:grid;grid-template-columns:repeat(6,48px);gap:3px"><sc-for list="{{ blurCells }}" as="b" hint-placeholder-count="36"><div style="width:48px;height:48px;border-radius:9px;background:{{ b }}"></div></sc-for></div></div>
+  <div style="padding:12px 16px 28px"><button style="width:100%;height:56px;border:0;border-radius:18px;background:#20233A;color:#F4F5FB;box-shadow:0 5px 0 #0A0B12;font:800 16px Unbounded,sans-serif">Claim win now</button></div>
+</div></div>
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">M4 You disconnected · Opponent left · Draw</div>
+<div style="display:flex;flex-direction:column;gap:12px;width:390px">
+  <sc-for list="{{ edgeCards }}" as="e" hint-placeholder-count="3">
+    <div style="border-radius:28px;background:#171929;padding:20px;display:flex;gap:14px;align-items:center;box-shadow:inset 0 0 0 2px {{ e.ring }}">
+      <dc-import name="Spuz" mood="{{ e.mood }}" size="{{ 96 }}" hint-size="96px,96px"></dc-import>
+      <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+        <span style="font:800 18px Unbounded,sans-serif">{{ e.t }}</span>
+        <span style="font:400 15px/1.45 Geist,sans-serif;color:#A2A6C2">{{ e.d }}</span>
+        <span style="align-self:flex-start;margin-top:4px;padding:10px 14px;border-radius:14px;background:{{ e.bbg }};color:{{ e.bfg }};font:700 14px Geist,sans-serif">{{ e.b }}</span>
+      </div>
+    </div>
+  </sc-for>
+</div></div>
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">A1 Async challenge card (recipient)</div>
+<div data-screen-label="A1 Challenge card" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column;padding:70px 20px 28px;box-sizing:border-box;gap:16px">
+  <div style="font:600 15px Geist,sans-serif;color:#A2A6C2;text-align:center;align-self:stretch">You've been challenged</div>
+  <div style="border-radius:32px;background:#1B1835;padding:24px;display:flex;flex-direction:column;align-items:center;gap:12px;position:relative;overflow:hidden">
+    <div style="position:absolute;inset:0;background-image:radial-gradient(#2E2858 1.5px,transparent 1.5px);background-size:20px 20px"></div>
+    <div style="position:relative;display:flex;align-items:center;gap:12px">
+      <div style="width:64px;height:64px;border-radius:20px;background:#FF8A3D;font:900 26px Unbounded,sans-serif;color:#0E0F1A;display:flex;align-items:center;justify-content:center">K</div>
+      <div style="display:flex;flex-direction:column"><span style="font:800 20px Unbounded,sans-serif">Kofi</span><span style="font:500 14px Geist,sans-serif;color:#C9C4FF">Level 22 · Achimota</span></div>
+    </div>
+    <div style="position:relative;font:600 17px Geist,sans-serif;text-align:center;align-self:stretch">"Beat my time. I'll wait."</div>
+    <div style="position:relative;display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:18px;background:#0E0F1A">
+      <div style="width:48px;height:48px;border-radius:15px;background:#8B7CFF;color:#0E0F1A;font-size:24px;display:flex;align-items:center;justify-content:center"><i class="ph-bold ph-crown-simple"></i></div>
+      <div style="display:flex;flex-direction:column"><span style="font:800 16px Unbounded,sans-serif;color:#8B7CFF">Crownfall</span><span style="font:500 14px Geist,sans-serif;color:#A2A6C2">Daily #214, same puzzle</span></div>
+      <span style="margin-left:16px;font:600 28px Geist Mono,monospace">1:05</span>
+    </div>
+    <div style="position:relative;display:flex;gap:10px;font:500 14px Geist,sans-serif;color:#C9C4FF"><span><i class="ph-bold ph-lightbulb"></i> 0 hints</span><span><i class="ph-bold ph-x-circle"></i> 1 slip</span></div>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center;padding:12px 14px;border-radius:16px;background:#171929;font:400 15px/1.4 Geist,sans-serif;color:#A2A6C2"><i class="ph-bold ph-ghost" style="font-size:22px;color:#F4F5FB"></i>Kofi's ghost timer runs beside yours, so you'll know if you're ahead.</div>
+  <div style="margin-top:auto;display:flex;flex-direction:column;gap:10px">
+    <button style="height:60px;border:0;border-radius:20px;background:#B8F23A;color:#0E0F1A;box-shadow:0 6px 0 #6F9A1C;font:900 17px Unbounded,sans-serif">Accept</button>
+    <button style="height:48px;border:0;border-radius:16px;background:transparent;color:#A2A6C2;font:600 16px Geist,sans-serif">Not now</button>
+  </div>
+</div></div>
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">A2 Head-to-head result with ghost timeline</div>
+<div data-screen-label="A2 Challenge result" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column;padding:70px 20px 28px;box-sizing:border-box;gap:16px">
+  <div style="font:900 30px/1.1 Unbounded,sans-serif;letter-spacing:-0.02em;text-align:center;align-self:stretch">You beat Kofi<br>by <span style="color:#B8F23A">4.2 s</span></div>
+  <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center">
+    <div style="border-radius:20px;background:#24331A;padding:14px;display:flex;flex-direction:column;align-items:center;gap:4px;box-shadow:inset 0 0 0 2px #B8F23A"><span style="font:600 15px Geist,sans-serif">You</span><span style="font:600 30px Geist Mono,monospace;color:#B8F23A">1:00.8</span><span style="font:500 13px Geist,sans-serif;color:#A2A6C2">0 hints · 0 slips</span></div>
+    <span style="font:900 18px Unbounded,sans-serif;color:#A2A6C2">vs</span>
+    <div style="border-radius:20px;background:#171929;padding:14px;display:flex;flex-direction:column;align-items:center;gap:4px"><span style="font:600 15px Geist,sans-serif">Kofi</span><span style="font:600 30px Geist Mono,monospace">1:05.0</span><span style="font:500 13px Geist,sans-serif;color:#A2A6C2">0 hints · 1 slip</span></div>
+  </div>
+  <div style="border-radius:22px;background:#171929;padding:16px;display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;justify-content:space-between;font:600 15px Geist,sans-serif"><span>Ghost timeline</span><span style="color:#A2A6C2;font-weight:500">crowns placed over time</span></div>
+    <div style="position:relative;height:120px">
+      <sc-for list="{{ ghostRows }}" as="g" hint-placeholder-count="6">
+        <div style="position:absolute;left:0;right:0;top:{{ g.y }}px;height:1px;background:#2B2F4A"></div>
+      </sc-for>
+      <sc-for list="{{ ghostDots }}" as="d" hint-placeholder-count="12">
+        <div style="position:absolute;left:{{ d.x }}%;top:{{ d.y }}px;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:{{ d.r }};background:{{ d.c }};opacity:{{ d.o }}"></div>
+      </sc-for>
+    </div>
+    <div style="display:flex;justify-content:space-between;font:500 13px Geist Mono,monospace;color:#A2A6C2"><span>0:00</span><span>0:30</span><span>1:05</span></div>
+    <div style="display:flex;gap:16px;font:500 14px Geist,sans-serif"><span style="display:flex;gap:6px;align-items:center"><span style="width:12px;height:12px;border-radius:50%;background:#B8F23A"></span>You</span><span style="display:flex;gap:6px;align-items:center;color:#A2A6C2"><span style="width:12px;height:12px;border-radius:3px;background:#FF8A3D;opacity:.7"></span>Kofi's ghost</span></div>
+    <div style="font:400 14px/1.4 Geist,sans-serif;color:#A2A6C2">Kofi was ahead until crown 5. You closed it in the last 15 seconds.</div>
+  </div>
+  <div style="margin-top:auto;display:grid;grid-template-columns:1fr 60px;gap:10px">
+    <button style="height:60px;border:0;border-radius:20px;background:#B8F23A;color:#0E0F1A;box-shadow:0 6px 0 #6F9A1C;font:900 16px Unbounded,sans-serif">Send it back</button>
+    <button aria-label="Share" style="height:60px;border:0;border-radius:20px;background:#20233A;color:#F4F5FB;box-shadow:0 6px 0 #0A0B12;font-size:22px"><i class="ph-bold ph-share-fat"></i></button>
+  </div>
+</div></div>
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">P0 Create room</div>
+<div data-screen-label="P0 Create room" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column;padding:56px 20px 28px;box-sizing:border-box;gap:14px">
+  <div style="display:flex;align-items:center;gap:12px"><div style="width:44px;height:44px;border-radius:14px;background:#20233A;display:flex;align-items:center;justify-content:center;font-size:20px"><i class="ph-bold ph-arrow-left"></i></div><span style="font:900 22px Unbounded,sans-serif">New party</span></div>
+  <div style="font:600 15px Geist,sans-serif">Game</div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+    <sc-for list="{{ roomGames }}" as="g" hint-placeholder-count="6">
+      <div style="height:92px;border-radius:18px;background:{{ g.bg }};box-shadow:{{ g.ring }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px">
+        <div style="width:40px;height:40px;border-radius:12px;background:{{ g.c }};color:#0E0F1A;font-size:20px;display:flex;align-items:center;justify-content:center"><i class="ph-bold {{ g.i }}"></i></div>
+        <span style="font:600 14px Geist,sans-serif">{{ g.n }}</span>
+      </div>
+    </sc-for>
+  </div>
+  <div style="font:600 15px Geist,sans-serif;margin-top:4px">Difficulty</div>
+  <div style="display:flex;gap:4px;padding:4px;border-radius:16px;background:#171929">
+    <sc-for list="{{ diffs }}" as="d" hint-placeholder-count="4"><span style="flex:1;height:44px;border-radius:12px;background:{{ d.bg }};color:{{ d.fg }};display:flex;align-items:center;justify-content:center;font:600 15px Geist,sans-serif">{{ d.t }}</span></sc-for>
+  </div>
+  <div style="font:600 15px Geist,sans-serif;margin-top:4px">Room size</div>
+  <div style="display:flex;align-items:center;gap:14px;padding:6px 0">
+    <div style="flex:1;position:relative;height:10px;border-radius:5px;background:#2B2F4A"><div style="position:absolute;left:0;top:0;bottom:0;width:100%;border-radius:5px;background:#B8F23A"></div><div style="position:absolute;right:-14px;top:-9px;width:28px;height:28px;border-radius:50%;background:#F4F5FB;box-shadow:0 3px 0 #A2A6C2"></div></div>
+    <span style="font:600 20px Geist Mono,monospace;width:40px;text-align:right">8</span>
+  </div>
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-radius:16px;background:#171929"><span style="font:600 16px Geist,sans-serif">Classroom mode</span><span style="width:52px;height:32px;border-radius:16px;background:#2B2F4A;position:relative"><span style="position:absolute;left:4px;top:4px;width:24px;height:24px;border-radius:50%;background:#A2A6C2"></span></span></div>
+  <button style="margin-top:auto;height:60px;border:0;border-radius:20px;background:#B8F23A;color:#0E0F1A;box-shadow:0 6px 0 #6F9A1C;font:900 17px Unbounded,sans-serif">Open room</button>
+</div></div>
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">GR Ghost Race HUD, Dash, mobile</div>
+<div data-screen-label="GR Ghost Race" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#1A0E12;position:relative;box-shadow:0 0 0 1px #2B2F4A">
+  <div style="position:absolute;inset:0;background-image:radial-gradient(#3A1A22 1.5px,transparent 1.5px);background-size:20px 20px"></div>
+  <div style="position:absolute;left:12px;right:12px;top:50px;display:flex;flex-direction:column;gap:10px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div aria-label="Pause" style="width:44px;height:44px;border-radius:14px;background:#0E0F1A;display:flex;align-items:center;justify-content:center;font-size:20px"><i class="ph-bold ph-pause"></i></div>
+      <div style="height:44px;padding:0 14px;border-radius:14px;background:#0E0F1A;display:flex;align-items:center;font:600 20px Geist Mono,monospace">412 m</div>
+      <div style="height:44px;padding:0 12px;border-radius:14px;background:#0E0F1A;display:flex;align-items:center;gap:6px;font:600 18px Geist Mono,monospace"><i class="ph-bold ph-skull" style="color:#FF3B3B"></i>3</div>
+    </div>
+    <div style="padding:12px;border-radius:16px;background:#0E0F1A;display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;justify-content:space-between;font:600 14px Geist,sans-serif"><span style="display:flex;gap:6px;align-items:center"><i class="ph-bold ph-ghost"></i>vs Kofi's best, 1:48</span><span style="font-family:Geist Mono,monospace;color:#B8F23A;animation:ghostTick 1s ease-in-out infinite">−0.6 s</span></div>
+      <div style="position:relative;height:10px;border-radius:5px;background:#2B2F4A">
+        <div style="position:absolute;left:0;top:0;bottom:0;width:58%;border-radius:5px;background:#B8F23A"></div>
+        <div style="position:absolute;left:calc(54% - 10px);top:-5px;width:20px;height:20px;border-radius:7px;background:#FF8A3D;opacity:.6;box-shadow:0 0 0 2px #0E0F1A"></div>
+        <div style="position:absolute;left:calc(58% - 10px);top:-5px;width:20px;height:20px;border-radius:7px;background:#2FD3E0;box-shadow:0 0 0 2px #0E0F1A"></div>
+      </div>
+    </div>
+  </div>
+  <div style="position:absolute;left:0;right:0;bottom:200px;height:40px;background:#3A1A22"></div>
+  <div style="position:absolute;left:230px;bottom:240px;display:flex;gap:2px"><div style="width:22px;height:22px;clip-path:polygon(50% 0,100% 100%,0 100%);background:#FF3B3B"></div><div style="width:22px;height:22px;clip-path:polygon(50% 0,100% 100%,0 100%);background:#FF3B3B"></div></div>
+  <div style="position:absolute;left:120px;bottom:300px"><dc-import name="Spuz" mood="cheer" size="{{ 80 }}" still="{{ true }}" hint-size="80px,80px"></dc-import></div>
+  <div style="position:absolute;left:40px;bottom:240px;opacity:.38;display:flex;flex-direction:column;align-items:center"><span style="padding:2px 8px;border-radius:8px;background:#F4F5FB;color:#0E0F1A;font:700 12px Geist,sans-serif">Kofi</span><dc-import name="Spuz" mood="idle" size="{{ 70 }}" color="#FF8A3D" still="{{ true }}" hint-size="70px,70px"></dc-import></div>
+  <div style="position:absolute;left:0;right:0;bottom:0;height:200px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px">
+    <div style="width:110px;height:110px;border-radius:50%;background:#FF3B3B;color:#0E0F1A;box-shadow:0 8px 0 #8A1E1E;font:900 18px Unbounded,sans-serif;display:flex;align-items:center;justify-content:center">JUMP</div>
+    <span style="font:500 14px Geist,sans-serif;color:#A2A6C2">or tap anywhere</span>
+  </div>
+</div></div>
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">L2 League week-end ceremony, promoted</div>
+<div data-screen-label="L2 Ceremony" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column;align-items:center;padding:80px 20px 28px;box-sizing:border-box;gap:14px">
+  <div style="font:600 15px Geist,sans-serif;color:#A2A6C2">Week 43 is done</div>
+  <div style="position:relative;width:180px;height:200px;display:flex;align-items:center;justify-content:center">
+    <div style="position:absolute;inset:-10px;border-radius:50%;box-shadow:0 0 0 4px #2FD3E0;animation:ringBurst 1.4s cubic-bezier(.23,1,.32,1) infinite"></div>
+    <div style="width:170px;height:190px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:#2FD3E0;display:flex;align-items:center;justify-content:center"><div style="width:120px;height:120px;transform:rotate(45deg);border-radius:20px;background:#0E0F1A;display:flex;align-items:center;justify-content:center"><div style="width:60px;height:60px;border-radius:12px;background:#B8F23A"></div></div></div>
+  </div>
+  <div style="font:900 32px Unbounded,sans-serif;letter-spacing:-0.02em;white-space:nowrap">Neon Prism</div>
+  <div style="font:600 17px Geist,sans-serif;text-align:center;align-self:stretch">Promoted. You finished 5th of 30.</div>
+  <div style="align-self:stretch;display:flex;align-items:center;gap:10px;height:54px;padding:0 14px;border-radius:16px;background:#24331A;box-shadow:inset 0 0 0 2px #B8F23A;transform:translateY(-6px) rotate(-1deg)">
+    <span style="font:600 15px Geist Mono,monospace;color:#B8F23A">5</span><span style="width:30px;height:30px;border-radius:9px;background:#2FD3E0;font:900 12px Unbounded,sans-serif;color:#0E0F1A;display:flex;align-items:center;justify-content:center">A</span><span style="flex:1;font:700 16px Geist,sans-serif">You</span><i class="ph-bold ph-caret-double-up" style="color:#B8F23A"></i><span style="font:600 15px Geist Mono,monospace">1,702</span>
+  </div>
+  <div style="display:flex;gap:10px"><div style="padding:10px 14px;border-radius:14px;background:#171929;font:600 15px Geist Mono,monospace;color:#FFC93C">+200 Sparks</div><div style="padding:10px 14px;border-radius:14px;background:#171929;font:600 15px Geist,sans-serif">Prism frame</div></div>
+  <button style="margin-top:auto;align-self:stretch;height:60px;border:0;border-radius:20px;background:#B8F23A;color:#0E0F1A;box-shadow:0 6px 0 #6F9A1C;font:900 17px Unbounded,sans-serif">Claim</button>
+</div></div>
+
+</div>
+</section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const REG = ['AABB', 'ACCB', 'DCCB', 'DDDB'];
+    const RC = { A: '#4A3F8F', B: '#1F5468', C: '#6B3A6E', D: '#3F5A2E' };
+    const marks = { '0,1': 'c', '1,3': 'c', '3,0': 'c', '0,0': 'x', '1,0': 'x', '1,1': 'x', '2,1': 'x', '0,2': 'x', '0,3': 'x', '2,3': 'x', '3,3': 'x', '3,1': 'x' };
+    const tut = [];
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
+      const m = marks[`${r},${c}`], hint = r === 2 && c === 2;
+      tut.push({ bg: RC[REG[r][c]], fg: m === 'x' ? '#8A8EB0' : '#F4F5FB', i: m === 'c' ? 'ph-crown-simple' : m === 'x' ? 'ph-x' : '', ring: hint ? 'inset 0 0 0 4px #B8F23A' : 'none' });
+    }
+    const W = ['#8B7CFF', '#8B7CFF', '#8B7CFF', '#2FD3E0', '#2FD3E0', '#FF8A3D', '#FFD23F', '#3DDC84', '#3DDC84', '#3DDC84', '#3DDC84', '#FF6B6B', '#4D8BFF', '#FF3B3B', '#FF3B3B'];
+    const WI = ['ph-crown-simple', 'ph-sun-horizon', 'ph-grid-nine', 'ph-path', 'ph-drop', 'ph-layout', 'ph-target', 'ph-scribble-loop', 'ph-ladder', 'ph-squares-four', 'ph-grid-four', 'ph-question', 'ph-music-notes', 'ph-skull', 'ph-person-simple-run'];
+    const blur = ['#4A3F8F', '#1F5468', '#6B3A6E', '#3F5A2E', '#7A4A2A', '#2B3F80'];
+    const ghostDots = [];
+    const you = [8, 15, 30, 44, 62, 92], kofi = [6, 12, 22, 36, 70, 100];
+    you.forEach((x, i) => ghostDots.push({ x, y: 10 + i * 20, c: '#B8F23A', r: '50%', o: 1 }));
+    kofi.forEach((x, i) => ghostDots.push({ x, y: 10 + i * 20, c: '#FF8A3D', r: '3px', o: .7 }));
+    return {
+      ages: [
+        { t: '13 to 15', d: 'Friends and classmates only. No global chat.', bg: '#171929', ring: 'none', dot: '#5A5E78', fill: 'transparent' },
+        { t: '16 to 17', d: 'Leagues and Duels on. Friend requests by code.', bg: '#24331A', ring: 'inset 0 0 0 2px #B8F23A', dot: '#B8F23A', fill: '#B8F23A' },
+        { t: '18 or older', d: 'Everything on.', bg: '#171929', ring: 'none', dot: '#5A5E78', fill: 'transparent' }
+      ],
+      tutRules: [
+        { t: 'One crown per row and column', i: 'ph-check-circle', c: '#B8F23A' },
+        { t: 'One crown per colour', i: 'ph-check-circle', c: '#B8F23A' },
+        { t: 'Crowns never touch, even corners', i: 'ph-circle', c: '#F4F5FB' }
+      ],
+      tut,
+      skins: [
+        { n: 'Lime', c: '#B8F23A', ring: 'none', i: '' }, { n: 'Cyan', c: '#2FD3E0', ring: '0 0 0 3px #0E0F1A,0 0 0 6px #F4F5FB', i: 'ph-check' },
+        { n: 'Gold', c: '#FFC93C', ring: 'none', i: '' }, { n: 'Orange', c: '#FF8A3D', ring: 'none', i: '' }, { n: 'Violet', c: '#8B7CFF', ring: 'none', i: '' }, { n: 'Coral', c: '#FF6B6B', ring: 'none', i: '' }
+      ],
+      nickIdeas: ['CocoaCrusher', 'GridGyal', 'KenteKing'],
+      rankLadder: [
+        { n: 'Rookie', c: '#5A5E78', t: '#A2A6C2' }, { n: 'Thinker', c: '#8B7CFF', t: '#F4F5FB' }, { n: 'Solver', c: '#2B2F4A', t: '#5A5E78' },
+        { n: 'Ace', c: '#2B2F4A', t: '#5A5E78' }, { n: 'Master', c: '#2B2F4A', t: '#5A5E78' }, { n: 'Legend', c: '#2B2F4A', t: '#5A5E78' }
+      ],
+      embers: [{ x: 40, y: 120, s: 8, c: '#FFC93C', d: 1.6, dl: 0 }, { x: 150, y: 140, s: 6, c: '#FF8A3D', d: 1.9, dl: .4 }, { x: 90, y: 200, s: 7, c: '#FFC93C', d: 1.4, dl: .8 }, { x: 170, y: 90, s: 5, c: '#FF6B2C', d: 1.7, dl: .2 }, { x: 20, y: 170, s: 6, c: '#FF8A3D', d: 2, dl: 1 }, { x: 120, y: 230, s: 5, c: '#FFC93C', d: 1.5, dl: .6 }],
+      full: W.map((c, k) => ({ c, i: WI[k] })),
+      blurCells: Array.from({ length: 36 }, (_, i) => blur[(i * 7 + Math.floor(i / 6)) % 6]),
+      pauseRows: [
+        { t: 'How to play', i: 'ph-question', c: '#F4F5FB', v: '20 s' }, { t: 'Sound', i: 'ph-speaker-high', c: '#F4F5FB', v: 'On' },
+        { t: 'Relaxed mode', i: 'ph-timer', c: '#F4F5FB', v: 'Hides timer' }, { t: 'Quit puzzle', i: 'ph-sign-out', c: '#FF5A5F', v: 'Progress saved' }
+      ],
+      online: [{ c: '#FF8A3D', i: 'K' }, { c: '#8B7CFF', i: 'E' }, { c: '#3DDC84', i: 'Y' }, { c: '#FFD23F', i: 'Z' }],
+      emoteBar: ['🔥', '😂', '😤', 'GG'],
+      edgeCards: [
+        { mood: 'shocked', t: 'You dropped out', d: 'Reconnecting. Your board is saved and your clock is paused for 20 s.', b: 'Retrying in 3', bbg: '#2A2410', bfg: '#FFC93C', ring: '#FFC93C' },
+        { mood: 'proud', t: 'Tunde left the duel', d: 'Win counts. Rating +12. No shame in finishing the puzzle anyway.', b: 'Take the W', bbg: '#B8F23A', bfg: '#0E0F1A', ring: '#2B2F4A' },
+        { mood: 'thinking', t: 'Draw. 2:04.3 each', d: 'Same time to the tenth. Fewer slips usually breaks it. You both had zero.', b: 'Rematch', bbg: '#B8F23A', bfg: '#0E0F1A', ring: '#2B2F4A' }
+      ],
+      ghostRows: [10, 30, 50, 70, 90, 110].map(y => ({ y })),
+      ghostDots,
+      roomGames: [
+        { n: 'Random mix', i: 'ph-shuffle', c: '#B8F23A', bg: '#24331A', ring: 'inset 0 0 0 2px #B8F23A' },
+        { n: 'Quads', i: 'ph-squares-four', c: '#3DDC84', bg: '#171929', ring: 'none' },
+        { n: 'Crownfall', i: 'ph-crown-simple', c: '#8B7CFF', bg: '#171929', ring: 'none' },
+        { n: 'Sixer', i: 'ph-grid-nine', c: '#8B7CFF', bg: '#171929', ring: 'none' },
+        { n: 'Dead On', i: 'ph-target', c: '#FFD23F', bg: '#171929', ring: 'none' },
+        { n: 'Echo', i: 'ph-music-notes', c: '#4D8BFF', bg: '#171929', ring: 'none' }
+      ],
+      diffs: [{ t: 'Easy', bg: 'transparent', fg: '#A2A6C2' }, { t: 'Medium', bg: '#20233A', fg: '#F4F5FB' }, { t: 'Hard', bg: 'transparent', fg: '#A2A6C2' }, { t: 'Expert', bg: 'transparent', fg: '#A2A6C2' }]
+    };
+  }
+}
+</script>
+</body>
+</html>

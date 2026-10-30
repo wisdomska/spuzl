@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800;900&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
+<style>
+body{margin:0;background:#0A0B14;color:#F4F5FB;font-family:Geist,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#B8F23A}a:hover{color:#D4FF7A}
+@keyframes radar{to{transform:rotate(360deg)}}
+@keyframes ping{0%{transform:scale(.3);opacity:.9}100%{transform:scale(1);opacity:0}}
+@keyframes punch{0%{transform:scale(2.2);opacity:0}40%{transform:scale(.92);opacity:1}55%{transform:scale(1.04) rotate(-2deg)}70%{transform:scale(1) rotate(1deg)}100%{transform:scale(1)}}
+@keyframes dropIn{0%{transform:translateY(-40px) scale(.8);opacity:0}60%{transform:translateY(4px) scale(1.04);opacity:1}100%{transform:none}}
+@keyframes floatUp{0%{transform:translateY(0);opacity:1}100%{transform:translateY(-28px);opacity:0}}
+@keyframes spinY{0%{transform:perspective(400px) rotateY(0)}100%{transform:perspective(400px) rotateY(360deg)}}
+@keyframes conf{0%{transform:translateY(-20px) rotate(0)}100%{transform:translateY(360px) rotate(540deg)}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important}}
+</style>
+</helmet>
+<div style="display:flex;flex-direction:column;gap:28px;padding:56px;background:#0A0B14;width:max-content">
+<div style="display:flex;flex-direction:column;gap:6px">
+  <div style="font:900 44px Unbounded,sans-serif;letter-spacing:-0.03em">Multiplayer, mobile 390</div>
+  <div style="font:400 17px Geist,sans-serif;color:#A2A6C2">Duel from matchmaking to result. Party Race from lobby to podium. Weekly league. TV mode below.</div>
+</div>
+<div style="display:flex;gap:36px;align-items:flex-start">
+
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">D1 Duel, matchmaking</div>
+<div data-screen-label="D1 Matchmaking" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column;align-items:center">
+  <div style="margin-top:60px;padding:8px 14px;border-radius:999px;background:#20233A;display:flex;gap:8px;align-items:center;font:600 14px Geist,sans-serif"><i class="ph-bold ph-sword" style="color:#B8F23A"></i>Quick Match, ranked<span style="font-family:Geist Mono,monospace;color:#A2A6C2">1,420</span></div>
+  <div style="position:relative;width:310px;height:310px;margin-top:40px">
+    <div style="position:absolute;inset:0;border-radius:50%;box-shadow:inset 0 0 0 2px #2B2F4A"></div>
+    <div style="position:absolute;inset:55px;border-radius:50%;box-shadow:inset 0 0 0 2px #2B2F4A"></div>
+    <div style="position:absolute;inset:110px;border-radius:50%;box-shadow:inset 0 0 0 2px #2B2F4A"></div>
+    <div style="position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,rgba(184,242,58,.32),rgba(184,242,58,0) 70deg,transparent 360deg);animation:radar 2.4s linear infinite"></div>
+    <div style="position:absolute;inset:0;border-radius:50%;box-shadow:inset 0 0 0 3px #B8F23A;animation:ping 2.4s cubic-bezier(.23,1,.32,1) infinite"></div>
+    <div style="position:absolute;left:52px;top:70px;width:30px;height:30px;border-radius:10px;background:#FF8A3D;opacity:.7"></div>
+    <div style="position:absolute;left:222px;top:196px;width:26px;height:26px;border-radius:9px;background:#8B7CFF;opacity:.5"></div>
+    <div style="position:absolute;left:95px;top:95px"><dc-import name="Spuz" mood="thinking" size="{{ 120 }}" hint-size="120px,120px"></dc-import></div>
+  </div>
+  <div style="margin-top:32px;font:900 26px Unbounded,sans-serif;text-align:center">Finding a rival</div>
+  <div style="margin-top:8px;font:500 16px Geist,sans-serif;color:#A2A6C2">Sixer, Logic Lab, best of 3</div>
+  <div style="margin-top:20px;display:flex;gap:10px">
+    <div style="padding:10px 16px;border-radius:14px;background:#171929;display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font:600 22px Geist Mono,monospace;font-variant-numeric:tabular-nums">0:07</span><span style="font:500 13px Geist,sans-serif;color:#A2A6C2">searching</span></div>
+    <div style="padding:10px 16px;border-radius:14px;background:#171929;display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font:600 22px Geist Mono,monospace;color:#A2A6C2">~0:12</span><span style="font:500 13px Geist,sans-serif;color:#A2A6C2">usual wait</span></div>
+  </div>
+  <div style="margin-top:14px;font:400 14px Geist,sans-serif;color:#A2A6C2;text-align:center;max-width:280px">No one by 0:20? You'll get a Practice bot. No rating on the line.</div>
+  <button style="position:absolute;bottom:32px;left:16px;right:16px;height:60px;border:0;border-radius:20px;background:#20233A;color:#F4F5FB;box-shadow:0 6px 0 #0A0B12;font:800 17px Unbounded,sans-serif;cursor:pointer" style-active="transform:translateY(5px);box-shadow:0 1px 0 #0A0B12">Cancel</button>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">D2 Versus intro, countdown</div>
+<div data-screen-label="D2 Versus" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A">
+  <div style="position:absolute;left:0;right:0;top:0;height:460px;background:#162019;clip-path:polygon(0 0,100% 0,100% 78%,0 100%)"></div>
+  <div style="position:absolute;left:0;right:0;bottom:0;height:460px;background:#24151A;clip-path:polygon(0 22%,100% 0,100% 100%,0 100%)"></div>
+  <div style="position:absolute;left:24px;top:70px;display:flex;flex-direction:column;gap:10px">
+    <dc-import name="Spuz" mood="proud" size="{{ 140 }}" hint-size="140px,140px"></dc-import>
+    <div style="font:900 30px Unbounded,sans-serif">Ama</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div style="width:34px;height:38px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:#FFC93C;display:flex;align-items:center;justify-content:center;color:#0E0F1A;font-size:16px"><i class="ph-bold ph-crown-simple"></i></div>
+      <span style="font:600 18px Geist Mono,monospace">1,420</span><span style="padding:3px 8px;border-radius:8px;background:#20233A;font:600 13px Geist,sans-serif">GH, Achimota</span>
+    </div>
+  </div>
+  <div style="position:absolute;right:24px;bottom:70px;display:flex;flex-direction:column;align-items:flex-end;gap:10px">
+    <div style="font:900 30px Unbounded,sans-serif">Tunde</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span style="padding:3px 8px;border-radius:8px;background:#20233A;font:600 13px Geist,sans-serif">NG, Lagos</span><span style="font:600 18px Geist Mono,monospace">1,446</span>
+      <div style="width:34px;height:38px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:#FFC93C;display:flex;align-items:center;justify-content:center;color:#0E0F1A;font-size:16px"><i class="ph-bold ph-crown-simple"></i></div>
+    </div>
+    <dc-import name="Spuz" mood="rage" size="{{ 140 }}" color="#FF8A3D" hint-size="140px,140px"></dc-import>
+  </div>
+  <div style="position:absolute;left:0;right:0;top:380px;display:flex;justify-content:center;align-items:center;gap:18px">
+    <div style="width:96px;height:96px;border-radius:28px;background:#B8F23A;color:#0E0F1A;font:900 64px Unbounded,sans-serif;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 0 #6F9A1C;animation:punch .5s cubic-bezier(.23,1,.32,1)">2</div>
+  </div>
+  <div style="position:absolute;left:0;right:0;top:500px;text-align:center;font:600 15px Geist,sans-serif;color:#A2A6C2">Round 1 of 3</div>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">D3 Duel, in match</div>
+<div data-screen-label="D3 In match" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column">
+  <div style="padding:50px 12px 10px;background:#171929;display:flex;flex-direction:column;gap:10px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="position:relative;width:40px;height:40px;border-radius:12px;background:#FF8A3D;font:900 16px Unbounded,sans-serif;color:#0E0F1A;display:flex;align-items:center;justify-content:center">T<div style="position:absolute;left:-6px;top:-34px;padding:4px 8px;border-radius:10px;background:#20233A;font:400 18px Geist,sans-serif;animation:floatUp 1.4s ease-out infinite">😤</div></div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:5px">
+        <div style="display:flex;justify-content:space-between;font:600 14px Geist,sans-serif"><span>Tunde</span><span style="color:#FF5A5F;display:flex;gap:4px;align-items:center"><i class="ph-bold ph-x-circle"></i>1</span></div>
+        <div style="height:10px;border-radius:5px;background:#2B2F4A;position:relative;overflow:hidden"><div style="position:absolute;left:0;top:0;bottom:0;width:64%;border-radius:5px;background:#FF8A3D"></div></div>
+      </div>
+      <div style="display:flex;gap:5px" aria-label="Round 2 of 3, you won round 1"><span style="width:12px;height:12px;border-radius:4px;background:#B8F23A"></span><span style="width:12px;height:12px;border-radius:4px;box-shadow:inset 0 0 0 2px #F4F5FB"></span><span style="width:12px;height:12px;border-radius:4px;background:#2B2F4A"></span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:40px;height:40px;border-radius:12px;background:#2FD3E0;font:900 16px Unbounded,sans-serif;color:#0E0F1A;display:flex;align-items:center;justify-content:center">A</div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:5px">
+        <div style="display:flex;justify-content:space-between;font:600 14px Geist,sans-serif"><span>You</span><span style="font-family:Geist Mono,monospace;color:#A2A6C2">01:31</span></div>
+        <div style="height:10px;border-radius:5px;background:#2B2F4A;position:relative;overflow:hidden"><div style="position:absolute;left:0;top:0;bottom:0;width:56%;border-radius:5px;background:#B8F23A"></div></div>
+      </div>
+      <div style="width:40px"></div>
+    </div>
+  </div>
+  <div style="padding:16px 20px 4px;display:flex;justify-content:space-between;align-items:baseline"><span style="font:900 22px Unbounded,sans-serif;color:#8B7CFF">Sixer</span><span style="font:500 14px Geist,sans-serif;color:#A2A6C2">Their board stays hidden</span></div>
+  <div style="padding:10px 18px;display:flex;justify-content:center">
+    <div role="grid" aria-label="Sixer board" style="display:grid;grid-template-columns:repeat(6,56px);gap:2px;padding:6px;border-radius:20px;background:#2B2F4A">
+      <sc-for list="{{ sixer }}" as="c" hint-placeholder-count="36">
+        <div role="gridcell" style="width:56px;height:56px;border-radius:{{ c.r }};background:{{ c.bg }};display:flex;align-items:center;justify-content:center;font:{{ c.fw }} 24px Geist Mono,monospace;color:{{ c.fg }};margin-right:{{ c.mr }}px;margin-bottom:{{ c.mb }}px;box-shadow:{{ c.ring }}">{{ c.v }}</div>
+      </sc-for>
+    </div>
+  </div>
+  <div style="margin-top:auto;padding:10px 16px 28px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+    <sc-for list="{{ pad }}" as="p" hint-placeholder-count="8">
+      <button aria-label="{{ p.a }}" style="height:56px;border:0;border-radius:16px;background:{{ p.bg }};color:{{ p.fg }};box-shadow:0 5px 0 {{ p.sh }};font:600 24px Geist Mono,monospace;display:flex;align-items:center;justify-content:center;cursor:pointer" style-active="transform:translateY(4px);box-shadow:0 1px 0 #0A0B12"><i class="ph-bold {{ p.i }}" style="font-size:22px"></i>{{ p.v }}</button>
+    </sc-for>
+  </div>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">D4 Duel, match end, you win</div>
+<div data-screen-label="D4 Match end" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column;align-items:center">
+  <div style="margin-top:70px;width:100%;height:84px;background:#B8F23A;transform:skewY(-4deg);display:flex;align-items:center;justify-content:center"><span style="transform:skewY(4deg);font:900 40px Unbounded,sans-serif;color:#0E0F1A;letter-spacing:-0.03em">You win 2-1</span></div>
+  <div style="margin-top:30px;width:110px;height:120px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:#FFC93C;display:flex;align-items:center;justify-content:center;font-size:56px;color:#0E0F1A;animation:spinY 2.4s cubic-bezier(.77,0,.175,1) infinite"><i class="ph-bold ph-trophy"></i></div>
+  <div style="margin-top:14px;font:600 17px Geist,sans-serif;text-align:center">Tunde had you in round 2. Not round 3.</div>
+  <div style="margin-top:18px;width:calc(100% - 32px);display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+    <sc-for list="{{ rounds }}" as="r" hint-placeholder-count="3">
+      <div style="background:#171929;border-radius:16px;padding:10px;display:flex;flex-direction:column;gap:4px;box-shadow:{{ r.ring }}">
+        <span style="font:600 13px Geist,sans-serif;color:#A2A6C2">Round {{ r.n }}</span>
+        <span style="font:600 16px Geist Mono,monospace">{{ r.you }}</span>
+        <span style="font:500 14px Geist Mono,monospace;color:#A2A6C2">{{ r.them }}</span>
+      </div>
+    </sc-for>
+  </div>
+  <div style="margin-top:12px;width:calc(100% - 32px);display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+    <div style="background:#171929;border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:2px"><span style="font:600 13px Geist,sans-serif;color:#A2A6C2">Rating</span><span style="font:600 20px Geist Mono,monospace;color:#B8F23A">+18</span><span style="font:500 13px Geist Mono,monospace;color:#A2A6C2">1,438</span></div>
+    <div style="background:#171929;border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:2px"><span style="font:600 13px Geist,sans-serif;color:#A2A6C2">XP</span><span style="font:600 20px Geist Mono,monospace;color:#B8F23A">+90</span></div>
+    <div style="background:#171929;border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:2px"><span style="font:600 13px Geist,sans-serif;color:#A2A6C2">Sparks</span><span style="font:600 20px Geist Mono,monospace;color:#FFC93C">+30</span></div>
+  </div>
+  <div style="position:absolute;left:16px;right:16px;bottom:28px;display:grid;grid-template-columns:1fr 60px;gap:10px">
+    <button style="height:60px;border:0;border-radius:20px;background:#B8F23A;color:#0E0F1A;box-shadow:0 6px 0 #6F9A1C;font:900 17px Unbounded,sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer" style-active="transform:translateY(5px);box-shadow:0 1px 0 #6F9A1C"><i class="ph-bold ph-arrows-clockwise"></i>Rematch</button>
+    <button aria-label="Share" style="height:60px;border:0;border-radius:20px;background:#20233A;color:#F4F5FB;box-shadow:0 6px 0 #0A0B12;font-size:22px;cursor:pointer" style-active="transform:translateY(5px);box-shadow:0 1px 0 #0A0B12"><i class="ph-bold ph-share-fat"></i></button>
+  </div>
+  <div style="position:absolute;left:16px;right:16px;bottom:106px;padding:10px 14px;border-radius:16px;background:#20233A;display:flex;align-items:center;gap:10px"><span style="width:8px;height:8px;border-radius:50%;background:#B8F23A"></span><span style="font:500 15px Geist,sans-serif">Tunde wants a rematch</span></div>
+</div>
+</div>
+
+</div>
+<div style="display:flex;gap:36px;align-items:flex-start">
+
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">P1 Party, lobby (host view)</div>
+<div data-screen-label="P1 Lobby" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column">
+  <div style="padding:52px 16px 0;display:flex;align-items:center;justify-content:space-between">
+    <div aria-label="Leave room" style="width:44px;height:44px;border-radius:14px;background:#20233A;display:flex;align-items:center;justify-content:center;font-size:20px"><i class="ph-bold ph-x"></i></div>
+    <div style="font:800 18px Unbounded,sans-serif">Party room</div>
+    <div aria-label="Room settings" style="width:44px;height:44px;border-radius:14px;background:#20233A;display:flex;align-items:center;justify-content:center;font-size:20px"><i class="ph-bold ph-sliders-horizontal"></i></div>
+  </div>
+  <div style="margin:16px 16px 0;padding:16px;border-radius:22px;background:#171929;display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:500 14px Geist,sans-serif;color:#A2A6C2">Room code</span><span style="font:500 14px Geist,sans-serif;color:#A2A6C2">5 of 8 in</span></div>
+    <div style="display:flex;gap:8px">
+      <sc-for list="{{ code }}" as="ch" hint-placeholder-count="4">
+        <div style="flex:1;height:62px;border-radius:16px;background:#20233A;box-shadow:inset 0 -5px 0 #0A0B12;display:flex;align-items:center;justify-content:center;font:900 32px Unbounded,sans-serif;color:#B8F23A">{{ ch }}</div>
+      </sc-for>
+    </div>
+    <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:8px">
+      <button style="height:48px;border:0;border-radius:14px;background:#B8F23A;color:#0E0F1A;font:600 15px Geist,sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 0 #6F9A1C;cursor:pointer"><i class="ph-bold ph-whatsapp-logo" style="font-size:18px"></i>WhatsApp</button>
+      <button style="height:48px;border:0;border-radius:14px;background:#20233A;color:#F4F5FB;font:600 15px Geist,sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 0 #0A0B12;cursor:pointer"><i class="ph-bold ph-qr-code" style="font-size:18px"></i>QR</button>
+      <button style="height:48px;border:0;border-radius:14px;background:#20233A;color:#F4F5FB;font:600 15px Geist,sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 0 #0A0B12;cursor:pointer"><i class="ph-bold ph-link" style="font-size:18px"></i>Link</button>
+    </div>
+  </div>
+  <div style="margin:14px 16px 0;display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+    <sc-for list="{{ lobby }}" as="p" hint-placeholder-count="8">
+      <div style="height:104px;border-radius:18px;background:{{ p.bg }};box-shadow:{{ p.ring }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;position:relative;animation:{{ p.anim }}">
+        <div style="width:44px;height:44px;border-radius:14px;background:{{ p.c }};font:900 18px Unbounded,sans-serif;color:#0E0F1A;display:flex;align-items:center;justify-content:center;box-shadow:inset -3px -3px 0 rgba(0,0,0,.18)">{{ p.ini }}</div>
+        <span style="font:600 14px Geist,sans-serif;color:{{ p.nc }}">{{ p.name }}</span>
+        <sc-if value="{{ p.ready }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;right:6px;top:6px;width:22px;height:22px;border-radius:8px;background:#B8F23A;color:#0E0F1A;display:flex;align-items:center;justify-content:center;font-size:13px"><i class="ph-bold ph-check"></i></span></sc-if>
+        <sc-if value="{{ p.host }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;left:6px;top:6px;color:#FFC93C;font-size:16px"><i class="ph-bold ph-crown-simple"></i></span></sc-if>
+      </div>
+    </sc-for>
+  </div>
+  <div style="margin:14px 16px 0;padding:12px 14px;border-radius:18px;background:#171929;display:flex;align-items:center;gap:12px">
+    <div style="width:44px;height:44px;border-radius:14px;background:#20233A;display:flex;align-items:center;justify-content:center;font-size:22px;color:#B8F23A"><i class="ph-bold ph-shuffle"></i></div>
+    <div style="flex:1;display:flex;flex-direction:column"><span style="font:600 16px Geist,sans-serif">Random mix, 3 games</span><span style="font:400 14px Geist,sans-serif;color:#A2A6C2">Medium. Host can change.</span></div>
+    <i class="ph-bold ph-caret-right" style="color:#A2A6C2"></i>
+  </div>
+  <div style="margin:12px 16px 0;display:flex;gap:8px;justify-content:center">
+    <sc-for list="{{ emotes }}" as="e" hint-placeholder-count="4">
+      <div style="width:56px;height:44px;border-radius:14px;background:#20233A;display:flex;align-items:center;justify-content:center;font:900 18px Unbounded,sans-serif">{{ e }}</div>
+    </sc-for>
+  </div>
+  <div style="position:absolute;left:16px;right:16px;bottom:104px;padding:10px 14px;border-radius:14px;background:#20233A;box-shadow:0 10px 30px rgba(0,0,0,.4);display:flex;align-items:center;gap:10px;font:500 15px Geist,sans-serif;animation:dropIn .42s cubic-bezier(.34,1.56,.64,1)"><span style="width:26px;height:26px;border-radius:8px;background:#FF8A3D;font:900 11px Unbounded,sans-serif;color:#0E0F1A;display:flex;align-items:center;justify-content:center">K</span>Kofi joined. Room is heating up.</div>
+  <button style="position:absolute;left:16px;right:16px;bottom:28px;height:60px;border:0;border-radius:20px;background:#B8F23A;color:#0E0F1A;box-shadow:0 6px 0 #6F9A1C;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer" style-active="transform:translateY(5px);box-shadow:0 1px 0 #6F9A1C"><span style="font:900 17px Unbounded,sans-serif">Start</span><span style="font:500 14px Geist,sans-serif">4 of 5 ready</span></button>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">P2 Party Race, live (Quads)</div>
+<div data-screen-label="P2 Race" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column">
+  <div style="padding:50px 12px 10px;background:#171929;display:flex;flex-direction:column;gap:6px">
+    <div style="display:flex;justify-content:space-between;font:500 14px Geist,sans-serif;color:#A2A6C2;padding:0 4px 4px"><span>Game 1 of 3</span><span style="font-family:Geist Mono,monospace;color:#F4F5FB">02:14</span></div>
+    <sc-for list="{{ race }}" as="r" hint-placeholder-count="5">
+      <div style="display:flex;align-items:center;gap:8px;height:28px;padding:0 6px;border-radius:10px;background:{{ r.rowbg }}">
+        <span style="width:30px;height:22px;border-radius:7px;background:{{ r.pbg }};color:{{ r.pfg }};font:700 12px Geist Mono,monospace;display:flex;align-items:center;justify-content:center">{{ r.pos }}</span>
+        <span style="width:22px;height:22px;border-radius:7px;background:{{ r.c }};font:900 10px Unbounded,sans-serif;color:#0E0F1A;display:flex;align-items:center;justify-content:center">{{ r.ini }}</span>
+        <span style="width:58px;font:{{ r.w }} 14px Geist,sans-serif">{{ r.name }}</span>
+        <div style="flex:1;height:8px;border-radius:4px;background:#2B2F4A;position:relative;overflow:hidden"><div style="position:absolute;left:0;top:0;bottom:0;width:{{ r.p }}%;border-radius:4px;background:{{ r.bar }}"></div></div>
+        <span style="width:32px;text-align:right;font:500 13px Geist Mono,monospace;color:#A2A6C2">{{ r.g }}</span>
+      </div>
+    </sc-for>
+  </div>
+  <div style="padding:14px 20px 4px;display:flex;justify-content:space-between;align-items:baseline"><span style="font:900 22px Unbounded,sans-serif;color:#3DDC84">Quads</span><span style="font:500 14px Geist,sans-serif;color:#A2A6C2">2 of 4 groups</span></div>
+  <div style="flex:none;padding:8px 16px;display:flex;flex-direction:column;gap:8px">
+    <sc-for list="{{ foundGroups }}" as="g" hint-placeholder-count="2">
+      <div style="flex:none;min-height:56px;box-sizing:border-box;padding:8px 14px;border-radius:14px;background:#3DDC84;color:#0E0F1A;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center"><span style="font:800 14px/1.2 Unbounded,sans-serif">{{ g.t }}</span><span style="font:500 14px/1.3 Geist,sans-serif;text-wrap:balance">{{ g.w }}</span></div>
+    </sc-for>
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">
+      <sc-for list="{{ quads }}" as="q" hint-placeholder-count="8">
+        <div style="height:64px;border-radius:14px;background:{{ q.bg }};color:{{ q.fg }};box-shadow:0 4px 0 {{ q.sh }};transform:{{ q.t }};display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:0 6px;min-width:0"><span style="display:block;max-width:100%;font-family:Geist,sans-serif;font-weight:700;font-size:{{ q.fs }}px;line-height:1.15;letter-spacing:.01em;text-align:center;white-space:nowrap">{{ q.w }}</span></div>
+      </sc-for>
+    </div>
+  </div>
+  <div style="position:absolute;left:16px;right:16px;bottom:100px;padding:8px 12px;border-radius:12px;background:#20233A;display:flex;align-items:center;gap:8px;font:500 14px Geist,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.4)"><i class="ph-bold ph-arrow-fat-lines-up" style="color:#FF8A3D"></i>Kofi passed you. Swoosh.</div>
+  <div style="margin-top:auto;padding:12px 16px 28px;display:grid;grid-template-columns:1fr 1fr 60px;gap:10px">
+    <button style="height:56px;border:0;border-radius:18px;background:#20233A;color:#F4F5FB;box-shadow:0 5px 0 #0A0B12;font:600 15px Geist,sans-serif;cursor:pointer">Shuffle</button>
+    <button style="height:56px;border:0;border-radius:18px;background:#3DDC84;color:#0E0F1A;box-shadow:0 5px 0 #1E8A4F;font:800 15px Unbounded,sans-serif;cursor:pointer">Submit</button>
+    <button aria-label="Emote" style="height:56px;border:0;border-radius:18px;background:#20233A;color:#F4F5FB;box-shadow:0 5px 0 #0A0B12;font-size:22px;cursor:pointer"><i class="ph-bold ph-smiley"></i></button>
+  </div>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">P3 Party, results podium</div>
+<div data-screen-label="P3 Podium" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column">
+  <sc-for list="{{ confetti }}" as="k" hint-placeholder-count="10">
+    <div style="position:absolute;left:{{ k.x }}px;top:{{ k.y }}px;width:9px;height:14px;border-radius:2px;background:{{ k.c }};animation:conf {{ k.d }}s linear infinite"></div>
+  </sc-for>
+  <div style="padding:60px 20px 0;text-align:center;font:900 28px Unbounded,sans-serif">Kofi takes it</div>
+  <div style="text-align:center;font:500 15px Geist,sans-serif;color:#A2A6C2;margin-top:6px">Random mix, 3 games, 5 Spuzlers</div>
+  <div style="margin-top:28px;display:flex;align-items:flex-end;justify-content:center;gap:8px;padding:0 16px">
+    <sc-for list="{{ podium }}" as="p" hint-placeholder-count="3">
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px">
+        <dc-import name="Spuz" mood="{{ p.mood }}" size="{{ p.sz }}" color="{{ p.c }}" hint-size="90px,90px"></dc-import>
+        <span style="font:700 16px Geist,sans-serif">{{ p.name }}</span>
+        <div style="width:100%;height:{{ p.h }}px;border-radius:18px 18px 0 0;background:{{ p.bg }};box-shadow:inset 0 -8px 0 rgba(0,0,0,.2);display:flex;flex-direction:column;align-items:center;padding-top:12px;gap:4px">
+          <span style="font:900 34px Unbounded,sans-serif;color:#0E0F1A">{{ p.pos }}</span>
+          <span style="font:600 14px Geist Mono,monospace;color:#0E0F1A">{{ p.pts }}</span>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+  <div style="padding:0 16px;display:flex;flex-direction:column">
+    <sc-for list="{{ rest }}" as="r" hint-placeholder-count="2">
+      <div style="display:flex;align-items:center;gap:10px;height:52px;padding:0 12px;background:#171929;border-top:1px solid #2B2F4A">
+        <span style="width:22px;font:600 15px Geist Mono,monospace;color:#A2A6C2">{{ r.pos }}</span>
+        <span style="width:28px;height:28px;border-radius:9px;background:{{ r.c }};font:900 12px Unbounded,sans-serif;color:#0E0F1A;display:flex;align-items:center;justify-content:center">{{ r.ini }}</span>
+        <span style="flex:1;font:500 16px Geist,sans-serif">{{ r.name }}</span>
+        <span style="font:600 15px Geist Mono,monospace">{{ r.pts }}</span>
+      </div>
+    </sc-for>
+  </div>
+  <div style="margin-top:auto;padding:12px 16px 28px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <button style="height:60px;border:0;border-radius:20px;background:#B8F23A;color:#0E0F1A;box-shadow:0 6px 0 #6F9A1C;font:900 16px Unbounded,sans-serif;cursor:pointer" style-active="transform:translateY(5px);box-shadow:0 1px 0 #6F9A1C">Run it back</button>
+    <button style="height:60px;border:0;border-radius:20px;background:#20233A;color:#F4F5FB;box-shadow:0 6px 0 #0A0B12;font:800 16px Unbounded,sans-serif;cursor:pointer" style-active="transform:translateY(5px);box-shadow:0 1px 0 #0A0B12">Next game</button>
+  </div>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">L1 Weekly league, Gold Crown</div>
+<div data-screen-label="L1 League" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column">
+  <div style="padding:56px 20px 16px;display:flex;align-items:center;gap:14px">
+    <div style="width:64px;height:72px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:#FFC93C;display:flex;align-items:center;justify-content:center;font-size:30px;color:#0E0F1A"><i class="ph-bold ph-crown-simple"></i></div>
+    <div style="display:flex;flex-direction:column;gap:2px;flex:1"><span style="font:900 22px Unbounded,sans-serif">Gold Crown</span><span style="font:500 15px Geist,sans-serif;color:#A2A6C2">Top 7 go up to Neon Prism</span></div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end"><span style="font:600 18px Geist Mono,monospace">2d 14h</span><span style="font:500 13px Geist,sans-serif;color:#A2A6C2">left</span></div>
+  </div>
+  <div style="flex:1;padding:0 12px;display:flex;flex-direction:column;gap:3px;overflow:hidden">
+    <sc-for list="{{ league }}" as="r" hint-placeholder-count="14">
+      <div style="display:flex;align-items:center;gap:10px;height:{{ r.h }}px;padding:0 10px;border-radius:12px;background:{{ r.bg }};box-shadow:{{ r.ring }}">
+        <span style="width:24px;font:600 14px Geist Mono,monospace;color:{{ r.pc }}">{{ r.pos }}</span>
+        <span style="width:28px;height:28px;border-radius:9px;background:{{ r.c }};font:900 12px Unbounded,sans-serif;color:#0E0F1A;display:flex;align-items:center;justify-content:center">{{ r.ini }}</span>
+        <span style="flex:1;font:{{ r.w }} 15px Geist,sans-serif">{{ r.name }}</span>
+        <i class="ph-bold {{ r.zi }}" style="color:{{ r.pc }};font-size:14px"></i>
+        <span style="font:600 15px Geist Mono,monospace;font-variant-numeric:tabular-nums">{{ r.xp }}</span>
+      </div>
+    </sc-for>
+  </div>
+  <div style="height:80px"></div>
+</div>
+</div>
+
+</div>
+
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">T1 Party Race, TV and classroom mode, 1280 x 720, readable at 3 m</div>
+<div data-screen-label="T1 TV mode" style="width:1280px;height:720px;border-radius:24px;overflow:hidden;background:#0E0F1A;box-shadow:0 0 0 1px #2B2F4A;display:grid;grid-template-columns:1fr 420px">
+  <div style="padding:48px;display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:flex-end;font:900 44px/0.9 Unbounded,sans-serif;letter-spacing:-0.05em"><span>SPU</span><span style="color:#B8F23A">Z</span><span>L</span></div>
+      <div style="display:flex;gap:14px;align-items:center"><span style="font:600 26px Geist,sans-serif;color:#A2A6C2">Join with</span><span style="padding:8px 18px;border-radius:16px;background:#20233A;font:900 40px Unbounded,sans-serif;color:#B8F23A;letter-spacing:.1em">K7QX</span></div>
+    </div>
+    <div style="font:900 64px Unbounded,sans-serif;letter-spacing:-0.03em;color:#3DDC84;margin-top:10px">Quads</div>
+    <div style="font:600 30px Geist,sans-serif;color:#A2A6C2">Game 1 of 3 · 5 Spuzlers racing</div>
+    <div style="margin-top:auto;display:flex;align-items:flex-end;gap:24px">
+      <div style="font:600 120px/1 Geist Mono,monospace;font-variant-numeric:tabular-nums">02:14</div>
+      <dc-import name="Spuz" mood="shocked" size="{{ 180 }}" hint-size="180px,180px"></dc-import>
+    </div>
+  </div>
+  <div style="background:#171929;padding:40px 28px;display:flex;flex-direction:column;gap:14px">
+    <sc-for list="{{ race }}" as="r" hint-placeholder-count="5">
+      <div style="display:flex;align-items:center;gap:14px;height:96px;padding:0 16px;border-radius:20px;background:{{ r.rowbg }}">
+        <span style="width:56px;height:56px;border-radius:16px;background:{{ r.pbg }};color:{{ r.pfg }};font:900 24px Unbounded,sans-serif;display:flex;align-items:center;justify-content:center">{{ r.posn }}</span>
+        <div style="flex:1;display:flex;flex-direction:column;gap:10px">
+          <span style="font:700 30px Geist,sans-serif">{{ r.tvname }}</span>
+          <div style="height:14px;border-radius:7px;background:#2B2F4A;position:relative;overflow:hidden"><div style="position:absolute;left:0;top:0;bottom:0;width:{{ r.p }}%;border-radius:7px;background:{{ r.bar }}"></div></div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const given = ['3..1..','.1..5.','5.2..4','..6.2.','.4..3.','..3..5'];
+    const mine = {'0,1':'2','0,2':'5','1,0':'4','2,1':'6','3,0':'1','3,1':'5'};
+    const sixer = [];
+    for (let r = 0; r < 6; r++) for (let c = 0; c < 6; c++) {
+      const g = given[r][c] !== '.' ? given[r][c] : null, m = mine[`${r},${c}`];
+      const sel = r === 2 && c === 3;
+      sixer.push({ v: g || m || '', fw: g ? 600 : 500, fg: g ? '#F4F5FB' : '#B8F23A',
+        bg: sel ? '#3A3366' : '#171929', ring: sel ? 'inset 0 0 0 3px #8B7CFF' : 'none',
+        r: '8px', mr: c === 2 ? 4 : 0, mb: (r === 1 || r === 3) ? 4 : 0 });
+    }
+    const P = {
+      Ama:{ini:'A',c:'#2FD3E0'},Kofi:{ini:'K',c:'#FF8A3D'},Efua:{ini:'E',c:'#8B7CFF'},Yaw:{ini:'Y',c:'#3DDC84'},Zainab:{ini:'Z',c:'#FFD23F'},
+      Tunde:{ini:'T',c:'#FF8A3D'},Chidi:{ini:'C',c:'#4D8BFF'},Adaeze:{ini:'A',c:'#FF6B6B'},Akosua:{ini:'A',c:'#B8F23A'},Kwame:{ini:'K',c:'#FFC93C'}
+    };
+    const posStyle = (i) => i === 0 ? ['#FFC93C','#0E0F1A'] : i === 1 ? ['#D7DAE8','#0E0F1A'] : i === 2 ? ['#E09A5C','#0E0F1A'] : ['#20233A','#A2A6C2'];
+    const raceRaw = [['Kofi',72,'2/4'],['Ama',61,'2/4'],['Zainab',48,'1/4'],['Efua',30,'1/4'],['Yaw',12,'0/4']];
+    const race = raceRaw.map(([n,p,g],i) => { const [pbg,pfg] = posStyle(i); const me = n === 'Ama';
+      return { ...P[n], name: me ? 'You' : n, tvname: me ? 'Ama' : n, p, g, pos: ['1st','2nd','3rd','4th','5th'][i], posn: i+1, pbg, pfg,
+        rowbg: me ? '#24331A' : 'transparent', bar: me ? '#B8F23A' : '#5A5E78', w: me ? 700 : 500 }; });
+    const lobby = [
+      {...P.Ama,name:'You',ready:true,host:true},{...P.Kofi,name:'Kofi',ready:true,anim:'dropIn .42s cubic-bezier(.34,1.56,.64,1)'},
+      {...P.Efua,name:'Efua',ready:true},{...P.Yaw,name:'Yaw',ready:false},{...P.Zainab,name:'Zainab',ready:true},
+      {empty:true},{empty:true},{empty:true}
+    ].map(p => p.empty ? {ini:'',name:'Open',c:'transparent',bg:'transparent',ring:'inset 0 0 0 2px #2B2F4A',nc:'#5A5E78',ready:false,host:false,anim:'none'}
+      : {...p,bg:'#171929',ring:p.ready ? 'inset 0 0 0 2px #B8F23A' : 'none',nc:'#F4F5FB',host:!!p.host,anim:p.anim||'none'});
+    const words = ['HIGHLIFE','GOLD','AZONTO','COCOA','TIMBER','AFROBEATS','SALT','ADOWA'];
+    const sel = new Set(['HIGHLIFE','AFROBEATS']);
+    const qfs = (w) => w.length >= 9 ? 11 : w.length >= 8 ? 12 : w.length >= 7 ? 13 : 14;
+    const quads = words.map(w => sel.has(w) ? {w,fs:qfs(w),bg:'#F4F5FB',fg:'#0E0F1A',sh:'#A2A6C2',t:'translateY(-3px)'} : {w,fs:qfs(w),bg:'#20233A',fg:'#F4F5FB',sh:'#0A0B12',t:'none'});
+    const leagueRaw = [['Zainab',2140],['Chidi',1980],['Kofi',1910],['Adaeze',1765],['Ama',1702],['Yaw',1650],['Efua',1610],['Kwame',1588],['Tunde',1501],['Akosua',1460]];
+    const league = leagueRaw.map(([n,xp],i) => { const me = n === 'Ama', promo = i < 7;
+      return {...P[n],name: me ? 'You' : n,xp:xp.toLocaleString(),pos:i+1,h:me?50:44,w:me?700:500,
+        bg: me ? '#24331A' : promo ? '#171929' : '#131524', ring: me ? 'inset 0 0 0 2px #B8F23A' : 'none',
+        pc: promo ? '#B8F23A' : '#A2A6C2', zi: promo ? 'ph-caret-double-up' : 'ph-minus'}; });
+    league.push({ini:'',c:'transparent',name:'… 15 more',xp:'',pos:'',h:32,w:500,bg:'transparent',ring:'none',pc:'#5A5E78',zi:''});
+    [['Kojo',420,'#3DDC84'],['Esi',380,'#4D8BFF'],['Musa',300,'#FF6B6B']].forEach(([n,xp,c],i)=>league.push({ini:n[0],c,name:n,xp:String(xp),pos:26+i,h:44,w:500,bg:'#2A1520',ring:'none',pc:'#FF5A5F',zi:'ph-caret-double-down'}));
+    return {
+      sixer,
+      pad: ['1','2','3','4','5','6'].map(v=>({v,a:v,i:'',bg:'#20233A',fg:'#F4F5FB',sh:'#0A0B12'})).concat([
+        {v:'',a:'Erase',i:'ph-eraser',bg:'#20233A',fg:'#A2A6C2',sh:'#0A0B12'},{v:'',a:'Emote',i:'ph-smiley',bg:'#20233A',fg:'#B8F23A',sh:'#0A0B12'}]),
+      rounds: [{n:1,you:'You 2:04',them:'Tunde 2:31',ring:'inset 0 0 0 2px #B8F23A'},{n:2,you:'You 2:40',them:'Tunde 2:22',ring:'none'},{n:3,you:'You 1:58',them:'Tunde 2:09',ring:'inset 0 0 0 2px #B8F23A'}],
+      code: ['K','7','Q','X'], lobby, emotes: ['🔥','😂','😤','GG'],
+      race, quads,
+      foundGroups: [{t:'Weekend plates',w:'JOLLOF · KENKEY · BANKU · FUFU'},{t:'Things with a crown',w:'KING · TOOTH · TREE · BOTTLE'}],
+      podium: [
+        {name:'Ama',mood:'proud',sz:90,c:'#2FD3E0',h:110,bg:'#D7DAE8',pos:'2',pts:'2,410'},
+        {name:'Kofi',mood:'party',sz:110,c:'#FF8A3D',h:150,bg:'#FFC93C',pos:'1',pts:'2,680'},
+        {name:'Zainab',mood:'cheer',sz:84,c:'#FFD23F',h:80,bg:'#E09A5C',pos:'3',pts:'1,990'}
+      ],
+      rest: [{pos:'4',...P.Efua,name:'Efua',pts:'1,540'},{pos:'5',...P.Yaw,name:'Yaw',pts:'1,120'}],
+      confetti: [[30,40,'#B8F23A',3],[90,10,'#FFC93C',3.6],[150,60,'#FF6B6B',2.8],[210,0,'#2FD3E0',3.2],[270,30,'#8B7CFF',3.8],[330,70,'#FFC93C',3],[60,120,'#2FD3E0',4],[300,140,'#B8F23A',3.4],[180,110,'#FF8A3D',3.1],[360,0,'#F4F5FB',3.5]].map(([x,y,c,d])=>({x,y,c,d})),
+      league
+    };
+  }
+}
+</script>
+</body>
+</html>

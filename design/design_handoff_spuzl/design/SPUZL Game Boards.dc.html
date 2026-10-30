@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800;900&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
+<style>
+body{margin:0;background:#0A0B14;color:#F4F5FB;font-family:Geist,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#B8F23A}a:hover{color:#D4FF7A}
+@keyframes padGlow{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+@keyframes headPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.5);opacity:.4}}
+@keyframes iconBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important}}
+</style>
+</helmet>
+<div style="display:flex;flex-direction:column;gap:40px;padding:56px;background:#0A0B14;width:max-content">
+
+<div style="display:flex;flex-direction:column;gap:6px">
+  <div style="font:900 44px Unbounded,sans-serif;letter-spacing:-0.03em">Game boards</div>
+  <div style="font:400 17px Geist,sans-serif;color:#A2A6C2">15 launch games in their world colour. Each card shows the live board in progress plus empty, rule-broken and cleared thumbnails.</div>
+</div>
+
+<section data-screen-label="Crownfall states" style="width:1960px;box-sizing:border-box;background:#171929;border-radius:32px;padding:32px;display:flex;flex-direction:column;gap:18px">
+  <div style="display:flex;align-items:center;gap:14px">
+    <div style="width:52px;height:52px;border-radius:16px;background:#8B7CFF;color:#0E0F1A;font-size:26px;display:flex;align-items:center;justify-content:center;box-shadow:inset -4px -4px 0 rgba(0,0,0,.18)"><i class="ph-bold ph-crown-simple"></i></div>
+    <div style="display:flex;flex-direction:column"><span style="font:900 24px Unbounded,sans-serif;color:#8B7CFF">Crownfall, the 4 board states</span><span style="font:400 16px Geist,sans-serif;color:#A2A6C2">The pattern every grid game follows. Colour never carries the state alone.</span></div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
+    <sc-for list="{{ crownStates }}" as="st" hint-placeholder-count="4">
+      <div style="background:#0E0F1A;border-radius:24px;padding:18px;display:flex;flex-direction:column;gap:14px;align-items:center">
+        <div style="align-self:stretch;display:flex;justify-content:space-between;align-items:center"><span style="font:800 17px Unbounded,sans-serif">{{ st.label }}</span><span style="display:flex;gap:6px;align-items:center;padding:4px 10px;border-radius:10px;background:{{ st.chipBg }};color:{{ st.chipFg }};font:600 13px Geist,sans-serif"><i class="ph-bold {{ st.chipIcon }}"></i>{{ st.chip }}</span></div>
+        <div style="position:relative;display:grid;grid-template-columns:repeat(6,48px);gap:3px;padding:6px;border-radius:16px;background:#0A0B12;box-shadow:0 0 0 2px #2B2F4A">
+          <sc-for list="{{ st.cells }}" as="c" hint-placeholder-count="36">
+            <div style="position:relative;width:48px;height:48px;border-radius:9px;background:{{ c.bg }};box-shadow:{{ c.ring }};display:flex;align-items:center;justify-content:center;color:{{ c.fg }};font-size:24px">
+              <sc-if value="{{ c.hatch }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;inset:0;border-radius:9px;background:repeating-linear-gradient(135deg,rgba(255,90,95,.4) 0 4px,transparent 4px 9px)"></div></sc-if>
+              <i class="ph-bold {{ c.icon }}" style="position:relative"></i>
+            </div>
+          </sc-for>
+        </div>
+        <div style="align-self:stretch;font:400 15px/1.45 Geist,sans-serif;color:#A2A6C2;text-wrap:pretty">{{ st.note }}</div>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+<section data-screen-label="Grid games" style="width:1960px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:20px">
+  <sc-for list="{{ grids }}" as="g" hint-placeholder-count="7">
+    <div style="background:#171929;border-radius:28px;padding:20px;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;gap:12px;align-items:center">
+        <dc-import name="Icon3D" icon="{{ g.icon }}" color="{{ g.wc }}" size="{{ 48 }}" label="{{ g.name }}" hint-size="48px,48px"></dc-import>
+        <div style="display:flex;flex-direction:column;flex:1"><span style="font:900 19px Unbounded,sans-serif;color:{{ g.wc }}">{{ g.name }}</span><span style="font:500 14px Geist,sans-serif;color:#A2A6C2">{{ g.world }}</span></div>
+        <span style="font:600 13px Geist Mono,monospace;color:#A2A6C2">{{ g.meta }}</span>
+      </div>
+      <div style="font:400 15px/1.45 Geist,sans-serif;color:#F4F5FB;min-height:44px;text-wrap:pretty">{{ g.rule }}</div>
+      <div style="background:#0E0F1A;border-radius:20px;padding:14px;display:flex;justify-content:center">
+        <div style="position:relative;display:grid;grid-template-columns:repeat({{ g.b.cols }},{{ g.b.cs }}px);gap:{{ g.b.gap }}px;padding:6px;border-radius:16px;background:{{ g.b.bg }}">
+          <sc-for list="{{ g.b.cells }}" as="c" hint-placeholder-count="36">
+            <div style="position:relative;width:{{ c.cs }}px;height:{{ c.cs }}px;border-radius:{{ c.r }}px;background:{{ c.bg }};box-shadow:{{ c.ring }};display:flex;align-items:center;justify-content:center;color:{{ c.fg }};font:{{ c.font }}">
+              <sc-for list="{{ c.segs }}" as="s" hint-placeholder-count="0"><div style="position:absolute;left:{{ s.l }}px;top:{{ s.t }}px;width:{{ s.w }}px;height:{{ s.h }}px;border-radius:{{ s.r }}px;background:{{ s.c }}"></div></sc-for>
+              <sc-if value="{{ c.head }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:50%;top:50%;width:22px;height:22px;margin:-11px;border-radius:50%;background:#2FD3E0;animation:headPulse 1s ease-in-out infinite"></div></sc-if>
+              <sc-if value="{{ c.num }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;left:4px;top:2px;font:600 11px Geist Mono,monospace;color:{{ c.numc }}">{{ c.num }}</span></sc-if>
+              <sc-if value="{{ c.badge }}" hint-placeholder-val="{{ false }}"><span style="position:relative;width:26px;height:26px;border-radius:50%;background:{{ c.badgeBg }};color:{{ c.badgeFg }};font:700 14px Geist Mono,monospace;display:flex;align-items:center;justify-content:center">{{ c.badge }}</span></sc-if>
+              <sc-if value="{{ c.icon }}" hint-placeholder-val="{{ false }}"><i class="ph-bold {{ c.icon }}" style="position:relative;font-size:{{ c.is }}px"></i></sc-if>
+              <span style="position:relative">{{ c.txt }}</span>
+            </div>
+          </sc-for>
+          <sc-for list="{{ g.b.marks }}" as="m" hint-placeholder-count="0">
+            <div style="position:absolute;left:{{ m.x }}px;top:{{ m.y }}px;width:18px;height:18px;border-radius:6px;background:#F4F5FB;color:#0E0F1A;font:700 13px Geist Mono,monospace;display:flex;align-items:center;justify-content:center">{{ m.t }}</div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="font:500 14px/1.4 Geist,sans-serif;color:#A2A6C2;display:flex;gap:8px;align-items:flex-start"><i class="ph-bold ph-hand-pointing" style="font-size:16px;margin-top:1px"></i><span>{{ g.controls }}</span></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+        <sc-for list="{{ g.thumbs }}" as="t" hint-placeholder-count="3">
+          <div style="background:#0E0F1A;border-radius:14px;padding:8px;display:flex;flex-direction:column;align-items:center;gap:6px">
+            <div style="display:grid;grid-template-columns:repeat({{ t.cols }},{{ t.cs }}px);gap:1px">
+              <sc-for list="{{ t.cells }}" as="tc" hint-placeholder-count="36"><div style="width:{{ t.cs }}px;height:{{ t.cs }}px;border-radius:2px;background:{{ tc }}"></div></sc-for>
+            </div>
+            <span style="font:600 12px Geist,sans-serif;color:{{ t.fg }};display:flex;gap:4px;align-items:center"><i class="ph-bold {{ t.icon }}"></i>{{ t.label }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-for>
+
+  <div style="background:#171929;border-radius:28px;padding:20px;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;gap:12px;align-items:center">
+      <div style="width:48px;height:48px;border-radius:15px;background:#FFD23F;color:#0E0F1A;font-size:24px;display:flex;align-items:center;justify-content:center;box-shadow:inset -4px -4px 0 rgba(0,0,0,.18)"><i class="ph-bold ph-target"></i></div>
+      <div style="display:flex;flex-direction:column;flex:1"><span style="font:900 19px Unbounded,sans-serif;color:#FFD23F">Dead On</span><span style="font:500 14px Geist,sans-serif;color:#A2A6C2">Number Den</span></div>
+      <span style="font:600 13px Geist Mono,monospace;color:#A2A6C2">6 tiles</span>
+    </div>
+    <div style="font:400 15px/1.45 Geist,sans-serif;min-height:44px">Use the six numbers once each with + − × ÷ to land on the target.</div>
+    <div style="background:#0E0F1A;border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="display:flex;flex-direction:column"><span style="font:500 13px Geist,sans-serif;color:#A2A6C2">Target</span><span style="font:600 44px Geist Mono,monospace;color:#FFD23F;line-height:1">347</span></div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end"><span style="font:500 13px Geist,sans-serif;color:#A2A6C2">You're at</span><span style="font:600 28px Geist Mono,monospace">352</span><span style="font:600 13px Geist Mono,monospace;color:#FFC93C">5 off</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;font:500 15px Geist Mono,monospace;color:#A2A6C2">
+        <span>50 − 6 = 44</span><span style="color:#F4F5FB">44 × 8 = 352</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+        <sc-for list="{{ deadTiles }}" as="t" hint-placeholder-count="6">
+          <div style="height:52px;border-radius:14px;background:{{ t.bg }};color:{{ t.fg }};box-shadow:0 4px 0 {{ t.sh }};font:600 22px Geist Mono,monospace;display:flex;align-items:center;justify-content:center;opacity:{{ t.op }};transform:{{ t.tr }}">{{ t.v }}</div>
+        </sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px">
+        <sc-for list="{{ ops }}" as="o" hint-placeholder-count="5">
+          <div style="height:44px;border-radius:12px;background:#20233A;font:600 20px Geist Mono,monospace;display:flex;align-items:center;justify-content:center;color:{{ o.c }}">{{ o.v }}</div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="font:500 14px/1.4 Geist,sans-serif;color:#A2A6C2;display:flex;gap:8px"><i class="ph-bold ph-hand-pointing" style="font-size:16px"></i>Tap number, operator, number. Used tiles fade out. Result becomes a new tile.</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font:600 12px Geist,sans-serif;text-align:center">
+      <div style="background:#0E0F1A;border-radius:14px;padding:10px 6px;color:#A2A6C2;display:flex;flex-direction:column;gap:4px"><span style="font:600 18px Geist Mono,monospace;color:#F4F5FB">347</span>Empty</div>
+      <div style="background:#0E0F1A;border-radius:14px;padding:10px 6px;color:#FF5A5F;display:flex;flex-direction:column;gap:4px;box-shadow:inset 0 0 0 2px #FF5A5F"><span style="font:600 18px Geist Mono,monospace">7 ÷ 2</span><span><i class="ph-bold ph-warning"></i> No fractions</span></div>
+      <div style="background:#FFD23F;border-radius:14px;padding:10px 6px;color:#0E0F1A;display:flex;flex-direction:column;gap:4px"><span style="font:600 18px Geist Mono,monospace">347</span><span><i class="ph-bold ph-check"></i> Dead on</span></div>
+    </div>
+  </div>
+
+  <div style="background:#171929;border-radius:28px;padding:20px;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;gap:12px;align-items:center">
+      <div style="width:48px;height:48px;border-radius:15px;background:#3DDC84;color:#0E0F1A;font-size:24px;display:flex;align-items:center;justify-content:center;box-shadow:inset -4px -4px 0 rgba(0,0,0,.18)"><i class="ph-bold ph-ladder"></i></div>
+      <div style="display:flex;flex-direction:column;flex:1"><span style="font:900 19px Unbounded,sans-serif;color:#3DDC84">Rungs</span><span style="font:500 14px Geist,sans-serif;color:#A2A6C2">Word Woods</span></div>
+      <span style="font:600 13px Geist Mono,monospace;color:#A2A6C2">5 rungs</span>
+    </div>
+    <div style="font:400 15px/1.45 Geist,sans-serif;min-height:44px">Answer the clues. Order the answers so each changes one letter. Then crack top and bottom.</div>
+    <div style="background:#0E0F1A;border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:8px">
+      <sc-for list="{{ rungs }}" as="r" hint-placeholder-count="5">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="display:flex;gap:4px">
+            <sc-for list="{{ r.letters }}" as="l" hint-placeholder-count="4">
+              <div style="width:40px;height:44px;border-radius:10px;background:{{ l.bg }};color:{{ l.fg }};box-shadow:{{ l.ring }};font:800 20px Unbounded,sans-serif;display:flex;align-items:center;justify-content:center">{{ l.v }}</div>
+            </sc-for>
+          </div>
+          <span style="flex:1;font:400 13px/1.3 Geist,sans-serif;color:#A2A6C2">{{ r.clue }}</span>
+          <i class="ph-bold ph-dots-six-vertical" style="color:#5A5E78;font-size:18px"></i>
+        </div>
+      </sc-for>
+    </div>
+    <div style="font:500 14px/1.4 Geist,sans-serif;color:#A2A6C2;display:flex;gap:8px"><i class="ph-bold ph-hand-pointing" style="font-size:16px"></i>Type with the SPUZL keyboard. Drag the handle to reorder. Changed letter glows.</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font:600 12px Geist,sans-serif;text-align:center">
+      <div style="background:#0E0F1A;border-radius:14px;padding:10px 6px;color:#A2A6C2">Empty: 5 blank rungs</div>
+      <div style="background:#0E0F1A;border-radius:14px;padding:10px 6px;color:#FF5A5F;box-shadow:inset 0 0 0 2px #FF5A5F"><i class="ph-bold ph-link-break"></i> 2 letters changed</div>
+      <div style="background:#3DDC84;border-radius:14px;padding:10px 6px;color:#0E0F1A"><i class="ph-bold ph-check"></i> Ladder locked</div>
+    </div>
+  </div>
+
+  <div style="background:#171929;border-radius:28px;padding:20px;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;gap:12px;align-items:center">
+      <div style="width:48px;height:48px;border-radius:15px;background:#3DDC84;color:#0E0F1A;font-size:24px;display:flex;align-items:center;justify-content:center;box-shadow:inset -4px -4px 0 rgba(0,0,0,.18)"><i class="ph-bold ph-squares-four"></i></div>
+      <div style="display:flex;flex-direction:column;flex:1"><span style="font:900 19px Unbounded,sans-serif;color:#3DDC84">Quads</span><span style="font:500 14px Geist,sans-serif;color:#A2A6C2">Word Woods</span></div>
+      <span style="font:600 13px Geist Mono,monospace;color:#A2A6C2">16 words</span>
+    </div>
+    <div style="font:400 15px/1.45 Geist,sans-serif;min-height:44px">Sort 16 words into 4 hidden groups of 4. Four slips allowed.</div>
+    <div style="background:#0E0F1A;border-radius:20px;padding:12px;display:flex;flex-direction:column;gap:6px">
+      <div style="height:52px;border-radius:12px;background:#3DDC84;color:#0E0F1A;display:flex;flex-direction:column;align-items:center;justify-content:center"><span style="font:800 13px Unbounded,sans-serif">Weekend plates</span><span style="font:500 13px Geist,sans-serif">JOLLOF · BANKU · FUFU · KENKEY</span></div>
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px">
+        <sc-for list="{{ quads }}" as="q" hint-placeholder-count="12">
+          <div style="height:52px;border-radius:12px;background:{{ q.bg }};color:{{ q.fg }};box-shadow:0 3px 0 {{ q.sh }};transform:{{ q.t }};display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:0 5px;min-width:0"><span style="display:block;max-width:100%;font-family:Geist,sans-serif;font-weight:700;font-size:{{ q.fs }}px;line-height:1.15;letter-spacing:.01em;text-align:center;white-space:nowrap">{{ q.w }}</span></div>
+        </sc-for>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:4px"><span style="font:500 13px Geist,sans-serif;color:#A2A6C2">Slips left</span><div style="display:flex;gap:5px"><span style="width:12px;height:12px;border-radius:50%;background:#3DDC84"></span><span style="width:12px;height:12px;border-radius:50%;background:#3DDC84"></span><span style="width:12px;height:12px;border-radius:50%;background:#3DDC84"></span><span style="width:12px;height:12px;border-radius:50%;box-shadow:inset 0 0 0 2px #5A5E78"></span></div></div>
+    </div>
+    <div style="font:500 14px/1.4 Geist,sans-serif;color:#A2A6C2;display:flex;gap:8px"><i class="ph-bold ph-hand-pointing" style="font-size:16px"></i>Tap 4 to lift them, Submit. One away? Spuz says so.</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font:600 12px Geist,sans-serif;text-align:center">
+      <div style="background:#0E0F1A;border-radius:14px;padding:10px 6px;color:#A2A6C2">Empty: 16 tiles</div>
+      <div style="background:#0E0F1A;border-radius:14px;padding:10px 6px;color:#FF5A5F;box-shadow:inset 0 0 0 2px #FF5A5F"><i class="ph-bold ph-x"></i> One away</div>
+      <div style="background:#3DDC84;border-radius:14px;padding:10px 6px;color:#0E0F1A"><i class="ph-bold ph-check"></i> 4 groups</div>
+    </div>
+  </div>
+
+  <div style="background:#171929;border-radius:28px;padding:20px;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;gap:12px;align-items:center">
+      <div style="width:48px;height:48px;border-radius:15px;background:#FF6B6B;color:#0E0F1A;font-size:24px;display:flex;align-items:center;justify-content:center;box-shadow:inset -4px -4px 0 rgba(0,0,0,.18)"><i class="ph-bold ph-question"></i></div>
+      <div style="display:flex;flex-direction:column;flex:1"><span style="font:900 19px Unbounded,sans-serif;color:#FF6B6B">Hunch</span><span style="font:500 14px Geist,sans-serif;color:#A2A6C2">Clue Cave</span></div>
+      <span style="font:600 13px Geist Mono,monospace;color:#A2A6C2">3 of 5 clues</span>
+    </div>
+    <div style="font:400 15px/1.45 Geist,sans-serif;min-height:44px">Guess the hidden category. Every clue you open costs points.</div>
+    <div style="background:#0E0F1A;border-radius:20px;padding:14px;display:flex;flex-direction:column;gap:7px">
+      <sc-for list="{{ hunch }}" as="h" hint-placeholder-count="5">
+        <div style="height:44px;border-radius:12px;background:{{ h.bg }};color:{{ h.fg }};display:flex;align-items:center;gap:10px;padding:0 12px;box-shadow:{{ h.ring }}">
+          <span style="font:600 13px Geist Mono,monospace;width:16px;color:{{ h.nc }}">{{ h.n }}</span><i class="ph-bold {{ h.icon }}"></i><span style="font:500 15px Geist,sans-serif">{{ h.t }}</span>
+        </div>
+      </sc-for>
+      <div style="margin-top:4px;height:48px;border-radius:12px;background:#20233A;box-shadow:inset 0 0 0 2px #FF6B6B;display:flex;align-items:center;padding:0 12px;font:500 16px Geist,sans-serif">things with a cr<span style="width:2px;height:20px;background:#FF6B6B;margin-left:1px"></span></div>
+    </div>
+    <div style="font:500 14px/1.4 Geist,sans-serif;color:#A2A6C2;display:flex;gap:8px"><i class="ph-bold ph-hand-pointing" style="font-size:16px"></i>Type a guess, or tap a locked card to open the next clue. Close guesses get "warm".</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font:600 12px Geist,sans-serif;text-align:center">
+      <div style="background:#0E0F1A;border-radius:14px;padding:10px 6px;color:#A2A6C2">1 clue open</div>
+      <div style="background:#0E0F1A;border-radius:14px;padding:10px 6px;color:#FFC93C;box-shadow:inset 0 0 0 2px #FFC93C"><i class="ph-bold ph-thermometer-simple"></i> Warm</div>
+      <div style="background:#FF6B6B;border-radius:14px;padding:10px 6px;color:#0E0F1A"><i class="ph-bold ph-check"></i> In 3 clues</div>
+    </div>
+  </div>
+
+  <div style="background:#171929;border-radius:28px;padding:20px;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;gap:12px;align-items:center">
+      <div style="width:48px;height:48px;border-radius:15px;background:#4D8BFF;color:#0E0F1A;font-size:24px;display:flex;align-items:center;justify-content:center;box-shadow:inset -4px -4px 0 rgba(0,0,0,.18)"><i class="ph-bold ph-music-notes"></i></div>
+      <div style="display:flex;flex-direction:column;flex:1"><span style="font:900 19px Unbounded,sans-serif;color:#4D8BFF">Echo</span><span style="font:500 14px Geist,sans-serif;color:#A2A6C2">Reflex Rink</span></div>
+      <span style="font:600 13px Geist Mono,monospace;color:#A2A6C2">Round 7</span>
+    </div>
+    <div style="font:400 15px/1.45 Geist,sans-serif;min-height:44px">Watch the pads light up, then repeat. One more step each round.</div>
+    <div style="background:#0E0F1A;border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:14px;align-items:center">
+      <div style="display:flex;gap:5px"><sc-for list="{{ echoSeq }}" as="e" hint-placeholder-count="7"><span style="width:14px;height:14px;border-radius:4px;background:{{ e }}"></span></sc-for></div>
+      <div style="display:grid;grid-template-columns:repeat(2,116px);gap:12px">
+        <sc-for list="{{ echoPads }}" as="p" hint-placeholder-count="4">
+          <div style="height:116px;border-radius:28px;background:{{ p.bg }};box-shadow:0 6px 0 {{ p.sh }}{{ p.glow }};color:{{ p.fg }};font-size:44px;display:flex;align-items:center;justify-content:center;animation:{{ p.anim }}"><i class="ph-bold {{ p.icon }}"></i></div>
+        </sc-for>
+      </div>
+      <span style="font:600 15px Geist,sans-serif">Your turn, 4 of 7</span>
+    </div>
+    <div style="font:500 14px/1.4 Geist,sans-serif;color:#A2A6C2;display:flex;gap:8px"><i class="ph-bold ph-hand-pointing" style="font-size:16px"></i>Each pad has its own shape and note. Pads light at 2 Hz max.</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font:600 12px Geist,sans-serif;text-align:center">
+      <div style="background:#0E0F1A;border-radius:14px;padding:10px 6px;color:#A2A6C2"><i class="ph-bold ph-eye"></i> Watch</div>
+      <div style="background:#0E0F1A;border-radius:14px;padding:10px 6px;color:#FF5A5F;box-shadow:inset 0 0 0 2px #FF5A5F"><i class="ph-bold ph-x"></i> Wrong pad</div>
+      <div style="background:#4D8BFF;border-radius:14px;padding:10px 6px;color:#0E0F1A"><i class="ph-bold ph-check"></i> 12 steps</div>
+    </div>
+  </div>
+
+  <div style="background:#171929;border-radius:28px;padding:20px;display:flex;flex-direction:column;gap:14px;grid-column:span 3">
+    <div style="display:flex;gap:12px;align-items:center">
+      <div style="width:48px;height:48px;border-radius:15px;background:#FF3B3B;color:#0E0F1A;font-size:24px;display:flex;align-items:center;justify-content:center;box-shadow:inset -4px -4px 0 rgba(0,0,0,.18)"><i class="ph-bold ph-skull"></i></div>
+      <div style="display:flex;flex-direction:column;flex:1"><span style="font:900 19px Unbounded,sans-serif;color:#FF3B3B">Gotcha</span><span style="font:500 14px Geist,sans-serif;color:#A2A6C2">Rage Ridge · Phaser canvas inside the SPUZL HUD</span></div>
+      <span style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:#20233A;font:600 13px Geist,sans-serif"><i class="ph-bold ph-warning-circle" style="color:#FFC93C"></i>Photosensitivity notice shown once</span>
+    </div>
+    <div style="position:relative;height:300px;border-radius:20px;overflow:hidden;background:#1A0E12">
+      <div style="position:absolute;inset:0;background-image:radial-gradient(#3A1A22 1.5px,transparent 1.5px);background-size:20px 20px"></div>
+      <div style="position:absolute;left:14px;right:14px;top:12px;display:flex;justify-content:space-between;align-items:center;z-index:2">
+        <div style="display:flex;gap:8px">
+          <div style="height:40px;padding:0 12px;border-radius:12px;background:#0E0F1A;display:flex;align-items:center;gap:8px;font:600 18px Geist Mono,monospace"><i class="ph-bold ph-skull" style="color:#FF3B3B"></i>47</div>
+          <div style="height:40px;padding:0 12px;border-radius:12px;background:#0E0F1A;display:flex;align-items:center;gap:8px;font:600 18px Geist Mono,monospace">03:18</div>
+        </div>
+        <div style="height:40px;padding:0 14px;border-radius:12px;background:#0E0F1A;display:flex;align-items:center;font:500 14px Geist,sans-serif;color:#F4F5FB">Death number 47. Spuz believes in you. Mostly.</div>
+      </div>
+      <div style="position:absolute;left:0;right:0;bottom:0;height:44px;display:grid;grid-template-columns:repeat(24,1fr);gap:2px">
+        <sc-for list="{{ ground }}" as="gd" hint-placeholder-count="24"><div style="background:{{ gd.bg }};border-radius:4px 4px 0 0;opacity:{{ gd.op }};transform:{{ gd.t }}"></div></sc-for>
+      </div>
+      <div style="position:absolute;left:300px;bottom:44px;display:flex;gap:2px"><sc-for list="{{ spikes }}" as="sp" hint-placeholder-count="4"><div style="width:22px;height:22px;clip-path:polygon(50% 0,100% 100%,0 100%);background:#FF3B3B"></div></sc-for></div>
+      <div style="position:absolute;left:470px;bottom:120px;width:120px;height:20px;border-radius:6px;background:#5A2A33"></div>
+      <div style="position:absolute;right:60px;bottom:44px;width:46px;height:70px;border-radius:12px 12px 0 0;background:#B8F23A;box-shadow:inset 0 0 0 5px #0E0F1A;display:flex;align-items:center;justify-content:center;color:#0E0F1A;font-size:22px;transform:translateX(26px) rotate(6deg)"><i class="ph-bold ph-door-open"></i></div>
+      <div style="position:absolute;right:30px;bottom:122px;font:600 13px Geist,sans-serif;color:#FFC93C">the exit ran away</div>
+      <div style="position:absolute;left:200px;bottom:44px"><dc-import name="Spuz" mood="shocked" size="{{ 64 }}" hint-size="64px,64px"></dc-import></div>
+      <div style="position:absolute;left:36px;bottom:44px;width:46px;height:46px;opacity:.35"><dc-import name="Spuz" mood="squish" size="{{ 46 }}" still="{{ true }}" hint-size="46px,46px"></dc-import></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div style="display:flex;gap:10px">
+        <button aria-label="Move left" style="width:72px;height:72px;border:0;border-radius:22px;background:#20233A;color:#F4F5FB;box-shadow:0 6px 0 #0A0B12;font-size:30px"><i class="ph-bold ph-caret-left"></i></button>
+        <button aria-label="Move right" style="width:72px;height:72px;border:0;border-radius:22px;background:#20233A;color:#F4F5FB;box-shadow:0 6px 0 #0A0B12;font-size:30px"><i class="ph-bold ph-caret-right"></i></button>
+      </div>
+      <div style="font:500 14px/1.4 Geist,sans-serif;color:#A2A6C2;max-width:300px;text-align:center">Floors drop, spikes appear, the exit runs. Death: squish, pixel burst, counter bumps, respawn in 300 ms.</div>
+      <button aria-label="Jump" style="width:96px;height:96px;border:0;border-radius:50%;background:#FF3B3B;color:#0E0F1A;box-shadow:0 7px 0 #8A1E1E;font:900 16px Unbounded,sans-serif">JUMP</button>
+    </div>
+  </div>
+
+  <div style="background:#171929;border-radius:28px;padding:20px;display:flex;flex-direction:column;gap:14px;grid-column:span 5">
+    <div style="display:flex;gap:12px;align-items:center">
+      <div style="width:48px;height:48px;border-radius:15px;background:#FF3B3B;color:#0E0F1A;font-size:24px;display:flex;align-items:center;justify-content:center;box-shadow:inset -4px -4px 0 rgba(0,0,0,.18)"><i class="ph-bold ph-person-simple-run"></i></div>
+      <div style="display:flex;flex-direction:column;flex:1"><span style="font:900 19px Unbounded,sans-serif;color:#FF3B3B">Dash</span><span style="font:500 14px Geist,sans-serif;color:#A2A6C2">Rage Ridge · daily course, tap anywhere to jump</span></div>
+      <span style="font:600 13px Geist Mono,monospace;color:#A2A6C2">Ghost Race on</span>
+    </div>
+    <div style="position:relative;height:300px;border-radius:20px;overflow:hidden;background:#1A0E12">
+      <div style="position:absolute;inset:0;background-image:radial-gradient(#3A1A22 1.5px,transparent 1.5px);background-size:20px 20px"></div>
+      <div style="position:absolute;left:14px;right:14px;top:12px;display:flex;flex-direction:column;gap:8px;z-index:2">
+        <div style="display:flex;justify-content:space-between">
+          <div style="height:40px;padding:0 12px;border-radius:12px;background:#0E0F1A;display:flex;align-items:center;gap:8px;font:600 18px Geist Mono,monospace">412 m</div>
+          <div style="height:40px;padding:0 12px;border-radius:12px;background:#0E0F1A;display:flex;align-items:center;gap:8px;font:600 15px Geist,sans-serif;white-space:nowrap"><i class="ph-bold ph-ghost" style="color:#A2A6C2"></i>Kofi is <span style="font-family:Geist Mono,monospace;color:#B8F23A">0.6 s</span> behind</div>
+        </div>
+        <div style="position:relative;height:10px;border-radius:5px;background:#2B2F4A">
+          <div style="position:absolute;left:0;top:0;bottom:0;width:58%;border-radius:5px;background:#B8F23A"></div>
+          <div style="position:absolute;left:54%;top:-5px;width:20px;height:20px;border-radius:7px;background:#FF8A3D;opacity:.6;box-shadow:0 0 0 2px #0E0F1A"></div>
+          <div style="position:absolute;left:calc(58% - 10px);top:-5px;width:20px;height:20px;border-radius:7px;background:#2FD3E0;box-shadow:0 0 0 2px #0E0F1A"></div>
+        </div>
+      </div>
+      <div style="position:absolute;left:0;right:0;bottom:0;height:44px;background:#3A1A22"></div>
+      <div style="position:absolute;left:820px;bottom:44px;width:40px;height:56px;border-radius:8px 8px 0 0;background:#5A2A33"></div>
+      <div style="position:absolute;left:1180px;bottom:44px;display:flex;gap:2px"><div style="width:22px;height:22px;clip-path:polygon(50% 0,100% 100%,0 100%);background:#FF3B3B"></div><div style="width:22px;height:22px;clip-path:polygon(50% 0,100% 100%,0 100%);background:#FF3B3B"></div></div>
+      <div style="position:absolute;left:560px;bottom:110px"><dc-import name="Spuz" mood="cheer" size="{{ 70 }}" still="{{ true }}" hint-size="70px,70px"></dc-import></div>
+      <div style="position:absolute;left:470px;bottom:44px;opacity:.38;display:flex;flex-direction:column;align-items:center">
+        <span style="padding:2px 8px;border-radius:8px;background:#F4F5FB;color:#0E0F1A;font:700 12px Geist,sans-serif">Kofi</span>
+        <dc-import name="Spuz" mood="idle" size="{{ 64 }}" color="#FF8A3D" still="{{ true }}" hint-size="64px,64px"></dc-import>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div style="font:500 14px/1.4 Geist,sans-serif;color:#A2A6C2;max-width:520px">The ghost is a translucent replay of a friend's best run, with their name tag. It never collides. Pass it and you get a swoosh plus a light haptic.</div>
+      <button aria-label="Jump" style="width:96px;height:96px;border:0;border-radius:50%;background:#FF3B3B;color:#0E0F1A;box-shadow:0 7px 0 #8A1E1E;font:900 16px Unbounded,sans-serif">JUMP</button>
+    </div>
+  </div>
+</section>
+
+<section data-screen-label="Board template" style="width:1960px;box-sizing:border-box;background:#171929;border-radius:32px;padding:40px;display:grid;grid-template-columns:420px 1fr;gap:40px">
+  <div style="width:390px;height:760px;border-radius:40px;background:#0E0F1A;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column;gap:10px;padding:16px;box-sizing:border-box">
+    <sc-for list="{{ tplZones }}" as="z" hint-placeholder-count="6">
+      <div style="height:{{ z.h }}px;flex:{{ z.flex }};border-radius:16px;background:repeating-linear-gradient(135deg,#171929 0 10px,#1B1E30 10px 20px);box-shadow:inset 0 0 0 2px {{ z.c }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:0 12px;text-align:center">
+        <span style="font:700 14px Geist Mono,monospace;color:{{ z.c }}">{{ z.n }}</span><span style="font:400 13px Geist,sans-serif;color:#A2A6C2">{{ z.d }}</span>
+      </div>
+    </sc-for>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:18px">
+    <div style="font:900 32px Unbounded,sans-serif;letter-spacing:-0.02em">Reusable board template, for the other 30 games</div>
+    <div style="font:400 17px/1.5 Geist,sans-serif;color:#A2A6C2;max-width:760px">Every game mounts into the same six zones. A new game only supplies its board component, its control set and its world. The shell handles timer, hints, pause, tutorial, offline banner, results hand-off and multiplayer strips.</div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
+      <sc-for list="{{ tplRules }}" as="r" hint-placeholder-count="6">
+        <div style="background:#20233A;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:6px"><span style="font:700 16px Geist,sans-serif">{{ r.t }}</span><span style="font:400 15px/1.45 Geist,sans-serif;color:#A2A6C2">{{ r.d }}</span></div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+
+<section data-screen-label="Game icons" style="width:1960px;box-sizing:border-box;background:#171929;border-radius:32px;padding:40px;display:flex;flex-direction:column;gap:24px">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end">
+    <div style="display:flex;flex-direction:column;gap:6px"><div style="font:900 32px Unbounded,sans-serif;letter-spacing:-0.02em">All 51 game icons, 3D</div><div style="font:400 16px Geist,sans-serif;color:#A2A6C2">World-colour squircle, ink glyph, 2-frame idle bob. Rendered live in three.js: glyph extruded and bevelled on a glossy toy tile.</div></div>
+    <div style="display:flex;gap:14px;font:500 14px Geist,sans-serif;color:#A2A6C2"><span><b style="color:#F4F5FB">L</b> launch</span><span><b style="color:#F4F5FB">M2</b> month 2</span><span><b style="color:#F4F5FB">M3+</b> rollout</span></div>
+  </div>
+  <sc-for list="{{ iconWorlds }}" as="w" hint-placeholder-count="8">
+    <div style="display:flex;gap:20px;align-items:center;border-top:1px solid #2B2F4A;padding-top:18px">
+      <div style="width:170px;font:800 17px Unbounded,sans-serif;color:{{ w.c }}">{{ w.name }}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:16px">
+        <sc-for list="{{ w.games }}" as="g" hint-placeholder-count="5">
+          <div style="width:96px;display:flex;flex-direction:column;align-items:center;gap:8px;opacity:{{ g.op }}">
+            <div style="position:relative;width:76px;height:76px;animation:{{ g.anim }}">
+              <dc-import name="Icon3D" icon="{{ g.i }}" color="{{ w.c }}" size="{{ 76 }}" label="{{ g.n }}" hint-size="76px,76px"></dc-import>
+              <span style="position:absolute;right:-6px;top:-6px;padding:2px 6px;border-radius:8px;background:#0E0F1A;color:#F4F5FB;font:600 11px Geist Mono,monospace;box-shadow:0 0 0 2px #171929">{{ g.p }}</span>
+            </div>
+            <span style="font:600 14px Geist,sans-serif;text-align:center">{{ g.n }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-for>
+</section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const seg = (d, cs, gap, th, c) => {
+  const m = cs / 2, h = th / 2;
+  if (d === 'N') return { l: m - h, t: -gap / 2, w: th, h: m + h + gap / 2, r: h, c };
+  if (d === 'S') return { l: m - h, t: m - h, w: th, h: cs - m + h + gap / 2, r: h, c };
+  if (d === 'E') return { l: m - h, t: m - h, w: cs - m + h + gap / 2, h: th, r: h, c };
+  return { l: -gap / 2, t: m - h, w: m + h + gap / 2, h: th, r: h, c };
+};
+const dirTo = (a, b) => b[0] < a[0] ? 'N' : b[0] > a[0] ? 'S' : b[1] > a[1] ? 'E' : 'W';
+const cell = (o) => ({ bg: '#20233A', fg: '#F4F5FB', ring: 'none', r: 8, font: '600 20px Geist Mono,monospace', segs: [], txt: '', icon: '', is: 22, num: '', numc: '#A2A6C2', badge: '', head: false, ...o });
+const thumbs = (cols, empty, broken, done) => [
+  { cols, cs: Math.floor(84 / cols), cells: empty, label: 'Empty', icon: 'ph-circle-dashed', fg: '#A2A6C2' },
+  { cols, cs: Math.floor(84 / cols), cells: broken, label: 'Broken', icon: 'ph-warning', fg: '#FF5A5F' },
+  { cols, cs: Math.floor(84 / cols), cells: done, label: 'Cleared', icon: 'ph-check-circle', fg: '#B8F23A' }
+];
+const fill = (n, c) => Array(n).fill(c);
+const brk = (n, cols, wc, idx) => Array.from({ length: n }, (_, i) => idx.includes(i) ? '#FF5A5F' : (i % 3 === 0 ? wc : '#2B2F4A'));
+
+function crownStates() {
+  const REG = ['AABBBB','AABBCC','DAACCC','DDEECC','DEEEFF','DEFFFF'];
+  const RC = {A:'#4A3F8F',B:'#1F5468',C:'#6B3A6E',D:'#3F5A2E',E:'#7A4A2A',F:'#2B3F80'};
+  const sol = [1,3,5,0,2,4];
+  const mk = (marks, broken, done) => {
+    const out = [];
+    for (let r = 0; r < 6; r++) for (let c = 0; c < 6; c++) {
+      const k = `${r},${c}`, m = marks[k], bad = broken.includes(k);
+      if (done) { const crown = sol[r] === c; out.push({ bg: crown ? '#FFC93C' : '#8B7CFF', fg: '#0E0F1A', icon: crown ? 'ph-crown-simple' : '', ring: 'none', hatch: false }); continue; }
+      out.push({ bg: RC[REG[r][c]], fg: bad ? '#FF5A5F' : m === 'x' ? '#8A8EB0' : '#F4F5FB', icon: m === 'c' ? 'ph-crown-simple' : m === 'x' ? 'ph-x' : '', ring: bad ? 'inset 0 0 0 3px #FF5A5F' : 'none', hatch: bad });
+    }
+    return out;
+  };
+  const prog = {'0,1':'c','1,3':'c','0,0':'x','1,0':'x','1,1':'x','0,2':'x','2,0':'x','2,2':'x','5,5':'x','0,3':'x','0,4':'x','0,5':'x'};
+  return [
+    { label: 'Empty', chip: 'Ready', chipIcon: 'ph-circle-dashed', chipBg: '#20233A', chipFg: '#A2A6C2', cells: mk({}, [], false), note: 'Regions only. Each region also has a pattern in colour-blind modes.' },
+    { label: 'In progress', chip: '2 of 6', chipIcon: 'ph-crown-simple', chipBg: '#20233A', chipFg: '#F4F5FB', cells: mk(prog, [], false), note: 'Tap cycles empty, X, crown. Drag paints X. Pop 1.08 in 140 ms.' },
+    { label: 'Rule broken', chip: 'Touching', chipIcon: 'ph-warning', chipBg: '#2A1520', chipFg: '#FF5A5F', cells: mk({ ...prog, '2,4': 'c' }, ['1,3', '2,4'], false), note: 'Danger ring, hatch and icon. Shake 3 x 6 px. Toast says which rule.' },
+    { label: 'Cleared', chip: '1:12', chipIcon: 'ph-check-circle', chipBg: '#24331A', chipFg: '#B8F23A', cells: mk({}, [], true), note: 'Tiles flip to world colour in a wave from the last move. Crowns turn gold.' }
+  ];
+}
+
+class Component extends DCLogic {
+  renderVals() {
+    const V = '#8B7CFF', C = '#2FD3E0', O = '#FF8A3D', G = '#3DDC84';
+    // Dusk
+    const duskRows = ['SSM.M.', 'M.SM..', '.MS.SM', 'S..MS.', 'M.M..S', '.S.SM.'];
+    const dcs = 44, dgap = 4;
+    const dusk = [];
+    duskRows.forEach((row, r) => [...row].forEach((ch, c) => dusk.push(cell({ cs: dcs, r: 10,
+      bg: ch === 'S' ? V : ch === 'M' ? '#2B2F4A' : '#171929', fg: ch === 'S' ? '#0E0F1A' : '#F4F5FB',
+      icon: ch === 'S' ? 'ph-sun' : ch === 'M' ? 'ph-moon' : '', is: 24, ring: (r + c) % 5 === 0 && ch !== '.' ? 'inset 0 0 0 2px #5A5E78' : 'none' }))));
+    const hm = (r, c, t) => ({ x: 6 + (c + 1) * (dcs + dgap) - dgap / 2 - 9, y: 6 + r * (dcs + dgap) + dcs / 2 - 9, t });
+    const vm = (r, c, t) => ({ x: 6 + c * (dcs + dgap) + dcs / 2 - 9, y: 6 + (r + 1) * (dcs + dgap) - dgap / 2 - 9, t });
+    // Sixer
+    const given = ['3..1..', '.1..5.', '5.2..4', '..6.2.', '.4..3.', '..3..5'];
+    const mine = { '0,1': '2', '0,2': '5', '1,0': '4', '2,1': '6', '3,0': '1', '3,1': '5' };
+    const sixer = [];
+    for (let r = 0; r < 6; r++) for (let c = 0; c < 6; c++) {
+      const gv = given[r][c] !== '.' ? given[r][c] : '', m = mine[`${r},${c}`];
+      sixer.push(cell({ cs: 44, txt: gv || m || '', fg: gv ? '#F4F5FB' : V, bg: (Math.floor(r / 2) + Math.floor(c / 3)) % 2 ? '#20233A' : '#1A1C30',
+        font: `${gv ? 600 : 500} 22px Geist Mono,monospace`, ring: r === 2 && c === 3 ? `inset 0 0 0 3px ${V}` : 'none' }));
+    }
+    // Weave
+    const wcs = 44, wg = 3;
+    const path = [[0,0],[0,1],[1,1],[1,0],[2,0],[3,0],[3,1],[2,1],[2,2],[1,2],[0,2],[0,3],[0,4],[0,5],[1,5],[1,4],[1,3],[2,3],[2,4],[2,5],[3,5],[3,4]];
+    const nums = { '0,0': 1, '2,0': 2, '0,2': 3, '1,4': 4, '3,3': 5, '5,0': 6, '5,5': 7 };
+    const weave = [];
+    for (let r = 0; r < 6; r++) for (let c = 0; c < 6; c++) {
+      const i = path.findIndex(p => p[0] === r && p[1] === c), segs = [];
+      if (i > 0) segs.push(seg(dirTo(path[i], path[i - 1]), wcs, wg, 14, C));
+      if (i >= 0 && i < path.length - 1) segs.push(seg(dirTo(path[i], path[i + 1]), wcs, wg, 14, C));
+      const n = nums[`${r},${c}`];
+      weave.push(cell({ cs: wcs, bg: i >= 0 ? '#14323A' : '#20233A', segs, badge: n || '', badgeBg: i >= 0 ? '#0E0F1A' : '#F4F5FB', badgeFg: i >= 0 ? C : '#0E0F1A', head: i === path.length - 1 }));
+    }
+    // Flowline
+    const pipes = ['ES','EW','SW','S','SE','W', 'NS','SE','NW','NS','NE','SW', 'NE','NW','SE','NW','ES','NW', 'S','E','NEW','SW','NS','S', 'NE','EW','NW','NE','NW','N'];
+    const lit = new Set([0,1,2,6,8,12,13,9,15,14]);
+    const flow = pipes.map((p, i) => cell({ cs: 44, bg: '#171929', r: 10, segs: [...p].map(d => seg(d, 44, 3, 12, lit.has(i) ? C : '#3A4466')),
+      icon: i === 0 ? 'ph-drop' : (i === 29 || i === 23) ? 'ph-plant' : '', is: 18, fg: i === 0 ? '#0E0F1A' : lit.has(i) ? C : '#A2A6C2', ring: i === 0 ? 'none' : 'none',
+      ...(i === 0 ? { badge: '', icon: 'ph-drop', bg: C } : {}) }));
+    flow.length = 30;
+    // Quilt
+    const QR = ['AABBCC', 'AABBCC', 'DDDECC', 'FFGGGH', 'FFGGGH', 'FFIIIH'];
+    const QT = { A: '#FF8A3D', B: '#E8722A', C: '#FFA766', D: '#D9681F', E: '#FFB98A', F: '#E8722A', G: '#FF8A3D', H: '#20233A', I: '#20233A' };
+    const clues = { '0,0': 4, '1,3': 4, '1,4': 6, '2,1': 3, '2,3': 1, '4,0': 6, '3,3': 6, '4,5': 3, '5,3': 3 };
+    const quilt = [];
+    for (let r = 0; r < 6; r++) for (let c = 0; c < 6; c++) {
+      const id = QR[r][c], filled = id !== 'H' && id !== 'I', sh = [];
+      if (filled) {
+        if (c === 0 || QR[r][c - 1] !== id) sh.push('inset 3px 0 0 #0E0F1A');
+        if (c === 5 || QR[r][c + 1] !== id) sh.push('inset -3px 0 0 #0E0F1A');
+        if (r === 0 || QR[r - 1][c] !== id) sh.push('inset 0 3px 0 #0E0F1A');
+        if (r === 5 || QR[r + 1][c] !== id) sh.push('inset 0 -3px 0 #0E0F1A');
+      } else sh.push('inset 0 0 0 1px #2B2F4A');
+      const cl = clues[`${r},${c}`];
+      quilt.push(cell({ cs: 46, r: 0, bg: QT[id], ring: sh.join(','), badge: cl || '', badgeBg: filled ? '#0E0F1A' : '#F4F5FB', badgeFg: filled ? '#FF8A3D' : '#0E0F1A' }));
+    }
+    // Coil
+    const L = ['BEADS', 'ETNEK', 'YASPT', 'OMLCE', 'SHEAR', 'PALMO'];
+    const found = new Set(['0,0','0,1','0,2','0,3','0,4','1,4','1,3','1,2','1,1','1,0']);
+    const cur = [[2,0],[2,1],[3,1]];
+    const wordPaths = [[[0,0],[0,1],[0,2],[0,3],[0,4]], [[1,4],[1,3],[1,2],[1,1],[1,0]], cur];
+    const coil = [];
+    for (let r = 0; r < 6; r++) for (let c = 0; c < 5; c++) {
+      const segs = [];
+      wordPaths.forEach((p, pi) => { const i = p.findIndex(q => q[0] === r && q[1] === c); if (i < 0) return;
+        const col = pi === 2 ? '#F4F5FB' : '#1E8A4F';
+        if (i > 0) segs.push(seg(dirTo(p[i], p[i - 1]), 50, 4, 10, col));
+        if (i < p.length - 1) segs.push(seg(dirTo(p[i], p[i + 1]), 50, 4, 10, col)); });
+      const k = `${r},${c}`, isCur = cur.some(q => q[0] === r && q[1] === c);
+      coil.push(cell({ cs: 50, r: 25, segs, bg: found.has(k) ? G : isCur ? '#2B4A38' : '#20233A', fg: found.has(k) ? '#0E0F1A' : '#F4F5FB',
+        font: '800 20px Unbounded,sans-serif', txt: '', badge: L[r][c], badgeBg: found.has(k) ? G : isCur ? '#F4F5FB' : '#20233A', badgeFg: found.has(k) || isCur ? '#0E0F1A' : '#F4F5FB' }));
+    }
+    // Minicross
+    const MX = [' ....', '.....', '.....', '.....', '.... '];
+    const letters = { '1,0': 'A', '1,1': 'C', '1,2': 'C', '0,1': 'T', '2,1': 'O', '0,4': 'B', '2,0': 'S' };
+    const mnum = { '0,1': 1, '0,2': 2, '0,3': 3, '0,4': 4, '1,0': 5, '2,0': 6, '3,0': 7, '4,0': 8 };
+    const mini = [];
+    for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) {
+      const blk = MX[r][c] === ' ', k = `${r},${c}`;
+      mini.push(cell({ cs: 54, r: 6, bg: blk ? '#0A0B12' : r === 1 ? '#D6F5E3' : '#F4F5FB', fg: '#0E0F1A', txt: letters[k] || '', font: '700 26px Geist,sans-serif',
+        num: mnum[k] || '', numc: '#5A5E78', ring: r === 1 && c === 3 ? 'inset 0 0 0 3px #1E8A4F' : 'none' }));
+    }
+
+    const T = (wc) => ({ e: fill(36, '#2B2F4A'), d: fill(36, wc) });
+    const grids = [
+      { name: 'Dusk', world: 'Logic Lab', wc: V, icon: 'ph-sun-horizon', meta: '6 × 6', rule: 'Suns and moons. Equal per row and column, never 3 in a line. = means same, × means different.', controls: 'Tap cycles sun, moon, empty. Sun and moon differ by shape, not just colour.',
+        b: { cols: 6, cs: dcs, gap: dgap, bg: '#0A0B12', cells: dusk, marks: [hm(0, 2, '='), hm(1, 4, '×'), vm(2, 1, '×'), vm(4, 4, '=')] }, thumbs: thumbs(6, T(V).e, brk(36, 6, V, [12, 13, 14]), T(V).d) },
+      { name: 'Sixer', world: 'Logic Lab', wc: V, icon: 'ph-grid-nine', meta: '6 × 6', rule: '1 to 6 once in every row, column and 2 × 3 box.', controls: 'Tap a cell, tap a number. Notes mode for pencil marks. Givens are bolder.',
+        b: { cols: 6, cs: 44, gap: 2, bg: '#2B2F4A', cells: sixer, marks: [] }, thumbs: thumbs(6, T(V).e, brk(36, 6, V, [3, 9]), T(V).d) },
+      { name: 'Weave', world: 'Line Lane', wc: C, icon: 'ph-path', meta: '6 × 6', rule: 'One path through the numbers in order, filling every cell.', controls: 'Drag to draw. Glowing head follows the finger. Drag back to undo.',
+        b: { cols: 6, cs: wcs, gap: wg, bg: '#0A0B12', cells: weave, marks: [] }, thumbs: thumbs(6, T(C).e, brk(36, 6, C, [20, 21]), T(C).d) },
+      { name: 'Flowline', world: 'Line Lane', wc: C, icon: 'ph-drop', meta: '6 × 5', rule: 'Rotate pipes so water reaches every plant.', controls: 'Tap to rotate 90°, spring 180 ms. Water pulses through lit pipes.',
+        b: { cols: 6, cs: 44, gap: 3, bg: '#0A0B12', cells: flow, marks: [] }, thumbs: thumbs(6, fill(30, '#2B2F4A'), brk(30, 6, C, [7]), fill(30, C)) },
+      { name: 'Quilt', world: 'Shape Shed', wc: O, icon: 'ph-layout', meta: '6 × 6', rule: 'Split the grid into rectangles. Each holds one number, equal to its area.', controls: 'Drag a rectangle. Tap to remove. Area counter rides the finger.',
+        b: { cols: 6, cs: 46, gap: 0, bg: '#0E0F1A', cells: quilt, marks: [] }, thumbs: thumbs(6, T(O).e, brk(36, 6, O, [8, 9, 14, 15]), T(O).d) },
+      { name: 'Coil', world: 'Word Woods', wc: G, icon: 'ph-scribble-loop', meta: '2 of 6', rule: 'Snake through letters to find themed words. Every letter gets used. Theme: market day.', controls: 'Drag through neighbours, any direction. Letters lift and fly to the word list.',
+        b: { cols: 5, cs: 50, gap: 4, bg: '#0A0B12', cells: coil, marks: [] }, thumbs: thumbs(5, fill(30, '#2B2F4A'), brk(30, 5, G, [10, 11]), fill(30, G)) },
+      { name: 'Minicross', world: 'Word Woods', wc: G, icon: 'ph-grid-four', meta: '5 × 5', rule: '5-Across: Ghana\'s capital (5). Tap again to switch direction.', controls: 'SPUZL keyboard. Active word tinted, active cell ringed. Screen reader reads clue then cell.',
+        b: { cols: 5, cs: 54, gap: 2, bg: '#0A0B12', cells: mini, marks: [] }, thumbs: thumbs(5, fill(25, '#F4F5FB'), brk(25, 5, '#F4F5FB', [6, 7]), fill(25, G)) }
+    ];
+
+    const sel = new Set(['ADOWA', 'AZONTO']);
+    const qwords = ['HIGHLIFE', 'COCOA', 'ADOWA', 'IVORY', 'TIMBER', 'GOLD', 'CAPE', 'AZONTO', 'OIL', 'AFROBEATS', 'BAUXITE', 'SKELETON'];
+    const IW = [
+      { name: 'Logic Lab', c: V, g: [['Crownfall','ph-crown-simple','L'],['Dusk','ph-sun-horizon','L'],['Sixer','ph-grid-nine','L'],['Nine','ph-number-square-nine','M3+'],['Pixl','ph-checkerboard','M2'],['Blackout','ph-lightbulb-filament','M2'],['Tripwire','ph-bomb','M3+']] },
+      { name: 'Line Lane', c: C, g: [['Weave','ph-path','L'],['Flowline','ph-drop','L'],['Isles','ph-circles-three','M3+'],['Pairup','ph-link-simple','M2'],['Lost','ph-signpost','M3+']] },
+      { name: 'Shape Shed', c: O, g: [['Quilt','ph-layout','L'],['Snug','ph-puzzle-piece','M2'],['Shuffle','ph-arrows-out-cardinal','M3+'],['Reflect','ph-flip-horizontal','M3+'],['Squint','ph-eye','M3+']] },
+      { name: 'Number Den', c: '#FFD23F', g: [['Dead On','ph-target','L'],['Merge','ph-arrows-merge','M3+'],['Sums','ph-plus-minus','M2'],['Equal','ph-equals','M3+']] },
+      { name: 'Word Woods', c: G, g: [['Coil','ph-scribble-loop','L'],['Rungs','ph-ladder','L'],['Quads','ph-squares-four','L'],['Seven','ph-asterisk','M2'],['Minicross','ph-grid-four','L'],['Buried','ph-shovel','M3+'],['Remix','ph-shuffle','M3+']] },
+      { name: 'Clue Cave', c: '#FF6B6B', g: [['Hunch','ph-question','L'],['Quickfire','ph-timer','M2'],['Pinned','ph-map-pin','M3+'],['Flagged','ph-flag','M3+']] },
+      { name: 'Reflex Rink', c: '#4D8BFF', g: [['Echo','ph-music-notes','L'],['Twins','ph-cards','M2'],['Flinch','ph-hand-tap','M3+']] },
+      { name: 'Rage Ridge', c: '#FF3B3B', g: [['Gotcha','ph-skull','L'],['Dash','ph-person-simple-run','L'],['Flipside','ph-arrows-down-up','M2'],['Ricochet','ph-arrow-bend-up-right','M3+'],['Stacked','ph-stack','M3+'],['Wobble','ph-scales','M3+'],['Grapple','ph-anchor-simple','M3+'],['Ghosted','ph-ghost','M3+'],['Slip','ph-sneaker-move','M3+'],['Gauntlet','ph-flag-checkered','M3+']] },
+      { name: 'Board Bay', c: '#F27ADB', g: [['Chess','ph-horse','L'],['Draughts','ph-circles-four','L'],['Oware','ph-dots-nine','L'],['Ludo','ph-dice-six','M2'],['Four Up','ph-circles-three-plus','M2'],['Flip','ph-circle-half','M3+']] }
+    ];
+    return {
+      crownStates: crownStates(), grids,
+      deadTiles: [['75',1],['50',0],['8',0],['6',0],['3',1],['2',1],['44',0],['352',2]].slice(0, 6).map(([v, s], i) => ({ v: i === 1 ? '352' : v, bg: s === 0 ? '#171929' : i === 1 ? '#FFD23F' : '#20233A', fg: i === 1 ? '#0E0F1A' : '#F4F5FB', sh: i === 1 ? '#9A7A10' : '#0A0B12', op: s === 0 && i !== 1 ? .3 : 1, tr: i === 1 ? 'translateY(-2px)' : 'none' })),
+      ops: [{ v: '+', c: '#F4F5FB' }, { v: '−', c: '#F4F5FB' }, { v: '×', c: '#FFD23F' }, { v: '÷', c: '#F4F5FB' }, { v: '↶', c: '#A2A6C2' }],
+      rungs: [
+        { word: '????', clue: 'Top: crack it last' },
+        { word: 'CORD', clue: 'Thin rope', hl: 2 },
+        { word: 'WORD', clue: 'You keep yours', hl: 0 },
+        { word: 'WOR_', clue: 'Had on, yesterday', cur: 3 },
+        { word: '????', clue: 'Bottom: crack it last' }
+      ].map(r => ({ clue: r.clue, letters: [...r.word].map((ch, i) => ({ v: ch === '?' || ch === '_' ? '' : ch,
+        bg: ch === '?' ? '#171929' : r.cur !== undefined ? '#20233A' : '#2B4A38', fg: i === r.hl ? '#3DDC84' : '#F4F5FB',
+        ring: ch === '?' ? 'inset 0 0 0 2px #2B2F4A' : r.cur === i ? 'inset 0 0 0 3px #3DDC84' : 'none' })) })),
+      quads: qwords.map(w => ({ fs: w.length >= 9 ? 10.5 : w.length >= 8 ? 11 : w.length >= 7 ? 12 : 13, w })).map(({ w, fs }) => sel.has(w) ? { w, fs, bg: '#F4F5FB', fg: '#0E0F1A', sh: '#A2A6C2', t: 'translateY(-3px)' } : { w, fs, bg: '#20233A', fg: '#F4F5FB', sh: '#0A0B12', t: 'none' }),
+      hunch: [
+        { n: 1, t: 'Kings wear one', icon: 'ph-eye', bg: '#2A1A1E', fg: '#F4F5FB', ring: 'none', nc: '#FF6B6B' },
+        { n: 2, t: 'So do your teeth', icon: 'ph-eye', bg: '#2A1A1E', fg: '#F4F5FB', ring: 'none', nc: '#FF6B6B' },
+        { n: 3, t: 'Pineapples too', icon: 'ph-eye', bg: '#2A1A1E', fg: '#F4F5FB', ring: 'inset 0 0 0 2px #FF6B6B', nc: '#FF6B6B' },
+        { n: 4, t: 'Tap to open, costs 20', icon: 'ph-lock-simple', bg: '#171929', fg: '#A2A6C2', ring: 'none', nc: '#5A5E78' },
+        { n: 5, t: 'Locked', icon: 'ph-lock-simple', bg: '#171929', fg: '#5A5E78', ring: 'none', nc: '#5A5E78' }
+      ],
+      echoSeq: ['#4D8BFF', '#4D8BFF', '#4D8BFF', '#F4F5FB', '#2B2F4A', '#2B2F4A', '#2B2F4A'],
+      echoPads: [
+        { icon: 'ph-circle', bg: '#4D8BFF', fg: '#0E0F1A', sh: '#244C9E', glow: ',0 0 0 6px #F4F5FB', anim: 'padGlow .5s ease-in-out infinite' },
+        { icon: 'ph-triangle', bg: '#20233A', fg: '#7FA9FF', sh: '#0A0B12', glow: '', anim: 'none' },
+        { icon: 'ph-square', bg: '#20233A', fg: '#7FA9FF', sh: '#0A0B12', glow: '', anim: 'none' },
+        { icon: 'ph-diamond', bg: '#20233A', fg: '#7FA9FF', sh: '#0A0B12', glow: '', anim: 'none' }
+      ],
+      ground: Array.from({ length: 24 }, (_, i) => ({ bg: '#3A1A22', op: i === 9 || i === 10 ? .25 : 1, t: i === 9 || i === 10 ? 'translateY(18px)' : 'none' })),
+      spikes: [1, 2, 3, 4],
+      tplZones: [
+        { n: '1 Top bar', d: 'back · timer · hints · help · sound, 44 px targets', h: 60, flex: 'none', c: '#B8F23A' },
+        { n: '2 Strip (optional)', d: 'opponent strip, race rail or ghost HUD', h: 56, flex: 'none', c: '#FFC93C' },
+        { n: '3 Title + rule', d: 'game name in world colour, one-line rule', h: 64, flex: 'none', c: '#A2A6C2' },
+        { n: '4 Board slot', d: 'square, max 358 px on mobile, centred; Phaser canvas for action games', h: 0, flex: '1', c: '#8B7CFF' },
+        { n: '5 Feedback line', d: 'rule toasts, Spuz one-liners, never over the board', h: 52, flex: 'none', c: '#FF5A5F' },
+        { n: '6 Controls', d: 'tool row, number pad, keyboard or D-pad', h: 140, flex: 'none', c: '#2FD3E0' }
+      ],
+      tplRules: [
+        { t: 'Board sizing', d: 'Cell = floor((min(vw, 420) − 32 − gaps) / cols). Never below 44 px; larger grids pan with two fingers.' },
+        { t: 'World colour', d: 'Used for the title, the active tool, filled marks and the clear wave. Never on global chrome.' },
+        { t: 'Marks', d: 'Every mark is a shape or glyph first, colour second. Colour-blind modes add hatch patterns.' },
+        { t: 'Keyboard and screen reader', d: 'Arrow keys move, Space cycles mark, Enter confirms. Each move announces row, column, region and mark.' },
+        { t: 'Rule broken', d: 'Ring + hatch + icon + one-line toast naming the rule. Never blocks input.' },
+        { t: 'Relaxed mode', d: 'Hides the timer and race strip. Results show "Relaxed" instead of a time; no leaderboard entry.' }
+      ],
+      iconWorlds: IW.map(w => ({ name: w.name, c: w.c, games: w.g.map(([n, i, p], k) => ({ n, i, p, op: 1, anim: p === 'L' ? `iconBob ${1.4 + (k % 3) * .2}s ease-in-out infinite` : 'none' })) }))
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800;900&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E0F1A;color:#F4F5FB;font-family:Geist,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#B8F23A;text-decoration:none}a:hover{color:#D4FF7A;text-decoration:underline}
+</style>
+</helmet>
+<div style="max-width:1280px;margin:0 auto;padding:48px 24px 80px;display:flex;flex-direction:column;gap:40px">
+
+<header style="display:flex;flex-direction:column;gap:12px">
+  <div style="display:flex;align-items:flex-end;font:900 56px/0.9 Unbounded,sans-serif;letter-spacing:-0.05em"><span>SPU</span><span style="color:#B8F23A">Z</span><span>L</span></div>
+  <div style="font:800 26px Unbounded,sans-serif">Handoff: motion spec and build notes</div>
+  <div style="font:400 17px/1.5 Geist,sans-serif;color:#A2A6C2;max-width:760px;text-wrap:pretty">Stack: Next.js, React, Tailwind v4, Radix, Motion, Rive, Phaser. Tokens live in <a href="tokens/spuzl-tokens.css">tokens/spuzl-tokens.css</a> and <a href="tokens/tailwind-theme.css">tokens/tailwind-theme.css</a>. Build and review every animation with the Emil Kowalski skills (animate, review-animations, animation-performance, mobile-native, break-ui).</div>
+</header>
+
+<section style="display:flex;flex-direction:column;gap:14px">
+  <div style="font:800 22px Unbounded,sans-serif">Files</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px">
+    <sc-for list="{{ files }}" as="f" hint-placeholder-count="10">
+      <a href="{{ f.href }}" style="display:flex;flex-direction:column;gap:4px;padding:14px 16px;border-radius:16px;background:#171929;color:#F4F5FB"><span style="font:700 16px Geist,sans-serif">{{ f.n }}</span><span style="font:400 14px Geist,sans-serif;color:#A2A6C2">{{ f.d }}</span></a>
+    </sc-for>
+  </div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:14px">
+  <div style="font:800 22px Unbounded,sans-serif">Motion spec</div>
+  <div style="font:400 15px/1.5 Geist,sans-serif;color:#A2A6C2;max-width:860px">Properties are transform and opacity only (clip-path where noted). Celebrations are skippable by tap and interruptible. Haptic patterns are Vibration API arrays in ms. RM = reduced-motion variant.</div>
+  <div style="overflow-x:auto;border-radius:18px;background:#171929">
+    <div style="display:grid;grid-template-columns:minmax(170px,1.3fr) 90px 150px 70px minmax(170px,1.3fr) minmax(120px,1fr) 100px minmax(160px,1.2fr);min-width:1180px">
+      <sc-for list="{{ head }}" as="h" hint-placeholder-count="8"><div style="padding:12px;background:#20233A;font:600 12px Geist Mono,monospace;color:#A2A6C2">{{ h }}</div></sc-for>
+      <sc-for list="{{ motion }}" as="m" hint-placeholder-count="30">
+        <div style="padding:10px 12px;border-top:1px solid #2B2F4A;font:600 14px Geist,sans-serif;color:{{ m.mc }}">{{ m.n }}</div>
+        <div style="padding:10px 12px;border-top:1px solid #2B2F4A;font:600 13px Geist Mono,monospace;color:#B8F23A">{{ m.d }}</div>
+        <div style="padding:10px 12px;border-top:1px solid #2B2F4A;font:500 13px Geist Mono,monospace;color:#A2A6C2">{{ m.c }}</div>
+        <div style="padding:10px 12px;border-top:1px solid #2B2F4A;font:500 13px Geist Mono,monospace;color:#A2A6C2">{{ m.dl }}</div>
+        <div style="padding:10px 12px;border-top:1px solid #2B2F4A;font:400 13px/1.4 Geist,sans-serif;color:#F4F5FB">{{ m.p }}</div>
+        <div style="padding:10px 12px;border-top:1px solid #2B2F4A;font:400 13px/1.4 Geist,sans-serif;color:#A2A6C2">{{ m.s }}</div>
+        <div style="padding:10px 12px;border-top:1px solid #2B2F4A;font:500 13px Geist Mono,monospace;color:#A2A6C2">{{ m.h }}</div>
+        <div style="padding:10px 12px;border-top:1px solid #2B2F4A;font:400 13px/1.4 Geist,sans-serif;color:#A2A6C2">{{ m.r }}</div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+
+<section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+  <div style="background:#171929;border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:10px">
+    <div style="font:800 18px Unbounded,sans-serif">Breakpoints and grid</div>
+    <sc-for list="{{ bps }}" as="b" hint-placeholder-count="4"><div style="display:flex;flex-direction:column;gap:2px;border-top:1px solid #2B2F4A;padding-top:8px"><span style="font:600 14px Geist Mono,monospace;color:#B8F23A">{{ b.k }}</span><span style="font:400 14px/1.45 Geist,sans-serif;color:#A2A6C2">{{ b.v }}</span></div></sc-for>
+  </div>
+  <div style="background:#171929;border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:10px">
+    <div style="font:800 18px Unbounded,sans-serif">Z-index scale</div>
+    <sc-for list="{{ zs }}" as="z" hint-placeholder-count="9"><div style="display:flex;gap:12px;border-top:1px solid #2B2F4A;padding-top:6px;font:400 14px Geist,sans-serif"><span style="width:36px;font:600 14px Geist Mono,monospace;color:#B8F23A">{{ z.v }}</span><span style="width:110px;font-weight:600">{{ z.k }}</span><span style="color:#A2A6C2">{{ z.d }}</span></div></sc-for>
+  </div>
+  <div style="background:#171929;border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:10px">
+    <div style="font:800 18px Unbounded,sans-serif">Sound and haptic map</div>
+    <sc-for list="{{ sfx }}" as="x" hint-placeholder-count="8"><div style="display:flex;gap:12px;border-top:1px solid #2B2F4A;padding-top:6px;font:400 14px Geist,sans-serif"><span style="flex:1;font-weight:600">{{ x.k }}</span><span style="color:#A2A6C2">{{ x.v }}</span></div></sc-for>
+  </div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:14px">
+  <div style="font:800 22px Unbounded,sans-serif">Rules an engineer could get wrong</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:10px">
+    <sc-for list="{{ rules }}" as="r" hint-placeholder-count="14">
+      <div style="background:#171929;border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:4px"><span style="font:700 15px Geist,sans-serif">{{ r.t }}</span><span style="font:400 14px/1.5 Geist,sans-serif;color:#A2A6C2;text-wrap:pretty">{{ r.d }}</span></div>
+    </sc-for>
+  </div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:14px">
+  <div style="font:800 22px Unbounded,sans-serif">Final check</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px">
+    <sc-for list="{{ checks }}" as="c" hint-placeholder-count="3">
+      <div style="background:#171929;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:8px"><span style="font:700 16px Geist,sans-serif">{{ c.t }}</span>
+        <sc-for list="{{ c.items }}" as="i" hint-placeholder-count="5"><span style="font:400 14px/1.45 Geist,sans-serif;color:#A2A6C2;display:flex;gap:8px"><span style="color:#B8F23A;font-weight:700">✓</span>{{ i }}</span></sc-for>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const M = (n, d, c, dl, p, s, h, r, mp) => ({ n, d, c, dl, p, s, h, r, mc: mp ? '#B8F23A' : '#F4F5FB' });
+    return {
+      files: [
+        { n: 'Art Direction', d: 'Brand, Spuz moods + Rive spec, The Grid, colour, type, motion', href: 'SPUZL Art Direction.dc.html' },
+        { n: 'Spuz', d: 'Mascot component, 12 moods, lookAt', href: 'Spuz.dc.html' },
+        { n: 'Prototype', d: 'Clickable flows a to d', href: 'SPUZL Prototype.dc.html' },
+        { n: 'Solo Screens', d: 'Splash, Home, World, Game, Results, Level up', href: 'SPUZL Solo Screens.dc.html' },
+        { n: 'Multiplayer', d: 'Duel, Party Race, League, TV mode', href: 'SPUZL Multiplayer.dc.html' },
+        { n: 'Onboarding and Overlays', d: 'First run, rewards, pause, duel edges, async, Ghost Race', href: 'SPUZL Onboarding and Overlays.dc.html' },
+        { n: 'Game Boards', d: '15 boards, states, template, 45 icons', href: 'SPUZL Game Boards.dc.html' },
+        { n: 'Social and Meta', d: 'Leaderboards, profile, quests, shop, friends, crew, settings, School Cup', href: 'SPUZL Social and Meta.dc.html' },
+        { n: 'Components', d: 'Every control in every state', href: 'SPUZL Components.dc.html' },
+        { n: 'States, Share, Light, Desktop', d: 'Empty/loading/error/offline, share cards, light theme, 1280', href: 'SPUZL States Share Light Desktop.dc.html' },
+        { n: 'Admin', d: 'Calendar, preview, moderation, live ops', href: 'SPUZL Admin.dc.html' },
+        { n: 'Board Games', d: 'World 9 Board Bay: chess, draughts, oware, ludo, four up, flip', href: 'SPUZL Board Games.dc.html' }
+      ],
+      head: ['Moment', 'Duration', 'Curve', 'Delay', 'Properties', 'Sound', 'Haptic', 'RM variant'],
+      motion: [
+        M('Button press', '120 ms', 'spring-press', '0', 'scale 1 → .96, translateY 5 px, depth shadow 6 → 1', 'tick_soft', '[8]', 'darken bg only'),
+        M('Place piece / fill cell', '140 ms', 'ease-out', '0', 'scale 1 → 1.08 → 1', 'pop, +1 semitone per correct streak (cap +7)', '[6]', 'mark fades in 80 ms'),
+        M('Rule broken', '240 ms', 'ease-in-out', '0', 'translateX ±6 px × 3 on offending cells; hatch + ring fade in', 'buzz_low', '[20,40,20]', 'ring + hatch + icon, no shake'),
+        M('Line drawn', 'live', '1:1 finger', '0', 'segment scaleX from origin; head scale pulse; trail opacity 1 → 0 over 300 ms', 'synth_rise (pitch by length)', 'none', 'line appears, no trail'),
+        M('Word found', '420 ms', 'ease-in-out', '40 ms/letter', 'letters translate to list + scale .6; list chip pops', 'chime per letter, ascending', '[10]', 'cells tint, chip fades in'),
+        M('Puzzle cleared', '900 ms', 'ease-out', '70 ms × Manhattan distance from last move', 'board scale 1.03 pulse; cells rotateY flip to world colour; confetti from Spuz; timer counts up', 'win_jingle 1 s', '[30,10,30]', 'cells cross-fade to world colour, no flip'),
+        M('XP gain', '600 ms', 'ease-out', '300 ms', 'numbers translate to bar; bar scaleX sweep; sparkle on tip', 'coin_ticks', 'none', 'bar jumps, number swaps'),
+        M('Level up', '1,200 ms', 'spring-party', '0', 'scrim opacity .9; ring scale .4 → 1.7 + fade; number reel translateY −50%', 'fanfare', '[50]', 'scrim + new number, fade'),
+        M('Streak +1', '700 ms', 'ease-out', '0', 'flame scale 1 → 1.2 → 1; embers translateY −60 + fade; digit flip', 'whoosh', '[15]', 'number swaps, flame static'),
+        M('Streak lost', '800 ms', 'ease-out', '0', 'flame scale → .4 + opacity; smoke puffs; Freeze sheet translateY 100% → 0', 'fail_soft', 'none', 'icon swap, sheet fades'),
+        M('Badge unlock', '1,100 ms', 'spring-party', '0', 'medallion drop translateY −40 → 0; rotateY 360; shine clip-path sweep; tier ring burst', 'clink', '[25]', 'medallion fades in, no spin'),
+        M('Sparks earned', '600 ms', 'ease-in-out', '30 ms stagger', 'sparks arc (translate on a curve) to wallet; wallet scale 1.08 spring', 'coin_ticks', 'none', 'wallet number swaps'),
+        M('League promotion', '1,200 ms', 'ease-in-out then spring-party', '0', 'your row translateY up + scale 1.04; new emblem scale 2 → 1 slam', 'crowd_cheer', '[40]', 'row highlights, emblem fades'),
+        M('Death (Rage Ridge)', '300 ms', 'ease-out', '0', 'squish scaleY .5; pixel burst; counter scale bump; respawn opacity 0 → 1', 'splat', '[15]', 'no burst, instant respawn'),
+        M('World travel', '700 ms', 'ease-in-out', '0', 'map translate (camera); Spuz hops along dotted path, 3 arcs', 'hop × 3', 'none', 'cross-fade to island'),
+        M('Screen change', '320 ms', 'ease-in-out', '0', 'shared element: tile scale/translate into board (Motion layoutId)', 'none', 'none', 'cross-fade 150 ms'),
+        M('Loading', 'shown after 300 ms', 'linear', '300 ms', 'skeleton shimmer translateX; Spuz Thinking tuft spin', 'none', 'none', 'static skeletons'),
+        M('Hint', '800 ms', 'ease-in-out', '0', 'target cell glow ring scale 1 → 1.06 × 2', 'twinkle', 'none', 'ring only'),
+        M('Player joins', '420 ms', 'spring-party', '0', 'card translateY −40 → 0, scale .8 → 1', 'pop', '[8]', 'fade in place', 1),
+        M('Countdown 3-2-1', '3 × 800 ms', 'ease-out', '0', 'number scale 2.2 → 1 + 2° shake; SPUZL! burst', 'drum hit; horn on SPUZL!', '[20] per beat', 'numbers fade, no shake', 1),
+        M('Live progress', '500 ms', 'ease-in-out', '0', 'bar scaleX; rows reorder by translateY (34 px slots)', 'pass_swoosh on overtake', '[10] on overtake', 'instant reorder', 1),
+        M('Opponent clears first', '400 ms', 'spring-party', '0', 'avatar flash scale 1.06; crown drops translateY; your board opacity → .45', 'sting_short', '[20,30,20]', 'crown appears, board dims', 1),
+        M('You win (multiplayer)', '1,100 ms', 'spring-party', '0', 'banner translateX −110% → 0; trophy rotateY; rating count-up', 'crowd_cheer', '[30,10,30]', 'banner fades, number swaps', 1),
+        M('Emote', '1,400 ms', 'ease-out', '0', 'bubble scale .6 → 1.05 → 1; translateY −40; opacity → 0', 'emote_pop', 'none', 'bubble fades in/out', 1),
+        M('Rematch', '600 ms', 'spring-press', '0', 'avatars translateX ±60 → bump → 0; arena wipe clip-path', 'bump + wipe', '[25]', 'cross-fade reset', 1)
+      ],
+      bps: [
+        { k: 'xs < 400', v: 'Phone baseline 360 × 800. Single column, 16 px gutters, board fills width minus 32.' },
+        { k: 'sm 400–767', v: 'Phone large. Same layout, board capped at 358 px, centred.' },
+        { k: 'md 768–1023', v: 'Tablet. Map + bottom dock; race rail moves to the side; sheets become centred modals 480 wide.' },
+        { k: 'lg ≥ 1024', v: 'Desktop. 88 px left rail, content, 360 px right panel. 12-col grid, 24 gutters, max 1440.' },
+        { k: 'TV mode', v: '1280 × 720 logical, min text 26 px, rows 80 px, readable at 3 m. Auto-hides chrome.' }
+      ],
+      zs: [
+        { v: '0', k: 'board', d: 'Game board, map' }, { v: '10', k: 'hud', d: 'Top bar, timer' }, { v: '20', k: 'strip', d: 'Opponent strip, race rail' },
+        { v: '30', k: 'dock', d: 'Bottom nav, CTA row' }, { v: '40', k: 'sheet', d: 'Bottom sheets' }, { v: '50', k: 'overlay', d: 'Modals, pause scrim' },
+        { v: '60', k: 'toast', d: 'Toasts, offline banner' }, { v: '70', k: 'celebration', d: 'Level up, badge, Full Spuzl, confetti' }, { v: '80', k: 'system', d: 'Photosensitivity notice, fatal errors' }
+      ],
+      sfx: [
+        { k: 'Defaults', v: 'SFX on, music off, haptics on' }, { k: 'Budget', v: '≈40 SFX, < 400 KB total, lazy after first tap' },
+        { k: 'UI', v: 'tick_soft, pop, whoosh, emote_pop' }, { k: 'Puzzle', v: 'pop (pitched), buzz_low, chime, synth_rise, twinkle' },
+        { k: 'Reward', v: 'win_jingle, coin_ticks, fanfare, clink, crowd_cheer' }, { k: 'Multiplayer', v: 'drum hit, horn, pass_swoosh, sting_short, bump' },
+        { k: 'Action', v: 'splat, jump, land, spike' }, { k: 'Silent device', v: 'Auto-mute where detectable; visuals never depend on sound' },
+        { k: 'Implementation', v: 'spuzl-audio.js: WebAudio synth kit + Vibration API map, play(name, {step}), settings persisted' },
+        { k: '3D assets', v: 'spuzl3d.js: three.js Staunton pieces (lathe + extruded knight) and extruded 3D game icons, rendered to cached PNG sprites; Icon3D.dc.html wraps it with a flat fallback' }
+      ],
+      rules: [
+        { t: 'Every game, anytime', d: 'Nothing is gated by the clock. Each game has the shared Daily (counts for streaks, leaderboards, Full Spuzl) plus endless Free play (generated or variant puzzles, +10 XP, +5 Sparks, no leaderboard). Home always shows "Play anytime"; finishing a Daily offers "Next puzzle" straight into free play.' },
+        { t: 'Never animate layout', d: 'No width, height, top, left. Progress bars use scaleX with transform-origin left. Reorders use translateY slots.' },
+        { t: 'No ease-in', d: 'Entrances ease-out, on-screen moves ease-in-out. Exits can be faster ease-out (150 ms).' },
+        { t: 'Repeated moves ≤ 120–140 ms', d: 'Placing, typing, rotating: one pop, never queue animations. A new tap cancels the previous pop.' },
+        { t: 'Celebrations skip on tap', d: 'Every overlay listens for pointerdown anywhere and jumps to the end state with the same info.' },
+        { t: 'World colour stays home', d: 'World hues only in their island, tiles and boards. Global chrome (nav, wallet, XP, CTA) is always lime.' },
+        { t: 'Text on world fills is ink', d: '#0E0F1A on every world colour, never white. In light theme use the -ink tokens for world-coloured text.' },
+        { t: 'Never colour alone', d: 'Every state has a glyph (crown, X, check, warning) and broken cells get the hatch. Leaderboard zones carry arrow icons.' },
+        { t: 'Numbers never jitter', d: 'All counters and timers in Geist Mono with font-variant-numeric: tabular-nums.' },
+        { t: 'No spinners', d: 'Skeletons in the final layout plus Spuz Thinking, only after 300 ms. Button loading = sweep along the base.' },
+        { t: 'Never show the opponent board', d: 'Duel strip shows progress %, mistakes and round dots only. Progress is correct-placements / total, server-validated.' },
+        { t: 'Flashing ≤ 3 Hz', d: 'Echo pads, Reflex Rink lights and Rage Ridge effects are capped at 2 Hz. Photosensitivity notice once before action games.' },
+        { t: 'Relaxed mode', d: 'Hides timers and race strips; results say "Relaxed", no leaderboard entry. Duels and races are unavailable in Relaxed.' },
+        { t: 'Touch targets', d: '44 × 44 minimum; board cells never below 44. D-pad 56, jump 96. Spacing ≥ 8 between targets.' },
+        { t: 'Screen reader paths', d: 'Board is role=grid; arrows move, Space cycles mark, Enter confirms. Announce row, column, region and mark on every move; announce rule breaks as polite live region.' },
+        { t: 'Copy', d: 'No em or en dashes anywhere. One label per action ("Play", "Share", "Continue"). Emoji only in emotes and share text.' },
+        { t: 'Spuz never covers a board', d: 'Spuz appears in headers, empty states and overlays, never over an active puzzle.' },
+        { t: 'Room codes', d: '4 characters from a set without 0, O, 1, I. Case-insensitive input. Codes expire 2 h after the room empties.' },
+        { t: 'Low-data mode', d: 'Rive swapped for static SVG per mood, no music, confetti capped at 30 pieces, map ambient loops paused.' }
+      ],
+      checks: [
+        { t: 'Avoid list', items: ['No dashboard layouts, glassmorphism or purple-blue gradients', 'No Inter; Unbounded + Geist + Geist Mono', 'No emoji as UI icons; Phosphor Bold only', 'No stock avatar circles; avatars are Spuz', 'No spinners, no em dashes in UI copy'] },
+        { t: 'Accessibility', items: ['Light accent and gold darkened for AA (documented)', '3 colour-blind modes add glyphs and hatch patterns', '44 px targets, keyboard + screen reader grid', 'Reduced-motion variant for every animation', 'Relaxed mode and photosensitivity notice'] },
+        { t: 'Multiplayer parity', items: ['Duel: entry, matchmaking, versus, match, round end, match end, 4 edge states', 'Party: create, lobby, race, podium, TV mode', 'Async challenge card + ghost timeline result', 'Ghost Race HUD, League + ceremony, Crew, School Cup', 'Clickable Duel and Party flows in the prototype'] }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

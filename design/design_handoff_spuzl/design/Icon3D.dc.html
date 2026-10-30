@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css"></helmet>
+<div role="img" aria-label="{{ label }}" style="position:relative;width:{{ sz }}px;height:{{ sz }}px;flex:none">
+  <div style="position:absolute;inset:0;border-radius:30%;background:{{ color }};display:{{ fbD }};align-items:center;justify-content:center;color:{{ fg }};font-size:{{ gs }}px;box-shadow:inset -4px -4px 0 rgba(0,0,0,.18),inset 3px 3px 0 rgba(255,255,255,.22)"><i class="ph-bold {{ icon }}"></i></div>
+  <div aria-hidden="true" style="position:absolute;left:-21%;top:-21%;width:142%;height:142%;background-image:{{ bgi }};background-size:contain;background-repeat:no-repeat;background-position:center;pointer-events:none;display:{{ imgD }}"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:200,&quot;height&quot;:200},&quot;icon&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;ph-crown-simple&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;color&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#8B7CFF&quot;,&quot;options&quot;:[&quot;#8B7CFF&quot;,&quot;#2FD3E0&quot;,&quot;#FF8A3D&quot;,&quot;#F27ADB&quot;],&quot;tsType&quot;:&quot;string&quot;},&quot;size&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:120,&quot;min&quot;:24,&quot;max&quot;:400,&quot;tsType&quot;:&quot;number&quot;},&quot;label&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { src: '' };
+  componentDidMount() { this.load(); }
+  componentDidUpdate(p) { if (p.icon !== this.props.icon || p.color !== this.props.color) this.load(); }
+  load() {
+    const icon = this.props.icon || 'ph-puzzle-piece', color = this.props.color || '#B8F23A';
+    this._k = icon + color;
+    const k = this._k;
+    import('./spuzl3d.js').then(m => m.icon(icon, color)).then(src => { if (src && k === this._k) this.setState({ src }); }).catch(() => {});
+  }
+  renderVals() {
+    const sz = this.props.size ?? 64, color = this.props.color || '#B8F23A';
+    const dark = /^#(1|2)/.test(color);
+    return { sz, color, icon: this.props.icon || 'ph-puzzle-piece', label: this.props.label || '', gs: Math.round(sz * .46), fg: dark ? '#A2A6C2' : '#0E0F1A',
+      src: this.state.src, bgi: this.state.src ? `url(${this.state.src})` : 'none', fbD: this.state.src ? 'none' : 'flex', imgD: this.state.src ? 'block' : 'none' };
+  }
+}
+</script>
+</body>
+</html>

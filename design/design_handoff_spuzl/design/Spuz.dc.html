@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><style>
+@keyframes spuzBreathe{0%,100%{transform:scale(1,1) skewX(0)}30%{transform:scale(1.05,.95) skewX(-2deg)}60%{transform:scale(.97,1.04) skewX(2deg)}}
+@keyframes spuzFlop{0%,100%{transform:rotate(-22deg)}40%{transform:rotate(26deg)}55%{transform:rotate(16deg)}70%{transform:rotate(20deg)}}
+@keyframes spuzBlink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.08)}}
+@keyframes spuzSway{0%,100%{transform:rotate(-9deg)}50%{transform:rotate(9deg)}}
+@keyframes spuzSpin{to{transform:rotate(360deg)}}
+@keyframes spuzWave{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(38deg)}}
+@keyframes spuzRise{0%{transform:translateY(0) scale(.6);opacity:0}30%{opacity:1}100%{transform:translateY(-2.6em) scale(1.1);opacity:0}}
+@keyframes spuzFlicker{0%,100%{transform:rotate(-45deg) scale(1)}50%{transform:rotate(-41deg) scale(1.08,1.15)}}
+@keyframes spuzHop{0%,100%{transform:translateY(0)}45%{transform:translateY(-.9em)}}
+@keyframes spuzShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-.12em)}75%{transform:translateX(.12em)}}
+@keyframes spuzTwinkle{0%,100%{transform:scale(1) rotate(0)}50%{transform:scale(.55) rotate(45deg)}}
+@media (prefers-reduced-motion: reduce){[data-spuz] *{animation:none!important}}
+</style></helmet>
+<div data-spuz="1" role="img" aria-label="Spuz the mascot, {{ mood }} mood" style="position:relative;width:12em;height:12em;font-size:{{ fs }}px;flex:none">
+  <div style="position:absolute;left:2.4em;bottom:.45em;width:7.2em;height:.9em;border-radius:50%;background:rgba(0,0,0,.28)"></div>
+  <div style="position:absolute;inset:0;animation:{{ hopAnim }}">
+    <div style="position:absolute;left:2.6em;bottom:.8em;width:2.3em;height:1.1em;transform:rotate(-14deg);border-radius:1.1em 1em .6em .6em;background:{{ color }};box-shadow:inset 0 -.32em 0 rgba(0,0,0,.28)"></div>
+    <div style="position:absolute;left:6.5em;bottom:.85em;width:1.7em;height:1.3em;transform:rotate(10deg);border-radius:1em 1em .6em .6em;background:{{ color }};box-shadow:inset 0 -.32em 0 rgba(0,0,0,.28)"></div>
+    <div style="position:absolute;left:1.5em;bottom:1.35em;width:9em;height:7.6em;transform-origin:50% 100%;transform:{{ bodyTransform }}">
+      <div style="position:absolute;inset:0;transform-origin:50% 100%;animation:{{ bodyAnim }}">
+        <sc-if value="{{ showTuft }}" hint-placeholder-val="{{ true }}">
+          <div style="position:absolute;left:3.9em;top:-2.9em;width:1.3em;height:3.4em;transform-origin:50% 100%;transform:{{ tuftTransform }}">
+            <div style="position:relative;width:100%;height:100%;transform-origin:50% 100%;animation:{{ tuftAnim }}">
+              <div style="position:absolute;left:.25em;top:.9em;width:.8em;height:2.6em;border-radius:.4em;background:{{ color }};box-shadow:inset -.2em 0 0 rgba(0,0,0,.14)"></div>
+              <div style="position:absolute;left:-.25em;top:-.2em;width:1.8em;height:1.6em;border-radius:52% 48% 46% 54% / 56% 50% 50% 44%;background:{{ color }};box-shadow:inset -.3em -.25em 0 rgba(0,0,0,.14),inset .2em .2em 0 rgba(255,255,255,.3)"></div>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ flame }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;left:3.3em;top:-2.5em;width:2.5em;height:2.5em;border-radius:50% 0 50% 50%;background:linear-gradient(45deg,#FF6B2C,#FFC93C);animation:spuzFlicker .5s ease-in-out infinite;transform:rotate(-45deg)">
+            <div style="position:absolute;left:.7em;top:.7em;width:1.1em;height:1.1em;border-radius:50% 0 50% 50%;background:#FFF1B8"></div>
+          </div>
+          <div style="position:absolute;left:3.6em;top:-2.6em;width:.35em;height:.35em;border-radius:50%;background:#FFC93C;animation:spuzRise 1.4s ease-out infinite"></div>
+          <div style="position:absolute;left:5.2em;top:-2.2em;width:.28em;height:.28em;border-radius:50%;background:#FF8A3D;animation:spuzRise 1.8s ease-out .5s infinite"></div>
+        </sc-if>
+        <sc-if value="{{ hat }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;left:3.1em;top:-2.9em;width:2.8em;height:3.2em;transform:rotate(-12deg);transform-origin:50% 100%">
+            <div style="position:absolute;inset:0;clip-path:polygon(50% 0,100% 100%,0 100%);background:repeating-linear-gradient(135deg,#FFC93C 0 .45em,#FF5A5F .45em .9em)"></div>
+            <div style="position:absolute;left:.95em;top:-.5em;width:.9em;height:.9em;border-radius:50%;background:#F4F5FB"></div>
+          </div>
+        </sc-if>
+        <div style="position:absolute;left:8em;top:2.6em;width:2.1em;height:2.1em;border-radius:50%;background:{{ color }};box-shadow:inset -.4em -.3em 0 rgba(0,0,0,.14)"></div>
+        <sc-if value="{{ arm }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;left:8.5em;top:.2em;width:1.3em;height:2.7em;border-radius:.7em;background:{{ color }};box-shadow:inset -.25em 0 0 rgba(0,0,0,.14);transform-origin:50% 100%;animation:spuzWave .6s ease-in-out infinite"></div>
+        </sc-if>
+        <div style="position:absolute;inset:0;border-radius:3.6em 2.6em 3em 3.3em / 3.4em 3em 2.5em 2.9em;background:{{ color }};box-shadow:inset -.55em -.65em 0 rgba(0,0,0,.16),inset .45em .4em 0 rgba(255,255,255,.28)"></div>
+        <sc-if value="{{ cheeks }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;left:1.05em;top:4.3em;width:1.4em;height:.75em;border-radius:50%;background:{{ cheekColor }}"></div>
+          <div style="position:absolute;left:6.55em;top:4.3em;width:1.4em;height:.75em;border-radius:50%;background:{{ cheekColor }}"></div>
+        </sc-if>
+        <sc-if value="{{ eyesRound }}" hint-placeholder-val="{{ true }}">
+          <div style="position:absolute;left:{{ eyeL }}em;top:{{ eyeTopL }}em;width:{{ eyeWL }}em;height:{{ eyeHL }}em;border-radius:50%;background:#fff;box-shadow:0 0 0 .16em #0E0F1A;overflow:hidden;animation:spuzBlink 4.6s ease-in-out infinite">
+            <div style="position:absolute;left:50%;top:50%;width:{{ pupil }}em;height:{{ pupil }}em;margin:{{ pupilM }}em;border-radius:50%;background:#0E0F1A;transform:{{ lookL }}">
+              <div style="position:absolute;left:18%;top:16%;width:32%;height:32%;border-radius:50%;background:#fff"></div>
+            </div>
+          </div>
+          <div style="position:absolute;left:{{ eyeR }}em;top:{{ eyeTopR }}em;width:{{ eyeWR }}em;height:{{ eyeHR }}em;border-radius:50%;background:#fff;box-shadow:0 0 0 .16em #0E0F1A;overflow:hidden;animation:spuzBlink 4.6s ease-in-out .08s infinite">
+            <div style="position:absolute;left:50%;top:50%;width:{{ pupilR }}em;height:{{ pupilR }}em;margin:{{ pupilMR }}em;border-radius:50%;background:#0E0F1A;transform:{{ lookR }}">
+              <div style="position:absolute;left:18%;top:16%;width:32%;height:32%;border-radius:50%;background:#fff"></div>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ eyesHappy }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;left:1.8em;top:2.6em;width:2.2em;height:1.1em;border:.36em solid #0E0F1A;border-bottom:none;border-radius:1em 1em 0 0;box-sizing:border-box"></div>
+          <div style="position:absolute;left:5.15em;top:3em;width:1.5em;height:.8em;border:.36em solid #0E0F1A;border-bottom:none;border-radius:1em 1em 0 0;box-sizing:border-box"></div>
+        </sc-if>
+        <sc-if value="{{ eyesSleepy }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;left:2.1em;top:3.05em;width:1.8em;height:.9em;border:.34em solid #0E0F1A;border-top:none;border-radius:0 0 1em 1em;box-sizing:border-box"></div>
+          <div style="position:absolute;left:5.15em;top:3.3em;width:1.5em;height:.75em;border:.34em solid #0E0F1A;border-top:none;border-radius:0 0 1em 1em;box-sizing:border-box"></div>
+        </sc-if>
+        <sc-if value="{{ eyesX }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;left:2.1em;top:2.4em;width:1.8em;height:1.8em">
+            <div style="position:absolute;left:0;top:.73em;width:1.8em;height:.34em;border-radius:.2em;background:#0E0F1A;transform:rotate(45deg)"></div>
+            <div style="position:absolute;left:0;top:.73em;width:1.8em;height:.34em;border-radius:.2em;background:#0E0F1A;transform:rotate(-45deg)"></div>
+          </div>
+          <div style="position:absolute;left:5.05em;top:2.4em;width:1.8em;height:1.8em">
+            <div style="position:absolute;left:0;top:.73em;width:1.8em;height:.34em;border-radius:.2em;background:#0E0F1A;transform:rotate(45deg)"></div>
+            <div style="position:absolute;left:0;top:.73em;width:1.8em;height:.34em;border-radius:.2em;background:#0E0F1A;transform:rotate(-45deg)"></div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ brows }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;left:2.05em;top:1.35em;width:1.9em;height:.36em;border-radius:.2em;background:#0E0F1A;transform:{{ browL }}"></div>
+          <div style="position:absolute;left:5.05em;top:1.35em;width:1.9em;height:.36em;border-radius:.2em;background:#0E0F1A;transform:{{ browR }}"></div>
+        </sc-if>
+        <sc-if value="{{ mSmile }}" hint-placeholder-val="{{ true }}">
+          <div style="position:absolute;left:3.2em;top:4.55em;width:2.7em;height:1em;border:.34em solid #0E0F1A;border-top:none;border-radius:0 0 1.4em 1em;box-sizing:border-box;transform:rotate(-6deg)"></div>
+          <div style="position:absolute;left:4.15em;top:5.38em;width:.62em;height:.62em;border-radius:0 0 .18em .18em;background:#fff;box-shadow:0 0 0 .13em #0E0F1A;transform:rotate(-6deg)"></div>
+        </sc-if>
+        <sc-if value="{{ mGrin }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;left:3.1em;top:4.45em;width:2.8em;height:1.35em;border-radius:.3em .5em 1.4em 1.2em;background:#0E0F1A;transform:rotate(-5deg)">
+            <div style="position:absolute;left:.3em;top:0;width:.55em;height:.45em;border-radius:0 0 .15em .15em;background:#fff"></div>
+            <div style="position:absolute;left:1.35em;top:.75em;width:1em;height:1.15em;border-radius:.2em .2em .55em .55em;background:#FF7A8A;box-shadow:0 0 0 .13em #0E0F1A"></div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ mO }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;left:4em;top:4.75em;width:1em;height:1.2em;border-radius:50%;background:#0E0F1A"></div>
+        </sc-if>
+        <sc-if value="{{ mFlat }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;left:3.8em;top:5.05em;width:1.4em;height:.34em;border-radius:.2em;background:#0E0F1A"></div>
+        </sc-if>
+        <sc-if value="{{ mFrown }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;left:3.7em;top:4.95em;width:1.6em;height:.8em;border:.34em solid #0E0F1A;border-bottom:none;border-radius:1em 1em 0 0;box-sizing:border-box"></div>
+        </sc-if>
+        <sc-if value="{{ tear }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;left:1.6em;top:4.55em;width:.7em;height:.7em;border-radius:0 50% 50% 50%;background:#6FB6FF;transform:rotate(45deg)"></div>
+        </sc-if>
+        <sc-if value="{{ sweat }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;left:.6em;top:1em;width:.85em;height:.85em;border-radius:0 50% 50% 50%;background:#6FB6FF;transform:rotate(45deg)"></div>
+        </sc-if>
+      </div>
+    </div>
+    <sc-if value="{{ confetti }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;left:2.2em;top:.6em;width:.55em;height:.55em;background:#FFC93C;animation:spuzTwinkle 1s ease-in-out infinite"></div>
+      <div style="position:absolute;left:8.6em;top:.9em;width:.5em;height:.5em;border-radius:50%;background:#2FD3E0;animation:spuzTwinkle 1.2s ease-in-out .2s infinite"></div>
+      <div style="position:absolute;left:1.1em;top:2.6em;width:.45em;height:.45em;border-radius:50%;background:#FF5A5F;animation:spuzTwinkle .9s ease-in-out .4s infinite"></div>
+      <div style="position:absolute;left:9.9em;top:2.5em;width:.55em;height:.55em;background:#8B7CFF;animation:spuzTwinkle 1.1s ease-in-out .1s infinite"></div>
+      <div style="position:absolute;left:6.9em;top:.1em;width:.4em;height:.4em;background:#F4F5FB;animation:spuzTwinkle 1s ease-in-out .3s infinite"></div>
+    </sc-if>
+    <sc-if value="{{ sparkles }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;left:1em;top:1.4em;width:1em;height:1em;clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%);background:#FFC93C;animation:spuzTwinkle 1.4s ease-in-out infinite"></div>
+      <div style="position:absolute;left:9.6em;top:.8em;width:1.3em;height:1.3em;clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%);background:#FFC93C;animation:spuzTwinkle 1.4s ease-in-out .5s infinite"></div>
+      <div style="position:absolute;left:10.2em;top:4em;width:.7em;height:.7em;clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%);background:#F4F5FB;animation:spuzTwinkle 1.4s ease-in-out .9s infinite"></div>
+    </sc-if>
+    <sc-if value="{{ zzz }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;left:8.6em;top:1.6em;font:900 1.1em Unbounded,sans-serif;color:#A2A6C2;animation:spuzRise 2.4s ease-out infinite">z</div>
+      <div style="position:absolute;left:9.6em;top:1.2em;font:900 1.5em Unbounded,sans-serif;color:#A2A6C2;animation:spuzRise 2.4s ease-out .8s infinite">Z</div>
+    </sc-if>
+    <sc-if value="{{ steam }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;left:3.4em;top:1.4em;width:1em;height:1em;border-radius:50%;background:#C9CCDD;animation:spuzRise 1.1s ease-out infinite"></div>
+      <div style="position:absolute;left:5.6em;top:1.2em;width:1.3em;height:1.3em;border-radius:50%;background:#C9CCDD;animation:spuzRise 1.1s ease-out .35s infinite"></div>
+      <div style="position:absolute;left:4.5em;top:.8em;width:.8em;height:.8em;border-radius:50%;background:#C9CCDD;animation:spuzRise 1.1s ease-out .7s infinite"></div>
+    </sc-if>
+    <sc-if value="{{ bubble }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;left:9.2em;top:2.6em;width:.5em;height:.5em;border-radius:50%;background:#A2A6C2"></div>
+      <div style="position:absolute;left:9.8em;top:1.5em;width:.8em;height:.8em;border-radius:50%;background:#A2A6C2"></div>
+      <div style="position:absolute;left:10.5em;top:.1em;width:1.3em;height:1.3em;border-radius:50%;background:#A2A6C2"></div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:240,&quot;height&quot;:240},&quot;mood&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;idle&quot;,&quot;wave&quot;,&quot;thinking&quot;,&quot;cheer&quot;,&quot;proud&quot;,&quot;fire&quot;,&quot;sleepy&quot;,&quot;squish&quot;,&quot;rage&quot;,&quot;shocked&quot;,&quot;sad&quot;,&quot;party&quot;],&quot;default&quot;:&quot;idle&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;size&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:120,&quot;min&quot;:24,&quot;max&quot;:600,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;},&quot;color&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#B8F23A&quot;,&quot;options&quot;:[&quot;#B8F23A&quot;,&quot;#FFC93C&quot;,&quot;#2FD3E0&quot;,&quot;#FF8A3D&quot;],&quot;tsType&quot;:&quot;string&quot;},&quot;lookX&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:0,&quot;min&quot;:-1,&quot;max&quot;:1,&quot;step&quot;:0.1,&quot;tsType&quot;:&quot;number&quot;},&quot;lookY&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:0,&quot;min&quot;:-1,&quot;max&quot;:1,&quot;step&quot;:0.1,&quot;tsType&quot;:&quot;number&quot;},&quot;still&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const MOODS = {
+  idle:{eyes:'round',mouth:'smile'},
+  wave:{eyes:'round',mouth:'grin',arm:true,cheeks:true},
+  thinking:{eyes:'round',mouth:'flat',look:[.6,-.8],brows:['rotate(-10deg) translateY(-.2em)','rotate(0)'],bubble:true,tuftAnim:'spuzSpin 1.2s linear infinite'},
+  cheer:{eyes:'happy',mouth:'grin',confetti:true,hop:true,cheeks:true},
+  proud:{eyes:'happy',mouth:'smile',sparkles:true,cheeks:true,t:'scale(1.05,1.02)'},
+  fire:{eyes:'round',mouth:'grin',flame:true,look:[0,-.3]},
+  sleepy:{eyes:'sleepy',mouth:'o',zzz:true,slow:true,tuftT:'rotate(30deg)'},
+  squish:{eyes:'x',mouth:'flat',t:'scale(1.34,.5)',still:true},
+  rage:{eyes:'round',mouth:'frown',brows:['rotate(20deg)','rotate(-20deg)'],cheeks:'rage',steam:true,shake:true},
+  shocked:{eyes:'big',mouth:'o',sweat:true,t:'translateY(-.35em) scale(.95,1.07)'},
+  sad:{eyes:'round',mouth:'frown',brows:['rotate(-16deg)','rotate(16deg)'],tear:true,look:[0,.7],tuftT:'rotate(44deg)',t:'scale(1.03,.95)',slow:true},
+  party:{eyes:'happy',mouth:'grin',hat:true,confetti:true,hop:true,cheeks:true}
+};
+class Component extends DCLogic {
+  renderVals() {
+    const mood = MOODS[this.props.mood] ? this.props.mood : 'idle';
+    const m = MOODS[mood];
+    const size = this.props.size ?? 120;
+    const lx = m.look ? m.look[0] : (this.props.lookX ?? 0);
+    const ly = m.look ? m.look[1] : (this.props.lookY ?? 0);
+    const big = m.eyes === 'big';
+    const pupil = big ? .7 : 1.05;
+    const eyeW = big ? 2.3 : 1.9, eyeH = big ? 2.5 : 2.2;
+    const still = this.props.still || m.still;
+    return {
+      mood, fs: size / 12, color: this.props.color ?? '#B8F23A',
+      hopAnim: m.hop && !still ? 'spuzHop .7s cubic-bezier(.45,0,.55,1) infinite' : 'none',
+      bodyTransform: m.t || 'none',
+      bodyAnim: still ? 'none' : m.shake ? 'spuzShake .22s linear infinite' : `spuzBreathe ${m.slow ? 4.6 : 3.2}s ease-in-out infinite`,
+      showTuft: !m.flame && !m.hat,
+      tuftTransform: m.tuftT || 'none',
+      tuftAnim: still ? 'none' : (m.tuftAnim || 'spuzFlop 1.8s cubic-bezier(.45,0,.55,1) infinite'),
+      flame: !!m.flame, hat: !!m.hat, arm: !!m.arm,
+      cheeks: !!m.cheeks, cheekColor: m.cheeks === 'rage' ? 'rgba(255,59,59,.85)' : 'rgba(255,122,138,.5)',
+      eyesRound: m.eyes === 'round' || big, eyesHappy: m.eyes === 'happy', eyesSleepy: m.eyes === 'sleepy', eyesX: m.eyes === 'x',
+      eyeL: big ? 1.5 : 1.7, eyeR: big ? 4.95 : 5.15, eyeTopL: big ? 1.4 : 1.65, eyeTopR: big ? 2 : 2.25,
+      eyeWL: big ? 2.8 : 2.4, eyeHL: big ? 3 : 2.6, eyeWR: big ? 2 : 1.6, eyeHR: big ? 2.2 : 1.75,
+      pupil, pupilM: -pupil / 2, pupilR: pupil * .8, pupilMR: -pupil * .4,
+      lookL: `translate(${((lx + (m.look ? 0 : .35)) * .4).toFixed(2)}em,${((ly - (m.look ? 0 : .25)) * .45).toFixed(2)}em)`,
+      lookR: `translate(${((lx - (m.look ? 0 : .45)) * .28).toFixed(2)}em,${((ly + (m.look ? 0 : .4)) * .3).toFixed(2)}em)`,
+      brows: !!m.brows, browL: m.brows ? m.brows[0] : 'none', browR: m.brows ? m.brows[1] : 'none',
+      mSmile: m.mouth === 'smile', mGrin: m.mouth === 'grin', mO: m.mouth === 'o', mFlat: m.mouth === 'flat', mFrown: m.mouth === 'frown',
+      tear: !!m.tear, sweat: !!m.sweat, confetti: !!m.confetti, sparkles: !!m.sparkles, zzz: !!m.zzz, steam: !!m.steam, bubble: !!m.bubble
+    };
+  }
+}
+</script>
+</body>
+</html>

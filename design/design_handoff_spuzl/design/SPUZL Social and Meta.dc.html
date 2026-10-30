@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800;900&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
+<style>
+body{margin:0;background:#0A0B14;color:#F4F5FB;font-family:Geist,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#B8F23A}a:hover{color:#D4FF7A}
+@keyframes claimPop{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+@keyframes isle{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important}}
+</style>
+</helmet>
+<div style="display:flex;flex-direction:column;gap:48px;padding:56px;background:#0A0B14;width:max-content">
+
+<section data-screen-label="Compete" style="display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-direction:column;gap:6px"><div style="font:900 40px Unbounded,sans-serif;letter-spacing:-0.03em">Compete, profile, collect</div><div style="font:400 17px Geist,sans-serif;color:#A2A6C2">Leaderboards, profiles, badges and quests, shop.</div></div>
+<div style="display:flex;gap:32px;align-items:flex-start">
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">S1 Leaderboards, School, Crownfall, today</div>
+<div data-screen-label="S1 Leaderboards" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column">
+  <div style="padding:56px 16px 10px;display:flex;flex-direction:column;gap:12px">
+    <div style="font:900 26px Unbounded,sans-serif">Leaderboards</div>
+    <div style="display:flex;gap:6px;overflow:hidden">
+      <sc-for list="{{ lbTabs }}" as="t" hint-placeholder-count="6"><span style="flex:none;height:40px;padding:0 14px;border-radius:12px;background:{{ t.bg }};color:{{ t.fg }};font:600 15px Geist,sans-serif;display:flex;align-items:center">{{ t.t }}</span></sc-for>
+    </div>
+    <div style="display:flex;gap:8px">
+      <div style="flex:1;height:44px;border-radius:14px;background:#171929;display:flex;align-items:center;gap:8px;padding:0 12px;font:600 15px Geist,sans-serif"><span style="width:24px;height:24px;border-radius:8px;background:#8B7CFF;color:#0E0F1A;font-size:14px;display:flex;align-items:center;justify-content:center"><i class="ph-bold ph-crown-simple"></i></span>Crownfall<i class="ph-bold ph-caret-down" style="margin-left:auto;color:#A2A6C2"></i></div>
+      <div style="height:44px;border-radius:14px;background:#171929;display:flex;align-items:center;gap:8px;padding:0 12px;font:600 15px Geist,sans-serif">Today<i class="ph-bold ph-caret-down" style="color:#A2A6C2"></i></div>
+    </div>
+    <div style="font:500 14px Geist,sans-serif;color:#A2A6C2;display:flex;gap:6px;align-items:center"><i class="ph-bold ph-seal-check" style="color:#B8F23A"></i>Achimota School · 312 Spuzlers played</div>
+  </div>
+  <div style="display:flex;align-items:flex-end;justify-content:center;gap:8px;padding:6px 16px 12px">
+    <sc-for list="{{ lbPod }}" as="p" hint-placeholder-count="3">
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px">
+        <div style="position:relative;width:{{ p.s }}px;height:{{ p.s }}px;border-radius:18px;background:{{ p.c }};font:900 20px Unbounded,sans-serif;color:#0E0F1A;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px #0E0F1A,0 0 0 6px {{ p.ring }}">{{ p.i }}</div>
+        <span style="font:600 14px Geist,sans-serif">{{ p.n }}</span>
+        <div style="width:100%;height:{{ p.h }}px;border-radius:14px 14px 0 0;background:{{ p.ring }};color:#0E0F1A;display:flex;flex-direction:column;align-items:center;padding-top:8px;font:600 14px Geist Mono,monospace">{{ p.t }}</div>
+      </div>
+    </sc-for>
+  </div>
+  <div style="flex:1;padding:0 12px;display:flex;flex-direction:column;gap:3px;overflow:hidden">
+    <sc-for list="{{ lbRows }}" as="r" hint-placeholder-count="8">
+      <div style="display:flex;align-items:center;gap:10px;height:48px;padding:0 10px;border-radius:12px;background:#171929">
+        <span style="width:26px;font:600 14px Geist Mono,monospace;color:#A2A6C2">{{ r.pos }}</span>
+        <span style="width:30px;height:30px;border-radius:9px;background:{{ r.c }};font:900 12px Unbounded,sans-serif;color:#0E0F1A;display:flex;align-items:center;justify-content:center">{{ r.i }}</span>
+        <span style="flex:1;display:flex;flex-direction:column"><span style="font:600 15px Geist,sans-serif">{{ r.n }}</span><span style="font:500 12px Geist,sans-serif;color:#A2A6C2">{{ r.sub }}</span></span>
+        <span style="font:600 15px Geist Mono,monospace">{{ r.t }}</span>
+      </div>
+    </sc-for>
+  </div>
+  <div style="position:absolute;left:12px;right:12px;bottom:92px;display:flex;align-items:center;gap:10px;height:56px;padding:0 12px;border-radius:16px;background:#24331A;box-shadow:inset 0 0 0 2px #B8F23A,0 -10px 24px #0E0F1A">
+    <span style="width:26px;font:600 14px Geist Mono,monospace;color:#B8F23A">23</span>
+    <span style="width:30px;height:30px;border-radius:9px;background:#2FD3E0;font:900 12px Unbounded,sans-serif;color:#0E0F1A;display:flex;align-items:center;justify-content:center">A</span>
+    <span style="flex:1;font:700 15px Geist,sans-serif">You</span><span style="font:500 13px Geist,sans-serif;color:#A2A6C2">top 8%</span>
+    <span style="font:600 15px Geist Mono,monospace">1:12</span>
+  </div>
+  <div style="position:absolute;left:0;right:0;bottom:0;height:80px;background:#171929;border-top:1px solid #2B2F4A;display:grid;grid-template-columns:repeat(5,1fr);padding-bottom:12px">
+    <sc-for list="{{ nav2 }}" as="n" hint-placeholder-count="5"><div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:{{ n.col }}"><i class="ph-bold {{ n.i }}" style="font-size:24px"></i><span style="font:600 12px Geist,sans-serif">{{ n.l }}</span></div></sc-for>
+  </div>
+</div></div>
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">S2 Profile, own</div>
+<div data-screen-label="S2 Profile" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column;padding:56px 16px 20px;box-sizing:border-box;gap:14px">
+  <div style="display:flex;gap:14px;align-items:center">
+    <div style="position:relative;width:96px;height:96px;border-radius:30px;background:#171929;box-shadow:0 0 0 4px #2FD3E0,0 0 0 8px #0E0F1A,0 0 0 10px #FFC93C;display:flex;align-items:center;justify-content:center"><dc-import name="Spuz" mood="fire" size="{{ 86 }}" color="#2FD3E0" still="{{ true }}" hint-size="86px,86px"></dc-import></div>
+    <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+      <span style="font:900 20px Unbounded,sans-serif">AmaTheGreat</span>
+      <span style="font:500 14px Geist,sans-serif;color:#A2A6C2">Achimota · Accra · Thinker</span>
+      <div style="display:flex;align-items:center;gap:8px"><span style="font:600 13px Geist Mono,monospace;color:#B8F23A">Lv 15</span><div style="flex:1;height:8px;border-radius:4px;background:#2B2F4A;overflow:hidden"><div style="width:22%;height:100%;background:#B8F23A;border-radius:4px"></div></div></div>
+    </div>
+    <div aria-label="Edit profile" style="width:44px;height:44px;border-radius:14px;background:#20233A;display:flex;align-items:center;justify-content:center;font-size:20px"><i class="ph-bold ph-pencil-simple"></i></div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+    <sc-for list="{{ pStats }}" as="s" hint-placeholder-count="3"><div style="background:#171929;border-radius:16px;padding:10px 12px;display:flex;flex-direction:column;gap:2px"><span style="font:600 20px Geist Mono,monospace;color:{{ s.c }}">{{ s.v }}</span><span style="font:500 13px Geist,sans-serif;color:#A2A6C2">{{ s.l }}</span></div></sc-for>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span style="font:700 16px Geist,sans-serif">Rank per world</span>
+    <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px">
+      <sc-for list="{{ worldRanks }}" as="w" hint-placeholder-count="8"><div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div style="width:38px;height:42px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:{{ w.bg }};color:#0E0F1A;font-size:16px;display:flex;align-items:center;justify-content:center"><i class="ph-bold {{ w.i }}"></i></div><span style="font:600 10px Geist,sans-serif;color:#A2A6C2">{{ w.r }}</span></div></sc-for>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <div style="display:flex;justify-content:space-between"><span style="font:700 16px Geist,sans-serif">Streak calendar</span><span style="font:500 14px Geist,sans-serif;color:#A2A6C2">Oct</span></div>
+    <div style="display:grid;grid-template-columns:repeat(15,1fr);gap:3px">
+      <sc-for list="{{ heat }}" as="h" hint-placeholder-count="30"><div style="aspect-ratio:1;border-radius:4px;background:{{ h.c }};display:flex;align-items:center;justify-content:center;color:#0E0F1A;font-size:9px"><i class="ph-bold {{ h.i }}"></i></div></sc-for>
+    </div>
+    <div style="display:flex;gap:12px;font:500 12px Geist,sans-serif;color:#A2A6C2"><span style="display:flex;gap:4px;align-items:center"><span style="width:10px;height:10px;border-radius:3px;background:#B8F23A"></span>Full Spuzl</span><span style="display:flex;gap:4px;align-items:center"><span style="width:10px;height:10px;border-radius:3px;background:#5E7F25"></span>Played</span><span style="display:flex;gap:4px;align-items:center"><span style="width:10px;height:10px;border-radius:3px;background:#6FB6FF"></span>Frozen</span></div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <div style="display:flex;justify-content:space-between"><span style="font:700 16px Geist,sans-serif">Pinned badges</span><span style="font:500 14px Geist,sans-serif;color:#B8F23A">All 34</span></div>
+    <div style="display:flex;gap:10px">
+      <sc-for list="{{ pinned }}" as="b" hint-placeholder-count="4"><div style="width:62px;height:68px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:{{ b.c }};display:flex;align-items:center;justify-content:center"><div style="width:46px;height:52px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:{{ b.in }};color:#0E0F1A;font-size:22px;display:flex;align-items:center;justify-content:center"><i class="ph-bold {{ b.i }}"></i></div></div></sc-for>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:2px;background:#171929;border-radius:16px;padding:4px 12px">
+    <sc-for list="{{ gameStats }}" as="g" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:10px;height:42px"><span style="width:26px;height:26px;border-radius:8px;background:{{ g.c }};color:#0E0F1A;font-size:14px;display:flex;align-items:center;justify-content:center"><i class="ph-bold {{ g.i }}"></i></span><span style="flex:1;font:600 15px Geist,sans-serif">{{ g.n }}</span><span style="font:500 13px Geist Mono,monospace;color:#A2A6C2">{{ g.c2 }} clears</span><span style="font:600 14px Geist Mono,monospace;width:52px;text-align:right">{{ g.b }}</span></div></sc-for>
+  </div>
+</div></div>
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">S3 Profile, friend view</div>
+<div data-screen-label="S3 Friend profile" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column;padding:56px 16px 20px;box-sizing:border-box;gap:14px">
+  <div style="display:flex;justify-content:space-between"><div style="width:44px;height:44px;border-radius:14px;background:#20233A;display:flex;align-items:center;justify-content:center;font-size:20px"><i class="ph-bold ph-arrow-left"></i></div><div aria-label="More" style="width:44px;height:44px;border-radius:14px;background:#20233A;display:flex;align-items:center;justify-content:center;font-size:20px"><i class="ph-bold ph-dots-three"></i></div></div>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+    <div style="position:relative;width:120px;height:120px;border-radius:36px;background:#171929;box-shadow:0 0 0 4px #FF8A3D;display:flex;align-items:center;justify-content:center"><dc-import name="Spuz" mood="idle" size="{{ 106 }}" color="#FF8A3D" hint-size="106px,106px"></dc-import><span style="position:absolute;right:-4px;bottom:-4px;width:20px;height:20px;border-radius:50%;background:#B8F23A;box-shadow:0 0 0 4px #0E0F1A"></span></div>
+    <span style="font:900 22px Unbounded,sans-serif">Kofi</span>
+    <span style="font:500 15px Geist,sans-serif;color:#A2A6C2;display:flex;gap:6px;align-items:center"><span style="width:8px;height:8px;border-radius:50%;background:#B8F23A"></span>Playing Crownfall</span>
+  </div>
+  <div style="background:#171929;border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:12px">
+    <span style="font:700 16px Geist,sans-serif">You vs Kofi</span>
+    <div style="display:flex;align-items:center;gap:12px"><span style="font:600 32px Geist Mono,monospace;color:#B8F23A">14</span><div style="flex:1;height:12px;border-radius:6px;background:#FF8A3D;overflow:hidden"><div style="width:54%;height:100%;background:#B8F23A"></div></div><span style="font:600 32px Geist Mono,monospace;color:#FF8A3D">12</span></div>
+    <div style="display:flex;justify-content:space-between;font:500 14px Geist,sans-serif;color:#A2A6C2"><span>Duel wins</span><span>Your best: Dusk · His: Weave</span></div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+    <sc-for list="{{ kStats }}" as="s" hint-placeholder-count="3"><div style="background:#171929;border-radius:16px;padding:10px 12px;display:flex;flex-direction:column;gap:2px"><span style="font:600 20px Geist Mono,monospace;color:{{ s.c }}">{{ s.v }}</span><span style="font:500 13px Geist,sans-serif;color:#A2A6C2">{{ s.l }}</span></div></sc-for>
+  </div>
+  <div style="margin-top:auto;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <button style="height:60px;border:0;border-radius:20px;background:#B8F23A;color:#0E0F1A;box-shadow:0 6px 0 #6F9A1C;font:900 16px Unbounded,sans-serif;display:flex;align-items:center;justify-content:center;gap:8px"><i class="ph-bold ph-sword"></i>Duel</button>
+    <button style="height:60px;border:0;border-radius:20px;background:#20233A;color:#F4F5FB;box-shadow:0 6px 0 #0A0B12;font:800 16px Unbounded,sans-serif;display:flex;align-items:center;justify-content:center;gap:8px"><i class="ph-bold ph-timer"></i>Beat time</button>
+  </div>
+</div></div>
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">S4 Quests and badges, claim state</div>
+<div data-screen-label="S4 Quests" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column;padding:56px 16px 20px;box-sizing:border-box;gap:12px">
+  <div style="font:900 26px Unbounded,sans-serif">Quests</div>
+  <div style="display:flex;gap:4px;padding:4px;border-radius:16px;background:#171929"><span style="flex:1;height:40px;border-radius:12px;background:#20233A;display:flex;align-items:center;justify-content:center;font:600 15px Geist,sans-serif">Quests</span><span style="flex:1;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font:600 15px Geist,sans-serif;color:#A2A6C2">Badges</span></div>
+  <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 16px Geist,sans-serif">Daily</span><span style="font:500 14px Geist Mono,monospace;color:#A2A6C2">resets 03:42:10</span></div>
+  <sc-for list="{{ quests }}" as="q" hint-placeholder-count="3">
+    <div style="border-radius:18px;background:{{ q.bg }};box-shadow:{{ q.ring }};padding:12px 14px;display:flex;align-items:center;gap:12px;animation:{{ q.anim }}">
+      <div style="width:44px;height:44px;border-radius:14px;background:{{ q.ibg }};color:{{ q.ifg }};font-size:22px;display:flex;align-items:center;justify-content:center"><i class="ph-bold {{ q.i }}"></i></div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+        <span style="font:600 15px Geist,sans-serif">{{ q.t }}</span>
+        <div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:8px;border-radius:4px;background:#2B2F4A;overflow:hidden"><div style="width:{{ q.p }}%;height:100%;background:{{ q.bar }};border-radius:4px"></div></div><span style="font:500 12px Geist Mono,monospace;color:#A2A6C2">{{ q.v }}</span></div>
+      </div>
+      <span style="padding:8px 12px;border-radius:12px;background:{{ q.cbg }};color:{{ q.cfg }};font:700 14px Geist,sans-serif;white-space:nowrap">{{ q.cta }}</span>
+    </div>
+  </sc-for>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px"><span style="font:700 16px Geist,sans-serif">Weekly chain · Market Week</span><span style="font:500 14px Geist,sans-serif;color:#A2A6C2">3 of 5</span></div>
+  <div style="display:flex;align-items:center;gap:0;padding:6px 4px">
+    <sc-for list="{{ chain }}" as="c" hint-placeholder-count="5">
+      <div style="display:flex;align-items:center;flex:{{ c.flex }}">
+        <div style="width:48px;height:52px;flex:none;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:{{ c.bg }};color:{{ c.fg }};font-size:20px;display:flex;align-items:center;justify-content:center"><i class="ph-bold {{ c.i }}"></i></div>
+        <div style="flex:1;height:4px;background:{{ c.line }};display:{{ c.ld }}"></div>
+      </div>
+    </sc-for>
+  </div>
+  <div style="border-radius:18px;background:#171929;padding:14px;display:flex;gap:12px;align-items:center"><dc-import name="Spuz" mood="thinking" size="{{ 64 }}" still="{{ true }}" hint-size="64px,64px"></dc-import><div style="flex:1;font:500 15px/1.4 Geist,sans-serif">Next: win 2 Party Races with a friend. Reward: Market hat.</div></div>
+</div></div>
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">S5 Shop, hat try-on</div>
+<div data-screen-label="S5 Shop" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column">
+  <div style="padding:56px 16px 0;display:flex;justify-content:space-between;align-items:center"><span style="font:900 26px Unbounded,sans-serif">Shop</span><div style="height:40px;padding:0 12px;border-radius:14px;background:#20233A;display:flex;align-items:center;gap:6px"><i class="ph-bold ph-lightning" style="color:#FFC93C"></i><span style="font:600 17px Geist Mono,monospace;color:#FFC93C">1,284</span></div></div>
+  <div style="margin:14px 16px 0;height:230px;border-radius:28px;background:#171929;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden">
+    <div style="position:absolute;inset:0;background-image:radial-gradient(#2B2F4A 1.5px,transparent 1.5px);background-size:22px 22px"></div>
+    <div style="position:relative"><dc-import name="Spuz" mood="party" size="{{ 190 }}" color="#2FD3E0" hint-size="190px,190px"></dc-import></div>
+    <span style="position:absolute;left:14px;top:14px;padding:6px 10px;border-radius:10px;background:#0E0F1A;font:600 13px Geist,sans-serif">Trying on</span>
+    <span style="position:absolute;right:14px;top:14px;padding:6px 10px;border-radius:10px;background:#0E0F1A;font:600 13px Geist,sans-serif;display:flex;gap:6px;align-items:center"><i class="ph-bold ph-arrow-counter-clockwise"></i>Reset</span>
+  </div>
+  <div style="display:flex;gap:6px;padding:14px 16px 0">
+    <sc-for list="{{ shopTabs }}" as="t" hint-placeholder-count="4"><span style="height:40px;padding:0 14px;border-radius:12px;background:{{ t.bg }};color:{{ t.fg }};font:600 15px Geist,sans-serif;display:flex;align-items:center">{{ t.t }}</span></sc-for>
+  </div>
+  <div style="padding:12px 16px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+    <sc-for list="{{ shopItems }}" as="s" hint-placeholder-count="6">
+      <div style="border-radius:18px;background:{{ s.bg }};box-shadow:{{ s.ring }};padding:10px;display:flex;flex-direction:column;align-items:center;gap:6px">
+        <div style="width:56px;height:56px;border-radius:16px;background:#20233A;color:{{ s.c }};font-size:28px;display:flex;align-items:center;justify-content:center"><i class="ph-bold {{ s.i }}"></i></div>
+        <span style="font:600 13px Geist,sans-serif">{{ s.n }}</span>
+        <span style="font:600 13px Geist Mono,monospace;color:{{ s.pc }};display:flex;gap:4px;align-items:center"><i class="ph-bold {{ s.pi }}"></i>{{ s.p }}</span>
+      </div>
+    </sc-for>
+  </div>
+  <div style="margin-top:auto;padding:0 16px 28px;display:flex;flex-direction:column;gap:8px">
+    <div style="display:flex;gap:10px;align-items:center;padding:10px 14px;border-radius:14px;background:#171929"><i class="ph-bold ph-snowflake" style="color:#6FB6FF;font-size:22px"></i><span style="flex:1;font:600 15px Geist,sans-serif">Streak Freeze</span><span style="font:500 13px Geist,sans-serif;color:#A2A6C2">own 1 · max 3</span><span style="font:600 14px Geist Mono,monospace;color:#FFC93C">200</span></div>
+    <button style="height:60px;border:0;border-radius:20px;background:#B8F23A;color:#0E0F1A;box-shadow:0 6px 0 #6F9A1C;font:900 16px Unbounded,sans-serif;display:flex;align-items:center;justify-content:center;gap:8px">Buy Party Hat <i class="ph-bold ph-lightning"></i>350</button>
+  </div>
+</div></div>
+
+</div>
+</section>
+
+<section data-screen-label="Social" style="display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-direction:column;gap:6px"><div style="font:900 40px Unbounded,sans-serif;letter-spacing:-0.03em">Friends, crews, settings</div><div style="font:400 17px Geist,sans-serif;color:#A2A6C2">Invite flows lead with WhatsApp. Reactions are presets only. Block and report always two taps away.</div></div>
+<div style="display:flex;gap:32px;align-items:flex-start">
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">F1 Friends</div>
+<div data-screen-label="F1 Friends" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column;padding:56px 16px 20px;box-sizing:border-box;gap:12px">
+  <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:900 26px Unbounded,sans-serif">Friends</span><span style="font:500 14px Geist,sans-serif;color:#A2A6C2">4 of 23 online</span></div>
+  <div style="border-radius:22px;background:#171929;padding:14px;display:flex;gap:12px;align-items:center">
+    <div style="width:84px;height:84px;border-radius:16px;background:#F4F5FB;padding:8px;box-sizing:border-box;display:grid;grid-template-columns:repeat(7,1fr);gap:1px"><sc-for list="{{ qr }}" as="q" hint-placeholder-count="49"><span style="background:{{ q }};border-radius:1px"></span></sc-for></div>
+    <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+      <span style="font:600 15px Geist,sans-serif">Your invite</span>
+      <span style="font:500 14px Geist Mono,monospace;color:#B8F23A">spuzl.gg/i/ama7</span>
+      <div style="display:flex;gap:6px"><span style="height:36px;padding:0 10px;border-radius:10px;background:#B8F23A;color:#0E0F1A;font:600 14px Geist,sans-serif;display:flex;align-items:center;gap:6px"><i class="ph-bold ph-whatsapp-logo"></i>WhatsApp</span><span style="height:36px;padding:0 10px;border-radius:10px;background:#20233A;font:600 14px Geist,sans-serif;display:flex;align-items:center;gap:6px"><i class="ph-bold ph-copy"></i>Copy</span></div>
+    </div>
+  </div>
+  <div style="height:48px;border-radius:14px;background:#171929;display:flex;align-items:center;gap:10px;padding:0 14px;color:#A2A6C2;font:500 15px Geist,sans-serif"><i class="ph-bold ph-magnifying-glass" style="font-size:18px"></i>Add by username</div>
+  <div style="font:700 15px Geist,sans-serif">Requests · 2</div>
+  <sc-for list="{{ reqs }}" as="r" hint-placeholder-count="2">
+    <div style="display:flex;align-items:center;gap:10px;height:56px;padding:0 10px;border-radius:16px;background:#171929">
+      <span style="width:36px;height:36px;border-radius:11px;background:{{ r.c }};font:900 14px Unbounded,sans-serif;color:#0E0F1A;display:flex;align-items:center;justify-content:center">{{ r.i }}</span>
+      <span style="flex:1;display:flex;flex-direction:column"><span style="font:600 15px Geist,sans-serif">{{ r.n }}</span><span style="font:500 12px Geist,sans-serif;color:#A2A6C2">{{ r.sub }}</span></span>
+      <span aria-label="Decline" style="width:44px;height:44px;border-radius:12px;background:#20233A;display:flex;align-items:center;justify-content:center"><i class="ph-bold ph-x"></i></span>
+      <span aria-label="Accept" style="width:44px;height:44px;border-radius:12px;background:#B8F23A;color:#0E0F1A;display:flex;align-items:center;justify-content:center"><i class="ph-bold ph-check"></i></span>
+    </div>
+  </sc-for>
+  <div style="font:700 15px Geist,sans-serif">Online</div>
+  <sc-for list="{{ friends }}" as="f" hint-placeholder-count="4">
+    <div style="display:flex;align-items:center;gap:10px;height:52px;padding:0 4px">
+      <span style="position:relative;width:36px;height:36px;border-radius:11px;background:{{ f.c }};font:900 14px Unbounded,sans-serif;color:#0E0F1A;display:flex;align-items:center;justify-content:center">{{ f.i }}<span style="position:absolute;right:-3px;bottom:-3px;width:12px;height:12px;border-radius:50%;background:{{ f.dot }};box-shadow:0 0 0 3px #0E0F1A"></span></span>
+      <span style="flex:1;display:flex;flex-direction:column"><span style="font:600 15px Geist,sans-serif">{{ f.n }}</span><span style="font:500 13px Geist,sans-serif;color:#A2A6C2">{{ f.st }}</span></span>
+      <span aria-label="Duel {{ f.n }}" style="width:44px;height:44px;border-radius:12px;background:#20233A;display:flex;align-items:center;justify-content:center;color:#B8F23A"><i class="ph-bold ph-sword"></i></span>
+    </div>
+  </sc-for>
+</div></div>
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">F2 Activity feed + report sheet</div>
+<div data-screen-label="F2 Feed report" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column;padding:56px 16px 20px;box-sizing:border-box;gap:10px">
+  <span style="font:900 26px Unbounded,sans-serif">Activity</span>
+  <sc-for list="{{ feed }}" as="f" hint-placeholder-count="3">
+    <div style="border-radius:18px;background:#171929;padding:12px 14px;display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="width:36px;height:36px;border-radius:11px;background:{{ f.c }};font:900 14px Unbounded,sans-serif;color:#0E0F1A;display:flex;align-items:center;justify-content:center">{{ f.i }}</span><span style="flex:1;font:500 15px/1.35 Geist,sans-serif">{{ f.t }}</span><span style="font:500 12px Geist,sans-serif;color:#A2A6C2">{{ f.ago }}</span></div>
+      <div style="display:flex;gap:6px"><sc-for list="{{ f.rx }}" as="x" hint-placeholder-count="4"><span style="height:34px;padding:0 10px;border-radius:10px;background:{{ x.bg }};font:600 14px Geist,sans-serif;display:flex;align-items:center;gap:4px">{{ x.e }}<span style="font:500 12px Geist Mono,monospace;color:#A2A6C2">{{ x.n }}</span></span></sc-for></div>
+    </div>
+  </sc-for>
+  <div style="position:absolute;inset:0;background:rgba(6,7,13,.6)"></div>
+  <div style="position:absolute;left:0;right:0;bottom:0;background:#171929;border-radius:32px 32px 0 0;padding:14px 20px 28px;display:flex;flex-direction:column;gap:10px">
+    <div style="align-self:center;width:44px;height:5px;border-radius:3px;background:#2B2F4A"></div>
+    <span style="font:800 18px Unbounded,sans-serif">Report Speedy99</span>
+    <span style="font:400 15px Geist,sans-serif;color:#A2A6C2">What's wrong? A human checks every report.</span>
+    <sc-for list="{{ reportOpts }}" as="o" hint-placeholder-count="4"><div style="height:52px;border-radius:14px;background:{{ o.bg }};box-shadow:{{ o.ring }};display:flex;align-items:center;gap:12px;padding:0 14px;font:600 15px Geist,sans-serif"><i class="ph-bold {{ o.i }}" style="font-size:20px"></i>{{ o.t }}</div></sc-for>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 2px"><span style="font:600 15px Geist,sans-serif">Also block them</span><span style="width:52px;height:32px;border-radius:16px;background:#B8F23A;position:relative"><span style="position:absolute;right:4px;top:4px;width:24px;height:24px;border-radius:50%;background:#0E0F1A"></span></span></div>
+    <button style="height:56px;border:0;border-radius:18px;background:#FF5A5F;color:#0E0F1A;box-shadow:0 5px 0 #9E2A2E;font:800 16px Unbounded,sans-serif">Send report</button>
+  </div>
+</div></div>
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">C1 Crew page + crew matchup</div>
+<div data-screen-label="C1 Crew" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column;padding:56px 16px 20px;box-sizing:border-box;gap:12px">
+  <div style="display:flex;gap:14px;align-items:center">
+    <div style="width:72px;height:80px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:#B8F23A;display:flex;align-items:center;justify-content:center"><div style="width:56px;height:62px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:#0E0F1A;color:#B8F23A;font-size:28px;display:flex;align-items:center;justify-content:center"><i class="ph-bold ph-pepper"></i></div></div>
+    <div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font:900 22px Unbounded,sans-serif">Shito Squad</span><span style="font:500 14px Geist,sans-serif;color:#A2A6C2">14 of 20 · Accra · rank 38 in GH</span></div>
+  </div>
+  <div style="border-radius:24px;background:#171929;padding:16px;display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;justify-content:space-between;font:600 14px Geist,sans-serif"><span>Crew clash · week 43</span><span style="color:#A2A6C2;font-family:Geist Mono,monospace">2d 14h</span></div>
+    <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><span style="font:800 15px Unbounded,sans-serif">Shito Squad</span><span style="font:600 30px Geist Mono,monospace;color:#B8F23A">18,420</span></div>
+      <span style="font:900 16px Unbounded,sans-serif;color:#A2A6C2">vs</span>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><span style="font:800 15px Unbounded,sans-serif">Lagos Lit</span><span style="font:600 30px Geist Mono,monospace">17,960</span></div>
+    </div>
+    <div style="height:14px;border-radius:7px;background:#FF8A3D;overflow:hidden"><div style="width:51%;height:100%;background:#B8F23A"></div></div>
+    <span style="font:500 14px Geist,sans-serif;color:#A2A6C2">Every clear by a member adds XP. Up 460. Don't sleep.</span>
+  </div>
+  <div style="display:flex;justify-content:space-between"><span style="font:700 15px Geist,sans-serif">This week's carry</span><span style="font:500 14px Geist,sans-serif;color:#B8F23A">All members</span></div>
+  <sc-for list="{{ crewRows }}" as="r" hint-placeholder-count="5">
+    <div style="display:flex;align-items:center;gap:10px;height:48px;padding:0 10px;border-radius:12px;background:{{ r.bg }}">
+      <span style="width:20px;font:600 14px Geist Mono,monospace;color:#A2A6C2">{{ r.pos }}</span>
+      <span style="width:30px;height:30px;border-radius:9px;background:{{ r.c }};font:900 12px Unbounded,sans-serif;color:#0E0F1A;display:flex;align-items:center;justify-content:center">{{ r.i }}</span>
+      <span style="flex:1;font:{{ r.w }} 15px Geist,sans-serif">{{ r.n }}</span>
+      <span style="font:600 15px Geist Mono,monospace">{{ r.xp }}</span>
+    </div>
+  </sc-for>
+  <div style="margin-top:auto;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <button style="height:56px;border:0;border-radius:18px;background:#B8F23A;color:#0E0F1A;box-shadow:0 5px 0 #6F9A1C;font:800 15px Unbounded,sans-serif">Crew race</button>
+    <button style="height:56px;border:0;border-radius:18px;background:#20233A;color:#F4F5FB;box-shadow:0 5px 0 #0A0B12;font:800 15px Unbounded,sans-serif">Invite</button>
+  </div>
+</div></div>
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">K1 Settings</div>
+<div data-screen-label="K1 Settings" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column;padding:56px 16px 20px;box-sizing:border-box;gap:10px">
+  <span style="font:900 26px Unbounded,sans-serif">Settings</span>
+  <sc-for list="{{ settingsGroups }}" as="g" hint-placeholder-count="3">
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <span style="font:600 14px Geist,sans-serif;color:#A2A6C2;padding:6px 4px">{{ g.t }}</span>
+      <div style="border-radius:18px;background:#171929;padding:0 14px">
+        <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="4">
+          <div style="display:flex;align-items:center;gap:12px;min-height:50px;border-top:{{ r.bt }}">
+            <i class="ph-bold {{ r.i }}" style="font-size:20px;color:#A2A6C2"></i>
+            <span style="flex:1;font:500 16px Geist,sans-serif">{{ r.l }}</span>
+            <sc-if value="{{ r.isToggle }}" hint-placeholder-val="{{ true }}"><span role="switch" aria-checked="{{ r.on }}" style="width:52px;height:32px;border-radius:16px;background:{{ r.tbg }};position:relative;flex:none"><span style="position:absolute;top:4px;left:{{ r.tx }}px;width:24px;height:24px;border-radius:50%;background:{{ r.knob }};display:flex;align-items:center;justify-content:center;font-size:12px;color:#B8F23A"><i class="ph-bold {{ r.ki }}"></i></span></span></sc-if>
+            <sc-if value="{{ r.isValue }}" hint-placeholder-val="{{ false }}"><span style="font:500 15px Geist,sans-serif;color:#A2A6C2;display:flex;gap:6px;align-items:center">{{ r.v }}<i class="ph-bold ph-caret-right"></i></span></sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-for>
+</div></div>
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">K2 Practice and Archive</div>
+<div data-screen-label="K2 Archive" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column;padding:56px 16px 20px;box-sizing:border-box;gap:12px">
+  <div style="display:flex;align-items:center;gap:12px"><div style="width:44px;height:44px;border-radius:14px;background:#20233A;display:flex;align-items:center;justify-content:center;font-size:20px"><i class="ph-bold ph-arrow-left"></i></div><span style="font:900 22px Unbounded,sans-serif;color:#8B7CFF">Crownfall</span></div>
+  <div style="display:flex;gap:4px;padding:4px;border-radius:16px;background:#171929"><span style="flex:1;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font:600 15px Geist,sans-serif;color:#A2A6C2">Practice</span><span style="flex:1;height:40px;border-radius:12px;background:#20233A;display:flex;align-items:center;justify-content:center;font:600 15px Geist,sans-serif">Archive</span></div>
+  <div style="display:flex;justify-content:space-between;align-items:center"><i class="ph-bold ph-caret-left" style="font-size:20px"></i><span style="font:800 17px Unbounded,sans-serif">October</span><i class="ph-bold ph-caret-right" style="font-size:20px;color:#5A5E78"></i></div>
+  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">
+    <sc-for list="{{ dow }}" as="d" hint-placeholder-count="7"><span style="text-align:center;font:600 12px Geist,sans-serif;color:#A2A6C2">{{ d }}</span></sc-for>
+    <sc-for list="{{ cal }}" as="c" hint-placeholder-count="31">
+      <div style="aspect-ratio:1;border-radius:12px;background:{{ c.bg }};box-shadow:{{ c.ring }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:{{ c.fg }};opacity:{{ c.op }}"><span style="font:600 14px Geist Mono,monospace">{{ c.d }}</span><i class="ph-bold {{ c.i }}" style="font-size:11px"></i></div>
+    </sc-for>
+  </div>
+  <div style="display:flex;gap:12px;font:500 13px Geist,sans-serif;color:#A2A6C2"><span style="display:flex;gap:4px;align-items:center"><i class="ph-bold ph-check-circle" style="color:#8B7CFF"></i>Cleared</span><span style="display:flex;gap:4px;align-items:center"><i class="ph-bold ph-circle-half"></i>Started</span><span style="display:flex;gap:4px;align-items:center"><i class="ph-bold ph-circle"></i>Missed</span></div>
+  <div style="border-radius:20px;background:#171929;padding:14px;display:flex;flex-direction:column;gap:10px">
+    <div style="display:flex;justify-content:space-between"><span style="font:700 16px Geist,sans-serif">Mon 27 Oct · Easy</span><span style="font:500 14px Geist,sans-serif;color:#A2A6C2">Missed</span></div>
+    <span style="font:400 14px Geist,sans-serif;color:#A2A6C2">Archive clears earn 10 XP and keep no streak. Leaderboard shows "late".</span>
+    <button style="height:52px;border:0;border-radius:16px;background:#B8F23A;color:#0E0F1A;box-shadow:0 5px 0 #6F9A1C;font:800 15px Unbounded,sans-serif">Play 27 Oct</button>
+  </div>
+</div></div>
+
+</div>
+</section>
+
+<section data-screen-label="School Cup" style="display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-direction:column;gap:6px"><div style="font:900 40px Unbounded,sans-serif;letter-spacing:-0.03em">School Cup</div><div style="font:400 17px Geist,sans-serif;color:#A2A6C2">Teacher setup on mobile, class board on the projector.</div></div>
+<div style="display:flex;gap:32px;align-items:flex-start">
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">T1 Teacher setup, step 2 of 3</div>
+<div data-screen-label="T1 Teacher setup" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column;padding:56px 16px 24px;box-sizing:border-box;gap:14px">
+  <div style="display:flex;align-items:center;gap:12px"><div style="width:44px;height:44px;border-radius:14px;background:#20233A;display:flex;align-items:center;justify-content:center;font-size:20px"><i class="ph-bold ph-arrow-left"></i></div><div style="display:flex;flex-direction:column"><span style="font:900 20px Unbounded,sans-serif">Class challenge</span><span style="font:500 14px Geist,sans-serif;color:#A2A6C2">Mrs Owusu · Form 2B · verified</span></div></div>
+  <div style="display:flex;gap:6px"><span style="flex:1;height:6px;border-radius:3px;background:#B8F23A"></span><span style="flex:1;height:6px;border-radius:3px;background:#B8F23A"></span><span style="flex:1;height:6px;border-radius:3px;background:#2B2F4A"></span></div>
+  <div style="font:700 17px Geist,sans-serif">Pick this week's games</div>
+  <sc-for list="{{ teachGames }}" as="g" hint-placeholder-count="5">
+    <div style="display:flex;align-items:center;gap:12px;height:60px;padding:0 12px;border-radius:16px;background:{{ g.bg }};box-shadow:{{ g.ring }}">
+      <span style="width:40px;height:40px;border-radius:12px;background:{{ g.c }};color:#0E0F1A;font-size:20px;display:flex;align-items:center;justify-content:center"><i class="ph-bold {{ g.i }}"></i></span>
+      <span style="flex:1;display:flex;flex-direction:column"><span style="font:600 16px Geist,sans-serif">{{ g.n }}</span><span style="font:500 13px Geist,sans-serif;color:#A2A6C2">{{ g.d }}</span></span>
+      <span style="width:28px;height:28px;border-radius:9px;background:{{ g.cb }};color:#0E0F1A;display:flex;align-items:center;justify-content:center;box-shadow:{{ g.cr }}"><i class="ph-bold {{ g.ci }}"></i></span>
+    </div>
+  </sc-for>
+  <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+    <span style="font:700 15px Geist,sans-serif">Runs</span>
+    <div style="display:flex;gap:8px"><span style="flex:1;height:48px;border-radius:14px;background:#171929;display:flex;align-items:center;justify-content:center;font:600 15px Geist,sans-serif">Mon 3 Nov</span><i class="ph-bold ph-arrow-right" style="align-self:center;color:#A2A6C2"></i><span style="flex:1;height:48px;border-radius:14px;background:#171929;display:flex;align-items:center;justify-content:center;font:600 15px Geist,sans-serif">Fri 7 Nov</span></div>
+  </div>
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-radius:14px;background:#171929"><span style="font:600 15px Geist,sans-serif">Relaxed mode for everyone</span><span style="width:52px;height:32px;border-radius:16px;background:#2B2F4A;position:relative"><span style="position:absolute;left:4px;top:4px;width:24px;height:24px;border-radius:50%;background:#A2A6C2"></span></span></div>
+  <button style="margin-top:auto;height:60px;border:0;border-radius:20px;background:#B8F23A;color:#0E0F1A;box-shadow:0 6px 0 #6F9A1C;font:900 17px Unbounded,sans-serif">Next: share with class</button>
+</div></div>
+
+<div style="display:flex;flex-direction:column;gap:12px"><div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">T2 Class board, TV mode 1280 × 720</div>
+<div data-screen-label="T2 Class board TV" style="width:1280px;height:720px;border-radius:24px;overflow:hidden;background:#0E0F1A;box-shadow:0 0 0 1px #2B2F4A;display:grid;grid-template-columns:480px 1fr">
+  <div style="padding:44px;display:flex;flex-direction:column;gap:16px;background:#171929">
+    <div style="display:flex;align-items:flex-end;font:900 40px/0.9 Unbounded,sans-serif;letter-spacing:-0.05em"><span>SPU</span><span style="color:#B8F23A">Z</span><span>L</span><span style="font:700 22px Unbounded,sans-serif;letter-spacing:0;margin-left:14px;color:#A2A6C2">School Cup</span></div>
+    <div style="font:900 52px/1 Unbounded,sans-serif;letter-spacing:-0.03em;margin-top:20px">Form 2B</div>
+    <div style="font:600 28px Geist,sans-serif;color:#A2A6C2">Week challenge · 3 games</div>
+    <div style="display:flex;gap:12px;margin-top:10px">
+      <div style="width:72px;height:72px;border-radius:22px;background:#8B7CFF;color:#0E0F1A;font-size:36px;display:flex;align-items:center;justify-content:center"><i class="ph-bold ph-crown-simple"></i></div>
+      <div style="width:72px;height:72px;border-radius:22px;background:#3DDC84;color:#0E0F1A;font-size:36px;display:flex;align-items:center;justify-content:center"><i class="ph-bold ph-squares-four"></i></div>
+      <div style="width:72px;height:72px;border-radius:22px;background:#FFD23F;color:#0E0F1A;font-size:36px;display:flex;align-items:center;justify-content:center"><i class="ph-bold ph-target"></i></div>
+    </div>
+    <div style="margin-top:auto;display:flex;align-items:flex-end;gap:10px"><div style="display:flex;flex-direction:column;gap:4px"><span style="font:600 26px Geist,sans-serif;color:#A2A6C2">Ends in</span><span style="font:600 64px/1 Geist Mono,monospace">2d 06h</span></div><div style="margin-left:auto"><dc-import name="Spuz" mood="party" size="{{ 150 }}" hint-size="150px,150px"></dc-import></div></div>
+  </div>
+  <div style="padding:36px 40px;display:flex;flex-direction:column;gap:10px">
+    <sc-for list="{{ classRows }}" as="r" hint-placeholder-count="7">
+      <div style="display:flex;align-items:center;gap:20px;height:80px;padding:0 22px;border-radius:20px;background:{{ r.bg }}">
+        <span style="width:52px;height:52px;border-radius:16px;background:{{ r.pbg }};color:{{ r.pfg }};font:900 24px Unbounded,sans-serif;display:flex;align-items:center;justify-content:center">{{ r.pos }}</span>
+        <span style="flex:1;font:700 32px Geist,sans-serif">{{ r.n }}</span>
+        <span style="font:600 26px Geist,sans-serif;color:#A2A6C2">{{ r.cl }}</span>
+        <span style="width:150px;text-align:right;font:600 34px Geist Mono,monospace">{{ r.t }}</span>
+      </div>
+    </sc-for>
+  </div>
+</div></div>
+
+</div>
+</section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const P = { Ama: ['A', '#2FD3E0'], Kofi: ['K', '#FF8A3D'], Efua: ['E', '#8B7CFF'], Yaw: ['Y', '#3DDC84'], Zainab: ['Z', '#FFD23F'], Tunde: ['T', '#FF8A3D'], Chidi: ['C', '#4D8BFF'], Adaeze: ['A', '#FF6B6B'], Akosua: ['A', '#B8F23A'], Kwame: ['K', '#FFC93C'] };
+const sel = (on) => ({ bg: on ? '#F4F5FB' : '#171929', fg: on ? '#0E0F1A' : '#A2A6C2' });
+class Component extends DCLogic {
+  renderVals() {
+    const heat = Array.from({ length: 30 }, (_, i) => {
+      const d = i + 1, full = [3, 4, 9, 12, 16, 17, 22, 25, 28].includes(d), frozen = d === 14, miss = d === 2, future = d > 30;
+      return { c: future ? '#171929' : full ? '#B8F23A' : frozen ? '#6FB6FF' : miss ? '#20233A' : '#5E7F25', i: frozen ? 'ph-snowflake' : full ? 'ph-star-four' : '' };
+    });
+    const qr = Array.from({ length: 49 }, (_, i) => { const r = Math.floor(i / 7), c = i % 7; const corner = (r < 2 && c < 2) || (r < 2 && c > 4) || (r > 4 && c < 2); return corner || ((r * 3 + c * 5) % 4 === 0) ? '#0E0F1A' : '#F4F5FB'; });
+    const cal = [{ d: '', bg: 'transparent', fg: '#5A5E78', i: '', ring: 'none', op: 1 }, { d: '', bg: 'transparent', fg: '#5A5E78', i: '', ring: 'none', op: 1 }].concat(Array.from({ length: 31 }, (_, i) => {
+      const d = i + 1, cleared = d % 4 !== 2 && d < 30, started = d === 18, today = d === 30, future = d > 30;
+      return { d, bg: today ? '#8B7CFF' : cleared ? '#24203F' : '#171929', fg: today ? '#0E0F1A' : '#F4F5FB', i: today ? 'ph-play' : cleared ? 'ph-check-circle' : started ? 'ph-circle-half' : 'ph-circle',
+        ring: d === 27 ? 'inset 0 0 0 2px #B8F23A' : 'none', op: future ? .35 : 1 };
+    }));
+    const tog = (on) => ({ isToggle: true, isValue: false, on: String(on), tbg: on ? '#B8F23A' : '#2B2F4A', tx: on ? 24 : 4, knob: on ? '#0E0F1A' : '#A2A6C2', ki: on ? 'ph-check' : '' });
+    const val = (v) => ({ isToggle: false, isValue: true, v });
+    const rows = (arr) => arr.map((r, i) => ({ ...r, bt: i ? '1px solid #2B2F4A' : 'none' }));
+    return {
+      lbTabs: ['Friends', 'Crew', 'School', 'City', 'Country', 'Global'].map(t => ({ t, ...sel(t === 'School') })),
+      lbPod: [
+        { n: 'Zainab', i: 'Z', c: '#FFD23F', s: 52, h: 46, ring: '#D7DAE8', t: '0:58' },
+        { n: 'Kwame', i: 'K', c: '#FFC93C', s: 62, h: 66, ring: '#FFC93C', t: '0:51' },
+        { n: 'Efua', i: 'E', c: '#8B7CFF', s: 48, h: 32, ring: '#E09A5C', t: '1:01' }
+      ],
+      lbRows: [['Akosua', '1:03', 'Form 3A'], ['Kofi', '1:05', 'Form 2B'], ['Yaw', '1:06', 'Form 1C'], ['Adaeze', '1:07', 'Form 2B'], ['Chidi', '1:08', 'Form 3A'], ['Tunde', '1:09', 'Form 1A']].map(([n, t, sub], i) => ({ pos: i + 4, n, t, sub, i: P[n][0], c: P[n][1] })),
+      nav2: [{ i: 'ph-map-trifold', l: 'Grid', col: '#A2A6C2' }, { i: 'ph-trophy', l: 'Leagues', col: '#B8F23A' }, { i: 'ph-users', l: 'Friends', col: '#A2A6C2' }, { i: 'ph-storefront', l: 'Shop', col: '#A2A6C2' }, { i: 'ph-user', l: 'Me', col: '#A2A6C2' }],
+      pStats: [{ v: '12', l: 'day streak', c: '#FFC93C' }, { v: '418', l: 'clears', c: '#F4F5FB' }, { v: '1,438', l: 'duel rating', c: '#B8F23A' }],
+      kStats: [{ v: '21', l: 'day streak', c: '#FFC93C' }, { v: '602', l: 'clears', c: '#F4F5FB' }, { v: 'Gold', l: 'league', c: '#FFC93C' }],
+      worldRanks: [['#8B7CFF', 'ph-flask', 'Thinker'], ['#2FD3E0', 'ph-path', 'Solver'], ['#FF8A3D', 'ph-cube', 'Rookie'], ['#FFD23F', 'ph-hash', 'Thinker'], ['#3DDC84', 'ph-tree', 'Ace'], ['#FF6B6B', 'ph-question', 'Rookie'], ['#4D8BFF', 'ph-lightning', 'Thinker'], ['#2B2F4A', 'ph-mountains', 'Locked']].map(([bg, i, r]) => ({ bg, i, r })),
+      heat,
+      pinned: [{ c: '#FFC93C', in: '#C99412', i: 'ph-sun-horizon' }, { c: '#C9CCDD', in: '#8F93AA', i: 'ph-sword' }, { c: '#C08A4A', in: '#8A5A26', i: 'ph-fire' }, { c: '#2FD3E0', in: '#B8F23A', i: 'ph-users-three' }],
+      gameStats: [{ n: 'Crownfall', i: 'ph-crown-simple', c: '#8B7CFF', c2: 64, b: '0:48' }, { n: 'Quads', i: 'ph-squares-four', c: '#3DDC84', c2: 51, b: '2:10' }, { n: 'Dash', i: 'ph-person-simple-run', c: '#FF3B3B', c2: 33, b: '1:31' }],
+      quests: [
+        { t: 'Clear 3 Logic Lab puzzles', i: 'ph-flask', p: 100, v: '3/3', cta: 'Claim 50', bg: '#24331A', ring: 'inset 0 0 0 2px #B8F23A', ibg: '#B8F23A', ifg: '#0E0F1A', bar: '#B8F23A', cbg: '#B8F23A', cfg: '#0E0F1A', anim: 'claimPop 1.2s ease-in-out infinite' },
+        { t: 'Win a Duel', i: 'ph-sword', p: 0, v: '0/1', cta: '+40', bg: '#171929', ring: 'none', ibg: '#20233A', ifg: '#F4F5FB', bar: '#B8F23A', cbg: '#20233A', cfg: '#FFC93C', anim: 'none' },
+        { t: 'Clear Quads with no slips', i: 'ph-squares-four', p: 0, v: '0/1', cta: 'Done', bg: '#171929', ring: 'none', ibg: '#20233A', ifg: '#5A5E78', bar: '#B8F23A', cbg: 'transparent', cfg: '#A2A6C2', anim: 'none' }
+      ].map((q, k) => k === 2 ? { ...q, p: 100, v: '1/1', ifg: '#B8F23A', cta: 'Claimed', cfg: '#A2A6C2' } : q),
+      chain: [['ph-check', '#B8F23A', '#0E0F1A', '#B8F23A'], ['ph-check', '#B8F23A', '#0E0F1A', '#B8F23A'], ['ph-check', '#B8F23A', '#0E0F1A', '#2B2F4A'], ['ph-lock-simple', '#20233A', '#A2A6C2', '#2B2F4A'], ['ph-gift', '#FFC93C', '#0E0F1A', '']].map(([i, bg, fg, line], k) => ({ i, bg, fg, line, ld: k === 4 ? 'none' : 'block', flex: k === 4 ? 'none' : '1' })),
+      shopTabs: ['Hats', 'Skins', 'Boards', 'Frames'].map(t => ({ t, ...sel(t === 'Hats') })),
+      shopItems: [
+        { n: 'Party Hat', i: 'ph-party-popper', c: '#FFC93C', p: '350', pi: 'ph-lightning', pc: '#FFC93C', bg: '#24331A', ring: 'inset 0 0 0 2px #B8F23A' },
+        { n: 'Kente Cap', i: 'ph-baseball-cap', c: '#FF8A3D', p: '500', pi: 'ph-lightning', pc: '#FFC93C', bg: '#171929', ring: 'none' },
+        { n: 'Crown', i: 'ph-crown-simple', c: '#FFC93C', p: 'Gold league', pi: 'ph-lock-simple', pc: '#A2A6C2', bg: '#171929', ring: 'none' },
+        { n: 'Shades', i: 'ph-sunglasses', c: '#2FD3E0', p: 'Owned', pi: 'ph-check', pc: '#B8F23A', bg: '#171929', ring: 'none' },
+        { n: 'Headphones', i: 'ph-headphones', c: '#8B7CFF', p: '400', pi: 'ph-lightning', pc: '#FFC93C', bg: '#171929', ring: 'none' },
+        { n: 'Chef Hat', i: 'ph-cooking-pot', c: '#F4F5FB', p: 'Quest', pi: 'ph-scroll', pc: '#A2A6C2', bg: '#171929', ring: 'none' }
+      ],
+      qr,
+      reqs: [{ n: 'Akosua', sub: '3 mutual · Achimota', i: 'A', c: '#B8F23A' }, { n: 'Chidi', sub: 'From your Party Race', i: 'C', c: '#4D8BFF' }],
+      friends: [
+        { n: 'Kofi', st: 'Playing Crownfall', i: 'K', c: '#FF8A3D', dot: '#B8F23A' },
+        { n: 'Efua', st: 'In a Party Race, 3 of 6', i: 'E', c: '#8B7CFF', dot: '#B8F23A' },
+        { n: 'Yaw', st: 'Online', i: 'Y', c: '#3DDC84', dot: '#B8F23A' },
+        { n: 'Zainab', st: 'Seen 2 h ago', i: 'Z', c: '#FFD23F', dot: '#5A5E78' }
+      ],
+      feed: [
+        { i: 'K', c: '#FF8A3D', t: 'Kofi cleared Crownfall in 1:05, no hints', ago: '4m', rx: [{ e: '🔥', n: 6, bg: '#2A2410' }, { e: '😂', n: '', bg: '#20233A' }, { e: '😤', n: 2, bg: '#20233A' }, { e: 'GG', n: '', bg: '#20233A' }] },
+        { i: 'Z', c: '#FFD23F', t: 'Zainab hit a 30-day streak', ago: '1h', rx: [{ e: '🔥', n: 11, bg: '#20233A' }, { e: '😂', n: '', bg: '#20233A' }, { e: '😤', n: '', bg: '#20233A' }, { e: 'GG', n: 4, bg: '#20233A' }] }
+      ],
+      reportOpts: [
+        { t: 'Offensive nickname', i: 'ph-text-aa', bg: '#24331A', ring: 'inset 0 0 0 2px #B8F23A' },
+        { t: 'Cheating or bot', i: 'ph-robot', bg: '#20233A', ring: 'none' },
+        { t: 'Harassing me', i: 'ph-hand-palm', bg: '#20233A', ring: 'none' },
+        { t: 'Something else', i: 'ph-dots-three', bg: '#20233A', ring: 'none' }
+      ],
+      crewRows: [['Kwame', '3,120'], ['Ama', '2,880'], ['Kofi', '2,410'], ['Efua', '1,990'], ['Yaw', '1,620']].map(([n, xp], i) => ({ pos: i + 1, n: n === 'Ama' ? 'You' : n, xp, i: P[n][0], c: P[n][1], bg: n === 'Ama' ? '#24331A' : '#171929', w: n === 'Ama' ? 700 : 500 })),
+      settingsGroups: [
+        { t: 'Look and feel', rows: rows([{ i: 'ph-moon', l: 'Theme', ...val('Dark') }, { i: 'ph-eye', l: 'Colour-blind mode', ...val('Deutan') }, { i: 'ph-text-aa', l: 'Text size', ...val('Large') }, { i: 'ph-person-simple-walk', l: 'Reduced motion', ...tog(false) }]) },
+        { t: 'Sound and feel', rows: rows([{ i: 'ph-speaker-high', l: 'Sound effects', ...tog(true) }, { i: 'ph-music-notes', l: 'Music', ...tog(false) }, { i: 'ph-vibrate', l: 'Haptics', ...tog(true) }]) },
+        { t: 'Data and account', rows: rows([{ i: 'ph-cell-signal-low', l: 'Low-data mode', ...tog(true) }, { i: 'ph-timer', l: 'Relaxed mode', ...tog(false) }, { i: 'ph-lock-simple', l: 'Privacy', ...val('Friends only') }, { i: 'ph-user-circle', l: 'Account', ...val('ama@…') }]) }
+      ],
+      dow: ['M', 'T', 'W', 'T', 'F', 'S', 'S'],
+      cal,
+      teachGames: [
+        { n: 'Crownfall', d: 'Logic · 6 × 6', i: 'ph-crown-simple', c: '#8B7CFF', on: 1 }, { n: 'Quads', d: 'Words · class-safe set', i: 'ph-squares-four', c: '#3DDC84', on: 1 },
+        { n: 'Dead On', d: 'Maths · easy targets', i: 'ph-target', c: '#FFD23F', on: 1 }, { n: 'Sixer', d: 'Logic · 6 × 6', i: 'ph-grid-nine', c: '#8B7CFF', on: 0 }, { n: 'Gotcha', d: 'Hidden in classroom mode', i: 'ph-skull', c: '#5A5E78', on: -1 }
+      ].map(g => ({ ...g, bg: g.on === 1 ? '#24331A' : '#171929', ring: g.on === 1 ? 'inset 0 0 0 2px #B8F23A' : 'none', cb: g.on === 1 ? '#B8F23A' : 'transparent', cr: g.on === 1 ? 'none' : 'inset 0 0 0 2px #5A5E78', ci: g.on === 1 ? 'ph-check' : g.on === -1 ? 'ph-minus' : '' })),
+      classRows: [['Kwame', '3 / 3', '4:12'], ['Akosua', '3 / 3', '4:40'], ['Kofi', '3 / 3', '5:02'], ['Adaeze', '3 / 3', '5:18'], ['Ama', '2 / 3', '3:55'], ['Yaw', '2 / 3', '4:20'], ['Efua', '1 / 3', '1:40']].map(([n, cl, t], i) => {
+        const pc = i === 0 ? ['#FFC93C', '#0E0F1A'] : i === 1 ? ['#D7DAE8', '#0E0F1A'] : i === 2 ? ['#E09A5C', '#0E0F1A'] : ['#20233A', '#A2A6C2'];
+        return { pos: i + 1, n, cl, t, pbg: pc[0], pfg: pc[1], bg: i < 3 ? '#171929' : 'transparent' };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+design/
+docs/SRS.md
+pnpm-lock.yaml
+.next/
+coverage/
+tests/visual/
+.agents/
+.claude/skills/
+supabase/.temp/
+public/

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800;900&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
+<style>
+body{margin:0;background:#0A0B14;color:#F4F5FB;font-family:Geist,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#B8F23A}a:hover{color:#D4FF7A}
+</style>
+</helmet>
+<div style="display:flex;flex-direction:column;gap:28px;padding:56px;background:#0A0B14;width:max-content">
+<div style="display:flex;flex-direction:column;gap:6px"><div style="font:900 40px Unbounded,sans-serif;letter-spacing:-0.03em">/admin</div><div style="font:400 17px Geist,sans-serif;color:#A2A6C2">Utilitarian, same tokens, denser. No Spuz, no motion beyond 150 ms state changes. 1280 wide.</div></div>
+<div style="display:grid;grid-template-columns:repeat(2,1280px);gap:32px">
+
+<div data-screen-label="Admin calendar" style="height:800px;border-radius:16px;overflow:hidden;background:#0E0F1A;box-shadow:0 0 0 1px #2B2F4A;display:grid;grid-template-columns:220px 1fr">
+  <div style="background:#171929;border-right:1px solid #2B2F4A;padding:18px 12px;display:flex;flex-direction:column;gap:4px">
+    <div style="display:flex;align-items:flex-end;font:900 22px/0.9 Unbounded,sans-serif;letter-spacing:-0.05em;padding:0 8px 16px"><span>SPU</span><span style="color:#B8F23A">Z</span><span>L</span><span style="font:600 12px Geist Mono,monospace;letter-spacing:0;margin-left:8px;color:#A2A6C2">admin</span></div>
+    <sc-for list="{{ side }}" as="n" hint-placeholder-count="6"><div style="height:40px;border-radius:10px;padding:0 10px;display:flex;align-items:center;gap:10px;background:{{ n.bg }};color:{{ n.fg }};font:600 14px Geist,sans-serif"><i class="ph-bold {{ n.i }}" style="font-size:18px"></i><span style="flex:1">{{ n.l }}</span><span style="font:600 12px Geist Mono,monospace;color:{{ n.bc }}">{{ n.b }}</span></div></sc-for>
+  </div>
+  <div style="padding:20px 24px;display:flex;flex-direction:column;gap:14px;overflow:hidden">
+    <div style="display:flex;align-items:center;gap:12px"><span style="font:800 20px Unbounded,sans-serif">Content calendar</span><span style="font:500 14px Geist,sans-serif;color:#A2A6C2">Week 45 · 3 to 9 Nov</span><div style="margin-left:auto;display:flex;gap:8px"><span style="height:36px;padding:0 12px;border-radius:10px;background:#20233A;display:flex;align-items:center;gap:6px;font:600 13px Geist,sans-serif"><i class="ph-bold ph-funnel"></i>All worlds</span><span style="height:36px;padding:0 12px;border-radius:10px;background:#B8F23A;color:#0E0F1A;display:flex;align-items:center;gap:6px;font:700 13px Geist,sans-serif"><i class="ph-bold ph-magic-wand"></i>Generate gaps</span></div></div>
+    <div style="display:grid;grid-template-columns:150px repeat(7,1fr);border-radius:12px;overflow:hidden;background:#171929;font:500 13px Geist,sans-serif">
+      <div style="padding:10px;background:#20233A;color:#A2A6C2;font:600 12px Geist Mono,monospace">Game</div>
+      <sc-for list="{{ days }}" as="d" hint-placeholder-count="7"><div style="padding:10px;background:#20233A;color:#A2A6C2;font:600 12px Geist Mono,monospace">{{ d }}</div></sc-for>
+      <sc-for list="{{ calRows }}" as="r" hint-placeholder-count="12">
+        <div style="padding:8px 10px;border-top:1px solid #2B2F4A;display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:3px;background:{{ r.c }}"></span><span style="font:600 13px Geist,sans-serif">{{ r.n }}</span></div>
+        <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="7"><div style="padding:6px;border-top:1px solid #2B2F4A;border-left:1px solid #2B2F4A"><span style="display:flex;align-items:center;gap:4px;height:26px;padding:0 8px;border-radius:7px;background:{{ c.bg }};color:{{ c.fg }};font:600 12px Geist Mono,monospace"><i class="ph-bold {{ c.i }}"></i>{{ c.t }}</span></div></sc-for>
+      </sc-for>
+    </div>
+    <div style="display:flex;gap:16px;font:500 13px Geist,sans-serif;color:#A2A6C2"><span><i class="ph-bold ph-check-circle" style="color:#B8F23A"></i> Scheduled, solver verified</span><span><i class="ph-bold ph-eye" style="color:#FFC93C"></i> Needs review</span><span><i class="ph-bold ph-warning" style="color:#FF5A5F"></i> Missing</span></div>
+  </div>
+</div>
+
+<div data-screen-label="Admin preview" style="height:800px;border-radius:16px;overflow:hidden;background:#0E0F1A;box-shadow:0 0 0 1px #2B2F4A;display:grid;grid-template-columns:1fr 420px">
+  <div style="padding:20px 24px;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:center;gap:12px"><i class="ph-bold ph-arrow-left" style="font-size:20px"></i><span style="font:800 20px Unbounded,sans-serif">Crownfall · Sat 8 Nov</span><span style="padding:4px 10px;border-radius:8px;background:#2A2410;color:#FFC93C;font:600 12px Geist Mono,monospace">needs review</span></div>
+    <div style="display:flex;gap:20px;flex:1">
+      <div style="width:390px;height:680px;border-radius:36px;background:#0E0F1A;box-shadow:0 0 0 2px #2B2F4A;display:flex;flex-direction:column;align-items:center;padding:30px 16px;box-sizing:border-box;gap:16px">
+        <span style="align-self:flex-start;font:900 22px Unbounded,sans-serif;color:#8B7CFF">Crownfall</span>
+        <div style="display:grid;grid-template-columns:repeat(8,40px);gap:2px;padding:6px;border-radius:16px;background:#0A0B12">
+          <sc-for list="{{ prev }}" as="c" hint-placeholder-count="64"><div style="width:40px;height:40px;border-radius:7px;background:{{ c.bg }};color:#FFC93C;font-size:20px;display:flex;align-items:center;justify-content:center"><i class="ph-bold {{ c.i }}"></i></div></sc-for>
+        </div>
+        <div style="display:flex;gap:8px"><span style="height:36px;padding:0 12px;border-radius:10px;background:#20233A;display:flex;align-items:center;gap:6px;font:600 13px Geist,sans-serif"><i class="ph-bold ph-eye"></i>Show solution</span><span style="height:36px;padding:0 12px;border-radius:10px;background:#20233A;display:flex;align-items:center;gap:6px;font:600 13px Geist,sans-serif"><i class="ph-bold ph-play"></i>Play test</span></div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:10px">
+        <sc-for list="{{ checks }}" as="c" hint-placeholder-count="6"><div style="display:flex;align-items:center;gap:10px;height:44px;padding:0 12px;border-radius:10px;background:#171929;font:500 14px Geist,sans-serif"><i class="ph-bold {{ c.i }}" style="color:{{ c.c }};font-size:18px"></i><span style="flex:1">{{ c.t }}</span><span style="font:600 13px Geist Mono,monospace;color:#A2A6C2">{{ c.v }}</span></div></sc-for>
+      </div>
+    </div>
+  </div>
+  <div style="background:#171929;border-left:1px solid #2B2F4A;padding:20px;display:flex;flex-direction:column;gap:12px">
+    <span style="font:800 16px Unbounded,sans-serif">Publish</span>
+    <sc-for list="{{ meta }}" as="m" hint-placeholder-count="5"><div style="display:flex;flex-direction:column;gap:4px"><span style="font:600 12px Geist Mono,monospace;color:#A2A6C2">{{ m.l }}</span><div style="height:40px;border-radius:10px;background:#0E0F1A;box-shadow:inset 0 0 0 1px #2B2F4A;display:flex;align-items:center;padding:0 12px;font:500 14px Geist,sans-serif">{{ m.v }}</div></div></sc-for>
+    <div style="display:flex;flex-direction:column;gap:4px"><span style="font:600 12px Geist Mono,monospace;color:#A2A6C2">Reviewer note</span><div style="height:90px;border-radius:10px;background:#0E0F1A;box-shadow:inset 0 0 0 1px #2B2F4A;padding:10px 12px;font:400 14px/1.4 Geist,sans-serif;color:#A2A6C2">Bottom-right region is huge for a Saturday. Fine for expert.</div></div>
+    <div style="margin-top:auto;display:grid;grid-template-columns:1fr 1fr;gap:8px"><span style="height:44px;border-radius:12px;background:#20233A;display:flex;align-items:center;justify-content:center;font:600 14px Geist,sans-serif">Regenerate</span><span style="height:44px;border-radius:12px;background:#B8F23A;color:#0E0F1A;display:flex;align-items:center;justify-content:center;font:700 14px Geist,sans-serif">Approve</span></div>
+  </div>
+</div>
+
+<div data-screen-label="Admin moderation" style="height:800px;border-radius:16px;overflow:hidden;background:#0E0F1A;box-shadow:0 0 0 1px #2B2F4A;display:grid;grid-template-columns:1fr 440px">
+  <div style="padding:20px 24px;display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;align-items:center;gap:12px"><span style="font:800 20px Unbounded,sans-serif">Moderation queue</span><span style="padding:4px 10px;border-radius:8px;background:#2A1520;color:#FF5A5F;font:600 12px Geist Mono,monospace">14 open</span><div style="margin-left:auto;display:flex;gap:4px;padding:3px;border-radius:10px;background:#171929"><span style="height:30px;padding:0 10px;border-radius:8px;background:#20233A;display:flex;align-items:center;font:600 13px Geist,sans-serif">Reports</span><span style="height:30px;padding:0 10px;border-radius:8px;display:flex;align-items:center;font:600 13px Geist,sans-serif;color:#A2A6C2">Nicknames</span><span style="height:30px;padding:0 10px;border-radius:8px;display:flex;align-items:center;font:600 13px Geist,sans-serif;color:#A2A6C2">Anti-cheat</span></div></div>
+    <div style="display:grid;grid-template-columns:90px 1fr 140px 110px 90px;border-radius:12px;overflow:hidden;background:#171929">
+      <sc-for list="{{ modHead }}" as="h" hint-placeholder-count="5"><div style="padding:10px 12px;background:#20233A;font:600 12px Geist Mono,monospace;color:#A2A6C2">{{ h }}</div></sc-for>
+      <sc-for list="{{ mod }}" as="m" hint-placeholder-count="8">
+        <div style="padding:10px 12px;border-top:1px solid #2B2F4A;font:600 13px Geist Mono,monospace;color:#A2A6C2;background:{{ m.bg }}">{{ m.id }}</div>
+        <div style="padding:10px 12px;border-top:1px solid #2B2F4A;font:500 14px Geist,sans-serif;background:{{ m.bg }}">{{ m.t }}</div>
+        <div style="padding:10px 12px;border-top:1px solid #2B2F4A;font:500 13px Geist,sans-serif;color:#A2A6C2;background:{{ m.bg }}">{{ m.k }}</div>
+        <div style="padding:10px 12px;border-top:1px solid #2B2F4A;background:{{ m.bg }}"><span style="padding:3px 8px;border-radius:6px;background:{{ m.sbg }};color:{{ m.sfg }};font:600 12px Geist Mono,monospace">{{ m.s }}</span></div>
+        <div style="padding:10px 12px;border-top:1px solid #2B2F4A;font:500 13px Geist Mono,monospace;color:#A2A6C2;background:{{ m.bg }}">{{ m.a }}</div>
+      </sc-for>
+    </div>
+  </div>
+  <div style="background:#171929;border-left:1px solid #2B2F4A;padding:20px;display:flex;flex-direction:column;gap:12px">
+    <span style="font:800 16px Unbounded,sans-serif">R-2291 · Speedy99</span>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><sc-for list="{{ caseStats }}" as="c" hint-placeholder-count="4"><div style="padding:10px;border-radius:10px;background:#0E0F1A;display:flex;flex-direction:column;gap:2px"><span style="font:600 18px Geist Mono,monospace;color:{{ c.c }}">{{ c.v }}</span><span style="font:500 12px Geist,sans-serif;color:#A2A6C2">{{ c.l }}</span></div></sc-for></div>
+    <div style="padding:12px;border-radius:10px;background:#0E0F1A;display:flex;flex-direction:column;gap:6px"><span style="font:600 12px Geist Mono,monospace;color:#A2A6C2">Solve trace, Crownfall #214</span><div style="display:flex;align-items:flex-end;gap:2px;height:60px"><sc-for list="{{ trace }}" as="t" hint-placeholder-count="20"><span style="flex:1;height:{{ t.h }}%;background:{{ t.c }};border-radius:2px"></span></sc-for></div><span style="font:500 12px Geist,sans-serif;color:#FF5A5F">Inputs every 180 ms with zero X marks. Bot-like.</span></div>
+    <div style="margin-top:auto;display:flex;flex-direction:column;gap:8px">
+      <span style="height:44px;border-radius:12px;background:#FF5A5F;color:#0E0F1A;display:flex;align-items:center;justify-content:center;font:700 14px Geist,sans-serif">Void times + 7-day ban</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><span style="height:44px;border-radius:12px;background:#20233A;display:flex;align-items:center;justify-content:center;font:600 14px Geist,sans-serif">Warn</span><span style="height:44px;border-radius:12px;background:#20233A;display:flex;align-items:center;justify-content:center;font:600 14px Geist,sans-serif">Dismiss</span></div>
+    </div>
+  </div>
+</div>
+
+<div data-screen-label="Admin live ops" style="height:800px;border-radius:16px;overflow:hidden;background:#0E0F1A;box-shadow:0 0 0 1px #2B2F4A;padding:20px 24px;box-sizing:border-box;display:flex;flex-direction:column;gap:14px">
+  <div style="display:flex;align-items:center;gap:12px"><span style="font:800 20px Unbounded,sans-serif">Live ops</span><span style="display:flex;align-items:center;gap:6px;font:600 13px Geist Mono,monospace;color:#B8F23A"><span style="width:8px;height:8px;border-radius:50%;background:#B8F23A"></span>live · Thu 30 Oct 21:14 GMT</span></div>
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">
+    <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="5"><div style="padding:14px;border-radius:12px;background:#171929;display:flex;flex-direction:column;gap:4px"><span style="font:500 13px Geist,sans-serif;color:#A2A6C2">{{ k.l }}</span><span style="font:600 28px Geist Mono,monospace">{{ k.v }}</span><span style="font:600 12px Geist Mono,monospace;color:{{ k.dc }}">{{ k.d }}</span></div></sc-for>
+  </div>
+  <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:14px;flex:1">
+    <div style="padding:16px;border-radius:12px;background:#171929;display:flex;flex-direction:column;gap:10px">
+      <span style="font:700 14px Geist,sans-serif">Concurrent players, last 24 h</span>
+      <div style="flex:1;display:flex;align-items:flex-end;gap:3px"><sc-for list="{{ ccu }}" as="c" hint-placeholder-count="48"><span style="flex:1;height:{{ c.h }}%;background:{{ c.c }};border-radius:2px 2px 0 0"></span></sc-for></div>
+      <div style="display:flex;justify-content:space-between;font:500 12px Geist Mono,monospace;color:#A2A6C2"><span>21:00</span><span>03:00</span><span>09:00</span><span>15:00</span><span>now</span></div>
+    </div>
+    <div style="padding:16px;border-radius:12px;background:#171929;display:flex;flex-direction:column;gap:10px">
+      <span style="font:700 14px Geist,sans-serif">Today by game · clears and median time</span>
+      <sc-for list="{{ byGame }}" as="g" hint-placeholder-count="8"><div style="display:flex;align-items:center;gap:10px;font:500 13px Geist,sans-serif"><span style="width:10px;height:10px;border-radius:3px;background:{{ g.c }}"></span><span style="width:86px">{{ g.n }}</span><div style="flex:1;height:8px;border-radius:4px;background:#2B2F4A;overflow:hidden"><div style="width:{{ g.w }}%;height:100%;background:{{ g.c }}"></div></div><span style="width:56px;text-align:right;font:600 12px Geist Mono,monospace">{{ g.v }}</span><span style="width:44px;text-align:right;font:500 12px Geist Mono,monospace;color:#A2A6C2">{{ g.t }}</span></div></sc-for>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+    <sc-for list="{{ alerts }}" as="a" hint-placeholder-count="3"><div style="padding:12px 14px;border-radius:12px;background:{{ a.bg }};box-shadow:inset 0 0 0 1px {{ a.ring }};display:flex;gap:10px;align-items:center;font:500 14px Geist,sans-serif"><i class="ph-bold {{ a.i }}" style="color:{{ a.c }};font-size:20px"></i><span style="flex:1">{{ a.t }}</span><span style="font:600 13px Geist,sans-serif;color:#B8F23A">{{ a.a }}</span></div></sc-for>
+  </div>
+</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const G = [['Crownfall', '#8B7CFF'], ['Dusk', '#8B7CFF'], ['Sixer', '#8B7CFF'], ['Weave', '#2FD3E0'], ['Flowline', '#2FD3E0'], ['Quilt', '#FF8A3D'], ['Dead On', '#FFD23F'], ['Coil', '#3DDC84'], ['Rungs', '#3DDC84'], ['Quads', '#3DDC84'], ['Minicross', '#3DDC84'], ['Hunch', '#FF6B6B']];
+    const diff = ['easy', 'med', 'med', 'med', 'hard', 'expert', 'mega'];
+    const calRows = G.map(([n, c], gi) => ({ n, c, cells: diff.map((d, di) => {
+      const miss = (gi === 8 && di === 6) || (gi === 11 && di === 5), rev = (gi + di) % 7 === 3 || (gi === 0 && di === 5);
+      return miss ? { t: 'missing', i: 'ph-warning', bg: '#2A1520', fg: '#FF5A5F' } : rev ? { t: d, i: 'ph-eye', bg: '#2A2410', fg: '#FFC93C' } : { t: d, i: 'ph-check-circle', bg: '#1E2A16', fg: '#B8F23A' };
+    }) }));
+    const REG = ['AABBBBCC', 'AABBDDCC', 'EAADDDCC', 'EEFFDDGG', 'EFFFHHGG', 'EFHHHHGG', 'EEHHHGGG', 'EEEHHGGG'];
+    const RC = { A: '#4A3F8F', B: '#1F5468', C: '#6B3A6E', D: '#3F5A2E', E: '#7A4A2A', F: '#2B3F80', G: '#5A2E4A', H: '#2E5A5A' };
+    const sol = [2, 6, 0, 4, 1, 7, 3, 5];
+    const prev = []; for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) prev.push({ bg: RC[REG[r][c]], i: sol[r] === c ? 'ph-crown-simple' : '' });
+    const ccu = Array.from({ length: 48 }, (_, i) => { const h = 18 + 60 * Math.max(0, Math.sin((i - 8) / 48 * Math.PI * 2)) + (i > 44 ? 15 : 0) + (i * 7 % 5) * 2; return { h: Math.min(98, h), c: i === 47 ? '#B8F23A' : '#3A4466' }; });
+    const trace = Array.from({ length: 20 }, (_, i) => ({ h: 70 + (i % 2) * 6, c: '#FF5A5F' }));
+    return {
+      side: [
+        { l: 'Calendar', i: 'ph-calendar-blank', b: '', bg: '#20233A', fg: '#F4F5FB', bc: '#A2A6C2' }, { l: 'Puzzles', i: 'ph-puzzle-piece', b: '1,204', bg: 'transparent', fg: '#A2A6C2', bc: '#A2A6C2' },
+        { l: 'Moderation', i: 'ph-shield-check', b: '14', bg: 'transparent', fg: '#A2A6C2', bc: '#FF5A5F' }, { l: 'Live ops', i: 'ph-pulse', b: '', bg: 'transparent', fg: '#A2A6C2', bc: '#A2A6C2' },
+        { l: 'Schools', i: 'ph-graduation-cap', b: '3', bg: 'transparent', fg: '#A2A6C2', bc: '#FFC93C' }, { l: 'Shop and events', i: 'ph-storefront', b: '', bg: 'transparent', fg: '#A2A6C2', bc: '#A2A6C2' }
+      ],
+      days: ['Mon 3', 'Tue 4', 'Wed 5', 'Thu 6', 'Fri 7', 'Sat 8', 'Sun 9'],
+      calRows, prev,
+      checks: [
+        { t: 'Unique solution', v: 'solver 41 ms', i: 'ph-check-circle', c: '#B8F23A' }, { t: 'Difficulty score', v: '7.8 / expert', i: 'ph-check-circle', c: '#B8F23A' },
+        { t: 'Median test solve', v: '6:20 (n=12)', i: 'ph-check-circle', c: '#B8F23A' }, { t: 'Region size spread', v: '4 to 14 cells', i: 'ph-warning', c: '#FFC93C' },
+        { t: 'Colour-blind pattern check', v: 'pass', i: 'ph-check-circle', c: '#B8F23A' }, { t: 'Duplicate of past 365 days', v: 'none', i: 'ph-check-circle', c: '#B8F23A' }
+      ],
+      meta: [{ l: 'Daily number', v: '#223' }, { l: 'Release', v: 'Sat 8 Nov 00:00 GMT' }, { l: 'Size', v: '8 × 8' }, { l: 'Tags', v: 'weekend, expert' }, { l: 'Duel pool', v: 'Yes, from Sun 9 Nov' }],
+      modHead: ['ID', 'Report', 'Kind', 'Status', 'Age'],
+      mod: [
+        ['R-2291', 'Speedy99 · Crownfall 0:09', 'Anti-cheat', 'open', '12m', 1], ['R-2290', 'Nickname "…" flagged by filter', 'Nickname', 'auto-hidden', '20m', 0],
+        ['R-2288', 'Emote spam in room K7QX', 'Room', 'open', '41m', 0], ['R-2285', 'Harassment via friend request', 'Social', 'open', '1h', 0],
+        ['R-2281', 'Crew name "…"', 'Crew', 'open', '2h', 0], ['R-2279', 'Dash ghost run 0:58', 'Anti-cheat', 'reviewing', '3h', 0],
+        ['R-2270', 'School verification, Prempeh College', 'School', 'pending', '5h', 0], ['R-2266', 'Duel quitter, 9 in 1 day', 'Behaviour', 'open', '7h', 0]
+      ].map(([id, t, k, s, a, sel]) => ({ id, t, k, s, a, bg: sel ? '#24331A' : 'transparent', sbg: s === 'open' ? '#2A1520' : s === 'auto-hidden' ? '#20233A' : '#2A2410', sfg: s === 'open' ? '#FF5A5F' : s === 'auto-hidden' ? '#A2A6C2' : '#FFC93C' })),
+      caseStats: [{ v: '0:09', l: 'claimed time', c: '#FF5A5F' }, { v: '0:41', l: 'world record', c: '#F4F5FB' }, { v: '3 days', l: 'account age', c: '#FFC93C' }, { v: '6', l: 'reports', c: '#F4F5FB' }],
+      trace,
+      kpis: [{ l: 'Players now', v: '18,402', d: '+12% vs last Thu', dc: '#B8F23A' }, { l: 'DAU', v: '212k', d: '+4%', dc: '#B8F23A' }, { l: 'Full Spuzls', v: '9,880', d: '+18%', dc: '#B8F23A' }, { l: 'Live duels', v: '1,214', d: 'p95 match 11 s', dc: '#A2A6C2' }, { l: 'Open rooms', v: '3,406', d: 'errors 0.2%', dc: '#A2A6C2' }],
+      ccu,
+      byGame: [['Crownfall', '#8B7CFF', 92, '61.2k', '1:44'], ['Quads', '#3DDC84', 84, '55.0k', '3:10'], ['Dusk', '#8B7CFF', 70, '44.1k', '2:51'], ['Minicross', '#3DDC84', 66, '41.9k', '2:05'], ['Dash', '#FF3B3B', 58, '37.3k', '1:52'], ['Hunch', '#FF6B6B', 52, '33.0k', '0:48'], ['Weave', '#2FD3E0', 44, '28.4k', '2:22'], ['Echo', '#4D8BFF', 30, '19.6k', '1:15']].map(([n, c, w, v, t]) => ({ n, c, w, v, t })),
+      alerts: [
+        { t: 'Rungs Sun 9 Nov missing', a: 'Fix', i: 'ph-warning', c: '#FF5A5F', bg: '#2A1520', ring: '#FF5A5F' },
+        { t: 'Matchmaking p95 above 20 s in NG', a: 'View', i: 'ph-timer', c: '#FFC93C', bg: '#2A2410', ring: '#FFC93C' },
+        { t: 'Crew Clash week 45 starts Mon', a: 'Edit', i: 'ph-flag', c: '#A2A6C2', bg: '#171929', ring: '#2B2F4A' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

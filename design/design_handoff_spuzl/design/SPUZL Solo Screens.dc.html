@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800;900&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
+<style>
+body{margin:0;background:#0A0B14;color:#F4F5FB;font-family:Geist,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#B8F23A}a:hover{color:#D4FF7A}
+@keyframes isle{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes shake3{0%,100%{transform:translateX(0)}16%,50%,83%{transform:translateX(-6px)}33%,66%{transform:translateX(6px)}}
+@keyframes ringBurst{0%{transform:scale(.4);opacity:1}100%{transform:scale(1.6);opacity:0}}
+@keyframes sparkTip{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.6)}}
+@keyframes dropIn{0%{transform:translateY(-14px) scale(.9);opacity:0}100%{transform:none;opacity:1}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important}}
+</style>
+</helmet>
+<div style="display:flex;flex-direction:column;gap:28px;padding:56px;background:#0A0B14;width:max-content">
+<div style="display:flex;flex-direction:column;gap:6px">
+  <div style="font:900 44px Unbounded,sans-serif;letter-spacing:-0.03em">Solo flow, mobile 390</div>
+  <div style="font:400 17px Geist,sans-serif;color:#A2A6C2">Splash to Home to a Daily clear. Dark theme. Home shown in the evening, streak at risk.</div>
+</div>
+<div style="display:flex;gap:36px;align-items:flex-start">
+
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">01 Splash, logo intro final frame</div>
+<div data-screen-label="01 Splash" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px">
+  <div style="position:absolute;inset:0;background-image:radial-gradient(#2B2F4A 1.5px,transparent 1.5px);background-size:26px 26px;opacity:.6"></div>
+  <div style="position:relative;margin-bottom:-14px"><dc-import name="Spuz" mood="wave" size="{{ 170 }}" hint-size="170px,170px"></dc-import></div>
+  <div style="position:relative;display:flex;align-items:flex-end;font:900 72px/0.9 Unbounded,sans-serif;letter-spacing:-0.05em"><span>SPU</span><span style="position:relative;display:inline-block;color:#B8F23A;transform:skewX(-10deg)">Z<span style="position:absolute;right:-0.13em;top:0.31em;width:0.2em;height:0.2em;border-radius:50%;background:#B8F23A"></span></span><span>L</span></div>
+  <div style="position:relative;font:700 17px Unbounded,sans-serif;color:#A2A6C2">Tiny games. Big brain.</div>
+  <div style="position:absolute;bottom:40px;font:500 15px Geist,sans-serif;color:#A2A6C2">Tap to skip</div>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">02 Home world map, evening, streak at risk</div>
+<div data-screen-label="02 Home map" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A">
+  <div style="position:absolute;inset:0;background-image:radial-gradient(#22253C 1.5px,transparent 1.5px);background-size:24px 24px"></div>
+  <div style="position:absolute;left:0;right:0;top:0;padding:52px 16px 12px;display:flex;align-items:center;justify-content:space-between;z-index:5;background:linear-gradient(#0E0F1A 70%,rgba(14,15,26,0))">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="position:relative;width:48px;height:48px;border-radius:50%;background:conic-gradient(#B8F23A 0 68%,#2B2F4A 68% 100%);display:flex;align-items:center;justify-content:center">
+        <div style="width:40px;height:40px;border-radius:12px;background:#2FD3E0;display:flex;align-items:center;justify-content:center;font:900 18px Unbounded,sans-serif;color:#0E0F1A">A</div>
+        <div style="position:absolute;right:-4px;bottom:-4px;min-width:22px;height:22px;border-radius:8px;background:#B8F23A;color:#0E0F1A;font:700 12px Geist Mono,monospace;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px #0E0F1A">14</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <div aria-label="12 day streak, at risk" style="height:40px;padding:0 12px;border-radius:14px;background:#20233A;display:flex;align-items:center;gap:6px;box-shadow:inset 0 0 0 2px #FFC93C55">
+        <i class="ph-bold ph-fire" style="font-size:20px;color:#FFC93C;opacity:.55"></i><span style="font:600 17px Geist Mono,monospace">12</span><i class="ph-bold ph-moon" style="font-size:14px;color:#A2A6C2"></i>
+      </div>
+      <div style="height:40px;padding:0 12px;border-radius:14px;background:#20233A;display:flex;align-items:center;gap:6px">
+        <i class="ph-bold ph-lightning" style="font-size:18px;color:#FFC93C"></i><span style="font:600 17px Geist Mono,monospace;color:#FFC93C">1,284</span>
+      </div>
+    </div>
+  </div>
+  <div style="position:absolute;left:0;right:0;top:112px;bottom:300px">
+    <div style="position:absolute;left:96px;top:80px;width:180px;height:120px;border-top:3px dotted #3A3F63;border-right:3px dotted #3A3F63;border-radius:0 60px 0 0"></div>
+    <div style="position:absolute;left:96px;top:230px;width:180px;height:120px;border-left:3px dotted #3A3F63;border-bottom:3px dotted #3A3F63;border-radius:0 0 0 60px"></div>
+    <sc-for list="{{ mapIsles }}" as="w" hint-placeholder-count="4">
+      <div style="position:absolute;left:{{ w.x }}px;top:{{ w.y }}px;width:136px;display:flex;flex-direction:column;align-items:center;gap:6px;opacity:{{ w.op }}">
+        <div style="position:relative;width:136px;height:100px;animation:isle {{ w.dur }}s ease-in-out infinite">
+          <div style="position:absolute;left:34px;top:54px;width:68px;height:44px;clip-path:polygon(0 0,100% 0,62% 100%,40% 86%);background:{{ w.deep }}"></div>
+          <div style="position:absolute;left:10px;top:40px;width:116px;height:30px;border-radius:50%;background:{{ w.c }};box-shadow:inset 0 -7px 0 rgba(0,0,0,.22)"></div>
+          <div style="position:absolute;left:{{ w.tl }}px;top:0;width:44px;height:52px;border-radius:13px 13px 9px 9px;background:{{ w.c }};box-shadow:inset -4px -4px 0 rgba(0,0,0,.2),0 0 0 3px #0E0F1A;display:flex;align-items:center;justify-content:center;font-size:24px;color:#0E0F1A"><i class="ph-bold {{ w.icon }}"></i></div><sc-if value="{{ w.spuz }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:{{ w.sl }}px;top:{{ w.st }}px;pointer-events:none"><dc-import name="Spuz" mood="{{ w.mood }}" size="{{ w.ss }}" color="{{ w.sc }}" hint-size="64px,64px"></dc-import></div></sc-if>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:#171929"><span style="font:700 13px Unbounded,sans-serif;white-space:nowrap">{{ w.name }}</span><span style="font:600 12px Geist Mono,monospace;color:#A2A6C2">{{ w.prog }}</span></div>
+      </div>
+    </sc-for>
+    
+  </div>
+  <div style="position:absolute;left:12px;right:12px;bottom:92px;display:flex;flex-direction:column;gap:10px;z-index:6">
+    <div style="background:#171929;border-radius:22px;padding:12px 14px 12px 8px;display:flex;align-items:center;gap:6px;box-shadow:inset 0 0 0 2px #FFC93C;animation:dropIn .4s cubic-bezier(.23,1,.32,1)">
+      <dc-import name="Spuz" mood="sleepy" size="{{ 60 }}" still="{{ true }}" hint-size="60px,60px"></dc-import>
+      <div style="display:flex;flex-direction:column;gap:2px;flex:1">
+        <div style="font:600 16px/1.3 Geist,sans-serif;text-wrap:pretty">Your 12-day streak is sleepy. One clear wakes it up.</div>
+        <div style="font:500 13px Geist Mono,monospace;color:#FFC93C">Resets in 03:42:10</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0 4px">
+      <div style="font:600 15px Geist,sans-serif">Today <span style="font-family:Geist Mono,monospace;color:#B8F23A">6</span><span style="color:#A2A6C2"> of 15 cleared</span></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="display:flex"><span style="width:26px;height:26px;border-radius:8px;background:#FF8A3D;box-shadow:0 0 0 2px #0E0F1A;font:900 11px Unbounded,sans-serif;color:#0E0F1A;display:flex;align-items:center;justify-content:center">K</span><span style="width:26px;height:26px;border-radius:8px;background:#8B7CFF;box-shadow:0 0 0 2px #0E0F1A;margin-left:-6px;font:900 11px Unbounded,sans-serif;color:#0E0F1A;display:flex;align-items:center;justify-content:center">E</span><span style="width:26px;height:26px;border-radius:8px;background:#3DDC84;box-shadow:0 0 0 2px #0E0F1A;margin-left:-6px;font:900 11px Unbounded,sans-serif;color:#0E0F1A;display:flex;align-items:center;justify-content:center">Y</span></div>
+        <span style="width:8px;height:8px;border-radius:50%;background:#B8F23A"></span><span style="font:500 14px Geist,sans-serif;color:#A2A6C2">4 online</span>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 64px 64px;gap:10px">
+      <button style="height:64px;border:0;border-radius:20px;background:#B8F23A;color:#0E0F1A;box-shadow:0 6px 0 #6F9A1C;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer" style-active="transform:translateY(5px);box-shadow:0 1px 0 #6F9A1C"><i class="ph-bold ph-play" style="font-size:20px"></i><span style="display:flex;flex-direction:column;align-items:flex-start"><span style="font:900 18px Unbounded,sans-serif">Play Dusk</span><span style="font:500 13px Geist,sans-serif">Logic Lab, 2 of 3</span></span></button>
+      <button aria-label="Duel" style="height:64px;border:0;border-radius:20px;background:#20233A;color:#F4F5FB;box-shadow:0 6px 0 #0A0B12;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer" style-active="transform:translateY(5px);box-shadow:0 1px 0 #0A0B12"><i class="ph-bold ph-sword" style="font-size:22px"></i><span style="font:600 12px Geist,sans-serif">Duel</span></button>
+      <button aria-label="Party" style="height:64px;border:0;border-radius:20px;background:#20233A;color:#F4F5FB;box-shadow:0 6px 0 #0A0B12;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer" style-active="transform:translateY(5px);box-shadow:0 1px 0 #0A0B12"><i class="ph-bold ph-users-three" style="font-size:22px"></i><span style="font:600 12px Geist,sans-serif">Party</span></button>
+    </div>
+  </div>
+  <div style="position:absolute;left:0;right:0;bottom:0;height:80px;background:#171929;border-top:1px solid #2B2F4A;display:grid;grid-template-columns:repeat(5,1fr);padding-bottom:12px;z-index:6">
+    <sc-for list="{{ nav }}" as="n" hint-placeholder-count="5">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:{{ n.col }}"><i class="ph-bold {{ n.i }}" style="font-size:24px"></i><span style="font:600 12px Geist,sans-serif">{{ n.l }}</span></div>
+    </sc-for>
+  </div>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">03 World view, Logic Lab</div>
+<div data-screen-label="03 World view" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A">
+  <div style="height:300px;background:#1B1835;position:relative;overflow:hidden">
+    <div style="position:absolute;inset:0;background-image:radial-gradient(#2E2858 1.5px,transparent 1.5px);background-size:22px 22px"></div>
+    <div style="position:absolute;left:16px;top:52px;width:44px;height:44px;border-radius:14px;background:#20233A;display:flex;align-items:center;justify-content:center;font-size:20px"><i class="ph-bold ph-arrow-left"></i></div>
+    <div style="position:absolute;left:95px;top:76px;width:200px;height:170px;animation:isle 5s ease-in-out infinite">
+      <div style="position:absolute;left:50px;top:96px;width:100px;height:70px;clip-path:polygon(0 0,100% 0,62% 100%,40% 86%);background:color-mix(in oklch,#8B7CFF 42%,#0E0F1A)"></div>
+      <div style="position:absolute;left:10px;top:76px;width:180px;height:46px;border-radius:50%;background:#8B7CFF;box-shadow:inset 0 -10px 0 rgba(0,0,0,.22)"></div>
+      <div style="position:absolute;left:66px;top:0;width:68px;height:90px;border-radius:18px 18px 12px 12px;background:#8B7CFF;box-shadow:inset -6px -6px 0 rgba(0,0,0,.2),0 0 0 4px #1B1835;display:flex;align-items:center;justify-content:center;font-size:38px;color:#0E0F1A"><i class="ph-bold ph-flask"></i></div>
+      <div style="position:absolute;left:146px;top:24px;font-size:30px;color:#8B7CFF"><i class="ph-bold ph-gear-six"></i></div>
+    </div>
+    <div style="position:absolute;left:20px;bottom:18px;display:flex;flex-direction:column;gap:2px">
+      <div style="font:900 30px Unbounded,sans-serif;color:#8B7CFF;letter-spacing:-0.02em">Logic Lab</div>
+      <div style="font:500 15px Geist,sans-serif;color:#C9C4FF">Rule grids. 1 of 3 cleared today.</div>
+    </div>
+  </div>
+  <div style="padding:18px 16px;display:flex;flex-direction:column;gap:12px">
+    <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="5">
+      <div style="display:flex;align-items:center;gap:14px;padding:12px;border-radius:20px;background:#171929;opacity:{{ t.op }};box-shadow:{{ t.ring }}">
+        <dc-import name="Icon3D" icon="{{ t.i }}" color="{{ t.bg }}" size="{{ 60 }}" label="{{ t.name }}" hint-size="60px,60px"></dc-import>
+        <div style="flex:1;display:flex;flex-direction:column;gap:3px">
+          <div style="font:800 17px Unbounded,sans-serif">{{ t.name }}</div>
+          <div style="font:400 15px Geist,sans-serif;color:#A2A6C2">{{ t.desc }}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:12px;background:{{ t.sbg }};color:{{ t.sfg }};font:600 14px Geist Mono,monospace"><i class="ph-bold {{ t.si }}"></i>{{ t.status }}</div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">04 Game, Crownfall, rule broken</div>
+<div data-screen-label="04 Game Crownfall" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column">
+  <div style="padding:52px 12px 8px;display:flex;align-items:center;gap:8px">
+    <div aria-label="Back" style="width:44px;height:44px;border-radius:14px;background:#20233A;display:flex;align-items:center;justify-content:center;font-size:20px"><i class="ph-bold ph-arrow-left"></i></div>
+    <div style="flex:1;display:flex;justify-content:center"><div style="height:44px;padding:0 16px;border-radius:14px;background:#171929;display:flex;align-items:center;gap:8px;font:600 22px Geist Mono,monospace;font-variant-numeric:tabular-nums"><i class="ph-bold ph-timer" style="font-size:18px;color:#A2A6C2"></i>00:48</div></div>
+    <div aria-label="Hints, 2 left" style="position:relative;width:44px;height:44px;border-radius:14px;background:#20233A;display:flex;align-items:center;justify-content:center;font-size:20px;color:#FFC93C"><i class="ph-bold ph-lightbulb"></i><span style="position:absolute;right:-4px;top:-4px;width:20px;height:20px;border-radius:7px;background:#FFC93C;color:#0E0F1A;font:700 12px Geist Mono,monospace;display:flex;align-items:center;justify-content:center">2</span></div>
+    <div aria-label="Help" style="width:44px;height:44px;border-radius:14px;background:#20233A;display:flex;align-items:center;justify-content:center;font-size:20px"><i class="ph-bold ph-question"></i></div>
+    <div aria-label="Pause" style="width:44px;height:44px;border-radius:14px;background:#20233A;display:flex;align-items:center;justify-content:center;font-size:20px"><i class="ph-bold ph-pause"></i></div>
+  </div>
+  <div style="padding:6px 20px 14px;display:flex;justify-content:space-between;align-items:baseline">
+    <div style="font:900 24px Unbounded,sans-serif;color:#8B7CFF">Crownfall</div>
+    <div style="font:500 14px Geist Mono,monospace;color:#A2A6C2">Daily #214</div>
+  </div>
+  <div style="padding:0 18px;font:400 15px/1.4 Geist,sans-serif;color:#A2A6C2">One crown per row, column and colour. Crowns never touch, not even corners.</div>
+  <div style="padding:18px;display:flex;justify-content:center">
+    <div role="grid" aria-label="Crownfall board, 6 by 6" style="display:grid;grid-template-columns:repeat(6,56px);gap:3px;padding:6px;border-radius:20px;background:#0A0B12;box-shadow:0 0 0 2px #2B2F4A">
+      <sc-for list="{{ crown }}" as="c" hint-placeholder-count="36">
+        <div role="gridcell" aria-label="{{ c.aria }}" style="position:relative;width:56px;height:56px;border-radius:10px;background:{{ c.bg }};display:flex;align-items:center;justify-content:center;font-size:28px;color:{{ c.fg }};box-shadow:{{ c.ring }};animation:{{ c.anim }}">
+          <sc-if value="{{ c.hatch }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;inset:0;border-radius:10px;background:repeating-linear-gradient(135deg,rgba(255,90,95,.35) 0 4px,transparent 4px 9px)"></div></sc-if>
+          <i class="ph-bold {{ c.icon }}" style="position:relative"></i>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  <div style="margin:0 16px;padding:12px 14px;border-radius:16px;background:#2A1520;box-shadow:inset 0 0 0 2px #FF5A5F;display:flex;align-items:center;gap:10px;animation:dropIn .2s cubic-bezier(.23,1,.32,1)">
+    <i class="ph-bold ph-warning" style="font-size:22px;color:#FF5A5F"></i>
+    <div style="font:500 15px Geist,sans-serif">Those crowns are touching corners. Give them space.</div>
+  </div>
+  <div style="margin-top:auto;padding:14px 16px 28px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+    <sc-for list="{{ tools }}" as="t" hint-placeholder-count="4">
+      <button aria-label="{{ t.l }}" style="height:64px;border:0;border-radius:18px;background:{{ t.bg }};color:{{ t.fg }};box-shadow:0 5px 0 {{ t.sh }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer" style-active="transform:translateY(4px);box-shadow:0 1px 0 #0A0B12"><i class="ph-bold {{ t.i }}" style="font-size:22px"></i><span style="font:600 13px Geist,sans-serif">{{ t.l }}</span></button>
+    </sc-for>
+  </div>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">05 Results, Daily clear</div>
+<div data-screen-label="05 Results" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#0E0F1A;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column">
+  <div style="height:250px;background:#1B1835;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:16px">
+    <div style="position:absolute;top:44px;left:0;right:0;display:grid;grid-template-columns:repeat(6,18px);gap:3px;justify-content:center;opacity:.5">
+      <sc-for list="{{ miniDone }}" as="m" hint-placeholder-count="36"><div style="width:18px;height:18px;border-radius:4px;background:{{ m }}"></div></sc-for>
+    </div>
+    <div style="position:relative"><dc-import name="Spuz" mood="cheer" size="{{ 130 }}" hint-size="130px,130px"></dc-import></div>
+  </div>
+  <div style="padding:16px 20px 0;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center">
+      <div style="font:600 17px/1.35 Geist,sans-serif">Clean. 1:12, no hints. Who taught you?</div>
+      <div style="font:600 56px Geist Mono,monospace;font-variant-numeric:tabular-nums;color:#B8F23A;line-height:1">01:12</div>
+      <div style="font:500 15px Geist,sans-serif;color:#A2A6C2">Faster than <span style="color:#F4F5FB">82%</span> of Spuzlers today</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div style="background:#171929;border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;justify-content:space-between;font:600 15px Geist,sans-serif"><span>XP</span><span style="font-family:Geist Mono,monospace;color:#B8F23A">+120</span></div>
+        <div style="position:relative;height:12px;border-radius:6px;background:#2B2F4A;overflow:hidden"><div style="position:absolute;left:0;top:0;bottom:0;width:78%;border-radius:6px;background:#B8F23A"></div><div style="position:absolute;left:calc(78% - 8px);top:2px;width:8px;height:8px;border-radius:2px;background:#fff;transform:rotate(45deg);animation:sparkTip .8s ease-in-out infinite"></div></div>
+        <div style="font:500 13px Geist Mono,monospace;color:#A2A6C2">Lv 14, 1,560 / 2,000</div>
+      </div>
+      <div style="background:#171929;border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;justify-content:space-between;font:600 15px Geist,sans-serif"><span>Sparks</span><span style="font-family:Geist Mono,monospace;color:#FFC93C">+25</span></div>
+        <div style="display:flex;gap:12px;font:500 14px Geist,sans-serif;color:#A2A6C2"><span><i class="ph-bold ph-lightbulb"></i> 0 hints</span><span><i class="ph-bold ph-x-circle"></i> 0 slips</span></div>
+      </div>
+    </div>
+    <div style="background:#171929;border-radius:16px;padding:6px 14px;display:flex;flex-direction:column">
+      <sc-for list="{{ friendsCmp }}" as="f" hint-placeholder-count="3">
+        <div style="display:flex;align-items:center;gap:10px;height:44px;border-top:{{ f.bt }}">
+          <span style="width:18px;font:600 14px Geist Mono,monospace;color:#A2A6C2">{{ f.pos }}</span>
+          <span style="width:28px;height:28px;border-radius:9px;background:{{ f.c }};font:900 12px Unbounded,sans-serif;color:#0E0F1A;display:flex;align-items:center;justify-content:center">{{ f.ini }}</span>
+          <span style="flex:1;font:{{ f.w }} 16px Geist,sans-serif">{{ f.name }}</span>
+          <span style="font:600 16px Geist Mono,monospace;font-variant-numeric:tabular-nums">{{ f.t }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  <div style="margin-top:auto;padding:12px 16px 28px;display:grid;grid-template-columns:1fr 64px;gap:10px">
+    <button style="height:60px;border:0;border-radius:20px;background:#B8F23A;color:#0E0F1A;box-shadow:0 6px 0 #6F9A1C;font:900 17px Unbounded,sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer" style-active="transform:translateY(5px);box-shadow:0 1px 0 #6F9A1C"><i class="ph-bold ph-sword"></i>Challenge Kofi</button>
+    <button aria-label="Share" style="height:60px;border:0;border-radius:20px;background:#20233A;color:#F4F5FB;box-shadow:0 6px 0 #0A0B12;font-size:22px;cursor:pointer" style-active="transform:translateY(5px);box-shadow:0 1px 0 #0A0B12"><i class="ph-bold ph-share-fat"></i></button>
+  </div>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="font:600 14px Geist Mono,monospace;color:#A2A6C2">06 Level-up overlay</div>
+<div data-screen-label="06 Level up" style="width:390px;height:844px;border-radius:44px;overflow:hidden;background:#06070D;position:relative;box-shadow:0 0 0 1px #2B2F4A;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px">
+  <div style="position:absolute;left:50%;top:330px;width:260px;height:260px;margin:-130px 0 0 -130px;border-radius:50%;box-shadow:0 0 0 6px #B8F23A;animation:ringBurst 1.2s cubic-bezier(.23,1,.32,1) infinite"></div>
+  <div style="position:absolute;left:50%;top:330px;width:260px;height:260px;margin:-130px 0 0 -130px;border-radius:50%;box-shadow:0 0 0 3px #FFC93C;animation:ringBurst 1.2s cubic-bezier(.23,1,.32,1) .3s infinite"></div>
+  <div style="font:700 16px Unbounded,sans-serif;color:#A2A6C2;margin-top:40px">Level up</div>
+  <div style="position:relative;width:200px;height:200px;border-radius:50%;background:#171929;box-shadow:inset 0 0 0 10px #B8F23A;display:flex;align-items:center;justify-content:center">
+    <div style="height:110px;overflow:hidden;display:flex;flex-direction:column;align-items:center">
+      <div style="font:900 104px/110px Unbounded,sans-serif;color:#F4F5FB;letter-spacing:-0.04em">15</div>
+    </div>
+    <div style="position:absolute;left:0;right:0;top:40px;height:2px;background:linear-gradient(90deg,transparent,#0E0F1A,transparent);opacity:.6"></div>
+  </div>
+  <div style="font:600 17px Geist,sans-serif;text-align:center;max-width:280px;line-height:1.4">Level 15. The Grid is starting to respect you.</div>
+  <div style="display:flex;gap:10px">
+    <div style="padding:10px 14px;border-radius:14px;background:#171929;display:flex;align-items:center;gap:8px;font:600 15px Geist,sans-serif"><i class="ph-bold ph-lightning" style="color:#FFC93C"></i><span style="font-family:Geist Mono,monospace;color:#FFC93C">+100</span></div>
+    <div style="padding:10px 14px;border-radius:14px;background:#171929;display:flex;align-items:center;gap:8px;font:600 15px Geist,sans-serif"><i class="ph-bold ph-paint-brush" style="color:#B8F23A"></i>Board: Midnight</div>
+  </div>
+  <div style="position:absolute;bottom:120px;right:24px"><dc-import name="Spuz" mood="proud" size="{{ 110 }}" hint-size="110px,110px"></dc-import></div>
+  <button style="position:absolute;bottom:32px;left:16px;right:16px;height:60px;border:0;border-radius:20px;background:#B8F23A;color:#0E0F1A;box-shadow:0 6px 0 #6F9A1C;font:900 17px Unbounded,sans-serif;cursor:pointer" style-active="transform:translateY(5px);box-shadow:0 1px 0 #6F9A1C">Nice</button>
+</div>
+</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const REG = ['AABBBB','AABBCC','DAACCC','DDEECC','DEEEFF','DEFFFF'];
+const RC = {A:'#4A3F8F',B:'#1F5468',C:'#6B3A6E',D:'#3F5A2E',E:'#7A4A2A',F:'#2B3F80'};
+const DONE = {A:'#8B7CFF',B:'#7A6CF0',C:'#9A8CFF',D:'#6F61E0',E:'#A79BFF',F:'#8274F5'};
+class Component extends DCLogic {
+  renderVals() {
+    const marks = {'0,1':'crown','1,3':'crown','2,4':'bad','0,0':'x','1,0':'x','1,1':'x','0,2':'x','5,5':'x'};
+    const broken = new Set(['1,3','2,4']);
+    const crown = [], miniDone = [];
+    const sol = [1,3,5,0,2,4];
+    for (let r = 0; r < 6; r++) for (let c = 0; c < 6; c++) {
+      const k = `${r},${c}`, m = marks[k], bad = broken.has(k);
+      crown.push({
+        bg: RC[REG[r][c]], fg: bad ? '#FF5A5F' : m === 'x' ? '#7C80A3' : '#F4F5FB',
+        icon: m === 'crown' || m === 'bad' ? 'ph-crown-simple' : m === 'x' ? 'ph-x' : '',
+        ring: bad ? 'inset 0 0 0 3px #FF5A5F' : 'none', hatch: bad,
+        anim: bad ? 'shake3 .24s ease-in-out' : 'none',
+        aria: `Row ${r+1}, column ${c+1}, region ${REG[r][c]}, ${m === 'crown' ? 'crown' : m === 'bad' ? 'crown, breaks a rule' : m === 'x' ? 'marked empty' : 'empty'}`
+      });
+      miniDone.push(sol[r] === c ? '#FFC93C' : DONE[REG[r][c]]);
+    }
+    const mix = (c) => `color-mix(in oklch, ${c} 42%, #0E0F1A)`;
+    return {
+      crown, miniDone,
+      mapIsles: [
+        {name:'Logic Lab',prog:'1/3',c:'#8B7CFF',icon:'ph-flask',x:200,y:60,dur:5,op:1},
+        {name:'Line Lane',prog:'2/2',c:'#2FD3E0',icon:'ph-path',x:40,y:135,dur:5.6,op:1},
+        {name:'Shape Shed',prog:'1/1',c:'#FF8A3D',icon:'ph-cube',x:220,y:215,dur:4.8,op:1},
+        {name:'Number Den',prog:'0/1',c:'#FFD23F',icon:'ph-hash',x:30,y:290,dur:6,op:.85}
+      ].map(w => w.name === 'Logic Lab' ? {...w, tl: 78, spuz: true, sl: 6, st: -8, ss: 64, sc: '#B8F23A', mood: 'sleepy'} : {...w, tl: 46, spuz: false}).map(w => ({...w, deep: mix(w.c)})),
+      nav: [
+        {i:'ph-map-trifold',l:'Grid',col:'#B8F23A'},{i:'ph-trophy',l:'Leagues',col:'#A2A6C2'},{i:'ph-users',l:'Friends',col:'#A2A6C2'},{i:'ph-storefront',l:'Shop',col:'#A2A6C2'},{i:'ph-user',l:'Me',col:'#A2A6C2'}
+      ],
+      tiles: [
+        {name:'Crownfall',desc:'Crowns on coloured regions',i:'ph-crown-simple',bg:'#8B7CFF',fg:'#0E0F1A',status:'1:12',si:'ph-check-circle',sbg:'#24331A',sfg:'#B8F23A',op:1,ring:'none'},
+        {name:'Dusk',desc:'Suns and moons, balanced rows',i:'ph-sun-horizon',bg:'#8B7CFF',fg:'#0E0F1A',status:'4:02',si:'ph-hourglass-medium',sbg:'#20233A',sfg:'#F4F5FB',op:1,ring:'inset 0 0 0 2px #8B7CFF'},
+        {name:'Sixer',desc:'6 by 6 number grid',i:'ph-grid-nine',bg:'#8B7CFF',fg:'#0E0F1A',status:'New',si:'ph-sparkle',sbg:'#8B7CFF',sfg:'#0E0F1A',op:1,ring:'none'},
+        {name:'Coming soon',desc:'Lands in Logic Lab next month',i:'ph-lock-simple',bg:'#20233A',fg:'#A2A6C2',status:'Soon',si:'ph-clock',sbg:'#20233A',sfg:'#A2A6C2',op:.7,ring:'none'}
+      ],
+      tools: [
+        {l:'Undo',i:'ph-arrow-counter-clockwise',bg:'#20233A',fg:'#F4F5FB',sh:'#0A0B12'},
+        {l:'Crown',i:'ph-crown-simple',bg:'#8B7CFF',fg:'#0E0F1A',sh:'#4E43A8'},
+        {l:'Mark X',i:'ph-x',bg:'#20233A',fg:'#F4F5FB',sh:'#0A0B12'},
+        {l:'Hint',i:'ph-lightbulb',bg:'#20233A',fg:'#FFC93C',sh:'#0A0B12'}
+      ],
+      friendsCmp: [
+        {pos:'1',ini:'K',c:'#FF8A3D',name:'Kofi',t:'1:05',w:'500',bt:'none'},
+        {pos:'2',ini:'A',c:'#2FD3E0',name:'You',t:'1:12',w:'700',bt:'1px solid #2B2F4A'},
+        {pos:'3',ini:'E',c:'#8B7CFF',name:'Efua',t:'1:40',w:'500',bt:'1px solid #2B2F4A'}
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
