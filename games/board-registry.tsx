@@ -17,4 +17,5 @@ export const BOARDS: Record<string, AnyBoard> = {
   stacked: dynamic(() => import("./stacked/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   wobble: dynamic(() => import("./wobble/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   grapple: dynamic(() => import("./grapple/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  ghosted: dynamic(() => import("./ghosted/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
 };

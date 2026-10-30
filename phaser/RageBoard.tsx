@@ -16,6 +16,7 @@ import { buildGhost, RageController } from "./controller";
 import { EV, type SimCore } from "./sim/core";
 import type { CoursePuzzle, RageState } from "./sim/course";
 import { BTN } from "./sim/input";
+import { framesToMs } from "./sim/fixed";
 import { cssColor, type Painter } from "./render/types";
 import type { Stage } from "./scene";
 
@@ -28,8 +29,8 @@ export interface RageGameSpec<S extends SimCore> {
   controls: ControlsKind;
   /** label on the big round button */
   action?: string;
-  /** "deaths" (Gotcha), "distance" (Dash, Ghosted), "score" (Ricochet, Stacked) */
-  hud: "deaths" | "distance" | "score";
+  /** "deaths" (Gotcha), "distance" (Dash), "race" (Ghosted, GR Ghost Race panel), "score" (Ricochet, Stacked) */
+  hud: "deaths" | "distance" | "score" | "race";
   /** level name for the caption under the board */
   levelName?(sim: S): string;
   metres?(sim: S): number;
@@ -423,7 +424,7 @@ export function RageBoard<S extends SimCore>({
         <div className="pointer-events-none absolute top-3 right-3.5 left-3.5 z-[2] flex flex-col gap-2">
           <div className="flex items-center justify-between gap-2">
             <div className="flex gap-2">
-              {spec.hud === "distance" && (
+              {(spec.hud === "distance" || spec.hud === "race") && (
                 <div style={{ ...chip, ...mono }} aria-label={`${hud.metres} metres`}>
                   {hud.metres} m
                 </div>
@@ -444,13 +445,13 @@ export function RageBoard<S extends SimCore>({
                   {hud.deaths}
                 </div>
               )}
-              {spec.hud !== "distance" && (
+              {spec.hud !== "distance" && spec.hud !== "race" && (
                 <div style={{ ...chip, ...mono }} aria-label={`Time ${formatClock(hud.timeMs)}`}>
                   {formatClock(hud.timeMs)}
                 </div>
               )}
             </div>
-            {ghostOn && hud.delta !== null ? (
+            {spec.hud !== "race" && ghostOn && hud.delta !== null ? (
               <div style={{ ...chip, fontSize: 15, fontWeight: 600, whiteSpace: "nowrap" }}>
                 <Icon name="ghost" size={16} style={{ color: "#A2A6C2" }} />
                 {Math.abs(hud.delta) < 0.05 ? (
@@ -472,24 +473,29 @@ export function RageBoard<S extends SimCore>({
               )
             )}
           </div>
-          {spec.hud === "distance" && (
-            <div className="relative h-2.5 rounded-[5px]" style={{ background: "#2B2F4A" }} aria-hidden>
-              <div className="absolute inset-y-0 left-0 rounded-[5px]" style={{ width: `${hud.progress * 100}%`, background: "#B8F23A" }} />
-              {ghostOn && (
-                <div
-                  className="absolute -top-[5px] h-5 w-5 rounded-[7px]"
-                  style={{
-                    left: `calc(${hud.ghostProgress * 100}% - 10px)`,
-                    background: "#FF8A3D",
-                    opacity: 0.6,
-                    boxShadow: "0 0 0 2px #0E0F1A",
-                  }}
-                />
-              )}
-              <div
-                className="absolute -top-[5px] h-5 w-5 rounded-[7px]"
-                style={{ left: `calc(${hud.progress * 100}% - 10px)`, background: "#2FD3E0", boxShadow: "0 0 0 2px #0E0F1A" }}
-              />
+          {spec.hud === "distance" && <RaceBar progress={hud.progress} ghost={ghostOn ? hud.ghostProgress : null} />}
+          {spec.hud === "race" && (
+            <div className="flex flex-col gap-2.5 rounded-[16px] p-3" style={{ background: "#0E0F1A", color: "#F4F5FB" }}>
+              <div className="flex items-center justify-between text-[14px] font-semibold">
+                <span className="flex items-center gap-1.5">
+                  <Icon name="ghost" size={16} />
+                  {ghostOn
+                    ? `vs ${ctl.ghost!.name}'s best, ${formatClock(framesToMs(ctl.ghost!.log.frames))}`
+                    : "Your best run becomes the ghost"}
+                </span>
+                {ghostOn && hud.delta !== null && hud.started && (
+                  <span
+                    style={{ ...mono, fontSize: 14, color: hud.delta > 0 ? "var(--w-rage)" : "#B8F23A" }}
+                    aria-label={
+                      hud.delta > 0 ? `${Math.abs(hud.delta).toFixed(1)} seconds behind` : `${Math.abs(hud.delta).toFixed(1)} seconds ahead`
+                    }
+                  >
+                    {hud.delta > 0 ? "+" : "\u2212"}
+                    {Math.abs(hud.delta).toFixed(1)} s
+                  </span>
+                )}
+              </div>
+              <RaceBar progress={hud.progress} ghost={ghostOn ? hud.ghostProgress : null} />
             </div>
           )}
         </div>
@@ -544,6 +550,25 @@ export function RageBoard<S extends SimCore>({
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+/** Course bar: lime fill, cyan player marker, translucent orange ghost marker (GR Ghost Race). */
+function RaceBar({ progress, ghost }: { progress: number; ghost: number | null }) {
+  return (
+    <div className="relative h-2.5 rounded-[5px]" style={{ background: "#2B2F4A" }} aria-hidden>
+      <div className="absolute inset-y-0 left-0 rounded-[5px]" style={{ width: `${progress * 100}%`, background: "#B8F23A" }} />
+      {ghost !== null && (
+        <div
+          className="absolute -top-[5px] h-5 w-5 rounded-[7px]"
+          style={{ left: `calc(${ghost * 100}% - 10px)`, background: "#FF8A3D", opacity: 0.6, boxShadow: "0 0 0 2px #0E0F1A" }}
+        />
+      )}
+      <div
+        className="absolute -top-[5px] h-5 w-5 rounded-[7px]"
+        style={{ left: `calc(${progress * 100}% - 10px)`, background: "#2FD3E0", boxShadow: "0 0 0 2px #0E0F1A" }}
+      />
     </div>
   );
 }
