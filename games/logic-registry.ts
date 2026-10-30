@@ -11,6 +11,7 @@ export const LOGIC: Record<string, Loader> = {
   weave: () => import("./weave/logic"),
   flowline: () => import("./flowline/logic"),
   isles: () => import("./isles/logic"),
+  pairup: () => import("./pairup/logic"),
 };
 
 export function hasLogic(id: string) {

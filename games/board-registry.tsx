@@ -13,4 +13,5 @@ export const BOARDS: Record<string, AnyBoard> = {
   weave: dynamic(() => import("./weave/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   flowline: dynamic(() => import("./flowline/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   isles: dynamic(() => import("./isles/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  pairup: dynamic(() => import("./pairup/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
 };
