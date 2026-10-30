@@ -12,6 +12,7 @@ export const LOGIC: Record<string, Loader> = {
   echo: () => import("./echo/logic"),
   twins: () => import("./twins/logic"),
   flinch: () => import("./flinch/logic"),
+  quickfire: () => import("./quickfire/logic"),
 };
 
 export function hasLogic(id: string) {
