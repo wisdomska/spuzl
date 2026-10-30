@@ -16,6 +16,7 @@ export const LOGIC: Record<string, Loader> = {
   squint: () => import("./squint/logic"),
   merge: () => import("./merge/logic"),
   sums: () => import("./sums/logic"),
+  equal: () => import("./equal/logic"),
 };
 
 export function hasLogic(id: string) {
