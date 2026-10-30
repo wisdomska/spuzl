@@ -11,6 +11,7 @@ export const LOGIC: Record<string, Loader> = {
   coil: () => import("./coil/logic"),
   quads: () => import("./quads/logic"),
   rungs: () => import("./rungs/logic"),
+  minicross: () => import("./minicross/logic"),
 };
 
 export function hasLogic(id: string) {
