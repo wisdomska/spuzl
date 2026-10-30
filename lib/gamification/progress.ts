@@ -170,16 +170,14 @@ async function advanceQuests(admin: SupabaseClient, playerId: string, c: ClearCo
     }
     const progress = q.goal.kind === "streak" ? delta : Math.min(q.goal.n, (row?.progress ?? 0) + delta);
     const done = progress >= q.goal.n;
-    await admin
-      .from("player_quests")
-      .upsert({
-        player_id: playerId,
-        quest_id: q.id,
-        period,
-        progress,
-        target: q.goal.n,
-        completed_at: done ? new Date().toISOString() : null,
-      });
+    await admin.from("player_quests").upsert({
+      player_id: playerId,
+      quest_id: q.id,
+      period,
+      progress,
+      target: q.goal.n,
+      completed_at: done ? new Date().toISOString() : null,
+    });
     if (done) out.push({ type: "quest", id: q.id, title: q.title });
   }
   return out;

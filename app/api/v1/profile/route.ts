@@ -19,19 +19,17 @@ export const POST = handle(async (req: Request) => {
   if (!(await verifyTurnstile(input.turnstile, req.headers.get("x-forwarded-for")))) throw new ApiError(403, "bot_check_failed");
   const problem = nicknameProblem(input.nickname);
   if (problem) throw new ApiError(422, "nickname_rejected", problem);
-  const { error } = await admin
-    .from("players")
-    .upsert(
-      {
-        id: user.id,
-        nickname: input.nickname,
-        age_band: input.ageBand,
-        avatar_color: input.color,
-        country: input.country ?? null,
-        is_guest: !!user.is_anonymous,
-      },
-      { onConflict: "id" },
-    );
+  const { error } = await admin.from("players").upsert(
+    {
+      id: user.id,
+      nickname: input.nickname,
+      age_band: input.ageBand,
+      avatar_color: input.color,
+      country: input.country ?? null,
+      is_guest: !!user.is_anonymous,
+    },
+    { onConflict: "id" },
+  );
   if (error?.code === "23505") throw new ApiError(409, "nickname_taken", "That name is taken.");
   if (error) throw error;
   await admin.from("streaks").upsert({ player_id: user.id }, { onConflict: "player_id", ignoreDuplicates: true });

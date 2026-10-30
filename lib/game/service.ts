@@ -411,14 +411,12 @@ export async function finishAttempt(
       fullSpuzl = (Array.isArray(g) ? g[0] : g)?.xp_added > 0;
       if (fullSpuzl) reward.lines.push({ label: "Full Spuzl", xp: FULL_SPUZL.xp, sparks: FULL_SPUZL.sparks });
     }
-    await admin
-      .from("feed_events")
-      .insert({
-        player_id: playerId,
-        kind: fullSpuzl ? "full_spuzl" : "clear",
-        game_id: a.game_id,
-        payload: { timeMs, hints: a.hints, date: a.daily_date },
-      });
+    await admin.from("feed_events").insert({
+      player_id: playerId,
+      kind: fullSpuzl ? "full_spuzl" : "clear",
+      game_id: a.game_id,
+      payload: { timeMs, hints: a.hints, date: a.daily_date },
+    });
   } else if (a.mode === "free") {
     const since = new Date();
     since.setUTCHours(0, 0, 0, 0);
@@ -499,16 +497,14 @@ async function updateRating(admin: SupabaseClient, playerId: string, track: stri
   const { data } = await admin.from("ratings").select("rating, rd, vol, games").eq("player_id", playerId).eq("track", track).maybeSingle();
   const cur = data ? { rating: Number(data.rating), rd: Number(data.rd), vol: Number(data.vol) } : DEFAULT_RATING;
   const next = glicko(cur, [dailyResult(percentile, hints, mistakes)]);
-  await admin
-    .from("ratings")
-    .upsert({
-      player_id: playerId,
-      track,
-      rating: next.rating.toFixed(2),
-      rd: next.rd.toFixed(2),
-      vol: next.vol.toFixed(6),
-      games: (data?.games ?? 0) + 1,
-      updated_at: new Date().toISOString(),
-    });
+  await admin.from("ratings").upsert({
+    player_id: playerId,
+    track,
+    rating: next.rating.toFixed(2),
+    rd: next.rd.toFixed(2),
+    vol: next.vol.toFixed(6),
+    games: (data?.games ?? 0) + 1,
+    updated_at: new Date().toISOString(),
+  });
   return { track, before: cur.rating, after: next.rating };
 }
