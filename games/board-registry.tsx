@@ -53,4 +53,11 @@ export const BOARDS: Record<string, AnyBoard> = {
   ghosted: dynamic(() => import("./ghosted/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   slip: dynamic(() => import("./slip/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   gauntlet: dynamic(() => import("./gauntlet/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  coil: dynamic(() => import("./coil/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  quads: dynamic(() => import("./quads/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  rungs: dynamic(() => import("./rungs/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  minicross: dynamic(() => import("./minicross/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  seven: dynamic(() => import("./seven/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  buried: dynamic(() => import("./buried/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  remix: dynamic(() => import("./remix/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
 };

@@ -1,0 +1,73 @@
+/**
+ * Remix words. Curated SPUZL list, needs owner review: three words a day, 5, 6 and 7 letters, mostly with a
+ * single arrangement in the word list (any real anagram is still accepted). About 1 day in 5 has a Ghanaian
+ * or West African word.
+ */
+export interface RemixEntry {
+  words: [string, string, string];
+}
+
+export const needsReview = true;
+
+export const CONTENT: RemixEntry[] = [
+  { words: ["AVERT", "VERBAL", "MERCURY"] },
+  { words: ["NASAL", "BEAGLE", "ABSENCE"] },
+  { words: ["ALLEY", "DJEMBE", "FACTUAL"] },
+  { words: ["ACUTE", "SYNTAX", "MASONRY"] },
+  { words: ["EMAIL", "PEBBLE", "DOLPHIN"] },
+  { words: ["DIZZY", "ROTTEN", "CARAMEL"] },
+  { words: ["TACKY", "FAUCET", "VITAMIN"] },
+  { words: ["JEWEL", "BOTANY", "ADINKRA"] },
+  { words: ["WAIVE", "STRONG", "DISABLE"] },
+  { words: ["LYRIC", "UNWISE", "QUICKEN"] },
+  { words: ["FORUM", "HOMAGE", "PRICKLE"] },
+  { words: ["PLAID", "INTACT", "EXHIBIT"] },
+  { words: ["SHITO", "THROWN", "EYELASH"] },
+  { words: ["BLOWN", "LOCALE", "MYSTERY"] },
+  { words: ["BROKE", "PATENT", "HARPOON"] },
+  { words: ["MURKY", "PARROT", "LECTURE"] },
+  { words: ["FORAY", "RESUME", "PREVENT"] },
+  { words: ["KENTE", "STURDY", "CRYSTAL"] },
+  { words: ["FOUND", "QUENCH", "QUALITY"] },
+  { words: ["NOTCH", "PACKET", "EXHAUST"] },
+  { words: ["NOBLE", "MUFFIN", "PICTURE"] },
+  { words: ["LIVEN", "PLANET", "HUSBAND"] },
+  { words: ["TOPAZ", "CANYON", "CASSAVA"] },
+  { words: ["FAINT", "HEYDAY", "HARVEST"] },
+  { words: ["FRANK", "POSTAL", "EQUATOR"] },
+  { words: ["TRAWL", "DAMAGE", "PORTION"] },
+  { words: ["WINCE", "SWIVEL", "OVERRUN"] },
+  { words: ["EVOKE", "SCRIPT", "DASHIKI"] },
+  { words: ["TREND", "ACTIVE", "CONFIDE"] },
+  { words: ["PROVE", "MATRON", "FIREMAN"] },
+  { words: ["SOOTY", "GRASSY", "FLUTIST"] },
+  { words: ["PUNCH", "SPLASH", "FORWARD"] },
+  { words: ["SUAVE", "JOLLOF", "BIPLANE"] },
+  { words: ["ACRID", "TURTLE", "ACADEMY"] },
+  { words: ["BLURT", "SKETCH", "CONTEND"] },
+  { words: ["CLUNG", "OFFICE", "FLATTEN"] },
+  { words: ["CAMEL", "SPIRAL", "DISRUPT"] },
+  { words: ["WRATH", "BAOBAB", "EXTINCT"] },
+  { words: ["PUTTY", "ABSORB", "MUSICAL"] },
+  { words: ["LUNAR", "AUTHOR", "VISIBLE"] },
+  { words: ["SKIRT", "ERRAND", "VARIANT"] },
+  { words: ["REUSE", "CASTLE", "JOURNEY"] },
+  { words: ["SHEAF", "WAAKYE", "KITCHEN"] },
+  { words: ["GOODY", "COOKIE", "GLORIFY"] },
+  { words: ["MELON", "BARREL", "BROUGHT"] },
+  { words: ["AROSE", "BELIEF", "LAUNDRY"] },
+  { words: ["IGLOO", "LOUNGE", "STORAGE"] },
+  { words: ["GIVEN", "KENKEY", "LIBRARY"] },
+  { words: ["FLOAT", "SODIUM", "REGIMEN"] },
+  { words: ["LILAC", "FLASHY", "UNEARTH"] },
+  { words: ["IVORY", "NEPHEW", "TIGHTEN"] },
+  { words: ["VITAL", "GARDEN", "PICKAXE"] },
+  { words: ["ROUGH", "AZONTO", "BLANKET"] },
+  { words: ["PEACE", "TEDIUM", "ACCOUNT"] },
+  { words: ["FLASH", "HORRID", "ECOLOGY"] },
+  { words: ["REIGN", "JIGSAW", "HEROISM"] },
+  { words: ["CLIFF", "CAVORT", "BALANCE"] },
+  { words: ["OWARE", "SLEIGH", "FORGIVE"] },
+  { words: ["PLANT", "SHODDY", "CUBICLE"] },
+  { words: ["RIGOR", "VICTOR", "ETERNAL"] },
+];

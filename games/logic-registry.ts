@@ -51,6 +51,13 @@ export const LOGIC: Record<string, Loader> = {
   ghosted: () => import("./ghosted/logic"),
   slip: () => import("./slip/logic"),
   gauntlet: () => import("./gauntlet/logic"),
+  coil: () => import("./coil/logic"),
+  quads: () => import("./quads/logic"),
+  rungs: () => import("./rungs/logic"),
+  minicross: () => import("./minicross/logic"),
+  seven: () => import("./seven/logic"),
+  buried: () => import("./buried/logic"),
+  remix: () => import("./remix/logic"),
 };
 
 export function hasLogic(id: string) {
