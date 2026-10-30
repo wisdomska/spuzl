@@ -231,7 +231,7 @@ export default function QuiltBoard({ puzzle, initialState, hint, disabled, mode,
   const boardPx = cols * cell + PAD * 2;
 
   return (
-    <div className={`overflow-x-auto ${done ? "board-pulse" : ""}`} style={{ maxWidth: "100%" }}>
+    <div className={`overflow-x-auto ${done ? "board-pulse" : ""}`} style={{ maxWidth: "min(100%, calc(100vw - 36px))" }}>
       <div
         ref={gridRef}
         role="grid"
