@@ -14,4 +14,5 @@ export const BOARDS: Record<string, AnyBoard> = {
   flowline: dynamic(() => import("./flowline/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   isles: dynamic(() => import("./isles/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   pairup: dynamic(() => import("./pairup/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  lost: dynamic(() => import("./lost/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
 };

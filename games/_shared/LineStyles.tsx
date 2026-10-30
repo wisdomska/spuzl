@@ -18,6 +18,8 @@ const CSS = `
 .ll-flow { animation: ll-flow 420ms var(--ease-out) both; }
 .ll-ink { background: var(--world); }
 [data-theme="light"] .ll-ink { background: var(--world-ink); }
+.ll-wall { background: color-mix(in srgb, var(--world) 75%, var(--surface)); }
+[data-theme="light"] .ll-wall { background: var(--world-ink); }
 .ll-turn { transition: transform var(--dur-fast) var(--spring-press); }
 .ll-fog { transition: opacity 260ms var(--ease-out); }
 .ll-cam { transition: transform var(--dur-ui) var(--ease-out); }

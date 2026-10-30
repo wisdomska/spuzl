@@ -12,6 +12,7 @@ export const LOGIC: Record<string, Loader> = {
   flowline: () => import("./flowline/logic"),
   isles: () => import("./isles/logic"),
   pairup: () => import("./pairup/logic"),
+  lost: () => import("./lost/logic"),
 };
 
 export function hasLogic(id: string) {
