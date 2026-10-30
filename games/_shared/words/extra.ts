@@ -1,0 +1,19 @@
+/**
+ * Words the SCOWL base list lacks but SPUZL content uses: Ghanaian and West African food, music,
+ * craft and place words in everyday English use, plus a few common words. All lowercase.
+ * Added to the validation list by build.ts.
+ */
+export const EXTRA_WORDS: readonly string[] = [
+  // food
+  "jollof", "banku", "fufu", "kenkey", "waakye", "shito", "kelewele", "gari", "garri", "egusi", "suya", "ampesi",
+  "akple", "kokonte", "tuozaafi", "omotuo", "fante", "tilapia", "moringa", "shea", "fonio", "chinchin", "puff",
+  "puffpuff", "abolo", "koose", "kosua", "plantains", "groundnut", "groundnuts", "agushie", "nkatie", "bofrot",
+  "sobolo", "zobo", "palava", "palaver", "okro",
+  // music, dance, craft
+  "kente", "adinkra", "oware", "azonto", "adowa", "kpanlogo", "agbadza", "djembe", "kora", "balafon", "talking",
+  "highlife", "hiplife", "afrobeats", "afrobeat", "atumpan", "fontomfrom", "agbada", "dashiki", "batakari",
+  "smock", "kaba", "beads", "akwaaba", "trotro", "trotros", "chop", "chopbar",
+  // places and nature (common nouns)
+  "harmattan", "savannah", "lagoon", "cedi", "cedis", "pesewa", "pesewas", "naira", "kobo", "dalasi", "leone",
+  "baobab", "cocoyam", "cocoyams", "akee",
+];
