@@ -13,6 +13,7 @@ export const LOGIC: Record<string, Loader> = {
   snug: () => import("./snug/logic"),
   shuffle: () => import("./shuffle/logic"),
   reflect: () => import("./reflect/logic"),
+  squint: () => import("./squint/logic"),
 };
 
 export function hasLogic(id: string) {
