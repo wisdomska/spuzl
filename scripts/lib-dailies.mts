@@ -7,12 +7,23 @@ import { dailyNumber } from "../lib/format";
 
 export const readyGames = () => Object.keys(LOGIC);
 
-export async function dailyFor(gameId: string, date: string): Promise<{ seed: string; difficulty: ReturnType<typeof difficultyForDate>; gen: Generated<unknown, unknown>; logic: GameLogic<unknown, unknown, unknown> }> {
+export async function dailyFor(
+  gameId: string,
+  date: string,
+): Promise<{
+  seed: string;
+  difficulty: ReturnType<typeof difficultyForDate>;
+  gen: Generated<unknown, unknown>;
+  logic: GameLogic<unknown, unknown, unknown>;
+}> {
   const logic = (await LOGIC[gameId]()).default as GameLogic<unknown, unknown, unknown>;
   const difficulty = difficultyForDate(date);
   const seed = `daily:${gameId}:${date}`;
   const content = logic as Partial<ContentLogic<unknown, unknown, unknown>>;
-  const gen = typeof content.generateAt === "function" ? content.generateAt(dailyNumber(date), difficulty) : logic.generate(createRng(seed), difficulty);
+  const gen =
+    typeof content.generateAt === "function"
+      ? content.generateAt(dailyNumber(date), difficulty)
+      : logic.generate(createRng(seed), difficulty);
   return { seed, difficulty, gen, logic };
 }
 

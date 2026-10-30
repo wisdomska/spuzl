@@ -6,7 +6,11 @@ import { hasSupabase } from "@/lib/supabase/env";
 import type { Hint } from "@/games/types";
 
 export class HttpError extends Error {
-  constructor(public status: number, public code: string, message?: string) {
+  constructor(
+    public status: number,
+    public code: string,
+    message?: string,
+  ) {
     super(message ?? code);
   }
 }
@@ -53,7 +57,15 @@ export interface Me {
   xpInto: number;
   xpNeed: number;
   sparks: number;
-  streak: { current: number; best: number; freezes_held: number; last_clear_date: string | null; lost_value?: number; lost_on?: string | null; flame: "orange" | "blue" | "purple" | "prism" };
+  streak: {
+    current: number;
+    best: number;
+    freezes_held: number;
+    last_clear_date: string | null;
+    lost_value?: number;
+    lost_on?: string | null;
+    flame: "orange" | "blue" | "purple" | "prism";
+  };
   rank: { rating: number; name: string; division: string; emblem: string };
   ratings: Record<string, number>;
   today: { date: string; cleared: Record<string, number>; featured: number; featuredCleared: number };
@@ -123,10 +135,16 @@ export interface FinishRes {
   level: { before: number; after: number; into: number; need: number };
   streak: { current: number; extended: boolean; milestone: number | null; freezeEarned: boolean } | null;
   fullSpuzl: boolean;
-  unlocks: ({ type: "badge"; id: string; name: string; tier: string; icon: string; sparks: number; secret: boolean } | { type: "quest"; id: string; title: string })[];
+  unlocks: (
+    | { type: "badge"; id: string; name: string; tier: string; icon: string; sparks: number; secret: boolean }
+    | { type: "quest"; id: string; title: string }
+  )[];
   rank: { track: string; before: number; after: number } | null;
 }
-export function finishAttempt(id: string, body: { state: unknown; activeMs: number; mistakes: number; deaths?: number; relaxed?: boolean; offline?: boolean; finishedAt?: string }) {
+export function finishAttempt(
+  id: string,
+  body: { state: unknown; activeMs: number; mistakes: number; deaths?: number; relaxed?: boolean; offline?: boolean; finishedAt?: string },
+) {
   return api<FinishRes>(`/api/v1/attempts/${id}/finish`, { json: { ...body, localHour: new Date().getHours() } });
 }
 

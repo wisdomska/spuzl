@@ -10,8 +10,15 @@ import { play } from "@/lib/audio";
 
 /** Island layout: the design's zigzag (x 200/40/220/30, ~77 px rows), extended to all 9 worlds. */
 const SLOTS = [
-  { x: 200, y: 60 }, { x: 40, y: 135 }, { x: 220, y: 215 }, { x: 30, y: 290 }, { x: 205, y: 370 },
-  { x: 45, y: 450 }, { x: 215, y: 530 }, { x: 35, y: 610 }, { x: 200, y: 690 },
+  { x: 200, y: 60 },
+  { x: 40, y: 135 },
+  { x: 220, y: 215 },
+  { x: 30, y: 290 },
+  { x: 205, y: 370 },
+  { x: 45, y: 450 },
+  { x: 215, y: 530 },
+  { x: 35, y: 610 },
+  { x: 200, y: 690 },
 ];
 const BOB = [5, 5.6, 4.8, 6, 5.3, 5.8, 4.9, 5.5, 5.1];
 
@@ -20,7 +27,17 @@ export interface WorldProgress {
   total: number;
 }
 
-export function HomeMap({ progress, current, mood, color }: { progress: Record<WorldId, WorldProgress>; current: WorldId; mood: SpuzMood; color: string }) {
+export function HomeMap({
+  progress,
+  current,
+  mood,
+  color,
+}: {
+  progress: Record<WorldId, WorldProgress>;
+  current: WorldId;
+  mood: SpuzMood;
+  color: string;
+}) {
   const router = useRouter();
   const reduce = useReducedMotion();
   const [spuzAt, setSpuzAt] = useState<WorldId>(current);
@@ -74,9 +91,9 @@ export function HomeMap({ progress, current, mood, color }: { progress: Record<W
             style={{ left: s.x, top: s.y }}
           >
             <Island color={w.color} icon={w.icon} landmarkLeft={w.id === spuzAt ? 78 : 46} bob={BOB[i]} />
-            <span className="flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-1">
+            <span className="bg-surface flex items-center gap-1.5 rounded-full px-2.5 py-1">
               <span className="font-display text-[13px] font-bold whitespace-nowrap">{w.name}</span>
-              <span className="num text-[12px] font-semibold text-muted">
+              <span className="num text-muted text-[12px] font-semibold">
                 {p.cleared}/{p.total}
               </span>
             </span>
@@ -86,11 +103,30 @@ export function HomeMap({ progress, current, mood, color }: { progress: Record<W
       <motion.div
         className="pointer-events-none absolute"
         initial={false}
-        animate={hopTo ? { transform: `translate(${hopTo.x}px, ${hopTo.y}px)` } : { transform: `translate(${from.x + 6}px, ${from.y - 8}px)` }}
+        animate={
+          hopTo ? { transform: `translate(${hopTo.x}px, ${hopTo.y}px)` } : { transform: `translate(${from.x + 6}px, ${from.y - 8}px)` }
+        }
         transition={{ duration: 0.7, ease: [0.77, 0, 0.175, 1] }}
         style={{ left: 0, top: 0 }}
       >
-        <motion.div animate={hopTo ? { transform: ["translateY(0px)", "translateY(-22px)", "translateY(0px)", "translateY(-22px)", "translateY(0px)", "translateY(-22px)", "translateY(0px)"] } : undefined} transition={{ duration: 0.7, ease: "easeOut" }}>
+        <motion.div
+          animate={
+            hopTo
+              ? {
+                  transform: [
+                    "translateY(0px)",
+                    "translateY(-22px)",
+                    "translateY(0px)",
+                    "translateY(-22px)",
+                    "translateY(0px)",
+                    "translateY(-22px)",
+                    "translateY(0px)",
+                  ],
+                }
+              : undefined
+          }
+          transition={{ duration: 0.7, ease: "easeOut" }}
+        >
           <Spuz mood={hopTo ? "cheer" : mood} size={64} color={color} decorative />
         </motion.div>
       </motion.div>

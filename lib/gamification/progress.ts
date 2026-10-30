@@ -34,8 +34,16 @@ interface Stats {
 async function stats(admin: SupabaseClient, playerId: string): Promise<Stats> {
   const count = async (q: PromiseLike<{ count: number | null }>) => (await q).count ?? 0;
   const base = () => admin.from("attempts").select("id", { count: "exact", head: true }).eq("player_id", playerId).eq("status", "cleared");
-  const [clears, dailyClears, noHintClears] = await Promise.all([count(base()), count(base().eq("mode", "daily")), count(base().eq("mode", "daily").eq("hints", 0))]);
-  const { count: fs } = await admin.from("xp_ledger").select("id", { count: "exact", head: true }).eq("player_id", playerId).eq("source", "full_spuzl");
+  const [clears, dailyClears, noHintClears] = await Promise.all([
+    count(base()),
+    count(base().eq("mode", "daily")),
+    count(base().eq("mode", "daily").eq("hints", 0)),
+  ]);
+  const { count: fs } = await admin
+    .from("xp_ledger")
+    .select("id", { count: "exact", head: true })
+    .eq("player_id", playerId)
+    .eq("source", "full_spuzl");
   return {
     clears,
     dailyClears,
@@ -55,22 +63,34 @@ async function badgeEarned(b: BadgeDef, c: ClearContext, s: Stats): Promise<bool
   // The 4 × 4 tutorial only ever earns First Clear.
   if (c.mode === "tutorial") return b.rule.kind === "clears" && s.clears >= n;
   switch (b.rule.kind) {
-    case "clears": return s.clears >= n;
-    case "streak": return c.streak >= n;
-    case "no_hint_clears": return s.noHintClears >= n;
-    case "full_spuzl_days": return s.fullSpuzlDays >= n;
-    case "game_clears": return c.gameId === b.rule.game && (await s.gameClears(b.rule.game!)) >= n;
-    case "world_all": return c.world === b.rule.world && (await s.worldGamesCleared(c.world)) >= gamesInWorld(c.world).length;
-    case "under_ms": return c.timeMs < n;
-    case "night_owl": return c.mode === "daily" && c.localHour !== undefined && c.localHour >= 0 && c.localHour < 4;
-    case "early_bird": return c.mode === "daily" && c.localHour !== undefined && c.localHour >= 4 && c.localHour < 6;
+    case "clears":
+      return s.clears >= n;
+    case "streak":
+      return c.streak >= n;
+    case "no_hint_clears":
+      return s.noHintClears >= n;
+    case "full_spuzl_days":
+      return s.fullSpuzlDays >= n;
+    case "game_clears":
+      return c.gameId === b.rule.game && (await s.gameClears(b.rule.game!)) >= n;
+    case "world_all":
+      return c.world === b.rule.world && (await s.worldGamesCleared(c.world)) >= gamesInWorld(c.world).length;
+    case "under_ms":
+      return c.timeMs < n;
+    case "night_owl":
+      return c.mode === "daily" && c.localHour !== undefined && c.localHour >= 0 && c.localHour < 4;
+    case "early_bird":
+      return c.mode === "daily" && c.localHour !== undefined && c.localHour >= 4 && c.localHour < 6;
     case "last_minute": {
       const now = new Date();
       return c.mode === "daily" && now.getUTCHours() === 23 && now.getUTCMinutes() === 59;
     }
-    case "zero_deaths": return c.world === "rage" && c.deaths === 0;
-    case "gauntlet_deaths": return c.gameId === "gauntlet" && c.deaths <= n;
-    default: return false; // social, duel and party badges are evaluated where those events happen
+    case "zero_deaths":
+      return c.world === "rage" && c.deaths === 0;
+    case "gauntlet_deaths":
+      return c.gameId === "gauntlet" && c.deaths <= n;
+    default:
+      return false; // social, duel and party badges are evaluated where those events happen
   }
 }
 
@@ -101,12 +121,18 @@ export function weekStart(d = new Date()): string {
 
 function questDelta(q: QuestDef, c: ClearContext): number {
   switch (q.goal.kind) {
-    case "world_clears": return c.mode === "daily" && c.world === q.goal.world ? 1 : 0;
-    case "daily_clears": return c.mode === "daily" ? 1 : 0;
-    case "no_hint_clears": return c.mode === "daily" && c.hints === 0 ? 1 : 0;
-    case "free_clears": return c.mode === "free" ? 1 : 0;
-    case "full_spuzl_days": return c.fullSpuzl ? 1 : 0;
-    default: return 0;
+    case "world_clears":
+      return c.mode === "daily" && c.world === q.goal.world ? 1 : 0;
+    case "daily_clears":
+      return c.mode === "daily" ? 1 : 0;
+    case "no_hint_clears":
+      return c.mode === "daily" && c.hints === 0 ? 1 : 0;
+    case "free_clears":
+      return c.mode === "free" ? 1 : 0;
+    case "full_spuzl_days":
+      return c.fullSpuzl ? 1 : 0;
+    default:
+      return 0;
   }
 }
 
@@ -114,22 +140,46 @@ async function advanceQuests(admin: SupabaseClient, playerId: string, c: ClearCo
   const today = new Date().toISOString().slice(0, 10);
   const week = weekStart();
   const out: Unlock[] = [];
-  const list: [QuestDef, string][] = [...questsForDate(today).map((q) => [q, today] as [QuestDef, string]), ...WEEKLY_CHAIN.map((q) => [q, week] as [QuestDef, string])];
+  const list: [QuestDef, string][] = [
+    ...questsForDate(today).map((q) => [q, today] as [QuestDef, string]),
+    ...WEEKLY_CHAIN.map((q) => [q, week] as [QuestDef, string]),
+  ];
   for (const [q, period] of list) {
     let delta = questDelta(q, c);
     if (q.goal.kind === "streak") delta = c.streak >= q.goal.n ? q.goal.n : 0;
     if (!delta) continue;
-    const { data: row } = await admin.from("player_quests").select("progress, completed_at").eq("player_id", playerId).eq("quest_id", q.id).eq("period", period).maybeSingle();
+    const { data: row } = await admin
+      .from("player_quests")
+      .select("progress, completed_at")
+      .eq("player_id", playerId)
+      .eq("quest_id", q.id)
+      .eq("period", period)
+      .maybeSingle();
     if (row?.completed_at) continue;
     // Weekly chain is sequential: step n only advances once step n-1 is complete.
     if (q.kind === "weekly" && q.step && q.step > 1) {
       const prev = WEEKLY_CHAIN[q.step - 2];
-      const { data: p } = await admin.from("player_quests").select("completed_at").eq("player_id", playerId).eq("quest_id", prev.id).eq("period", period).maybeSingle();
+      const { data: p } = await admin
+        .from("player_quests")
+        .select("completed_at")
+        .eq("player_id", playerId)
+        .eq("quest_id", prev.id)
+        .eq("period", period)
+        .maybeSingle();
       if (!p?.completed_at) continue;
     }
     const progress = q.goal.kind === "streak" ? delta : Math.min(q.goal.n, (row?.progress ?? 0) + delta);
     const done = progress >= q.goal.n;
-    await admin.from("player_quests").upsert({ player_id: playerId, quest_id: q.id, period, progress, target: q.goal.n, completed_at: done ? new Date().toISOString() : null });
+    await admin
+      .from("player_quests")
+      .upsert({
+        player_id: playerId,
+        quest_id: q.id,
+        period,
+        progress,
+        target: q.goal.n,
+        completed_at: done ? new Date().toISOString() : null,
+      });
     if (done) out.push({ type: "quest", id: q.id, title: q.title });
   }
   return out;

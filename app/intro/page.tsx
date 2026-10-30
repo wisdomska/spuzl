@@ -64,11 +64,14 @@ export default function Intro() {
       onKeyDown={skip}
       tabIndex={0}
       aria-label="SPUZL. Tiny games. Big brain. Tap to skip."
-      className="relative flex min-h-dvh flex-col items-center justify-center gap-2.5 overflow-hidden bg-bg outline-none"
+      className="bg-bg relative flex min-h-dvh flex-col items-center justify-center gap-2.5 overflow-hidden outline-none"
       animate={{ opacity: leaving ? 0 : 1 }}
       transition={{ duration: 0.2, ease: EASE_OUT }}
     >
-      <div className="absolute inset-0 opacity-60" style={{ backgroundImage: "radial-gradient(var(--line) 1.5px, transparent 1.5px)", backgroundSize: "26px 26px" }} />
+      <div
+        className="absolute inset-0 opacity-60"
+        style={{ backgroundImage: "radial-gradient(var(--line) 1.5px, transparent 1.5px)", backgroundSize: "26px 26px" }}
+      />
       <motion.div
         className="relative -mb-3.5"
         initial={instant ? false : { opacity: 0, transform: "translateY(60px) scale(0.6)" }}
@@ -77,33 +80,37 @@ export default function Intro() {
       >
         <Spuz mood="wave" size={170} decorative />
       </motion.div>
-      <div className="relative flex items-end font-display font-black" style={{ fontSize: 72, lineHeight: 0.9, letterSpacing: "-0.05em" }} aria-hidden>
+      <div
+        className="font-display relative flex items-end font-black"
+        style={{ fontSize: 72, lineHeight: 0.9, letterSpacing: "-0.05em" }}
+        aria-hidden
+      >
         {["S", "P", "U"].map((ch, i) => (
           <motion.span key={ch} className="inline-block origin-bottom" {...letter(i)}>
             {ch}
           </motion.span>
         ))}
         <motion.span
-          className="relative inline-block text-accent"
+          className="text-accent relative inline-block"
           initial={instant ? false : { opacity: 0, transform: "translateX(160px) skewX(-10deg)" }}
           animate={{ opacity: 1, transform: "translateX(0px) skewX(-10deg)" }}
           transition={instant ? { duration: 0 } : { delay: 0.7, duration: 0.4, ease: [0.77, 0, 0.175, 1] }}
         >
-          Z<span className="absolute rounded-full bg-accent" style={{ right: "-0.13em", top: "0.31em", width: "0.2em", height: "0.2em" }} />
+          Z<span className="bg-accent absolute rounded-full" style={{ right: "-0.13em", top: "0.31em", width: "0.2em", height: "0.2em" }} />
         </motion.span>
         <motion.span className="inline-block origin-bottom" {...letter(3)}>
           L
         </motion.span>
       </div>
       <motion.p
-        className="relative font-display text-[17px] font-bold text-muted"
+        className="font-display text-muted relative text-[17px] font-bold"
         initial={instant ? false : { opacity: 0, transform: "translateY(8px)" }}
         animate={{ opacity: 1, transform: "translateY(0px)" }}
         transition={instant ? { duration: 0 } : { delay: 1.7, duration: 0.5, ease: EASE_OUT }}
       >
         Tiny games. Big brain.
       </motion.p>
-      <p className="absolute bottom-10 text-[15px] font-medium text-muted">Tap to skip</p>
+      <p className="text-muted absolute bottom-10 text-[15px] font-medium">Tap to skip</p>
     </motion.main>
   );
 }

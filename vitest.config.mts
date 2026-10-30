@@ -10,7 +10,15 @@ export default defineConfig({
     include: ["games/**/*.test.ts", "lib/**/*.test.ts", "tests/unit/**/*.test.{ts,tsx}"],
     coverage: {
       provider: "v8",
-      include: ["games/**/logic.ts", "games/**/generator.ts", "games/**/solver.ts", "lib/rewards/**", "lib/rating/**", "lib/streaks/**", "lib/leagues/**"],
+      include: [
+        "games/**/logic.ts",
+        "games/**/generator.ts",
+        "games/**/solver.ts",
+        "lib/rewards/**",
+        "lib/rating/**",
+        "lib/streaks/**",
+        "lib/leagues/**",
+      ],
       thresholds: { lines: 90, functions: 90, statements: 90, branches: 80 },
     },
   },

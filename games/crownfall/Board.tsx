@@ -47,7 +47,8 @@ export default function CrownfallBoard({ puzzle, initialState, hint, disabled, m
       setHist((h) => [...h, prev]);
       setLast(i);
       setTapN((t) => t + 1);
-      const r = Math.floor(i / n) + 1, c = (i % n) + 1;
+      const r = Math.floor(i / n) + 1,
+        c = (i % n) + 1;
       const markName = value === CROWN ? "crown" : value === MARK ? "marked empty" : "empty";
       if (broke) {
         streak.current = 0;
@@ -98,7 +99,13 @@ export default function CrownfallBoard({ puzzle, initialState, hint, disabled, m
   useEffect(() => {
     api.setControls([
       { id: "undo", label: "Undo", icon: "arrow-counter-clockwise", onPress: undo, disabled: !hist.length || done },
-      { id: "crown", label: "Crown", icon: "crown-simple", onPress: () => setTool((t) => (t === "crown" ? null : "crown")), active: tool === "crown" },
+      {
+        id: "crown",
+        label: "Crown",
+        icon: "crown-simple",
+        onPress: () => setTool((t) => (t === "crown" ? null : "crown")),
+        active: tool === "crown",
+      },
       { id: "x", label: "Mark X", icon: "x", onPress: () => setTool((t) => (t === "x" ? null : "x")), active: tool === "x" },
       { id: "hint", label: "Hint", icon: "lightbulb", onPress: () => {}, tone: "gold" },
     ]);
@@ -116,7 +123,8 @@ export default function CrownfallBoard({ puzzle, initialState, hint, disabled, m
   const onPointerDown = (i: number) => (e: React.PointerEvent) => {
     if (disabled || done) return;
     (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
-    if (tool !== "crown" && (cells[i] === EMPTY || cells[i] === MARK) && tool === "x") painting.current = { value: cells[i] === MARK ? EMPTY : MARK };
+    if (tool !== "crown" && (cells[i] === EMPTY || cells[i] === MARK) && tool === "x")
+      painting.current = { value: cells[i] === MARK ? EMPTY : MARK };
   };
   const onPointerEnter = (i: number) => () => {
     if (painting.current && cells[i] !== CROWN) commit(i, painting.current.value);
@@ -127,7 +135,8 @@ export default function CrownfallBoard({ puzzle, initialState, hint, disabled, m
     return () => window.removeEventListener("pointerup", up);
   }, []);
 
-  const lastR = Math.floor(last / n), lastC = last % n;
+  const lastR = Math.floor(last / n),
+    lastC = last % n;
   const hintTarget = typeof hint?.target === "number" ? hint.target : -1;
   const tutorialGlow = mode === "tutorial" && !done && a.crowns === n - 1 && a.bad.size === 0;
 
@@ -140,7 +149,13 @@ export default function CrownfallBoard({ puzzle, initialState, hint, disabled, m
         aria-colcount={n}
         onKeyDown={keys.onKeyDown}
         className="grid rounded-[20px] p-1.5"
-        style={{ gridTemplateColumns: `repeat(${n}, ${cell}px)`, gap, background: "var(--board-bg)", boxShadow: "0 0 0 2px var(--line)", perspective: 600 }}
+        style={{
+          gridTemplateColumns: `repeat(${n}, ${cell}px)`,
+          gap,
+          background: "var(--board-bg)",
+          boxShadow: "0 0 0 2px var(--line)",
+          perspective: 600,
+        }}
       >
         {Array.from({ length: n }, (_, r) => (
           <div role="row" key={r} className="contents">
@@ -191,7 +206,14 @@ export default function CrownfallBoard({ puzzle, initialState, hint, disabled, m
                     />
                   )}
                   {bad && <span aria-hidden className="hatch absolute inset-0 rounded-[10px]" />}
-                  {v === CROWN && <Icon name="crown-simple" size={Math.round(cell * 0.5)} className="relative" style={done ? { color: "#0E0F1A" } : undefined} />}
+                  {v === CROWN && (
+                    <Icon
+                      name="crown-simple"
+                      size={Math.round(cell * 0.5)}
+                      className="relative"
+                      style={done ? { color: "#0E0F1A" } : undefined}
+                    />
+                  )}
                   {v === MARK && !done && <Icon name="x" size={Math.round(cell * 0.45)} className="relative" />}
                 </div>
               );

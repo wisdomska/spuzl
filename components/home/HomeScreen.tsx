@@ -53,8 +53,16 @@ export function HomeScreen() {
   return (
     <div className="lg:grid lg:grid-cols-[1fr_360px]">
       <main className="dotgrid relative min-h-dvh overflow-hidden">
-        <header className="safe-top sticky top-0 z-10 flex items-center justify-between px-4 pb-3 lg:pt-6" style={{ background: "linear-gradient(var(--bg) 70%, transparent)" }}>
-          <LevelRing level={d.level} pct={(d.xpInto / d.xpNeed) * 100} color={d.avatar_color} initial={d.nickname.slice(0, 1).toUpperCase()} />
+        <header
+          className="safe-top sticky top-0 z-10 flex items-center justify-between px-4 pb-3 lg:pt-6"
+          style={{ background: "linear-gradient(var(--bg) 70%, transparent)" }}
+        >
+          <LevelRing
+            level={d.level}
+            pct={(d.xpInto / d.xpNeed) * 100}
+            color={d.avatar_color}
+            initial={d.nickname.slice(0, 1).toUpperCase()}
+          />
           <div className="flex gap-2">
             <StreakChip streak={streak} atRisk={atRisk} />
             <SparksChip sparks={d.sparks} />
@@ -65,20 +73,26 @@ export function HomeScreen() {
           <HomeMap progress={progress} current={currentWorld} mood={mood} color={d.avatar_color} />
         </section>
 
-        <div aria-hidden className="pointer-events-none fixed inset-x-0 bottom-0 z-10 h-[340px] lg:absolute lg:h-[280px]" style={{ background: "linear-gradient(transparent, var(--bg) 22%)" }} />
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-x-0 bottom-0 z-10 h-[340px] lg:absolute lg:h-[280px]"
+          style={{ background: "linear-gradient(transparent, var(--bg) 22%)" }}
+        />
         <div className="fixed inset-x-3 bottom-[92px] z-20 mx-auto flex max-w-[536px] flex-col gap-2.5 lg:absolute lg:bottom-6">
           {atRisk && (
             <motion.div
               initial={{ opacity: 0, transform: "translateY(-12px)" }}
               animate={{ opacity: 1, transform: "translateY(0px)" }}
               transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
-              className="flex items-center gap-1.5 rounded-[22px] bg-surface py-3 pr-3.5 pl-2"
+              className="bg-surface flex items-center gap-1.5 rounded-[22px] py-3 pr-3.5 pl-2"
               style={{ boxShadow: "inset 0 0 0 2px var(--gold)" }}
             >
               <Spuz mood="sleepy" size={60} still decorative />
               <div className="flex flex-1 flex-col gap-0.5">
-                <p className="text-[16px] leading-[1.3] font-semibold text-pretty">Your {streak}-day streak is sleepy. One clear wakes it up.</p>
-                <p className="num text-[13px] font-medium text-gold">Resets in {formatCountdown(msToReset(new Date(now)))}</p>
+                <p className="text-[16px] leading-[1.3] font-semibold text-pretty">
+                  Your {streak}-day streak is sleepy. One clear wakes it up.
+                </p>
+                <p className="num text-gold text-[13px] font-medium">Resets in {formatCountdown(msToReset(new Date(now)))}</p>
               </div>
             </motion.div>
           )}
@@ -88,15 +102,23 @@ export function HomeScreen() {
               <span className="text-muted"> of {LAUNCH_IDS.length} cleared</span>
             </p>
           </div>
-          <Link href="/library" className="toy flex h-[52px] items-center gap-2.5 rounded-[18px] bg-surface-raised px-4" style={{ boxShadow: "0 5px 0 var(--depth)" }}>
+          <Link
+            href="/library"
+            className="toy bg-surface-raised flex h-[52px] items-center gap-2.5 rounded-[18px] px-4"
+            style={{ boxShadow: "0 5px 0 var(--depth)" }}
+          >
             <Icon name="infinity" size={22} className="text-accent" />
-            <span className="flex-1 text-left font-display text-[15px] font-extrabold">Play anytime</span>
-            <span className="text-[13px] font-medium text-muted">51 games, no limit</span>
+            <span className="font-display flex-1 text-left text-[15px] font-extrabold">Play anytime</span>
+            <span className="text-muted text-[13px] font-medium">51 games, no limit</span>
             <Icon name="caret-right" size={16} className="text-muted" />
           </Link>
           <div className="grid grid-cols-[1fr_64px_64px] gap-2.5">
             {nextMeta ? (
-              <Link href={`/play/${nextMeta.id}`} className="toy flex h-16 items-center justify-center gap-2.5 rounded-[20px] bg-accent text-on-accent" style={{ ["--btn-depth" as string]: "var(--accent-depth)" }}>
+              <Link
+                href={`/play/${nextMeta.id}`}
+                className="toy bg-accent text-on-accent flex h-16 items-center justify-center gap-2.5 rounded-[20px]"
+                style={{ ["--btn-depth" as string]: "var(--accent-depth)" }}
+              >
                 <Icon name="play" size={20} />
                 <span className="flex flex-col items-start">
                   <span className="font-display text-[18px] font-black">Play {nextMeta.name}</span>
@@ -106,16 +128,28 @@ export function HomeScreen() {
                 </span>
               </Link>
             ) : (
-              <Link href="/library" className="toy flex h-16 items-center justify-center gap-2.5 rounded-[20px] bg-accent text-on-accent" style={{ ["--btn-depth" as string]: "var(--accent-depth)" }}>
+              <Link
+                href="/library"
+                className="toy bg-accent text-on-accent flex h-16 items-center justify-center gap-2.5 rounded-[20px]"
+                style={{ ["--btn-depth" as string]: "var(--accent-depth)" }}
+              >
                 <Icon name="crown" size={20} />
                 <span className="font-display text-[18px] font-black">Full Spuzl. Free play?</span>
               </Link>
             )}
-            <Link href="/duel" aria-label="Duel" className="toy flex h-16 flex-col items-center justify-center gap-0.5 rounded-[20px] bg-surface-raised">
+            <Link
+              href="/duel"
+              aria-label="Duel"
+              className="toy bg-surface-raised flex h-16 flex-col items-center justify-center gap-0.5 rounded-[20px]"
+            >
               <Icon name="sword" size={22} />
               <span className="text-[12px] font-semibold">Duel</span>
             </Link>
-            <Link href="/party" aria-label="Party" className="toy flex h-16 flex-col items-center justify-center gap-0.5 rounded-[20px] bg-surface-raised">
+            <Link
+              href="/party"
+              aria-label="Party"
+              className="toy bg-surface-raised flex h-16 flex-col items-center justify-center gap-0.5 rounded-[20px]"
+            >
               <Icon name="users-three" size={22} />
               <span className="text-[12px] font-semibold">Party</span>
             </Link>

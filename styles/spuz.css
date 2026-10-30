@@ -1,32 +1,174 @@
 /* Spuz (global, prefixed). Keyframes, ported 1:1 from design/Spuz.dc.html. Transform and opacity only. */
-@keyframes spuz-breathe { 0%, 100% { transform: scale(1, 1) skewX(0); } 30% { transform: scale(1.05, .95) skewX(-2deg); } 60% { transform: scale(.97, 1.04) skewX(2deg); } }
-@keyframes spuz-flop { 0%, 100% { transform: rotate(-22deg); } 40% { transform: rotate(26deg); } 55% { transform: rotate(16deg); } 70% { transform: rotate(20deg); } }
-@keyframes spuz-blink { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.08); } }
-@keyframes spuz-spin { to { transform: rotate(360deg); } }
-@keyframes spuz-wave { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(38deg); } }
-@keyframes spuz-rise { 0% { transform: translateY(0) scale(.6); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(-2.6em) scale(1.1); opacity: 0; } }
-@keyframes spuz-flicker { 0%, 100% { transform: rotate(-45deg) scale(1); } 50% { transform: rotate(-41deg) scale(1.08, 1.15); } }
-@keyframes spuz-hop { 0%, 100% { transform: translateY(0); } 45% { transform: translateY(-.9em); } }
-@keyframes spuz-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-.12em); } 75% { transform: translateX(.12em); } }
-@keyframes spuz-twinkle { 0%, 100% { transform: scale(1) rotate(0); } 50% { transform: scale(.55) rotate(45deg); } }
-@keyframes spuz-moodIn { from { opacity: .4; } to { opacity: 1; } }
+@keyframes spuz-breathe {
+  0%,
+  100% {
+    transform: scale(1, 1) skewX(0);
+  }
+  30% {
+    transform: scale(1.05, 0.95) skewX(-2deg);
+  }
+  60% {
+    transform: scale(0.97, 1.04) skewX(2deg);
+  }
+}
+@keyframes spuz-flop {
+  0%,
+  100% {
+    transform: rotate(-22deg);
+  }
+  40% {
+    transform: rotate(26deg);
+  }
+  55% {
+    transform: rotate(16deg);
+  }
+  70% {
+    transform: rotate(20deg);
+  }
+}
+@keyframes spuz-blink {
+  0%,
+  93%,
+  100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.08);
+  }
+}
+@keyframes spuz-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes spuz-wave {
+  0%,
+  100% {
+    transform: rotate(-8deg);
+  }
+  50% {
+    transform: rotate(38deg);
+  }
+}
+@keyframes spuz-rise {
+  0% {
+    transform: translateY(0) scale(0.6);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-2.6em) scale(1.1);
+    opacity: 0;
+  }
+}
+@keyframes spuz-flicker {
+  0%,
+  100% {
+    transform: rotate(-45deg) scale(1);
+  }
+  50% {
+    transform: rotate(-41deg) scale(1.08, 1.15);
+  }
+}
+@keyframes spuz-hop {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  45% {
+    transform: translateY(-0.9em);
+  }
+}
+@keyframes spuz-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-0.12em);
+  }
+  75% {
+    transform: translateX(0.12em);
+  }
+}
+@keyframes spuz-twinkle {
+  0%,
+  100% {
+    transform: scale(1) rotate(0);
+  }
+  50% {
+    transform: scale(0.55) rotate(45deg);
+  }
+}
+@keyframes spuz-moodIn {
+  from {
+    opacity: 0.4;
+  }
+  to {
+    opacity: 1;
+  }
+}
 
-.spuz-root { position: relative; width: 12em; height: 12em; flex: none; }
-.spuz-root * { position: absolute; }
-.spuz-root[data-still="true"] * { animation: none !important; }
-@media (prefers-reduced-motion: reduce) { .spuz-root * { animation: none !important; } }
-.spuz-face { inset: 0; animation: spuz-moodIn 180ms cubic-bezier(.23, 1, .32, 1); }
-.spuz-pupil { transition: transform 120ms cubic-bezier(.23, 1, .32, 1); }
+.spuz-root {
+  position: relative;
+  width: 12em;
+  height: 12em;
+  flex: none;
+}
+.spuz-root * {
+  position: absolute;
+}
+.spuz-root[data-still="true"] * {
+  animation: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .spuz-root * {
+    animation: none !important;
+  }
+}
+.spuz-face {
+  inset: 0;
+  animation: spuz-moodIn 180ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.spuz-pupil {
+  transition: transform 120ms cubic-bezier(0.23, 1, 0.32, 1);
+}
 
-.spuz-hop { animation: spuz-hop .7s cubic-bezier(.45, 0, .55, 1) infinite; }
-.spuz-breathe { animation: spuz-breathe 3.2s ease-in-out infinite; }
-.spuz-breatheSlow { animation: spuz-breathe 4.6s ease-in-out infinite; }
-.spuz-shake { animation: spuz-shake .22s linear infinite; }
-.spuz-flop { animation: spuz-flop 1.8s cubic-bezier(.45, 0, .55, 1) infinite; }
-.spuz-spin { animation: spuz-spin 1.2s linear infinite; }
-.spuz-blinkL { animation: spuz-blink 4.6s ease-in-out infinite; }
-.spuz-blinkR { animation: spuz-blink 4.6s ease-in-out .08s infinite; }
-.spuz-wave { animation: spuz-wave .6s ease-in-out infinite; }
-.spuz-flicker { animation: spuz-flicker .5s ease-in-out infinite; }
-.spuz-rise { animation: spuz-rise 1.4s ease-out infinite; }
-.spuz-twinkle { animation: spuz-twinkle 1s ease-in-out infinite; }
+.spuz-hop {
+  animation: spuz-hop 0.7s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+.spuz-breathe {
+  animation: spuz-breathe 3.2s ease-in-out infinite;
+}
+.spuz-breatheSlow {
+  animation: spuz-breathe 4.6s ease-in-out infinite;
+}
+.spuz-shake {
+  animation: spuz-shake 0.22s linear infinite;
+}
+.spuz-flop {
+  animation: spuz-flop 1.8s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+.spuz-spin {
+  animation: spuz-spin 1.2s linear infinite;
+}
+.spuz-blinkL {
+  animation: spuz-blink 4.6s ease-in-out infinite;
+}
+.spuz-blinkR {
+  animation: spuz-blink 4.6s ease-in-out 0.08s infinite;
+}
+.spuz-wave {
+  animation: spuz-wave 0.6s ease-in-out infinite;
+}
+.spuz-flicker {
+  animation: spuz-flicker 0.5s ease-in-out infinite;
+}
+.spuz-rise {
+  animation: spuz-rise 1.4s ease-out infinite;
+}
+.spuz-twinkle {
+  animation: spuz-twinkle 1s ease-in-out infinite;
+}

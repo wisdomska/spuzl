@@ -14,8 +14,14 @@ export const GET = handle(async () => {
   const admin = supabaseAdmin();
   const status: Record<string, { state: "new" | "in_progress" | "cleared"; timeMs?: number }> = {};
   if (user) {
-    const { data } = await admin.from("attempts").select("game_id, status, time_ms").eq("player_id", user.id).eq("daily_date", date).eq("mode", "daily");
-    for (const a of data ?? []) status[a.game_id] = a.status === "cleared" ? { state: "cleared", timeMs: a.time_ms } : { state: "in_progress" };
+    const { data } = await admin
+      .from("attempts")
+      .select("game_id, status, time_ms")
+      .eq("player_id", user.id)
+      .eq("daily_date", date)
+      .eq("mode", "daily");
+    for (const a of data ?? [])
+      status[a.game_id] = a.status === "cleared" ? { state: "cleared", timeMs: a.time_ms } : { state: "in_progress" };
   }
   return ok({
     date,

@@ -20,11 +20,20 @@ export function isActive(pathname: string, href: string) {
 export function BottomNav() {
   const pathname = usePathname();
   return (
-    <nav aria-label="Main" className="safe-bottom fixed inset-x-0 bottom-0 z-30 grid h-20 grid-cols-5 border-t border-line bg-surface pb-3 lg:hidden">
+    <nav
+      aria-label="Main"
+      className="safe-bottom border-line bg-surface fixed inset-x-0 bottom-0 z-30 grid h-20 grid-cols-5 border-t pb-3 lg:hidden"
+    >
       {NAV.map((n) => {
         const active = isActive(pathname, n.href);
         return (
-          <Link key={n.href} href={n.href} aria-current={active ? "page" : undefined} className="flex flex-col items-center justify-center gap-[3px]" style={{ color: active ? "var(--accent)" : "var(--text-muted)" }}>
+          <Link
+            key={n.href}
+            href={n.href}
+            aria-current={active ? "page" : undefined}
+            className="flex flex-col items-center justify-center gap-[3px]"
+            style={{ color: active ? "var(--accent)" : "var(--text-muted)" }}
+          >
             <Icon name={n.icon} size={24} />
             <span className="text-[12px] font-semibold">{n.label}</span>
           </Link>
@@ -38,8 +47,11 @@ export function BottomNav() {
 export function DesktopRail() {
   const pathname = usePathname();
   return (
-    <nav aria-label="Main" className="fixed inset-y-0 left-0 z-30 hidden w-[88px] flex-col items-center gap-2 border-r border-line bg-surface py-6 lg:flex">
-      <Link href="/" aria-label="SPUZL home" className="mb-4 font-display text-[15px] font-black tracking-tight">
+    <nav
+      aria-label="Main"
+      className="border-line bg-surface fixed inset-y-0 left-0 z-30 hidden w-[88px] flex-col items-center gap-2 border-r py-6 lg:flex"
+    >
+      <Link href="/" aria-label="SPUZL home" className="font-display mb-4 text-[15px] font-black tracking-tight">
         SPU<span className="text-accent">Z</span>L
       </Link>
       {NAV.map((n) => {
@@ -57,7 +69,7 @@ export function DesktopRail() {
           </Link>
         );
       })}
-      <Link href="/settings" aria-label="Settings" className="mt-auto flex h-12 w-12 items-center justify-center rounded-[14px] text-muted">
+      <Link href="/settings" aria-label="Settings" className="text-muted mt-auto flex h-12 w-12 items-center justify-center rounded-[14px]">
         <Icon name="gear-six" size={22} />
       </Link>
     </nav>

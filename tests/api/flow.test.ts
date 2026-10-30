@@ -41,14 +41,18 @@ describe("api: daily clear flow", () => {
     expect(hint.status).toBe(200);
     expect(hint.data.hint.text).toBeTruthy();
     await new Promise((r) => setTimeout(r, 6500)); // stay above the human floor in wall time
-    const fin = await h.api(`/api/v1/attempts/${s2.data.attemptId}/finish`, { json: { state, activeMs: 6200, mistakes: 0, localHour: 14 } });
+    const fin = await h.api(`/api/v1/attempts/${s2.data.attemptId}/finish`, {
+      json: { state, activeMs: 6200, mistakes: 0, localHour: 14 },
+    });
     expect(fin.status).toBe(200);
     expect(fin.data).toMatchObject({ ok: true, status: "cleared" });
     expect(fin.data.reward.xp).toBeGreaterThan(0);
     expect(fin.data.streak.current).toBe(1);
     expect(fin.data.unlocks.some((u: { id: string }) => u.id === "first-clear")).toBe(true);
     // second finish is rejected, and a new daily attempt is refused
-    expect((await h.api(`/api/v1/attempts/${s2.data.attemptId}/finish`, { json: { state, activeMs: 6200, mistakes: 0 } })).status).toBe(409);
+    expect((await h.api(`/api/v1/attempts/${s2.data.attemptId}/finish`, { json: { state, activeMs: 6200, mistakes: 0 } })).status).toBe(
+      409,
+    );
     expect((await h.api("/api/v1/attempts", { json: { game: "crownfall", mode: "daily" } })).status).toBe(409);
     const me = await h.api("/api/v1/me");
     expect(me.data.today.cleared.crownfall).toBe(6200);

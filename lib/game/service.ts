@@ -6,7 +6,15 @@ import { loadLogic, hasLogic } from "@/games/logic-registry";
 import { createRng } from "@/lib/rng";
 import { difficultyForDate, type Difficulty, type Hint } from "@/games/types";
 import { ApiError } from "@/lib/api/server";
-import { dailyClearReward, freePlayReward, FULL_SPUZL, STREAK_MILESTONES, STREAK_MILESTONE_SPARKS, levelFromXp, type Reward } from "@/lib/rewards";
+import {
+  dailyClearReward,
+  freePlayReward,
+  FULL_SPUZL,
+  STREAK_MILESTONES,
+  STREAK_MILESTONE_SPARKS,
+  levelFromXp,
+  type Reward,
+} from "@/lib/rewards";
 import { update as glicko, dailyResult, DEFAULT_RATING } from "@/lib/rating/glicko2";
 import { evaluateAfterClear, type Unlock } from "@/lib/gamification/progress";
 
@@ -39,7 +47,12 @@ interface Loaded {
 }
 
 export async function loadDaily(admin: SupabaseClient, gameId: string, date: string): Promise<Loaded> {
-  const { data } = await admin.from("dailies").select("puzzle_id, puzzles!dailies_puzzle_id_fkey(data, solution, difficulty)").eq("game_id", gameId).eq("date", date).maybeSingle();
+  const { data } = await admin
+    .from("dailies")
+    .select("puzzle_id, puzzles!dailies_puzzle_id_fkey(data, solution, difficulty)")
+    .eq("game_id", gameId)
+    .eq("date", date)
+    .maybeSingle();
   const p = data?.puzzles as unknown as { data: unknown; solution: unknown; difficulty: Difficulty } | undefined;
   if (data && p) return { puzzleId: data.puzzle_id, puzzle: p.data, solution: p.solution, difficulty: p.difficulty };
   // Safety net: no scheduled Daily (should never happen; the rollover alerts). Generate deterministically
@@ -49,10 +62,25 @@ export async function loadDaily(admin: SupabaseClient, gameId: string, date: str
   const g = logic.generate(createRng(`daily:${gameId}:${date}`), difficulty);
   const { data: ins } = await admin
     .from("puzzles")
-    .upsert({ game_id: gameId, seed: `daily:${gameId}:${date}`, difficulty, grade: g.grade, data: g.puzzle, solution: g.solution, solution_hash: solutionHash(g.solution), status: "scheduled" }, { onConflict: "game_id,seed,difficulty" })
+    .upsert(
+      {
+        game_id: gameId,
+        seed: `daily:${gameId}:${date}`,
+        difficulty,
+        grade: g.grade,
+        data: g.puzzle,
+        solution: g.solution,
+        solution_hash: solutionHash(g.solution),
+        status: "scheduled",
+      },
+      { onConflict: "game_id,seed,difficulty" },
+    )
     .select("id")
     .single();
-  if (ins) await admin.from("dailies").upsert({ date, game_id: gameId, puzzle_id: ins.id, published_at: new Date().toISOString() }, { onConflict: "date,game_id" });
+  if (ins)
+    await admin
+      .from("dailies")
+      .upsert({ date, game_id: gameId, puzzle_id: ins.id, published_at: new Date().toISOString() }, { onConflict: "date,game_id" });
   return { puzzleId: ins?.id ?? null, puzzle: g.puzzle, solution: g.solution, difficulty };
 }
 
@@ -86,8 +114,17 @@ export async function startAttempt(admin: SupabaseClient, playerId: string, ref:
         .eq("mode", "daily")
         .maybeSingle();
       if (existing) {
-        if (existing.status !== "in_progress") throw new ApiError(409, "daily_done", "Today's Daily is already cleared. Free play is open.");
-        return { attemptId: existing.id, puzzle: loaded.puzzle, state: existing.state, startedAt: existing.started_at, resumed: true, activeMs: existing.active_ms ?? 0, hints: existing.hints };
+        if (existing.status !== "in_progress")
+          throw new ApiError(409, "daily_done", "Today's Daily is already cleared. Free play is open.");
+        return {
+          attemptId: existing.id,
+          puzzle: loaded.puzzle,
+          state: existing.state,
+          startedAt: existing.started_at,
+          resumed: true,
+          activeMs: existing.active_ms ?? 0,
+          hints: existing.hints,
+        };
       }
     }
   } else {
@@ -96,14 +133,30 @@ export async function startAttempt(admin: SupabaseClient, playerId: string, ref:
   }
   const { data, error } = await admin
     .from("attempts")
-    .insert({ player_id: playerId, game_id: meta.id, mode: ref.mode, daily_date: ref.mode === "daily" || ref.mode === "archive" ? ref.date : null, puzzle_id: loaded.puzzleId, free_seed: seed ? `${seed}|${loaded.difficulty}` : null })
+    .insert({
+      player_id: playerId,
+      game_id: meta.id,
+      mode: ref.mode,
+      daily_date: ref.mode === "daily" || ref.mode === "archive" ? ref.date : null,
+      puzzle_id: loaded.puzzleId,
+      free_seed: seed ? `${seed}|${loaded.difficulty}` : null,
+    })
     .select("id, started_at")
     .single();
   if (error) {
     if (error.code === "23505") throw new ApiError(409, "daily_in_progress");
     throw error;
   }
-  return { attemptId: data.id, puzzle: loaded.puzzle, state: null, startedAt: data.started_at, resumed: false, activeMs: 0, hints: 0, seed };
+  return {
+    attemptId: data.id,
+    puzzle: loaded.puzzle,
+    state: null,
+    startedAt: data.started_at,
+    resumed: false,
+    activeMs: 0,
+    hints: 0,
+    seed,
+  };
 }
 
 interface AttemptRow {
@@ -122,7 +175,11 @@ interface AttemptRow {
 }
 
 async function getAttempt(admin: SupabaseClient, playerId: string, id: string): Promise<AttemptRow> {
-  const { data } = await admin.from("attempts").select("id, player_id, game_id, mode, daily_date, puzzle_id, free_seed, started_at, status, hints, mistakes, state").eq("id", id).maybeSingle();
+  const { data } = await admin
+    .from("attempts")
+    .select("id, player_id, game_id, mode, daily_date, puzzle_id, free_seed, started_at, status, hints, mistakes, state")
+    .eq("id", id)
+    .maybeSingle();
   if (!data || data.player_id !== playerId) throw new ApiError(404, "attempt_not_found");
   return data as AttemptRow;
 }
@@ -139,7 +196,10 @@ async function loadForAttempt(admin: SupabaseClient, a: AttemptRow): Promise<Loa
 export async function saveAttempt(admin: SupabaseClient, playerId: string, id: string, state: unknown, activeMs: number) {
   const a = await getAttempt(admin, playerId, id);
   if (a.status !== "in_progress") throw new ApiError(409, "attempt_closed");
-  await admin.from("attempts").update({ state, active_ms: Math.max(0, Math.floor(activeMs)), first_move_at: a.state ? undefined : new Date().toISOString() }).eq("id", id);
+  await admin
+    .from("attempts")
+    .update({ state, active_ms: Math.max(0, Math.floor(activeMs)), first_move_at: a.state ? undefined : new Date().toISOString() })
+    .eq("id", id);
 }
 
 export async function hintFor(admin: SupabaseClient, playerId: string, id: string, state: unknown): Promise<Hint | null> {
@@ -150,7 +210,11 @@ export async function hintFor(admin: SupabaseClient, playerId: string, id: strin
   if (!logic.hint) return null;
   const l = await loadForAttempt(admin, a);
   const h = logic.hint(l.puzzle, l.solution, state);
-  if (h) await admin.from("attempts").update({ hints: a.hints + 1, state }).eq("id", id);
+  if (h)
+    await admin
+      .from("attempts")
+      .update({ hints: a.hints + 1, state })
+      .eq("id", id);
   return h;
 }
 
@@ -185,7 +249,13 @@ export interface FinishResult {
 
 const WALL_SLACK_MS = 3000;
 
-export async function finishAttempt(admin: SupabaseClient, playerId: string, id: string, input: FinishInput, rankingRevoked: boolean): Promise<FinishResult> {
+export async function finishAttempt(
+  admin: SupabaseClient,
+  playerId: string,
+  id: string,
+  input: FinishInput,
+  rankingRevoked: boolean,
+): Promise<FinishResult> {
   const a = await getAttempt(admin, playerId, id);
   if (a.status !== "in_progress") throw new ApiError(409, "attempt_closed");
   const meta = gameOr404(a.game_id);
@@ -196,10 +266,24 @@ export async function finishAttempt(admin: SupabaseClient, playerId: string, id:
   const finishedAt = input.offline && input.finishedAt ? new Date(input.finishedAt) : new Date();
   const wallMs = finishedAt.getTime() - new Date(a.started_at).getTime();
   const timeMs = Math.max(0, Math.round(input.activeMs));
-  const nobody = { ok: false, status: "failed" as const, timeMs, reward: { xp: 0, sparks: 0, lines: [] }, percentile: null, level: { before: 0, after: 0, into: 0, need: 0 }, streak: null, fullSpuzl: false, unlocks: [], rank: null };
+  const nobody = {
+    ok: false,
+    status: "failed" as const,
+    timeMs,
+    reward: { xp: 0, sparks: 0, lines: [] },
+    percentile: null,
+    level: { before: 0, after: 0, into: 0, need: 0 },
+    streak: null,
+    fullSpuzl: false,
+    unlocks: [],
+    rank: null,
+  };
 
   if (!verdict.ok) {
-    await admin.from("attempts").update({ status: "failed", state: input.state, finished_at: finishedAt.toISOString(), time_ms: timeMs, mistakes: input.mistakes }).eq("id", id);
+    await admin
+      .from("attempts")
+      .update({ status: "failed", state: input.state, finished_at: finishedAt.toISOString(), time_ms: timeMs, mistakes: input.mistakes })
+      .eq("id", id);
     return nobody;
   }
 
@@ -210,7 +294,8 @@ export async function finishAttempt(admin: SupabaseClient, playerId: string, id:
   if (a.mode === "tutorial") flag = null;
   else if (timeMs < meta.minTimeMs) flag = `below human floor (${timeMs} < ${meta.minTimeMs} ms)`;
   else if (timeMs > wallMs + WALL_SLACK_MS) flag = `client time ${timeMs} exceeds server wall time ${wallMs}`;
-  else if (input.offline && a.mode === "daily" && a.daily_date && finishedAt.toISOString().slice(0, 10) !== a.daily_date) flag = "offline clear outside its day";
+  else if (input.offline && a.mode === "daily" && a.daily_date && finishedAt.toISOString().slice(0, 10) !== a.daily_date)
+    flag = "offline clear outside its day";
 
   await admin
     .from("attempts")
@@ -244,45 +329,131 @@ export async function finishAttempt(admin: SupabaseClient, playerId: string, id:
   }
 
   if (a.mode === "daily" && a.daily_date) {
-    const { count: prior } = await admin.from("attempts").select("id", { count: "exact", head: true }).eq("player_id", playerId).eq("game_id", a.game_id).in("status", ["cleared"]).neq("id", id);
+    const { count: prior } = await admin
+      .from("attempts")
+      .select("id", { count: "exact", head: true })
+      .eq("player_id", playerId)
+      .eq("game_id", a.game_id)
+      .in("status", ["cleared"])
+      .neq("id", id);
     const { data: median } = await admin.rpc("svc_daily_median", { p_game: a.game_id, p_date: a.daily_date });
-    reward = dailyClearReward({ timeMs, hints: a.hints, mistakes: input.mistakes, deaths: input.deaths, medianMs: median ?? null, firstClearOfGameEver: (prior ?? 0) === 0, relaxed: input.relaxed });
+    reward = dailyClearReward({
+      timeMs,
+      hints: a.hints,
+      mistakes: input.mistakes,
+      deaths: input.deaths,
+      medianMs: median ?? null,
+      firstClearOfGameEver: (prior ?? 0) === 0,
+      relaxed: input.relaxed,
+    });
     if (!input.relaxed && !rankingRevoked) {
-      const { data: rec } = await admin.rpc("svc_record_daily_clear", { p_player: playerId, p_game: a.game_id, p_date: a.daily_date, p_time: timeMs, p_score: verdict.score ?? null, p_hints: a.hints, p_mistakes: input.mistakes });
+      const { data: rec } = await admin.rpc("svc_record_daily_clear", {
+        p_player: playerId,
+        p_game: a.game_id,
+        p_date: a.daily_date,
+        p_time: timeMs,
+        p_score: verdict.score ?? null,
+        p_hints: a.hints,
+        p_mistakes: input.mistakes,
+      });
       const r = Array.isArray(rec) ? rec[0] : rec;
       const milestone = r?.extended && STREAK_MILESTONES.includes(r.streak) ? r.streak : null;
       streak = { current: r?.streak ?? 0, extended: !!r?.extended, milestone, freezeEarned: !!r?.freeze_earned };
-      if (milestone) await admin.rpc("svc_grant_reward", { p_player: playerId, p_source: "streak_milestone", p_ref: String(milestone), p_xp: 0, p_sparks: STREAK_MILESTONE_SPARKS[milestone] ?? 0 });
+      if (milestone)
+        await admin.rpc("svc_grant_reward", {
+          p_player: playerId,
+          p_source: "streak_milestone",
+          p_ref: String(milestone),
+          p_xp: 0,
+          p_sparks: STREAK_MILESTONE_SPARKS[milestone] ?? 0,
+        });
       const { data: pct } = await admin.rpc("svc_daily_percentile", { p_game: a.game_id, p_date: a.daily_date, p_time: timeMs });
       percentile = pct === null ? null : Number(pct);
       rank = await updateRating(admin, playerId, meta.world, percentile ?? 50, a.hints, input.mistakes);
     } else {
       // Relaxed or revoked: still a streak day, but no leaderboard entry.
-      const { data: rec } = await admin.rpc("svc_record_daily_clear", { p_player: playerId, p_game: a.game_id, p_date: a.daily_date, p_time: timeMs, p_score: verdict.score ?? null, p_hints: a.hints, p_mistakes: input.mistakes });
+      const { data: rec } = await admin.rpc("svc_record_daily_clear", {
+        p_player: playerId,
+        p_game: a.game_id,
+        p_date: a.daily_date,
+        p_time: timeMs,
+        p_score: verdict.score ?? null,
+        p_hints: a.hints,
+        p_mistakes: input.mistakes,
+      });
       const r = Array.isArray(rec) ? rec[0] : rec;
       streak = { current: r?.streak ?? 0, extended: !!r?.extended, milestone: null, freezeEarned: !!r?.freeze_earned };
-      if (input.relaxed) await admin.from("daily_results").delete().eq("player_id", playerId).eq("game_id", a.game_id).eq("date", a.daily_date);
+      if (input.relaxed)
+        await admin.from("daily_results").delete().eq("player_id", playerId).eq("game_id", a.game_id).eq("date", a.daily_date);
     }
-    await admin.rpc("svc_grant_reward", { p_player: playerId, p_source: "daily", p_ref: `${a.game_id}:${a.daily_date}`, p_xp: reward.xp, p_sparks: reward.sparks });
+    await admin.rpc("svc_grant_reward", {
+      p_player: playerId,
+      p_source: "daily",
+      p_ref: `${a.game_id}:${a.daily_date}`,
+      p_xp: reward.xp,
+      p_sparks: reward.sparks,
+    });
     // Full Spuzl: all of today's featured Dailies cleared.
-    const { data: todays } = await admin.from("daily_results").select("game_id").eq("player_id", playerId).eq("date", a.daily_date).in("game_id", LAUNCH_IDS);
+    const { data: todays } = await admin
+      .from("daily_results")
+      .select("game_id")
+      .eq("player_id", playerId)
+      .eq("date", a.daily_date)
+      .in("game_id", LAUNCH_IDS);
     if ((todays?.length ?? 0) >= LAUNCH_IDS.length) {
-      const { data: g } = await admin.rpc("svc_grant_reward", { p_player: playerId, p_source: "full_spuzl", p_ref: a.daily_date, p_xp: FULL_SPUZL.xp, p_sparks: FULL_SPUZL.sparks });
+      const { data: g } = await admin.rpc("svc_grant_reward", {
+        p_player: playerId,
+        p_source: "full_spuzl",
+        p_ref: a.daily_date,
+        p_xp: FULL_SPUZL.xp,
+        p_sparks: FULL_SPUZL.sparks,
+      });
       fullSpuzl = (Array.isArray(g) ? g[0] : g)?.xp_added > 0;
       if (fullSpuzl) reward.lines.push({ label: "Full Spuzl", xp: FULL_SPUZL.xp, sparks: FULL_SPUZL.sparks });
     }
-    await admin.from("feed_events").insert({ player_id: playerId, kind: fullSpuzl ? "full_spuzl" : "clear", game_id: a.game_id, payload: { timeMs, hints: a.hints, date: a.daily_date } });
+    await admin
+      .from("feed_events")
+      .insert({
+        player_id: playerId,
+        kind: fullSpuzl ? "full_spuzl" : "clear",
+        game_id: a.game_id,
+        payload: { timeMs, hints: a.hints, date: a.daily_date },
+      });
   } else if (a.mode === "free") {
     const since = new Date();
     since.setUTCHours(0, 0, 0, 0);
-    const { data: today } = await admin.from("xp_ledger").select("amount").eq("player_id", playerId).eq("source", "free").gte("created_at", since.toISOString());
+    const { data: today } = await admin
+      .from("xp_ledger")
+      .select("amount")
+      .eq("player_id", playerId)
+      .eq("source", "free")
+      .gte("created_at", since.toISOString());
     const earned = (today ?? []).reduce((s, r) => s + r.amount, 0);
-    const { count: dup } = await admin.from("attempts").select("id", { count: "exact", head: true }).eq("player_id", playerId).eq("free_seed", a.free_seed!).eq("status", "cleared").neq("id", id);
+    const { count: dup } = await admin
+      .from("attempts")
+      .select("id", { count: "exact", head: true })
+      .eq("player_id", playerId)
+      .eq("free_seed", a.free_seed!)
+      .eq("status", "cleared")
+      .neq("id", id);
     reward = freePlayReward(earned, (dup ?? 0) > 0);
     await admin.rpc("svc_grant_reward", { p_player: playerId, p_source: "free", p_ref: id, p_xp: reward.xp, p_sparks: reward.sparks });
   } else if (a.mode === "archive" && a.daily_date) {
-    reward = dailyClearReward({ timeMs, hints: a.hints, mistakes: input.mistakes, medianMs: null, firstClearOfGameEver: false, archive: true });
-    await admin.rpc("svc_grant_reward", { p_player: playerId, p_source: "archive", p_ref: `${a.game_id}:${a.daily_date}`, p_xp: reward.xp, p_sparks: 0 });
+    reward = dailyClearReward({
+      timeMs,
+      hints: a.hints,
+      mistakes: input.mistakes,
+      medianMs: null,
+      firstClearOfGameEver: false,
+      archive: true,
+    });
+    await admin.rpc("svc_grant_reward", {
+      p_player: playerId,
+      p_source: "archive",
+      p_ref: `${a.game_id}:${a.daily_date}`,
+      p_xp: reward.xp,
+      p_sparks: 0,
+    });
   } else if (a.mode === "tutorial") {
     // Designed first-clear screen: +150 XP, +50 Sparks (40 here + 10 from the First Clear badge).
     reward = { xp: 150, sparks: 50, lines: [{ label: "First clear", xp: 150, sparks: 50 }] };
@@ -294,16 +465,50 @@ export async function finishAttempt(admin: SupabaseClient, playerId: string, id:
     streak = { current: 1, extended: true, milestone: null, freezeEarned: false };
   }
 
-  const unlocks = await evaluateAfterClear(admin, playerId, { gameId: a.game_id, world: meta.world, mode: a.mode, timeMs, hints: a.hints, mistakes: input.mistakes, deaths: input.deaths ?? 0, date: a.daily_date, localHour: input.localHour, fullSpuzl, streak: streak?.current ?? 0 });
+  const unlocks = await evaluateAfterClear(admin, playerId, {
+    gameId: a.game_id,
+    world: meta.world,
+    mode: a.mode,
+    timeMs,
+    hints: a.hints,
+    mistakes: input.mistakes,
+    deaths: input.deaths ?? 0,
+    date: a.daily_date,
+    localHour: input.localHour,
+    fullSpuzl,
+    streak: streak?.current ?? 0,
+  });
   const { data: after } = await admin.from("players").select("xp, level").eq("id", playerId).single();
   const lv = levelFromXp(after?.xp ?? 0);
-  return { ok: true, status: "cleared", timeMs, score: verdict.score, reward, percentile, level: { before: lvBefore, after: after?.level ?? lv.level, into: lv.into, need: lv.need }, streak, fullSpuzl, unlocks, rank };
+  return {
+    ok: true,
+    status: "cleared",
+    timeMs,
+    score: verdict.score,
+    reward,
+    percentile,
+    level: { before: lvBefore, after: after?.level ?? lv.level, into: lv.into, need: lv.need },
+    streak,
+    fullSpuzl,
+    unlocks,
+    rank,
+  };
 }
 
 async function updateRating(admin: SupabaseClient, playerId: string, track: string, percentile: number, hints: number, mistakes: number) {
   const { data } = await admin.from("ratings").select("rating, rd, vol, games").eq("player_id", playerId).eq("track", track).maybeSingle();
   const cur = data ? { rating: Number(data.rating), rd: Number(data.rd), vol: Number(data.vol) } : DEFAULT_RATING;
   const next = glicko(cur, [dailyResult(percentile, hints, mistakes)]);
-  await admin.from("ratings").upsert({ player_id: playerId, track, rating: next.rating.toFixed(2), rd: next.rd.toFixed(2), vol: next.vol.toFixed(6), games: (data?.games ?? 0) + 1, updated_at: new Date().toISOString() });
+  await admin
+    .from("ratings")
+    .upsert({
+      player_id: playerId,
+      track,
+      rating: next.rating.toFixed(2),
+      rd: next.rd.toFixed(2),
+      vol: next.vol.toFixed(6),
+      games: (data?.games ?? 0) + 1,
+      updated_at: new Date().toISOString(),
+    });
   return { track, before: cur.rating, after: next.rating };
 }

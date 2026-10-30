@@ -20,7 +20,14 @@ describe("rewards", () => {
     expect(base.xp).toBe(75);
     const hinted = dailyClearReward({ timeMs: 200_000, hints: 1, mistakes: 1, medianMs: 100_000, firstClearOfGameEver: false });
     expect(hinted.xp).toBe(25);
-    const archive = dailyClearReward({ timeMs: 200_000, hints: 0, mistakes: 1, medianMs: 100_000, firstClearOfGameEver: false, archive: true });
+    const archive = dailyClearReward({
+      timeMs: 200_000,
+      hints: 0,
+      mistakes: 1,
+      medianMs: 100_000,
+      firstClearOfGameEver: false,
+      archive: true,
+    });
     expect(archive.xp).toBe(37);
     expect(archive.sparks).toBe(0);
   });

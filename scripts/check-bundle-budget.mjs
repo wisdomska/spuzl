@@ -6,7 +6,10 @@ import zlib from "node:zlib";
 const dir = ".next/static/chunks";
 const gz = (f) => zlib.gzipSync(fs.readFileSync(f)).length;
 const files = [];
-const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).forEach((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : e.name.endsWith(".js") && files.push(path.join(d, e.name))));
+const walk = (d) =>
+  fs
+    .readdirSync(d, { withFileTypes: true })
+    .forEach((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : e.name.endsWith(".js") && files.push(path.join(d, e.name))));
 walk(dir);
 const sizes = files.map((f) => ({ f, kb: gz(f) / 1024 })).sort((a, b) => b.kb - a.kb);
 const over = sizes.filter((s) => s.kb > 450);

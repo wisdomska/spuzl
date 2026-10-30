@@ -3,13 +3,47 @@
  * The filter normalises leetspeak and checks substrings against a blocklist. Moderators review reports.
  */
 const BLOCK = [
-  "fuck", "shit", "bitch", "cunt", "dick", "pussy", "nigg", "fag", "slut", "whore", "rape", "nazi", "hitler", "porn", "sex", "kill", "suicide",
-  "admin", "spuzl", "moderator", "support", "official", "kwasia", "ashawo", "mumu", "olodo", "ode",
+  "fuck",
+  "shit",
+  "bitch",
+  "cunt",
+  "dick",
+  "pussy",
+  "nigg",
+  "fag",
+  "slut",
+  "whore",
+  "rape",
+  "nazi",
+  "hitler",
+  "porn",
+  "sex",
+  "kill",
+  "suicide",
+  "admin",
+  "spuzl",
+  "moderator",
+  "support",
+  "official",
+  "kwasia",
+  "ashawo",
+  "mumu",
+  "olodo",
+  "ode",
 ];
 const ALLOW = ["code", "model", "mode", "node", "episode"]; // contain a blocked substring innocently
 
 export function normalise(s: string): string {
-  return s.toLowerCase().replace(/0/g, "o").replace(/1/g, "i").replace(/3/g, "e").replace(/4/g, "a").replace(/5/g, "s").replace(/7/g, "t").replace(/8/g, "b").replace(/_/g, "");
+  return s
+    .toLowerCase()
+    .replace(/0/g, "o")
+    .replace(/1/g, "i")
+    .replace(/3/g, "e")
+    .replace(/4/g, "a")
+    .replace(/5/g, "s")
+    .replace(/7/g, "t")
+    .replace(/8/g, "b")
+    .replace(/_/g, "");
 }
 
 export function nicknameProblem(nick: string): string | null {

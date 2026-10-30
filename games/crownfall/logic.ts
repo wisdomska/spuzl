@@ -47,8 +47,12 @@ export function analyze(p: CrownfallPuzzle, cells: CrownfallState): Analysis {
   let rule: RuleBreak | null = null;
   for (let x = 0; x < cr.length; x++) {
     for (let y = x + 1; y < cr.length; y++) {
-      const a = cr[x], b = cr[y];
-      const ra = Math.floor(a / n), ca = a % n, rb = Math.floor(b / n), cb = b % n;
+      const a = cr[x],
+        b = cr[y];
+      const ra = Math.floor(a / n),
+        ca = a % n,
+        rb = Math.floor(b / n),
+        cb = b % n;
       let why: RuleBreak | null = null;
       if (ra === rb) why = "row";
       else if (ca === cb) why = "column";
@@ -146,10 +150,12 @@ export function nextDeduction(p: CrownfallPuzzle, cells: CrownfallState): Deduct
   const blocked = new Set<number>();
   cells.forEach((v, i) => {
     if (v !== CROWN) return;
-    const r = Math.floor(i / n), c = i % n;
+    const r = Math.floor(i / n),
+      c = i % n;
     for (let j = 0; j < n * n; j++) {
       if (j === i) continue;
-      const rj = Math.floor(j / n), cj = j % n;
+      const rj = Math.floor(j / n),
+        cj = j % n;
       if (rj === r || cj === c || p.regions[j] === p.regions[i] || (Math.abs(rj - r) <= 1 && Math.abs(cj - c) <= 1)) blocked.add(j);
     }
   });
@@ -243,9 +249,13 @@ function growRegions(n: number, sol: number[], rng: Rng): number[] {
     const f = frontier[g];
     if (!f.length) continue;
     const from = f[rng.int(0, f.length - 1)];
-    const r = Math.floor(from / n), c = from % n;
+    const r = Math.floor(from / n),
+      c = from % n;
     const nbrs = [
-      [r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1],
+      [r - 1, c],
+      [r + 1, c],
+      [r, c - 1],
+      [r, c + 1],
     ].filter(([a, b]) => a >= 0 && b >= 0 && a < n && b < n && regions[a * n + b] === -1);
     if (!nbrs.length) {
       f.splice(f.indexOf(from), 1);
@@ -274,7 +284,10 @@ function tighten(n: number, regions: number[], sol: number[], rng: Rng, budget: 
     const own = regions[cell];
     if (sol.some((c, rr) => rr * n + c === cell)) continue;
     const nbrRegs = [
-      [r - 1, alt[r]], [r + 1, alt[r]], [r, alt[r] - 1], [r, alt[r] + 1],
+      [r - 1, alt[r]],
+      [r + 1, alt[r]],
+      [r, alt[r] - 1],
+      [r, alt[r] + 1],
     ]
       .filter(([a, b]) => a >= 0 && b >= 0 && a < n && b < n)
       .map(([a, b]) => regions[a * n + b])
@@ -314,8 +327,14 @@ function connected(n: number, regions: number[], g: number): boolean {
   const stack = [cells[0]];
   while (stack.length) {
     const i = stack.pop()!;
-    const r = Math.floor(i / n), c = i % n;
-    for (const [a, b] of [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]]) {
+    const r = Math.floor(i / n),
+      c = i % n;
+    for (const [a, b] of [
+      [r - 1, c],
+      [r + 1, c],
+      [r, c - 1],
+      [r, c + 1],
+    ]) {
       const j = a * n + b;
       if (a >= 0 && b >= 0 && a < n && b < n && regions[j] === g && !seen.has(j)) {
         seen.add(j);

@@ -4,7 +4,11 @@ import fs from "node:fs";
 /** Integration helpers: talk to a running dev server (API_BASE) and local Supabase (.env.local). */
 const env = Object.fromEntries(
   fs.existsSync(".env.local")
-    ? fs.readFileSync(".env.local", "utf8").split("\n").filter(Boolean).map((l) => [l.slice(0, l.indexOf("=")), l.slice(l.indexOf("=") + 1)])
+    ? fs
+        .readFileSync(".env.local", "utf8")
+        .split("\n")
+        .filter(Boolean)
+        .map((l) => [l.slice(0, l.indexOf("=")), l.slice(l.indexOf("=") + 1)])
     : [],
 );
 export const BASE = process.env.API_BASE ?? "http://localhost:3000";

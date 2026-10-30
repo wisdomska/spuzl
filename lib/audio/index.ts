@@ -12,9 +12,33 @@
 import { haptic, HAPTICS } from "@/lib/haptics";
 
 export type SfxName =
-  | "tick" | "pop" | "buzz" | "chime" | "twinkle" | "jingle" | "fanfare" | "whoosh" | "swoosh" | "fizzle"
-  | "clink" | "coins" | "cheer" | "splat" | "drum" | "horn" | "hop" | "emote" | "sting" | "bump"
-  | "clack" | "capture" | "check" | "synth" | "jump" | "land" | "spike";
+  | "tick"
+  | "pop"
+  | "buzz"
+  | "chime"
+  | "twinkle"
+  | "jingle"
+  | "fanfare"
+  | "whoosh"
+  | "swoosh"
+  | "fizzle"
+  | "clink"
+  | "coins"
+  | "cheer"
+  | "splat"
+  | "drum"
+  | "horn"
+  | "hop"
+  | "emote"
+  | "sting"
+  | "bump"
+  | "clack"
+  | "capture"
+  | "check"
+  | "synth"
+  | "jump"
+  | "land"
+  | "spike";
 
 /** Handoff spec names mapped onto kit names. */
 export const ALIASES: Record<string, SfxName> = {
@@ -221,7 +245,17 @@ const S: Record<SfxName, Synth> = {
 
 /** Approximate audible length per sound, used to free voice slots. */
 const LENGTH_MS: Partial<Record<SfxName, number>> = {
-  jingle: 700, fanfare: 1200, cheer: 1150, fizzle: 500, horn: 700, clink: 450, coins: 400, check: 350, sting: 550, bump: 400, whoosh: 350,
+  jingle: 700,
+  fanfare: 1200,
+  cheer: 1150,
+  fizzle: 500,
+  horn: 700,
+  clink: 450,
+  coins: 400,
+  check: 350,
+  sting: 550,
+  bump: 400,
+  whoosh: 350,
 };
 
 export const names = Object.keys(S) as SfxName[];

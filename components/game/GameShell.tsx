@@ -51,7 +51,24 @@ interface FeedbackState {
 }
 
 export function GameShell<P, St>(props: GameShellProps<P, St>) {
-  const { meta, Board, puzzle, mode, label, initialState, hintsLeft = 3, requestHint, onSolved, onFailed, onMove, onExit, onHelp, strip, locked, puzzleKey } = props;
+  const {
+    meta,
+    Board,
+    puzzle,
+    mode,
+    label,
+    initialState,
+    hintsLeft = 3,
+    requestHint,
+    onSolved,
+    onFailed,
+    onMove,
+    onExit,
+    onHelp,
+    strip,
+    locked,
+    puzzleKey,
+  } = props;
   const world = WORLD_BY_ID[meta.world];
   const relaxed = useSettings((s) => s.relaxed);
 
@@ -156,24 +173,36 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   }, [hints, requestHint, solved]);
 
   // Hint controls registered by the board call into the shell.
-  const shownControls = controls.map((c) => (c.id === "hint" ? { ...c, onPress: askHint, disabled: hints <= 0 || solved || c.disabled } : c));
+  const shownControls = controls.map((c) =>
+    c.id === "hint" ? { ...c, onPress: askHint, disabled: hints <= 0 || solved || c.disabled } : c,
+  );
 
-  const style = { "--world": world.color, "--world-ink": world.ink, "--world-depth": `color-mix(in srgb, ${world.color} 55%, #0E0F1A)` } as CSSProperties;
+  const style = {
+    "--world": world.color,
+    "--world-ink": world.ink,
+    "--world-depth": `color-mix(in srgb, ${world.color} 55%, #0E0F1A)`,
+  } as CSSProperties;
 
   return (
-    <div className="relative mx-auto flex min-h-dvh w-full max-w-[560px] flex-col bg-bg" style={style} data-world={meta.world}>
+    <div className="bg-bg relative mx-auto flex min-h-dvh w-full max-w-[560px] flex-col" style={style} data-world={meta.world}>
       {/* 1 Top bar */}
       <header className="safe-top relative z-10 flex items-center gap-2 px-3 pb-2 lg:pt-6">
         <IconButton icon="arrow-left" label="Back" onClick={onExit} />
         <div className="flex flex-1 justify-center">
           {!relaxed && (
-            <div className="num flex h-11 items-center gap-2 rounded-[14px] bg-surface px-4 text-[22px] font-semibold" role="timer" aria-label={`Time ${formatClock(elapsed)}`}>
+            <div
+              className="num bg-surface flex h-11 items-center gap-2 rounded-[14px] px-4 text-[22px] font-semibold"
+              role="timer"
+              aria-label={`Time ${formatClock(elapsed)}`}
+            >
               <Icon name="timer" size={18} className="text-muted" />
               {formatClock(elapsed)}
             </div>
           )}
         </div>
-        {requestHint && <IconButton icon="lightbulb" label="Hints" tone="gold" badge={hints} onClick={askHint} disabled={hints <= 0 || solved} />}
+        {requestHint && (
+          <IconButton icon="lightbulb" label="Hints" tone="gold" badge={hints} onClick={askHint} disabled={hints <= 0 || solved} />
+        )}
         <IconButton icon="question" label="Help" onClick={onHelp} />
         <IconButton icon="pause" label="Pause" onClick={() => setPaused(true)} disabled={solved} />
       </header>
@@ -183,14 +212,24 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
 
       {/* 3 Title + rule */}
       <div className="flex items-baseline justify-between gap-3 px-5 pt-1.5 pb-3.5">
-        <h1 className="font-display text-[24px] font-black text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]">{meta.name}</h1>
-        <span className="num text-[14px] font-medium whitespace-nowrap text-muted">{label}</span>
+        <h1 className="font-display text-[24px] font-black text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]">
+          {meta.name}
+        </h1>
+        <span className="num text-muted text-[14px] font-medium whitespace-nowrap">{label}</span>
       </div>
-      <p className="px-[18px] text-[15px] leading-[1.4] text-muted">{meta.rule}</p>
+      <p className="text-muted px-[18px] text-[15px] leading-[1.4]">{meta.rule}</p>
 
       {/* 4 Board slot */}
       <main className="relative z-0 flex justify-center p-[18px]" aria-label={`${meta.name} board`}>
-        <Board key={puzzleKey} puzzle={puzzle} mode={mode} initialState={initialState} hint={hint} disabled={locked || paused || solved} api={api} />
+        <Board
+          key={puzzleKey}
+          puzzle={puzzle}
+          mode={mode}
+          initialState={initialState}
+          hint={hint}
+          disabled={locked || paused || solved}
+          api={api}
+        />
       </main>
 
       {/* 5 Feedback line: never overlays the board */}
@@ -202,7 +241,10 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
 
       {/* 6 Controls */}
       {shownControls.length > 0 && (
-        <div className="safe-bottom mt-auto grid gap-2.5 px-4 pt-3.5 pb-7" style={{ gridTemplateColumns: `repeat(${shownControls.length}, minmax(0, 1fr))` }}>
+        <div
+          className="safe-bottom mt-auto grid gap-2.5 px-4 pt-3.5 pb-7"
+          style={{ gridTemplateColumns: `repeat(${shownControls.length}, minmax(0, 1fr))` }}
+        >
           {shownControls.map((c) => (
             <ToolButton key={c.id} c={c} />
           ))}
@@ -231,7 +273,12 @@ export function FeedbackLine({ text, tone, icon }: Omit<FeedbackState, "n">) {
       ? { bg: "var(--danger-tint)", ring: "inset 0 0 0 2px var(--danger)", ic: "var(--danger)", i: icon ?? "warning" }
       : tone === "success"
         ? { bg: "var(--success-tint)", ring: "inset 0 0 0 2px var(--accent)", ic: "var(--accent)", i: icon ?? "check-circle" }
-        : { bg: "var(--surface)", ring: "none", ic: icon === "lightbulb" ? "var(--gold)" : "var(--text-muted)", i: icon ?? "hand-pointing" };
+        : {
+            bg: "var(--surface)",
+            ring: "none",
+            ic: icon === "lightbulb" ? "var(--gold)" : "var(--text-muted)",
+            i: icon ?? "hand-pointing",
+          };
   return (
     <motion.div
       role={tone === "danger" ? "alert" : "status"}

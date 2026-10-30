@@ -30,11 +30,25 @@ for (const game of readyGames()) {
     const hash = createHash("sha256").update(JSON.stringify(gen.solution)).digest("hex");
     const { data: pz, error } = await db
       .from("puzzles")
-      .upsert({ game_id: game, seed, difficulty, grade: gen.grade, data: gen.puzzle, solution: gen.solution, solution_hash: hash, status: "scheduled" }, { onConflict: "game_id,seed,difficulty" })
+      .upsert(
+        {
+          game_id: game,
+          seed,
+          difficulty,
+          grade: gen.grade,
+          data: gen.puzzle,
+          solution: gen.solution,
+          solution_hash: hash,
+          status: "scheduled",
+        },
+        { onConflict: "game_id,seed,difficulty" },
+      )
       .select("id")
       .single();
     if (error) throw error;
-    const { error: e2 } = await db.from("dailies").insert({ date, game_id: game, puzzle_id: pz.id, locked: Date.parse(date) - Date.parse(today) < 7 * 86_400_000 });
+    const { error: e2 } = await db
+      .from("dailies")
+      .insert({ date, game_id: game, puzzle_id: pz.id, locked: Date.parse(date) - Date.parse(today) < 7 * 86_400_000 });
     if (e2 && e2.code !== "23505") throw e2;
     made++;
   }

@@ -4,6 +4,7 @@ You are building SPUZL games inside an existing Next.js 16 + React 19 + TypeScri
 Quality bar: the design handoff is the floor. Match it exactly or do better, never worse.
 
 ## Read first
+
 1. `games/types.ts`: the contract (GameLogic, BoardProps, BoardApi, ContentLogic, BoardGameRules, InputLog).
 2. `games/crownfall/logic.ts`, `games/crownfall/Board.tsx`, `games/crownfall/logic.test.ts`: the reference implementation. Copy its structure, rigour and test style.
 3. `components/game/GameShell.tsx`: the 6-zone shell your Board renders inside. The shell owns the timer, hints, pause, feedback line and controls. The board reports moves through `api`.
@@ -13,6 +14,7 @@ Quality bar: the design handoff is the floor. Match it exactly or do better, nev
 7. Motion skill: `.agents/skills/animate/SKILL.md` (read before writing motion).
 
 ## Per game, deliver
+
 - `games/<id>/logic.ts`: pure TS, no React or DOM. Default export a `GameLogic` (or `ContentLogic`). Must include:
   - `generate(rng, difficulty)`: deterministic for (seed, difficulty). Difficulty curve: easy, medium, hard, expert, mega (Sunday, larger).
   - `countSolutions(puzzle, limit)` for every game where `unique: true` in the catalogue. Generated puzzles must have exactly 1 solution.
@@ -31,15 +33,19 @@ Quality bar: the design handoff is the floor. Match it exactly or do better, nev
 - Register the game by adding ONE line each to `games/logic-registry.ts` (LOGIC map) and `games/board-registry.tsx` (BOARDS map, same pattern as crownfall: `dynamic(() => import("./<id>/Board"), { ssr: false, loading: () => <BoardSkeleton /> })`). Do not otherwise edit shared files. If you truly need a shared change, describe it in your final report instead.
 
 ## Content games (Word Woods, Clue Cave)
+
 Write ORIGINAL content in `games/<id>/content.ts` (export `CONTENT` and `needsReview = true`). Rules: global-first with about 20% Ghanaian and West African references. No politics, religion, insults, adult themes or brand trademarks in answers. Ages 13 and up. Implement `ContentLogic` (`contentCount`, `generateAt`). Aim for 60 days of Daily content per game; never fewer than 30. Word validity uses a word list you build into `games/_shared/words/` (a reasonable, family-safe English list; you may generate it from your own knowledge; keep it under 200 KB gzipped and lazy-load it on the client).
 
 ## Testing your board in a browser
+
 Start your own dev server on the port given in your task: `pnpm dev -p <port>`. Open `http://localhost:<port>/dev/board/<id>?seed=a&d=easy` (fixture route that generates a puzzle locally). Screenshot it with Playwright (`import { chromium } from "@playwright/test"`, viewport 390 × 844) and compare it with the design reference image by eye. Fix anything worse than the design. Check light theme as well: `localStorage.setItem("spuzl.settings", JSON.stringify({ theme: "light" }))` before load. Stop your dev server when done.
 
 ## Checks before you commit
+
 - `pnpm vitest run games/<id>` passes. `pnpm tsc --noEmit` has no errors in your files. `pnpm eslint games/<id>` is clean.
 - Commit on your branch with Conventional Commits, for example `feat(games): add dusk with generator, solver and board`. One commit per game is ideal.
 - Git identity is already configured. NEVER add Co-Authored-By, "Generated with", or any mention of Claude, Anthropic or AI in commit messages, code comments or docs. A hook rejects them.
 
 ## Final report (keep it short)
+
 Per game: done or not, test count and coverage, any design deviations (with reasons), anything left undone, and content needing owner review.

@@ -25,17 +25,17 @@ pnpm dev
 
 ## Scripts
 
-| Script | What it does |
-|---|---|
-| `pnpm dev` | Dev server on :3000 |
-| `pnpm build` | Production build |
-| `pnpm check` | Typecheck, lint, format check and unit tests |
-| `pnpm test` / `pnpm test:coverage` | Vitest |
-| `pnpm test:e2e` | Playwright end-to-end |
-| `pnpm test:visual` | Visual parity against `tests/visual/reference` |
-| `pnpm test:db` | pgTAP database tests |
-| `pnpm gen:puzzles` | Generate and schedule Dailies |
-| `pnpm validate:dailies` | Prove every scheduled logic Daily has exactly one solution |
+| Script                             | What it does                                               |
+| ---------------------------------- | ---------------------------------------------------------- |
+| `pnpm dev`                         | Dev server on :3000                                        |
+| `pnpm build`                       | Production build                                           |
+| `pnpm check`                       | Typecheck, lint, format check and unit tests               |
+| `pnpm test` / `pnpm test:coverage` | Vitest                                                     |
+| `pnpm test:e2e`                    | Playwright end-to-end                                      |
+| `pnpm test:visual`                 | Visual parity against `tests/visual/reference`             |
+| `pnpm test:db`                     | pgTAP database tests                                       |
+| `pnpm gen:puzzles`                 | Generate and schedule Dailies                              |
+| `pnpm validate:dailies`            | Prove every scheduled logic Daily has exactly one solution |
 
 ## Layout
 

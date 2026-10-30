@@ -42,7 +42,8 @@ export function update(player: Rating, results: Result[]): Rating {
   const delta = v * deltaSum;
   // volatility (Illinois algorithm)
   const a = Math.log(player.vol ** 2);
-  const f = (x: number) => (Math.exp(x) * (delta ** 2 - phi ** 2 - v - Math.exp(x))) / (2 * (phi ** 2 + v + Math.exp(x)) ** 2) - (x - a) / TAU ** 2;
+  const f = (x: number) =>
+    (Math.exp(x) * (delta ** 2 - phi ** 2 - v - Math.exp(x))) / (2 * (phi ** 2 + v + Math.exp(x)) ** 2) - (x - a) / TAU ** 2;
   let A = a;
   let B: number;
   if (delta ** 2 > phi ** 2 + v) B = Math.log(delta ** 2 - phi ** 2 - v);

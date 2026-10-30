@@ -16,7 +16,11 @@ const failures: string[] = [];
 
 if (url && key && process.argv.includes("--db")) {
   const db = createClient(url, key, { auth: { persistSession: false } });
-  const { data } = await db.from("dailies").select("date, game_id, puzzles!dailies_puzzle_id_fkey(data, solution)").gte("date", today).lt("date", datesFrom(today, days + 1).pop()!);
+  const { data } = await db
+    .from("dailies")
+    .select("date, game_id, puzzles!dailies_puzzle_id_fkey(data, solution)")
+    .gte("date", today)
+    .lt("date", datesFrom(today, days + 1).pop()!);
   for (const row of data ?? []) {
     const p = row.puzzles as unknown as { data: unknown; solution: unknown };
     if (!LOGIC[row.game_id]) continue;

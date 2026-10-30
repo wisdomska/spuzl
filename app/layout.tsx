@@ -15,7 +15,8 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://spuzl.vercel.app";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: { default: "SPUZL · 51 games, one Grid", template: "%s · SPUZL" },
-  description: "Daily puzzles, skill games and classic board games across 9 worlds. Play anytime, duel your friends, keep your streak alive.",
+  description:
+    "Daily puzzles, skill games and classic board games across 9 worlds. Play anytime, duel your friends, keep your streak alive.",
   applicationName: "SPUZL",
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "SPUZL" },

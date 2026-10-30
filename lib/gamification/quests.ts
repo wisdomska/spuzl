@@ -10,15 +10,43 @@ export interface QuestDef {
 }
 
 export const DAILY_POOL: QuestDef[] = [
-  { id: "d-clear-2-word", kind: "daily", title: "Clear 2 Word Woods games", goal: { kind: "world_clears", world: "word", n: 2 }, xp: 40, sparks: 15 },
-  { id: "d-clear-2-logic", kind: "daily", title: "Clear 2 Logic Lab games", goal: { kind: "world_clears", world: "logic", n: 2 }, xp: 40, sparks: 15 },
+  {
+    id: "d-clear-2-word",
+    kind: "daily",
+    title: "Clear 2 Word Woods games",
+    goal: { kind: "world_clears", world: "word", n: 2 },
+    xp: 40,
+    sparks: 15,
+  },
+  {
+    id: "d-clear-2-logic",
+    kind: "daily",
+    title: "Clear 2 Logic Lab games",
+    goal: { kind: "world_clears", world: "logic", n: 2 },
+    xp: 40,
+    sparks: 15,
+  },
   { id: "d-clear-3", kind: "daily", title: "Clear 3 Dailies", goal: { kind: "daily_clears", n: 3 }, xp: 50, sparks: 20 },
   { id: "d-no-hint", kind: "daily", title: "Clear a Daily without hints", goal: { kind: "no_hint_clears", n: 1 }, xp: 30, sparks: 10 },
   { id: "d-beat-friend", kind: "daily", title: "Beat a friend's time", goal: { kind: "beat_friend", n: 1 }, xp: 60, sparks: 20 },
   { id: "d-duel", kind: "daily", title: "Play a Duel", goal: { kind: "duels", n: 1 }, xp: 50, sparks: 15 },
   { id: "d-free-3", kind: "daily", title: "Clear 3 Free play puzzles", goal: { kind: "free_clears", n: 3 }, xp: 30, sparks: 10 },
-  { id: "d-new-world", kind: "daily", title: "Clear a game in 3 different worlds", goal: { kind: "worlds_today", n: 3 }, xp: 80, sparks: 30 },
-  { id: "d-board", kind: "daily", title: "Clear a Board Bay Daily", goal: { kind: "world_clears", world: "board", n: 1 }, xp: 40, sparks: 15 },
+  {
+    id: "d-new-world",
+    kind: "daily",
+    title: "Clear a game in 3 different worlds",
+    goal: { kind: "worlds_today", n: 3 },
+    xp: 80,
+    sparks: 30,
+  },
+  {
+    id: "d-board",
+    kind: "daily",
+    title: "Clear a Board Bay Daily",
+    goal: { kind: "world_clears", world: "board", n: 1 },
+    xp: 40,
+    sparks: 15,
+  },
 ];
 
 export const WEEKLY_CHAIN: QuestDef[] = [

@@ -7,7 +7,11 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { hasSupabase } from "@/lib/supabase/env";
 
 export class ApiError extends Error {
-  constructor(public status: number, public code: string, message?: string) {
+  constructor(
+    public status: number,
+    public code: string,
+    message?: string,
+  ) {
     super(message ?? code);
   }
 }
@@ -22,7 +26,8 @@ export function handle<A extends unknown[]>(fn: (...args: A) => Promise<Response
       return await fn(...args);
     } catch (e) {
       if (e instanceof ApiError) return NextResponse.json({ error: e.code, message: e.message }, { status: e.status });
-      if (e && typeof e === "object" && "issues" in e) return NextResponse.json({ error: "invalid_request", issues: (e as { issues: unknown }).issues }, { status: 400 });
+      if (e && typeof e === "object" && "issues" in e)
+        return NextResponse.json({ error: "invalid_request", issues: (e as { issues: unknown }).issues }, { status: 400 });
       console.error("[api]", e);
       return NextResponse.json({ error: "internal" }, { status: 500 });
     }
@@ -42,7 +47,17 @@ export async function body<T>(req: Request, schema: ZodType<T>): Promise<T> {
 export interface PlayerCtx {
   user: User;
   admin: SupabaseClient;
-  player: { id: string; nickname: string; age_band: string; level: number; xp: number; sparks: number; banned_at: string | null; ranking_revoked: boolean; is_guest: boolean };
+  player: {
+    id: string;
+    nickname: string;
+    age_band: string;
+    level: number;
+    xp: number;
+    sparks: number;
+    banned_at: string | null;
+    ranking_revoked: boolean;
+    is_guest: boolean;
+  };
 }
 
 /** Requires a signed-in user (anonymous guests included) with a player profile. */
