@@ -13,4 +13,5 @@ export const BOARDS: Record<string, AnyBoard> = {
   chess: dynamic(() => import("./chess/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   draughts: dynamic(() => import("./draughts/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   oware: dynamic(() => import("./oware/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  fourup: dynamic(() => import("./fourup/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
 };
