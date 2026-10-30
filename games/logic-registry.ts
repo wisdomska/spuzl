@@ -15,6 +15,7 @@ export const LOGIC: Record<string, Loader> = {
   reflect: () => import("./reflect/logic"),
   squint: () => import("./squint/logic"),
   merge: () => import("./merge/logic"),
+  sums: () => import("./sums/logic"),
 };
 
 export function hasLogic(id: string) {

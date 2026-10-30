@@ -17,4 +17,5 @@ export const BOARDS: Record<string, AnyBoard> = {
   reflect: dynamic(() => import("./reflect/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   squint: dynamic(() => import("./squint/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   merge: dynamic(() => import("./merge/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  sums: dynamic(() => import("./sums/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
 };
