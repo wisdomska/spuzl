@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, preview]
+  push:
+    branches: [main, preview]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  authorship:
+    name: Authorship
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Reject AI attribution in PR commits
+        run: |
+          base=${{ github.event.pull_request.base.sha }}
+          head=${{ github.event.pull_request.head.sha }}
+          if git log --format='%an <%ae>%n%B' "$base..$head" | grep -iE 'co-authored-by|generated with|claude|anthropic'; then
+            echo "::error::AI attribution found in commit messages or authors"; exit 1
+          fi
+      - name: Reject AI attribution in PR description
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          if printf '%s\n%s' "$PR_TITLE" "$PR_BODY" | grep -iE 'co-authored-by|generated with|claude|anthropic'; then
+            echo "::error::AI attribution found in the PR title or description"; exit 1
+          fi
+
+  check:
+    name: Typecheck, lint, format, unit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm format:check
+      - run: pnpm test:coverage
+      - name: Prove every generated Daily has exactly one solution
+        run: pnpm validate:dailies --days 14
+
+  db:
+    name: Database (pgTAP) and API integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor
+      - run: pnpm supabase test db
+      - name: API integration
+        run: |
+          pnpm supabase status -o env | sed -n 's/^API_URL=/NEXT_PUBLIC_SUPABASE_URL=/p; s/^ANON_KEY=/NEXT_PUBLIC_SUPABASE_ANON_KEY=/p; s/^SERVICE_ROLE_KEY=/SUPABASE_SERVICE_ROLE_KEY=/p' | tr -d '"' > .env.local
+          echo "ENABLE_DEV_ROUTES=1" >> .env.local
+          pnpm build
+          (pnpm start -p 3000 &) && npx wait-on http://localhost:3000/api/health -t 60000
+          pnpm vitest run -c vitest.api.config.mts
+
+  build:
+    name: Build and bundle budget
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci
+      - name: Service-role key must never reach the client bundle
+        run: |
+          if grep -rl "SUPABASE_SERVICE_ROLE_KEY\|service_role" .next/static; then echo "::error::service role reference in client bundle"; exit 1; fi
+      - run: node scripts/check-bundle-budget.mjs
