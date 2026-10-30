@@ -8,6 +8,7 @@ type Loader = () => Promise<{ default: GameLogic<any, any, any> }>; // eslint-di
 
 export const LOGIC: Record<string, Loader> = {
   crownfall: () => import("./crownfall/logic"),
+  gotcha: () => import("./gotcha/logic"),
 };
 
 export function hasLogic(id: string) {
