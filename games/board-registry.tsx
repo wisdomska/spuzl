@@ -13,4 +13,5 @@ export const BOARDS: Record<string, AnyBoard> = {
   hunch: dynamic(() => import("./hunch/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   echo: dynamic(() => import("./echo/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   twins: dynamic(() => import("./twins/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  flinch: dynamic(() => import("./flinch/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
 };

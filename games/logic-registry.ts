@@ -11,6 +11,7 @@ export const LOGIC: Record<string, Loader> = {
   hunch: () => import("./hunch/logic"),
   echo: () => import("./echo/logic"),
   twins: () => import("./twins/logic"),
+  flinch: () => import("./flinch/logic"),
 };
 
 export function hasLogic(id: string) {
