@@ -16,6 +16,7 @@ const SPEC: RageGameSpec<PlatformerCourse> = {
   hud: "deaths",
   startHint: "Move or jump to start",
   levelName: (sim) => sim.levels[sim.idx].def.name,
+  deathLines: ["Spuz has seen worse. Barely.", "The floor was lying.", "Now you know. Go again.", "Spuz believes in you. Mostly."],
   demoLog: async (p) => {
     const [{ courseLog }, { default: SOLUTIONS }, { CONFIG }] = await Promise.all([
       import("@/phaser/sim/scripted"),

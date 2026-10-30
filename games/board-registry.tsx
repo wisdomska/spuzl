@@ -15,4 +15,5 @@ export const BOARDS: Record<string, AnyBoard> = {
   flipside: dynamic(() => import("./flipside/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   ricochet: dynamic(() => import("./ricochet/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   stacked: dynamic(() => import("./stacked/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  wobble: dynamic(() => import("./wobble/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
 };

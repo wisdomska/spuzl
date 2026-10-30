@@ -39,6 +39,9 @@ export interface RageGameSpec<S extends SimCore> {
   demoLog?(p: CoursePuzzle): Promise<InputLog>;
   /** taller canvas (Flipside shows floor and ceiling, Slip climbs) */
   tall?: boolean;
+  /** death copy override: lines (cycled by count) and noun ("Fall" for Wobble) */
+  deathLines?: readonly string[];
+  deathNoun?: string;
   /** a server hint arrived for the current level (reveal its traps) */
   reveal?(sim: S): void;
   /** shown in the feedback line once the run ends */
@@ -50,9 +53,9 @@ export interface GhostSpec {
   log: InputLog;
 }
 
-const DEATH_LINES = ["Spuz has seen worse. Barely.", "The floor was lying.", "Now you know. Go again.", "Spuz believes in you. Mostly."];
-export function deathCopy(n: number) {
-  return `Death number ${n}. ${DEATH_LINES[n % DEATH_LINES.length]}`;
+const DEATH_LINES = ["Spuz has seen worse. Barely.", "Shake it off. Go again.", "Now you know. Go again.", "Spuz believes in you. Mostly."];
+export function deathCopy(n: number, lines: readonly string[] = DEATH_LINES, noun = "Death") {
+  return `${noun} number ${n}. ${lines[n % lines.length]}`;
 }
 
 const SEEN_KEY = "spuzl.photosensitive.seen";
@@ -167,7 +170,7 @@ export function RageBoard<S extends SimCore>({
         if (ev & EV.DEATH) {
           play("splat");
           const n = ctl.sim.deaths;
-          const line = deathCopy(n);
+          const line = deathCopy(n, spec.deathLines, spec.deathNoun);
           setBump((b) => b + 1);
           setMessage(line);
           apiRef.current.onMove(stateNow(), { mistake: true });

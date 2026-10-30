@@ -13,6 +13,7 @@ export const LOGIC: Record<string, Loader> = {
   flipside: () => import("./flipside/logic"),
   ricochet: () => import("./ricochet/logic"),
   stacked: () => import("./stacked/logic"),
+  wobble: () => import("./wobble/logic"),
 };
 
 export function hasLogic(id: string) {
