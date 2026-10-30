@@ -16,6 +16,7 @@ export const LOGIC: Record<string, Loader> = {
   wobble: () => import("./wobble/logic"),
   grapple: () => import("./grapple/logic"),
   ghosted: () => import("./ghosted/logic"),
+  slip: () => import("./slip/logic"),
 };
 
 export function hasLogic(id: string) {

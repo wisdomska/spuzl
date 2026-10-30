@@ -335,7 +335,7 @@ export class PlatformerWorld {
       if (this.cfg.rope === "hold" && (dy > 0 || dx < -TILE)) return; // hooks above and ahead
       if (this.cfg.rope === "climb" && i === b.lastHook && b.regrab > 0) return;
       const d = dx * dx + dy * dy;
-      const r = this.cfg.rope === "climb" ? 12 * FP : this.cfg.reach;
+      const r = this.cfg.rope === "climb" ? 14 * FP : this.cfg.reach;
       if (d <= r * r && d < bestD) {
         bestD = d;
         best = i;
