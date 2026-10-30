@@ -14,4 +14,5 @@ export const BOARDS: Record<string, AnyBoard> = {
   sixer: dynamic(() => import("./sixer/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   nine: dynamic(() => import("./nine/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   pixl: dynamic(() => import("./pixl/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  blackout: dynamic(() => import("./blackout/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
 };
