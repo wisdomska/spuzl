@@ -11,6 +11,7 @@ export const LOGIC: Record<string, Loader> = {
   dusk: () => import("./dusk/logic"),
   sixer: () => import("./sixer/logic"),
   nine: () => import("./nine/logic"),
+  pixl: () => import("./pixl/logic"),
 };
 
 export function hasLogic(id: string) {
