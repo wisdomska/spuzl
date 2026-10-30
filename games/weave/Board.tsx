@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
-import { useCellSize } from "@/components/game/useBoardSize";
+import { useFitCell } from "@/games/_shared/useFitCell";
 import { useGridKeys } from "@/components/game/useGridKeys";
 import { play } from "@/lib/audio";
 import { adjacent, dirBetween, edgeKey, step } from "@/games/_shared/grid";
@@ -38,7 +38,7 @@ export default function WeaveBoard({ puzzle, initialState, hint, disabled, mode,
   const trailId = useRef(0);
   const drag = useRef<{ last: number } | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
-  const cs = useCellSize(n, GAP, PAD * 2 + 4);
+  const { cs, bleed } = useFitCell(n, GAP, PAD);
   const pitch = cs + GAP;
   const th = Math.round(cs * 0.32);
   const center = (i: number) => ({ x: PAD + (i % n) * pitch + cs / 2, y: PAD + Math.floor(i / n) * pitch + cs / 2 });
@@ -237,7 +237,7 @@ export default function WeaveBoard({ puzzle, initialState, hint, disabled, mode,
   };
 
   return (
-    <div className={`overflow-x-auto ${done ? "board-pulse" : ""}`} style={{ maxWidth: "100%" }}>
+    <div className={`overflow-x-auto ${done ? "board-pulse" : ""}`} style={{ marginInline: -bleed, maxWidth: `calc(100% + ${bleed * 2}px)` }}>
       <LineStyles />
       <div
         ref={gridRef}

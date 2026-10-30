@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
-import { useCellSize } from "@/components/game/useBoardSize";
+import { useFitCell } from "@/games/_shared/useFitCell";
 import { useGridKeys } from "@/components/game/useGridKeys";
 import { play } from "@/lib/audio";
 import { LineStyles } from "@/games/_shared/LineStyles";
@@ -36,7 +36,7 @@ export default function IslesBoard({ puzzle, initialState, hint, disabled, mode,
   const [done, setDone] = useState(a.complete);
   const downAt = useRef<number | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
-  const cs = useCellSize(cols, GAP, PAD * 2 + 4);
+  const { cs, bleed } = useFitCell(cols, GAP, PAD);
   const pitch = cs + GAP;
   const center = (i: number) => ({ x: PAD + islands[i].c * pitch + cs / 2, y: PAD + islands[i].r * pitch + cs / 2 });
   const where = (i: number) => `row ${islands[i].r + 1}, column ${islands[i].c + 1}`;
@@ -215,7 +215,7 @@ export default function IslesBoard({ puzzle, initialState, hint, disabled, mode,
   });
 
   return (
-    <div className={`overflow-x-auto ${done ? "board-pulse" : ""}`} style={{ maxWidth: "100%" }}>
+    <div className={`overflow-x-auto ${done ? "board-pulse" : ""}`} style={{ marginInline: -bleed, maxWidth: `calc(100% + ${bleed * 2}px)` }}>
       <LineStyles />
       <div
         ref={gridRef}
@@ -226,7 +226,7 @@ export default function IslesBoard({ puzzle, initialState, hint, disabled, mode,
         onKeyDown={keys.onKeyDown}
         onPointerDown={onPointerDown}
         onPointerUp={onPointerUp}
-        className="relative grid touch-none rounded-[16px] select-none"
+        className={`relative grid rounded-[16px] select-none ${cols > 8 ? "" : "touch-none"}`}
         style={{ gridTemplateColumns: `repeat(${cols}, ${cs}px)`, gap: GAP, padding: PAD, background: "var(--board-bg)", perspective: 600 }}
       >
         <div aria-hidden className="pointer-events-none absolute inset-0">
