@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createRng } from "@/lib/rng";
 import type { Difficulty } from "@/games/types";
 import { checkTapTimes, FLASH_PERIOD_MS, stdev } from "@/games/_shared/reflex";
-import logic, { generate, grade, IDLE_MS, LENGTH_FOR, padName, PADS, replay, START_FOR, verify, type EchoPuzzle, type EchoRound, type EchoState } from "./logic";
+import logic, { generate, grade, IDLE_MS, LENGTH_FOR, padName, PADS, START_FOR, verify, type EchoPuzzle, type EchoRound, type EchoState } from "./logic";
 
 const D: Difficulty[] = ["easy", "medium", "hard", "expert", "mega"];
 
