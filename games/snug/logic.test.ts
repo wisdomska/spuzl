@@ -134,4 +134,9 @@ describe("snug", () => {
     expect(avg("mega")).toBeGreaterThan(avg("medium"));
     expect(grade(tiny)).toBeGreaterThanOrEqual(0);
   }, 20_000);
+  it("hints from the empty board before the first move", () => {
+    const g = generate(createRng("pre"), "easy");
+    expect(hint(g.puzzle, g.solution, undefined)).toEqual(hint(g.puzzle, g.solution, g.solution.map(() => null)));
+    expect(hint(g.puzzle, g.solution, undefined)).not.toBeNull();
+  });
 });

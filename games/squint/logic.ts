@@ -256,7 +256,9 @@ export function verify(p: SquintPuzzle, sol: SquintSolution, state: SquintState)
   return equal ? { ok: true, progress: 1 } : { ok: false, progress: progress(p, sol, state), reason: "differences do not match" };
 }
 
-export function hint(p: SquintPuzzle, sol: SquintSolution, state: SquintState): Hint | null {
+export function hint(p: SquintPuzzle, sol: SquintSolution, state: SquintState | undefined): Hint | null {
+  // before the first move the shell has no state yet: hint from the empty board
+  if (state === undefined) state = { found: [], misses: 0 };
   if (!wellFormed(state)) return null;
   const next = sol.find((id) => !state.found.includes(id));
   if (!next) return null;

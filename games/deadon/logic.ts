@@ -257,7 +257,9 @@ export function verify(p: DeadOnPuzzle, sol: DeadOnSolution, state: DeadOnState)
   return { ok: true, progress: progress(p, sol, state), score: scoreFor(p, sol, value) };
 }
 
-export function hint(p: DeadOnPuzzle, sol: DeadOnSolution, state: DeadOnState): Hint | null {
+export function hint(p: DeadOnPuzzle, sol: DeadOnSolution, state: DeadOnState | undefined): Hint | null {
+  // before the first move the shell has no state yet: hint from the empty board
+  if (state === undefined) state = { steps: [] };
   if (!wellFormed(state)) return null;
   const r = replay(p, state.steps);
   if (r.error) return null;

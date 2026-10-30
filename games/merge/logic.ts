@@ -238,7 +238,9 @@ export function verify(p: MergePuzzle, sol: MergeSolution, state: MergeState): V
   return { ok: true, progress: progress(p, sol, state), score: scoreOf(r.board) };
 }
 
-export function hint(p: MergePuzzle, _sol: MergeSolution, state: MergeState): Hint | null {
+export function hint(p: MergePuzzle, _sol: MergeSolution, state: MergeState | undefined): Hint | null {
+  // before the first move the shell has no state yet: hint from the empty board
+  if (state === undefined) state = { moves: [] };
   if (!wellFormed(state)) return null;
   const r = replay(p, state.moves);
   if (r.bad >= 0) return null;

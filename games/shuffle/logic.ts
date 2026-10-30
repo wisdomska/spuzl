@@ -291,7 +291,9 @@ export function verify(p: ShufflePuzzle, sol: ShuffleSolution, state: ShuffleSta
   return { ok: true, progress: 1 };
 }
 
-export function hint(p: ShufflePuzzle, sol: ShuffleSolution, state: ShuffleState): Hint | null {
+export function hint(p: ShufflePuzzle, sol: ShuffleSolution, state: ShuffleState | undefined): Hint | null {
+  // before the first move the shell has no state yet: hint from the empty board
+  if (state === undefined) state = { moves: [] };
   if (!wellFormed(state)) return null;
   const r = replay(p, state.moves);
   if (r.bad >= 0 || solved(r.tiles)) return null;

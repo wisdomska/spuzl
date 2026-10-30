@@ -93,4 +93,9 @@ describe("reflect", () => {
     expect(avg("expert")).toBeGreaterThan(avg("hard"));
     expect(grade(tiny)).toBeGreaterThanOrEqual(0);
   });
+  it("hints from the empty board before the first move", () => {
+    const g = generate(createRng("pre"), "easy");
+    expect(hint(g.puzzle, g.solution, undefined)).toEqual(hint(g.puzzle, g.solution, g.puzzle.given.map((v) => Math.max(0, v))));
+    expect(hint(g.puzzle, g.solution, undefined)).not.toBeNull();
+  });
 });

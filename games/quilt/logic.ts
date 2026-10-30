@@ -331,7 +331,9 @@ export function verify(p: QuiltPuzzle, sol: QuiltSolution, state: QuiltState): V
   return match ? { ok: true, progress: 1 } : { ok: false, progress: prog, reason: "valid but not the scheduled solution" };
 }
 
-export function hint(p: QuiltPuzzle, sol: QuiltSolution, state: QuiltState): Hint | null {
+export function hint(p: QuiltPuzzle, sol: QuiltSolution, state: QuiltState | undefined): Hint | null {
+  // before the first move the shell has no state yet: hint from the empty board
+  if (state === undefined) state = [];
   if (!wellFormed(p, state)) return null;
   const wrong = state.find((r) => !sol.some((s) => sameRect(s, r)));
   if (wrong) return { target: wrong, text: "This rectangle does not belong. Tap it to remove." };

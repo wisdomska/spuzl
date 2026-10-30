@@ -126,4 +126,9 @@ describe("sums", () => {
     expect(avg("expert")).toBeGreaterThan(avg("medium"));
     expect(grade(tiny)).toBeGreaterThanOrEqual(0);
   }, 60_000);
+  it("hints from the empty board before the first move", () => {
+    const g = generate(createRng("pre"), "easy");
+    expect(hint(g.puzzle, g.solution, undefined)).toEqual(hint(g.puzzle, g.solution, new Array(g.puzzle.rows * g.puzzle.cols).fill(0)));
+    expect(hint(g.puzzle, g.solution, undefined)).not.toBeNull();
+  });
 });

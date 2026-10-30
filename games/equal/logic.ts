@@ -275,7 +275,9 @@ export function verify(p: EqualPuzzle, sol: EqualSolution, state: EqualState): V
   return match ? { ok: true, progress: 1 } : { ok: false, progress: prog, reason: "valid but not the scheduled solution" };
 }
 
-export function hint(p: EqualPuzzle, sol: EqualSolution, state: EqualState): Hint | null {
+export function hint(p: EqualPuzzle, sol: EqualSolution, state: EqualState | undefined): Hint | null {
+  // before the first move the shell has no state yet: hint from the empty board
+  if (state === undefined) state = new Array(p.n * p.n).fill(0);
   if (!wellFormed(p, state)) return null;
   const blanks = p.given.flatMap((g, i) => (g ? [] : [i]));
   const wrong = blanks.find((i) => state[i] && state[i] !== sol[i]);

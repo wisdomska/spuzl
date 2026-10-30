@@ -411,7 +411,9 @@ export function verify(p: SumsPuzzle, sol: SumsSolution, state: SumsState): Veri
   return match ? { ok: true, progress: 1 } : { ok: false, progress: prog, reason: "valid but not the scheduled solution" };
 }
 
-export function hint(p: SumsPuzzle, sol: SumsSolution, state: SumsState): Hint | null {
+export function hint(p: SumsPuzzle, sol: SumsSolution, state: SumsState | undefined): Hint | null {
+  // before the first move the shell has no state yet: hint from the empty board
+  if (state === undefined) state = new Array(p.rows * p.cols).fill(0);
   if (!wellFormed(p, state)) return null;
   const wrong = p.white.findIndex((w, i) => w && state[i] && state[i] !== sol[i]);
   if (wrong >= 0) return { target: wrong, text: "This digit does not belong here." };

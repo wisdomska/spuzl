@@ -94,4 +94,9 @@ describe("squint", () => {
     expect(avg("expert")).toBeGreaterThan(avg("medium"));
     expect(grade(tiny)).toBeGreaterThanOrEqual(0);
   });
+  it("hints from the empty board before the first move", () => {
+    const g = generate(createRng("pre"), "easy");
+    expect(hint(g.puzzle, g.solution, undefined)).toEqual(hint(g.puzzle, g.solution, { found: [], misses: 0 }));
+    expect(hint(g.puzzle, g.solution, undefined)).not.toBeNull();
+  });
 });

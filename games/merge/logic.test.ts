@@ -142,4 +142,9 @@ describe("merge", () => {
     expect(g("expert")).toBeGreaterThan(g("hard"));
     expect(grade(P, { botBest: 2048, botSum: 0 })).toBeLessThan(grade(P, { botBest: 64, botSum: 0 }));
   });
+  it("hints from the empty board before the first move", () => {
+    const g = generate(createRng("pre"), "easy");
+    expect(hint(g.puzzle, g.solution, undefined)).toEqual(hint(g.puzzle, g.solution, { moves: [] }));
+    expect(hint(g.puzzle, g.solution, undefined)).not.toBeNull();
+  });
 });

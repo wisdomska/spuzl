@@ -145,7 +145,9 @@ export function verify(p: ReflectPuzzle, sol: ReflectSolution, state: ReflectSta
 
 const NAMES = ["empty", "filled", "second colour"];
 
-export function hint(p: ReflectPuzzle, sol: ReflectSolution, state: ReflectState): Hint | null {
+export function hint(p: ReflectPuzzle, sol: ReflectSolution, state: ReflectState | undefined): Hint | null {
+  // before the first move the shell has no state yet: hint from the empty board
+  if (state === undefined) state = p.given.map((g) => Math.max(0, g));
   if (!wellFormed(p, state)) return null;
   const cells = playerCells(p);
   const wrong = cells.find((i) => state[i] > 0 && state[i] !== sol[i]);

@@ -137,4 +137,9 @@ describe("deadon", () => {
     expect(grade(p)).toBeGreaterThanOrEqual(0);
     expect(grade({ numbers: [1, 1], target: 999 })).toBeLessThanOrEqual(100);
   }, 30_000);
+  it("hints from the empty board before the first move", () => {
+    const g = generate(createRng("pre"), "easy");
+    expect(hint(g.puzzle, g.solution, undefined)).toEqual(hint(g.puzzle, g.solution, { steps: [] }));
+    expect(hint(g.puzzle, g.solution, undefined)).not.toBeNull();
+  });
 });

@@ -343,7 +343,9 @@ export function verify(p: SnugPuzzle, sol: SnugSolution, state: SnugState): Veri
   return exact ? { ok: true, progress: 1 } : { ok: false, progress: prog, reason: "outline not covered" };
 }
 
-export function hint(p: SnugPuzzle, sol: SnugSolution, state: SnugState): Hint | null {
+export function hint(p: SnugPuzzle, sol: SnugSolution, state: SnugState | undefined): Hint | null {
+  // before the first move the shell has no state yet: hint from the empty board
+  if (state === undefined) state = p.pieces.map(() => null);
   if (!wellFormed(p, state)) return null;
   // blocks that are illegal right now come first
   for (let k = 0; k < state.length; k++) {
