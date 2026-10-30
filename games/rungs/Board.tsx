@@ -199,13 +199,14 @@ export default function RungsBoard({ puzzle, initialState, hint, disabled, mode,
   const hintTarget = (hint?.target ?? null) as { rung?: number; cap?: number } | null;
 
   /* ---------- rendering ---------- */
-  const cell = (ch: string, opts: { bg: string; fg?: string; ring?: string; placeholder?: string; key: string }) => (
+  const cell = (ch: string, opts: { bg: string; fg?: string; ring?: string; placeholder?: string; key: string; mark?: boolean }) => (
     <div
       key={opts.key}
-      className="flex h-11 w-10 items-center justify-center rounded-[10px] text-[20px] font-extrabold"
+      className="relative flex h-11 w-10 items-center justify-center rounded-[10px] text-[20px] font-extrabold"
       style={{ background: opts.bg, color: opts.fg ?? "var(--text)", boxShadow: opts.ring, fontFamily: "var(--font-display)", transition: "background-color 180ms var(--ease-out)" }}
     >
       {ch || (opts.placeholder ? <span style={{ color: "var(--text-muted)", opacity: 0.5 }}>{opts.placeholder}</span> : "")}
+      {opts.mark && <span aria-hidden className="absolute bottom-1 h-[3px] w-3 rounded-full" style={{ background: "var(--hl)" }} />}
     </div>
   );
 
@@ -241,7 +242,7 @@ export default function RungsBoard({ puzzle, initialState, hint, disabled, mode,
 
   return (
     <div className="flex w-full flex-col items-center gap-3">
-      <div role="grid" aria-label="Rungs ladder" className={`flex w-full max-w-[400px] flex-col gap-2 rounded-[20px] p-4 ${done ? "board-pulse" : ""}`} style={{ background: "var(--board-bg)" }}>
+      <div role="grid" aria-label="Rungs ladder" className={`flex w-full max-w-[400px] flex-col gap-2 rounded-[20px] p-4 [--hl:var(--world)] [[data-theme=light]_&]:[--hl:var(--world-ink)] ${done ? "board-pulse" : ""}`} style={{ background: "var(--board-bg)" }}>
         {capRow(0)}
         <div className="relative flex flex-col gap-2">
           {order.map((id, pos) => {
@@ -282,9 +283,10 @@ export default function RungsBoard({ puzzle, initialState, hint, disabled, mode,
                     cell(text[i] ?? "", {
                       key: `${key}${i}`,
                       bg: word ? tint : "var(--surface-raised)",
-                      fg: broken && above[i] !== word[i] ? "var(--danger)" : i === hl ? "var(--world)" : undefined,
+                      fg: broken && above[i] !== word[i] ? "var(--danger)" : i === hl ? "var(--hl)" : undefined,
                       ring: isActive && i === Math.min(text.length, LEN - 1) ? "inset 0 0 0 3px var(--world)" : hinted ? "inset 0 0 0 3px var(--gold)" : broken ? "inset 0 0 0 2px var(--danger)" : undefined,
                       placeholder: puzzle.starts && i === 0 && !text ? puzzle.starts[id] : undefined,
+                      mark: i === hl,
                     }),
                   )}
                 </div>

@@ -180,7 +180,7 @@ export default function SevenBoard({ puzzle, initialState, hint, disabled, mode,
   };
 
   return (
-    <div className="flex w-full max-w-[400px] flex-col items-center gap-4">
+    <div className="flex w-full max-w-[400px] flex-col items-center gap-4 [--hl:var(--world)] [[data-theme=light]_&]:[--hl:var(--world-ink)]">
       {/* score + rank */}
       <div className="flex w-full flex-col gap-2 rounded-[16px] p-3" style={{ background: "var(--surface)" }}>
         <div className="flex items-baseline justify-between">
@@ -208,7 +208,7 @@ export default function SevenBoard({ puzzle, initialState, hint, disabled, mode,
                 letterEls.current[k] = el;
               }}
               className="font-display text-[30px] font-extrabold tracking-[0.04em]"
-              style={{ color: bad ? "var(--danger)" : ch === centre ? "var(--world)" : "var(--text)" }}
+              style={{ color: bad ? "var(--danger)" : ch === centre ? "var(--hl)" : "var(--text)" }}
             >
               {ch}
             </span>
