@@ -20,6 +20,11 @@ export const LOGIC: Record<string, Loader> = {
   fourup: () => import("./fourup/logic"),
   flip: () => import("./flip/logic"),
   ludo: () => import("./ludo/logic"),
+  weave: () => import("./weave/logic"),
+  flowline: () => import("./flowline/logic"),
+  isles: () => import("./isles/logic"),
+  pairup: () => import("./pairup/logic"),
+  lost: () => import("./lost/logic"),
 };
 
 export function hasLogic(id: string) {
