@@ -329,7 +329,7 @@ describe("content editor and two-person approval (FR-AD-03)", () => {
     }
   }, 60_000);
 
-  it("refuses scheduling unapproved items and guess-route games", async () => {
+  it("refuses unapproved items and schedules guess games (checked by attempt)", async () => {
     const c = await S.content_editor.aal2("/api/admin/content", { json: { game: "hunch", payload: hunch() } });
     const r = await S.owner.aal2("/api/admin/dailies/schedule", { json: { itemId: c.data.id, date: day(40) } });
     expect([r.status, r.data.error]).toEqual([409, "not_approved"]);
@@ -340,7 +340,10 @@ describe("content editor and two-person approval (FR-AD-03)", () => {
     await S.content_editor.aal2(`/api/admin/content/${coil.data.id}`, { method: "PATCH", json: { submit: true } });
     await S.owner.aal2(`/api/admin/content/${coil.data.id}/review`, { json: { decision: "approve" } });
     const g = await S.owner.aal2("/api/admin/dailies/schedule", { json: { itemId: coil.data.id, date: day(40) } });
-    expect([g.status, g.data.error]).toEqual([409, "guess_route_pending"]);
+    // Guess games resolve guesses against the attempt's stored puzzle, so they schedule like any other
+    // (a made-up item may still fail the solve check, which answers 422 check_failed).
+    expect(g.data.error).not.toBe("guess_route_pending");
+    expect([200, 422]).toContain(g.status);
   });
 
   it("lists content.ts entries flagged needsReview and records the owner's approval", async () => {

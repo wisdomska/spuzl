@@ -103,8 +103,8 @@ export const isContentGame = (g: string): g is ContentGame => g in CONTENT_SCHEM
 /**
  * Games whose approved items can be scheduled as a whole Daily today. Pool games (one question, landmark,
  * country or picture per item) feed Free play and the Daily rotation through content.ts instead.
- * Guess games (coil, rungs, quads, minicross, seven, buried, remix) rebuild each guess from content.ts on the
- * server, so a custom item would get wrong feedback until /api/games/[game]/guess resolves by puzzle id.
+ * Guess games (coil, rungs, quads, minicross, seven, buried, remix) check each guess on the server against the
+ * player's attempt, i.e. the stored puzzle, so custom items get the right feedback (`guessRoute` marks them).
  */
 export const SCHEDULABLE: Partial<Record<ContentGame, { items: number; guessRoute: boolean }>> = {
   hunch: { items: 1, guessRoute: false },

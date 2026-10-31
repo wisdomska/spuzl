@@ -206,6 +206,21 @@ async function loadForAttempt(admin: SupabaseClient, a: AttemptRow): Promise<Loa
   return loadFree(a.game_id, seed, (difficulty as Difficulty) || "easy");
 }
 
+/**
+ * The puzzle and solution behind one of the player's open attempts, for server-side guess checks. Content
+ * games resolve guesses through this, so admin-scheduled custom items check against what was served.
+ */
+export async function attemptPuzzle(
+  admin: SupabaseClient,
+  playerId: string,
+  id: string,
+): Promise<{ gameId: string; puzzle: unknown; solution: unknown }> {
+  const a = await getAttempt(admin, playerId, id);
+  if (a.status !== "in_progress") throw new ApiError(409, "attempt_closed");
+  const l = await loadForAttempt(admin, a);
+  return { gameId: a.game_id, puzzle: l.puzzle, solution: l.solution };
+}
+
 export async function saveAttempt(admin: SupabaseClient, playerId: string, id: string, state: unknown, activeMs: number) {
   const a = await getAttempt(admin, playerId, id);
   if (a.status !== "in_progress") throw new ApiError(409, "attempt_closed");

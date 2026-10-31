@@ -112,4 +112,21 @@ describe("api: daily clear flow", () => {
     for (let i = 0; i < 3; i++) expect((await dh()).status).toBe(200);
     expect((await dh()).status).toBe(429);
   });
+
+  it("checks content-game guesses against the player's own attempt", async () => {
+    const g = await guest(uniq("guess_"));
+    const s = await g.api("/api/v1/attempts", { json: { game: "rungs", mode: "free", difficulty: "easy" } });
+    expect(s.status).toBe(200);
+    const ref = s.data.puzzle.ref;
+    const guess = { rung: 1, word: "ZZZZ" };
+    const byRef = await g.api("/api/games/rungs/guess", { json: { ref, guess } });
+    const byAttempt = await g.api("/api/games/rungs/guess", { json: { ref, guess, attemptId: s.data.attemptId } });
+    expect(byAttempt.status).toBe(200);
+    expect(byAttempt.data).toEqual(byRef.data);
+    // Someone else's attempt is not found; a different game is refused.
+    const other = await guest(uniq("guess2_"));
+    expect((await other.api("/api/games/rungs/guess", { json: { ref, guess, attemptId: s.data.attemptId } })).status).toBe(404);
+    const c = await g.api("/api/v1/attempts", { json: { game: "crownfall", mode: "free", difficulty: "easy" } });
+    expect((await g.api("/api/games/rungs/guess", { json: { ref, guess, attemptId: c.data.attemptId } })).status).toBe(400);
+  });
 });

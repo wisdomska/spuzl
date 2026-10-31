@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { GameShell } from "@/components/game/GameShell";
 import { BoardSkeleton } from "@/components/game/BoardSkeleton";
 import { BOARDS } from "@/games/board-registry";
+import { setGuessAttempt } from "@/games/_shared/guess";
 import { WORLD_BY_ID, type GameMeta } from "@/lib/catalog";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { finishAttempt, HttpError, requestHint, saveAttempt, startAttempt, useMe, type FinishRes, type StartRes } from "@/lib/client/api";
@@ -82,6 +83,7 @@ export function PlayScreen({
           difficulty: m === "free" ? difficulty : undefined,
         });
         latestState.current = a.state ?? undefined;
+        setGuessAttempt(a.attemptId);
         setAttempt(a);
         setMode(m);
         setPhase("playing");
@@ -99,6 +101,8 @@ export function PlayScreen({
   useEffect(() => {
     beginRef.current = begin;
   }, [begin]);
+  // Content-game guesses resolve against this screen's attempt; forget it when the screen goes.
+  useEffect(() => () => setGuessAttempt(null), []);
 
   // Start (or resume) once the player is known. Runs from a timer callback so a StrictMode double effect
   // cancels the first start instead of creating two attempts.

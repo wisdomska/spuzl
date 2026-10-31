@@ -25,12 +25,6 @@ export const POST = handle(async (req: Request) => {
   const game = item.game_id as string;
   const plan = isContentGame(game) ? SCHEDULABLE[game] : undefined;
   if (!plan) throw new ApiError(409, "not_schedulable", "Items for this game join the content pool instead of a single Daily.");
-  if (plan.guessRoute)
-    throw new ApiError(
-      409,
-      "guess_route_pending",
-      "This game checks guesses against content.ts on the server, so a custom item needs the guess route to resolve by puzzle first.",
-    );
   const current = await getDaily(ctx.db, date, game);
   if (current?.locked) throw new ApiError(409, "locked");
 
