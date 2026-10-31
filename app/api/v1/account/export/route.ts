@@ -43,9 +43,16 @@ export const GET = handle(async () => {
   );
   const { data: friends } = await admin.from("friendships").select("*").or(`player_id.eq.${user.id},friend_id.eq.${user.id}`);
   tables.friendships = friends ?? [];
+  // The request identity carries only JWT claims: read the full auth record for the export.
+  const { data: authUser } = await admin.auth.admin.getUserById(user.id);
   const doc = {
     exported_at: new Date().toISOString(),
-    account: { id: user.id, email: user.email ?? null, anonymous: !!user.is_anonymous, created_at: user.created_at },
+    account: {
+      id: user.id,
+      email: authUser.user?.email ?? user.email ?? null,
+      anonymous: !!(authUser.user?.is_anonymous ?? user.is_anonymous),
+      created_at: authUser.user?.created_at ?? null,
+    },
     player,
     ...tables,
   };
