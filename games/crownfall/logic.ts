@@ -19,7 +19,7 @@ export const EMPTY = 0;
 export const MARK = 1;
 export const CROWN = 2;
 
-export const SIZE_FOR: Record<Difficulty, number> = { easy: 6, medium: 7, hard: 8, expert: 9, mega: 10 };
+export const SIZE_FOR: Record<Difficulty, number> = { easy: 5, medium: 6, hard: 7, expert: 8, mega: 9 };
 
 export type RuleBreak = "row" | "column" | "region" | "touch";
 export const RULE_COPY: Record<RuleBreak, string> = {
