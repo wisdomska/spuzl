@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { motion, useReducedMotion } from "motion/react";
 import type { BoardProps, ControlSpec } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { play } from "@/lib/audio";
@@ -40,6 +41,7 @@ export default function SevenBoard({ puzzle, initialState, hint, disabled, mode,
   const [done, setDone] = useState(false);
   const [focus, setFocus] = useState(0);
   const [popKey, setPopKey] = useState<string | null>(null);
+  const reduce = useReducedMotion();
   const letterEls = useRef<(HTMLSpanElement | null)[]>([]);
   const listRef = useRef<HTMLDivElement>(null);
   const streak = useRef(0);
@@ -294,8 +296,12 @@ export default function SevenBoard({ puzzle, initialState, hint, disabled, mode,
       >
         <div role="row" className="contents">
           {tiles.map((l, k) => (
-            <button
-              key={`${l}${k}`}
+            // keyed by letter (the seven are distinct) so Shuffle slides each hex to its new spot
+            <motion.button
+              key={l}
+              initial={false}
+              animate={{ left: W / 2 - HEX_W / 2 + pos[k][0] * 1.06, top: H / 2 - HEX_H / 2 + pos[k][1] * 1.06 }}
+              transition={reduce ? { duration: 0 } : { type: "spring", duration: 0.32, bounce: 0.18 }}
               type="button"
               role="gridcell"
               tabIndex={focus === k ? 0 : -1}
@@ -309,17 +315,15 @@ export default function SevenBoard({ puzzle, initialState, hint, disabled, mode,
               style={{
                 width: HEX_W,
                 height: HEX_H,
-                left: W / 2 - HEX_W / 2 + pos[k][0] * 1.06,
-                top: H / 2 - HEX_H / 2 + pos[k][1] * 1.06,
                 clipPath: HEX,
                 background: k === 0 ? "var(--world)" : "var(--surface-raised)",
                 color: k === 0 ? INK : "var(--text)",
-                transition: "transform var(--dur-instant) var(--spring-press), left 220ms var(--ease-out), top 220ms var(--ease-out)",
+                transition: "transform var(--dur-instant) var(--spring-press)",
               }}
             >
               {l}
               {k === 0 && <span className="sr-only"> (centre)</span>}
-            </button>
+            </motion.button>
           ))}
         </div>
       </div>

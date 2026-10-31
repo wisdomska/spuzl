@@ -27,10 +27,17 @@ export interface BuriedSolution {
 
 export interface BuriedState {
   found: number[][];
+  /** Bonus word lines: real words that are not on the list. Shown only; they never use up letters. */
+  bonus?: number[][];
 }
 
 export type BuriedGuess = number[];
-export type BuriedCheck = { ok: true; word: string } | { ok: false };
+/** `bonus` marks a real word off the list: never a mistake, never counts toward the clear. */
+export type BuriedCheck =
+  { ok: true; bonus?: undefined; word: string } | { ok: false; bonus: true; word: string } | { ok: false; bonus?: undefined };
+
+/** Shortest line that can count as a bonus word. */
+export const BONUS_MIN = 4;
 
 /** Cells from a to b if they lie on one row, column or diagonal; otherwise null. */
 export function lineBetween(a: number, b: number, cols: number): number[] | null {

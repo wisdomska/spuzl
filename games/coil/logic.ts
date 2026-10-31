@@ -259,7 +259,24 @@ export function checkGuess(p: CoilPuzzle, s: CoilSolution, guess: CoilGuess): Co
   const idx = s.words.findIndex((w, i) => w === word && sameCells(s.paths[i], guess));
   if (idx >= 0) return { ok: true, index: idx, word, path: s.paths[idx].slice() };
   if (s.words.includes(word)) return { ok: false, reason: "spot", word };
-  return { ok: false, reason: isWord(word) ? "off-theme" : "not-word", word };
+  return isWord(word) ? { ok: false, bonus: true, reason: "bonus", word } : { ok: false, reason: "not-word", word };
+}
+
+/**
+ * Distinct bonus words in a state, each re-checked against the dictionary here (never trusted from the
+ * client). Returns null when any bonus entry is malformed, not a real word, or a repeat.
+ */
+export function bonusWords(p: CoilPuzzle, s: CoilSolution, state: CoilState): string[] | null {
+  const list = state?.bonus;
+  if (list === undefined) return [];
+  if (!Array.isArray(list)) return null;
+  const out: string[] = [];
+  for (const path of list) {
+    const r = checkGuess(p, s, path as CoilGuess);
+    if (!r.bonus || out.includes(r.word)) return null;
+    out.push(r.word);
+  }
+  return out;
 }
 
 function matched(p: CoilPuzzle, s: CoilSolution, state: CoilState): Set<number> | null {
@@ -276,6 +293,7 @@ function matched(p: CoilPuzzle, s: CoilSolution, state: CoilState): Set<number> 
 export function verify(p: CoilPuzzle, s: CoilSolution, state: CoilState): VerifyResult {
   const got = matched(p, s, state);
   if (!got) return { ok: false, progress: 0, reason: "malformed or wrong path" };
+  if (!bonusWords(p, s, state)) return { ok: false, progress: 0, reason: "invalid bonus word" };
   const progress = got.size / s.words.length;
   return got.size === s.words.length ? { ok: true, progress: 1 } : { ok: false, progress, reason: "incomplete" };
 }

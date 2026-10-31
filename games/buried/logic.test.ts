@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { createRng } from "@/lib/rng";
 import type { Difficulty } from "@/games/types";
+import { fromView, toView, viewDims } from "@/games/_shared/rotate";
 import logic, {
+  bonusWords,
   checkGuess,
   contentCount,
   DIRS_FOR,
@@ -16,7 +18,7 @@ import logic, {
   verify,
 } from "./logic";
 import { CONTENT, needsReview } from "./content";
-import { isStraight, leftovers, lineBetween, snapLine, splitPhrase, wordOn } from "./rules";
+import { isStraight, leftovers, lineBetween, snapLine, splitPhrase, wordOn, type BuriedPuzzle, type BuriedSolution } from "./rules";
 
 const DIFFS: Difficulty[] = ["easy", "medium", "hard", "expert", "mega"];
 
@@ -93,6 +95,75 @@ describe("buried lines and verification", () => {
     expect(checkGuess(puzzle, solution, p0.cells.slice().reverse())).toEqual({ ok: true, word: p0.word });
     expect(checkGuess(puzzle, solution, p0.cells.slice(0, -1))).toEqual({ ok: false });
     expect(checkGuess(puzzle, solution, [0, 2])).toEqual({ ok: false });
+  });
+
+  describe("bonus words", () => {
+    // row 0 reads LAKE (off the list), row 1 hides CAKE; X, Q, Z, J are filler
+    const p: BuriedPuzzle = {
+      ...puzzle,
+      rows: 2,
+      cols: 7,
+      letters: [..."LAKEXQZ", ..."CAKEJJJ"],
+      words: ["CAKE"],
+      phraseShape: [3, 3],
+    };
+    const s: BuriedSolution = { placements: [{ word: "CAKE", cells: [7, 8, 9, 10] }], phrase: "XQZ JJJ" };
+
+    it("counts a real off-list word on a straight line as a bonus, read either way", () => {
+      expect(checkGuess(p, s, [0, 1, 2, 3])).toEqual({ ok: false, bonus: true, word: "LAKE" });
+      expect(checkGuess(p, s, [3, 2, 1, 0])).toEqual({ ok: false, bonus: true, word: "LAKE" });
+      expect(checkGuess(p, s, [7, 8, 9, 10])).toEqual({ ok: true, word: "CAKE" });
+      // too short, not a word, or not straight: no bonus
+      expect(checkGuess(p, s, [0, 1, 2])).toEqual({ ok: false });
+      expect(checkGuess(p, s, [3, 4, 5, 6])).toEqual({ ok: false });
+      expect(checkGuess(p, s, [0, 8, 2, 3])).toEqual({ ok: false });
+      // a listed word is never a bonus, even off its spot
+      expect(checkGuess({ ...p, words: ["CAKE", "LAKE"] }, s, [0, 1, 2, 3])).toEqual({ ok: false });
+    });
+
+    it("verify re-checks bonus words, never lets them clear the board, and keeps old saves valid", () => {
+      expect(bonusWords(p, s, { found: [], bonus: [[3, 2, 1, 0]] })).toEqual(["LAKE"]);
+      expect(verify(p, s, { found: [], bonus: [[0, 1, 2, 3]] })).toMatchObject({ ok: false, progress: 0, reason: "incomplete" });
+      expect(verify(p, s, { found: [[7, 8, 9, 10]], bonus: [[0, 1, 2, 3]] })).toEqual({ ok: true, progress: 1 });
+      expect(verify(p, s, { found: [[7, 8, 9, 10]] })).toEqual({ ok: true, progress: 1 });
+      // bonus words never count as found words
+      expect(verify(p, s, { found: [[0, 1, 2, 3]] }).ok).toBe(false);
+      // forged, repeated or malformed bonus entries are rejected
+      expect(verify(p, s, { found: [[7, 8, 9, 10]], bonus: [[3, 4, 5, 6]] }).ok).toBe(false);
+      expect(verify(p, s, { found: [[7, 8, 9, 10]], bonus: [[7, 8, 9, 10]] }).ok).toBe(false);
+      expect(
+        verify(p, s, {
+          found: [[7, 8, 9, 10]],
+          bonus: [
+            [0, 1, 2, 3],
+            [3, 2, 1, 0],
+          ],
+        }).ok,
+      ).toBe(false);
+      expect(verify(p, s, { found: [[7, 8, 9, 10]], bonus: "x" } as never).ok).toBe(false);
+      // leftovers ignore bonus lines, so the secret phrase is unchanged
+      expect(leftovers(p, [[7, 8, 9, 10]])).toBe("LAKEXQZJJJ");
+    });
+  });
+
+  it("rotating the view maps taps back to the same cells and keeps lines straight", () => {
+    const { rows, cols } = puzzle;
+    for (let t = 0; t < 4; t++) {
+      const [vr, vc] = viewDims(rows, cols, t);
+      for (let i = 0; i < rows * cols; i++) {
+        const [r, c] = toView(i, rows, cols, t);
+        expect(r < vr && c < vc).toBe(true);
+        expect(fromView(r, c, rows, cols, t)).toBe(i);
+      }
+      // every hidden word, tapped end to end on the rotated view, snaps to the same line and checks out
+      for (const pl of solution.placements) {
+        const [ar, ac] = toView(pl.cells[0], rows, cols, t);
+        const [br, bc] = toView(pl.cells[pl.cells.length - 1], rows, cols, t);
+        const line = snapLine(fromView(ar, ac, rows, cols, t), fromView(br, bc, rows, cols, t), rows, cols);
+        expect(line).toEqual(pl.cells);
+        expect(checkGuess(puzzle, solution, line)).toEqual({ ok: true, word: pl.word });
+      }
+    }
   });
 
   it("verifies all words and rejects repeats, wrong lines and junk", () => {

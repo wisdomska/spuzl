@@ -6,9 +6,11 @@
  */
 import type { Difficulty, Generated, Hint, VerifyResult } from "@/games/types";
 import type { GuessLogic } from "@/games/_shared/guess";
+import { isWord } from "@/games/_shared/words";
 import { createRng, type Rng } from "@/lib/rng";
 import { CONTENT } from "./content";
 import {
+  BONUS_MIN,
   COLS,
   isStraight,
   type BuriedCheck,
@@ -155,11 +157,36 @@ export function generate(rng: Rng, difficulty: Difficulty): Generated<BuriedPuzz
 
 const sameSet = (a: number[], b: number[]) => a.length === b.length && a.every((x) => b.includes(x));
 
-/** Pure check of a dragged line against the hidden placements. */
+/**
+ * Pure check of a dragged line against the hidden placements. A line that is not a hidden word but reads
+ * as a real word (either way, 4+ letters, not one of the listed words) comes back as a bonus.
+ */
 export function checkGuess(p: BuriedPuzzle, s: BuriedSolution, guess: BuriedGuess): BuriedCheck {
   if (!isStraight(guess, p.rows, p.cols)) return { ok: false };
   const hit = s.placements.find((pl) => sameSet(pl.cells, guess));
-  return hit ? { ok: true, word: hit.word } : { ok: false };
+  if (hit) return { ok: true, word: hit.word };
+  if (guess.length < BONUS_MIN) return { ok: false };
+  const fwd = guess.map((i) => p.letters[i]).join("");
+  const back = [...fwd].reverse().join("");
+  const word = [fwd, back].find((w) => isWord(w) && !p.words.includes(w));
+  return word ? { ok: false, bonus: true, word } : { ok: false };
+}
+
+/**
+ * Distinct bonus words in a state, each re-checked here against the dictionary (never trusted from the
+ * client). Returns null when any bonus entry is malformed, not a real word, or a repeat.
+ */
+export function bonusWords(p: BuriedPuzzle, s: BuriedSolution, state: BuriedState): string[] | null {
+  const list = state?.bonus;
+  if (list === undefined) return [];
+  if (!Array.isArray(list)) return null;
+  const out: string[] = [];
+  for (const path of list) {
+    const r = checkGuess(p, s, path);
+    if (!r.bonus || out.includes(r.word)) return null;
+    out.push(r.word);
+  }
+  return out;
 }
 
 function matched(p: BuriedPuzzle, s: BuriedSolution, state: BuriedState): Set<string> | null {
@@ -180,6 +207,7 @@ export function progress(p: BuriedPuzzle, s: BuriedSolution, state: BuriedState)
 export function verify(p: BuriedPuzzle, s: BuriedSolution, state: BuriedState): VerifyResult {
   const got = matched(p, s, state);
   if (!got) return { ok: false, progress: 0, reason: "malformed or wrong line" };
+  if (!bonusWords(p, s, state)) return { ok: false, progress: 0, reason: "invalid bonus word" };
   return got.size === s.placements.length
     ? { ok: true, progress: 1 }
     : { ok: false, progress: got.size / s.placements.length, reason: "incomplete" };

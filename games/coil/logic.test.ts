@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { createRng } from "@/lib/rng";
 import type { Difficulty } from "@/games/types";
+import { fromView, toView, viewDims } from "@/games/_shared/rotate";
 import logic, {
+  bonusWords,
   checkGuess,
   contentCount,
   countSolutions,
@@ -15,7 +17,7 @@ import logic, {
   verify,
 } from "./logic";
 import { CONTENT, needsReview } from "./content";
-import { adjacent, COLS, ROWS, sameCells, spell, validPath } from "./rules";
+import { adjacent, COLS, ROWS, sameCells, spell, validPath, type CoilState } from "./rules";
 
 const DIFFS: Difficulty[] = ["easy", "medium", "hard", "expert", "mega"];
 
@@ -123,7 +125,77 @@ describe("coil guesses and verification", () => {
         [0, 1, 2, 3],
       ],
     };
-    expect(checkGuess(p3, s3, [0, 1, 2, 3])).toMatchObject({ ok: false, reason: "off-theme", word: "LAKE" });
+    expect(checkGuess(p3, s3, [0, 1, 2, 3])).toEqual({ ok: false, bonus: true, reason: "bonus", word: "LAKE" });
+  });
+
+  describe("bonus words", () => {
+    const p = { ...puzzle, rows: 2, cols: 4, letters: ["L", "A", "K", "E", "C", "A", "K", "E"], count: 2 };
+    const s = {
+      words: ["CAKE", "WXYZ"],
+      paths: [
+        [4, 5, 6, 7],
+        [0, 1, 2, 3],
+      ],
+    };
+
+    it("counts a real off-theme word as a bonus, never as a found word or a mistake", () => {
+      const r = checkGuess(p, s, [0, 1, 2, 3]);
+      expect(r.ok).toBe(false);
+      expect(r).toMatchObject({ bonus: true, word: "LAKE" });
+      // a non-word and a theme word are never bonuses
+      expect(checkGuess(p, s, [3, 2, 1, 0]).bonus).toBeUndefined();
+      expect(checkGuess(p, s, [4, 5, 6, 7])).toMatchObject({ ok: true, word: "CAKE" });
+      expect(bonusWords(p, s, { found: [], bonus: [[0, 1, 2, 3]] })).toEqual(["LAKE"]);
+    });
+
+    it("verify re-checks bonus words on the server and they never complete the puzzle", () => {
+      const half = verify(p, s, { found: [[4, 5, 6, 7]], bonus: [[0, 1, 2, 3]] });
+      expect(half).toMatchObject({ ok: false, reason: "incomplete" });
+      expect(half.progress).toBeCloseTo(0.5);
+      // older saves without the field still verify
+      expect(verify(puzzle, solution, { found: solution.paths })).toEqual({ ok: true, progress: 1 });
+      expect(verify(puzzle, solution, { found: solution.paths, bonus: [] })).toEqual({ ok: true, progress: 1 });
+      // forged, repeated or malformed bonus entries are rejected
+      expect(verify(p, s, { found: [[4, 5, 6, 7]], bonus: [[3, 2, 1, 0]] }).ok).toBe(false);
+      expect(verify(p, s, { found: [[4, 5, 6, 7]], bonus: [[4, 5, 6, 7]] }).ok).toBe(false);
+      expect(
+        verify(p, s, {
+          found: [[4, 5, 6, 7]],
+          bonus: [
+            [0, 1, 2, 3],
+            [0, 1, 2, 3],
+          ],
+        }).ok,
+      ).toBe(false);
+      expect(verify(p, s, { found: [], bonus: "x" } as unknown as CoilState).ok).toBe(false);
+      expect(bonusWords(p, s, { found: [] })).toEqual([]);
+    });
+  });
+
+  it("rotating the view maps every cell back to the same coordinates and keeps neighbours", () => {
+    for (let t = 0; t < 4; t++) {
+      const [vr, vc] = viewDims(ROWS, COLS, t);
+      expect(vr * vc).toBe(ROWS * COLS);
+      const seen = new Set<number>();
+      for (let i = 0; i < ROWS * COLS; i++) {
+        const [r, c] = toView(i, ROWS, COLS, t);
+        expect(r).toBeGreaterThanOrEqual(0);
+        expect(c).toBeGreaterThanOrEqual(0);
+        expect(r).toBeLessThan(vr);
+        expect(c).toBeLessThan(vc);
+        expect(fromView(r, c, ROWS, COLS, t)).toBe(i);
+        seen.add(r * vc + c);
+        // a traced path stays a path: neighbours in the puzzle are neighbours on screen
+        for (let j = 0; j < ROWS * COLS; j++) {
+          const [r2, c2] = toView(j, ROWS, COLS, t);
+          expect(Math.abs(r - r2) <= 1 && Math.abs(c - c2) <= 1 && i !== j).toBe(adjacent(i, j, COLS));
+        }
+      }
+      expect(seen.size).toBe(ROWS * COLS);
+    }
+    // a guess built from taps on a rotated view is the same guess as on the plain view
+    const tapped = solution.paths[0].map((i) => toView(i, ROWS, COLS, 1)).map(([r, c]) => fromView(r, c, ROWS, COLS, 1));
+    expect(checkGuess(puzzle, solution, tapped)).toMatchObject({ ok: true, index: 0 });
   });
 
   it("verifies the full set, rejects near misses and malformed state", () => {

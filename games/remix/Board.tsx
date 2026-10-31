@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { motion, useReducedMotion } from "motion/react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { play } from "@/lib/audio";
@@ -24,6 +25,7 @@ export default function RemixBoard({ puzzle, initialState, hint, disabled, mode,
   const [flash, setFlash] = useState(false);
   const [tapN, setTapN] = useState(0);
   const streak = useRef(0);
+  const reduce = useReducedMotion();
   const done = answers.length >= ROUNDS;
   const off = disabled || done || busy || flash;
   const letters = puzzle.rounds[round].letters;
@@ -208,8 +210,11 @@ export default function RemixBoard({ puzzle, initialState, hint, disabled, mode,
           {order.map((i) => {
             const used = picks.includes(i);
             return (
-              <button
+              // stable key per tile, so Shuffle slides tiles to their new places instead of redrawing them
+              <motion.button
                 key={`${round}-${i}`}
+                layout={reduce ? false : "position"}
+                transition={{ type: "spring", duration: 0.3, bounce: 0.15 }}
                 type="button"
                 role="gridcell"
                 onClick={() => pick(i)}
@@ -227,7 +232,7 @@ export default function RemixBoard({ puzzle, initialState, hint, disabled, mode,
                 }}
               >
                 {letters[i]}
-              </button>
+              </motion.button>
             );
           })}
         </div>

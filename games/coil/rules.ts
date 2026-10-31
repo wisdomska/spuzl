@@ -26,14 +26,18 @@ export interface CoilSolution {
 /** Found word paths, in the order they were found. */
 export interface CoilState {
   found: number[][];
+  /** Bonus word paths: real words that are not theme words. Shown only, never needed to clear. */
+  bonus?: number[][];
 }
 
 /** A guess is a traced path of cell indices. */
 export type CoilGuess = number[];
 
 export type CoilCheck =
-  | { ok: true; index: number; word: string; path: number[] }
-  | { ok: false; reason: "path" | "short" | "spot" | "off-theme" | "not-word"; word?: string };
+  | { ok: true; bonus?: undefined; index: number; word: string; path: number[] }
+  /** a real word that is not a theme word: kept as a bonus, never a mistake, never clears the board */
+  | { ok: false; bonus: true; reason: "bonus"; word: string }
+  | { ok: false; bonus?: undefined; reason: "path" | "short" | "spot" | "not-word"; word?: string };
 
 export const MIN_LEN = 4;
 
@@ -77,6 +81,6 @@ export const REASON_COPY: Record<Exclude<CoilCheck, { ok: true }>["reason"], str
   path: "Letters must touch, in any direction.",
   short: "Words need 4 letters or more.",
   spot: "Right word, but it lives somewhere else.",
-  "off-theme": "Real word, not on theme.",
+  bonus: "Bonus word! Real word, not on theme.",
   "not-word": "Not a word we know.",
 };
