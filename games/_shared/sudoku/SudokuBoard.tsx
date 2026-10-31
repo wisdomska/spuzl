@@ -10,6 +10,7 @@ import { popClass, shakeClass, waveStyle } from "@/games/_shared/logiclab/fx";
 import { sudoku as t } from "@/lib/copy/sudoku";
 import { analyze, emptyState, geometry, type SudokuPuzzle, type SudokuState } from "./logic";
 import { boundaryTracks, boxIndex, digitCounts, trackList } from "./layout";
+import { statusLine, type StatusLine } from "./status";
 
 /** Gap between cells inside a box. */
 const GAP = 2;
@@ -63,6 +64,8 @@ export function SudokuBoard({
   const [done, setDone] = useState(false);
   const streak = useRef(0);
   const stRef = useRef(st);
+  // The shell shows one feedback line; only replace it when the text or tone actually changes.
+  const shown = useRef("");
   const cell = useSudokuCell(n);
   const a = analyze(puzzle, st.values);
   const given = (i: number) => puzzle.givens[i] !== 0;
@@ -75,6 +78,18 @@ export function SudokuBoard({
     setHist((h) => [...h, prev]);
   }, []);
 
+  const say = useCallback(
+    (line: StatusLine) => {
+      const key = `${line.tone}|${line.text}`;
+      if (shown.current === key) return;
+      shown.current = key;
+      api.feedback(line.text, line.tone, line.icon);
+    },
+    [api],
+  );
+  /** One status line for a position: cleared, else the first broken rule, else the placed count. */
+  const sayStatus = useCallback((values: number[]) => say(statusLine(analyze(puzzle, values), n * n)), [say, puzzle, n]);
+
   const where = (i: number) => t.where(Math.floor(i / n) + 1, (i % n) + 1, boxIndex(i, n, puzzle.boxW, puzzle.boxH) + 1);
 
   /** Place (or clear with 0) a digit in a cell. */
@@ -82,7 +97,7 @@ export function SudokuBoard({
     (i: number, d: number) => {
       if (locked || i < 0) return;
       if (given(i)) {
-        api.feedback(t.givenLocked, "info", "lock-simple");
+        say({ text: t.givenLocked, tone: "info", icon: "lock-simple" });
         return;
       }
       const prev = stRef.current;
@@ -100,28 +115,31 @@ export function SudokuBoard({
       const after = analyze(puzzle, values);
       const broke = d !== 0 && after.bad.has(i) && after.bad.size > before.bad.size;
       setLast(i);
-      setTapN((t) => t + 1);
+      setTapN((k) => k + 1);
       if (broke) {
         streak.current = 0;
         setShakeN((k) => k + 1);
+        // ruleBreak owns the feedback line here (shake, buzz, danger tone); remember it as shown.
         api.ruleBreak(after.message);
+        shown.current = `danger|${after.message}`;
         api.announce(`${where(i)}, ${d}. ${after.message}`);
-      } else if (after.clear) {
-        setDone(true);
-        play("jingle");
-        api.feedback(t.cleared, "success", "check-circle");
-        api.announce(t.clearedShort);
       } else {
-        if (d) streak.current++;
-        play("pop", { step: streak.current });
-        api.announce(`${where(i)}, ${d || t.cellCleared}`);
-        if (after.bad.size === 0) api.feedback(t.placed(after.filled, n * n), "info", "grid-nine");
+        if (after.clear) {
+          setDone(true);
+          play("jingle");
+          api.announce(t.clearedShort);
+        } else {
+          if (d) streak.current++;
+          play("pop", { step: streak.current });
+          api.announce(`${where(i)}, ${d || t.cellCleared}`);
+        }
+        say(statusLine(after, n * n));
       }
       api.onMove(next, { correctStreak: streak.current, mistake: broke });
       if (after.clear) api.onSolved(next);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [api, locked, n, puzzle, push],
+    [api, locked, n, puzzle, push, say],
   );
 
   const toggleNote = useCallback(
@@ -133,7 +151,7 @@ export function SudokuBoard({
       const next = { values: prev.values, notes };
       push(next);
       setLast(i);
-      setTapN((t) => t + 1);
+      setTapN((k) => k + 1);
       play("tick");
       api.announce(`${where(i)}, ${t.noteToggled(d, (notes[i] & (1 << (d - 1))) !== 0)}`);
       api.onMove(next);
@@ -145,13 +163,13 @@ export function SudokuBoard({
   const enter = useCallback(
     (d: number) => {
       if (selected < 0) {
-        api.feedback(t.tapCellFirst, "info", "hand-pointing");
+        say({ text: t.tapCellFirst, tone: "info", icon: "hand-pointing" });
         return;
       }
       if (notesMode && d) toggleNote(selected, d);
       else place(selected, d);
     },
-    [api, notesMode, place, selected, toggleNote],
+    [say, notesMode, place, selected, toggleNote],
   );
 
   const erase = useCallback(() => {
@@ -176,9 +194,10 @@ export function SudokuBoard({
       stRef.current = prev;
       setSt(prev);
       api.onMove(prev);
+      sayStatus(prev.values);
       return h.slice(0, -1);
     });
-  }, [api]);
+  }, [api, sayStatus]);
 
   useEffect(() => {
     api.setControls([
@@ -196,7 +215,7 @@ export function SudokuBoard({
   }, [api, undo, erase, hist.length, done, notesMode]);
 
   useEffect(() => {
-    api.feedback(mode === "tutorial" ? t.startTutorial : t.start, "info", "hand-pointing");
+    say({ text: mode === "tutorial" ? t.startTutorial : t.start, tone: "info", icon: "hand-pointing" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
