@@ -65,4 +65,21 @@ export const quick = {
     slipsSay: (n: number, of: number) => `${n} of ${of} slips left`,
     groupSay: (label: string, level: string, words: string[]) => `${level} group: ${label}. ${words.join(", ")}.`,
   },
+  merge: {
+    time: "Time",
+    hurry: "Last 20 seconds",
+    timeBar: "Time left in this run",
+    /** coarse words for the time bar: the header holds the one exact clock */
+    timeSay: (ms: number) => {
+      const s = Math.ceil(ms / 1000);
+      if (s <= 0) return "Time is up";
+      if (s <= 20) return "Under 20 seconds left";
+      if (s <= 60) return "Under a minute left";
+      const m = Math.ceil(s / 60);
+      return `Under ${m} ${plural(m, "minute")} left`;
+    },
+    bestTile: "Best tile",
+    total: "Total",
+    swipeToStart: "Swipe to start the clock.",
+  },
 } as const;

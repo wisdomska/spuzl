@@ -4,12 +4,13 @@ import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type Poin
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { play } from "@/lib/audio";
-import { formatClock } from "@/lib/format";
+import { quick } from "@/lib/copy/quick";
 import { best, canMove, DIR_WORD, initialBoard, slide, total, type Dir, type MergePuzzle, type MergeState } from "./logic";
 
 const GAP = 8;
 const PAD = 8;
 const INK = "#0E0F1A";
+const t = quick.merge;
 const KEY_DIR: Record<string, Dir> = { ArrowUp: "U", ArrowDown: "D", ArrowLeft: "L", ArrowRight: "R", w: "U", s: "D", a: "L", d: "R" };
 
 /** Tile fills climb through the world palette; the number is always printed, so colour is never alone. */
@@ -40,8 +41,9 @@ interface Tile {
 }
 
 /**
- * Merge board: swipe or use the arrow keys. A 3 minute countdown runs while the board is active
- * (it pauses with the game). Time up or no moves left ends the run and submits the move log.
+ * Merge board: swipe or use the arrow keys. A 3 minute limit runs while the board is active (it pauses
+ * with the game), shown as a draining bar in the card: the shell header holds the only clock. Time up
+ * or no moves left ends the run and submits the move log.
  */
 export default function MergeBoard({ puzzle, initialState, hint, disabled, mode, api }: BoardProps<MergePuzzle, MergeState>) {
   const n = puzzle.size;
@@ -177,7 +179,7 @@ export default function MergeBoard({ puzzle, initialState, hint, disabled, mode,
 
   useEffect(() => {
     api.feedback(
-      mode === "tutorial" ? "Swipe to slide every tile. Equal tiles merge." : "Swipe to start the clock.",
+      mode === "tutorial" ? "Swipe to slide every tile. Equal tiles merge." : t.swipeToStart,
       "info",
       mode === "tutorial" ? "hand-pointing" : "arrows-merge",
     );
@@ -204,6 +206,8 @@ export default function MergeBoard({ puzzle, initialState, hint, disabled, mode,
   };
 
   const left = Math.max(0, puzzle.limitMs - elapsed);
+  const frac = puzzle.limitMs > 0 ? left / puzzle.limitMs : 0;
+  const hurry = left < 20_000 && moveN > 0;
   const hintDir = typeof hint?.target === "string" ? (hint.target as Dir) : null;
   const size = n * pitch - GAP + PAD * 2;
   const top = board.length ? best(board) : 0;
@@ -212,25 +216,42 @@ export default function MergeBoard({ puzzle, initialState, hint, disabled, mode,
     <div className="flex flex-col gap-3" style={{ width }}>
       <div className="flex items-stretch gap-2">
         <div className="flex flex-1 flex-col rounded-[14px] px-3 py-2" style={{ background: "var(--surface)" }}>
-          <span className="text-muted text-[13px] font-medium">Time left</span>
-          <span
-            className="num text-[24px] leading-tight font-semibold"
-            style={{ color: left < 20_000 && moveN ? "var(--danger)" : "var(--text)" }}
-            role="timer"
-            aria-label={`Time left ${formatClock(left)}`}
-          >
-            {formatClock(left)}
-          </span>
-        </div>
-        <div className="flex flex-1 flex-col rounded-[14px] px-3 py-2" style={{ background: "var(--surface)" }}>
-          <span className="text-muted text-[13px] font-medium">Best tile</span>
+          <span className="text-muted text-[13px] font-medium">{t.bestTile}</span>
           <span className="num text-[24px] leading-tight font-semibold text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]">
             {top}
           </span>
         </div>
         <div className="flex flex-1 flex-col rounded-[14px] px-3 py-2" style={{ background: "var(--surface)" }}>
-          <span className="text-muted text-[13px] font-medium">Total</span>
+          <span className="text-muted text-[13px] font-medium">{t.total}</span>
           <span className="num text-[24px] leading-tight font-semibold">{board.length ? total(board) : 0}</span>
+        </div>
+      </div>
+      {/* The run's time limit: a bar, never a second clock (the header holds the game's one clock). */}
+      <div className="flex items-center gap-3">
+        <span
+          className="text-muted min-w-[56px] text-[13px] font-medium whitespace-nowrap"
+          style={hurry ? { color: "var(--danger)" } : undefined}
+        >
+          {hurry ? t.hurry : t.time}
+        </span>
+        <div
+          className="h-2 flex-1 overflow-hidden rounded-full"
+          style={{ background: "var(--surface)" }}
+          role="progressbar"
+          aria-label={t.timeBar}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(100 * frac)}
+          aria-valuetext={t.timeSay(left)}
+        >
+          <div
+            className="h-full w-full origin-left rounded-full"
+            style={{
+              background: hurry ? "var(--danger)" : "var(--world)",
+              transform: `scaleX(${frac})`,
+              transition: running ? "transform 200ms linear" : undefined,
+            }}
+          />
         </div>
       </div>
 

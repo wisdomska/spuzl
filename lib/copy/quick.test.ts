@@ -40,3 +40,14 @@ describe("quick copy: quads", () => {
     expect(quick.quads.found("Ghana regions", "Easy", 4)).toBe("Ghana regions (Easy). All four groups.");
   });
 });
+
+describe("quick copy: merge time bar", () => {
+  it("describes the time left in words, never as a clock", () => {
+    expect(quick.merge.timeSay(180_000)).toBe("Under 3 minutes left");
+    expect(quick.merge.timeSay(61_000)).toBe("Under 2 minutes left");
+    expect(quick.merge.timeSay(60_000)).toBe("Under a minute left");
+    expect(quick.merge.timeSay(15_000)).toBe("Under 20 seconds left");
+    expect(quick.merge.timeSay(0)).toBe("Time is up");
+    expect(quick.merge.timeSay(95_000)).not.toMatch(/\d+:\d{2}/);
+  });
+});
