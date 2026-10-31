@@ -9,6 +9,13 @@ export interface CosmeticDef {
   unlockLevel?: number;
 }
 
+/** Board themes: the backdrop and frame around a game board. Cells keep their game colours (they carry meaning). */
+export const BOARD_THEMES: Record<string, { bg: string; cell: string; mark: string }> = {
+  midnight: { bg: "#0A0B1E", cell: "#1B1E3A", mark: "#8B7CFF" },
+  sand: { bg: "#C9A66B", cell: "#E8D3A6", mark: "#B4520F" },
+  neon: { bg: "#07070C", cell: "#14142A", mark: "#B8F23A" },
+};
+
 export const COSMETICS: CosmeticDef[] = [
   { id: "freeze", type: "freeze", name: "Streak Freeze", price: 200, rarity: "common", payload: { icon: "snowflake" } },
   { id: "hint-pack-5", type: "hint_pack", name: "Free play hint pack", price: 50, rarity: "common", payload: { hints: 5 } },

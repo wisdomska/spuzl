@@ -9,16 +9,13 @@ import { ErrorState, PageTitle, PillTabs } from "@/components/meta/ui";
 import { SpuzWear } from "@/components/meta/SpuzWear";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
+import { BOARD_THEMES } from "@/lib/gamification/cosmetics";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { SHOP_TABS, purchaseState, tabOf, type ShopTab } from "@/lib/meta";
 import { formatNumber } from "@/lib/format";
 import { play } from "@/lib/audio";
 
-const THEMES: Record<string, { bg: string; cell: string; mark: string }> = {
-  midnight: { bg: "#0A0B1E", cell: "#1B1E3A", mark: "#8B7CFF" },
-  sand: { bg: "#C9A66B", cell: "#E8D3A6", mark: "#B4520F" },
-  neon: { bg: "#07070C", cell: "#14142A", mark: "#B8F23A" },
-};
+const THEMES = BOARD_THEMES;
 
 function itemIcon(i: ShopItem): { icon: string; color: string } {
   if (i.type === "hat")

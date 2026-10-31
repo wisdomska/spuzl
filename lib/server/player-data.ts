@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { levelFromXp, flameTier } from "@/lib/rewards";
 import { rankFor } from "@/lib/rating/glicko2";
 import { GAMES, LAUNCH_IDS } from "@/lib/catalog";
+import { COSMETICS } from "@/lib/gamification/cosmetics";
 import { hasLogic } from "@/games/logic-registry";
 import { dailyNumber, msToReset } from "@/lib/format";
 import { todayGmt } from "@/lib/api/server";
@@ -23,7 +24,7 @@ export interface PlayerRow {
  */
 export async function loadMe(user: User, player: PlayerRow, admin: SupabaseClient = supabaseAdmin()): Promise<Me> {
   const today = todayGmt();
-  const [{ data: profile }, { data: streak }, { data: ratings }, { data: cleared }] = await Promise.all([
+  const [{ data: profile }, { data: streak }, { data: ratings }, { data: cleared }, { data: equipped }] = await Promise.all([
     admin
       .from("players")
       .select("nickname, avatar_color, skin, hat, title, age_band, country, city, settings, hide_activity, created_at")
@@ -36,7 +37,9 @@ export async function loadMe(user: User, player: PlayerRow, admin: SupabaseClien
       .maybeSingle(),
     admin.from("ratings").select("track, rating").eq("player_id", player.id),
     admin.from("daily_results").select("game_id, time_ms").eq("player_id", player.id).eq("date", today),
+    admin.from("inventory").select("cosmetic_id").eq("player_id", player.id).eq("equipped", true),
   ]);
+  const theme = COSMETICS.find((c) => c.type === "board_theme" && (equipped ?? []).some((e) => e.cosmetic_id === c.id));
   const lv = levelFromXp(player.xp);
   const worldRatings = (ratings ?? []).filter((r) => !r.track.startsWith("duel") && !r.track.startsWith("board:"));
   const overall = worldRatings.length ? worldRatings.reduce((s, r) => s + Number(r.rating), 0) / worldRatings.length : 1000;
@@ -52,6 +55,7 @@ export async function loadMe(user: User, player: PlayerRow, admin: SupabaseClien
     sparks: player.sparks,
     streak: { current: 0, best: 0, freezes_held: 0, last_clear_date: null, ...streak, flame: flameTier(streak?.current ?? 0) },
     rank: { rating: overall, ...rankFor(overall) },
+    boardTheme: theme ? String(theme.payload.theme) : null,
     ratings: Object.fromEntries((ratings ?? []).map((r) => [r.track, Number(r.rating)])),
     today: {
       date: today,

@@ -8,6 +8,8 @@ import { WORLD_BY_ID } from "@/lib/catalog";
 import { IconButton } from "@/components/ui/IconButton";
 import { Icon } from "@/components/ui/Icon";
 import { useSettings } from "@/lib/settings/store";
+import { useMe } from "@/lib/client/api";
+import { BOARD_THEMES } from "@/lib/gamification/cosmetics";
 import { play } from "@/lib/audio";
 import { formatClock } from "@/lib/format";
 import { PauseOverlay } from "./PauseOverlay";
@@ -74,6 +76,9 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   } = props;
   const world = WORLD_BY_ID[meta.world];
   const relaxed = useSettings((s) => s.relaxed);
+  // Equipped Shop board theme: colours the backdrop and frame around the board, never the cells.
+  const boardTheme = useMe().data?.boardTheme ?? null;
+  const theme = boardTheme ? BOARD_THEMES[boardTheme] : undefined;
 
   const [elapsed, setElapsed] = useState(0);
   const [started, setStarted] = useState(false);
@@ -214,7 +219,12 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
       <p className="text-muted px-[18px] text-[15px] leading-[1.4]">{meta.rule}</p>
 
       {/* 4 Board slot */}
-      <main className="relative z-0 flex justify-center p-[18px]" aria-label={`${meta.name} board`}>
+      <main
+        className={`relative z-0 flex justify-center p-[18px] ${theme ? "rounded-[26px]" : ""}`}
+        style={theme ? { background: theme.bg, boxShadow: `inset 0 0 0 2px ${theme.mark}` } : undefined}
+        data-board-theme={theme ? boardTheme! : undefined}
+        aria-label={`${meta.name} board`}
+      >
         <Board
           {...extra}
           extra={extra}

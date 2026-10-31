@@ -72,6 +72,8 @@ export interface Me {
   };
   rank: { rating: number; name: string; division: string; emblem: string };
   ratings: Record<string, number>;
+  /** equipped Shop board theme (backdrop and frame around boards) */
+  boardTheme?: string | null;
   today: { date: string; cleared: Record<string, number>; featured: number; featuredCleared: number };
 }
 
