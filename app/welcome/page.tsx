@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Spuz } from "@/components/brand/Spuz";
@@ -13,7 +13,7 @@ import { analyze, type CrownfallState } from "@/games/crownfall/logic";
 import type { BoardApi } from "@/games/types";
 import { nicknameProblem } from "@/lib/validation/nickname";
 import { api, ensureSession, finishAttempt, startAttempt } from "@/lib/client/api";
-import { readOnboarding, writeOnboarding } from "@/lib/client/onboarding";
+import { writeOnboarding } from "@/lib/client/onboarding";
 import { formatShort } from "@/lib/format";
 import { play, duck } from "@/lib/audio";
 import { PATTERNS, haptic } from "@/lib/haptics";
@@ -64,11 +64,7 @@ export default function Welcome() {
   const [error, setError] = useState<string | null>(null);
   const t0 = useRef<number | null>(null);
   const clear = useRef<{ state: CrownfallState; ms: number } | null>(null);
-
-  useEffect(() => {
-    const o = readOnboarding();
-    if (o.ageBand) setAge(o.ageBand);
-  }, []);
+  const [clearMs, setClearMs] = useState(0);
 
   const a = analyze(TUTORIAL_PUZZLE, cells);
   const rules = [
@@ -85,6 +81,7 @@ export default function Welcome() {
       },
       onSolved(state) {
         clear.current = { state, ms: Math.round(performance.now() - (t0.current ?? performance.now())) };
+        setClearMs(clear.current.ms);
         setTimeout(() => {
           setStep("firstclear");
           duck(1200);
@@ -247,7 +244,7 @@ export default function Welcome() {
           </Screen>
         )}
 
-        {step === "firstclear" && <FirstClear key="firstclear" ms={clear.current?.ms ?? 0} onNext={() => setStep("nickname")} />}
+        {step === "firstclear" && <FirstClear key="firstclear" ms={clearMs} onNext={() => setStep("nickname")} />}
 
         {step === "nickname" && (
           <Screen key="nickname">

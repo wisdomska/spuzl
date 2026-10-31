@@ -39,12 +39,13 @@ export function ResultsScreen({
   onShare: () => void;
 }) {
   const reduce = useReducedMotion();
-  const [t, setT] = useState(reduce ? 1 : 0);
+  const [progress, setT] = useState(0);
   const [skipped, setSkipped] = useState(false);
   const instant = !!reduce || skipped;
+  const t = instant ? 1 : progress;
 
   useEffect(() => {
-    if (instant) return setT(1);
+    if (instant) return;
     play("coins");
     const start = performance.now();
     let raf = 0;

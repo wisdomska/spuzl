@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { GameShell } from "@/components/game/GameShell";
 import { BoardSkeleton } from "@/components/game/BoardSkeleton";
@@ -50,8 +50,9 @@ export function PlayScreen({ meta, initialMode, date }: { meta: GameMeta; initia
     if (me.isSuccess && me.data === null) router.replace(readOnboarding().introSeen ? "/welcome" : "/intro");
   }, [me.isSuccess, me.data, router]);
 
+  const beginRef = useRef<(m: Mode) => Promise<void>>(async () => {});
   const begin = useCallback(
-    async (m: Mode) => {
+    async (m: Mode): Promise<void> => {
       setPhase("loading");
       setResult(null);
       try {
@@ -63,7 +64,7 @@ export function PlayScreen({ meta, initialMode, date }: { meta: GameMeta; initia
       } catch (e) {
         if (e instanceof HttpError && e.code === "daily_done" && m === "daily") {
           setNotice("Today's Daily is done. Free play is open, no limit.");
-          return begin("free");
+          return beginRef.current("free");
         }
         setError(e instanceof HttpError ? (e.message ?? e.code) : "Could not load the puzzle.");
         setPhase("error");
@@ -71,11 +72,18 @@ export function PlayScreen({ meta, initialMode, date }: { meta: GameMeta; initia
     },
     [meta.id, date],
   );
-
   useEffect(() => {
-    if (me.data) void begin(initialMode);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [me.data?.id, meta.id]);
+    beginRef.current = begin;
+  }, [begin]);
+
+  // Start (or resume) once the player is known. Runs from a timer callback so a StrictMode double effect
+  // cancels the first start instead of creating two attempts.
+  const playerId = me.data?.id;
+  useEffect(() => {
+    if (!playerId) return;
+    const id = setTimeout(() => void beginRef.current(initialMode), 0);
+    return () => clearTimeout(id);
+  }, [playerId, meta.id, initialMode]);
 
   const onMove = useCallback(
     (state: unknown, elapsedMs: number) => {
@@ -123,13 +131,13 @@ export function PlayScreen({ meta, initialMode, date }: { meta: GameMeta; initia
         setCelebrations(buildCelebrations(res));
         setTimeout(() => {
           setFreeN((n) => n + 1);
-          void begin("free");
+          void beginRef.current("free");
         }, 1500);
         return;
       }
       setTimeout(() => setPhase("results"), 1100);
     },
-    [attempt, relaxed, qc, mode, freeN, begin],
+    [attempt, relaxed, qc, mode, freeN],
   );
 
   const onFailed = useCallback(
@@ -153,11 +161,12 @@ export function PlayScreen({ meta, initialMode, date }: { meta: GameMeta; initia
     [attempt],
   );
 
-  const label = useMemo(() => {
-    if (mode === "daily" && attempt?.date) return `Daily #${dailyNumber(attempt.date)}`;
-    if (mode === "archive" && attempt?.date) return `Archive #${dailyNumber(attempt.date)}`;
-    return `Free play ${freeN}`;
-  }, [mode, attempt?.date, freeN]);
+  const label =
+    mode === "daily" && attempt?.date
+      ? `Daily #${dailyNumber(attempt.date)}`
+      : mode === "archive" && attempt?.date
+        ? `Archive #${dailyNumber(attempt.date)}`
+        : `Free play ${freeN}`;
 
   if (phase === "results" && result) {
     return (
@@ -213,6 +222,7 @@ export function PlayScreen({ meta, initialMode, date }: { meta: GameMeta; initia
         </main>
       ) : (
         <GameShell
+          key={attempt.attemptId}
           meta={meta}
           Board={Board}
           puzzle={attempt.puzzle}

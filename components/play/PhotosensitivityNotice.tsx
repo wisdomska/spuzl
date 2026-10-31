@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 
@@ -8,14 +8,19 @@ const KEY = "spuzl.photosensitivity.ok";
 
 /** Shown once before the first action or flashing game (system layer, z 80). Flashing is capped at 2 Hz. */
 export function PhotosensitivityNotice() {
-  const [open, setOpen] = useState(false);
-  useEffect(() => {
-    try {
-      setOpen(localStorage.getItem(KEY) !== "1");
-    } catch {
-      setOpen(true);
-    }
-  }, []);
+  const needed = useSyncExternalStore(
+    () => () => {},
+    () => {
+      try {
+        return localStorage.getItem(KEY) !== "1";
+      } catch {
+        return true;
+      }
+    },
+    () => false,
+  );
+  const [dismissed, setDismissed] = useState(false);
+  const open = needed && !dismissed;
   if (!open) return null;
   return (
     <div
@@ -40,7 +45,7 @@ export function PhotosensitivityNotice() {
             try {
               localStorage.setItem(KEY, "1");
             } catch {}
-            setOpen(false);
+            setDismissed(true);
           }}
         >
           Got it

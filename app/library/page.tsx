@@ -24,7 +24,7 @@ export default function Library() {
         </Link>
         <div className="flex min-w-0 flex-col">
           <h1 className="font-display text-[24px] font-black">Play anytime</h1>
-          <p className="text-muted text-[14px] leading-[1.35]">Dailies are today's shared puzzle. Free play never runs out.</p>
+          <p className="text-muted text-[14px] leading-[1.35]">Dailies are today&apos;s shared puzzle. Free play never runs out.</p>
         </div>
       </header>
       <div role="tablist" aria-label="Filter by world" className="flex gap-1.5 overflow-x-auto px-4 pt-2 pb-1">
