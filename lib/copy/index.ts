@@ -28,6 +28,44 @@ export const en = {
     signInLeavesGuest: "Signing in to another account leaves this guest's progress on this phone behind.",
     backToSaving: "Back to saving this guest",
   },
+  shell: {
+    hintsLeft: (n: number) => (n === 1 ? "1 hint left" : `${n} hints left`),
+    hintConfirmTitle: "Use a hint?",
+    hintConfirmDaily: (keptPct: number) =>
+      keptPct >= 100
+        ? "Hints are free on today's Daily."
+        : keptPct === 50
+          ? "Daily XP is halved when you use a hint."
+          : keptPct === 0
+            ? "You won't earn Daily XP after using a hint."
+            : `You keep ${keptPct}% of the Daily XP after using a hint.`,
+    hintConfirmFree: "Free play hints come from your 3 per puzzle, then your hint packs. No XP is lost.",
+    cancel: "Cancel",
+    useHint: "Use hint",
+  },
+  comfort: {
+    title: "Comfort",
+    patterns: "Colour-blind patterns",
+    textSize: "Text size",
+    reducedMotion: "Reduced motion",
+    hideTimer: "Hide timer",
+    sound: "Sound",
+    haptics: "Haptics",
+    on: "On",
+    off: "Off",
+    system: "Like my phone",
+  },
+  play: {
+    another: (game: string) => `Another ${game}`,
+    backToGrid: "Back to the Grid",
+    cleared: "Cleared!",
+    accuracy: (pct: number) => `${pct}% accuracy`,
+    levelUp: (lv: number) => `Level ${lv}`,
+    rankUp: (rank: string, world: string) => `${rank} in ${world}`,
+    badge: (name: string) => `Badge: ${name}`,
+    streak: (days: number, sparks: number) => (sparks ? `${days}-day streak, +${sparks} Sparks` : `${days}-day streak`),
+    fullSpuzl: "Full Spuzl!",
+  },
   welcome: {
     helloTitle: "Akwaaba! Ready to play?",
     helloBody: "51 tiny games, a new Daily every day. Jump in as a guest, or sign in to keep your streak on every phone.",

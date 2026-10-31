@@ -13,6 +13,8 @@ import { BOARD_THEMES } from "@/lib/gamification/cosmetics";
 import { play } from "@/lib/audio";
 import { formatClock } from "@/lib/format";
 import { PauseOverlay } from "./PauseOverlay";
+import { HintConfirm, hintConfirmed, rememberHintConfirmed } from "./HintConfirm";
+import { copy } from "@/lib/copy";
 
 /**
  * The reusable 6-zone board template (Game Boards file):
@@ -45,6 +47,12 @@ export interface GameShellProps<P, St> {
   puzzleKey?: string | number;
   /** extra props passed straight to the board (e.g. `ghost` for Ghost Race) */
   extra?: Record<string, unknown>;
+  /** another overlay (How to play) is open: the clock stops, input pauses */
+  pausedExternally?: boolean;
+  /** replaces the tool bar after a clear (free play's compact result bar); the header stays */
+  endBar?: ReactNode;
+  /** solved: hold the board with a highlight (set by the parent while it waits for the server) */
+  celebrate?: boolean;
 }
 
 interface FeedbackState {
@@ -73,6 +81,9 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
     locked,
     puzzleKey,
     extra,
+    pausedExternally,
+    endBar,
+    celebrate,
   } = props;
   const world = WORLD_BY_ID[meta.world];
   const relaxed = useSettings((s) => s.relaxed);
@@ -89,6 +100,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   const [controls, setControls] = useState<ControlSpec[]>([]);
   const [feedback, setFeedback] = useState<FeedbackState>({ text: "", tone: "info", n: 0 });
   const [live, setLive] = useState("");
+  const [confirmHint, setConfirmHint] = useState(false);
   const stateRef = useRef<St | undefined>(initialState);
   const mistakes = useRef(0);
   const hintsUsed = useRef(0);
@@ -97,7 +109,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   const boardClock = useRef<(() => number) | null>(null);
 
   // Timer: starts on first interaction, stops while paused or hidden (FR-GP-02).
-  const running = started && !paused && !solved;
+  const running = started && !paused && !solved && !pausedExternally && !confirmHint;
   useEffect(() => {
     if (!running) return;
     const c = clock.current; // one mutable clock for the shell's lifetime
@@ -170,7 +182,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
     [started, now, onMove, onSolved, onFailed],
   );
 
-  const askHint = useCallback(async () => {
+  const spendHint = useCallback(async () => {
     if (hints <= 0 || !requestHint || solved) return;
     setStarted(true);
     const h = await requestHint(stateRef.current);
@@ -182,6 +194,12 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
     setLive(h.text);
     play("twinkle");
   }, [hints, requestHint, solved]);
+  // Only the Hint button spends a hint, and the first one per game asks first (XP cost on Dailies).
+  const askHint = useCallback(() => {
+    if (hints <= 0 || !requestHint || solved) return;
+    if (hintConfirmed(meta.id)) void spendHint();
+    else setConfirmHint(true);
+  }, [hints, requestHint, solved, meta.id, spendHint]);
 
   // Hint controls registered by the board call into the shell.
   // No hint source (Duels, Party Races): the Hint control is hidden rather than dead.
@@ -198,7 +216,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   return (
     <div className="bg-bg relative mx-auto flex min-h-dvh w-full max-w-[560px] flex-col" style={style} data-world={meta.world}>
       {/* 1 Top bar */}
-      <header className="safe-top relative z-10 flex items-center gap-2 px-3 pb-2 lg:pt-6">
+      <header className="safe-top relative z-10 flex items-center gap-3 px-3 pb-2 lg:pt-6">
         <IconButton icon="arrow-left" label="Back" onClick={onExit} />
         <div className="flex min-w-0 flex-1 justify-center">
           {!relaxed && (
@@ -213,7 +231,17 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
           )}
         </div>
         {requestHint && (
-          <IconButton icon="lightbulb" label="Hints" tone="gold" badge={hints} onClick={askHint} disabled={hints <= 0 || solved} />
+          // A counter only: hints are spent from the Hint button in the tool bar, never from here.
+          <div
+            role="status"
+            aria-label={copy.shell.hintsLeft(hints)}
+            className="text-gold bg-surface relative flex size-11 shrink-0 items-center justify-center rounded-[14px]"
+          >
+            <Icon name="lightbulb" size={20} />
+            <span className="num bg-gold text-on-accent absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[12px] font-bold">
+              {hints}
+            </span>
+          </div>
         )}
         <IconButton icon="question" label="Help" onClick={onHelp} />
         <IconButton icon="pause" label="Pause" onClick={() => setPaused(true)} disabled={solved} />
@@ -233,7 +261,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
 
       {/* 4 Board slot */}
       <main
-        className={`relative z-0 flex justify-center p-[18px] ${theme ? "rounded-[26px]" : ""}`}
+        className={`relative z-0 flex justify-center p-[18px] ${theme ? "rounded-[26px]" : ""} ${celebrate || solved ? "shell-solved" : ""}`}
         style={theme ? { background: theme.bg, boxShadow: `inset 0 0 0 2px ${theme.mark}` } : undefined}
         data-board-theme={theme ? boardTheme! : undefined}
         aria-label={`${meta.name} board`}
@@ -246,7 +274,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
           mode={mode}
           initialState={initialState}
           hint={hint}
-          disabled={locked || paused || solved}
+          disabled={locked || paused || solved || pausedExternally}
           api={api}
         />
       </main>
@@ -258,16 +286,20 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
         </AnimatePresence>
       </div>
 
-      {/* 6 Controls */}
-      {shownControls.length > 0 && (
-        <div
-          className="safe-bottom mt-auto grid gap-2.5 px-4 pt-3.5 pb-7"
-          style={{ gridTemplateColumns: `repeat(${shownControls.length}, minmax(0, 1fr))` }}
-        >
-          {shownControls.map((c) => (
-            <ToolButton key={c.id} c={c} />
-          ))}
-        </div>
+      {/* 6 Controls (or the end bar after a clear) */}
+      {endBar ? (
+        <div className="safe-bottom mt-auto px-4 pt-3.5 pb-7">{endBar}</div>
+      ) : (
+        shownControls.length > 0 && (
+          <div
+            className="safe-bottom mt-auto grid gap-2.5 px-4 pt-3.5 pb-7"
+            style={{ gridTemplateColumns: `repeat(${shownControls.length}, minmax(0, 1fr))` }}
+          >
+            {shownControls.map((c) => (
+              <ToolButton key={c.id} c={c} />
+            ))}
+          </div>
+        )
       )}
 
       <div aria-live="polite" className="sr-only">
@@ -281,6 +313,24 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
         onResume={() => setPaused(false)}
         onRestart={undefined}
         onQuit={onExit}
+        onHelp={
+          onHelp
+            ? () => {
+                setPaused(false);
+                onHelp();
+              }
+            : undefined
+        }
+      />
+      <HintConfirm
+        open={confirmHint}
+        daily={mode === "daily"}
+        onCancel={() => setConfirmHint(false)}
+        onConfirm={() => {
+          rememberHintConfirmed(meta.id);
+          setConfirmHint(false);
+          void spendHint();
+        }}
       />
     </div>
   );
@@ -315,11 +365,14 @@ export function FeedbackLine({ text, tone, icon }: Omit<FeedbackState, "n">) {
 }
 
 function ToolButton({ c }: { c: ControlSpec }) {
-  const tone = c.active || c.tone === "world" ? "world" : c.tone === "gold" ? "gold" : "default";
+  // The active tool is always visible: filled accent, aria-pressed="true" (audit: tool mode was invisible).
+  const tone = c.active ? "active" : c.tone === "world" ? "world" : c.tone === "gold" ? "gold" : "default";
   const look =
-    tone === "world"
-      ? { bg: "var(--world)", fg: "#0E0F1A", sh: "var(--world-depth)" }
-      : { bg: "var(--surface-raised)", fg: tone === "gold" ? "var(--gold)" : "var(--text)", sh: "var(--depth)" };
+    tone === "active"
+      ? { bg: "var(--accent)", fg: "var(--on-accent)", sh: "var(--accent-depth)" }
+      : tone === "world"
+        ? { bg: "var(--world)", fg: "var(--on-accent)", sh: "var(--world-depth)" }
+        : { bg: "var(--surface-raised)", fg: tone === "gold" ? "var(--gold)" : "var(--text)", sh: "var(--depth)" };
   return (
     <button
       type="button"
