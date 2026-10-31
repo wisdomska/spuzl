@@ -1,6 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { createRng } from "@/lib/rng";
-import logic, { analyze, countSolutions, CROWN, EMPTY, generate, grade, hint, MARK, nextDeduction, SIZE_FOR, solve, verify } from "./logic";
+import logic, {
+  analyze,
+  countSolutions,
+  CROWN,
+  EMPTY,
+  explainHint,
+  generate,
+  grade,
+  hint,
+  MARK,
+  nextDeduction,
+  SIZE_FOR,
+  solve,
+  verify,
+} from "./logic";
 import type { Difficulty } from "@/games/types";
 
 const solvedState = (n: number, sol: number[]) => {
@@ -81,9 +95,11 @@ describe("crownfall", () => {
     for (let k = 0; k < n * n * 2 && !verify(g.puzzle, g.solution, s).ok; k++) {
       h = hint(g.puzzle, g.solution, s);
       expect(h).not.toBeNull();
+      const e = explainHint(g.puzzle, g.solution, s)!;
       const i = h!.target as number;
+      expect(e.cell).toBe(i);
       const isCrown = g.solution[Math.floor(i / n)] === i % n;
-      s[i] = h!.text.includes("Mark it X") ? MARK : CROWN;
+      s[i] = e.value;
       if (s[i] === MARK) expect(isCrown).toBe(false);
       else expect(isCrown).toBe(true);
     }

@@ -4,6 +4,7 @@
  */
 import type { Difficulty, GameLogic, Generated, Hint, VerifyResult } from "@/games/types";
 import type { Rng } from "@/lib/rng";
+import { CROWNFALL_COPY } from "@/lib/copy/crownfall";
 
 export interface CrownfallPuzzle {
   size: number;
@@ -393,22 +394,154 @@ function progressOf(p: CrownfallPuzzle, sol: CrownfallSolution, state: Crownfall
   return correct / n;
 }
 
-export function hint(p: CrownfallPuzzle, sol: CrownfallSolution, given: CrownfallState | undefined): Hint | null {
+/* ---------------- Hint engine ---------------- */
+
+export type ExplainKind = "wrong-crown" | "wrong-mark" | "last-spot" | "line-in-region" | "region-in-line" | "empties-unit" | "reveal";
+
+export interface Explained {
+  cell: number;
+  /** what the player should put in `cell`: a crown, an X, or EMPTY to clear a wrong mark */
+  value: typeof CROWN | typeof MARK | typeof EMPTY;
+  kind: ExplainKind;
+  text: string;
+}
+
+interface Unit {
+  kind: "row" | "column" | "region";
+  index: number;
+  cells: number[];
+}
+
+/**
+ * Finds the next real deduction for a player's state, with a one sentence reason. Cells ruled out only
+ * because they share a row, column or region with a crown, or touch one, are treated as already gone and
+ * are never offered as a hint on their own. Steps, first match wins:
+ * 1. a row, column or region with one possible spot left: crown it
+ * 2. a row or column whose possible spots all sit in one region: that region's other spots are out
+ * 3. a region whose possible spots all sit in one row or column: that line's other spots are out
+ * 4. a spot whose crown would leave some row, column or region with no possible spot: it is out
+ * Assumes every crown and X in `cells` agrees with a solution (`hint` fixes wrong ones first).
+ */
+export function explainNext(p: CrownfallPuzzle, cells: CrownfallState): Explained | null {
   const n = p.size;
-  // Hints can be asked for before the first move: treat a missing state as the empty board.
-  const state = Array.isArray(given) && given.length === n * n ? given : new Array<number>(n * n).fill(EMPTY);
-  // First fix a wrong crown, if any.
-  for (let i = 0; i < n * n; i++) {
-    if (state[i] === CROWN && sol[Math.floor(i / n)] !== i % n) return { target: i, text: "This crown does not belong here." };
+  const H = CROWNFALL_COPY.hints;
+  const colour = (g: number) => CROWNFALL_COPY.regionName(g);
+  const lineName = (u: Unit) => (u.kind === "row" ? CROWNFALL_COPY.row(u.index) : CROWNFALL_COPY.column(u.index));
+  const rowOf = (i: number) => Math.floor(i / n);
+  const colOf = (i: number) => i % n;
+  const conflicts = (a: number, b: number) =>
+    rowOf(a) === rowOf(b) ||
+    colOf(a) === colOf(b) ||
+    p.regions[a] === p.regions[b] ||
+    (Math.abs(rowOf(a) - rowOf(b)) <= 1 && Math.abs(colOf(a) - colOf(b)) <= 1);
+
+  const crowns: number[] = [];
+  cells.forEach((v, i) => v === CROWN && crowns.push(i));
+  const possible = new Array<boolean>(n * n).fill(false);
+  for (let i = 0; i < n * n; i++) possible[i] = cells[i] === EMPTY && !crowns.some((c) => conflicts(c, i));
+
+  const units: Unit[] = [];
+  for (let r = 0; r < n; r++) units.push({ kind: "row", index: r, cells: Array.from({ length: n }, (_, c) => r * n + c) });
+  for (let c = 0; c < n; c++) units.push({ kind: "column", index: c, cells: Array.from({ length: n }, (_, r) => r * n + c) });
+  for (let g = 0; g < n; g++) units.push({ kind: "region", index: g, cells: p.regions.flatMap((reg, i) => (reg === g ? [i] : [])) });
+  const open = units.filter((u) => !u.cells.some((i) => cells[i] === CROWN));
+  const spots = (u: Unit) => u.cells.filter((i) => possible[i]);
+
+  // 1. Last possible spot in a row, column or region.
+  for (const u of open) {
+    const s = spots(u);
+    if (s.length === 1) {
+      const text = u.kind === "region" ? H.lastSpotRegion(colour(u.index)) : H.lastSpotLine(lineName(u));
+      return { cell: s[0], value: CROWN, kind: "last-spot", text };
+    }
   }
-  const d = nextDeduction(p, state);
-  if (d) return { target: d.cell, text: d.value === CROWN ? d.why : `${d.why} Mark it X.` };
-  // Fall back to revealing the next solution crown.
-  for (let r = 0; r < n; r++) {
-    const i = r * n + sol[r];
-    if (state[i] !== CROWN) return { target: i, text: "Try a crown here." };
+
+  // 2. A row or column that can only hold its crown inside one region claims that region.
+  for (const u of open) {
+    if (u.kind === "region") continue;
+    const s = spots(u);
+    const regs = new Set(s.map((i) => p.regions[i]));
+    if (regs.size !== 1) continue;
+    const g = [...regs][0];
+    const out = p.regions.findIndex((reg, i) => reg === g && possible[i] && !u.cells.includes(i));
+    if (out >= 0) return { cell: out, value: MARK, kind: "line-in-region", text: H.lineInRegion(lineName(u), colour(g)) };
+  }
+
+  // 3. A region confined to one row or column claims that line.
+  for (const u of open) {
+    if (u.kind !== "region") continue;
+    const s = spots(u);
+    if (!s.length) continue;
+    for (const kind of ["row", "column"] as const) {
+      const at = kind === "row" ? rowOf : colOf;
+      if (new Set(s.map(at)).size !== 1) continue;
+      const line: Unit = { kind, index: at(s[0]), cells: [] };
+      const out = Array.from({ length: n }, (_, k) => (kind === "row" ? line.index * n + k : k * n + line.index)).find(
+        (i) => possible[i] && p.regions[i] !== u.index,
+      );
+      if (out !== undefined)
+        return { cell: out, value: MARK, kind: "region-in-line", text: H.regionInLine(colour(u.index), lineName(line)) };
+    }
+  }
+
+  // 4. A crown here would leave another row, column or region with nowhere to go.
+  for (let x = 0; x < n * n; x++) {
+    if (!possible[x]) continue;
+    let emptied: Unit | undefined;
+    for (const u of open) {
+      if (u.cells.includes(x)) continue;
+      if (spots(u).every((i) => conflicts(x, i))) {
+        if (u.kind === "region") {
+          emptied = u;
+          break;
+        }
+        emptied ??= u;
+      }
+    }
+    if (emptied) {
+      const text = emptied.kind === "region" ? H.emptiesRegion(colour(emptied.index)) : H.emptiesLine(lineName(emptied));
+      return { cell: x, value: MARK, kind: "empties-unit", text };
+    }
   }
   return null;
+}
+
+export function hint(p: CrownfallPuzzle, sol: CrownfallSolution, given: CrownfallState | undefined): Hint | null {
+  const e = explainHint(p, sol, given);
+  return e && { target: e.cell, text: e.text };
+}
+
+/** `hint` with the suggested value and deduction kind (used by tests and any richer hint UI). */
+export function explainHint(p: CrownfallPuzzle, sol: CrownfallSolution, given: CrownfallState | undefined): Explained | null {
+  const n = p.size;
+  const H = CROWNFALL_COPY.hints;
+  // Hints can be asked for before the first move: treat a missing state as the empty board.
+  const state = Array.isArray(given) && given.length === n * n ? given : new Array<number>(n * n).fill(EMPTY);
+  const isSolution = (i: number) => sol[Math.floor(i / n)] === i % n;
+  // Deductions are only sound on a consistent board: fix a wrong crown, then an X on a crown spot.
+  for (let i = 0; i < n * n; i++) {
+    if (state[i] === CROWN && !isSolution(i)) return { cell: i, value: EMPTY, kind: "wrong-crown", text: H.wrongCrown };
+  }
+  for (let i = 0; i < n * n; i++) {
+    if (state[i] === MARK && isSolution(i)) return { cell: i, value: EMPTY, kind: "wrong-mark", text: H.wrongMark };
+  }
+  const d = explainNext(p, state);
+  if (d) return d;
+  // No simple deduction: reveal the crown of the most constrained unsolved row. The puzzle is unique, so
+  // every other spot in that row really does lead to a dead end.
+  let best = -1,
+    bestSpots = Infinity;
+  for (let r = 0; r < n; r++) {
+    const i = r * n + sol[r];
+    if (state[i] === CROWN) continue;
+    const spots = Array.from({ length: n }, (_, c) => r * n + c).filter((j) => state[j] === EMPTY).length;
+    if (spots < bestSpots) {
+      best = r;
+      bestSpots = spots;
+    }
+  }
+  if (best < 0) return null;
+  return { cell: best * n + sol[best], value: CROWN, kind: "reveal", text: H.reveal(CROWNFALL_COPY.row(best)) };
 }
 
 const logic: GameLogic<CrownfallPuzzle, CrownfallSolution, CrownfallState> = {
