@@ -14,12 +14,16 @@ import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { formatCountdown, msToReset } from "@/lib/format";
 import { SidePanel } from "./SidePanel";
+import { OfflineBanner } from "@/components/pwa/OfflineBanner";
+import { BannerStack } from "@/components/notify/Banner";
+import { useNotices } from "@/lib/notify/notices";
 
 export function HomeScreen() {
   const router = useRouter();
   const me = useMe();
   const today = useToday();
   const [now, setNow] = useState(() => Date.now());
+  const { notices, dismiss } = useNotices({ me: me.data ?? null, today: today.data ?? null });
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -69,6 +73,23 @@ export function HomeScreen() {
           </div>
         </header>
 
+        <div className="relative z-10 flex flex-col gap-2 px-3">
+          <OfflineBanner context="home" />
+          {/* Streak at risk has its own designed card below; banners carry new games and league results. */}
+          <BannerStack
+            items={notices
+              .filter((n) => n.kind !== "streak_at_risk")
+              .map((n) => ({
+                id: n.id,
+                icon: n.icon,
+                text: n.text,
+                tone: n.tone,
+                actionLabel: n.actionLabel,
+                onAction: n.href ? () => router.push(n.href!) : undefined,
+                onDismiss: () => dismiss(n.id),
+              }))}
+          />
+        </div>
         <section aria-label="The Grid" className="relative overflow-y-auto pb-[320px] lg:pb-[260px]">
           <HomeMap progress={progress} current={currentWorld} mood={mood} color={d.avatar_color} />
         </section>

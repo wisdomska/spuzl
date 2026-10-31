@@ -16,6 +16,11 @@ import { STREAK_MILESTONE_SPARKS } from "@/lib/rewards";
 import { ResultsScreen } from "@/components/results/ResultsScreen";
 import { CelebrationChain, type Celebration } from "@/components/celebrate/Celebrations";
 import { PhotosensitivityNotice } from "./PhotosensitivityNotice";
+import { finishOrQueue } from "@/lib/offline/queue";
+import { OfflineBanner } from "@/components/pwa/OfflineBanner";
+import { ShareSheet } from "@/components/share/ShareSheet";
+import { dailyShareText } from "@/lib/share/text";
+import { cardUrl } from "@/lib/share/urls";
 import { HowToSheet } from "./HowToSheet";
 import { Spuz } from "@/components/brand/Spuz";
 import { Button } from "@/components/ui/Button";
@@ -40,6 +45,7 @@ export function PlayScreen({ meta, initialMode, date }: { meta: GameMeta; initia
   const [howTo, setHowTo] = useState(false);
   const [celebrations, setCelebrations] = useState<Celebration[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
   const lastSave = useRef(0);
   const latestState = useRef<unknown>(undefined);
   const elapsedRef = useRef(0);
@@ -110,9 +116,21 @@ export function PlayScreen({ meta, initialMode, date }: { meta: GameMeta; initia
       setStats(s);
       let res: FinishRes;
       try {
-        res = await finishAttempt(attempt.attemptId, { state, activeMs: elapsedMs, mistakes: s.mistakes, relaxed });
+        // Offline (or the request never lands): the clear is queued on this device and synced later.
+        const out = await finishOrQueue<FinishRes>(attempt.attemptId, {
+          state,
+          activeMs: elapsedMs,
+          mistakes: s.mistakes,
+          relaxed,
+          localHour: new Date().getHours(),
+        });
+        if (out.queued) {
+          setNotice("Saved on this phone. We'll sync your clear when you're back online.");
+          return;
+        }
+        res = out.result;
       } catch {
-        setNotice("Saved on this phone. We'll sync your clear when you're back online.");
+        setNotice("Could not reach the server. Your progress is saved; try again in a moment.");
         return;
       }
       try {
@@ -170,22 +188,41 @@ export function PlayScreen({ meta, initialMode, date }: { meta: GameMeta; initia
 
   if (phase === "results" && result) {
     return (
-      <ResultsScreen
-        meta={meta}
-        result={result}
-        hints={stats.hints}
-        mistakes={stats.mistakes}
-        relaxed={relaxed}
-        color={me.data?.avatar_color ?? "#B8F23A"}
-        onShare={() => void share(meta, result)}
-        onNext={() => {
-          const chain = buildCelebrations(result);
-          if (chain.length) {
-            setCelebrations(chain);
-            setPhase("celebrate");
-          } else void begin("free");
-        }}
-      />
+      <>
+        <ShareSheet
+          open={shareOpen}
+          onOpenChange={setShareOpen}
+          kind="daily"
+          title={`${meta.name} on SPUZL`}
+          text={dailyShareText({
+            gameId: meta.id,
+            number: attempt?.date ? dailyNumber(attempt.date) : 0,
+            timeMs: result.timeMs,
+            hints: stats.hints,
+            slips: stats.mistakes,
+            score: result.score ?? null,
+            streak: result.streak?.current,
+          })}
+          image={attempt ? cardUrl("daily", attempt.attemptId) : ""}
+          fileName={`spuzl-${meta.id}.png`}
+        />
+        <ResultsScreen
+          meta={meta}
+          result={result}
+          hints={stats.hints}
+          mistakes={stats.mistakes}
+          relaxed={relaxed}
+          color={me.data?.avatar_color ?? "#B8F23A"}
+          onShare={() => setShareOpen(true)}
+          onNext={() => {
+            const chain = buildCelebrations(result);
+            if (chain.length) {
+              setCelebrations(chain);
+              setPhase("celebrate");
+            } else void begin("free");
+          }}
+        />
+      </>
     );
   }
 
@@ -243,6 +280,7 @@ export function PlayScreen({ meta, initialMode, date }: { meta: GameMeta; initia
           puzzleKey={attempt.attemptId}
         />
       )}
+      <OfflineBanner floating />
       {notice && <Toast text={notice} onDone={() => setNotice(null)} />}
       <HowToSheet open={howTo} meta={meta} onClose={() => setHowTo(false)} />
     </>
@@ -291,18 +329,6 @@ function worldName(track: string) {
     board: "Board Bay",
   };
   return names[track] ?? track;
-}
-
-async function share(meta: GameMeta, r: FinishRes) {
-  const mins = Math.floor(r.timeMs / 60000),
-    secs = Math.round((r.timeMs % 60000) / 1000);
-  const text = `SPUZL ${meta.name} ${mins}:${String(secs).padStart(2, "0")} 🧩\nhttps://spuzl.vercel.app`;
-  try {
-    if (navigator.share) await navigator.share({ text });
-    else await navigator.clipboard.writeText(text);
-  } catch {
-    /* dismissed */
-  }
 }
 
 function Toast({ text, onDone }: { text: string; onDone: () => void }) {
