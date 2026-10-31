@@ -161,10 +161,14 @@ async function ratingsOf(admin: SupabaseClient, ids: string[]): Promise<Record<s
 /** The client view. The puzzle unlocks when its countdown begins; solutions never leave the server. */
 export async function viewOf(admin: SupabaseClient, l: Loaded, me: string, reward: MatchView["reward"] = null): Promise<MatchView> {
   const { m, now } = l;
-  const ratings = await ratingsOf(
-    admin,
-    l.players.map((p) => p.player_id),
-  );
+  // Ratings only show in Duels.
+  const ratings =
+    m.kind === "duel"
+      ? await ratingsOf(
+          admin,
+          l.players.map((p) => p.player_id),
+        )
+      : {};
   const start = ms(m.round_started_at);
   let puzzle: MatchView["puzzle"] = null;
   const game = m.games[m.round - 1];
@@ -324,11 +328,12 @@ export async function submitFinish(
 
 /* ---------------- Resolution (idempotent; any request may run it) ---------------- */
 
-export async function resolve(admin: SupabaseClient, id: string): Promise<void> {
-  const l = await loadMatch(admin, id);
-  if (l.m.status !== "playing") return;
-  if (l.m.kind === "duel") await resolveDuel(admin, l);
-  else await resolveRace(admin, l);
+/** Settles the current round if it can be. Returns true when something changed. */
+export async function resolve(admin: SupabaseClient, id: string, loaded?: Loaded): Promise<boolean> {
+  const l = loaded ?? (await loadMatch(admin, id));
+  if (l.m.status !== "playing") return false;
+  if (l.m.kind === "duel") return resolveDuel(admin, l);
+  return resolveRace(admin, l);
 }
 
 async function commit(
@@ -362,10 +367,10 @@ async function commit(
   return data === true;
 }
 
-async function resolveDuel(admin: SupabaseClient, l: Loaded) {
+async function resolveDuel(admin: SupabaseClient, l: Loaded): Promise<boolean> {
   const { m, now } = l;
   const start = ms(m.round_started_at)!;
-  if (now < start) return;
+  if (now < start) return false;
   const humans = l.players.filter((p) => !p.spectator);
   const here = l.rounds.filter((r) => r.round === m.round && r.time_ms !== null);
   const finishers: Finisher[] = here.map((r) => ({ id: r.player_id, timeMs: r.time_ms!, mistakes: r.mistakes }));
@@ -374,10 +379,10 @@ async function resolveDuel(admin: SupabaseClient, l: Loaded) {
     const effective = now - start - m.pause_ms - (m.paused_at ? now - Date.parse(m.paused_at) : 0);
     if (botMs !== undefined && effective >= botMs) finishers.push({ id: BOT_ID, timeMs: botMs, mistakes: 0 });
   }
-  if (!finishers.length) return;
+  if (!finishers.length) return false;
   // Wait for the settle window after the first finish so a near tie is decided fairly.
   const firstAt = ms(m.round_first_at);
-  if (firstAt !== null && now - firstAt < TIMING.settleMs) return;
+  if (firstAt !== null && now - firstAt < TIMING.settleMs) return false;
   const outcome = resolveRound(finishers);
   const score: Record<string, number> = Object.fromEntries(humans.map((p) => [p.player_id, p.rounds_won]));
   if (m.is_bot) score[BOT_ID] = m.bot_rounds_won;
@@ -406,19 +411,20 @@ async function resolveDuel(admin: SupabaseClient, l: Loaded) {
     players: humans.map((p) => ({ player_id: p.player_id, rounds_won: score[p.player_id] ?? 0 })),
     rounds,
   });
-  if (!applied) return;
+  if (!applied) return false;
   await serverBroadcast(matchTopic(m.id), "changed", {
     reason: state.over ? "match_end" : "round_end",
     winner: outcome.winner,
     tie: outcome.tie,
   });
   if (state.over) await finalizeDuel(admin, await loadMatch(admin, m.id));
+  return true;
 }
 
-async function resolveRace(admin: SupabaseClient, l: Loaded) {
+async function resolveRace(admin: SupabaseClient, l: Loaded): Promise<boolean> {
   const { m, now } = l;
   const start = ms(m.round_started_at)!;
-  if (now < start) return;
+  if (now < start) return false;
   const racers: Racer[] = l.players
     .filter((p) => !p.spectator)
     .map((p) => {
@@ -431,7 +437,7 @@ async function resolveRace(admin: SupabaseClient, l: Loaded) {
         gone: !!p.left_at || isStale(p, now, TIMING.reconnectMs),
       };
     });
-  if (!raceOver(racers, start, ms(m.round_first_at), now)) return;
+  if (!raceOver(racers, start, ms(m.round_first_at), now)) return false;
   const placed = placeRace(racers);
   const last = m.round >= m.games.length;
   const totals = new Map(l.players.map((p) => [p.player_id, p.points]));
@@ -455,9 +461,10 @@ async function resolveRace(admin: SupabaseClient, l: Loaded) {
       won: r.place === 1 && r.timeMs !== null,
     })),
   });
-  if (!applied) return;
+  if (!applied) return false;
   await serverBroadcast(matchTopic(m.id), "changed", { reason: last ? "final" : "podium" });
   if (last) await finalizeRace(admin, await loadMatch(admin, m.id), placed);
+  return true;
 }
 
 /* ---------------- Tick: time-based transitions any participant can trigger ---------------- */
@@ -467,6 +474,7 @@ export async function tick(admin: SupabaseClient, id: string, playerId: string) 
   member(l, playerId);
   await touch(admin, l, playerId);
   const { m, now } = l;
+  const before = { ...m };
   if (m.status === "playing" && m.kind === "duel" && !m.is_bot) {
     const active = l.players.filter((p) => !p.left_at && !p.spectator);
     const stale = active.filter((p) => isStale(p, now));
@@ -479,16 +487,24 @@ export async function tick(admin: SupabaseClient, id: string, playerId: string) 
         .is("paused_at", null)
         .eq("status", "playing")
         .select("id");
-      if (data?.length) await serverBroadcast(matchTopic(id), "changed", { reason: "pause", player: stale[0].player_id });
+      if (data?.length) {
+        m.paused_at = iso(now);
+        await serverBroadcast(matchTopic(id), "changed", { reason: "pause", player: stale[0].player_id });
+      }
     }
     // Gone past the reconnect window: abandoning counts as a loss (SRS 6).
     const gone = stale.filter((p) => now - Date.parse(p.last_seen_at) > TIMING.reconnectMs);
-    if (gone.length === 1 && active.length === 2) await forfeit(admin, l, gone[0].player_id, "abandon");
+    if (gone.length === 1 && active.length === 2) {
+      await forfeit(admin, l, gone[0].player_id, "abandon");
+      m.status = "finished";
+    }
   }
-  l = await loadMatch(admin, id);
-  if (l.m.status === "playing") await resolve(admin, id);
-  if (l.m.kind === "race" && l.m.status !== "playing") await migrateHostIfGone(admin, l);
-  return viewOf(admin, await loadMatch(admin, id), playerId);
+  // Reuse this request's load unless something changed it.
+  let dirty = before.paused_at !== m.paused_at || before.status !== m.status;
+  if (dirty) l = await loadMatch(admin, id);
+  if (l.m.status === "playing" && l.now >= (ms(l.m.round_started_at) ?? Infinity)) dirty = (await resolve(admin, id, l)) || dirty;
+  if (l.m.kind === "race" && l.m.status !== "playing") dirty = (await migrateHostIfGone(admin, l)) || dirty;
+  return viewOf(admin, dirty ? await loadMatch(admin, id) : l, playerId);
 }
 
 async function forfeit(admin: SupabaseClient, l: Loaded, loser: string, result: "abandon" | "left") {
@@ -499,9 +515,9 @@ async function forfeit(admin: SupabaseClient, l: Loaded, loser: string, result: 
   await finalizeDuel(admin, await loadMatch(admin, l.m.id));
 }
 
-async function migrateHostIfGone(admin: SupabaseClient, l: Loaded) {
+async function migrateHostIfGone(admin: SupabaseClient, l: Loaded): Promise<boolean> {
   const host = l.players.find((p) => p.player_id === l.m.host_id);
-  if (host && !host.left_at && !isStale(host, l.now, 30_000)) return;
+  if (host && !host.left_at && !isStale(host, l.now, 30_000)) return false;
   const next = nextHost(
     l.players.map((p) => ({
       id: p.player_id,
@@ -511,9 +527,11 @@ async function migrateHostIfGone(admin: SupabaseClient, l: Loaded) {
     })),
     l.m.host_id ?? "",
   );
-  if (!next || next === l.m.host_id) return;
+  if (!next || next === l.m.host_id) return false;
   const { data } = await admin.from("matches").update({ host_id: next }).eq("id", l.m.id).eq("host_id", l.m.host_id!).select("id");
-  if (data?.length) await serverBroadcast(matchTopic(l.m.id), "changed", { reason: "host", host: next });
+  if (!data?.length) return false;
+  await serverBroadcast(matchTopic(l.m.id), "changed", { reason: "host", host: next });
+  return true;
 }
 
 /* ---------------- Leave ---------------- */

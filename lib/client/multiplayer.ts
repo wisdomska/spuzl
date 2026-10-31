@@ -116,27 +116,40 @@ export function useMatch(id: string | null, opts: { presenceKey?: string } = {})
   useEffect(() => {
     if (!id) return;
     let stop = false;
-    const beat = async () => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    // Live rounds beat every 2.5 s (disconnects, bot finishes, race caps); lobbies and results every 8 s.
+    const next = () => {
       if (stop) return;
+      const v = qc.getQueryData<MatchView>(matchKey(id));
+      timer = setTimeout(beat, v && v.status === "playing" ? 2500 : 8000);
+    };
+    let busy = false;
+    const beat = async () => {
+      if (stop || busy) return;
+      busy = true;
       try {
         const v = await api<MatchView>(`/api/v1/matches/${id}/tick`, { json: {} });
         qc.setQueryData(matchKey(id), v);
         failSince.current = null;
         setOffline(false);
       } catch (e) {
-        if (e instanceof HttpError && e.status < 500 && e.status !== 429) return;
-        failSince.current ??= Date.now();
-        if (Date.now() - failSince.current > 4000) setOffline(true);
+        if (!(e instanceof HttpError && e.status < 500 && e.status !== 429)) {
+          failSince.current ??= Date.now();
+          if (Date.now() - failSince.current > 4000) setOffline(true);
+        }
+      } finally {
+        busy = false;
+        next();
       }
     };
-    const t = setInterval(beat, 2500);
+    next();
     const onLine = () => void beat();
     window.addEventListener("online", onLine);
     const onOff = () => setOffline(true);
     window.addEventListener("offline", onOff);
     return () => {
       stop = true;
-      clearInterval(t);
+      if (timer) clearTimeout(timer);
       window.removeEventListener("online", onLine);
       window.removeEventListener("offline", onOff);
     };

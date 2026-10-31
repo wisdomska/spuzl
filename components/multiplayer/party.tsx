@@ -382,24 +382,26 @@ export interface RailRow {
   gone: boolean;
 }
 
+/** Racers in this set: everyone who isn't spectating, minus people who left before scoring anything. */
+export const inSet = (view: MatchView) =>
+  view.players.filter((p) => !p.spectator && (!p.left || p.points > 0 || p.progress > 0 || view.rounds.some((r) => r.playerId === p.id)));
+
 export function rowsOf(view: MatchView): RailRow[] {
   const round = view.round;
-  const list = view.players
-    .filter((p) => !p.spectator)
-    .map((p) => {
-      const r = view.rounds.find((x) => x.round === round && x.playerId === p.id);
-      const timeMs = r?.timeMs ?? p.finishedMs ?? null;
-      return {
-        id: p.id,
-        nickname: p.nickname,
-        color: p.color,
-        progress: timeMs !== null ? 1 : p.progress,
-        finished: timeMs !== null,
-        gone: p.left || p.stale,
-        timeMs,
-        mistakes: p.mistakes,
-      };
-    });
+  const list = inSet(view).map((p) => {
+    const r = view.rounds.find((x) => x.round === round && x.playerId === p.id);
+    const timeMs = r?.timeMs ?? p.finishedMs ?? null;
+    return {
+      id: p.id,
+      nickname: p.nickname,
+      color: p.color,
+      progress: timeMs !== null ? 1 : p.progress,
+      finished: timeMs !== null,
+      gone: p.left || p.stale,
+      timeMs,
+      mistakes: p.mistakes,
+    };
+  });
   return raceOrder(list);
 }
 
@@ -509,7 +511,7 @@ export function Podium({
   const reduce = useReduce();
   const lowData = useSettings((s) => s.lowData);
   const [skip, setSkip] = useState(false);
-  const standing = view.players.filter((p) => !p.spectator).sort((a, b) => b.points - a.points || (a.place ?? 9) - (b.place ?? 9));
+  const standing = inSet(view).sort((a, b) => b.points - a.points || (a.place ?? 9) - (b.place ?? 9));
   const top = standing[0];
   useEffect(() => {
     play("cheer");
