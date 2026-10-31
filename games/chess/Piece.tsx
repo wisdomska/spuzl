@@ -46,8 +46,10 @@ export function useSprites(): Set<string> | null {
 }
 
 /**
- * One chess piece standing on its square: the 3D sprite (190% of the square, bottom aligned, like the
- * design), or the CSS-gradient glyph with a contact shadow when the sprite is missing.
+ * One chess piece standing on its square: the 3D sprite, or the CSS-gradient glyph with a contact shadow
+ * when the sprite is missing. Pieces stay inside their square (the tallest sprite, the king, fills about
+ * 92% of it), so a back-rank piece never spills over the board edge or covers the square above; boards
+ * also clip each square as a backstop. Sprites are 192 px with the piece standing in the lower 80%.
  */
 export function Piece({
   ch,
@@ -66,8 +68,9 @@ export function Piece({
 }) {
   const white = ch === ch.toUpperCase();
   const key = (white ? "w" : "b") + ch.toUpperCase();
+  // The lift stays small enough to read inside a clipped square.
   const motion: CSSProperties = {
-    transform: lift ? "translateY(-8px) scale(1.1)" : "none",
+    transform: lift ? "translateY(-6%) scale(1.06)" : "none",
     transformOrigin: "50% 100%",
     transition: "transform 180ms cubic-bezier(.34,1.56,.64,1)",
   };
@@ -76,7 +79,7 @@ export function Piece({
       <span
         aria-hidden
         className={`pointer-events-none absolute ${className ?? ""}`}
-        style={{ left: "-45%", bottom: 0, width: "190%", height: "190%", zIndex: 1, ...motion, ...style }}
+        style={{ left: "-7.5%", bottom: 0, width: "115%", height: "115%", zIndex: 1, ...motion, ...style }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={spriteUrl(key)} alt="" draggable={false} className="h-full w-full object-contain object-bottom" />
@@ -111,7 +114,7 @@ export function Piece({
           filter: look.pf,
           zIndex: 1,
           ...motion,
-          transform: `${lift ? "translateY(-10px) scale(1.1)" : "translateY(-2px)"}`,
+          transform: `${lift ? "translateY(-6%) scale(1.06)" : "translateY(-2px)"}`,
           ...style,
         }}
       >

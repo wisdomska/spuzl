@@ -30,6 +30,12 @@ import { CH_N, Piece, useSprites } from "./Piece";
 
 const PROMOS = ["q", "r", "b", "n"] as const;
 const LETTER = " PNBRQK";
+/** Board coordinates: 12 px in the square ink (6:1 or better on every square colour), above the pieces. */
+const COORD = "num pointer-events-none absolute z-[3] text-[12px] leading-[16px] font-bold text-[var(--square-ink)]";
+/** A soft ring in the square's own colour keeps a coordinate readable where a dark piece stands behind it. */
+const halo = (bg: string) => `0 0 2px ${bg}, 0 0 2px ${bg}`;
+/** Legal-move dot: about a third of the square, never under 12 px. */
+const DOT = (cell: number) => Math.max(12, Math.round(cell * 0.3));
 
 /**
  * Chess Daily board (Board Games B2 + prototype chess screen). Tap a white piece to lift it
@@ -282,8 +288,8 @@ export default function ChessBoard({ puzzle, initialState, hint, disabled, api }
                     keys.setFocus(vi);
                     tapSquare(sq);
                   }}
-                  className="relative flex cursor-pointer items-center justify-center outline-none focus-visible:z-20"
-                  style={{ width: cell, height: cell, background: bg, boxShadow: BEVEL, borderRadius: corner, zIndex: vr + 1 }}
+                  className="relative flex cursor-pointer items-center justify-center overflow-hidden outline-none focus-visible:z-20"
+                  style={{ width: cell, height: cell, background: bg, boxShadow: BEVEL, borderRadius: corner }}
                 >
                   {sq === checkK && (
                     <span
@@ -293,35 +299,27 @@ export default function ChessBoard({ puzzle, initialState, hint, disabled, api }
                       style={{ background: "var(--danger)", borderRadius: corner }}
                     />
                   )}
+                  {occ && <Piece ch={ch} size={cell} sprites={sprites} lift={isSel} className={anim} />}
                   {vc === 0 && (
-                    <span
-                      aria-hidden
-                      className="num absolute top-0.5 left-1 text-[10px] font-semibold"
-                      style={{ color: light ? SQUARE.dark : SQUARE.light }}
-                    >
+                    <span aria-hidden className={`${COORD} top-0 left-1`} style={{ textShadow: halo(bg) }}>
                       {8 - (sq >> 3)}
                     </span>
                   )}
                   {vr === 7 && (
-                    <span
-                      aria-hidden
-                      className="num absolute right-1 bottom-0 text-[10px] font-semibold"
-                      style={{ color: light ? SQUARE.dark : SQUARE.light }}
-                    >
+                    <span aria-hidden className={`${COORD} right-1 bottom-0`} style={{ textShadow: halo(bg) }}>
                       {"abcdefgh"[sq & 7]}
                     </span>
                   )}
-                  {occ && <Piece ch={ch} size={cell} sprites={sprites} lift={isSel} className={anim} />}
                   {isTarget && (
                     <span
                       aria-hidden
                       className={`absolute rounded-full ${occ ? "" : "bay-dot"}`}
                       style={{
                         zIndex: 2,
-                        width: occ ? cell - 6 : 12,
-                        height: occ ? cell - 6 : 12,
-                        background: occ ? "transparent" : "rgba(14,15,26,.45)",
-                        boxShadow: occ ? "inset 0 0 0 3px rgba(14,15,26,.55)" : "none",
+                        width: occ ? cell - 4 : DOT(cell),
+                        height: occ ? cell - 4 : DOT(cell),
+                        background: occ ? "transparent" : "color-mix(in srgb, var(--square-ink) 50%, transparent)",
+                        boxShadow: occ ? "inset 0 0 0 4px color-mix(in srgb, var(--square-ink) 60%, transparent)" : "none",
                       }}
                     />
                   )}

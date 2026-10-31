@@ -255,6 +255,9 @@ select {
   --reg-8: #624d00;
   --reg-9: #585859;
   --board-bg: #0a0b12;
+  /* Ink on chess and draughts squares (SQUARE in games/_shared/BayStyles): the squares are the same in
+     both themes, so this is not redefined for light. 6.2:1 on the dark square, 13:1 on the light one. */
+  --square-ink: #0e0f1a;
 }
 [data-theme="light"] {
   --reg-0: #888deb;
