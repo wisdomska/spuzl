@@ -37,7 +37,9 @@ function Archive() {
   const params = useSearchParams();
   const today = gmtDate();
   const thisMonth = today.slice(0, 7);
-  const [game, setGame] = useState(params.get("game") && GAME_BY_ID[params.get("game")!] ? params.get("game")! : (LAUNCH_IDS[0] ?? "crownfall"));
+  const [game, setGame] = useState(
+    params.get("game") && GAME_BY_ID[params.get("game")!] ? params.get("game")! : (LAUNCH_IDS[0] ?? "crownfall"),
+  );
   const [tab, setTab] = useState<"practice" | "archive">(params.get("tab") === "practice" ? "practice" : "archive");
   const [month, setMonth] = useState(thisMonth);
   const [sel, setSel] = useState<string | null>(null);
@@ -49,7 +51,11 @@ function Archive() {
   const grid = monthGrid(y, m - 1);
   const byDate = new Map((q.data?.days ?? []).map((d) => [d.date, d]));
   const selDay: Day | undefined = sel ? byDate.get(sel) : undefined;
-  const monthName = new Date(month + "-01T00:00:00Z").toLocaleDateString("en-GB", { month: "long", year: month.slice(0, 4) === thisMonth.slice(0, 4) ? undefined : "numeric", timeZone: "UTC" });
+  const monthName = new Date(month + "-01T00:00:00Z").toLocaleDateString("en-GB", {
+    month: "long",
+    year: month.slice(0, 4) === thisMonth.slice(0, 4) ? undefined : "numeric",
+    timeZone: "UTC",
+  });
 
   return (
     <TabPage label="Practice and Archive">
@@ -94,11 +100,21 @@ function Archive() {
       ) : (
         <>
           <div className="flex items-center justify-between">
-            <button aria-label="Previous month" disabled={month <= LAUNCH_DATE.slice(0, 7)} onClick={() => setMonth(shift(month, -1))} className="flex size-11 items-center justify-center disabled:opacity-30">
+            <button
+              aria-label="Previous month"
+              disabled={month <= LAUNCH_DATE.slice(0, 7)}
+              onClick={() => setMonth(shift(month, -1))}
+              className="flex size-11 items-center justify-center disabled:opacity-30"
+            >
               <Icon name="caret-left" size={20} />
             </button>
             <h2 className="font-display text-[17px] font-extrabold">{monthName}</h2>
-            <button aria-label="Next month" disabled={month >= thisMonth} onClick={() => setMonth(shift(month, 1))} className="flex size-11 items-center justify-center disabled:opacity-30">
+            <button
+              aria-label="Next month"
+              disabled={month >= thisMonth}
+              onClick={() => setMonth(shift(month, 1))}
+              className="flex size-11 items-center justify-center disabled:opacity-30"
+            >
               <Icon name="caret-right" size={20} />
             </button>
           </div>
@@ -158,7 +174,10 @@ function Archive() {
                     className="press flex h-11 items-center gap-2 rounded-[12px] px-2.5 text-left text-[14px] font-semibold"
                     style={{ background: game === g.id ? "var(--success-tint)" : "var(--surface-raised)" }}
                   >
-                    <span className="flex size-6 shrink-0 items-center justify-center rounded-[8px]" style={{ background: w.color, color: "#0E0F1A" }}>
+                    <span
+                      className="flex size-6 shrink-0 items-center justify-center rounded-[8px]"
+                      style={{ background: w.color, color: "#0E0F1A" }}
+                    >
                       <Icon name={g.icon} size={14} />
                     </span>
                     <span className="truncate">{g.name}</span>
@@ -179,7 +198,15 @@ function DayCell({ d, color, selected, onPick }: { d: Day; color: string; select
   const locked = d.access === "locked";
   const future = d.access === "future" || d.access === "before";
   const cleared = d.state === "cleared";
-  const icon = isToday ? "play" : locked && !cleared ? "lock-simple" : cleared ? "check-circle" : d.state === "started" ? "circle-half" : "circle";
+  const icon = isToday
+    ? "play"
+    : locked && !cleared
+      ? "lock-simple"
+      : cleared
+        ? "check-circle"
+        : d.state === "started"
+          ? "circle-half"
+          : "circle";
   const status = isToday ? "today" : future ? "not yet" : cleared ? "cleared" : locked ? "locked, SPUZL+" : d.state;
   return (
     <button
@@ -204,7 +231,8 @@ function DayCell({ d, color, selected, onPick }: { d: Day; color: string; select
 
 function DayCard({ d, game }: { d: Day; game: string }) {
   const diff = cap(difficultyForDate(d.date));
-  const label = d.state === "cleared" ? `Cleared${d.timeMs ? ` in ${formatShort(d.timeMs)}` : ""}` : d.state === "started" ? "Started" : "Missed";
+  const label =
+    d.state === "cleared" ? `Cleared${d.timeMs ? ` in ${formatShort(d.timeMs)}` : ""}` : d.state === "started" ? "Started" : "Missed";
   if (d.access === "today")
     return (
       <div className="bg-surface flex flex-col gap-2.5 rounded-[20px] p-3.5">
@@ -239,7 +267,9 @@ function DayCard({ d, game }: { d: Day; game: string }) {
         </>
       ) : (
         <>
-          <p className="text-muted text-[14px]">Archive clears earn half XP and no Sparks. They never count for streaks, ratings or boards.</p>
+          <p className="text-muted text-[14px]">
+            Archive clears earn half XP and no Sparks. They never count for streaks, ratings or boards.
+          </p>
           <Link
             href={`/play/${game}?mode=archive&date=${d.date}`}
             className="toy bg-accent text-on-accent font-display flex h-[52px] items-center justify-center rounded-[16px] text-[15px] font-extrabold"

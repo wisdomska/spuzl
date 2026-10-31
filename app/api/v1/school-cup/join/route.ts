@@ -11,7 +11,9 @@ export const POST = handle(async (req: Request) => {
   const { code } = await body(req, Join);
   const { data: cup } = await admin.from("school_cups").select("id, school_id").eq("join_code", normaliseCode(code)).maybeSingle();
   if (!cup) throw new ApiError(404, "not_found", "No class challenge with that code.");
-  const { error } = await admin.from("school_cup_members").upsert({ cup_id: cup.id, player_id: player.id }, { onConflict: "cup_id,player_id", ignoreDuplicates: true });
+  const { error } = await admin
+    .from("school_cup_members")
+    .upsert({ cup_id: cup.id, player_id: player.id }, { onConflict: "cup_id,player_id", ignoreDuplicates: true });
   if (error) throw error;
   // Joining through a teacher's code links you to that verified school (FR-AC-06), unless you already have one.
   await admin.from("players").update({ school_id: cup.school_id }).eq("id", player.id).is("school_id", null);

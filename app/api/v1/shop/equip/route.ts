@@ -13,7 +13,12 @@ export const POST = handle(async (req: Request) => {
   const { itemId, equip } = await body(req, Equip);
   const { data: item } = await admin.from("cosmetics").select("id, type, name, payload").eq("id", itemId).maybeSingle();
   if (!item || item.type === "freeze" || item.type === "hint_pack") throw new ApiError(404, "unknown_item");
-  const { data: own } = await admin.from("inventory").select("cosmetic_id").eq("player_id", player.id).eq("cosmetic_id", itemId).maybeSingle();
+  const { data: own } = await admin
+    .from("inventory")
+    .select("cosmetic_id")
+    .eq("player_id", player.id)
+    .eq("cosmetic_id", itemId)
+    .maybeSingle();
   if (!own) throw new ApiError(403, "not_owned", "Buy it first.");
 
   const { data: sameType } = await admin.from("cosmetics").select("id").eq("type", item.type);

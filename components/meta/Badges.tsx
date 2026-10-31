@@ -27,7 +27,11 @@ export function Medallion({ b, size = 62 }: { b: Pick<BadgeDTO, "tier" | "icon" 
         inner={Math.round(size * 0.74)}
         innerBg={b.earned ? t.inner : "var(--surface-raised)"}
       >
-        <Icon name={b.icon} size={Math.round(size * 0.35)} style={{ color: b.earned ? "#0E0F1A" : "var(--text-muted)", opacity: b.earned ? 1 : 0.7 }} />
+        <Icon
+          name={b.icon}
+          size={Math.round(size * 0.35)}
+          style={{ color: b.earned ? "#0E0F1A" : "var(--text-muted)", opacity: b.earned ? 1 : 0.7 }}
+        />
       </Hex>
       {/* Tier marks so tiers never rely on colour alone */}
       <span aria-hidden className="absolute inset-x-0 -bottom-1 flex justify-center gap-[3px]">

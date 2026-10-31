@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useNow } from "@/components/meta/useNow";
 import { useLeague } from "@/lib/client/social";
 import { TabPage } from "@/components/meta/TabPage";
 import { EmptyState, ErrorState, Hex, ListSkeleton } from "@/components/meta/ui";
@@ -15,15 +16,7 @@ export default function LeaguesPage() {
   const q = useLeague();
   const [seen, setSeen] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
-  const [now, setNow] = useState(() => Date.now());
-  const [loadedAt, setLoadedAt] = useState(() => Date.now());
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 30_000);
-    return () => clearInterval(t);
-  }, []);
-  useEffect(() => {
-    if (q.dataUpdatedAt) setLoadedAt(q.dataUpdatedAt);
-  }, [q.dataUpdatedAt]);
+  const now = useNow(30_000);
 
   const l = q.data?.league;
   const ceremony = q.data?.ceremony && q.data.ceremony.leagueId !== seen ? q.data.ceremony : null;
@@ -34,7 +27,7 @@ export default function LeaguesPage() {
   const tailStart = members.length - 3;
   const collapsible = !expanded && members.length > headEnd + 4;
   const shown = collapsible ? [...members.slice(0, headEnd), null, ...members.slice(tailStart)] : members;
-  const left = l ? l.endsInMs - (now - loadedAt) : 0;
+  const left = l ? q.dataUpdatedAt + l.endsInMs - now : 0;
 
   return (
     <TabPage label="Leagues">
@@ -66,7 +59,9 @@ export default function LeaguesPage() {
             </Hex>
             <div className="flex min-w-0 flex-1 flex-col gap-0.5">
               <h1 className="font-display text-[22px] font-black">{l.name}</h1>
-              <p className="text-muted text-[15px] font-medium">{l.next ? `Top 7 go up to ${l.next}` : "The top league. Hold your place."}</p>
+              <p className="text-muted text-[15px] font-medium">
+                {l.next ? `Top 7 go up to ${l.next}` : "The top league. Hold your place."}
+              </p>
             </div>
             <div className="flex flex-col items-end" aria-label={`${formatLeft(left)} left this week`}>
               <span className="num text-[18px] font-semibold">{formatLeft(left)}</span>
@@ -94,13 +89,14 @@ export default function LeaguesPage() {
               ),
             )}
           </ol>
-          {members.length < 13 && (
-            <p className="text-muted px-1 text-[14px]">Fewer than 13 players this week, so nobody drops a league.</p>
-          )}
+          {members.length < 13 && <p className="text-muted px-1 text-[14px]">Fewer than 13 players this week, so nobody drops a league.</p>}
         </>
       )}
       <nav aria-label="Compete" className="flex gap-2 pt-2">
-        <Link href="/leaderboards" className="press bg-surface flex h-11 items-center gap-2 rounded-[12px] px-3.5 text-[15px] font-semibold">
+        <Link
+          href="/leaderboards"
+          className="press bg-surface flex h-11 items-center gap-2 rounded-[12px] px-3.5 text-[15px] font-semibold"
+        >
           <Icon name="chart-bar" size={18} className="text-accent" />
           Leaderboards
         </Link>

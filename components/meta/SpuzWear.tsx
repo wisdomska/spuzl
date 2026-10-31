@@ -58,7 +58,17 @@ function Hat({ id, size }: { id: HatId; size: number }) {
             boxShadow: "inset 0 -0.4em 0 rgba(0,0,0,.18)",
           }}
         />
-        <div style={{ position: "absolute", left: "44%", top: "55%", width: 0.45 * em, height: 0.45 * em, borderRadius: "50%", background: "#FF5A5F" }} />
+        <div
+          style={{
+            position: "absolute",
+            left: "44%",
+            top: "55%",
+            width: 0.45 * em,
+            height: 0.45 * em,
+            borderRadius: "50%",
+            background: "#FF5A5F",
+          }}
+        />
       </div>
     );
   if (id === "kente")
@@ -73,12 +83,33 @@ function Hat({ id, size }: { id: HatId; size: number }) {
             fontSize: em,
           }}
         />
-        <div style={{ position: "absolute", left: -0.2 * em, right: -0.2 * em, bottom: -0.3 * em, height: 0.6 * em, borderRadius: 0.3 * em, background: "#FFC93C" }} />
+        <div
+          style={{
+            position: "absolute",
+            left: -0.2 * em,
+            right: -0.2 * em,
+            bottom: -0.3 * em,
+            height: 0.6 * em,
+            borderRadius: 0.3 * em,
+            background: "#FFC93C",
+          }}
+        />
       </div>
     );
   // party (default)
   return (
-    <div aria-hidden style={{ ...box, left: 4.6 * em, top: 0.1 * em, width: 2.8 * em, height: 3.2 * em, transform: "rotate(-12deg)", transformOrigin: "50% 100%" }}>
+    <div
+      aria-hidden
+      style={{
+        ...box,
+        left: 4.6 * em,
+        top: 0.1 * em,
+        width: 2.8 * em,
+        height: 3.2 * em,
+        transform: "rotate(-12deg)",
+        transformOrigin: "50% 100%",
+      }}
+    >
       <div
         style={{
           position: "absolute",
@@ -88,7 +119,17 @@ function Hat({ id, size }: { id: HatId; size: number }) {
           fontSize: em,
         }}
       />
-      <div style={{ position: "absolute", left: 0.95 * em, top: -0.5 * em, width: 0.9 * em, height: 0.9 * em, borderRadius: "50%", background: "#F4F5FB" }} />
+      <div
+        style={{
+          position: "absolute",
+          left: 0.95 * em,
+          top: -0.5 * em,
+          width: 0.9 * em,
+          height: 0.9 * em,
+          borderRadius: "50%",
+          background: "#F4F5FB",
+        }}
+      />
     </div>
   );
 }

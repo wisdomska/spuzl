@@ -88,7 +88,9 @@ async function person(nick: string, color: string, band: string): Promise<string
   }
   if (!id) throw new Error(`user ${nick}`);
   must(
-    await sb.from("players").upsert({ id, nickname: nick, age_band: band, avatar_color: color, country: "GH", city: "Accra", is_guest: false }),
+    await sb
+      .from("players")
+      .upsert({ id, nickname: nick, age_band: band, avatar_color: color, country: "GH", city: "Accra", is_guest: false }),
     `player ${nick}`,
   );
   return id;
@@ -106,25 +108,57 @@ must(await sb.from("players").update({ country: "GH", city: "Accra", sparks: 128
 const { data: school } = await sb.from("schools").select("id").eq("code", "ACHI24").maybeSingle();
 const schoolId =
   school?.id ??
-  must(await sb.from("schools").insert({ name: "Achimota School", city: "Accra", country: "GH", code: "ACHI24", verified_by: viewer }).select("id").single(), "school").id;
-must(await sb.from("players").update({ school_id: schoolId }).in("id", [viewer, ...others.slice(0, 12)]), "school members");
+  must(
+    await sb
+      .from("schools")
+      .insert({ name: "Achimota School", city: "Accra", country: "GH", code: "ACHI24", verified_by: viewer })
+      .select("id")
+      .single(),
+    "school",
+  ).id;
+must(
+  await sb
+    .from("players")
+    .update({ school_id: schoolId })
+    .in("id", [viewer, ...others.slice(0, 12)]),
+  "school members",
+);
 
 // Friends: 4 accepted (with presence), 2 incoming requests.
 for (const n of ["Kofi", "Efua", "Yaw", "Zainab", "Kwame", "Adaeze"]) {
-  await sb.from("friendships").upsert({ player_id: viewer, friend_id: ids[n], status: "accepted" }, { onConflict: "player_id,friend_id", ignoreDuplicates: true });
+  await sb
+    .from("friendships")
+    .upsert({ player_id: viewer, friend_id: ids[n], status: "accepted" }, { onConflict: "player_id,friend_id", ignoreDuplicates: true });
 }
 for (const n of ["Akosua", "Chidi"]) {
-  await sb.from("friendships").upsert({ player_id: ids[n], friend_id: viewer, status: "pending" }, { onConflict: "player_id,friend_id", ignoreDuplicates: true });
+  await sb
+    .from("friendships")
+    .upsert({ player_id: ids[n], friend_id: viewer, status: "pending" }, { onConflict: "player_id,friend_id", ignoreDuplicates: true });
 }
 await sb.from("friendships").upsert({ player_id: ids.Akosua, friend_id: ids.Kofi, status: "accepted" }, { ignoreDuplicates: true });
 await sb.from("friendships").upsert({ player_id: ids.Akosua, friend_id: ids.Yaw, status: "accepted" }, { ignoreDuplicates: true });
 const now = Date.now();
 const seen = (min: number) => new Date(now - min * 60_000).toISOString();
-await sb.from("players").update({ last_seen_at: seen(0), playing_game: "crownfall" }).eq("id", ids.Kofi);
-await sb.from("players").update({ last_seen_at: seen(0), playing_game: null }).eq("id", ids.Efua);
-await sb.from("players").update({ last_seen_at: seen(1), playing_game: null }).eq("id", ids.Yaw);
-await sb.from("players").update({ last_seen_at: seen(120), playing_game: null }).eq("id", ids.Zainab);
-await sb.from("players").update({ last_seen_at: seen(60 * 26), playing_game: null }).in("id", [ids.Kwame, ids.Adaeze]);
+await sb
+  .from("players")
+  .update({ last_seen_at: seen(0), playing_game: "crownfall" })
+  .eq("id", ids.Kofi);
+await sb
+  .from("players")
+  .update({ last_seen_at: seen(0), playing_game: null })
+  .eq("id", ids.Efua);
+await sb
+  .from("players")
+  .update({ last_seen_at: seen(1), playing_game: null })
+  .eq("id", ids.Yaw);
+await sb
+  .from("players")
+  .update({ last_seen_at: seen(120), playing_game: null })
+  .eq("id", ids.Zainab);
+await sb
+  .from("players")
+  .update({ last_seen_at: seen(60 * 26), playing_game: null })
+  .in("id", [ids.Kwame, ids.Adaeze]);
 
 // Today's Crownfall board: viewer ~1:12, others around a minute.
 const times = [51, 58, 61, 63, 65, 66, 67, 68, 69, 74, 77, 80, 83, 85, 90, 95, 101, 109, 115, 121];
@@ -137,11 +171,27 @@ const rows = others.slice(0, times.length).map((id, i) => ({
   mistakes: i % 3,
   finished_at: new Date(now - i * 60_000).toISOString(),
 }));
-rows.push({ date: today, game_id: "crownfall", player_id: viewer, time_ms: 72_400, hints: 0, mistakes: 0, finished_at: new Date().toISOString() });
+rows.push({
+  date: today,
+  game_id: "crownfall",
+  player_id: viewer,
+  time_ms: 72_400,
+  hints: 0,
+  mistakes: 0,
+  finished_at: new Date().toISOString(),
+});
 must(await sb.from("daily_results").upsert(rows, { onConflict: "date,game_id,player_id", ignoreDuplicates: true }), "board");
 for (const g of ["dusk", "weave", "quads"])
   await sb.from("daily_results").upsert(
-    others.slice(0, 8).map((id, i) => ({ date: today, game_id: g, player_id: id, time_ms: (60 + i * 7) * 1000, hints: 0, mistakes: 0, finished_at: new Date().toISOString() })),
+    others.slice(0, 8).map((id, i) => ({
+      date: today,
+      game_id: g,
+      player_id: id,
+      time_ms: (60 + i * 7) * 1000,
+      hints: 0,
+      mistakes: 0,
+      finished_at: new Date().toISOString(),
+    })),
     { onConflict: "date,game_id,player_id", ignoreDuplicates: true },
   );
 
@@ -191,26 +241,43 @@ for (const b of ["first-clear", "streak-7", "early-bird", "social-5", "clean-10"
   await sb.from("player_badges").upsert({ player_id: viewer, badge_id: b }, { ignoreDuplicates: true });
 
 // This week's league (Gold Crown) with the viewer in 5th.
-const { data: lm } = await sb.from("league_members").select("league_id, leagues!inner(week_start)").eq("player_id", viewer).eq("leagues.week_start", monday).maybeSingle();
+const { data: lm } = await sb
+  .from("league_members")
+  .select("league_id, leagues!inner(week_start)")
+  .eq("player_id", viewer)
+  .eq("leagues.week_start", monday)
+  .maybeSingle();
 let leagueId = lm?.league_id as string | undefined;
 if (!leagueId) {
   leagueId = must(await sb.from("leagues").insert({ tier: 2, week_start: monday }).select("id").single(), "league").id;
   must(await sb.from("league_members").insert({ league_id: leagueId, player_id: viewer, points: 1702 }), "viewer member");
 }
-const pts = [2140, 1980, 1910, 1765, 1650, 1610, 1588, 1501, 1460, 1390, 1340, 1300, 1255, 1210, 1170, 1102, 1050, 990, 930, 870, 800, 760, 700, 640, 560, 420, 380, 300];
+const pts = [
+  2140, 1980, 1910, 1765, 1650, 1610, 1588, 1501, 1460, 1390, 1340, 1300, 1255, 1210, 1170, 1102, 1050, 990, 930, 870, 800, 760, 700, 640,
+  560, 420, 380, 300,
+];
 await sb.from("league_members").upsert(
   others.slice(0, pts.length).map((id, i) => ({ league_id: leagueId, player_id: id, points: pts[i] })),
   { onConflict: "league_id,player_id", ignoreDuplicates: true },
 );
 if (ceremony) {
   const prevWeek = new Date(Date.parse(monday) - 7 * 86_400_000).toISOString().slice(0, 10);
-  const prev = must(await sb.from("leagues").insert({ tier: 2, week_start: prevWeek, finalised_at: new Date().toISOString() }).select("id").single(), "prev league").id;
+  const prev = must(
+    await sb.from("leagues").insert({ tier: 2, week_start: prevWeek, finalised_at: new Date().toISOString() }).select("id").single(),
+    "prev league",
+  ).id;
   const prevPts = [2300, 2210, 2050, 1880, 1702, 1690, 1640, 1500];
   must(
     await sb.from("league_members").insert([
       ...others.slice(0, 4).map((id, i) => ({ league_id: prev, player_id: id, points: prevPts[i], final_rank: i + 1, result: "promoted" })),
       { league_id: prev, player_id: viewer, points: 1702, final_rank: 5, result: "promoted" },
-      ...others.slice(4, 7).map((id, i) => ({ league_id: prev, player_id: id, points: prevPts[5 + i], final_rank: 6 + i, result: i < 2 ? "promoted" : "stayed" })),
+      ...others.slice(4, 7).map((id, i) => ({
+        league_id: prev,
+        player_id: id,
+        points: prevPts[5 + i],
+        final_rank: 6 + i,
+        result: i < 2 ? "promoted" : "stayed",
+      })),
     ]),
     "prev members",
   );
@@ -243,7 +310,10 @@ await sb.from("reactions").upsert(
 async function crew(name: string, owner: string, members: string[], code: string) {
   const { data: c } = await sb.from("crews").select("id").eq("name", name).maybeSingle();
   const id = c?.id ?? must(await sb.from("crews").insert({ name, owner_id: owner, join_code: code }).select("id").single(), name).id;
-  for (const p of members) await sb.from("crew_members").upsert({ crew_id: id, player_id: p, role: p === owner ? "captain" : "member" }, { ignoreDuplicates: true });
+  for (const p of members)
+    await sb
+      .from("crew_members")
+      .upsert({ crew_id: id, player_id: p, role: p === owner ? "captain" : "member" }, { ignoreDuplicates: true });
   return id;
 }
 const { data: vc } = await sb.from("crew_members").select("crew_id").eq("player_id", viewer).maybeSingle();
@@ -265,9 +335,32 @@ for (const [n, xp] of [
 const quests = (await import("../../lib/gamification/quests.ts")).questsForDate(today);
 await sb.from("player_quests").upsert(
   [
-    { player_id: viewer, quest_id: quests[0].id, period: today, progress: quests[0].goal.n, target: quests[0].goal.n, completed_at: new Date().toISOString() },
-    { player_id: viewer, quest_id: quests[2].id, period: today, progress: quests[2].goal.n, target: quests[2].goal.n, completed_at: new Date().toISOString(), claimed_at: new Date().toISOString() },
-    ...["w-1", "w-2", "w-3"].map((q) => ({ player_id: viewer, quest_id: q, period: monday, progress: 1, target: 1, completed_at: new Date().toISOString(), claimed_at: new Date().toISOString() })),
+    {
+      player_id: viewer,
+      quest_id: quests[0].id,
+      period: today,
+      progress: quests[0].goal.n,
+      target: quests[0].goal.n,
+      completed_at: new Date().toISOString(),
+    },
+    {
+      player_id: viewer,
+      quest_id: quests[2].id,
+      period: today,
+      progress: quests[2].goal.n,
+      target: quests[2].goal.n,
+      completed_at: new Date().toISOString(),
+      claimed_at: new Date().toISOString(),
+    },
+    ...["w-1", "w-2", "w-3"].map((q) => ({
+      player_id: viewer,
+      quest_id: q,
+      period: monday,
+      progress: 1,
+      target: 1,
+      completed_at: new Date().toISOString(),
+      claimed_at: new Date().toISOString(),
+    })),
   ],
   { onConflict: "player_id,quest_id,period" },
 );
@@ -279,7 +372,15 @@ const cupId =
   must(
     await sb
       .from("school_cups")
-      .insert({ school_id: schoolId, teacher_id: viewer, class_name: "Form 2B", games: ["crownfall", "quads", "deadon"], week_start: monday, ends_on: new Date(Date.parse(monday) + 4 * 86_400_000).toISOString().slice(0, 10), join_code: "FRM2BQ" })
+      .insert({
+        school_id: schoolId,
+        teacher_id: viewer,
+        class_name: "Form 2B",
+        games: ["crownfall", "quads", "deadon"],
+        week_start: monday,
+        ends_on: new Date(Date.parse(monday) + 4 * 86_400_000).toISOString().slice(0, 10),
+        join_code: "FRM2BQ",
+      })
       .select("id")
       .single(),
     "cup",

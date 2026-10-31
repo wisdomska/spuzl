@@ -238,7 +238,8 @@ function useGet<T>(key: QueryKey, path: string, opts: { enabled?: boolean; stale
 }
 
 export const useFriends = (enabled = true) => useGet<FriendsRes>(["friends"], "/api/v1/friends", { enabled, refetchInterval: 60_000 });
-export const useInvite = () => useGet<{ code: string; url: string; nickname: string }>(["invite"], "/api/v1/friends/invite", { staleTime: Infinity });
+export const useInvite = () =>
+  useGet<{ code: string; url: string; nickname: string }>(["invite"], "/api/v1/friends/invite", { staleTime: Infinity });
 export const useFeed = () => useGet<{ items: FeedItem[]; next: number | null }>(["feed"], "/api/v1/feed");
 export const useBlocks = () => useGet<{ blocked: { id: string; nickname: string; color: string }[] }>(["blocks"], "/api/v1/blocks");
 export const useBoard = (game: string, scope: Scope, date: string) =>
@@ -248,13 +249,16 @@ export const useQuests = () => useGet<QuestsRes>(["quests"], "/api/v1/quests");
 export const useBadges = () => useGet<BadgesRes>(["badges"], "/api/v1/badges");
 export const useShop = () => useGet<ShopRes>(["shop"], "/api/v1/shop");
 export const useProfile = (month: string) => useGet<ProfileRes>(["profile", month], `/api/v1/me/profile?month=${month}`);
-export const usePlayer = (nickname: string) => useGet<PublicProfile>(["player", nickname.toLowerCase()], `/api/v1/players/${encodeURIComponent(nickname)}`);
+export const usePlayer = (nickname: string) =>
+  useGet<PublicProfile>(["player", nickname.toLowerCase()], `/api/v1/players/${encodeURIComponent(nickname)}`);
 export const useMyCrew = () =>
   useGet<{ crew: { id: string; name: string; color: string; code: string; role: string } | null }>(["crew", "mine"], "/api/v1/crews");
 export const useCrew = (id: string) => useGet<CrewPage>(["crew", id], `/api/v1/crews/${id}`);
 export const useCups = () => useGet<{ canTeach: boolean; teaching: CupDTO[]; joined: CupDTO[] }>(["cups"], "/api/v1/school-cup");
-export const useCup = (id: string, refetchInterval?: number) => useGet<CupBoard>(["cup", id], `/api/v1/school-cup/${id}`, { refetchInterval });
-export const useArchive = (game: string, month: string) => useGet<ArchiveRes>(["archive", game, month], `/api/v1/archive?game=${game}&month=${month}`);
+export const useCup = (id: string, refetchInterval?: number) =>
+  useGet<CupBoard>(["cup", id], `/api/v1/school-cup/${id}`, { refetchInterval });
+export const useArchive = (game: string, month: string) =>
+  useGet<ArchiveRes>(["archive", game, month], `/api/v1/archive?game=${game}&month=${month}`);
 
 // ---------- mutations ----------
 function useAct<I, O>(fn: (input: I) => Promise<O>, invalidate: QueryKey[]) {
@@ -309,7 +313,8 @@ export function useReact() {
 
 export const useClaimQuest = () =>
   useAct(
-    (id: string) => api<{ xp: number; sparks: number; already: boolean; balance: number }>(`/api/v1/quests/${id}/claim`, { method: "POST" }),
+    (id: string) =>
+      api<{ xp: number; sparks: number; already: boolean; balance: number }>(`/api/v1/quests/${id}/claim`, { method: "POST" }),
     [["quests"], ["me"]],
   );
 export const useClaimLeague = () =>

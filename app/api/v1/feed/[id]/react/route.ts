@@ -27,7 +27,10 @@ export const POST = handle(async (req: Request, ctx: RouteContext<"/api/v1/feed/
   } else {
     const { error } = await admin
       .from("reactions")
-      .upsert({ event_id: ev.id, player_id: player.id, reaction, created_at: new Date().toISOString() }, { onConflict: "event_id,player_id" });
+      .upsert(
+        { event_id: ev.id, player_id: player.id, reaction, created_at: new Date().toISOString() },
+        { onConflict: "event_id,player_id" },
+      );
     if (error) throw error;
   }
   return ok({ ok: true });

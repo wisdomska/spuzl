@@ -80,7 +80,14 @@ function Crews() {
             <input
               id="crew-code"
               value={code}
-              onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8))}
+              onChange={(e) =>
+                setCode(
+                  e.target.value
+                    .toUpperCase()
+                    .replace(/[^A-Z0-9]/g, "")
+                    .slice(0, 8),
+                )
+              }
               placeholder="K7QXPM"
               autoCapitalize="characters"
               autoComplete="off"

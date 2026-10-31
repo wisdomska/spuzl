@@ -65,7 +65,9 @@ function SchoolCup() {
       </div>
       <div className="flex items-center gap-3 py-1">
         <Spuz mood="proud" size={80} decorative />
-        <p className="text-[15px] leading-snug font-medium text-pretty">Your class against the clock. Your teacher picks the games, everyone plays the Daily, the board fills up all week.</p>
+        <p className="text-[15px] leading-snug font-medium text-pretty">
+          Your class against the clock. Your teacher picks the games, everyone plays the Daily, the board fills up all week.
+        </p>
       </div>
       <form onSubmit={onJoin} className="bg-surface flex flex-col gap-3 rounded-[20px] p-4">
         <label htmlFor="cup-code" className="text-[16px] font-bold">
@@ -74,7 +76,14 @@ function SchoolCup() {
         <input
           id="cup-code"
           value={code}
-          onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8))}
+          onChange={(e) =>
+            setCode(
+              e.target.value
+                .toUpperCase()
+                .replace(/[^A-Z0-9]/g, "")
+                .slice(0, 8),
+            )
+          }
           placeholder="Class code"
           autoCapitalize="characters"
           autoComplete="off"
@@ -109,7 +118,10 @@ function SchoolCup() {
               <CupRow key={c.id} c={c} teacher />
             ))}
             {q.data.canTeach ? (
-              <Link href="/school-cup/new" className="toy bg-surface-raised font-display flex h-14 items-center justify-center gap-2 rounded-[18px] text-[15px] font-extrabold">
+              <Link
+                href="/school-cup/new"
+                className="toy bg-surface-raised font-display flex h-14 items-center justify-center gap-2 rounded-[18px] text-[15px] font-extrabold"
+              >
                 <Icon name="plus" size={18} />
                 Set up a class challenge
               </Link>

@@ -39,7 +39,7 @@ select is((select count(*)::int from public.feed_events where player_id = '00000
 select is((select count(*)::int from public.feed_events where player_id = '00000000-0000-0000-0000-00000000060d'), 0, 'strangers are not in the feed');
 select is((select count(*)::int from public.feed_events where player_id = '00000000-0000-0000-0000-000000000610'), 0, 'a friend who blocked you is not in the feed');
 select is((select count(*)::int from public.streak_frozen_days), 0, 'frozen days are own rows only');
-select throws_ok($$ select * from public.svc_leaderboard('00000000-0000-0000-0000-00000000060a', 'crownfall', '2026-10-30', 'global') $$,
+select throws_ok($$ select * from public.svc_leaderboard('00000000-0000-0000-0000-00000000060a', 'crownfall', '2001-01-02', 'global') $$,
   '42501', null, 'clients cannot call the leaderboard service function');
 select throws_ok($$ select public.svc_buy_cosmetic('00000000-0000-0000-0000-00000000060a', 'hat-party', 'r1') $$,
   '42501', null, 'clients cannot buy directly');
@@ -47,28 +47,28 @@ reset role;
 
 -- Leaderboard: crownfall on a fixed date
 insert into public.daily_results (date, game_id, player_id, time_ms, hints, mistakes, finished_at) values
-  ('2026-10-30', 'crownfall', '00000000-0000-0000-0000-00000000060a', 70000, 0, 0, now()),
-  ('2026-10-30', 'crownfall', '00000000-0000-0000-0000-00000000060b', 50000, 0, 0, now()),
-  ('2026-10-30', 'crownfall', '00000000-0000-0000-0000-00000000060c', 60000, 0, 0, now()),
-  ('2026-10-30', 'crownfall', '00000000-0000-0000-0000-00000000060d', 40000, 0, 0, now()),
-  ('2026-10-30', 'crownfall', '00000000-0000-0000-0000-00000000060e', 10000, 0, 0, now()),
-  ('2026-10-30', 'crownfall', '00000000-0000-0000-0000-00000000060f', 9000, 0, 0, now()),
-  ('2026-10-30', 'crownfall', '00000000-0000-0000-0000-000000000610', 9500, 0, 0, now()),
-  ('2026-10-30', 'dusk', '00000000-0000-0000-0000-00000000060a', 30000, 0, 0, now());
+  ('2001-01-02', 'crownfall', '00000000-0000-0000-0000-00000000060a', 70000, 0, 0, now()),
+  ('2001-01-02', 'crownfall', '00000000-0000-0000-0000-00000000060b', 50000, 0, 0, now()),
+  ('2001-01-02', 'crownfall', '00000000-0000-0000-0000-00000000060c', 60000, 0, 0, now()),
+  ('2001-01-02', 'crownfall', '00000000-0000-0000-0000-00000000060d', 40000, 0, 0, now()),
+  ('2001-01-02', 'crownfall', '00000000-0000-0000-0000-00000000060e', 10000, 0, 0, now()),
+  ('2001-01-02', 'crownfall', '00000000-0000-0000-0000-00000000060f', 9000, 0, 0, now()),
+  ('2001-01-02', 'crownfall', '00000000-0000-0000-0000-000000000610', 9500, 0, 0, now()),
+  ('2001-01-02', 'dusk', '00000000-0000-0000-0000-00000000060a', 30000, 0, 0, now());
 insert into public.attempts (player_id, game_id, mode, daily_date, status) values
-  ('00000000-0000-0000-0000-00000000060f', 'crownfall', 'daily', '2026-10-30', 'flagged');
+  ('00000000-0000-0000-0000-00000000060f', 'crownfall', 'daily', '2001-01-02', 'flagged');
 
-select is((select string_agg(nickname, ',' order by pos) from public.svc_leaderboard('00000000-0000-0000-0000-00000000060a', 'crownfall', '2026-10-30', 'global')),
+select is((select string_agg(nickname, ',' order by pos) from public.svc_leaderboard('00000000-0000-0000-0000-00000000060a', 'crownfall', '2001-01-02', 'global')),
   'soc_d,soc_b,soc_c,soc_a', 'global board: fastest first; flagged, test and blocked players never show');
-select is((select pos from public.svc_leaderboard('00000000-0000-0000-0000-00000000060a', 'crownfall', '2026-10-30', 'global') where is_me), 4, 'the viewer row is marked');
-select is((select string_agg(nickname, ',' order by pos) from public.svc_leaderboard('00000000-0000-0000-0000-00000000060a', 'crownfall', '2026-10-30', 'friends')),
+select is((select pos from public.svc_leaderboard('00000000-0000-0000-0000-00000000060a', 'crownfall', '2001-01-02', 'global') where is_me), 4, 'the viewer row is marked');
+select is((select string_agg(nickname, ',' order by pos) from public.svc_leaderboard('00000000-0000-0000-0000-00000000060a', 'crownfall', '2001-01-02', 'friends')),
   'soc_b,soc_c,soc_a', 'friends board holds friends and you');
-select is((select string_agg(nickname, ',' order by pos) from public.svc_leaderboard('00000000-0000-0000-0000-00000000060a', 'crownfall', '2026-10-30', 'city')),
+select is((select string_agg(nickname, ',' order by pos) from public.svc_leaderboard('00000000-0000-0000-0000-00000000060a', 'crownfall', '2001-01-02', 'city')),
   'soc_b,soc_a', 'city board: same city, never under-16s');
-select is((select count(*)::int from public.svc_leaderboard('00000000-0000-0000-0000-00000000060a', 'crownfall', '2026-10-30', 'crew')), 0, 'no crew, empty crew board');
-select is((select clears from public.svc_leaderboard('00000000-0000-0000-0000-00000000060a', null, '2026-10-30', 'global') where is_me), 2, 'overall board counts clears for the day');
-select is((select pos from public.svc_leaderboard('00000000-0000-0000-0000-00000000060a', null, '2026-10-30', 'global') where is_me), 1, 'overall board ranks more clears first');
-select is((select count(*)::int from public.svc_leaderboard('00000000-0000-0000-0000-00000000060a', 'crownfall', '2026-10-30', 'global', 1)), 2, 'limit keeps the top rows plus you');
+select is((select count(*)::int from public.svc_leaderboard('00000000-0000-0000-0000-00000000060a', 'crownfall', '2001-01-02', 'crew')), 0, 'no crew, empty crew board');
+select is((select clears from public.svc_leaderboard('00000000-0000-0000-0000-00000000060a', null, '2001-01-02', 'global') where is_me), 2, 'overall board counts clears for the day');
+select is((select pos from public.svc_leaderboard('00000000-0000-0000-0000-00000000060a', null, '2001-01-02', 'global') where is_me), 1, 'overall board ranks more clears first');
+select is((select count(*)::int from public.svc_leaderboard('00000000-0000-0000-0000-00000000060a', 'crownfall', '2001-01-02', 'global', 1)), 2, 'limit keeps the top rows plus you');
 
 -- Shop
 update public.players set sparks = 400 where id = '00000000-0000-0000-0000-00000000060a';
@@ -79,9 +79,9 @@ select throws_like($$ select public.svc_buy_cosmetic('00000000-0000-0000-0000-00
 select throws_like($$ select public.svc_buy_cosmetic('00000000-0000-0000-0000-00000000060a', 'hat-party', 'r3') $$, '%owned%', 'cannot buy an owned item twice');
 
 -- Streak Freeze use is recorded for the calendar; a milestone posts to the feed
-insert into public.streaks (player_id, current, best, last_clear_date, freezes_held) values ('00000000-0000-0000-0000-00000000060b', 6, 6, '2026-10-28', 1);
-update public.streaks set freezes_held = 0, last_clear_date = '2026-10-29' where player_id = '00000000-0000-0000-0000-00000000060b';
-select is((select day::text from public.streak_frozen_days where player_id = '00000000-0000-0000-0000-00000000060b'), '2026-10-29', 'a spent Freeze marks the covered day');
+insert into public.streaks (player_id, current, best, last_clear_date, freezes_held) values ('00000000-0000-0000-0000-00000000060b', 6, 6, '2001-01-01', 1);
+update public.streaks set freezes_held = 0, last_clear_date = '2001-01-02' where player_id = '00000000-0000-0000-0000-00000000060b';
+select is((select day::text from public.streak_frozen_days where player_id = '00000000-0000-0000-0000-00000000060b'), '2001-01-02', 'a spent Freeze marks the covered day');
 update public.streaks set current = 7 where player_id = '00000000-0000-0000-0000-00000000060b';
 select is((select count(*)::int from public.feed_events where player_id = '00000000-0000-0000-0000-00000000060b' and kind = 'streak'), 1, 'a 7 day streak posts to the feed');
 

@@ -33,7 +33,13 @@ export const GET = handle(async (_req: Request, ctx: RouteContext<"/api/v1/crews
       admin.rpc("svc_crew_week_xp", { p_crew: id, p_week: week }),
       admin.rpc("svc_crew_week_xp", { p_crew: otherId, p_week: week }),
     ]);
-    clash = { week: isoWeek(week), endsInMs: msToLeagueReset(), us: Number(us ?? 0), them: Number(them ?? 0), opponent: other?.name ?? "Another crew" };
+    clash = {
+      week: isoWeek(week),
+      endsInMs: msToLeagueReset(),
+      us: Number(us ?? 0),
+      them: Number(them ?? 0),
+      opponent: other?.name ?? "Another crew",
+    };
   }
   const carry = [...people.values()]
     .map((c) => ({ id: c.id, nickname: c.nickname, color: c.color, xp: xp.get(c.id) ?? 0, me: c.id === player.id }))

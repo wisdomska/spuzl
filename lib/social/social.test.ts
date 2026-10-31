@@ -18,7 +18,7 @@ describe("codes", () => {
   it("never uses 0, O, 1 or I", () => {
     expect(CODE_ALPHABET).not.toMatch(/[0O1I]/);
     let seed = 0;
-    const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
+    const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
     for (let i = 0; i < 200; i++) expect(makeCode(6, rnd)).toMatch(/^[2-9A-HJ-NP-Z]{6}$/);
   });
   it("normalises typed codes", () => {

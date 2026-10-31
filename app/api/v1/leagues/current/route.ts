@@ -15,11 +15,18 @@ async function table(admin: Parameters<typeof cards>[0], leagueId: string, me: s
   const { data, error } = await admin.from("league_members").select("player_id, points, final_rank, result").eq("league_id", leagueId);
   if (error) throw error;
   const rows = (data ?? []) as MemberRow[];
-  const people = await cards(admin, rows.map((r) => r.player_id));
+  const people = await cards(
+    admin,
+    rows.map((r) => r.player_id),
+  );
   // Same order as the rollover: points desc, then id. Banned players drop out of the shown table.
   const sorted = rows
     .filter((r) => people.has(r.player_id))
-    .sort((a, b) => (finalised && a.final_rank && b.final_rank ? a.final_rank - b.final_rank : b.points - a.points || a.player_id.localeCompare(b.player_id)));
+    .sort((a, b) =>
+      finalised && a.final_rank && b.final_rank
+        ? a.final_rank - b.final_rank
+        : b.points - a.points || a.player_id.localeCompare(b.player_id),
+    );
   const n = sorted.length;
   return sorted.map((r, i) => {
     const c = people.get(r.player_id)!;

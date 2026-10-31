@@ -8,7 +8,11 @@ export const dynamic = "force-dynamic";
 /** GET /api/v1/crews: your crew, if any. */
 export const GET = handle(async () => {
   const { admin, player } = await requirePlayer();
-  const { data } = await admin.from("crew_members").select("role, crews(id, name, color, join_code)").eq("player_id", player.id).maybeSingle();
+  const { data } = await admin
+    .from("crew_members")
+    .select("role, crews(id, name, color, join_code)")
+    .eq("player_id", player.id)
+    .maybeSingle();
   const crew = data?.crews as unknown as { id: string; name: string; color: string; join_code: string } | null;
   return ok({ crew: crew ? { id: crew.id, name: crew.name, color: crew.color, code: crew.join_code, role: data!.role } : null });
 });

@@ -9,7 +9,10 @@ export const GET = handle(async () => {
   const { admin, player } = await requirePlayer();
   const { data, error } = await admin.from("blocks").select("blocked_id").eq("player_id", player.id);
   if (error) throw error;
-  const people = await cards(admin, (data ?? []).map((b) => b.blocked_id));
+  const people = await cards(
+    admin,
+    (data ?? []).map((b) => b.blocked_id),
+  );
   return ok({ blocked: [...people.values()].map(({ id, nickname, color }) => ({ id, nickname, color })) });
 });
 

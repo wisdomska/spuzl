@@ -14,9 +14,24 @@ import { ordinal } from "@/lib/leagues";
 
 const NEEDS: Record<NonNullable<BoardRes["needs"]>, { title: string; body: string; href: string; cta: string }> = {
   crew: { title: "No crew yet", body: "Start one or join with a code, then race your crew every day.", href: "/crews", cta: "Find a crew" },
-  school: { title: "No school board yet", body: "Join your class challenge with the code your teacher shares.", href: "/school-cup", cta: "Enter a class code" },
-  city: { title: "Add your city", body: "Pick your city in Settings to see who's fastest near you.", href: "/settings#place", cta: "Open Settings" },
-  country: { title: "Add your country", body: "Pick your country in Settings to see your country's board.", href: "/settings#place", cta: "Open Settings" },
+  school: {
+    title: "No school board yet",
+    body: "Join your class challenge with the code your teacher shares.",
+    href: "/school-cup",
+    cta: "Enter a class code",
+  },
+  city: {
+    title: "Add your city",
+    body: "Pick your city in Settings to see who's fastest near you.",
+    href: "/settings#place",
+    cta: "Open Settings",
+  },
+  country: {
+    title: "Add your country",
+    body: "Pick your country in Settings to see your country's board.",
+    href: "/settings#place",
+    cta: "Open Settings",
+  },
 };
 
 function valueText(r: BoardRow, scoring: BoardRes["scoring"]) {
@@ -106,7 +121,10 @@ export default function LeaderboardsPage() {
           title={NEEDS[d.needs].title}
           body={NEEDS[d.needs].body}
           action={
-            <Link href={NEEDS[d.needs].href} className="toy bg-surface-raised font-display flex h-14 items-center justify-center rounded-[18px] text-[15px] font-extrabold">
+            <Link
+              href={NEEDS[d.needs].href}
+              className="toy bg-surface-raised font-display flex h-14 items-center justify-center rounded-[18px] text-[15px] font-extrabold"
+            >
               {NEEDS[d.needs].cta}
             </Link>
           }
@@ -203,7 +221,10 @@ export default function LeaderboardsPage() {
                     className="press flex h-11 items-center gap-2 rounded-[12px] px-2.5 text-left text-[14px] font-semibold"
                     style={{ background: game === g.id ? "var(--success-tint)" : "var(--surface-raised)" }}
                   >
-                    <span className="flex size-6 shrink-0 items-center justify-center rounded-[8px]" style={{ background: w.color, color: "#0E0F1A" }}>
+                    <span
+                      className="flex size-6 shrink-0 items-center justify-center rounded-[8px]"
+                      style={{ background: w.color, color: "#0E0F1A" }}
+                    >
                       <Icon name={g.icon} size={14} />
                     </span>
                     <span className="truncate">{g.name}</span>
@@ -249,11 +270,27 @@ function Podium({ rows, scoring }: { rows: BoardRow[]; scoring: BoardRes["scorin
   return (
     <ol className="flex items-end justify-center gap-2 px-0 pt-1.5 pb-3" aria-label="Top 3">
       {order.map((r, i) => (
-        <li key={r.id} className="flex min-w-0 flex-1 flex-col items-center gap-1.5" aria-label={`${ordinal(r.pos)}, ${r.me ? "you" : r.nickname}, ${valueLabel(r, scoring)}`}>
-          <Link href={r.me ? "/me" : `/u/${r.nickname}`} data-me={r.me || undefined} className="flex flex-col items-center gap-1.5" aria-hidden tabIndex={-1}>
+        <li
+          key={r.id}
+          className="flex min-w-0 flex-1 flex-col items-center gap-1.5"
+          aria-label={`${ordinal(r.pos)}, ${r.me ? "you" : r.nickname}, ${valueLabel(r, scoring)}`}
+        >
+          <Link
+            href={r.me ? "/me" : `/u/${r.nickname}`}
+            data-me={r.me || undefined}
+            className="flex flex-col items-center gap-1.5"
+            aria-hidden
+            tabIndex={-1}
+          >
             <span
               className="font-display flex items-center justify-center rounded-[18px] text-[20px] font-black"
-              style={{ width: POD[i].size, height: POD[i].size, background: r.color, color: "#0E0F1A", boxShadow: `0 0 0 3px var(--bg), 0 0 0 6px ${POD[i].ring}` }}
+              style={{
+                width: POD[i].size,
+                height: POD[i].size,
+                background: r.color,
+                color: "#0E0F1A",
+                boxShadow: `0 0 0 3px var(--bg), 0 0 0 6px ${POD[i].ring}`,
+              }}
             >
               {r.nickname[0]?.toUpperCase()}
             </span>

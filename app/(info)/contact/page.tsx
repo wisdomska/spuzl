@@ -14,19 +14,17 @@ export default function Contact() {
 
       <h2>Someone is being unkind or cheating</h2>
       <p>
-        Open their profile or tap the three dots on their activity, then Report. Pick a reason and, if you like, block them in the same step. A
-        moderator checks every report within a day.
+        Open their profile or tap the three dots on their activity, then Report. Pick a reason and, if you like, block them in the same
+        step. A moderator checks every report within a day.
       </p>
 
       <h2>A puzzle looks broken</h2>
-      <p>
-        Tell us the game and the date{EMAIL ? " by email" : ""}. If a Daily is broken we can swap it for a fixed one.
-      </p>
+      <p>Tell us the game and the date{EMAIL ? " by email" : ""}. If a Daily is broken we can swap it for a fixed one.</p>
 
       <h2>Your data or account</h2>
       <p>
-        You can download or delete everything yourself in <Link href="/settings#account">Settings, Account</Link>. Parents and teachers who need a
-        young player&apos;s account removed can write to us.
+        You can download or delete everything yourself in <Link href="/settings#account">Settings, Account</Link>. Parents and teachers who
+        need a young player&apos;s account removed can write to us.
       </p>
 
       <h2>Email</h2>

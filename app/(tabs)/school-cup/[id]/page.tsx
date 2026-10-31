@@ -33,7 +33,9 @@ export default function CupPage({ params }: PageProps<"/school-cup/[id]">) {
           <header className="flex flex-col gap-1">
             <h1 className="font-display text-[28px] font-black">{c.className}</h1>
             <p className="text-muted text-[15px] font-medium">
-              {[c.school, `${c.games.length} ${c.games.length === 1 ? "game" : "games"}`, c.relaxed ? "Relaxed mode" : null].filter(Boolean).join(" · ")}
+              {[c.school, `${c.games.length} ${c.games.length === 1 ? "game" : "games"}`, c.relaxed ? "Relaxed mode" : null]
+                .filter(Boolean)
+                .join(" · ")}
             </p>
           </header>
           <div className="flex items-center gap-2">
@@ -52,14 +54,20 @@ export default function CupPage({ params }: PageProps<"/school-cup/[id]">) {
               ) : null;
             })}
             <span className="ml-auto flex flex-col items-end">
-              <span className="text-muted text-[13px] font-medium">{c.startsInMs > 0 ? "Starts in" : c.endsInMs > 0 ? "Ends in" : "Finished"}</span>
+              <span className="text-muted text-[13px] font-medium">
+                {c.startsInMs > 0 ? "Starts in" : c.endsInMs > 0 ? "Ends in" : "Finished"}
+              </span>
               <span className="num text-[18px] font-semibold">
                 {c.startsInMs > 0 ? formatLeft(c.startsInMs) : c.endsInMs > 0 ? formatLeft(c.endsInMs) : shortDate(c.endsOn ?? c.weekStart)}
               </span>
             </span>
           </div>
           {c.rows.length === 0 ? (
-            <EmptyState mood="wave" title="Nobody's joined yet" body={c.code ? `Share the class code ${c.code} with your students.` : undefined} />
+            <EmptyState
+              mood="wave"
+              title="Nobody's joined yet"
+              body={c.code ? `Share the class code ${c.code} with your students.` : undefined}
+            />
           ) : (
             <CupRows rows={c.rows} games={c.games.length} />
           )}

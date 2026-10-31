@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata: Metadata = { title: "Privacy", description: "What SPUZL collects, why, how long we keep it, and how to export or delete it." };
+export const metadata: Metadata = {
+  title: "Privacy",
+  description: "What SPUZL collects, why, how long we keep it, and how to export or delete it.",
+};
 
 // OWNER LEGAL REVIEW REQUIRED before launch (Ghana Act 843, Nigeria NDPA 2023, GDPR). Copy is plain-language and honest
 // about what the code does today; it is not legal advice.
@@ -9,7 +12,9 @@ export default function Privacy() {
   return (
     <>
       <h1>Privacy</h1>
-      <p className="lede">Last updated 31 October 2026. SPUZL is a free puzzle game for players aged 13 and up. We collect as little as we can.</p>
+      <p className="lede">
+        Last updated 31 October 2026. SPUZL is a free puzzle game for players aged 13 and up. We collect as little as we can.
+      </p>
 
       <h2>What we collect</h2>
       <ul>
@@ -23,7 +28,8 @@ export default function Privacy() {
           <strong>Email</strong>, only if you choose to sign in with email or Google. We use it to sign you in and recover your account.
         </li>
         <li>
-          <strong>City and country</strong>, only if you add them in Settings, for local boards. If you are under 16, your city never shows publicly.
+          <strong>City and country</strong>, only if you add them in Settings, for local boards. If you are under 16, your city never shows
+          publicly.
         </li>
         <li>
           <strong>School</strong>, only if you join a class challenge with a teacher&apos;s code.
@@ -62,21 +68,22 @@ export default function Privacy() {
           <strong>Download everything</strong> we hold about you as a file from <Link href="/settings#account">Settings, Account</Link>.
         </li>
         <li>
-          <strong>Delete your account</strong> from the same place. It is removed straight away, with your results, friends and Sparks. It can&apos;t be
-          undone.
+          <strong>Delete your account</strong> from the same place. It is removed straight away, with your results, friends and Sparks. It
+          can&apos;t be undone.
         </li>
       </ul>
 
       <h2>Players under 16</h2>
       <p>
-        Under-16 players appear on boards with nickname and avatar only. Friends can only be added with an invite link or QR code. If you are a
-        parent or teacher and want a young player&apos;s account removed, <Link href="/contact">contact us</Link>. Players under 13 can&apos;t use SPUZL.
+        Under-16 players appear on boards with nickname and avatar only. Friends can only be added with an invite link or QR code. If you
+        are a parent or teacher and want a young player&apos;s account removed, <Link href="/contact">contact us</Link>. Players under 13
+        can&apos;t use SPUZL.
       </p>
 
       <h2>Where your data lives</h2>
       <p>
-        SPUZL runs on Supabase (database and sign-in) and Vercel (the app), both hosted in London, United Kingdom. They process data only to run
-        SPUZL for us.
+        SPUZL runs on Supabase (database and sign-in) and Vercel (the app), both hosted in London, United Kingdom. They process data only to
+        run SPUZL for us.
       </p>
 
       <h2>On your device</h2>

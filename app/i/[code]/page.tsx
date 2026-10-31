@@ -32,7 +32,8 @@ export default function InvitePage({ params }: PageProps<"/i/[code]">) {
   }, [me.isSuccess, me.data, code, accept]);
 
   const start = readOnboarding().introSeen ? "/welcome" : "/intro";
-  const cta = "toy bg-accent text-on-accent font-display flex h-[60px] w-full items-center justify-center rounded-[20px] text-[16px] font-black";
+  const cta =
+    "toy bg-accent text-on-accent font-display flex h-[60px] w-full items-center justify-center rounded-[20px] text-[16px] font-black";
 
   return (
     <main className="safe-top dotgrid flex min-h-dvh flex-col items-center justify-center gap-5 px-6 text-center">

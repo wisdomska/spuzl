@@ -4,6 +4,7 @@ import Link from "next/link";
 import { use, useEffect, useState } from "react";
 import { useCup } from "@/lib/client/social";
 import { CupRows } from "@/components/meta/CupBoard";
+import { useNow } from "@/components/meta/useNow";
 import { Wordmark } from "@/components/brand/Wordmark";
 import { Spuz } from "@/components/brand/Spuz";
 import { Icon } from "@/components/ui/Icon";
@@ -18,23 +19,18 @@ export default function CupTvPage({ params }: PageProps<"/school-cup/[id]/tv">) 
   const { id } = use(params);
   const q = useCup(id, 30_000);
   const [scale, setScale] = useState(1);
-  const [now, setNow] = useState(() => Date.now());
-  const [loadedAt, setLoadedAt] = useState(() => Date.now());
+  const now = useNow(30_000);
   useEffect(() => {
     const fit = () => setScale(Math.min(window.innerWidth / 1280, window.innerHeight / 720));
-    fit();
+    const raf = requestAnimationFrame(fit);
     window.addEventListener("resize", fit);
-    const t = setInterval(() => setNow(Date.now()), 30_000);
     return () => {
+      cancelAnimationFrame(raf);
       window.removeEventListener("resize", fit);
-      clearInterval(t);
     };
   }, []);
-  useEffect(() => {
-    if (q.dataUpdatedAt) setLoadedAt(q.dataUpdatedAt);
-  }, [q.dataUpdatedAt]);
   const c = q.data;
-  const left = c ? (c.startsInMs > 0 ? c.startsInMs : c.endsInMs) - (now - loadedAt) : 0;
+  const left = c ? (c.startsInMs > 0 ? c.startsInMs : c.endsInMs) + q.dataUpdatedAt - now : 0;
 
   return (
     <main aria-label="Class board, TV mode" className="bg-bg fixed inset-0 overflow-hidden">
@@ -55,7 +51,12 @@ export default function CupTvPage({ params }: PageProps<"/school-cup/[id]/tv">) 
             {c?.games.map((g) => {
               const meta = GAME_BY_ID[g];
               return meta ? (
-                <span key={g} className="flex size-[72px] items-center justify-center rounded-[22px]" style={{ background: WORLD_BY_ID[meta.world].color, color: "#0E0F1A" }} title={meta.name}>
+                <span
+                  key={g}
+                  className="flex size-[72px] items-center justify-center rounded-[22px]"
+                  style={{ background: WORLD_BY_ID[meta.world].color, color: "#0E0F1A" }}
+                  title={meta.name}
+                >
                   <Icon name={meta.icon} size={36} label={meta.name} />
                 </span>
               ) : null;
@@ -63,7 +64,9 @@ export default function CupTvPage({ params }: PageProps<"/school-cup/[id]/tv">) 
           </div>
           <div className="mt-auto flex items-end gap-2.5">
             <div className="flex flex-col gap-1">
-              <span className="text-muted text-[26px] font-semibold">{c && c.startsInMs > 0 ? "Starts in" : c && left > 0 ? "Ends in" : "Final board"}</span>
+              <span className="text-muted text-[26px] font-semibold">
+                {c && c.startsInMs > 0 ? "Starts in" : c && left > 0 ? "Ends in" : "Final board"}
+              </span>
               <span className="num text-[64px] leading-none font-semibold">{c && left > 0 ? formatLeft(left) : ""}</span>
             </div>
             <div className="ml-auto">
@@ -77,7 +80,9 @@ export default function CupTvPage({ params }: PageProps<"/school-cup/[id]/tv">) 
           ) : (
             <div className="flex flex-1 flex-col items-center justify-center gap-4">
               <Spuz mood="wave" size={160} decorative />
-              <p className="font-display text-[34px] font-black">{q.isError ? "Board didn't load" : c ? "Join with the class code" : " "}</p>
+              <p className="font-display text-[34px] font-black">
+                {q.isError ? "Board didn't load" : c ? "Join with the class code" : " "}
+              </p>
               {c?.code && <p className="font-display text-accent text-[64px] font-black tracking-[0.12em]">{c.code}</p>}
             </div>
           )}

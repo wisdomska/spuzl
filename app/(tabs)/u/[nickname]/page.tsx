@@ -39,7 +39,11 @@ export default function PlayerPage({ params }: PageProps<"/u/[nickname]">) {
       <div className="flex justify-between">
         <BackButton />
         {p && (
-          <button aria-label="More" onClick={() => setMenu(true)} className="press bg-surface-raised flex size-11 items-center justify-center rounded-[14px]">
+          <button
+            aria-label="More"
+            onClick={() => setMenu(true)}
+            className="press bg-surface-raised flex size-11 items-center justify-center rounded-[14px]"
+          >
             <Icon name="dots-three" size={20} />
           </button>
         )}
@@ -50,7 +54,11 @@ export default function PlayerPage({ params }: PageProps<"/u/[nickname]">) {
           title={`You blocked ${name}`}
           body="They can't find you, add you or see your activity."
           action={
-            <Button variant="secondary" className="w-full" onClick={() => unblock.mutate(blockedId, { onSuccess: () => setBlockedId(null) })}>
+            <Button
+              variant="secondary"
+              className="w-full"
+              onClick={() => unblock.mutate(blockedId, { onSuccess: () => setBlockedId(null) })}
+            >
               Unblock
             </Button>
           }
@@ -66,16 +74,27 @@ export default function PlayerPage({ params }: PageProps<"/u/[nickname]">) {
       ) : (
         <>
           <div className="flex flex-col items-center gap-2">
-            <div className="bg-surface relative flex size-[120px] items-center justify-center rounded-[36px]" style={{ boxShadow: `0 0 0 4px ${p.color}` }}>
+            <div
+              className="bg-surface relative flex size-[120px] items-center justify-center rounded-[36px]"
+              style={{ boxShadow: `0 0 0 4px ${p.color}` }}
+            >
               <SpuzWear size={106} color={p.color} hat={p.hat} label={`${p.nickname}'s Spuz`} />
               {p.presence?.online && (
-                <span aria-hidden className="bg-accent absolute -right-1 -bottom-1 size-5 rounded-full" style={{ boxShadow: "0 0 0 4px var(--bg)" }} />
+                <span
+                  aria-hidden
+                  className="bg-accent absolute -right-1 -bottom-1 size-5 rounded-full"
+                  style={{ boxShadow: "0 0 0 4px var(--bg)" }}
+                />
               )}
             </div>
             <h1 className="font-display text-[22px] font-black">{p.nickname}</h1>
             {p.presence ? (
               <p className="text-muted flex items-center gap-1.5 text-[15px] font-medium">
-                <span aria-hidden className="size-2 rounded-full" style={{ background: p.presence.online ? "var(--accent)" : "var(--text-muted)" }} />
+                <span
+                  aria-hidden
+                  className="size-2 rounded-full"
+                  style={{ background: p.presence.online ? "var(--accent)" : "var(--text-muted)" }}
+                />
                 {p.presence.label}
               </p>
             ) : p.title ? (
@@ -141,7 +160,13 @@ export default function PlayerPage({ params }: PageProps<"/u/[nickname]">) {
                 </Link>
               </>
             ) : p.relation === "incoming" ? (
-              <Button size="lg" className="col-span-2" icon="check" loading={accept.isPending} onClick={() => accept.mutate(p.id, { onSuccess: () => q.refetch() })}>
+              <Button
+                size="lg"
+                className="col-span-2"
+                icon="check"
+                loading={accept.isPending}
+                onClick={() => accept.mutate(p.id, { onSuccess: () => q.refetch() })}
+              >
                 Accept friend request
               </Button>
             ) : p.relation === "requested" ? (
@@ -151,7 +176,13 @@ export default function PlayerPage({ params }: PageProps<"/u/[nickname]">) {
             ) : p.minor ? (
               <p className="text-muted col-span-2 text-center text-[14px]">Players under 16 add friends with an invite link or QR code.</p>
             ) : (
-              <Button size="lg" className="col-span-2" icon="user-plus" loading={add.isPending} onClick={() => add.mutate(p.nickname, { onSuccess: () => q.refetch() })}>
+              <Button
+                size="lg"
+                className="col-span-2"
+                icon="user-plus"
+                loading={add.isPending}
+                onClick={() => add.mutate(p.nickname, { onSuccess: () => q.refetch() })}
+              >
                 Add friend
               </Button>
             )}

@@ -74,7 +74,11 @@ export function LeagueCeremony({ c, onDone }: { c: Ceremony; onDone: () => void 
         >
           <div className="flex w-full max-w-[480px] items-center justify-between">
             <span className="text-muted text-[15px] font-semibold">Week {c.week} is done</span>
-            <span data-wallet className="bg-surface-raised flex h-10 items-center gap-1.5 rounded-[14px] px-3" aria-label={`${formatNumber(me.data?.sparks ?? 0)} Sparks`}>
+            <span
+              data-wallet
+              className="bg-surface-raised flex h-10 items-center gap-1.5 rounded-[14px] px-3"
+              aria-label={`${formatNumber(me.data?.sparks ?? 0)} Sparks`}
+            >
               <Icon name="lightning" size={18} className="text-gold" />
               <span className="num text-gold text-[17px] font-semibold">{formatNumber(me.data?.sparks ?? 0)}</span>
             </span>
@@ -97,7 +101,10 @@ export function LeagueCeremony({ c, onDone }: { c: Ceremony; onDone: () => void 
             >
               <Hex w={170} h={190} bg={c.to.color} label={`${c.to.name} emblem`}>
                 <div className="flex size-[120px] rotate-45 items-center justify-center rounded-[20px]" style={{ background: "#0E0F1A" }}>
-                  <div className="flex size-[60px] -rotate-45 items-center justify-center rounded-[12px]" style={{ background: c.to.color, color: "#0E0F1A" }}>
+                  <div
+                    className="flex size-[60px] -rotate-45 items-center justify-center rounded-[12px]"
+                    style={{ background: c.to.color, color: "#0E0F1A" }}
+                  >
                     <Icon name={c.to.icon} size={32} />
                   </div>
                 </div>
@@ -128,8 +135,12 @@ export function LeagueCeremony({ c, onDone }: { c: Ceremony; onDone: () => void 
             })}
           </div>
           <div className="flex flex-wrap justify-center gap-2.5">
-            {c.reward > 0 && <span className="bg-surface num text-gold rounded-[14px] px-3.5 py-2.5 text-[15px] font-semibold">+{c.reward} Sparks</span>}
-            <span className="bg-surface num rounded-[14px] px-3.5 py-2.5 text-[15px] font-semibold">{formatNumber(c.points)} XP this week</span>
+            {c.reward > 0 && (
+              <span className="bg-surface num text-gold rounded-[14px] px-3.5 py-2.5 text-[15px] font-semibold">+{c.reward} Sparks</span>
+            )}
+            <span className="bg-surface num rounded-[14px] px-3.5 py-2.5 text-[15px] font-semibold">
+              {formatNumber(c.points)} XP this week
+            </span>
           </div>
           <Button
             ref={claimRef}

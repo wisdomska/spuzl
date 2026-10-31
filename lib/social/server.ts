@@ -98,7 +98,11 @@ export async function befriend(admin: SupabaseClient, a: string, b: string) {
   const existing = await friendshipBetween(admin, a, b);
   if (existing) {
     if (existing.status !== "accepted")
-      await admin.from("friendships").update({ status: "accepted" }).eq("player_id", existing.player_id).eq("friend_id", existing.friend_id);
+      await admin
+        .from("friendships")
+        .update({ status: "accepted" })
+        .eq("player_id", existing.player_id)
+        .eq("friend_id", existing.friend_id);
     return;
   }
   const { error } = await admin.from("friendships").insert({ player_id: a, friend_id: b, status: "accepted" });
@@ -112,7 +116,9 @@ export function sqlMessage(e: { message?: string } | null): string {
 
 /** Blocks a player and ends any friendship or request between you. */
 export async function blockPlayer(admin: SupabaseClient, me: string, other: string) {
-  const { error } = await admin.from("blocks").upsert({ player_id: me, blocked_id: other }, { onConflict: "player_id,blocked_id", ignoreDuplicates: true });
+  const { error } = await admin
+    .from("blocks")
+    .upsert({ player_id: me, blocked_id: other }, { onConflict: "player_id,blocked_id", ignoreDuplicates: true });
   if (error?.code === "23503") throw new ApiError(404, "not_found");
   if (error) throw error;
   const { error: e2 } = await admin

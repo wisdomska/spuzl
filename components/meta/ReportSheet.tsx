@@ -52,7 +52,10 @@ export function ReportSheet({
                   aria-checked={on}
                   onClick={() => setReason(o.id)}
                   className="flex h-[52px] items-center gap-3 rounded-[14px] px-3.5 text-left text-[15px] font-semibold"
-                  style={{ background: on ? "var(--success-tint)" : "var(--surface-raised)", boxShadow: on ? "inset 0 0 0 2px var(--accent)" : undefined }}
+                  style={{
+                    background: on ? "var(--success-tint)" : "var(--surface-raised)",
+                    boxShadow: on ? "inset 0 0 0 2px var(--accent)" : undefined,
+                  }}
                 >
                   <Icon name={o.icon} size={20} />
                   {o.label}

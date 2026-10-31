@@ -13,7 +13,10 @@ export default function FairPlay() {
       <h2>Every clear is checked</h2>
       <ul>
         <li>Puzzle answers stay on our servers until you clear. Your board is checked there before any XP, Sparks or rank is given.</li>
-        <li>Each game has a fastest humanly possible time. Clears faster than that are flagged and kept off the boards until a moderator looks.</li>
+        <li>
+          Each game has a fastest humanly possible time. Clears faster than that are flagged and kept off the boards until a moderator
+          looks.
+        </li>
         <li>We keep your moves for 90 days, so top and flagged results can be checked step by step.</li>
         <li>You get one ranked try at each Daily. Replays are practice and never rank.</li>
       </ul>
@@ -41,14 +44,14 @@ export default function FairPlay() {
         <li>Making extra accounts to climb boards or leagues.</li>
       </ul>
       <p>
-        Depending on what happened, we may hide a result, reset a nickname, remove ranking access or close an account. If you think we got it
-        wrong, <Link href="/contact">tell us</Link>.
+        Depending on what happened, we may hide a result, reset a nickname, remove ranking access or close an account. If you think we got
+        it wrong, <Link href="/contact">tell us</Link>.
       </p>
 
       <h2>Look after yourself</h2>
       <p>
-        Puzzles are better with breaks. A Streak Freeze means one missed day is fine, and Relaxed mode hides the timer if racing the clock stops
-        being fun.
+        Puzzles are better with breaks. A Streak Freeze means one missed day is fine, and Relaxed mode hides the timer if racing the clock
+        stops being fun.
       </p>
     </>
   );

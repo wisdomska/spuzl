@@ -73,7 +73,11 @@ export default function CrewPage({ params }: PageProps<"/crews/[id]">) {
               </div>
               <p className="text-muted text-[14px] font-medium">
                 Every clear by a member adds XP.{" "}
-                {lead > 0 ? `Up ${formatNumber(lead)}. Don't sleep.` : lead < 0 ? `Down ${formatNumber(-lead)}. Time to carry.` : "Dead level. Make the next clear count."}
+                {lead > 0
+                  ? `Up ${formatNumber(lead)}. Don't sleep.`
+                  : lead < 0
+                    ? `Down ${formatNumber(-lead)}. Time to carry.`
+                    : "Dead level. Make the next clear count."}
               </p>
             </section>
           ) : (
@@ -135,7 +139,12 @@ export default function CrewPage({ params }: PageProps<"/crews/[id]">) {
             </>
           )}
 
-          <Sheet open={invite} onOpenChange={setInvite} title="Bring your people" description="Share the code or the link. Up to 20 in a crew.">
+          <Sheet
+            open={invite}
+            onOpenChange={setInvite}
+            title="Bring your people"
+            description="Share the code or the link. Up to 20 in a crew."
+          >
             <div className="flex flex-col items-center gap-3">
               <span className="font-display text-accent text-[34px] font-black tracking-[0.12em]">{c.code}</span>
               {link && (

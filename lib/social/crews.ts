@@ -11,7 +11,8 @@ export function crewNameProblem(name: string): string | null {
   if (n.length > 24) return "24 characters max.";
   if (!/^[A-Za-z0-9 ]+$/.test(n)) return "Letters, numbers and spaces only.";
   const flat = n.replace(/ /g, "");
-  const windows = flat.length <= 16 ? [flat] : Array.from({ length: Math.ceil((flat.length - 8) / 8) }, (_, i) => flat.slice(i * 8, i * 8 + 16));
+  const windows =
+    flat.length <= 16 ? [flat] : Array.from({ length: Math.ceil((flat.length - 8) / 8) }, (_, i) => flat.slice(i * 8, i * 8 + 16));
   for (const w of windows) if (w.length >= 3 && nicknameProblem(w)) return "Pick another name.";
   return null;
 }

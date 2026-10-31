@@ -67,7 +67,10 @@ export function SidePanel() {
             </span>
           </Link>
           <div className="grid grid-cols-2 gap-2">
-            <div className="bg-surface-raised flex h-[52px] items-center justify-center gap-2 rounded-[14px]" aria-label={`${d.streak.current} day streak`}>
+            <div
+              className="bg-surface-raised flex h-[52px] items-center justify-center gap-2 rounded-[14px]"
+              aria-label={`${d.streak.current} day streak`}
+            >
               <Icon name="fire" size={22} className="text-gold" />
               <span className="num text-[20px] font-semibold">{d.streak.current}</span>
             </div>
@@ -88,11 +91,20 @@ export function SidePanel() {
                 <span className="text-accent">{done}</span> / {LAUNCH_IDS.length}
               </span>
             </div>
-            <ol className="grid gap-[3px]" style={{ gridTemplateColumns: `repeat(${LAUNCH_IDS.length}, 1fr)` }} aria-label="Today's featured Dailies">
+            <ol
+              className="grid gap-[3px]"
+              style={{ gridTemplateColumns: `repeat(${LAUNCH_IDS.length}, 1fr)` }}
+              aria-label="Today's featured Dailies"
+            >
               {LAUNCH_IDS.map((id) => {
                 const c = cleared[id] !== undefined;
                 return (
-                  <li key={id} title={GAME_BY_ID[id].name} className="h-5 rounded-[5px]" style={{ background: c ? "var(--accent)" : "var(--surface-raised)" }}>
+                  <li
+                    key={id}
+                    title={GAME_BY_ID[id].name}
+                    className="h-5 rounded-[5px]"
+                    style={{ background: c ? "var(--accent)" : "var(--surface-raised)" }}
+                  >
                     <span className="sr-only">
                       {GAME_BY_ID[id].name}, {c ? "cleared" : "not cleared"}
                     </span>
@@ -110,11 +122,17 @@ export function SidePanel() {
             <span className="font-display text-[18px] font-black">{nextMeta ? `Play ${nextMeta.name}` : "Play anytime"}</span>
           </Link>
           <div className="grid grid-cols-2 gap-2">
-            <Link href="/duel" className="toy bg-surface-raised font-display flex h-14 items-center justify-center gap-2 rounded-[18px] text-[15px] font-extrabold">
+            <Link
+              href="/duel"
+              className="toy bg-surface-raised font-display flex h-14 items-center justify-center gap-2 rounded-[18px] text-[15px] font-extrabold"
+            >
               <Icon name="sword" size={18} />
               Duel
             </Link>
-            <Link href="/party" className="toy bg-surface-raised font-display flex h-14 items-center justify-center gap-2 rounded-[18px] text-[15px] font-extrabold">
+            <Link
+              href="/party"
+              className="toy bg-surface-raised font-display flex h-14 items-center justify-center gap-2 rounded-[18px] text-[15px] font-extrabold"
+            >
               <Icon name="users-three" size={18} />
               Party
             </Link>

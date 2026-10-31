@@ -201,9 +201,14 @@ describe("api: quests", () => {
     expect(list.data.weekly).toHaveLength(5);
     const q = list.data.daily[0];
     expect((await a.api(`/api/v1/quests/${q.id}/claim`, { method: "POST" })).status).toBe(409);
-    await admin()
-      .from("player_quests")
-      .insert({ player_id: a.userId, quest_id: q.id, period: today(), progress: q.target, target: q.target, completed_at: new Date().toISOString() });
+    await admin().from("player_quests").insert({
+      player_id: a.userId,
+      quest_id: q.id,
+      period: today(),
+      progress: q.target,
+      target: q.target,
+      completed_at: new Date().toISOString(),
+    });
     const [c1, c2] = await Promise.all([
       a.api(`/api/v1/quests/${q.id}/claim`, { method: "POST" }),
       a.api(`/api/v1/quests/${q.id}/claim`, { method: "POST" }),
@@ -273,7 +278,9 @@ describe("api: School Cup", () => {
     const g = await guest(uniq("gs_"));
     expect((await g.api("/api/v1/school-cup")).data.canTeach).toBe(false);
     const teacher = await member(uniq("tch_"));
-    const code = uniq("SC").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const code = uniq("SC")
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "");
     await admin().from("schools").insert({ name: "Demo School", city: "Accra", country: "GH", code, verified_by: teacher.userId });
     const monday = (() => {
       const d = new Date();
@@ -286,11 +293,21 @@ describe("api: School Cup", () => {
     });
     expect(bad.status).toBe(422);
     expect(
-      (await g.api("/api/v1/school-cup", { json: { schoolCode: code, className: "Form 2B", games: ["crownfall"], weekStart: monday, endsOn: friday } }))
-        .status,
+      (
+        await g.api("/api/v1/school-cup", {
+          json: { schoolCode: code, className: "Form 2B", games: ["crownfall"], weekStart: monday, endsOn: friday },
+        })
+      ).status,
     ).toBe(403);
     const cup = await teacher.api("/api/v1/school-cup", {
-      json: { schoolCode: code, className: "Form 2B", games: ["crownfall", "quads", "deadon"], weekStart: monday, endsOn: friday, relaxed: true },
+      json: {
+        schoolCode: code,
+        className: "Form 2B",
+        games: ["crownfall", "quads", "deadon"],
+        weekStart: monday,
+        endsOn: friday,
+        relaxed: true,
+      },
     });
     expect(cup.status).toBe(200);
     const kid = await minor(uniq("st_"));

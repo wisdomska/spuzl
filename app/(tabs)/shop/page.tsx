@@ -21,7 +21,11 @@ const THEMES: Record<string, { bg: string; cell: string; mark: string }> = {
 };
 
 function itemIcon(i: ShopItem): { icon: string; color: string } {
-  if (i.type === "hat") return { icon: i.payload.hat === "crown" ? "crown-simple" : i.payload.hat === "kente" ? "baseball-cap" : "confetti", color: i.payload.hat === "kente" ? "#FF8A3D" : "#FFC93C" };
+  if (i.type === "hat")
+    return {
+      icon: i.payload.hat === "crown" ? "crown-simple" : i.payload.hat === "kente" ? "baseball-cap" : "confetti",
+      color: i.payload.hat === "kente" ? "#FF8A3D" : "#FFC93C",
+    };
   if (i.type === "skin") return { icon: i.payload.effect === "prism" ? "sparkle" : "drop", color: String(i.payload.color ?? "#B8F23A") };
   if (i.type === "board_theme") return { icon: "grid-four", color: THEMES[String(i.payload.theme)]?.mark ?? "#B8F23A" };
   if (i.type === "title") return { icon: "text-aa", color: "var(--text)" };
@@ -60,7 +64,21 @@ export default function ShopPage() {
     else setPreview(null);
   };
 
-  const state = item && d ? purchaseState({ price: item.price, owned: item.owned, unlockLevel: item.unlockLevel, consumable: item.type === "freeze" || item.type === "hint_pack" }, d.sparks, d.level, d.freezesHeld, item.type === "freeze") : null;
+  const state =
+    item && d
+      ? purchaseState(
+          {
+            price: item.price,
+            owned: item.owned,
+            unlockLevel: item.unlockLevel,
+            consumable: item.type === "freeze" || item.type === "hint_pack",
+          },
+          d.sparks,
+          d.level,
+          d.freezesHeld,
+          item.type === "freeze",
+        )
+      : null;
 
   const doBuy = async () => {
     if (!item) return;
@@ -70,7 +88,13 @@ export default function ShopPage() {
       await buy.mutateAsync({ itemId: item.id, requestId: request.current.id });
       request.current = null;
       play("jingle");
-      setNote(item.type === "freeze" ? "Freeze ready. It covers one missed day." : item.type === "hint_pack" ? "Hints added for practice." : `${item.name} is yours.`);
+      setNote(
+        item.type === "freeze"
+          ? "Freeze ready. It covers one missed day."
+          : item.type === "hint_pack"
+            ? "Hints added for practice."
+            : `${item.name} is yours.`,
+      );
     } catch (e) {
       setNote(e instanceof HttpError && e.message !== e.code ? e.message : "Purchase failed. Your Sparks were not taken.");
     }
@@ -86,7 +110,11 @@ export default function ShopPage() {
     <TabPage label="Shop">
       <PageTitle
         right={
-          <span data-wallet className="bg-surface-raised flex h-10 items-center gap-1.5 rounded-[14px] px-3" aria-label={`${formatNumber(d?.sparks ?? me.data?.sparks ?? 0)} Sparks`}>
+          <span
+            data-wallet
+            className="bg-surface-raised flex h-10 items-center gap-1.5 rounded-[14px] px-3"
+            aria-label={`${formatNumber(d?.sparks ?? me.data?.sparks ?? 0)} Sparks`}
+          >
             <Icon name="lightning" size={18} className="text-gold" />
             <span className="num text-gold text-[17px] font-semibold">{formatNumber(d?.sparks ?? me.data?.sparks ?? 0)}</span>
           </span>
@@ -95,7 +123,10 @@ export default function ShopPage() {
         Shop
       </PageTitle>
 
-      <section aria-label="Try-on" className="bg-surface relative flex h-[230px] items-center justify-center overflow-hidden rounded-[28px]">
+      <section
+        aria-label="Try-on"
+        className="bg-surface relative flex h-[230px] items-center justify-center overflow-hidden rounded-[28px]"
+      >
         <div aria-hidden className="dotgrid absolute inset-0" />
         {preview?.theme ? (
           <div
@@ -105,16 +136,28 @@ export default function ShopPage() {
             aria-label={`${item?.name} preview`}
           >
             {Array.from({ length: 16 }, (_, i) => (
-              <span key={i} className="flex size-9 items-center justify-center rounded-[8px]" style={{ background: THEMES[preview.theme!]?.cell }}>
+              <span
+                key={i}
+                className="flex size-9 items-center justify-center rounded-[8px]"
+                style={{ background: THEMES[preview.theme!]?.cell }}
+              >
                 {[1, 6, 11, 12].includes(i) && <Icon name="crown-simple" size={18} style={{ color: THEMES[preview.theme!]?.mark }} />}
               </span>
             ))}
           </div>
         ) : (
           <div className="relative flex flex-col items-center">
-            <SpuzWear size={preview?.title ? 160 : 190} color={color} hat={hat} mood={preview ? "party" : "idle"} label={`Spuz${hat ? " wearing a hat" : ""}`} />
+            <SpuzWear
+              size={preview?.title ? 160 : 190}
+              color={color}
+              hat={hat}
+              mood={preview ? "party" : "idle"}
+              label={`Spuz${hat ? " wearing a hat" : ""}`}
+            />
             {(preview?.title ?? wearing?.title) && (
-              <span className="font-display bg-bg -mt-2 rounded-[10px] px-2.5 py-1 text-[13px] font-extrabold">{preview?.title ?? wearing?.title}</span>
+              <span className="font-display bg-bg -mt-2 rounded-[10px] px-2.5 py-1 text-[13px] font-extrabold">
+                {preview?.title ?? wearing?.title}
+              </span>
             )}
           </div>
         )}
@@ -152,16 +195,15 @@ export default function ShopPage() {
             const ic = itemIcon(i);
             const locked = i.unlockLevel !== null && d!.level < i.unlockLevel;
             const consumable = i.type === "freeze" || i.type === "hint_pack";
-            const price =
-              i.equipped
-                ? { icon: "check-circle", text: "Wearing", color: "var(--accent)" }
-                : i.owned && !consumable
-                  ? { icon: "check", text: "Owned", color: "var(--accent)" }
-                  : locked
-                    ? { icon: "lock-simple", text: `Level ${i.unlockLevel}`, color: "var(--text-muted)" }
-                    : i.price === 0
-                      ? { icon: "gift", text: "Free", color: "var(--accent)" }
-                      : { icon: "lightning", text: formatNumber(i.price), color: "var(--gold)" };
+            const price = i.equipped
+              ? { icon: "check-circle", text: "Wearing", color: "var(--accent)" }
+              : i.owned && !consumable
+                ? { icon: "check", text: "Owned", color: "var(--accent)" }
+                : locked
+                  ? { icon: "lock-simple", text: `Level ${i.unlockLevel}`, color: "var(--text-muted)" }
+                  : i.price === 0
+                    ? { icon: "gift", text: "Free", color: "var(--accent)" }
+                    : { icon: "lightning", text: formatNumber(i.price), color: "var(--gold)" };
             return (
               <button
                 key={i.id}
@@ -170,7 +212,10 @@ export default function ShopPage() {
                 onClick={() => pick(i)}
                 aria-label={`${i.name}, ${price.text}${i.type === "freeze" ? `, you hold ${d!.freezesHeld} of 2` : ""}`}
                 className="press flex flex-col items-center gap-1.5 rounded-[18px] p-2.5"
-                style={{ background: on ? "var(--success-tint)" : "var(--surface)", boxShadow: on ? "inset 0 0 0 2px var(--accent)" : undefined }}
+                style={{
+                  background: on ? "var(--success-tint)" : "var(--surface)",
+                  boxShadow: on ? "inset 0 0 0 2px var(--accent)" : undefined,
+                }}
               >
                 <span className="bg-surface-raised flex size-14 items-center justify-center rounded-[16px]" style={{ color: ic.color }}>
                   <Icon name={ic.icon} size={28} />
@@ -211,7 +256,13 @@ export default function ShopPage() {
         )}
         {item && state ? (
           state.kind === "owned" && item.type !== "freeze" && item.type !== "hint_pack" ? (
-            <Button size="lg" variant={item.equipped ? "secondary" : "primary"} className="w-full" loading={equip.isPending} onClick={() => doEquip(!item.equipped)}>
+            <Button
+              size="lg"
+              variant={item.equipped ? "secondary" : "primary"}
+              className="w-full"
+              loading={equip.isPending}
+              onClick={() => doEquip(!item.equipped)}
+            >
               {item.equipped ? `Take off ${item.name}` : `Wear ${item.name}`}
             </Button>
           ) : state.kind === "locked" ? (

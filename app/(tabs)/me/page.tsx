@@ -50,23 +50,40 @@ export default function MePage() {
               className="bg-surface flex size-24 shrink-0 items-center justify-center rounded-[30px]"
               style={{ boxShadow: `0 0 0 4px ${d.avatar_color}, 0 0 0 8px var(--bg), 0 0 0 10px var(--gold)` }}
             >
-              <SpuzWear size={86} color={d.avatar_color} hat={d.hat} mood={d.streak.current >= 7 ? "fire" : "idle"} still label={`${d.nickname}'s Spuz`} />
+              <SpuzWear
+                size={86}
+                color={d.avatar_color}
+                hat={d.hat}
+                mood={d.streak.current >= 7 ? "fire" : "idle"}
+                still
+                label={`${d.nickname}'s Spuz`}
+              />
             </div>
             <div className="flex min-w-0 flex-1 flex-col gap-1">
               <h1 className="font-display truncate text-[20px] font-black">{d.nickname}</h1>
-              {(sub || d.title) && <p className="text-muted truncate text-[14px] font-medium">{[sub, d.title].filter(Boolean).join(" · ")}</p>}
+              {(sub || d.title) && (
+                <p className="text-muted truncate text-[14px] font-medium">{[sub, d.title].filter(Boolean).join(" · ")}</p>
+              )}
               <div className="flex items-center gap-2">
                 <span className="num text-accent text-[13px] font-semibold">Lv {d.level}</span>
                 <Bar value={d.xpInto / Math.max(1, d.xpNeed)} label={`${d.xpInto} of ${d.xpNeed} XP to level ${d.level + 1}`} />
               </div>
             </div>
-            <Link href="/settings" aria-label="Edit profile and settings" className="press bg-surface-raised flex size-11 shrink-0 items-center justify-center rounded-[14px]">
+            <Link
+              href="/settings"
+              aria-label="Edit profile and settings"
+              className="press bg-surface-raised flex size-11 shrink-0 items-center justify-center rounded-[14px]"
+            >
               <Icon name="pencil-simple" size={20} />
             </Link>
           </header>
 
           {d.guest && (
-            <Link href="/settings#account" className="bg-surface flex items-center gap-3 rounded-[16px] px-3.5 py-3" style={{ boxShadow: "inset 0 0 0 2px var(--line)" }}>
+            <Link
+              href="/settings#account"
+              className="bg-surface flex items-center gap-3 rounded-[16px] px-3.5 py-3"
+              style={{ boxShadow: "inset 0 0 0 2px var(--line)" }}
+            >
               <Icon name="shield-check" size={22} className="text-accent shrink-0" />
               <span className="flex-1 text-[14px] font-medium">Playing as a guest. Sign in to keep your progress on any phone.</span>
               <Icon name="caret-right" size={16} className="text-muted" />
@@ -76,7 +93,11 @@ export default function MePage() {
           <div className="grid grid-cols-3 gap-2">
             <StatCard value={d.streak.current} label="day streak" color="var(--gold)" />
             <StatCard value={formatNumber(p!.clears)} label="clears" />
-            <StatCard value={p!.duelRating !== null ? formatNumber(Math.round(p!.duelRating)) : "New"} label="duel rating" color="var(--accent)" />
+            <StatCard
+              value={p!.duelRating !== null ? formatNumber(Math.round(p!.duelRating)) : "New"}
+              label="duel rating"
+              color="var(--accent)"
+            />
           </div>
 
           <section aria-label="Rank per world" className="flex flex-col gap-2">
@@ -88,7 +109,11 @@ export default function MePage() {
                 return (
                   <li key={w.world} className="flex flex-col items-center gap-1" aria-label={`${world.name}: ${label}`}>
                     <Hex w={36} h={40} bg={w.rank ? world.color : "var(--line)"}>
-                      <Icon name={w.rank ? world.icon : "lock-simple"} size={16} style={{ color: w.rank ? "#0E0F1A" : "var(--text-muted)" }} />
+                      <Icon
+                        name={w.rank ? world.icon : "lock-simple"}
+                        size={16}
+                        style={{ color: w.rank ? "#0E0F1A" : "var(--text-muted)" }}
+                      />
                     </Hex>
                     <span className="text-muted max-w-full truncate text-[10px] font-semibold" aria-hidden>
                       {w.rank ? w.rank.name : "Locked"}
@@ -103,7 +128,11 @@ export default function MePage() {
             <div className="flex items-center justify-between">
               <h2 className="text-[16px] font-bold">Streak calendar</h2>
               <div className="flex items-center gap-1">
-                <button aria-label="Previous month" onClick={() => setMonth(shiftMonth(month, -1))} className="text-muted flex size-11 items-center justify-center">
+                <button
+                  aria-label="Previous month"
+                  onClick={() => setMonth(shiftMonth(month, -1))}
+                  className="text-muted flex size-11 items-center justify-center"
+                >
                   <Icon name="caret-left" size={16} />
                 </button>
                 <span className="text-muted min-w-[72px] text-center text-[14px] font-medium">{monthName}</span>
@@ -182,14 +211,19 @@ export default function MePage() {
                       <tr key={g.game} className="h-[42px]">
                         <th scope="row" className="py-0 pl-3 font-normal">
                           <span className="flex items-center gap-2.5">
-                            <span className="flex size-[26px] shrink-0 items-center justify-center rounded-[8px]" style={{ background: w.color, color: "#0E0F1A" }}>
+                            <span
+                              className="flex size-[26px] shrink-0 items-center justify-center rounded-[8px]"
+                              style={{ background: w.color, color: "#0E0F1A" }}
+                            >
                               <Icon name={meta.icon} size={14} />
                             </span>
                             <span className="text-[15px] font-semibold">{meta.name}</span>
                           </span>
                         </th>
                         <td className="num text-muted text-right text-[13px] font-medium whitespace-nowrap">{g.clears} clears</td>
-                        <td className="num text-muted pl-2 text-right text-[13px] whitespace-nowrap">{score ? "" : `avg ${formatShort(g.avgMs ?? 0)}`}</td>
+                        <td className="num text-muted pl-2 text-right text-[13px] whitespace-nowrap">
+                          {score ? "" : `avg ${formatShort(g.avgMs ?? 0)}`}
+                        </td>
                         <td className="num w-[64px] pr-3 text-right text-[14px] font-semibold">
                           {score ? formatNumber(g.bestScore ?? 0) : formatShort(g.bestMs ?? 0)}
                         </td>

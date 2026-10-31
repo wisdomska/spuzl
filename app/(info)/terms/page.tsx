@@ -18,8 +18,8 @@ export default function Terms() {
       <ul>
         <li>Playing costs nothing. There is nothing to buy with money today.</li>
         <li>
-          Sparks, XP, badges and cosmetics are part of the game. They have no cash value and can&apos;t be sold, traded or transferred. We may
-          change prices or rewards to keep the game balanced.
+          Sparks, XP, badges and cosmetics are part of the game. They have no cash value and can&apos;t be sold, traded or transferred. We
+          may change prices or rewards to keep the game balanced.
         </li>
       </ul>
 
@@ -34,26 +34,27 @@ export default function Terms() {
 
       <h2>Play fair, be kind</h2>
       <p>
-        Follow the <Link href="/fair-play">fair play rules</Link>. No cheating tools, no extra accounts for ranking, no offensive names, no harassment.
-        We may hide results, reset names, remove ranking access or close accounts that break them.
+        Follow the <Link href="/fair-play">fair play rules</Link>. No cheating tools, no extra accounts for ranking, no offensive names, no
+        harassment. We may hide results, reset names, remove ranking access or close accounts that break them.
       </p>
 
       <h2>Our content</h2>
       <p>
-        The games, puzzles, art, Spuz, sounds and text are ours or used with permission. You may share results and share cards the app makes. Please
-        don&apos;t copy or republish our puzzles.
+        The games, puzzles, art, Spuz, sounds and text are ours or used with permission. You may share results and share cards the app
+        makes. Please don&apos;t copy or republish our puzzles.
       </p>
 
       <h2>Service</h2>
       <p>
-        We work hard to keep SPUZL running and fair, but it is provided as it is. Dailies can be swapped if one is broken, and features may change
-        or end. To the extent the law allows, we aren&apos;t responsible for losses from using SPUZL, such as a lost streak during an outage.
+        We work hard to keep SPUZL running and fair, but it is provided as it is. Dailies can be swapped if one is broken, and features may
+        change or end. To the extent the law allows, we aren&apos;t responsible for losses from using SPUZL, such as a lost streak during an
+        outage.
       </p>
 
       <h2>Changes and contact</h2>
       <p>
-        If these terms change, we&apos;ll update this page and tell you in the app. These terms are governed by the laws of Ghana. Questions go to
-        the <Link href="/contact">contact page</Link>.
+        If these terms change, we&apos;ll update this page and tell you in the app. These terms are governed by the laws of Ghana. Questions
+        go to the <Link href="/contact">contact page</Link>.
       </p>
     </>
   );

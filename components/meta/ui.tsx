@@ -209,7 +209,19 @@ export function Segmented<T extends string>({
 }
 
 /** Progress bar: the fill is a scaleX transform (Handoff: transform and opacity only). */
-export function Bar({ value, color = "var(--accent)", height = 8, track = "var(--line)", label }: { value: number; color?: string; height?: number; track?: string; label?: string }) {
+export function Bar({
+  value,
+  color = "var(--accent)",
+  height = 8,
+  track = "var(--line)",
+  label,
+}: {
+  value: number;
+  color?: string;
+  height?: number;
+  track?: string;
+  label?: string;
+}) {
   const v = Math.max(0, Math.min(1, value));
   return (
     <div
@@ -223,7 +235,12 @@ export function Bar({ value, color = "var(--accent)", height = 8, track = "var(-
     >
       <div
         className="h-full origin-left transition-transform duration-500"
-        style={{ transform: `scaleX(${v})`, background: color, borderRadius: height / 2, transitionTimingFunction: "cubic-bezier(0.23, 1, 0.32, 1)" }}
+        style={{
+          transform: `scaleX(${v})`,
+          background: color,
+          borderRadius: height / 2,
+          transitionTimingFunction: "cubic-bezier(0.23, 1, 0.32, 1)",
+        }}
       />
     </div>
   );
@@ -266,17 +283,7 @@ export function StatCard({ value, label, color = "var(--text)" }: { value: React
 }
 
 /** Empty state: Spuz with a mood, a punchy title, one line, one action (States file). */
-export function EmptyState({
-  mood = "sad",
-  title,
-  body,
-  action,
-}: {
-  mood?: SpuzMood;
-  title: string;
-  body?: string;
-  action?: ReactNode;
-}) {
+export function EmptyState({ mood = "sad", title, body, action }: { mood?: SpuzMood; title: string; body?: string; action?: ReactNode }) {
   return (
     <div className="flex flex-col items-center gap-3 px-6 py-10 text-center">
       <Spuz mood={mood} size={110} decorative />

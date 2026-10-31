@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { Suspense, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSettings, prefersReducedMotion, type Settings } from "@/lib/settings/store";
@@ -19,7 +19,18 @@ import { Icon } from "@/components/ui/Icon";
 const THEME = { dark: "Dark", light: "Light", system: "System" } as const;
 const CB = { off: "Off", protan: "Protan", deutan: "Deutan", tritan: "Tritan" } as const;
 const TEXT = { 100: "Default", 110: "Large", 120: "Larger", 130: "Largest" } as const;
-const SYNCED: (keyof Settings)[] = ["sfx", "music", "haptics", "hapticsTouched", "theme", "cb", "reducedMotion", "textScale", "relaxed", "lowData"];
+const SYNCED: (keyof Settings)[] = [
+  "sfx",
+  "music",
+  "haptics",
+  "hapticsTouched",
+  "theme",
+  "cb",
+  "reducedMotion",
+  "textScale",
+  "relaxed",
+  "lowData",
+];
 
 type SheetId = "theme" | "cb" | "text" | "privacy" | "account" | "delete" | null;
 
@@ -37,18 +48,22 @@ function SettingsScreen() {
   const me = useMe();
   const patch = usePatchProfile();
   const params = useSearchParams();
-  const [open, setOpen] = useState<SheetId>(null);
-  const [status, setStatus] = useState<string | null>(null);
+  // Deep links (#account, #privacy, #place) open their sheet; the sheet portal only renders on the client.
+  const [open, setOpen] = useState<SheetId>(() => {
+    if (typeof window === "undefined") return null;
+    const h = window.location.hash.slice(1);
+    return h === "account" || h === "privacy" ? h : h === "place" ? "privacy" : null;
+  });
+  const auth = params.get("auth");
+  const [status] = useState<string | null>(
+    auth === "linked"
+      ? "Signed in. Your progress is saved to your account."
+      : auth === "failed"
+        ? "Sign-in didn't finish. Try again."
+        : null,
+  );
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reduce = s.hydrated && prefersReducedMotion(s);
-
-  useEffect(() => {
-    const h = window.location.hash.slice(1);
-    if (h === "account" || h === "privacy" || h === "place") setOpen(h === "place" ? "privacy" : h);
-    const auth = params.get("auth");
-    if (auth === "linked") setStatus("Signed in. Your progress is saved to your account.");
-    if (auth === "failed") setStatus("Sign-in didn't finish. Try again.");
-  }, [params]);
 
   // Account copy of the settings, debounced, so the same look and sound follow you to a new phone.
   const save = <K extends keyof Settings>(key: K, value: Settings[K]) => {
@@ -96,8 +111,18 @@ function SettingsScreen() {
         <Row icon="timer" label="Relaxed mode" hint="Timers hidden until results">
           <Switch checked={s.relaxed} onChange={(v) => save("relaxed", v)} label="Relaxed mode" />
         </Row>
-        <Row icon="lock-simple" label="Privacy" value={(d as (typeof d & MeExtra) | undefined)?.hide_activity ? "Hidden" : "Friends only"} onClick={() => setOpen("privacy")} />
-        <Row icon="user-circle" label="Account" value={d ? (d.guest ? "Guest" : (d.email ?? "Signed in")) : ""} onClick={() => setOpen("account")} />
+        <Row
+          icon="lock-simple"
+          label="Privacy"
+          value={(d as (typeof d & MeExtra) | undefined)?.hide_activity ? "Hidden" : "Friends only"}
+          onClick={() => setOpen("privacy")}
+        />
+        <Row
+          icon="user-circle"
+          label="Account"
+          value={d ? (d.guest ? "Guest" : (d.email ?? "Signed in")) : ""}
+          onClick={() => setOpen("account")}
+        />
       </Group>
       <Group title="Help and legal">
         <LinkRow icon="question" label="How to play" href="/how-to-play" />
@@ -148,7 +173,21 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function Row({ icon, label, value, hint, onClick, children }: { icon: string; label: string; value?: string; hint?: string; onClick?: () => void; children?: ReactNode }) {
+function Row({
+  icon,
+  label,
+  value,
+  hint,
+  onClick,
+  children,
+}: {
+  icon: string;
+  label: string;
+  value?: string;
+  hint?: string;
+  onClick?: () => void;
+  children?: ReactNode;
+}) {
   const inner = (
     <>
       <Icon name={icon} size={20} className="text-muted shrink-0" />
@@ -213,7 +252,10 @@ function Choice({
               aria-checked={on}
               onClick={() => onPick(k)}
               className="flex h-[52px] items-center justify-between rounded-[14px] px-3.5 text-[15px] font-semibold"
-              style={{ background: on ? "var(--success-tint)" : "var(--surface-raised)", boxShadow: on ? "inset 0 0 0 2px var(--accent)" : undefined }}
+              style={{
+                background: on ? "var(--success-tint)" : "var(--surface-raised)",
+                boxShadow: on ? "inset 0 0 0 2px var(--accent)" : undefined,
+              }}
             >
               {label}
               {on && <Icon name="check" size={18} className="text-accent" />}
@@ -234,23 +276,13 @@ function PrivacySheet({ open, onClose }: { open: boolean; onClose: () => void })
   const blocks = useBlocks();
   const unblock = useUnblock();
   const d = me.data as (NonNullable<ReturnType<typeof useMe>["data"]> & MeExtra) | null | undefined;
-  const [country, setCountry] = useState("");
-  const [city, setCity] = useState("");
-  const [saved, setSaved] = useState(false);
-  useEffect(() => {
-    if (open && d) {
-      setCountry(d.country ?? "");
-      setCity(d.city ?? "");
-    }
-  }, [open, d]);
-  const minor = d?.age_band === "13-15";
-  const savePlace = async (e: FormEvent) => {
-    e.preventDefault();
-    await patch.mutateAsync({ country: country ? country.toUpperCase() : null, city: city.trim() || null });
-    setSaved(true);
-  };
   return (
-    <Sheet open={open} onOpenChange={(o) => !o && onClose()} title="Privacy" description="No chat, ever. Friends only see presets and results.">
+    <Sheet
+      open={open}
+      onOpenChange={(o) => !o && onClose()}
+      title="Privacy"
+      description="No chat, ever. Friends only see presets and results."
+    >
       <div className="flex items-center justify-between gap-3 py-1">
         <span className="flex flex-col">
           <span className="text-[15px] font-semibold">Hide my activity</span>
@@ -258,33 +290,7 @@ function PrivacySheet({ open, onClose }: { open: boolean; onClose: () => void })
         </span>
         <Switch checked={!!d?.hide_activity} onChange={(v) => patch.mutate({ hideActivity: v })} label="Hide my activity" />
       </div>
-      <form id="place" onSubmit={savePlace} className="flex flex-col gap-2 pt-1">
-        <span className="text-[15px] font-semibold">Your place, for local boards</span>
-        {minor && <span className="text-muted text-[13px]">Under 16, your city never shows on public boards.</span>}
-        <div className="flex gap-2">
-          <label className="flex w-24 flex-col gap-1">
-            <span className="text-muted text-[13px]">Country</span>
-            <input
-              value={country}
-              onChange={(e) => setCountry(e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 2))}
-              placeholder="GH"
-              className="bg-surface-raised h-11 rounded-[12px] px-3 text-[16px] font-semibold uppercase outline-none"
-            />
-          </label>
-          <label className="flex flex-1 flex-col gap-1">
-            <span className="text-muted text-[13px]">City</span>
-            <input
-              value={city}
-              onChange={(e) => setCity(e.target.value.replace(/[^\p{L} '.]/gu, "").slice(0, 40))}
-              placeholder="Accra"
-              className="bg-surface-raised h-11 rounded-[12px] px-3 text-[16px] font-medium outline-none"
-            />
-          </label>
-        </div>
-        <Button type="submit" variant="secondary" loading={patch.isPending} disabled={country.length === 1}>
-          {saved ? "Saved" : "Save place"}
-        </Button>
-      </form>
+      {d && <PlaceForm initialCountry={d.country ?? ""} initialCity={d.city ?? ""} minor={d.age_band === "13-15"} />}
       <div className="flex flex-col gap-2 pt-2">
         <span className="text-[15px] font-semibold">Blocked</span>
         {blocks.data?.blocked.length ? (
@@ -292,7 +298,10 @@ function PrivacySheet({ open, onClose }: { open: boolean; onClose: () => void })
             <div key={b.id} className="flex items-center gap-2.5">
               <AvatarChip nickname={b.nickname} color={b.color} size={32} radius={10} />
               <span className="flex-1 text-[15px] font-semibold">{b.nickname}</span>
-              <button onClick={() => unblock.mutate(b.id)} className="press bg-surface-raised h-11 rounded-[12px] px-3 text-[14px] font-semibold">
+              <button
+                onClick={() => unblock.mutate(b.id)}
+                className="press bg-surface-raised h-11 rounded-[12px] px-3 text-[14px] font-semibold"
+              >
                 Unblock
               </button>
             </div>
@@ -335,7 +344,12 @@ function AccountSheet({ open, onClose, onDelete }: { open: boolean; onClose: () 
         ? await sb.auth.updateUser({ email: email.trim() }, { emailRedirectTo: redirect() })
         : await sb.auth.signInWithOtp({ email: email.trim(), options: { shouldCreateUser: false, emailRedirectTo: redirect() } });
     setBusy(false);
-    if (error) setErr(mode === "link" && /already/i.test(error.message) ? "That email has an account. Use “Sign in instead” below." : "That didn't send. Check the address and try again.");
+    if (error)
+      setErr(
+        mode === "link" && /already/i.test(error.message)
+          ? "That email has an account. Use “Sign in instead” below."
+          : "That didn't send. Check the address and try again.",
+      );
     else setSent(email.trim());
   };
   const signOut = async () => {
@@ -350,7 +364,11 @@ function AccountSheet({ open, onClose, onDelete }: { open: boolean; onClose: () 
       open={open}
       onOpenChange={(o) => !o && onClose()}
       title="Account"
-      description={d?.guest ? "You're playing as a guest. Sign in to keep your streak, Sparks and friends on any phone." : `Signed in${d?.email ? ` as ${d.email}` : ""}.`}
+      description={
+        d?.guest
+          ? "You're playing as a guest. Sign in to keep your streak, Sparks and friends on any phone."
+          : `Signed in${d?.email ? ` as ${d.email}` : ""}.`
+      }
     >
       {d?.guest && (
         <>
@@ -377,12 +395,18 @@ function AccountSheet({ open, onClose, onDelete }: { open: boolean; onClose: () 
                 className="bg-surface-raised h-12 rounded-[14px] px-3.5 text-[16px] outline-none"
               />
               {mode === "signin" && (
-                <p className="text-gold text-[13px]">Signing in to another account leaves this guest&apos;s progress on this phone behind.</p>
+                <p className="text-gold text-[13px]">
+                  Signing in to another account leaves this guest&apos;s progress on this phone behind.
+                </p>
               )}
               <Button type="submit" loading={busy} disabled={!/^\S+@\S+\.\S+$/.test(email)}>
                 Send magic link
               </Button>
-              <button type="button" onClick={() => setMode(mode === "link" ? "signin" : "link")} className="text-accent h-11 text-[14px] font-semibold">
+              <button
+                type="button"
+                onClick={() => setMode(mode === "link" ? "signin" : "link")}
+                className="text-accent h-11 text-[14px] font-semibold"
+              >
                 {mode === "link" ? "Already have an account? Sign in instead" : "Back to saving this guest"}
               </button>
             </form>
@@ -404,7 +428,10 @@ function AccountSheet({ open, onClose, onDelete }: { open: boolean; onClose: () 
           Download my data
         </a>
         {!d?.guest && (
-          <button onClick={signOut} className="press bg-surface-raised flex h-[52px] items-center gap-3 rounded-[14px] px-3.5 text-[15px] font-semibold">
+          <button
+            onClick={signOut}
+            className="press bg-surface-raised flex h-[52px] items-center gap-3 rounded-[14px] px-3.5 text-[15px] font-semibold"
+          >
             <Icon name="sign-out" size={20} />
             Sign out
           </button>
@@ -472,12 +499,67 @@ function DeleteSheet({ open, onClose }: { open: boolean; onClose: () => void }) 
           {err}
         </p>
       )}
-      <Button size="lg" variant="danger" className="w-full" disabled={confirm.toLowerCase() !== nick.toLowerCase() || !nick} loading={busy} onClick={go}>
+      <Button
+        size="lg"
+        variant="danger"
+        className="w-full"
+        disabled={confirm.toLowerCase() !== nick.toLowerCase() || !nick}
+        loading={busy}
+        onClick={go}
+      >
         Delete forever
       </Button>
       <Button variant="ghost" className="w-full" onClick={onClose}>
         Keep my account
       </Button>
     </Sheet>
+  );
+}
+
+function PlaceForm({ initialCountry, initialCity, minor }: { initialCountry: string; initialCity: string; minor: boolean }) {
+  const patch = usePatchProfile();
+  const [country, setCountry] = useState(initialCountry);
+  const [city, setCity] = useState(initialCity);
+  const [saved, setSaved] = useState(false);
+  const savePlace = async (e: FormEvent) => {
+    e.preventDefault();
+    await patch.mutateAsync({ country: country ? country.toUpperCase() : null, city: city.trim() || null });
+    setSaved(true);
+  };
+  return (
+    <form id="place" onSubmit={savePlace} className="flex flex-col gap-2 pt-1">
+      <span className="text-[15px] font-semibold">Your place, for local boards</span>
+      {minor && <span className="text-muted text-[13px]">Under 16, your city never shows on public boards.</span>}
+      <div className="flex gap-2">
+        <label className="flex w-24 flex-col gap-1">
+          <span className="text-muted text-[13px]">Country</span>
+          <input
+            value={country}
+            onChange={(e) =>
+              setCountry(
+                e.target.value
+                  .toUpperCase()
+                  .replace(/[^A-Z]/g, "")
+                  .slice(0, 2),
+              )
+            }
+            placeholder="GH"
+            className="bg-surface-raised h-11 rounded-[12px] px-3 text-[16px] font-semibold uppercase outline-none"
+          />
+        </label>
+        <label className="flex flex-1 flex-col gap-1">
+          <span className="text-muted text-[13px]">City</span>
+          <input
+            value={city}
+            onChange={(e) => setCity(e.target.value.replace(/[^\p{L} '.]/gu, "").slice(0, 40))}
+            placeholder="Accra"
+            className="bg-surface-raised h-11 rounded-[12px] px-3 text-[16px] font-medium outline-none"
+          />
+        </label>
+      </div>
+      <Button type="submit" variant="secondary" loading={patch.isPending} disabled={country.length === 1}>
+        {saved ? "Saved" : "Save place"}
+      </Button>
+    </form>
   );
 }

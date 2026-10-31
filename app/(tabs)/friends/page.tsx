@@ -2,16 +2,7 @@
 
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
-import {
-  useAccept,
-  useAddFriend,
-  useFeed,
-  useFriends,
-  useInvite,
-  useReact,
-  useRemoveFriend,
-  type FeedItem,
-} from "@/lib/client/social";
+import { useAccept, useAddFriend, useFeed, useFriends, useInvite, useReact, useRemoveFriend, type FeedItem } from "@/lib/client/social";
 import { useMe, HttpError } from "@/lib/client/api";
 import { TabPage } from "@/components/meta/TabPage";
 import { AvatarChip, EmptyState, ErrorState, ListSkeleton, PageTitle, Segmented } from "@/components/meta/ui";
@@ -100,7 +91,11 @@ function InviteCard() {
             <Icon name="whatsapp-logo" size={16} />
             WhatsApp
           </a>
-          <button onClick={copy} disabled={!url} className="press bg-surface-raised flex h-11 items-center gap-1.5 rounded-[10px] px-2.5 text-[14px] font-semibold">
+          <button
+            onClick={copy}
+            disabled={!url}
+            className="press bg-surface-raised flex h-11 items-center gap-1.5 rounded-[10px] px-2.5 text-[14px] font-semibold"
+          >
             <Icon name={copied ? "check" : "copy"} size={16} />
             {copied ? "Copied" : "Copy"}
           </button>
@@ -162,7 +157,11 @@ function AddByName({ minor }: { minor: boolean }) {
           className="placeholder:text-muted min-w-0 flex-1 bg-transparent text-[15px] font-medium outline-none"
         />
         {name.length >= 3 && (
-          <button type="submit" className="press bg-accent text-on-accent h-9 rounded-[10px] px-3 text-[14px] font-semibold" disabled={add.isPending}>
+          <button
+            type="submit"
+            className="press bg-accent text-on-accent h-9 rounded-[10px] px-3 text-[14px] font-semibold"
+            disabled={add.isPending}
+          >
             Add
           </button>
         )}
@@ -198,7 +197,9 @@ function FriendsTab({ minor }: { minor: boolean }) {
                   <AvatarChip nickname={r.nickname} color={r.color} size={36} radius={11} />
                   <Link href={`/u/${r.nickname}`} className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate text-[15px] font-semibold">{r.nickname}</span>
-                    <span className="text-muted text-[12px] font-medium">{r.mutual > 0 ? `${r.mutual} mutual` : "Wants to be friends"}</span>
+                    <span className="text-muted text-[12px] font-medium">
+                      {r.mutual > 0 ? `${r.mutual} mutual` : "Wants to be friends"}
+                    </span>
                   </Link>
                   <button
                     aria-label={`Decline ${r.nickname}`}
@@ -253,16 +254,17 @@ function FriendsTab({ minor }: { minor: boolean }) {
             </section>
           )}
           {d!.outgoing.length > 0 && (
-            <p className="text-muted px-1 text-[14px]">
-              Waiting on {d!.outgoing.map((o) => o.nickname).join(", ")}.
-            </p>
+            <p className="text-muted px-1 text-[14px]">Waiting on {d!.outgoing.map((o) => o.nickname).join(", ")}.</p>
           )}
           <nav aria-label="Groups" className="grid grid-cols-2 gap-2 pt-1">
             <Link href="/crews" className="press bg-surface flex h-14 items-center gap-2.5 rounded-[16px] px-3.5 text-[15px] font-semibold">
               <Icon name="users-three" size={20} className="text-accent" />
               Crew
             </Link>
-            <Link href="/school-cup" className="press bg-surface flex h-14 items-center gap-2.5 rounded-[16px] px-3.5 text-[15px] font-semibold">
+            <Link
+              href="/school-cup"
+              className="press bg-surface flex h-14 items-center gap-2.5 rounded-[16px] px-3.5 text-[15px] font-semibold"
+            >
               <Icon name="graduation-cap" size={20} className="text-accent" />
               School Cup
             </Link>
@@ -283,7 +285,11 @@ function ActivityTab() {
   const items = q.data!.items;
   if (!items.length)
     return (
-      <EmptyState mood="wave" title="Quiet in here." body="Clears, streaks and badges from you and your friends show up here. Go make some noise." />
+      <EmptyState
+        mood="wave"
+        title="Quiet in here."
+        body="Clears, streaks and badges from you and your friends show up here. Go make some noise."
+      />
     );
   const tap = (it: FeedItem, r: Reaction) => {
     const next = it.mine === r ? null : r;
@@ -304,7 +310,11 @@ function ActivityTab() {
                   <time dateTime={it.at}>{agoShort(it.at)}</time>
                 </span>
                 {!it.player.me && (
-                  <button aria-label={`More for ${it.player.nickname}`} onClick={() => setMenu(it)} className="text-muted -mr-1.5 flex size-11 items-center justify-center self-start">
+                  <button
+                    aria-label={`More for ${it.player.nickname}`}
+                    onClick={() => setMenu(it)}
+                    className="text-muted -mr-1.5 flex size-11 items-center justify-center self-start"
+                  >
                     <Icon name="dots-three" size={20} />
                   </button>
                 )}
@@ -320,7 +330,10 @@ function ActivityTab() {
                       aria-pressed={on}
                       aria-label={`${REACTION_LABEL[r]}${n ? `, ${n}` : ""}`}
                       className="press flex h-11 min-w-11 items-center justify-center gap-1 rounded-[10px] px-2.5 text-[14px] font-semibold"
-                      style={{ background: on ? "var(--warn-tint)" : "var(--surface-raised)", boxShadow: on ? "inset 0 0 0 2px var(--gold)" : undefined }}
+                      style={{
+                        background: on ? "var(--warn-tint)" : "var(--surface-raised)",
+                        boxShadow: on ? "inset 0 0 0 2px var(--gold)" : undefined,
+                      }}
                       data-no-tick
                     >
                       <span aria-hidden className={r === "gg" ? "font-display font-black" : undefined}>
@@ -338,7 +351,10 @@ function ActivityTab() {
       <Sheet open={!!menu} onOpenChange={(o) => !o && setMenu(null)} title={menu?.player.nickname ?? ""}>
         {menu && (
           <div className="flex flex-col gap-2">
-            <Link href={`/u/${menu.player.nickname}`} className="press bg-surface-raised flex h-[52px] items-center gap-3 rounded-[14px] px-3.5 text-[15px] font-semibold">
+            <Link
+              href={`/u/${menu.player.nickname}`}
+              className="press bg-surface-raised flex h-[52px] items-center gap-3 rounded-[14px] px-3.5 text-[15px] font-semibold"
+            >
               <Icon name="user" size={20} />
               View profile
             </Link>

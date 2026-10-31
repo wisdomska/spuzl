@@ -1,6 +1,7 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useRef, useState } from "react";
+import { useNow } from "@/components/meta/useNow";
 import { useSearchParams } from "next/navigation";
 import { useBadges, useClaimQuest, useQuests, type QuestDTO } from "@/lib/client/social";
 import { useMe } from "@/lib/client/api";
@@ -31,7 +32,11 @@ function Quests() {
     <TabPage label="Quests">
       <PageTitle
         right={
-          <span data-wallet className="bg-surface-raised flex h-10 items-center gap-1.5 rounded-[14px] px-3" aria-label={`${formatNumber(me.data?.sparks ?? 0)} Sparks`}>
+          <span
+            data-wallet
+            className="bg-surface-raised flex h-10 items-center gap-1.5 rounded-[14px] px-3"
+            aria-label={`${formatNumber(me.data?.sparks ?? 0)} Sparks`}
+          >
             <Icon name="lightning" size={18} className="text-gold" />
             <span className="num text-gold text-[17px] font-semibold">{formatNumber(me.data?.sparks ?? 0)}</span>
           </span>
@@ -62,19 +67,11 @@ function BadgesTab() {
 
 function QuestList() {
   const q = useQuests();
-  const [now, setNow] = useState(() => Date.now());
-  const loaded = useRef(Date.now());
-  useEffect(() => {
-    if (q.dataUpdatedAt) loaded.current = q.dataUpdatedAt;
-  }, [q.dataUpdatedAt]);
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(t);
-  }, []);
+  const now = useNow(1000);
   if (q.isPending) return <ListSkeleton rows={3} height={68} />;
   if (q.isError) return <ErrorState onRetry={() => q.refetch()} />;
   const d = q.data;
-  const elapsed = now - loaded.current;
+  const elapsed = now - q.dataUpdatedAt;
   const states = chainStates(d.weekly.map((w) => ({ completed: w.completed })));
   const doneCount = states.filter((s) => s === "done").length;
   const current = d.weekly.find((_, i) => states[i] === "current");
@@ -84,7 +81,10 @@ function QuestList() {
     <>
       <div className="flex items-center justify-between">
         <h2 className="text-[16px] font-bold">Daily</h2>
-        <span className="num text-muted text-[14px] font-medium" aria-label={`Daily quests reset in ${formatCountdown(d.resetsInMs - elapsed)}`}>
+        <span
+          className="num text-muted text-[14px] font-medium"
+          aria-label={`Daily quests reset in ${formatCountdown(d.resetsInMs - elapsed)}`}
+        >
           resets {formatCountdown(d.resetsInMs - elapsed)}
         </span>
       </div>
@@ -109,11 +109,22 @@ function QuestList() {
           const bg = s === "done" ? "var(--accent)" : isLast ? "var(--gold)" : "var(--surface-raised)";
           const icon = s === "done" ? "check" : isLast ? "gift" : s === "current" ? (w.icon ?? "star") : "lock-simple";
           return (
-            <li key={w.id} className="flex items-center" style={{ flex: isLast ? "none" : 1 }} aria-label={`Step ${i + 1}: ${w.title}, ${s === "done" ? "done" : s === "current" ? `${w.progress} of ${w.target}` : "locked"}`}>
+            <li
+              key={w.id}
+              className="flex items-center"
+              style={{ flex: isLast ? "none" : 1 }}
+              aria-label={`Step ${i + 1}: ${w.title}, ${s === "done" ? "done" : s === "current" ? `${w.progress} of ${w.target}` : "locked"}`}
+            >
               <Hex w={48} h={52} bg={bg}>
-                <Icon name={icon} size={20} style={{ color: s === "done" || isLast ? "#0E0F1A" : s === "current" ? "var(--accent)" : "var(--text-muted)" }} />
+                <Icon
+                  name={icon}
+                  size={20}
+                  style={{ color: s === "done" || isLast ? "#0E0F1A" : s === "current" ? "var(--accent)" : "var(--text-muted)" }}
+                />
               </Hex>
-              {!isLast && <span aria-hidden className="h-1 flex-1" style={{ background: s === "done" ? "var(--accent)" : "var(--line)" }} />}
+              {!isLast && (
+                <span aria-hidden className="h-1 flex-1" style={{ background: s === "done" ? "var(--accent)" : "var(--line)" }} />
+              )}
             </li>
           );
         })}
@@ -148,7 +159,10 @@ function QuestCard({ q }: { q: QuestDTO }) {
   return (
     <div
       className={`flex items-center gap-3 rounded-[18px] px-3.5 py-3 ${claimable ? "claim-pop" : ""}`}
-      style={{ background: claimable ? "var(--success-tint)" : "var(--surface)", boxShadow: claimable ? "inset 0 0 0 2px var(--accent)" : undefined }}
+      style={{
+        background: claimable ? "var(--success-tint)" : "var(--surface)",
+        boxShadow: claimable ? "inset 0 0 0 2px var(--accent)" : undefined,
+      }}
     >
       <span
         className="flex size-11 shrink-0 items-center justify-center rounded-[14px]"
@@ -181,7 +195,10 @@ function QuestCard({ q }: { q: QuestDTO }) {
       ) : q.claimed ? (
         <span className="text-muted shrink-0 px-2 text-[14px] font-bold">Claimed</span>
       ) : (
-        <span className="bg-surface-raised text-gold num shrink-0 rounded-[12px] px-3 py-2 text-[14px] font-bold" aria-label={`Reward ${q.sparks} Sparks`}>
+        <span
+          className="bg-surface-raised text-gold num shrink-0 rounded-[12px] px-3 py-2 text-[14px] font-bold"
+          aria-label={`Reward ${q.sparks} Sparks`}
+        >
           +{q.sparks}
         </span>
       )}

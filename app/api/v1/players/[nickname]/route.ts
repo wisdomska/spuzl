@@ -21,19 +21,12 @@ export const GET = handle(async (_req: Request, ctx: RouteContext<"/api/v1/playe
     .eq("nickname", nickname)
     .maybeSingle();
   if (!p || p.banned_at) throw new ApiError(404, "not_found", "No Spuzler with that name.");
-  if (p.id !== player.id && (await isBlockedPair(admin, player.id, p.id))) throw new ApiError(404, "not_found", "No Spuzler with that name.");
+  if (p.id !== player.id && (await isBlockedPair(admin, player.id, p.id)))
+    throw new ApiError(404, "not_found", "No Spuzler with that name.");
 
   const f = p.id === player.id ? null : await friendshipBetween(admin, player.id, p.id);
   const relation =
-    p.id === player.id
-      ? "self"
-      : f?.status === "accepted"
-        ? "friend"
-        : f
-          ? f.player_id === player.id
-            ? "requested"
-            : "incoming"
-          : "none";
+    p.id === player.id ? "self" : f?.status === "accepted" ? "friend" : f ? (f.player_id === player.id ? "requested" : "incoming") : "none";
   const card = toCard(p);
   if (card.minor) return ok({ ...card, relation, public: false });
 
@@ -41,7 +34,12 @@ export const GET = handle(async (_req: Request, ctx: RouteContext<"/api/v1/playe
   const [{ data: streak }, theirs, { data: league }] = await Promise.all([
     admin.from("streaks").select("current").eq("player_id", p.id).maybeSingle(),
     gameStats(admin, p.id),
-    admin.from("league_members").select("leagues!inner(tier, week_start)").eq("player_id", p.id).eq("leagues.week_start", weekStartOf()).maybeSingle(),
+    admin
+      .from("league_members")
+      .select("leagues!inner(tier, week_start)")
+      .eq("player_id", p.id)
+      .eq("leagues.week_start", weekStartOf())
+      .maybeSingle(),
   ]);
   const tier = (league?.leagues as unknown as { tier: number } | undefined)?.tier;
 
