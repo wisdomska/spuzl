@@ -9,7 +9,7 @@
  *   versioned. GET /api/v1/today and /api/v1/me fall back to their last good copy.
  * - Never cached: other API writes, share images, Supabase and anything cross-origin.
  */
-const VERSION = "2026-10-31.1";
+const VERSION = "2026-10-31.2";
 const SHELL = `spuzl-shell-${VERSION}`;
 const STATIC = `spuzl-static-${VERSION}`;
 const DATA = `spuzl-data-${VERSION}`;
