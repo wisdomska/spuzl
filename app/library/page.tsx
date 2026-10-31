@@ -6,6 +6,7 @@ import { GAMES, WORLDS, WORLD_BY_ID, type WorldId } from "@/lib/catalog";
 import { Icon } from "@/components/ui/Icon";
 import { GameIcon3D } from "@/components/world/GameIcon3D";
 import { useMe } from "@/lib/client/api";
+import { BotEntry } from "@/components/world/BotEntry";
 
 /** Play anytime (prototype "library"): every game, endless Free play, filter by world. */
 export default function Library() {
@@ -54,33 +55,36 @@ export default function Library() {
         {list.map((g) => {
           const daily = me.data?.today.cleared[g.id] === undefined;
           return (
-            <li key={g.id} className="bg-surface flex items-center gap-2 rounded-[20px] py-2.5 pr-2.5 pl-3">
-              {/* Two sibling links (never nested): the tile opens Free play, the chip opens today's Daily. */}
-              <Link
-                href={`/play/${g.id}?mode=free`}
-                className="press flex min-w-0 flex-1 items-center gap-3"
-                aria-label={`${g.name}, free play. ${g.blurb}`}
-              >
-                <GameIcon3D meta={g} size={52} />
-                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="font-display text-[16px] font-extrabold">{g.name}</span>
-                  <span className="text-muted text-[13px] leading-[1.35]">{g.blurb}</span>
-                </span>
-                <span className="bg-surface-raised shrink-0 rounded-[12px] px-2.5 py-1.5 text-[13px] font-bold whitespace-nowrap">
-                  Free play
-                </span>
-              </Link>
-              {daily && (
+            <li key={g.id} className="flex flex-col gap-1.5">
+              <div className="bg-surface flex items-center gap-2 rounded-[20px] py-2.5 pr-2.5 pl-3">
+                {/* Two sibling links (never nested): the tile opens Free play, the chip opens today's Daily. */}
                 <Link
-                  href={`/play/${g.id}`}
-                  aria-label={`${g.name}, today's Daily`}
-                  className="press flex size-11 shrink-0 flex-col items-center justify-center rounded-[12px] text-[11px] leading-none font-semibold"
-                  style={{ background: "var(--accent)", color: "var(--on-accent)" }}
+                  href={`/play/${g.id}?mode=free`}
+                  className="press flex min-w-0 flex-1 items-center gap-3"
+                  aria-label={`${g.name}, free play. ${g.blurb}`}
                 >
-                  <Icon name="calendar-blank" size={16} />
-                  Daily
+                  <GameIcon3D meta={g} size={52} />
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className="font-display text-[16px] font-extrabold">{g.name}</span>
+                    <span className="text-muted text-[13px] leading-[1.35]">{g.blurb}</span>
+                  </span>
+                  <span className="bg-surface-raised shrink-0 rounded-[12px] px-2.5 py-1.5 text-[13px] font-bold whitespace-nowrap">
+                    Free play
+                  </span>
                 </Link>
-              )}
+                {daily && (
+                  <Link
+                    href={`/play/${g.id}`}
+                    aria-label={`${g.name}, today's Daily`}
+                    className="press flex size-11 shrink-0 flex-col items-center justify-center rounded-[12px] text-[11px] leading-none font-semibold"
+                    style={{ background: "var(--accent)", color: "var(--on-accent)" }}
+                  >
+                    <Icon name="calendar-blank" size={16} />
+                    Daily
+                  </Link>
+                )}
+              </div>
+              <BotEntry meta={g} />
             </li>
           );
         })}

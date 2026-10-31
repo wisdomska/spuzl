@@ -43,6 +43,8 @@ export interface GameMeta {
   content?: "human" | "curated";
   /** Has a flashing/fast visual, shows the photosensitivity notice once */
   photosensitive?: boolean;
+  /** Offers "Play a full game vs bot" (casual, on the device, no XP): /play/<id>/bot */
+  botPlay?: boolean;
 }
 
 export const WORLDS: World[] = [
@@ -80,7 +82,7 @@ const g = (
   engine: Engine,
   blurb: string,
   rule: string,
-  opts: Partial<Pick<GameMeta, "unique" | "scoring" | "minTimeMs" | "content" | "photosensitive">> = {},
+  opts: Partial<Pick<GameMeta, "unique" | "scoring" | "minTimeMs" | "content" | "photosensitive" | "botPlay">> = {},
 ): GameMeta => ({ id, name, world, icon, phase, engine, blurb, rule, unique: false, scoring: "time", minTimeMs: 4000, ...opts });
 
 export const GAMES: GameMeta[] = [
@@ -524,6 +526,7 @@ export const GAMES: GameMeta[] = [
   g("chess", "Chess", "board", "horse", "L", "board", "Daily mates and live games", "Find the mate. White to move.", {
     unique: true,
     minTimeMs: 1500,
+    botPlay: true,
   }),
   g(
     "draughts",
@@ -534,7 +537,7 @@ export const GAMES: GameMeta[] = [
     "board",
     "Jump, crown, clear the board",
     "Find the winning sequence. Captures are compulsory.",
-    { unique: true, minTimeMs: 1500 },
+    { unique: true, minTimeMs: 1500, botPlay: true },
   ),
   g(
     "oware",
@@ -545,7 +548,7 @@ export const GAMES: GameMeta[] = [
     "board",
     "Sow seeds, capture the most",
     "Sow seeds anticlockwise. Capture 2s and 3s on their side.",
-    { minTimeMs: 1500 },
+    { minTimeMs: 1500, botPlay: true },
   ),
   g(
     "ludo",
@@ -556,7 +559,7 @@ export const GAMES: GameMeta[] = [
     "board",
     "Race four pieces home",
     "Roll, move and race all four pieces home. Land on rivals to send them back.",
-    { minTimeMs: 1500 },
+    { minTimeMs: 1500, botPlay: true },
   ),
   g(
     "fourup",
@@ -567,7 +570,7 @@ export const GAMES: GameMeta[] = [
     "board",
     "Line up four first",
     "Drop discs. Four in a line, any direction, wins.",
-    { unique: true, minTimeMs: 1500 },
+    { unique: true, minTimeMs: 1500, botPlay: true },
   ),
   g(
     "flip",
@@ -578,7 +581,7 @@ export const GAMES: GameMeta[] = [
     "board",
     "Outflank and flip",
     "Place a disc to outflank and flip your rival's discs. Most discs wins.",
-    { minTimeMs: 1500 },
+    { minTimeMs: 1500, botPlay: true },
   ),
 ];
 

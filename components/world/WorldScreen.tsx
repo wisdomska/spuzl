@@ -8,6 +8,7 @@ import { Island } from "@/components/home/Island";
 import { Icon } from "@/components/ui/Icon";
 import { formatClock } from "@/lib/format";
 import { GameIcon3D } from "./GameIcon3D";
+import { BotEntry } from "./BotEntry";
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
@@ -79,6 +80,7 @@ export function WorldScreen({ id }: { id: WorldId }) {
               initial={{ opacity: 0, transform: "translateY(8px)" }}
               animate={{ opacity: 1, transform: "translateY(0px)" }}
               transition={{ duration: 0.24, delay: i * 0.04, ease: EASE_OUT }}
+              className="flex flex-col gap-1.5"
             >
               <Link
                 href={done ? `/play/${g.id}?mode=free` : `/play/${g.id}`}
@@ -104,6 +106,7 @@ export function WorldScreen({ id }: { id: WorldId }) {
                   </Chip>
                 )}
               </Link>
+              <BotEntry meta={g} />
             </motion.li>
           );
         })}
