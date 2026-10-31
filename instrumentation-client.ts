@@ -26,11 +26,22 @@ safe(() => window.addEventListener("appinstalled", () => track("pwa_installed"))
 if (swEnabled()) {
   const idle = (fn: () => void) =>
     typeof window.requestIdleCallback === "function" ? window.requestIdleCallback(fn, { timeout: 8000 }) : setTimeout(fn, 3000);
-  const prefetch = () => idle(() => safe(prefetchDailies));
-  safe(async () => {
-    await registerServiceWorker();
-    // The first visit is not controlled until the worker claims the page.
-    if (navigator.serviceWorker.controller) prefetch();
-    else navigator.serviceWorker.addEventListener("controllerchange", prefetch, { once: true });
-  });
+  const afterLoad = (fn: () => void) =>
+    document.readyState === "complete" ? fn() : window.addEventListener("load", () => fn(), { once: true });
+  // Low data mode or Save-Data: no background downloads. Otherwise wait well past first paint so the
+  // prefetch never competes with the screen the player opened.
+  const saveData =
+    document.documentElement.dataset.lowData === "true" ||
+    (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData === true;
+  const prefetch = () => {
+    if (!saveData) setTimeout(() => idle(() => safe(prefetchDailies)), 10_000);
+  };
+  afterLoad(() =>
+    safe(async () => {
+      await registerServiceWorker();
+      // The first visit is not controlled until the worker claims the page.
+      if (navigator.serviceWorker.controller) prefetch();
+      else navigator.serviceWorker.addEventListener("controllerchange", prefetch, { once: true });
+    }),
+  );
 }

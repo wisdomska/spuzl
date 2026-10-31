@@ -53,7 +53,8 @@ export default function Intro() {
     instant
       ? { initial: false as const, animate: { opacity: 1, transform: "translateY(0px) scaleY(1)" } }
       : {
-          initial: { opacity: 0, transform: "translateY(-60px) scaleY(1)" },
+          // Opaque from the first paint (they only drop): the server-rendered letters count for LCP before hydration.
+          initial: { opacity: 1, transform: "translateY(-60px) scaleY(1)" },
           animate: { opacity: 1, transform: ["translateY(-60px) scaleY(1.2)", "translateY(0px) scaleY(0.9)", "translateY(0px) scaleY(1)"] },
           transition: { duration: 0.46, delay: i * 0.06, ease: EASE_OUT, times: [0, 0.7, 1] },
         };
