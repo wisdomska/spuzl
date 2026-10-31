@@ -17,7 +17,7 @@ import type { BoardApi } from "@/games/types";
 import { nicknameProblem } from "@/lib/validation/nickname";
 import { api, ensureSession, finishAttempt, startAttempt } from "@/lib/client/api";
 import { writeOnboarding } from "@/lib/client/onboarding";
-import { formatShort } from "@/lib/format";
+import { formatClock } from "@/lib/format";
 import { play, duck } from "@/lib/audio";
 import { PATTERNS, haptic } from "@/lib/haptics";
 
@@ -553,7 +553,7 @@ function FirstClear({ ms, onNext }: { ms: number; onNext: () => void }) {
         <Spuz mood="cheer" size={200} decorative />
       </motion.div>
       <p className="max-w-[300px] text-center text-[18px] leading-[1.4] font-semibold">
-        {formatShort(ms)} on your first ever puzzle. Okay, big brain.
+        {formatClock(ms)} on your first ever puzzle. Okay, big brain.
       </p>
       <div className="mt-1 flex gap-2.5">
         <Tile v="+150" c="#B8F23A" l="XP" d={0.3} instant={instant} />

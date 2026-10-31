@@ -10,7 +10,7 @@ import { BadgeGrid, Medallion } from "@/components/meta/Badges";
 import { SpuzWear } from "@/components/meta/SpuzWear";
 import { Icon } from "@/components/ui/Icon";
 import { GAME_BY_ID, WORLDS, WORLD_BY_ID, type WorldId } from "@/lib/catalog";
-import { formatNumber, formatShort, gmtDate } from "@/lib/format";
+import { formatNumber, formatClock, gmtDate } from "@/lib/format";
 
 const CAL: Record<string, { bg: string; icon?: string; label: string }> = {
   full: { bg: "var(--accent)", icon: "star-four", label: "Full Spuzl" },
@@ -222,10 +222,10 @@ export default function MePage() {
                         </th>
                         <td className="num text-muted text-right text-[13px] font-medium whitespace-nowrap">{g.clears} clears</td>
                         <td className="num text-muted pl-2 text-right text-[13px] whitespace-nowrap">
-                          {score ? "" : `avg ${formatShort(g.avgMs ?? 0)}`}
+                          {score ? "" : `avg ${formatClock(g.avgMs ?? 0)}`}
                         </td>
                         <td className="num w-[64px] pr-3 text-right text-[14px] font-semibold">
-                          {score ? formatNumber(g.bestScore ?? 0) : formatShort(g.bestMs ?? 0)}
+                          {score ? formatNumber(g.bestScore ?? 0) : formatClock(g.bestMs ?? 0)}
                         </td>
                       </tr>
                     );

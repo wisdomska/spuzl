@@ -1,5 +1,5 @@
 import type { CupBoard as CupBoardData } from "@/lib/client/social";
-import { formatShort } from "@/lib/format";
+import { formatClock } from "@/lib/format";
 
 export const POD_CHIP = [
   { bg: "var(--pos-1)", fg: "#0E0F1A" },
@@ -19,7 +19,7 @@ export function CupRows({ rows, games, tv, limit }: { rows: CupBoardData["rows"]
             key={r.id}
             className={`flex items-center ${tv ? "h-20 gap-5 rounded-[20px] px-[22px]" : "h-12 gap-2.5 rounded-[12px] px-2.5"}`}
             style={{ background: r.me ? "var(--success-tint)" : pod || !tv ? "var(--surface)" : "transparent" }}
-            aria-label={`${r.pos}, ${r.nickname}, ${r.clears} of ${games} cleared, ${formatShort(r.timeMs)}`}
+            aria-label={`${r.pos}, ${r.nickname}, ${r.clears} of ${games} cleared, ${formatClock(r.timeMs)}`}
           >
             <span
               aria-hidden
@@ -35,7 +35,7 @@ export function CupRows({ rows, games, tv, limit }: { rows: CupBoardData["rows"]
               {r.clears} / {games}
             </span>
             <span aria-hidden className={`num text-right font-semibold ${tv ? "w-[150px] text-[34px]" : "w-[56px] text-[15px]"}`}>
-              {r.clears ? formatShort(r.timeMs) : ""}
+              {r.clears ? formatClock(r.timeMs) : ""}
             </span>
           </li>
         );

@@ -10,7 +10,7 @@ import { Sheet } from "@/components/meta/Sheet";
 import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { GAME_BY_ID, LAUNCH_IDS, WORLDS, WORLD_BY_ID, gamesInWorld } from "@/lib/catalog";
-import { LAUNCH_DATE, formatShort, gmtDate } from "@/lib/format";
+import { LAUNCH_DATE, formatClock, gmtDate } from "@/lib/format";
 import { monthGrid, shortDate } from "@/lib/meta";
 import { difficultyForDate } from "@/games/types";
 
@@ -231,7 +231,7 @@ function DayCell({ d, color, selected, onPick }: { d: Day; color: string; select
 function DayCard({ d, game }: { d: Day; game: string }) {
   const diff = cap(difficultyForDate(d.date));
   const label =
-    d.state === "cleared" ? `Cleared${d.timeMs ? ` in ${formatShort(d.timeMs)}` : ""}` : d.state === "started" ? "Started" : "Missed";
+    d.state === "cleared" ? `Cleared${d.timeMs ? ` in ${formatClock(d.timeMs)}` : ""}` : d.state === "started" ? "Started" : "Missed";
   if (d.access === "today")
     return (
       <div className="bg-surface flex flex-col gap-2.5 rounded-[20px] p-3.5">

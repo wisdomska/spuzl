@@ -9,7 +9,7 @@ import { Sheet } from "@/components/meta/Sheet";
 import { Icon } from "@/components/ui/Icon";
 import { GAME_BY_ID, LAUNCH_IDS, WORLDS, gamesInWorld } from "@/lib/catalog";
 import { SCOPES, SCOPE_LABEL, addDays, shortDate, type Scope } from "@/lib/meta";
-import { formatNumber, formatShort, gmtDate } from "@/lib/format";
+import { formatNumber, formatClock, gmtDate } from "@/lib/format";
 import { ordinal } from "@/lib/leagues";
 
 const NEEDS: Record<NonNullable<BoardRes["needs"]>, { title: string; body: string; href: string; cta: string }> = {
@@ -36,13 +36,13 @@ const NEEDS: Record<NonNullable<BoardRes["needs"]>, { title: string; body: strin
 
 function valueText(r: BoardRow, scoring: BoardRes["scoring"]) {
   if (scoring === "score") return `${formatNumber(r.value)}`;
-  if (scoring === "overall") return `${r.clears} · ${formatShort(r.timeMs)}`;
-  return formatShort(r.value);
+  if (scoring === "overall") return `${r.clears} · ${formatClock(r.timeMs)}`;
+  return formatClock(r.value);
 }
 function valueLabel(r: BoardRow, scoring: BoardRes["scoring"]) {
   if (scoring === "score") return `${formatNumber(r.value)} points`;
-  if (scoring === "overall") return `${r.clears} clears, ${formatShort(r.timeMs)} total`;
-  return `time ${formatShort(r.value)}`;
+  if (scoring === "overall") return `${r.clears} clears, ${formatClock(r.timeMs)} total`;
+  return `time ${formatClock(r.value)}`;
 }
 
 /** S1 Leaderboards: per game per day and overall; friends, crew, school, city, country, global; "you" pinned. */

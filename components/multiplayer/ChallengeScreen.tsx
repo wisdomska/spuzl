@@ -11,7 +11,7 @@ import { BOARDS } from "@/games/board-registry";
 import { GAME_BY_ID, WORLD_BY_ID } from "@/lib/catalog";
 import { api, finishAttempt, HttpError } from "@/lib/client/api";
 import { useProfileGate, useReduce } from "@/lib/client/multiplayer";
-import { formatShort } from "@/lib/format";
+import { formatClock } from "@/lib/format";
 import { play } from "@/lib/audio";
 import { haptic } from "@/lib/haptics";
 import { Avatar, Cta, EASE_OUT, LoadingScreen, MpToast, NeedProfile, Screen, TopButton, formatTenths, useToast } from "./ui";
@@ -66,7 +66,7 @@ export function ChallengeCard({ c, onAccept, onLater }: { c: ChallengeCardData; 
             </span>
             <span className="text-[14px] font-medium text-[#A2A6C2]">{c.label}</span>
           </span>
-          <span className="num ml-4 text-[28px] font-semibold">{formatShort(c.senderMs)}</span>
+          <span className="num ml-4 text-[28px] font-semibold">{formatClock(c.senderMs)}</span>
         </div>
         <div className="relative flex gap-2.5 text-[14px] font-medium text-[#C9C4FF]">
           <span className="flex items-center gap-1">
@@ -103,7 +103,7 @@ function aheadLine(name: string, mine: [number, number][], theirs: [number, numb
     if (them > p) leadThem = true;
     if (leadThem && p > them && flip === null) flip = ms;
   }
-  if (won && leadThem && flip !== null) return `${name} was ahead until ${formatShort(flip)}. You closed it after that.`;
+  if (won && leadThem && flip !== null) return `${name} was ahead until ${formatClock(flip)}. You closed it after that.`;
   if (won) return `You led from the start. ${name} never caught up.`;
   if (!leadThem) return `You led early, then ${name}'s ghost pulled away.`;
   return `${name}'s ghost led most of the way.`;
@@ -206,8 +206,8 @@ export function ChallengeResult({ c, onSendBack, onShare }: { c: ChallengeCardDa
         </div>
         <div className="num text-muted flex justify-between text-[13px] font-medium">
           <span>0:00</span>
-          <span>{formatShort(total / 2)}</span>
-          <span>{formatShort(total)}</span>
+          <span>{formatClock(total / 2)}</span>
+          <span>{formatClock(total)}</span>
         </div>
         <div className="flex gap-4 text-[14px] font-medium">
           <span className="flex items-center gap-1.5">
@@ -251,14 +251,14 @@ function GhostTimer({ name, color, senderMs, startedAt }: { name: string; color:
     <div
       className="bg-surface -mx-3 flex flex-col gap-2 rounded-[16px] px-3 py-2.5"
       role="timer"
-      aria-label={`${name}'s time ${formatShort(senderMs)}`}
+      aria-label={`${name}'s time ${formatClock(senderMs)}`}
     >
       <div className="flex justify-between text-[14px] font-semibold">
         <span className="flex items-center gap-1.5">
-          <Icon name="ghost" size={16} /> vs {name}&apos;s time, <span className="num">{formatShort(senderMs)}</span>
+          <Icon name="ghost" size={16} /> vs {name}&apos;s time, <span className="num">{formatClock(senderMs)}</span>
         </span>
         <span className="num" style={{ color: left >= 0 ? "var(--accent)" : "var(--danger)" }}>
-          {left >= 0 ? `${formatShort(left)} left` : `${formatShort(-left)} over`}
+          {left >= 0 ? `${formatClock(left)} left` : `${formatClock(-left)} over`}
         </span>
       </div>
       <div className="bg-line relative h-2.5 rounded-[5px]">
@@ -338,7 +338,7 @@ export function ChallengeScreen({ code }: { code: string }) {
     if (!c?.result?.attemptId) return;
     try {
       const att = await api<{ code: string }>("/api/v1/challenges", { json: { attemptId: c.result.attemptId } });
-      await share(`Your turn. Beat ${formatShort(c.result.timeMs)} on SPUZL 😤`, `/challenge/${att.code}`);
+      await share(`Your turn. Beat ${formatClock(c.result.timeMs)} on SPUZL 😤`, `/challenge/${att.code}`);
     } catch {
       show("Couldn't make the link.", "bad");
     }
@@ -393,12 +393,12 @@ export function ChallengeScreen({ code }: { code: string }) {
             <h1 className="font-display text-[22px] font-black">Your challenge</h1>
           </div>
           <p className="text-muted text-[16px]">
-            {meta?.name}, {c.label}. Your time: <span className="num text-text">{formatShort(c.senderMs)}</span>. Send it to a friend.
+            {meta?.name}, {c.label}. Your time: <span className="num text-text">{formatClock(c.senderMs)}</span>. Send it to a friend.
           </p>
           <Cta
             className="mt-auto"
             icon="share-fat"
-            onClick={() => share(`Beat my ${formatShort(c.senderMs)} on ${meta?.name} 😤`, `/challenge/${c.code}`)}
+            onClick={() => share(`Beat my ${formatClock(c.senderMs)} on ${meta?.name} 😤`, `/challenge/${c.code}`)}
           >
             Share
           </Cta>

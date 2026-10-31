@@ -5,9 +5,12 @@ export function formatClock(ms: number): string {
   return `${String(m).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 }
 
-/** 1:12 style for results and tiles. */
+/**
+ * 1:12 style, for share text and share cards only (their design format). Rounds down like formatClock, so
+ * a shared time never disagrees with the clock. Everything shown in the app uses formatClock.
+ */
 export function formatShort(ms: number): string {
-  const s = Math.max(0, Math.round(ms / 1000));
+  const s = Math.max(0, Math.floor(ms / 1000));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 

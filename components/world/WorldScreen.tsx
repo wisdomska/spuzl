@@ -6,7 +6,7 @@ import { WORLD_BY_ID, gamesInWorld, type WorldId } from "@/lib/catalog";
 import { useMe, useToday } from "@/lib/client/api";
 import { Island } from "@/components/home/Island";
 import { Icon } from "@/components/ui/Icon";
-import { formatShort } from "@/lib/format";
+import { formatClock } from "@/lib/format";
 import { GameIcon3D } from "./GameIcon3D";
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
@@ -92,7 +92,7 @@ export function WorldScreen({ id }: { id: WorldId }) {
                 </span>
                 {done ? (
                   <Chip icon="check-circle" bg="var(--success-tint)" fg="var(--accent)" num>
-                    {timeMs !== undefined ? formatShort(timeMs) : "Done"}
+                    {timeMs !== undefined ? formatClock(timeMs) : "Done"}
                   </Chip>
                 ) : inProgress ? (
                   <Chip icon="hourglass-medium" bg="var(--surface-raised)" fg="var(--text)">

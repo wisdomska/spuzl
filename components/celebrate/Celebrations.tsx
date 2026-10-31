@@ -6,7 +6,7 @@ import { Spuz } from "@/components/brand/Spuz";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { play, duck } from "@/lib/audio";
-import { formatShort } from "@/lib/format";
+import { formatClock } from "@/lib/format";
 import { GAMES, LAUNCH_IDS, WORLD_BY_ID } from "@/lib/catalog";
 
 /**
@@ -329,7 +329,7 @@ function FullSpuzl({ c, instant }: { c: Extract<Celebration, { kind: "full" }>; 
           <span className="num text-[#B8F23A]">+{c.xp} XP</span>
         </Chip>
         <Chip icon="timer" iconColor="#A2A6C2">
-          <span className="num">Total {formatShort(c.totalMs)}</span>
+          <span className="num">Total {formatClock(c.totalMs)}</span>
         </Chip>
       </div>
     </>
