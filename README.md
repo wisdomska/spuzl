@@ -16,7 +16,7 @@ Production: https://spuzl.vercel.app · Admin: https://spuzl.vercel.app/admin
 ## Getting started
 
 ```bash
-nvm use            # Node 20+
+nvm use            # Node 22+
 pnpm install
 pnpm supabase start   # local Postgres, Auth and Realtime in Docker
 cp .env.example .env.local   # fill in the values printed by supabase start

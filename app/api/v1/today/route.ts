@@ -16,12 +16,14 @@ export const GET = handle(async () => {
   if (user) {
     const { data } = await admin
       .from("attempts")
-      .select("game_id, status, time_ms")
+      .select("game_id, status, time_ms, first_move_at")
       .eq("player_id", user.id)
       .eq("daily_date", date)
       .eq("mode", "daily");
+    // Prefetched (offline-ready) Dailies have an attempt but no move yet: they are still "new".
     for (const a of data ?? [])
-      status[a.game_id] = a.status === "cleared" ? { state: "cleared", timeMs: a.time_ms } : { state: "in_progress" };
+      status[a.game_id] =
+        a.status === "cleared" ? { state: "cleared", timeMs: a.time_ms } : a.first_move_at ? { state: "in_progress" } : { state: "new" };
   }
   return ok({
     date,
