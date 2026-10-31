@@ -1,6 +1,8 @@
 name: Keep-alive
 
-# Supabase Free pauses projects after 7 days without activity. /api/health runs `select 1`.
+# Supabase Free pauses a project after 7 days without activity. Each run calls the public `health()`
+# function (select 1) on both projects through their REST API. The anon keys are public by design
+# (they ship in the browser bundle); RLS protects the data.
 on:
   schedule:
     - cron: "17 6 */3 * *"
@@ -10,7 +12,13 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Production
-        run: curl -fsS --retry 3 https://spuzl.vercel.app/api/health
-      - name: Preview
-        run: curl -fsS --retry 3 https://spuzl-preview.vercel.app/api/health
+      - name: Production database
+        run: >-
+          curl -fsS --retry 3 -X POST https://xwpllzwnhrrhybezkbxz.supabase.co/rest/v1/rpc/health
+          -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3cGxsenduaHJyaHliZXprYnh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMzOTc4OTUsImV4cCI6MjEwODk3Mzg5NX0.xwQ1Qttg2iziNxEFYPR0UU7Wr3efPowQQq2PRfvu8dk" -H "Content-Type: application/json" -d '{}'
+      - name: Preview database
+        run: >-
+          curl -fsS --retry 3 -X POST https://cbwkrkftkkdgagambmfn.supabase.co/rest/v1/rpc/health
+          -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNid2tya2Z0a2tkZ2FnYW1ibWZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMzOTc5NjQsImV4cCI6MjEwODk3Mzk2NH0.WXtYc0m1d-DlHV1tzaxj8COcBvpdizb2GOVgVs77BDw" -H "Content-Type: application/json" -d '{}'
+      - name: Production site
+        run: curl -fsS --retry 3 -o /dev/null https://spuzl.vercel.app/api/health
