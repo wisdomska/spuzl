@@ -62,6 +62,8 @@ const ROUTES: Route[] = [
   { method: "GET", path: "/api/admin/team", perm: "team.manage" },
   { method: "POST", path: "/api/admin/team", perm: "team.manage" },
   { method: "PATCH", path: `/api/admin/team/${NIL}`, perm: "team.manage" },
+  { method: "GET", path: "/api/admin/settings", perm: "settings.read" },
+  { method: "PUT", path: "/api/admin/settings", perm: "settings.write" },
 ];
 
 const S = {} as Record<Role, AdminSession>;
