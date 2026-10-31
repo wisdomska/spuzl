@@ -132,21 +132,23 @@ export function HomeScreen() {
             style={{ boxShadow: "0 5px 0 var(--depth)" }}
           >
             <Icon name="infinity" size={22} className="text-accent" />
-            <span className="font-display flex-1 text-left text-[15px] font-extrabold">Play anytime</span>
-            <span className="text-muted text-[13px] font-medium">51 games, no limit</span>
+            <span className="font-display flex-1 text-left text-[15px] font-extrabold whitespace-nowrap">Play anytime</span>
+            <span className="text-muted text-[13px] font-medium max-[359px]:hidden">51 games, no limit</span>
             <Icon name="caret-right" size={16} className="text-muted" />
           </Link>
           <div className="grid grid-cols-[1fr_64px_64px] gap-2.5">
             {nextMeta ? (
               <Link
                 href={`/play/${nextMeta.id}`}
-                className="toy bg-accent text-on-accent flex h-16 items-center justify-center gap-2.5 rounded-[20px]"
+                className="toy bg-accent text-on-accent flex h-16 min-w-0 items-center justify-center gap-2.5 rounded-[20px] px-3"
                 style={{ ["--btn-depth" as string]: "var(--accent-depth)" }}
               >
                 <Icon name="play" size={20} />
-                <span className="flex flex-col items-start">
-                  <span className="font-display text-[18px] font-black">Play {nextMeta.name}</span>
-                  <span className="text-[13px] font-medium">
+                <span className="flex min-w-0 flex-col items-start">
+                  <span className="font-display max-w-full truncate text-[18px] font-black max-[359px]:text-[15px]">
+                    Play {nextMeta.name}
+                  </span>
+                  <span className="max-w-full truncate text-[13px] font-medium">
                     {WORLD_BY_ID[nextMeta.world].name}, {posInWorld} of {worldGames.length}
                   </span>
                 </span>
@@ -154,11 +156,13 @@ export function HomeScreen() {
             ) : (
               <Link
                 href="/library"
-                className="toy bg-accent text-on-accent flex h-16 items-center justify-center gap-2.5 rounded-[20px]"
+                className="toy bg-accent text-on-accent flex h-16 min-w-0 items-center justify-center gap-2.5 rounded-[20px] px-3"
                 style={{ ["--btn-depth" as string]: "var(--accent-depth)" }}
               >
                 <Icon name="crown" size={20} />
-                <span className="font-display text-[18px] font-black">Full Spuzl. Free play?</span>
+                <span className="font-display min-w-0 text-[18px] leading-tight font-black max-[359px]:text-[15px]">
+                  Full Spuzl. Free play?
+                </span>
               </Link>
             )}
             <Link

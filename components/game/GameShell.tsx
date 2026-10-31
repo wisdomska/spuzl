@@ -182,14 +182,14 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
       {/* 1 Top bar */}
       <header className="safe-top relative z-10 flex items-center gap-2 px-3 pb-2 lg:pt-6">
         <IconButton icon="arrow-left" label="Back" onClick={onExit} />
-        <div className="flex flex-1 justify-center">
+        <div className="flex min-w-0 flex-1 justify-center">
           {!relaxed && (
             <div
-              className="num bg-surface flex h-11 items-center gap-2 rounded-[14px] px-4 text-[22px] font-semibold"
+              className="num bg-surface flex h-11 items-center gap-2 rounded-[14px] px-4 text-[22px] font-semibold max-[359px]:px-2.5 max-[359px]:text-[19px]"
               role="timer"
               aria-label={`Time ${formatClock(elapsed)}`}
             >
-              <Icon name="timer" size={18} className="text-muted" />
+              <Icon name="timer" size={18} className="text-muted max-[359px]:hidden" />
               {formatClock(elapsed)}
             </div>
           )}

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 
 /**
  * Visual parity against the design handoff (tests/visual/reference, 390 × 844 frames).
@@ -31,11 +31,13 @@ const PAIRS: [route: string, reference: string][] = [
 test.describe.configure({ mode: "serial" });
 test.skip(({ viewport }) => (viewport?.width ?? 0) > 500, "design frames are phone-sized");
 
+let context: BrowserContext;
 let page: Page;
 const errors: string[] = [];
 
 test.beforeAll(async ({ browser }) => {
-  page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  page = await context.newPage();
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("console", (m) => {
     // Resource failures are checked by URL below (the console line has none); vibrate() is blocked before a tap.
@@ -65,7 +67,7 @@ test.beforeAll(async ({ browser }) => {
   await page.waitForURL((u) => u.pathname === "/", { timeout: 20_000 });
 });
 
-test.afterAll(async () => page?.close());
+test.afterAll(async () => context?.close());
 
 for (const [route, reference] of PAIRS) {
   test(`${route} beside ${reference}`, async ({}, info) => {
@@ -76,7 +78,7 @@ for (const [route, reference] of PAIRS) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth), "horizontal overflow").toBeLessThanOrEqual(0);
     const ours = await page.screenshot();
     const design = readFileSync(path.join(REF, `${reference}.png`));
-    const sheet = await page.context().newPage();
+    const sheet = await context.newPage();
     await sheet.setViewportSize({ width: 820, height: 884 });
     const src = (b: Buffer) => `data:image/png;base64,${b.toString("base64")}`;
     await sheet.setContent(

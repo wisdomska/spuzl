@@ -397,8 +397,8 @@ function PlayLoading({ meta }: { meta: GameMeta }) {
     >
       <div className="safe-top flex items-center gap-2 px-3 pb-2 lg:pt-6">
         <Skeleton className="size-11 rounded-[14px]" />
-        <div className="flex flex-1 justify-center">
-          <Skeleton className="h-11 w-[116px] rounded-[14px]" />
+        <div className="flex min-w-0 flex-1 justify-center">
+          <Skeleton className="h-11 w-[116px] rounded-[14px] max-[359px]:w-[80px]" />
         </div>
         <Skeleton className="size-11 rounded-[14px]" />
         <Skeleton className="size-11 rounded-[14px]" />
