@@ -5,7 +5,16 @@
  * heartbeat broadcasts. The token comes from /api/v1/realtime/token, scoped to this one channel
  * after the server checks membership. Select with NEXT_PUBLIC_REALTIME_TRANSPORT=ably.
  */
-import { HeartbeatPresence, Listeners, MessageBus, type ChannelOptions, type ChannelStatus, type PresenceMember, type RealtimeChannel, type RealtimeTransport } from "./transport";
+import {
+  HeartbeatPresence,
+  Listeners,
+  MessageBus,
+  type ChannelOptions,
+  type ChannelStatus,
+  type PresenceMember,
+  type RealtimeChannel,
+  type RealtimeTransport,
+} from "./transport";
 
 interface Token {
   token: string;

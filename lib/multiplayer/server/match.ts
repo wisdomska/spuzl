@@ -126,7 +126,11 @@ const isStale = (p: PlayerRow, now: number, after: number = TIMING.staleMs) => n
 /** Any request from a player is a heartbeat. A returning player ends a pause; their clock resumes. */
 export async function touch(admin: SupabaseClient, l: Loaded, playerId: string) {
   const now = Date.now();
-  await admin.from("match_players").update({ last_seen_at: iso(now) }).eq("match_id", l.m.id).eq("player_id", playerId);
+  await admin
+    .from("match_players")
+    .update({ last_seen_at: iso(now) })
+    .eq("match_id", l.m.id)
+    .eq("player_id", playerId);
   const me = l.players.find((p) => p.player_id === playerId);
   if (me) me.last_seen_at = iso(now);
   if (l.m.paused_at && l.m.kind === "duel") {
@@ -213,6 +217,7 @@ export async function viewOf(admin: SupabaseClient, l: Loaded, me: string, rewar
     round: m.round,
     bestOf: m.best_of,
     setNo: m.set_no,
+    gameId: m.game_id,
     games: m.games,
     difficulty: m.difficulty,
     mix: m.mix,
@@ -232,7 +237,7 @@ export async function viewOf(admin: SupabaseClient, l: Loaded, me: string, rewar
     me,
     players,
     rounds,
-    bot: m.is_bot ? { name: "Practice bot", roundsWon: m.bot_rounds_won, finishMs: m.bot_ms[m.round - 1] ?? null } : null,
+    bot: m.is_bot ? { name: "Practice bot", roundsWon: m.bot_rounds_won, finishMs: m.bot_ms[m.round - 1] ?? null, times: m.bot_ms } : null,
     puzzle,
     myState: mine && puzzle ? mine.state : null,
     reward,
@@ -250,7 +255,12 @@ function requirePlaying(l: Loaded, p: PlayerRow, round: number) {
 
 /* ---------------- Progress (server validated) ---------------- */
 
-export async function submitProgress(admin: SupabaseClient, id: string, playerId: string, input: { round: number; state: unknown; mistakes: number }) {
+export async function submitProgress(
+  admin: SupabaseClient,
+  id: string,
+  playerId: string,
+  input: { round: number; state: unknown; mistakes: number },
+) {
   const l = await loadMatch(admin, id);
   const p = member(l, playerId);
   await touch(admin, l, playerId);
@@ -274,7 +284,12 @@ export async function submitProgress(admin: SupabaseClient, id: string, playerId
 
 /* ---------------- Finish ---------------- */
 
-export async function submitFinish(admin: SupabaseClient, id: string, playerId: string, input: { round: number; state: unknown; mistakes: number }) {
+export async function submitFinish(
+  admin: SupabaseClient,
+  id: string,
+  playerId: string,
+  input: { round: number; state: unknown; mistakes: number },
+) {
   const l = await loadMatch(admin, id);
   const p = member(l, playerId);
   await touch(admin, l, playerId);
@@ -291,7 +306,12 @@ export async function submitFinish(admin: SupabaseClient, id: string, playerId: 
   if (!ok) throw new ApiError(422, "not_solved");
   const mistakes = Math.max(p.mistakes, Math.min(input.mistakes, p.mistakes + 10));
   await admin.from("match_players").update({ state: input.state, mistakes }).eq("match_id", id).eq("player_id", playerId);
-  const { data, error } = await admin.rpc("svc_match_finish", { p_match: id, p_round: input.round, p_player: playerId, p_mistakes: mistakes });
+  const { data, error } = await admin.rpc("svc_match_finish", {
+    p_match: id,
+    p_round: input.round,
+    p_player: playerId,
+    p_mistakes: mistakes,
+  });
   if (error) throw error;
   const row = (Array.isArray(data) ? data[0] : data) as { time_ms: number | null; first_ms: number | null; accepted: boolean };
   if (!row?.accepted) throw new ApiError(409, "round_over");
@@ -387,7 +407,11 @@ async function resolveDuel(admin: SupabaseClient, l: Loaded) {
     rounds,
   });
   if (!applied) return;
-  await serverBroadcast(matchTopic(m.id), "changed", { reason: state.over ? "match_end" : "round_end", winner: outcome.winner, tie: outcome.tie });
+  await serverBroadcast(matchTopic(m.id), "changed", {
+    reason: state.over ? "match_end" : "round_end",
+    winner: outcome.winner,
+    tie: outcome.tie,
+  });
   if (state.over) await finalizeDuel(admin, await loadMatch(admin, m.id));
 }
 
@@ -479,7 +503,12 @@ async function migrateHostIfGone(admin: SupabaseClient, l: Loaded) {
   const host = l.players.find((p) => p.player_id === l.m.host_id);
   if (host && !host.left_at && !isStale(host, l.now, 30_000)) return;
   const next = nextHost(
-    l.players.map((p) => ({ id: p.player_id, joinedAt: Date.parse(p.joined_at), gone: !!p.left_at || isStale(p, l.now, 30_000), spectator: p.spectator })),
+    l.players.map((p) => ({
+      id: p.player_id,
+      joinedAt: Date.parse(p.joined_at),
+      gone: !!p.left_at || isStale(p, l.now, 30_000),
+      spectator: p.spectator,
+    })),
     l.m.host_id ?? "",
   );
   if (!next || next === l.m.host_id) return;

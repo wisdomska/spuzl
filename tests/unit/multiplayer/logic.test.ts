@@ -120,13 +120,33 @@ describe("progress validation", () => {
 
 describe("duel rules", () => {
   it("first verified clear takes the round", () => {
-    expect(resolveRound([{ id: "b", timeMs: 2400, mistakes: 0 }, { id: "a", timeMs: 2000, mistakes: 3 }])).toMatchObject({ winner: "a", tie: false, margin: 400 });
+    expect(
+      resolveRound([
+        { id: "b", timeMs: 2400, mistakes: 0 },
+        { id: "a", timeMs: 2000, mistakes: 3 },
+      ]),
+    ).toMatchObject({ winner: "a", tie: false, margin: 400 });
     expect(resolveRound([{ id: "a", timeMs: 1000, mistakes: 0 }]).winner).toBe("a");
   });
   it("same tenth of a second: fewer slips takes it, otherwise a drawn round", () => {
-    expect(resolveRound([{ id: "a", timeMs: 2043, mistakes: 1 }, { id: "b", timeMs: 2049, mistakes: 0 }])).toMatchObject({ winner: "b", tie: true });
-    expect(resolveRound([{ id: "a", timeMs: 2043, mistakes: 0 }, { id: "b", timeMs: 2049, mistakes: 0 }])).toMatchObject({ winner: null, tie: true });
-    expect(resolveRound([{ id: "a", timeMs: 2099, mistakes: 0 }, { id: "b", timeMs: 2101, mistakes: 0 }]).winner).toBe("a");
+    expect(
+      resolveRound([
+        { id: "a", timeMs: 2043, mistakes: 1 },
+        { id: "b", timeMs: 2049, mistakes: 0 },
+      ]),
+    ).toMatchObject({ winner: "b", tie: true });
+    expect(
+      resolveRound([
+        { id: "a", timeMs: 2043, mistakes: 0 },
+        { id: "b", timeMs: 2049, mistakes: 0 },
+      ]),
+    ).toMatchObject({ winner: null, tie: true });
+    expect(
+      resolveRound([
+        { id: "a", timeMs: 2099, mistakes: 0 },
+        { id: "b", timeMs: 2101, mistakes: 0 },
+      ]).winner,
+    ).toBe("a");
   });
   it("best of 3, draws possible", () => {
     expect(matchState({ a: 2, b: 0 }, 2)).toMatchObject({ over: true, winner: "a" });

@@ -41,6 +41,8 @@ export interface GameShellProps<P, St> {
   locked?: boolean;
   /** a key that changes per puzzle so the board remounts (free play next puzzle) */
   puzzleKey?: string | number;
+  /** extra props passed straight to the board (e.g. `ghost` for Ghost Race) */
+  extra?: Record<string, unknown>;
 }
 
 interface FeedbackState {
@@ -68,6 +70,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
     strip,
     locked,
     puzzleKey,
+    extra,
   } = props;
   const world = WORLD_BY_ID[meta.world];
   const relaxed = useSettings((s) => s.relaxed);
@@ -222,6 +225,8 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
       {/* 4 Board slot */}
       <main className="relative z-0 flex justify-center p-[18px]" aria-label={`${meta.name} board`}>
         <Board
+          {...extra}
+          extra={extra}
           key={puzzleKey}
           puzzle={puzzle}
           mode={mode}

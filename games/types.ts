@@ -74,6 +74,8 @@ export interface BoardProps<P = unknown, St = unknown> {
   /** Locked after clear, during countdowns and while paused */
   disabled?: boolean;
   api: BoardApi<St>;
+  /** Mode-specific props passed through by the shell, e.g. `ghost` for Ghost Race boards. */
+  extra?: Record<string, unknown>;
 }
 
 export type PlayMode = "tutorial" | "daily" | "free" | "duel" | "race" | "archive" | "challenge";

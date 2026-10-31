@@ -18,7 +18,11 @@ const secureRandom = () => randomInt(0, CODE_ALPHABET.length) / CODE_ALPHABET.le
 async function insertWithCode(admin: SupabaseClient, row: Record<string, unknown>): Promise<{ id: string; code: string }> {
   for (let i = 0; i < 12; i++) {
     const code = makeRoomCode(secureRandom);
-    const { data, error } = await admin.from("matches").insert({ ...row, code }).select("id, code").single();
+    const { data, error } = await admin
+      .from("matches")
+      .insert({ ...row, code })
+      .select("id, code")
+      .single();
     if (!error) return data as { id: string; code: string };
     if (error.code !== "23505") throw error;
   }
@@ -67,7 +71,13 @@ export async function pollQueue(admin: SupabaseClient, playerId: string) {
     .gte("enqueued_at", iso(now - 2 * 60_000))
     .order("enqueued_at")
     .limit(50);
-  const toEntry = (r: { player_id: string; game_id: string | null; rating: number; region: string | null; enqueued_at: string }): QueueEntry => ({
+  const toEntry = (r: {
+    player_id: string;
+    game_id: string | null;
+    rating: number;
+    region: string | null;
+    enqueued_at: string;
+  }): QueueEntry => ({
     playerId: r.player_id,
     gameId: r.game_id,
     rating: Number(r.rating),
@@ -139,7 +149,11 @@ async function createDuel(
 
 /** Practice bot after 20 s of searching (SRS 12.2). Clearly labelled, unrated. */
 export async function practiceBot(admin: SupabaseClient, playerId: string, game: string | null) {
-  const { data: q } = await admin.from("matchmaking_queue").select("enqueued_at, match_id, game_id").eq("player_id", playerId).maybeSingle();
+  const { data: q } = await admin
+    .from("matchmaking_queue")
+    .select("enqueued_at, match_id, game_id")
+    .eq("player_id", playerId)
+    .maybeSingle();
   if (q?.match_id) return { matchId: q.match_id as string };
   if (q && Date.now() - Date.parse(q.enqueued_at) < TIMING.botAfterMs - 1000) throw new ApiError(409, "too_soon");
   await cancelQueue(admin, playerId);
@@ -330,10 +344,21 @@ export async function startRoom(admin: SupabaseClient, playerId: string, code: s
   const waiting = racers.find((p) => !p.ready);
   if (waiting) throw new ApiError(409, "not_ready", `${waiting.players?.nickname ?? "Someone"} is still getting ready.`);
   const games = pickGames(createRng(`party:${l.m.id}:${l.m.set_no}`), l.m.game_id, PARTY_GAMES);
-  await admin.from("match_players").update({ points: 0, place: null, progress: 0, mistakes: 0, finished_ms: null, state: null }).eq("match_id", l.m.id);
+  await admin
+    .from("match_players")
+    .update({ points: 0, place: null, progress: 0, mistakes: 0, finished_ms: null, state: null })
+    .eq("match_id", l.m.id);
   const { data } = await admin
     .from("matches")
-    .update({ status: "playing", round: 1, games, round_started_at: iso(Date.now() + TIMING.countdownMs), round_first_at: null, winner_id: null, result: null })
+    .update({
+      status: "playing",
+      round: 1,
+      games,
+      round_started_at: iso(Date.now() + TIMING.countdownMs),
+      round_first_at: null,
+      winner_id: null,
+      result: null,
+    })
     .eq("id", l.m.id)
     .eq("status", "lobby")
     .select("id");
@@ -367,11 +392,24 @@ export async function nextGame(admin: SupabaseClient, playerId: string, code: st
 export async function runItBack(admin: SupabaseClient, playerId: string, code: string) {
   const l = await roomForHost(admin, code, playerId, true);
   if (l.m.status !== "finished" && l.m.status !== "round_end") throw new ApiError(409, "not_finished");
-  await admin.from("match_players").update({ ready: false, points: 0, place: null, progress: 0, mistakes: 0, finished_ms: null, state: null }).eq("match_id", l.m.id);
+  await admin
+    .from("match_players")
+    .update({ ready: false, points: 0, place: null, progress: 0, mistakes: 0, finished_ms: null, state: null })
+    .eq("match_id", l.m.id);
   await admin.from("match_players").update({ ready: true }).eq("match_id", l.m.id).eq("player_id", playerId);
   const { data } = await admin
     .from("matches")
-    .update({ status: "lobby", round: 1, set_no: l.m.set_no + 1, games: [], round_started_at: null, round_first_at: null, winner_id: null, result: null, finished_at: null })
+    .update({
+      status: "lobby",
+      round: 1,
+      set_no: l.m.set_no + 1,
+      games: [],
+      round_started_at: null,
+      round_first_at: null,
+      winner_id: null,
+      result: null,
+      finished_at: null,
+    })
     .eq("id", l.m.id)
     .eq("set_no", l.m.set_no)
     .select("id");

@@ -77,8 +77,15 @@ async function movesOf(admin: SupabaseClient, b: BayRow) {
 export async function bayView(admin: SupabaseClient, b: BayRow, me: string): Promise<BayView> {
   const humans = b.players.filter((p) => p !== BOT_PLAYER);
   const [{ data: cards }, { data: ratings }, moves] = await Promise.all([
-    admin.from("players").select("id, nickname, avatar_color").in("id", humans.length ? humans : [BOT_PLAYER]),
-    admin.from("ratings").select("player_id, rating").eq("track", `board:${b.game_id}`).in("player_id", humans.length ? humans : [BOT_PLAYER]),
+    admin
+      .from("players")
+      .select("id, nickname, avatar_color")
+      .in("id", humans.length ? humans : [BOT_PLAYER]),
+    admin
+      .from("ratings")
+      .select("player_id, rating")
+      .eq("track", `board:${b.game_id}`)
+      .in("player_id", humans.length ? humans : [BOT_PLAYER]),
     movesOf(admin, b),
   ]);
   const seat = seatOf(b, me);
@@ -278,7 +285,13 @@ async function settleClock(admin: SupabaseClient, b: BayRow): Promise<BayRow> {
   const clock = flag && b.clock_ms ? b.clock_ms.map((c, i) => (i === b.turn ? 0 : c)) : b.clock_ms;
   const { data } = await admin
     .from("board_matches")
-    .update({ status: "finished", result: flag ? "flag" : "timeout", winner_id: winner === BOT_PLAYER ? null : winner, clock_ms: clock, updated_at: iso(now) })
+    .update({
+      status: "finished",
+      result: flag ? "flag" : "timeout",
+      winner_id: winner === BOT_PLAYER ? null : winner,
+      clock_ms: clock,
+      updated_at: iso(now),
+    })
     .eq("id", b.id)
     .eq("status", "active")
     .eq("ply", b.ply)
@@ -291,7 +304,16 @@ async function settleClock(admin: SupabaseClient, b: BayRow): Promise<BayRow> {
 
 /* ---------------- Resign, draw, takeback, nudge, rematch ---------------- */
 
-export type BayAction = "resign" | "draw_offer" | "draw_accept" | "draw_decline" | "takeback_request" | "takeback_accept" | "takeback_decline" | "nudge" | "rematch";
+export type BayAction =
+  | "resign"
+  | "draw_offer"
+  | "draw_accept"
+  | "draw_decline"
+  | "takeback_request"
+  | "takeback_accept"
+  | "takeback_decline"
+  | "nudge"
+  | "rematch";
 
 export async function bayAction(admin: SupabaseClient, me: string, id: string, action: BayAction) {
   let b = await load(admin, id);
@@ -302,7 +324,14 @@ export async function bayAction(admin: SupabaseClient, me: string, id: string, a
   const end = async (winner: string | null, result: string) => {
     const { data } = await admin
       .from("board_matches")
-      .update({ status: "finished", winner_id: winner === BOT_PLAYER ? null : winner, result, draw_offer: null, takeback_offer: null, updated_at: iso(now) })
+      .update({
+        status: "finished",
+        winner_id: winner === BOT_PLAYER ? null : winner,
+        result,
+        draw_offer: null,
+        takeback_offer: null,
+        updated_at: iso(now),
+      })
       .eq("id", id)
       .eq("status", "active")
       .select("id");
@@ -357,9 +386,15 @@ export async function bayAction(admin: SupabaseClient, me: string, id: string, a
     case "nudge": {
       active();
       if (b.mode !== "async") throw new ApiError(409, "live_match");
-      const ok = canNudge({ myTurn: b.turn === seat, turnStartedAt: Date.parse(b.turn_started_at ?? b.updated_at), nudgedAt: ms(b.nudged_at) }, now);
+      const ok = canNudge(
+        { myTurn: b.turn === seat, turnStartedAt: Date.parse(b.turn_started_at ?? b.updated_at), nudgedAt: ms(b.nudged_at) },
+        now,
+      );
       if (!ok) throw new ApiError(409, "nudge_not_yet", "You can nudge 12 h after their turn began, once.");
-      await admin.from("board_matches").update({ nudged_at: iso(now) }).eq("id", id);
+      await admin
+        .from("board_matches")
+        .update({ nudged_at: iso(now) })
+        .eq("id", id);
       const other = b.players[b.turn];
       if (other && other !== BOT_PLAYER) await serverBroadcast(`user:${other}`, "nudge", { matchId: id, game: b.game_id });
       break;
@@ -419,7 +454,12 @@ async function rematchBay(admin: SupabaseClient, me: string, b: BayRow) {
     .select("id")
     .single();
   if (error) throw error;
-  const { data: set } = await admin.from("board_matches").update({ rematch_id: data.id }).eq("id", b.id).is("rematch_id", null).select("id");
+  const { data: set } = await admin
+    .from("board_matches")
+    .update({ rematch_id: data.id })
+    .eq("id", b.id)
+    .is("rematch_id", null)
+    .select("id");
   if (!set?.length) {
     await admin.from("board_matches").delete().eq("id", data.id);
     return getBay(admin, (await load(admin, b.id)).rematch_id!, me);
@@ -441,7 +481,10 @@ export async function inbox(admin: SupabaseClient, me: string) {
   const rows = (data ?? []) as BayRow[];
   const now = Date.now();
   const others = [...new Set(rows.flatMap((b) => b.players).filter((p) => p !== me && p !== BOT_PLAYER))];
-  const { data: cards } = await admin.from("players").select("id, nickname, avatar_color").in("id", others.length ? others : [BOT_PLAYER]);
+  const { data: cards } = await admin
+    .from("players")
+    .select("id, nickname, avatar_color")
+    .in("id", others.length ? others : [BOT_PLAYER]);
   const name = (id: string) => (id === BOT_PLAYER ? "Practice bot" : (cards?.find((c) => c.id === id)?.nickname ?? "Spuzler"));
   const color = (id: string) => (id === BOT_PLAYER ? "#A2A6C2" : (cards?.find((c) => c.id === id)?.avatar_color ?? "#B8F23A"));
   const hours = (n: number) => Math.max(0, Math.floor(n / 3_600_000));

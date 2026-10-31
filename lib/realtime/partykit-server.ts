@@ -25,7 +25,10 @@ async function verify(topic: string, token: string, secret: string): Promise<str
   if (!player || !exp || !sig || Number(exp) < Date.now()) return null;
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   const mac = new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${topic}|${player}.${exp}`)));
-  const want = btoa(String.fromCharCode(...mac)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const want = btoa(String.fromCharCode(...mac))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
   return want === sig ? player : null;
 }
 

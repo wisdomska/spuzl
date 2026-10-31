@@ -202,6 +202,10 @@ import {
   Wrench,
   X,
   XCircle,
+  // multiplayer
+  ArrowFatLinesDown,
+  BellRinging,
+  ClockCountdown,
 } from "@phosphor-icons/react/dist/ssr";
 import type { Icon } from "@phosphor-icons/react";
 
@@ -408,4 +412,8 @@ export const ICONS: Record<string, Icon> = {
   wrench: Wrench,
   x: X,
   "x-circle": XCircle,
+  // multiplayer
+  "arrow-fat-lines-down": ArrowFatLinesDown,
+  "bell-ringing": BellRinging,
+  "clock-countdown": ClockCountdown,
 };

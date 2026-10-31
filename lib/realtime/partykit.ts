@@ -5,7 +5,16 @@
  * by lib/realtime/partykit-server.ts. The connection carries a short-lived token from
  * /api/v1/realtime/token that the party checks. Presence rides on heartbeat broadcasts.
  */
-import { HeartbeatPresence, Listeners, MessageBus, type ChannelOptions, type ChannelStatus, type PresenceMember, type RealtimeChannel, type RealtimeTransport } from "./transport";
+import {
+  HeartbeatPresence,
+  Listeners,
+  MessageBus,
+  type ChannelOptions,
+  type ChannelStatus,
+  type PresenceMember,
+  type RealtimeChannel,
+  type RealtimeTransport,
+} from "./transport";
 
 class PartyChannel implements RealtimeChannel {
   private ws: WebSocket | null = null;

@@ -149,7 +149,14 @@ export async function getChallenge(admin: SupabaseClient, me: string, code: stri
     senderTimeline: c.sender_timeline ?? [],
     mine: c.sender_id === me,
     result: mine
-      ? { timeMs: mine.time_ms as number, won: mine.won as boolean, hints: mine.hints as number, mistakes: mine.mistakes as number, timeline: mine.timeline ?? [] }
+      ? {
+          attemptId: (mine.attempt_id as string | null) ?? null,
+          timeMs: mine.time_ms as number,
+          won: mine.won as boolean,
+          hints: mine.hints as number,
+          mistakes: mine.mistakes as number,
+          timeline: mine.timeline ?? [],
+        }
       : null,
     expiresAt: Date.parse(c.expires_at),
   };
@@ -161,11 +168,25 @@ export async function acceptChallenge(admin: SupabaseClient, me: string, code: s
   const { puzzle } = await puzzleFor(admin, c);
   const { data, error } = await admin
     .from("attempts")
-    .insert({ player_id: me, game_id: c.game_id, mode: "challenge", puzzle_id: c.puzzle_id, free_seed: c.puzzle_id ? null : c.free_seed, ref_id: c.id })
+    .insert({
+      player_id: me,
+      game_id: c.game_id,
+      mode: "challenge",
+      puzzle_id: c.puzzle_id,
+      free_seed: c.puzzle_id ? null : c.free_seed,
+      ref_id: c.id,
+    })
     .select("id, started_at")
     .single();
   if (error) throw error;
-  return { attemptId: data.id as string, puzzle, startedAt: data.started_at as string, game: c.game_id, senderMs: c.sender_ms, senderTimeline: c.sender_timeline ?? [] };
+  return {
+    attemptId: data.id as string,
+    puzzle,
+    startedAt: data.started_at as string,
+    game: c.game_id,
+    senderMs: c.sender_ms,
+    senderTimeline: c.sender_timeline ?? [],
+  };
 }
 
 export async function challengeResult(admin: SupabaseClient, me: string, code: string, attemptId: string, timeline?: TimelineSample[]) {
@@ -199,26 +220,54 @@ export async function startGhostRace(admin: SupabaseClient, me: string, game: st
   let puzzle: unknown;
   let ghost: { name: string; log: unknown; timeMs: number; deaths: number; runId: string; mine: boolean } | null = null;
   const pick = async (q: PromiseLike<{ data: unknown }>) => {
-    const { data } = (await q) as { data: { id: string; player_id: string; inputs: unknown; time_ms: number; deaths: number; puzzle_id: string | null } | null };
+    const { data } = (await q) as {
+      data: { id: string; player_id: string; inputs: unknown; time_ms: number; deaths: number; puzzle_id: string | null } | null;
+    };
     if (!data) return;
     const { data: card } = await admin.from("player_cards").select("nickname").eq("id", data.player_id).maybeSingle();
-    ghost = { name: card?.nickname ?? "Spuzler", log: data.inputs, timeMs: data.time_ms, deaths: data.deaths, runId: data.id, mine: data.player_id === me };
+    ghost = {
+      name: card?.nickname ?? "Spuzler",
+      log: data.inputs,
+      timeMs: data.time_ms,
+      deaths: data.deaths,
+      runId: data.id,
+      mine: data.player_id === me,
+    };
     puzzleId = data.puzzle_id;
   };
   if (runId && /^[0-9a-f-]{36}$/i.test(runId))
-    await pick(admin.from("ghost_runs").select("id, player_id, inputs, time_ms, deaths, puzzle_id").eq("id", runId).eq("game_id", game).maybeSingle());
+    await pick(
+      admin
+        .from("ghost_runs")
+        .select("id, player_id, inputs, time_ms, deaths, puzzle_id")
+        .eq("id", runId)
+        .eq("game_id", game)
+        .maybeSingle(),
+    );
   if (!puzzleId) {
     const daily = await loadDaily(admin, game, todayGmt());
     puzzleId = daily.puzzleId;
     puzzle = daily.puzzle;
     if (!ghost && puzzleId) {
-      const { data: fr } = await admin.from("friendships").select("player_id, friend_id").eq("status", "accepted").or(`player_id.eq.${me},friend_id.eq.${me}`);
+      const { data: fr } = await admin
+        .from("friendships")
+        .select("player_id, friend_id")
+        .eq("status", "accepted")
+        .or(`player_id.eq.${me},friend_id.eq.${me}`);
       const friends = (fr ?? []).map((f) => (f.player_id === me ? f.friend_id : f.player_id));
       const runs = admin.from("ghost_runs").select("id, player_id, inputs, time_ms, deaths, puzzle_id").eq("puzzle_id", puzzleId);
       if (friends.length) await pick(runs.in("player_id", friends).order("deaths").order("time_ms").limit(1).maybeSingle());
       if (!ghost)
         await pick(
-          admin.from("ghost_runs").select("id, player_id, inputs, time_ms, deaths, puzzle_id").eq("puzzle_id", puzzleId).eq("player_id", me).order("deaths").order("time_ms").limit(1).maybeSingle(),
+          admin
+            .from("ghost_runs")
+            .select("id, player_id, inputs, time_ms, deaths, puzzle_id")
+            .eq("puzzle_id", puzzleId)
+            .eq("player_id", me)
+            .order("deaths")
+            .order("time_ms")
+            .limit(1)
+            .maybeSingle(),
         );
     }
   } else {

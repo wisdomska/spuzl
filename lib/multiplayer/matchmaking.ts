@@ -42,12 +42,12 @@ export function pickOpponent(me: QueueEntry, waiting: QueueEntry[], now: number)
   let bestKey: [number, number, number] | null = null;
   for (const o of waiting) {
     if (!compatible(me, o, now)) continue;
-    const key: [number, number, number] = [
-      me.region && o.region === me.region ? 0 : 1,
-      Math.abs(me.rating - o.rating),
-      o.enqueuedAt,
-    ];
-    if (!bestKey || key[0] < bestKey[0] || (key[0] === bestKey[0] && (key[1] < bestKey[1] || (key[1] === bestKey[1] && key[2] < bestKey[2])))) {
+    const key: [number, number, number] = [me.region && o.region === me.region ? 0 : 1, Math.abs(me.rating - o.rating), o.enqueuedAt];
+    if (
+      !bestKey ||
+      key[0] < bestKey[0] ||
+      (key[0] === bestKey[0] && (key[1] < bestKey[1] || (key[1] === bestKey[1] && key[2] < bestKey[2])))
+    ) {
       best = o;
       bestKey = key;
     }

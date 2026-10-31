@@ -6,7 +6,15 @@
  */
 import type { RealtimeChannel as SbChannel } from "@supabase/supabase-js";
 import { supabaseBrowser } from "@/lib/supabase/browser";
-import { Listeners, MessageBus, type ChannelOptions, type ChannelStatus, type PresenceMember, type RealtimeChannel, type RealtimeTransport } from "./transport";
+import {
+  Listeners,
+  MessageBus,
+  type ChannelOptions,
+  type ChannelStatus,
+  type PresenceMember,
+  type RealtimeChannel,
+  type RealtimeTransport,
+} from "./transport";
 
 class SupabaseChannel implements RealtimeChannel {
   private ch: SbChannel | null = null;
@@ -45,7 +53,9 @@ class SupabaseChannel implements RealtimeChannel {
       if (this.opts.presenceKey)
         ch.on("presence", { event: "sync" }, () => {
           const state = ch.presenceState<Record<string, unknown>>();
-          this.presence.emit(Object.entries(state).map(([key, metas]) => ({ key, meta: (metas[metas.length - 1] ?? {}) as Record<string, unknown> })));
+          this.presence.emit(
+            Object.entries(state).map(([key, metas]) => ({ key, meta: (metas[metas.length - 1] ?? {}) as Record<string, unknown> })),
+          );
         });
       this.ch = ch;
       await new Promise<void>((resolve) => {

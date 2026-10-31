@@ -46,6 +46,8 @@ export interface MatchView {
   round: number;
   bestOf: number;
   setNo: number;
+  /** the room's chosen game, null for a random mix */
+  gameId: string | null;
   games: string[];
   difficulty: string;
   mix: boolean;
@@ -65,7 +67,7 @@ export interface MatchView {
   me: string;
   players: MatchPlayerView[];
   rounds: MatchRoundView[];
-  bot: { name: string; roundsWon: number; finishMs: number | null } | null;
+  bot: { name: string; roundsWon: number; finishMs: number | null; times: number[] } | null;
   /** the current round's puzzle, only once its countdown has begun */
   puzzle: { round: number; game: string; data: unknown } | null;
   /** your saved board for this round (reconnect) */

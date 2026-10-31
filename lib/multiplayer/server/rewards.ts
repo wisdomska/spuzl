@@ -27,8 +27,24 @@ export async function rateTwo(admin: SupabaseClient, a: string, b: string, score
   const nb = glicko(rb, [{ opponent: ra, score: 1 - scoreA }]);
   const now = new Date().toISOString();
   await admin.from("ratings").upsert([
-    { player_id: a, track, rating: na.rating.toFixed(2), rd: na.rd.toFixed(2), vol: na.vol.toFixed(6), games: ra.games + 1, updated_at: now },
-    { player_id: b, track, rating: nb.rating.toFixed(2), rd: nb.rd.toFixed(2), vol: nb.vol.toFixed(6), games: rb.games + 1, updated_at: now },
+    {
+      player_id: a,
+      track,
+      rating: na.rating.toFixed(2),
+      rd: na.rd.toFixed(2),
+      vol: na.vol.toFixed(6),
+      games: ra.games + 1,
+      updated_at: now,
+    },
+    {
+      player_id: b,
+      track,
+      rating: nb.rating.toFixed(2),
+      rd: nb.rd.toFixed(2),
+      vol: nb.vol.toFixed(6),
+      games: rb.games + 1,
+      updated_at: now,
+    },
   ]);
   return { a: { before: ra.rating, after: na.rating }, b: { before: rb.rating, after: nb.rating } };
 }
@@ -113,7 +129,9 @@ export async function finalizeDuel(admin: SupabaseClient, l: Loaded) {
     await grant(admin, p.player_id, "duel", m.id, xp);
     await bumpQuests(admin, p.player_id, won && !m.is_bot ? ["duels", "mp_wins"] : ["duels"]);
     if (!won || m.is_bot) continue;
-    await admin.from("feed_events").insert({ player_id: p.player_id, kind: "duel_win", game_id: m.games[0] ?? null, payload: { matchId: m.id } });
+    await admin
+      .from("feed_events")
+      .insert({ player_id: p.player_id, kind: "duel_win", game_id: m.games[0] ?? null, payload: { matchId: m.id } });
     const { count } = await admin
       .from("matches")
       .select("id", { count: "exact", head: true })
@@ -135,7 +153,9 @@ export async function finalizeRace(admin: SupabaseClient, l: Loaded, lastGame: P
     await grant(admin, p.player_id, "party", ref, won ? PARTY.winXp : PARTY.playXp);
     if (!won) continue;
     await bumpQuests(admin, p.player_id, ["mp_wins"]);
-    await admin.from("feed_events").insert({ player_id: p.player_id, kind: "party_win", game_id: m.games[0] ?? null, payload: { matchId: m.id } });
+    await admin
+      .from("feed_events")
+      .insert({ player_id: p.player_id, kind: "party_win", game_id: m.games[0] ?? null, payload: { matchId: m.id } });
     await badge(admin, p.player_id, "party-1");
   }
   // Photo finish: won a Party game by under a second.

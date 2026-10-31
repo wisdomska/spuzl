@@ -3,7 +3,17 @@ import { body, handle, ok, rateLimit, requirePlayer } from "@/lib/api/server";
 import { bayAction } from "@/lib/multiplayer/server/bay";
 
 const Action = z.object({
-  action: z.enum(["resign", "draw_offer", "draw_accept", "draw_decline", "takeback_request", "takeback_accept", "takeback_decline", "nudge", "rematch"]),
+  action: z.enum([
+    "resign",
+    "draw_offer",
+    "draw_accept",
+    "draw_decline",
+    "takeback_request",
+    "takeback_accept",
+    "takeback_decline",
+    "nudge",
+    "rematch",
+  ]),
 });
 
 /** POST /api/v1/bay/:id/action: resign, draw offers, takebacks (unranked only), nudges (async, after 12 h), rematch. */

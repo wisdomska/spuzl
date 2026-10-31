@@ -10,7 +10,13 @@ export const GET = handle(async (req: Request) => {
   if (!/^[0-9a-f-]{36}$/i.test(id ?? "")) throw new ApiError(400, "bad_topic");
   let allowed = false;
   if (kind === "match") {
-    const { data } = await admin.from("match_players").select("player_id").eq("match_id", id).eq("player_id", player.id).is("left_at", null).maybeSingle();
+    const { data } = await admin
+      .from("match_players")
+      .select("player_id")
+      .eq("match_id", id)
+      .eq("player_id", player.id)
+      .is("left_at", null)
+      .maybeSingle();
     allowed = !!data;
   } else if (kind === "bay") {
     const { data } = await admin.from("board_matches").select("id").eq("id", id).contains("players", [player.id]).maybeSingle();
