@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { ApiError, body, handle, ok, rateLimit, requirePlayer } from "@/lib/api/server";
 import { blockedIds, cards, friendshipBetween } from "@/lib/social/server";
-import { canRequestByUsername, presenceFor } from "@/lib/social";
+import { canRequestByUsername, isUnder16, presenceFor } from "@/lib/social";
 
 export const dynamic = "force-dynamic";
 
@@ -65,6 +65,7 @@ export const POST = handle(async (req: Request) => {
   const { admin, player } = await requirePlayer();
   await rateLimit(admin, `friend-req:${player.id}`, 30, 3600);
   const { nickname } = await body(req, Request_);
+  if (isUnder16(player.age_band)) throw new ApiError(403, "invite_only", "Under-16 players add friends by invite link or QR.");
   const { data: target } = await admin
     .from("players")
     .select("id, age_band, banned_at, is_test")
