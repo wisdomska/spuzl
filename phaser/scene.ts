@@ -88,7 +88,9 @@ export function startStage<S>(Phaser: PhaserModule, o: StageOptions<S>): Stage {
     parent: o.parent,
     width: w,
     height: h,
-    backgroundColor: "#1A0E12",
+    // Transparent until the painter's first frame, so the CSS poster under the canvas shows instead of a
+    // cleared (black) buffer while Phaser boots; every painter fills the whole background each frame.
+    transparent: true,
     banner: false,
     audio: { noAudio: true },
     input: { keyboard: false, mouse: false, touch: false, gamepad: false },

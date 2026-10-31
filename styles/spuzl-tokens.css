@@ -37,6 +37,9 @@
   --w-rage-ink: #b81e1e;
   --w-board: #f27adb;
   --w-board-ink: #a3348f; /* Board Bay: chess, draughts, oware, ludo, four up, flip */
+  /* Rage Ridge night scene (always dark; mirrors SCENE.bg / SCENE.dot in phaser/render/types.ts) */
+  --rage-scene: #1a0e12;
+  --rage-scene-dot: #3a1a22;
   /* podium + tiers */
   --pos-1: #ffc93c;
   --pos-2: #d7dae8;

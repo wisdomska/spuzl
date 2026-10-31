@@ -59,7 +59,10 @@ export interface Painter<S> {
   draw(ctx: DrawCtx, sim: S, ghost: { sim: S; name: string } | null): void;
 }
 
-/** Scene colours (Rage Ridge night scene, from the Game Boards file). */
+/**
+ * Scene colours (Rage Ridge night scene, from the Game Boards file). `bg` and `dot` are mirrored by the
+ * `--rage-scene` and `--rage-scene-dot` tokens, which paint the poster frame before Phaser boots.
+ */
 export const SCENE = {
   bg: 0x1a0e12,
   dot: 0x3a1a22,

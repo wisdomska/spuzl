@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import type { ComponentType } from "react";
 import type { BoardProps } from "./types";
 import { BoardSkeleton } from "@/components/game/BoardSkeleton";
+import { RagePoster } from "@/phaser/RagePoster";
 
 type AnyBoard = ComponentType<BoardProps<any, any>>; // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -43,16 +44,17 @@ export const BOARDS: Record<string, AnyBoard> = {
   merge: dynamic(() => import("./merge/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   sums: dynamic(() => import("./sums/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   equal: dynamic(() => import("./equal/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
-  gotcha: dynamic(() => import("./gotcha/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
-  dash: dynamic(() => import("./dash/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
-  flipside: dynamic(() => import("./flipside/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
-  ricochet: dynamic(() => import("./ricochet/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
-  stacked: dynamic(() => import("./stacked/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
-  wobble: dynamic(() => import("./wobble/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
-  grapple: dynamic(() => import("./grapple/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
-  ghosted: dynamic(() => import("./ghosted/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
-  slip: dynamic(() => import("./slip/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
-  gauntlet: dynamic(() => import("./gauntlet/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  // Rage Ridge: a poster frame of the night scene while the board (then Phaser) loads, never a black box.
+  gotcha: dynamic(() => import("./gotcha/Board"), { ssr: false, loading: () => <RagePoster /> }),
+  dash: dynamic(() => import("./dash/Board"), { ssr: false, loading: () => <RagePoster /> }),
+  flipside: dynamic(() => import("./flipside/Board"), { ssr: false, loading: () => <RagePoster tall /> }),
+  ricochet: dynamic(() => import("./ricochet/Board"), { ssr: false, loading: () => <RagePoster tall /> }),
+  stacked: dynamic(() => import("./stacked/Board"), { ssr: false, loading: () => <RagePoster tall /> }),
+  wobble: dynamic(() => import("./wobble/Board"), { ssr: false, loading: () => <RagePoster /> }),
+  grapple: dynamic(() => import("./grapple/Board"), { ssr: false, loading: () => <RagePoster tall /> }),
+  ghosted: dynamic(() => import("./ghosted/Board"), { ssr: false, loading: () => <RagePoster tall /> }),
+  slip: dynamic(() => import("./slip/Board"), { ssr: false, loading: () => <RagePoster tall /> }),
+  gauntlet: dynamic(() => import("./gauntlet/Board"), { ssr: false, loading: () => <RagePoster /> }),
   coil: dynamic(() => import("./coil/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   quads: dynamic(() => import("./quads/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   rungs: dynamic(() => import("./rungs/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),

@@ -2,11 +2,22 @@
 
 /**
  * Shared Rage Ridge board: a Phaser canvas sized to the board slot, the in-canvas HUD (Game Boards:
- * Gotcha and Dash, Overlays: GR Ghost Race), touch controls under the board (D-pad 56 px, jump 96 px),
+ * Gotcha and Dash, Overlays: GR Ghost Race), touch controls under the board (D-pad 64 px, jump 96 px),
  * keyboard (arrows, A D, Space, W) and the Gamepad API. Phaser is imported inside an effect so it lands
- * in its own lazy chunk. The simulation is fixed-step and every frame's buttons go into the input log.
+ * in its own lazy chunk; until it draws, the CSS poster frame (night scene) shows under the canvas.
+ * The simulation is fixed-step and every frame's buttons go into the input log; held keys and pointers
+ * keep applying on every step until released (HeldInput).
  */
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as RPointerEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent as RPointerEvent,
+} from "react";
 import type { BoardProps, InputLog } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { play } from "@/lib/audio";
@@ -19,6 +30,9 @@ import { BTN } from "./sim/input";
 import { framesToMs } from "./sim/fixed";
 import { cssColor, type Painter } from "./render/types";
 import type { Stage } from "./scene";
+import { HeldInput } from "./held";
+import { stageHeight } from "./layout";
+import { posterStyle } from "./RagePoster";
 
 export type ControlsKind = "dpad" | "tap" | "hold" | "lr" | "drag";
 
@@ -106,8 +120,12 @@ export function RageBoard<S extends SimCore>({
   const settings = useSettings();
   const reduced = prefersReducedMotion(settings);
   const reducedRef = useRef(reduced);
-  const [size, setSize] = useState({ w: 354, h: 248 });
-  const [loaded, setLoaded] = useState(false);
+  // First render already uses the phone height (boards are client-only), so the poster never jumps.
+  const [size, setSize] = useState(() => {
+    const w = typeof window === "undefined" ? 354 : Math.max(0, Math.min(window.innerWidth, 560) - 36);
+    const vp = typeof window === "undefined" ? { w: 1280, h: 800 } : { w: window.innerWidth, h: window.innerHeight };
+    return { w, h: stageHeight(w, vp, spec.tall) };
+  });
   const [bump, setBump] = useState(0);
   const [message, setMessage] = useState("");
   const [notice, setNotice] = useState(() => {
@@ -255,19 +273,23 @@ export function RageBoard<S extends SimCore>({
     return () => clearInterval(id);
   }, [readHud]);
 
-  // Size the canvas to the board slot.
-  useEffect(() => {
+  // Size the canvas to the board slot (and, on phones, to the viewport height) before the first paint.
+  useLayoutEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
     const on = () => {
       const w = Math.floor(el.clientWidth);
-      const h = spec.tall ? Math.round(Math.max(300, Math.min(400, w * 0.9))) : Math.round(Math.max(230, Math.min(320, w * 0.7)));
+      const h = stageHeight(w, { w: window.innerWidth, h: window.innerHeight }, spec.tall);
       setSize((s) => (s.w === w && s.h === h ? s : { w, h }));
     };
     on();
     const ro = new ResizeObserver(on);
     ro.observe(el);
-    return () => ro.disconnect();
+    window.addEventListener("resize", on);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", on);
+    };
   }, [spec.tall]);
 
   // Lazy Phaser.
@@ -301,7 +323,6 @@ export function RageBoard<S extends SimCore>({
           return { sim: ctl.sim, ghost: ctl.ghost ? { sim: ctl.ghost.sim, name: ctl.ghost.name } : null };
         },
       });
-      setLoaded(true);
     })();
     return () => {
       dead = true;
@@ -330,78 +351,91 @@ export function RageBoard<S extends SimCore>({
     [ctl, notice, dismissNotice],
   );
 
-  // Keyboard: arrows or A D to move, Space, W or Up to jump.
+  // Held input: one tracker for the board's life, so a re-render (the photosensitive notice closing on the
+  // first press) never forgets a key or finger that is still down. Presses go through `press`, releases
+  // straight to the controller.
+  const held = useMemo(() => new HeldInput(), []);
   useEffect(() => {
-    const held = new Set<string>();
-    const bits = () => {
-      let b = 0;
-      if (held.has("ArrowLeft") || held.has("KeyA")) b |= BTN.LEFT;
-      if (held.has("ArrowRight") || held.has("KeyD")) b |= BTN.RIGHT;
-      if (held.has("Space") || held.has("ArrowUp") || held.has("KeyW") || held.has("KeyZ")) b |= BTN.JUMP;
-      if (held.has("ArrowDown") || held.has("KeyS")) b |= BTN.DOWN;
-      return b;
-    };
-    const keys = new Set(["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space", "KeyA", "KeyD", "KeyW", "KeyS", "KeyZ"]);
+    held.setApply((src, bits, down) => (down ? press(src, bits) : ctl.setSource(src, bits)));
+  }, [held, ctl, press]);
+
+  // Keyboard: arrows or A D to move, Space, W or Up to jump. Auto-repeat re-applies; release on keyup,
+  // window blur, a hidden tab or page hide.
+  useEffect(() => {
     const down = (e: KeyboardEvent) => {
-      if (!keys.has(e.code)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
       const t = e.target as HTMLElement | null;
       if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
       if (t && t.tagName === "BUTTON" && !t.dataset.rage && (e.code === "Space" || e.code === "Enter")) return;
-      e.preventDefault();
-      held.add(e.code);
-      press("key", bits());
+      if (held.keyDown(e.code)) e.preventDefault();
     };
-    const up = (e: KeyboardEvent) => {
-      if (!held.delete(e.code)) return;
-      ctl.setSource("key", bits());
-    };
-    const blur = () => {
-      held.clear();
-      ctl.clearSources();
+    const up = (e: KeyboardEvent) => held.keyUp(e.code);
+    const releaseAll = () => held.releaseAll();
+    const onVis = () => {
+      if (document.hidden) releaseAll();
     };
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
-    window.addEventListener("blur", blur);
+    window.addEventListener("blur", releaseAll);
+    window.addEventListener("pagehide", releaseAll);
+    document.addEventListener("visibilitychange", onVis);
     return () => {
       window.removeEventListener("keydown", down);
       window.removeEventListener("keyup", up);
-      window.removeEventListener("blur", blur);
+      window.removeEventListener("blur", releaseAll);
+      window.removeEventListener("pagehide", releaseAll);
+      document.removeEventListener("visibilitychange", onVis);
+      releaseAll();
     };
-  }, [ctl, press]);
+  }, [held]);
 
-  // Canvas touch: tap anywhere to jump (tap and hold games), drag to swing (Slip).
+  // Canvas touch: tap anywhere to jump (tap and hold games), drag to swing (Slip). The pointer is captured
+  // so a finger that slides off the canvas still releases.
   const drag = useRef<{ id: number; x: number } | null>(null);
   const onCanvasDown = (e: RPointerEvent) => {
-    if (spec.controls === "tap" || spec.controls === "hold") press("canvas", BTN.JUMP);
-    else if (spec.controls === "drag") {
-      drag.current = { id: e.pointerId, x: e.clientX };
+    if (spec.controls !== "tap" && spec.controls !== "hold" && spec.controls !== "drag") return;
+    try {
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
-      press("canvas", 0);
+    } catch {
+      /* pointer already gone */
     }
+    if (spec.controls === "drag") {
+      drag.current = { id: e.pointerId, x: e.clientX };
+      held.pointerDown("canvas", e.pointerId, 0);
+    } else held.pointerDown("canvas", e.pointerId, BTN.JUMP);
   };
   const onCanvasMove = (e: RPointerEvent) => {
     if (spec.controls !== "drag" || !drag.current || drag.current.id !== e.pointerId) return;
     const dx = e.clientX - drag.current.x;
-    ctl.setSource("canvas", dx > 12 ? BTN.RIGHT : dx < -12 ? BTN.LEFT : 0);
+    held.pointerSet("canvas", e.pointerId, dx > 12 ? BTN.RIGHT : dx < -12 ? BTN.LEFT : 0);
     if (Math.abs(dx) > 48) drag.current.x = e.clientX - Math.sign(dx) * 48;
   };
   const onCanvasUp = (e: RPointerEvent) => {
-    if (spec.controls === "drag" && drag.current?.id === e.pointerId) drag.current = null;
-    ctl.setSource("canvas", 0);
+    if (drag.current?.id === e.pointerId) drag.current = null;
+    held.pointerUp("canvas", e.pointerId);
   };
 
-  const holdProps = (src: string, bit: number) => ({
-    onPointerDown: (e: RPointerEvent) => {
-      e.preventDefault();
-      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
-      press(src, bit);
-    },
-    onPointerUp: () => ctl.setSource(src, 0),
-    onPointerCancel: () => ctl.setSource(src, 0),
-    onLostPointerCapture: () => ctl.setSource(src, 0),
-    onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
-    "data-rage": "1",
-  });
+  // On-screen controls: pressed while any pointer is down on them (captured, so sliding off keeps the
+  // press); pointerup, pointercancel and lost capture all release.
+  const holdProps = (src: string, bit: number) => {
+    const release = (e: RPointerEvent) => held.pointerUp(src, e.pointerId);
+    return {
+      onPointerDown: (e: RPointerEvent) => {
+        e.preventDefault();
+        try {
+          (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+        } catch {
+          /* pointer already gone */
+        }
+        held.pointerDown(src, e.pointerId, bit);
+      },
+      onPointerUp: release,
+      onPointerCancel: release,
+      onLostPointerCapture: release,
+      onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
+      "data-rage": "1",
+    };
+  };
 
   const wide = size.w >= 520;
   const ghostOn = !!ctl.ghost;
@@ -411,19 +445,13 @@ export function RageBoard<S extends SimCore>({
     <div ref={wrapRef} className="flex w-full flex-col gap-3.5" style={{ maxWidth: "100%" }}>
       <div
         className="relative overflow-hidden rounded-[20px] select-none"
-        style={{ height: size.h, background: "#1A0E12", touchAction: "none" }}
+        style={{ ...posterStyle, height: size.h, touchAction: "none", WebkitTouchCallout: "none" }}
         onPointerDown={onCanvasDown}
         onPointerMove={onCanvasMove}
         onPointerUp={onCanvasUp}
         onPointerCancel={onCanvasUp}
+        onLostPointerCapture={onCanvasUp}
       >
-        {!loaded && (
-          <div
-            aria-hidden
-            className="absolute inset-0"
-            style={{ backgroundImage: "radial-gradient(#3A1A22 1.5px, transparent 1.5px)", backgroundSize: "20px 20px" }}
-          />
-        )}
         <div ref={canvasRef} role="img" aria-label={`${spec.name} level. ${hud.deaths} deaths.`} className="absolute inset-0" />
 
         {/* HUD */}
@@ -509,7 +537,17 @@ export function RageBoard<S extends SimCore>({
         {(!hud.started || notice) && !hud.finished && (
           <div className="pointer-events-none absolute inset-x-4 top-[38%] z-[3] flex flex-col items-center gap-2 text-center">
             {notice && (
-              <div style={{ ...chip, height: "auto", padding: "8px 12px", fontSize: 13, fontWeight: 600, background: "#20233A" }}>
+              <div
+                style={{
+                  ...chip,
+                  height: "auto",
+                  padding: "8px 12px",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  background: "#20233A",
+                  whiteSpace: "normal",
+                }}
+              >
                 <Icon name="warning-circle" size={16} style={{ color: "#FFC93C", flex: "none" }} />
                 Fast motion and quick flashes ahead. Take a break whenever you like.
               </div>
@@ -520,9 +558,9 @@ export function RageBoard<S extends SimCore>({
       </div>
 
       {/* Controls under the board */}
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-2 select-none" style={{ WebkitTouchCallout: "none" }}>
         {spec.controls === "dpad" || spec.controls === "lr" || spec.controls === "drag" ? (
-          <div className="flex gap-2.5">
+          <div className="flex flex-none gap-2">
             <PadButton label="Move left" icon="caret-left" {...holdProps("pl", BTN.LEFT)} />
             <PadButton label="Move right" icon="caret-right" {...holdProps("pr", BTN.RIGHT)} />
           </div>
@@ -531,7 +569,7 @@ export function RageBoard<S extends SimCore>({
         )}
         <div className="text-muted min-w-0 flex-1 text-center text-[14px] leading-[1.4] font-medium" aria-live="off">
           {total > 1 && (
-            <div className="num font-semibold text-[var(--text)]">{`Level ${Math.min(total, hud.cleared + 1)} of ${total}`}</div>
+            <div className="num font-semibold text-balance text-[var(--text)]">{`Level ${Math.min(total, hud.cleared + 1)} of ${total}`}</div>
           )}
           {hud.level && <div className="truncate">{hud.level}</div>}
         </div>
@@ -586,9 +624,9 @@ function PadButton({ label, icon, ...rest }: { label: string; icon: string } & R
       aria-label={label}
       className="toy flex items-center justify-center"
       style={{
-        width: 56,
-        height: 56,
-        borderRadius: 18,
+        width: 64,
+        height: 64,
+        borderRadius: 20,
         background: "var(--surface-raised)",
         color: "var(--text)",
         ["--btn-depth" as string]: "var(--depth)",
