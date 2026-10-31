@@ -166,9 +166,10 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   }, [hints, requestHint, solved]);
 
   // Hint controls registered by the board call into the shell.
-  const shownControls = controls.map((c) =>
-    c.id === "hint" ? { ...c, onPress: askHint, disabled: hints <= 0 || solved || c.disabled } : c,
-  );
+  // No hint source (Duels, Party Races): the Hint control is hidden rather than dead.
+  const shownControls = controls
+    .filter((c) => c.id !== "hint" || requestHint)
+    .map((c) => (c.id === "hint" ? { ...c, onPress: askHint, disabled: hints <= 0 || solved || c.disabled } : c));
 
   const style = {
     "--world": world.color,

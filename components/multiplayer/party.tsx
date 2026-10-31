@@ -339,7 +339,7 @@ export function Lobby({
         </span>
         <span className="flex flex-1 flex-col">
           <span className="text-[16px] font-semibold">{gameLine}</span>
-          <span className="text-muted text-[14px] capitalize">{view.difficulty}. Host can change.</span>
+          <span className="text-muted text-[14px]">{view.difficulty[0].toUpperCase() + view.difficulty.slice(1)}. Host can change.</span>
         </span>
         {host && <Icon name="caret-right" size={18} className="text-muted" />}
       </button>
@@ -348,11 +348,17 @@ export function Lobby({
       </div>
       <div className="mx-4 mt-auto pt-4">
         {view.classroom && host ? (
-          <Cta onClick={onStart} disabled={!all} sub={all ? `${ready} of ${here.length} ready` : "Waiting for the class"}>
+          <Cta
+            className="w-full"
+            onClick={onStart}
+            disabled={!all}
+            sub={all ? `${ready} of ${here.length} ready` : "Waiting for the class"}
+          >
             Start
           </Cta>
         ) : host ? (
           <Cta
+            className="w-full"
             onClick={onStart}
             tone={all ? "accent" : "raised"}
             sub={all ? `${ready} of ${here.length} ready` : here.length < 2 ? "Share the code" : `${ready} of ${here.length} ready`}
@@ -360,7 +366,12 @@ export function Lobby({
             Start
           </Cta>
         ) : (
-          <Cta onClick={() => onReady(!me.ready)} tone={me.ready ? "raised" : "accent"} icon={me.ready ? "check" : undefined}>
+          <Cta
+            className="w-full"
+            onClick={() => onReady(!me.ready)}
+            tone={me.ready ? "raised" : "accent"}
+            icon={me.ready ? "check" : undefined}
+          >
             {me.ready ? "Ready. Waiting for the host" : "Ready"}
           </Cta>
         )}

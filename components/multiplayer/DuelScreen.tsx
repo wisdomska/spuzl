@@ -403,7 +403,7 @@ function DuelMatch({ id }: { id: string }) {
             finished: theyFinished,
             bot: view.isBot,
           }}
-          me={{ color: me.color, progress: me.progress }}
+          me={{ nickname: me.nickname, color: me.color, progress: me.progress }}
           myMs={phase === "countdown" ? 0 : elapsed}
           rounds={rounds}
           round={view.round}

@@ -5,7 +5,8 @@ import { GameShell } from "@/components/game/GameShell";
 import { BOARDS } from "@/games/board-registry";
 import { GAME_BY_ID } from "@/lib/catalog";
 import { HttpError } from "@/lib/client/api";
-import { matchAction } from "@/lib/client/multiplayer";
+import { useQueryClient } from "@tanstack/react-query";
+import { matchAction, matchKey } from "@/lib/client/multiplayer";
 import { throttle } from "@/lib/multiplayer/progress";
 import { TIMING } from "@/lib/multiplayer/constants";
 import type { MatchView } from "@/lib/multiplayer/types";
@@ -39,6 +40,7 @@ export function MatchBoard({
   const round = puzzle.round;
   const key = `${view.id}:${view.setNo}:${round}`;
   const lastState = useRef<unknown>(view.myState);
+  const qc = useQueryClient();
 
   useEffect(() => {
     mistakes.current = view.players.find((p) => p.id === view.me)?.mistakes ?? 0;
@@ -47,9 +49,18 @@ export function MatchBoard({
   const send = useMemo(
     () =>
       throttle((state: unknown, m: number) => {
-        void matchAction(view.id, "progress", { round, state, mistakes: m }).catch(() => {});
+        void matchAction<{ progress: number; mistakes: number }>(view.id, "progress", { round, state, mistakes: m })
+          .then((r) =>
+            // My own validated progress, straight from the server's answer.
+            qc.setQueryData<MatchView>(matchKey(view.id), (v) =>
+              v && v.round === round
+                ? { ...v, players: v.players.map((p) => (p.id === v.me ? { ...p, progress: r.progress, mistakes: r.mistakes } : p)) }
+                : v,
+            ),
+          )
+          .catch(() => {});
       }, TIMING.progressMs),
-    [view.id, round],
+    [view.id, round, qc],
   );
   useEffect(() => () => send.cancel(), [send]);
 

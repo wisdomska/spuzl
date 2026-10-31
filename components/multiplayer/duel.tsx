@@ -355,7 +355,7 @@ export function OpponentStrip({
   stale,
 }: {
   them: { nickname: string; color: string; progress: number; mistakes: number; finished: boolean; bot?: boolean };
-  me: { color: string; progress: number };
+  me: { nickname: string; color: string; progress: number };
   myMs: number;
   rounds: ("me" | "them" | "draw")[];
   round: number;
@@ -430,7 +430,7 @@ export function OpponentStrip({
         <RoundDots rounds={rounds} current={round} oppColor={them.color} />
       </motion.div>
       <div className="flex items-center gap-2.5">
-        <Avatar name="You" color={me.color}>
+        <Avatar name={me.nickname} color={me.color}>
           <EmoteBubble emote={myEmote?.e ?? null} n={myEmote?.n ?? 0} className="-top-[34px] -left-1.5" />
         </Avatar>
         <div className="flex flex-1 flex-col gap-[5px]">
@@ -592,7 +592,7 @@ export function OppDisconnected({
         </div>
         <h2 className="font-display self-stretch text-center text-[18px] font-extrabold">{name} lost signal</h2>
         <p className="text-muted self-stretch text-center text-[15px] leading-[1.45]">
-          Your clock is paused. If they&apos;re not back in 20 s, the round is yours.
+          Your clock is paused. If they&apos;re not back in 20&nbsp;s, the round is yours.
         </p>
       </div>
       <div className="flex flex-1 items-start justify-center pt-1.5 opacity-40" aria-hidden>

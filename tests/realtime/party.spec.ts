@@ -41,7 +41,12 @@ test("party: 8 devices race, host leaves, everyone sees the same podium", async 
   // Countdown, then the race rail with all seven racers on every device.
   for (const g of guests) await expect(g.page.getByRole("list", { name: "Race standings" })).toBeVisible({ timeout: 20_000 });
   const matchId = (await inPage<{ member: boolean; view: { id: string } }>(newHost.page, `/api/v1/rooms/${code}`)).data.view.id;
-  const v = (await inPage<{ setNo: number; difficulty: string; games: string[]; roundStartedAt: number; serverNow: number }>(newHost.page, `/api/v1/matches/${matchId}`)).data;
+  const v = (
+    await inPage<{ setNo: number; difficulty: string; games: string[]; roundStartedAt: number; serverNow: number }>(
+      newHost.page,
+      `/api/v1/matches/${matchId}`,
+    )
+  ).data;
   expect(v.games[0]).toBe("crownfall");
   await newHost.page.waitForTimeout(Math.max(0, v.roundStartedAt - v.serverNow) + 300);
   for (const g of guests) await expect(g.page.getByRole("list", { name: "Race standings" }).getByRole("listitem")).toHaveCount(7);
@@ -51,11 +56,15 @@ test("party: 8 devices race, host leaves, everyone sees the same podium", async 
   const racer = guests[1];
   await racer.page.getByRole("button", { name: "Crown" }).click();
   await racer.page.locator('[role="gridcell"]').nth(r.crowns[0]).click();
-  await expect(guests[5].page.getByRole("listitem", { name: new RegExp(`${racer.nickname}, [1-9]\\d? percent`) })).toBeVisible({ timeout: 15_000 });
+  await expect(guests[5].page.getByRole("listitem", { name: new RegExp(`${racer.nickname}, [1-9]\\d? percent`) })).toBeVisible({
+    timeout: 15_000,
+  });
 
   // Everyone else submits the solution at the same instant: the server times them all once.
   await Promise.all(
-    guests.filter((g) => g !== racer).map((g) => inPage(g.page, `/api/v1/matches/${matchId}/finish`, { round: 1, state: r.state, mistakes: 0 })),
+    guests
+      .filter((g) => g !== racer)
+      .map((g) => inPage(g.page, `/api/v1/matches/${matchId}/finish`, { round: 1, state: r.state, mistakes: 0 })),
   );
   for (const i of r.crowns.slice(1)) await racer.page.locator('[role="gridcell"]').nth(i).click();
 

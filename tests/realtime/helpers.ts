@@ -32,7 +32,11 @@ export interface Player {
 }
 
 /** Signs a new guest in, creates the profile through the API, and puts the session cookie in a fresh context. */
-export async function player(browser: Browser, prefix: string, opts: { viewport?: { width: number; height: number } } = {}): Promise<Player> {
+export async function player(
+  browser: Browser,
+  prefix: string,
+  opts: { viewport?: { width: number; height: number } } = {},
+): Promise<Player> {
   const sb = createClient(SB_URL, ANON, { auth: { persistSession: false } });
   const { data, error } = await sb.auth.signInAnonymously();
   if (error) throw error;
@@ -40,7 +44,11 @@ export async function player(browser: Browser, prefix: string, opts: { viewport?
   const res = await fetch(`${BASE}/api/v1/profile`, {
     method: "POST",
     headers: { authorization: `Bearer ${data.session!.access_token}`, "content-type": "application/json" },
-    body: JSON.stringify({ nickname, ageBand: "18+", color: ["#2FD3E0", "#FF8A3D", "#8B7CFF", "#FFD23F", "#3DDC84", "#FF6B6B"][Math.floor(Math.random() * 6)] }),
+    body: JSON.stringify({
+      nickname,
+      ageBand: "18+",
+      color: ["#2FD3E0", "#FF8A3D", "#8B7CFF", "#FFD23F", "#3DDC84", "#FF6B6B"][Math.floor(Math.random() * 6)],
+    }),
   });
   if (!res.ok) throw new Error(`profile ${res.status} ${await res.text()}`);
   // Let @supabase/ssr write its own cookie format for this session.
