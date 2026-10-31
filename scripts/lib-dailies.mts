@@ -3,7 +3,7 @@ import { GAME_BY_ID } from "../lib/catalog";
 import { LOGIC } from "../games/logic-registry";
 import { createRng } from "../lib/rng";
 import { difficultyForDate, type ContentLogic, type GameLogic, type Generated } from "../games/types";
-import { dailyNumber } from "../lib/format";
+import { dailyNumber, dailySeed } from "../lib/format";
 
 export const readyGames = () => Object.keys(LOGIC);
 
@@ -17,8 +17,8 @@ export async function dailyFor(
   logic: GameLogic<unknown, unknown, unknown>;
 }> {
   const logic = (await LOGIC[gameId]()).default as GameLogic<unknown, unknown, unknown>;
-  const difficulty = difficultyForDate(date);
-  const seed = `daily:${gameId}:${date}`;
+  const difficulty = gameId === "gauntlet" ? "hard" : difficultyForDate(date);
+  const seed = dailySeed(gameId, date);
   const content = logic as Partial<ContentLogic<unknown, unknown, unknown>>;
   const gen =
     typeof content.generateAt === "function"

@@ -38,3 +38,15 @@ export function formatCountdown(ms: number): string {
   const m = Math.floor((s % 3600) / 60);
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 }
+
+/** Monday (GMT) of the week containing `date`, YYYY-MM-DD. */
+export function weekStartGmt(date: string): string {
+  const d = new Date(date + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+  return d.toISOString().slice(0, 10);
+}
+
+/** Daily seed for a game. Gauntlet is "new weekly" (SRS 5.8): one course per GMT week. */
+export function dailySeed(gameId: string, date: string): string {
+  return gameId === "gauntlet" ? `weekly:gauntlet:${weekStartGmt(date)}` : `daily:${gameId}:${date}`;
+}

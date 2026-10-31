@@ -5,7 +5,7 @@ import { GAME_BY_ID } from "@/lib/catalog";
 import { LOGIC } from "@/games/logic-registry";
 import { createRng } from "@/lib/rng";
 import { difficultyForDate, type ContentLogic, type GameLogic } from "@/games/types";
-import { dailyNumber } from "@/lib/format";
+import { dailyNumber, dailySeed } from "@/lib/format";
 import { encodeSolution } from "./solution-codec";
 
 /**
@@ -31,8 +31,8 @@ export async function fillSchedule(db: SupabaseClient, { days = 60, budgetMs = 4
       }
       const logic = (await LOGIC[game]()).default as GameLogic<unknown, unknown, unknown> &
         Partial<ContentLogic<unknown, unknown, unknown>>;
-      const difficulty = difficultyForDate(date);
-      const seed = `daily:${game}:${date}`;
+      const difficulty = game === "gauntlet" ? "hard" : difficultyForDate(date);
+      const seed = dailySeed(game, date);
       const gen =
         typeof logic.generateAt === "function"
           ? logic.generateAt(dailyNumber(date), difficulty)

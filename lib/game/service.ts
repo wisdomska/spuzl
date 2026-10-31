@@ -6,6 +6,7 @@ import { loadLogic, hasLogic } from "@/games/logic-registry";
 import { createRng } from "@/lib/rng";
 import { difficultyForDate, type Difficulty, type Hint } from "@/games/types";
 import { ApiError } from "@/lib/api/server";
+import { dailySeed } from "@/lib/format";
 import {
   dailyClearReward,
   freePlayReward,
@@ -58,15 +59,15 @@ export async function loadDaily(admin: SupabaseClient, gameId: string, date: str
   if (data && p) return { puzzleId: data.puzzle_id, puzzle: p.data, solution: decodeSolution(p.solution), difficulty: p.difficulty };
   // Safety net: no scheduled Daily (should never happen; the rollover alerts). Generate deterministically
   // from the date so every player still gets the same puzzle, and persist it.
-  const difficulty = difficultyForDate(date);
+  const difficulty = gameId === "gauntlet" ? "hard" : difficultyForDate(date);
   const logic = await loadLogic(gameId);
-  const g = logic.generate(createRng(`daily:${gameId}:${date}`), difficulty);
+  const g = logic.generate(createRng(dailySeed(gameId, date)), difficulty);
   const { data: ins } = await admin
     .from("puzzles")
     .upsert(
       {
         game_id: gameId,
-        seed: `daily:${gameId}:${date}`,
+        seed: dailySeed(gameId, date),
         difficulty,
         grade: g.grade,
         data: g.puzzle,
