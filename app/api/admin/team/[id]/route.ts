@@ -8,7 +8,10 @@ const Body = z.object({ role: z.enum(ROLES).optional(), disabled: z.boolean().op
 /** PATCH /api/admin/team/:id: change an admin's role or disable them. Owners cannot demote or disable themselves. */
 export const PATCH = handle(async (req: Request, rc: RouteContext<"/api/admin/team/[id]">) => {
   const ctx = await requireAdmin("team.manage");
-  const id = z.string().uuid().parse((await rc.params).id);
+  const id = z
+    .string()
+    .uuid()
+    .parse((await rc.params).id);
   const b = await body(req, Body);
   if (id === ctx.user.id) throw new ApiError(409, "self", "Ask another owner to change your own access.");
   const patch: Record<string, unknown> = {};

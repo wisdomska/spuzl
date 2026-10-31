@@ -22,7 +22,13 @@ const KINDS: Record<"badges" | "quests" | "cosmetics", CatalogKind> = {
     cols: "id, family, tier, name, description, secret, sparks, rule, sort",
     order: "sort",
     patch: z
-      .object({ name: label, description: z.string().trim().min(1).max(200).refine(noDash), secret: z.boolean(), sparks: z.number().int().min(0).max(5000), sort: z.number().int() })
+      .object({
+        name: label,
+        description: z.string().trim().min(1).max(200).refine(noDash),
+        secret: z.boolean(),
+        sparks: z.number().int().min(0).max(5000),
+        sort: z.number().int(),
+      })
       .partial()
       .strict(),
     create: z.object({
@@ -41,7 +47,13 @@ const KINDS: Record<"badges" | "quests" | "cosmetics", CatalogKind> = {
     cols: "id, kind, title, goal, xp, sparks, step, active",
     order: "id",
     patch: z
-      .object({ title: label, xp: z.number().int().min(0).max(5000), sparks: z.number().int().min(0).max(5000), active: z.boolean(), goal: z.record(z.string(), z.unknown()) })
+      .object({
+        title: label,
+        xp: z.number().int().min(0).max(5000),
+        sparks: z.number().int().min(0).max(5000),
+        active: z.boolean(),
+        goal: z.record(z.string(), z.unknown()),
+      })
       .partial()
       .strict(),
     create: z.object({
@@ -104,7 +116,8 @@ export const PATCH = handle(async (req: Request, rc: RouteContext<"/api/admin/ca
   const b = await body(req, z.object({ id: Id, patch: z.record(z.string(), z.unknown()) }));
   const patch = k.patch.parse(b.patch);
   if (!Object.keys(patch).length) throw new ApiError(400, "empty_patch");
-  if ("price_sparks" in patch && !can(ctx.role, "prices.write")) throw new ApiError(403, "forbidden", "Only the owner changes Sparks prices.");
+  if ("price_sparks" in patch && !can(ctx.role, "prices.write"))
+    throw new ApiError(403, "forbidden", "Only the owner changes Sparks prices.");
   const { data: before } = await ctx.db.from(k.table).select(Object.keys(patch).join(", ")).eq("id", b.id).maybeSingle();
   if (!before) throw new ApiError(404, "not_found");
   const { data, error } = await ctx.db.from(k.table).update(patch).eq("id", b.id).select(k.cols).single();

@@ -25,7 +25,11 @@ export const GET = handle(async (req: Request) => {
   return ok({
     me: ctx.user.id,
     games: CONTENT_GAMES,
-    rows: (data ?? []).map((r) => ({ ...r, author_email: email[r.author_id] ?? null, reviewer_email: r.reviewer_id ? (email[r.reviewer_id] ?? null) : null })),
+    rows: (data ?? []).map((r) => ({
+      ...r,
+      author_email: email[r.author_id] ?? null,
+      reviewer_email: r.reviewer_id ? (email[r.reviewer_id] ?? null) : null,
+    })),
   });
 });
 

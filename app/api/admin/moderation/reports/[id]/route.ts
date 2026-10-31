@@ -19,7 +19,9 @@ export const GET = handle(async (_req: Request, rc: RouteContext<"/api/admin/mod
     .neq("id", id)
     .order("created_at", { ascending: false })
     .limit(20);
-  const players = Id.safeParse(r.target_id).success ? await playerSummaries(ctx.db, [r.target_id, r.reporter_id]) : await playerSummaries(ctx.db, [r.reporter_id]);
+  const players = Id.safeParse(r.target_id).success
+    ? await playerSummaries(ctx.db, [r.target_id, r.reporter_id])
+    : await playerSummaries(ctx.db, [r.reporter_id]);
   return ok({
     report: { ...r, ref: shortRef("R", r.id) },
     target: players[r.target_id] ?? null,

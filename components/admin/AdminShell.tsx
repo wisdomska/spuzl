@@ -37,17 +37,29 @@ export function AdminShell({ role, email, children }: { role: Role; email: strin
   const router = useRouter();
   const { data: me } = useAdminMe();
   const items = NAV.filter((n) => can(role, n.perm));
+  // Drill-in views (one Daily or puzzle) get the icon rail so the board, checks and publish panel fit at 1280.
+  const focus = /^\/admin\/(calendar\/[^/]+\/[^/]+|puzzles\/[^/]+)$/.test(path);
   return (
-    <div className="grid min-h-dvh grid-cols-[72px_1fr] lg:grid-cols-[220px_1fr]">
-      <nav aria-label="Admin" className="bg-surface border-line sticky top-0 flex h-dvh flex-col gap-1 border-r px-3 py-[18px]">
-        <Link href="/admin/calendar" className="flex items-end px-2 pb-4 font-display text-[22px] leading-[0.9] font-black tracking-[-0.05em]" aria-label="SPUZL admin home">
-          <span aria-hidden className="hidden lg:inline">
+    <div className={`grid min-h-dvh grid-cols-[72px_1fr] ${focus ? "" : "lg:grid-cols-[220px_1fr]"}`}>
+      <nav
+        aria-label="Admin"
+        data-rail={focus ? "icons" : "auto"}
+        className="group bg-surface border-line sticky top-0 flex h-dvh flex-col gap-1 border-r px-3 py-[18px]"
+      >
+        <Link
+          href="/admin/calendar"
+          className="font-display flex items-end px-2 pb-4 text-[22px] leading-[0.9] font-black tracking-[-0.05em]"
+          aria-label="SPUZL admin home"
+        >
+          <span aria-hidden className="hidden group-data-[rail=auto]:lg:inline">
             SPU<span className="text-accent">Z</span>L
           </span>
-          <span aria-hidden className="lg:hidden">
+          <span aria-hidden className="group-data-[rail=auto]:lg:hidden">
             S<span className="text-accent">Z</span>
           </span>
-          <span className="num text-muted ml-2 hidden text-[12px] font-semibold tracking-normal lg:inline">admin</span>
+          <span className="num text-muted ml-2 hidden text-[12px] font-semibold tracking-normal group-data-[rail=auto]:lg:inline">
+            admin
+          </span>
         </Link>
         {items.map((n) => {
           const active = path === n.href || path.startsWith(n.href + "/");
@@ -58,12 +70,12 @@ export function AdminShell({ role, email, children }: { role: Role; email: strin
               href={n.href}
               aria-current={active ? "page" : undefined}
               title={n.label}
-              className={`flex h-11 items-center justify-center gap-2.5 rounded-[10px] px-2.5 text-[14px] font-semibold lg:h-10 lg:justify-start ${active ? "bg-surface-raised text-text" : "text-muted hover:bg-surface-raised/60 hover:text-text"}`}
+              className={`flex h-11 items-center justify-center gap-2.5 rounded-[10px] px-2.5 text-[14px] font-semibold group-data-[rail=auto]:lg:h-10 group-data-[rail=auto]:lg:justify-start ${active ? "bg-surface-raised text-text" : "text-muted hover:bg-surface-raised/60 hover:text-text"}`}
             >
               <Icon name={n.icon} size={18} />
-              <span className="sr-only flex-1 lg:not-sr-only">{n.label}</span>
+              <span className="sr-only flex-1 group-data-[rail=auto]:lg:not-sr-only">{n.label}</span>
               {count ? (
-                <span className={`num hidden text-[12px] font-semibold lg:inline ${BADGE_COLOR[n.badge!]}`}>
+                <span className={`num hidden text-[12px] font-semibold group-data-[rail=auto]:lg:inline ${BADGE_COLOR[n.badge!]}`}>
                   {count.toLocaleString("en-US")}
                   <span className="sr-only"> {n.badge === "puzzles" ? "puzzles" : "open"}</span>
                 </span>
@@ -72,7 +84,7 @@ export function AdminShell({ role, email, children }: { role: Role; email: strin
           );
         })}
         <div className="mt-auto flex flex-col gap-2 px-1 pt-4">
-          <div className="hidden min-w-0 flex-col lg:flex">
+          <div className="hidden min-w-0 flex-col group-data-[rail=auto]:lg:flex">
             <span className="truncate text-[13px] font-semibold" title={email ?? undefined}>
               {email ?? "Admin"}
             </span>
@@ -84,10 +96,10 @@ export function AdminShell({ role, email, children }: { role: Role; email: strin
               await adminSignOut();
               router.replace("/admin/login");
             }}
-            className="text-muted hover:bg-surface-raised hover:text-text flex h-11 items-center justify-center gap-2 rounded-[10px] px-2.5 text-[13px] font-semibold lg:h-10 lg:justify-start"
+            className="text-muted hover:bg-surface-raised hover:text-text flex h-11 items-center justify-center gap-2 rounded-[10px] px-2.5 text-[13px] font-semibold group-data-[rail=auto]:lg:h-10 group-data-[rail=auto]:lg:justify-start"
           >
             <Icon name="sign-out" size={18} />
-            <span className="sr-only lg:not-sr-only">Sign out</span>
+            <span className="sr-only group-data-[rail=auto]:lg:not-sr-only">Sign out</span>
           </button>
         </div>
       </nav>

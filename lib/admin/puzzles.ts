@@ -23,6 +23,21 @@ export const hashSolution = (solution: unknown) =>
     .update(JSON.stringify(solution ?? null))
     .digest("hex");
 
+/** JSON with object keys sorted. jsonb reorders keys, so stored answer keys compare in this form. */
+export function canonical(v: unknown): string {
+  return JSON.stringify(v ?? null, (_k, x) =>
+    x && typeof x === "object" && !Array.isArray(x)
+      ? Object.fromEntries(
+          Object.keys(x)
+            .sort()
+            .map((k) => [k, (x as Record<string, unknown>)[k]]),
+        )
+      : x,
+  );
+}
+/** Hash used for puzzles the admin console stores: stable under jsonb key reordering. */
+export const canonicalHash = (solution: unknown) => createHash("sha256").update(canonical(solution)).digest("hex");
+
 export interface PuzzleRow {
   id: string;
   game_id: string;
@@ -128,8 +143,24 @@ export async function runSolveCheck(db: SupabaseClient, p: PuzzleRow, opts: { da
     value: verified ? "verify ok" : solution === null ? "replay game, play test" : "needs play test",
   });
 
-  // 3. Integrity of the stored answer key
-  const hashOk = hashSolution(solution) === p.solution_hash || hashSolution(p.solution) === p.solution_hash;
+  // Generated puzzles rebuild from their seed (compared key-order independently).
+  let regen: Generated<unknown, unknown> | null = null;
+  let rebuilt: boolean | null = null;
+  if (p.source === "generated") {
+    try {
+      regen = regenerateFromSeed(logic, p.seed, p.difficulty);
+      rebuilt = regen ? canonical(regen.solution) === canonical(solution) : null;
+    } catch {
+      rebuilt = false;
+    }
+  }
+
+  // 3. Integrity of the stored answer key. Older rows hash the generator's key order, which jsonb does not
+  // keep, so a rebuilt identical solution with the same hash also proves it.
+  const hashOk =
+    hashSolution(solution) === p.solution_hash ||
+    canonicalHash(solution) === p.solution_hash ||
+    (rebuilt === true && regen !== null && hashSolution(regen.solution) === p.solution_hash);
   checks.push({ id: "hash", label: "Solution hash", status: hashOk ? "pass" : "fail", value: hashOk ? "matches" : "mismatch" });
 
   // 4. Difficulty against the weekly curve
@@ -142,23 +173,12 @@ export async function runSolveCheck(db: SupabaseClient, p: PuzzleRow, opts: { da
   });
 
   // 5. Generated puzzles must rebuild from their seed
-  if (p.source === "generated") {
-    let same: boolean | null = null;
-    try {
-      const g = regenerateFromSeed(logic, p.seed, p.difficulty);
-      same = g ? hashSolution(g.solution) === p.solution_hash : null;
-    } catch {
-      same = false;
-    }
-    checks.push({
-      id: "seed",
-      label: "Rebuilds from its seed",
-      status: same === false ? "warn" : same ? "pass" : "info",
-      value: same === null ? "custom seed" : same ? "yes" : "differs",
-    });
-  } else {
-    checks.push({ id: "seed", label: "Rebuilds from its seed", status: "info", value: "written content" });
-  }
+  checks.push({
+    id: "seed",
+    label: "Rebuilds from its seed",
+    status: p.source !== "generated" || rebuilt === null ? "info" : rebuilt ? "pass" : "warn",
+    value: p.source !== "generated" ? "written content" : rebuilt === null ? "custom seed" : rebuilt ? "yes" : "differs",
+  });
 
   // 6. Not a repeat of the last 365 days
   const since = new Date(Date.now() - 365 * 86_400_000).toISOString().slice(0, 10);
@@ -182,7 +202,10 @@ export async function runSolveCheck(db: SupabaseClient, p: PuzzleRow, opts: { da
 
   // 7. Real solve times on this exact puzzle
   const { data: times } = await db.from("attempts").select("time_ms").eq("puzzle_id", p.id).eq("status", "cleared").limit(2000);
-  const ts = (times ?? []).map((t) => t.time_ms as number).filter((n) => Number.isFinite(n)).sort((a, b) => a - b);
+  const ts = (times ?? [])
+    .map((t) => t.time_ms as number)
+    .filter((n) => Number.isFinite(n))
+    .sort((a, b) => a - b);
   checks.push({
     id: "median",
     label: "Median test solve",
@@ -221,8 +244,8 @@ export async function freshPuzzle(gameId: string, date: string, tag: string, avo
       seed = `${tag}:${gameId}:${date}:${randomUUID().slice(0, 8)}`;
       g = logic.generate(createRng(seed), difficulty);
     }
-    const hash = hashSolution(g.solution);
-    if (avoidHash && hash === avoidHash) continue;
+    const hash = canonicalHash(g.solution);
+    if (avoidHash && (hash === avoidHash || hashSolution(g.solution) === avoidHash)) continue;
     if (meta?.unique && logic.countSolutions && logic.countSolutions(g.puzzle, 2) !== 1) continue;
     return { seed, difficulty, gen: g, hash };
   }
@@ -237,19 +260,19 @@ export async function insertPuzzle(
   const { data, error } = await db
     .from("puzzles")
     .insert({
-        game_id: row.game_id,
-        seed: row.seed,
-        difficulty: row.difficulty,
-        grade: row.gen.grade,
-        data: row.gen.puzzle,
-        solution: encodeSolution(row.gen.solution),
-        solution_hash: row.hash,
-        source: extra.source ?? "generated",
-        status: extra.status,
-        content_item_id: extra.content_item_id ?? null,
-        reviewed_by: extra.reviewed_by ?? null,
-        reviewed_at: extra.reviewed_by ? new Date().toISOString() : null,
-      })
+      game_id: row.game_id,
+      seed: row.seed,
+      difficulty: row.difficulty,
+      grade: row.gen.grade,
+      data: row.gen.puzzle,
+      solution: encodeSolution(row.gen.solution),
+      solution_hash: row.hash,
+      source: extra.source ?? "generated",
+      status: extra.status,
+      content_item_id: extra.content_item_id ?? null,
+      reviewed_by: extra.reviewed_by ?? null,
+      reviewed_at: extra.reviewed_by ? new Date().toISOString() : null,
+    })
     .select("id")
     .single();
   if (error) throw error;

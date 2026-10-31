@@ -18,6 +18,10 @@ export default defineConfig({
   },
   projects: [
     { name: "desktop-dark", use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } } },
-    { name: "tablet-light", use: { ...devices["Desktop Chrome"], viewport: { width: 834, height: 1112 }, colorScheme: "light" }, grep: /@tablet/ },
+    {
+      name: "tablet-light",
+      use: { ...devices["Desktop Chrome"], viewport: { width: 834, height: 1112 }, colorScheme: "light" },
+      grep: /@tablet/,
+    },
   ],
 });

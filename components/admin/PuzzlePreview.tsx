@@ -116,7 +116,11 @@ export function PuzzlePreview({
   const isToday = !!slot && date === slot.today;
   const future = !!slot && !!date && date > slot.today;
   const err = check.error ?? approve.error ?? regen.error ?? lock.error ?? swap.error ?? saveNote.error;
-  const tags = [p.difficulty, date && [0, 6].includes(new Date(date + "T00:00:00Z").getUTCDay()) ? "weekend" : null, p.source === "human" ? "written" : "generated"]
+  const tags = [
+    p.difficulty,
+    date && [0, 6].includes(new Date(date + "T00:00:00Z").getUTCDay()) ? "weekend" : null,
+    p.source === "human" ? "written" : "generated",
+  ]
     .filter(Boolean)
     .join(", ");
 
@@ -124,7 +128,11 @@ export function PuzzlePreview({
     <div className="grid min-h-dvh grid-cols-1 xl:grid-cols-[1fr_420px]">
       <div className="flex min-w-0 flex-col gap-3.5 px-6 py-5">
         <div className="flex flex-wrap items-center gap-3">
-          <Link href={date ? "/admin/calendar" : "/admin/puzzles"} aria-label="Back" className="hover:bg-surface-raised -ml-2 flex size-11 items-center justify-center rounded-[10px]">
+          <Link
+            href={date ? "/admin/calendar" : "/admin/puzzles"}
+            aria-label="Back"
+            className="hover:bg-surface-raised -ml-2 flex size-11 items-center justify-center rounded-[10px]"
+          >
             <Icon name="arrow-left" size={20} />
           </Link>
           <h1 className="font-display text-[20px] font-extrabold">
@@ -150,7 +158,15 @@ export function PuzzlePreview({
           </Notice>
         )}
         <div className="flex flex-col gap-5 lg:flex-row">
-          <BoardFrame key={p.id} game={game} puzzle={p.data} solution={p.solution} puzzleId={p.id} worldColor={world.color} worldInk={world.ink} />
+          <BoardFrame
+            key={p.id}
+            game={game}
+            puzzle={p.data}
+            solution={p.solution}
+            puzzleId={p.id}
+            worldColor={world.color}
+            worldInk={world.ink}
+          />
           <div className="flex min-w-0 flex-1 flex-col gap-2.5">
             {report ? (
               report.checks.map((c) => (
@@ -170,7 +186,9 @@ export function PuzzlePreview({
                 <Btn size="sm" icon="arrows-clockwise" disabled={check.isPending} onClick={() => check.mutate()}>
                   {check.isPending ? "Checking" : "Run solve-check"}
                 </Btn>
-                {report && <span className="num text-muted text-[12px]">checked {new Date(report.ranAt).toISOString().slice(11, 16)} GMT</span>}
+                {report && (
+                  <span className="num text-muted text-[12px]">checked {new Date(report.ranAt).toISOString().slice(11, 16)} GMT</span>
+                )}
               </div>
             )}
           </div>
@@ -179,8 +197,14 @@ export function PuzzlePreview({
 
       <aside aria-label="Publish" className="bg-surface border-line flex flex-col gap-3 border-t p-5 xl:border-t-0 xl:border-l">
         <h2 className="font-display text-[16px] font-extrabold">Publish</h2>
-        <ReadField label="Daily number" value={slot ? `#${slot.number}` : (q.data.dailies[0] ? `#${q.data.dailies[0].number}` : "Not scheduled")} />
-        <ReadField label="Release" value={date ? `${dayMonth(date)} 00:00 GMT` : (q.data.dailies.map((d) => dayMonth(d.date)).join(", ") || "Not scheduled")} />
+        <ReadField
+          label="Daily number"
+          value={slot ? `#${slot.number}` : q.data.dailies[0] ? `#${q.data.dailies[0].number}` : "Not scheduled"}
+        />
+        <ReadField
+          label="Release"
+          value={date ? `${dayMonth(date)} 00:00 GMT` : q.data.dailies.map((d) => dayMonth(d.date)).join(", ") || "Not scheduled"}
+        />
         <ReadField label="Size" value={sizeOf(p.data)} />
         <ReadField label="Tags" value={tags} />
         <ReadField label="Grade" value={<span className="num">{(p.grade / 10).toFixed(1)} / 10</span>} />
@@ -215,7 +239,9 @@ export function PuzzlePreview({
         {canSwap && slot?.slot && date && (isToday || (future && locked)) && (
           <div className="bg-bg flex flex-col gap-2 rounded-[12px] p-3 shadow-[inset_0_0_0_1px_var(--line)]">
             <span className="text-[14px] font-semibold">Emergency swap</span>
-            <span className="text-muted text-[13px] leading-[1.4]">Replaces {isToday ? "today's" : "this"} puzzle with a fresh verified one. Players mid-solve finish their current puzzle.</span>
+            <span className="text-muted text-[13px] leading-[1.4]">
+              Replaces {isToday ? "today's" : "this"} puzzle with a fresh verified one. Players mid-solve finish their current puzzle.
+            </span>
             {swapReason === null ? (
               <Btn tone="danger" icon="swap" onClick={() => setSwapReason("")}>
                 Swap Daily
@@ -231,7 +257,14 @@ export function PuzzlePreview({
                 <label htmlFor="swap-reason" className="num text-muted text-[12px] font-semibold">
                   What is broken?
                 </label>
-                <input id="swap-reason" required minLength={3} value={swapReason} onChange={(e) => setSwapReason(e.target.value)} className={`${textareaCls} h-10`} />
+                <input
+                  id="swap-reason"
+                  required
+                  minLength={3}
+                  value={swapReason}
+                  onChange={(e) => setSwapReason(e.target.value)}
+                  className={`${textareaCls} h-10`}
+                />
                 <div className="grid grid-cols-2 gap-2">
                   <Btn onClick={() => setSwapReason(null)}>Cancel</Btn>
                   <Btn type="submit" tone="danger" disabled={swap.isPending}>
@@ -246,10 +279,20 @@ export function PuzzlePreview({
 
         {canWrite && p.status !== "retired" && (
           <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
-            <Btn size="lg" disabled={!future || locked || regen.isPending} title={locked ? "Locked Dailies change only through Swap Daily" : undefined} onClick={() => date && regen.mutate({ date, game })}>
+            <Btn
+              size="lg"
+              disabled={!future || locked || regen.isPending}
+              title={locked ? "Locked Dailies change only through Swap Daily" : undefined}
+              onClick={() => date && regen.mutate({ date, game })}
+            >
               {regen.isPending ? "Generating" : "Regenerate"}
             </Btn>
-            <Btn size="lg" tone="primary" disabled={approve.isPending || !review} onClick={() => approve.mutate({ note: note ?? undefined, date })}>
+            <Btn
+              size="lg"
+              tone="primary"
+              disabled={approve.isPending || !review}
+              onClick={() => approve.mutate({ note: note ?? undefined, date })}
+            >
               {review ? (approve.isPending ? "Checking" : "Approve") : "Approved"}
             </Btn>
           </div>
@@ -297,7 +340,11 @@ function BoardFrame({
         if (mode !== "play") return;
         try {
           const v = await api<{ ok: boolean; reason: string | null }>(`/api/admin/puzzles/${puzzleId}/verify`, { json: { state } });
-          setFeedback(v.ok ? { text: "Server verify accepts this solve.", tone: "success" } : { text: `Server verify refused it: ${v.reason ?? "not solved"}.`, tone: "danger" });
+          setFeedback(
+            v.ok
+              ? { text: "Server verify accepts this solve.", tone: "success" }
+              : { text: `Server verify refused it: ${v.reason ?? "not solved"}.`, tone: "danger" },
+          );
         } catch (e) {
           setFeedback({ text: errorText(e), tone: "danger" });
         }
@@ -311,15 +358,27 @@ function BoardFrame({
     [mode, puzzleId],
   );
 
-  const style = { "--world": worldColor, "--world-ink": worldInk, "--world-depth": `color-mix(in srgb, ${worldColor} 55%, #0E0F1A)` } as CSSProperties;
+  const style = {
+    "--world": worldColor,
+    "--world-ink": worldInk,
+    "--world-depth": `color-mix(in srgb, ${worldColor} 55%, #0E0F1A)`,
+  } as CSSProperties;
   const showJson = mode === "solution" && solved === undefined;
 
   return (
-    <div style={style} data-world={meta.world} className="bg-bg flex h-[680px] w-full max-w-[390px] shrink-0 flex-col items-center gap-4 overflow-hidden rounded-[36px] px-4 py-[30px] shadow-[0_0_0_2px_var(--line)]">
-      <span className="font-display self-start text-[22px] font-black text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]">{meta.name}</span>
+    <div
+      style={style}
+      data-world={meta.world}
+      className="bg-bg flex h-[680px] w-full max-w-[390px] shrink-0 flex-col items-center gap-4 overflow-hidden rounded-[36px] px-4 py-[30px] shadow-[0_0_0_2px_var(--line)]"
+    >
+      <span className="font-display self-start text-[22px] font-black text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]">
+        {meta.name}
+      </span>
       <div className="flex min-h-0 w-full flex-1 flex-col items-center gap-3 overflow-auto">
         {showJson ? (
-          <pre className="num bg-surface w-full flex-1 overflow-auto rounded-[12px] p-3 text-[12px] leading-[1.4] whitespace-pre-wrap">{JSON.stringify(solution, null, 1)}</pre>
+          <pre className="num bg-surface w-full flex-1 overflow-auto rounded-[12px] p-3 text-[12px] leading-[1.4] whitespace-pre-wrap">
+            {JSON.stringify(solution, null, 1)}
+          </pre>
         ) : Board ? (
           <FitWidth>
             <Board
@@ -344,7 +403,11 @@ function BoardFrame({
           </div>
         )}
         {feedback && mode === "play" && (
-          <p className={`text-center text-[13px] font-semibold ${feedback.tone === "danger" ? "text-danger" : feedback.tone === "success" ? "text-accent" : "text-muted"}`}>{feedback.text}</p>
+          <p
+            className={`text-center text-[13px] font-semibold ${feedback.tone === "danger" ? "text-danger" : feedback.tone === "success" ? "text-accent" : "text-muted"}`}
+          >
+            {feedback.text}
+          </p>
         )}
       </div>
       <div className="flex gap-2">
@@ -387,24 +450,37 @@ function BoardFrame({
 function FitWidth({ children }: { children: ReactNode }) {
   const outer = useRef<HTMLDivElement>(null);
   const inner = useRef<HTMLDivElement>(null);
-  const [fit, setFit] = useState({ scale: 1, height: 0 });
+  const [fit, setFit] = useState({ width: 0, scale: 1, height: 0 });
   useLayoutEffect(() => {
     const o = outer.current;
     const i = inner.current;
     if (!o || !i) return;
     const measure = () => {
-      const scale = Math.min(1, o.clientWidth / Math.max(1, i.scrollWidth));
-      setFit({ scale, height: i.scrollHeight * scale });
+      // Boards cap themselves at 100% width and scroll; the widest scroll width is their natural size.
+      let width = i.scrollWidth;
+      i.querySelectorAll<HTMLElement>("*").forEach((el) => (width = Math.max(width, el.scrollWidth)));
+      const scale = Math.min(1, o.clientWidth / Math.max(1, width));
+      setFit((f) =>
+        f.width === width && f.scale === scale && f.height === i.scrollHeight * scale
+          ? f
+          : { width, scale, height: i.scrollHeight * scale },
+      );
     };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(o);
     ro.observe(i);
-    return () => ro.disconnect();
+    // The board chunk loads after mount and may keep the same box size as its skeleton.
+    const mo = new MutationObserver(measure);
+    mo.observe(i, { childList: true, subtree: true });
+    return () => {
+      ro.disconnect();
+      mo.disconnect();
+    };
   }, []);
   return (
-    <div ref={outer} className="w-full overflow-hidden" style={{ height: fit.height || undefined }}>
-      <div ref={inner} className="mx-auto w-max origin-top" style={{ transform: `scale(${fit.scale})` }}>
+    <div ref={outer} className="flex w-full justify-center overflow-hidden" style={{ height: fit.height || undefined }}>
+      <div ref={inner} className="shrink-0 origin-top" style={{ width: fit.width || "max-content", transform: `scale(${fit.scale})` }}>
         {children}
       </div>
     </div>

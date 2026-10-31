@@ -64,10 +64,18 @@ function Toggle({ on, label, disabled, onChange }: { on: boolean; label: string;
 /* ---------------- Schools ---------------- */
 
 export function SchoolsPage({ canWrite }: { canWrite: boolean }) {
-  const q = useAdminQuery<{ rows: { id: string; name: string; city: string | null; country: string | null; code: string; verified: boolean; players: number; created_at: string }[] }>(
-    ["schools"],
-    "/api/admin/schools",
-  );
+  const q = useAdminQuery<{
+    rows: {
+      id: string;
+      name: string;
+      city: string | null;
+      country: string | null;
+      code: string;
+      verified: boolean;
+      players: number;
+      created_at: string;
+    }[];
+  }>(["schools"], "/api/admin/schools");
   const act = useAdminAction<{ id: string; decision: "verify" | "unverify" }>("POST", (i) => `/api/admin/schools/${i.id}`);
   return (
     <div className="flex flex-col gap-3.5 px-6 py-5">
@@ -91,7 +99,12 @@ export function SchoolsPage({ canWrite }: { canWrite: boolean }) {
                   <td className={td}>{s.verified ? <Pill tone="ok">verified</Pill> : <Pill tone="warn">pending</Pill>}</td>
                   <td className={`${td} text-right`}>
                     {canWrite && (
-                      <Btn size="sm" tone={s.verified ? "ghost" : "primary"} disabled={act.isPending} onClick={() => act.mutate({ id: s.id, decision: s.verified ? "unverify" : "verify" })}>
+                      <Btn
+                        size="sm"
+                        tone={s.verified ? "ghost" : "primary"}
+                        disabled={act.isPending}
+                        onClick={() => act.mutate({ id: s.id, decision: s.verified ? "unverify" : "verify" })}
+                      >
                         {s.verified ? "Withdraw" : "Verify"}
                       </Btn>
                     )}
@@ -180,11 +193,14 @@ export function ShopPage({ canWrite, canPrice }: { canWrite: boolean; canPrice: 
                   <td className={`${td} font-semibold`}>{r.name}</td>
                   <td className={`${td} text-muted text-[13px]`}>{r.type?.replace("_", " ")}</td>
                   <td className={`${td} text-muted text-[13px]`}>{r.rarity}</td>
+                  <td className={td}>{numCell(r, "price_sparks", canPrice)}</td>
                   <td className={td}>
-                    {numCell(r, "price_sparks", canPrice)}
-                  </td>
-                  <td className={td}>
-                    <Toggle on={!!r.active} label={`${r.name} in shop`} disabled={!canWrite || patch.isPending} onChange={(v) => patch.mutate({ id: r.id, patch: { active: v } })} />
+                    <Toggle
+                      on={!!r.active}
+                      label={`${r.name} in shop`}
+                      disabled={!canWrite || patch.isPending}
+                      onChange={(v) => patch.mutate({ id: r.id, patch: { active: v } })}
+                    />
                   </td>
                 </tr>
               ))}
@@ -199,11 +215,14 @@ export function ShopPage({ canWrite, canPrice }: { canWrite: boolean; canPrice: 
                   </td>
                   <td className={`${td} text-muted text-[13px]`}>{r.family}</td>
                   <td className={`${td} text-[13px]`}>{r.tier}</td>
+                  <td className={td}>{numCell(r, "sparks", canWrite)}</td>
                   <td className={td}>
-                    {numCell(r, "sparks", canWrite)}
-                  </td>
-                  <td className={td}>
-                    <Toggle on={!!r.secret} label={`${r.name} secret`} disabled={!canWrite || patch.isPending} onChange={(v) => patch.mutate({ id: r.id, patch: { secret: v } })} />
+                    <Toggle
+                      on={!!r.secret}
+                      label={`${r.name} secret`}
+                      disabled={!canWrite || patch.isPending}
+                      onChange={(v) => patch.mutate({ id: r.id, patch: { secret: v } })}
+                    />
                   </td>
                 </tr>
               ))}
@@ -214,14 +233,15 @@ export function ShopPage({ canWrite, canPrice }: { canWrite: boolean; canPrice: 
                 <tr key={r.id}>
                   <td className={`${td} font-semibold`}>{r.title}</td>
                   <td className={`${td} text-muted text-[13px]`}>{r.kind}</td>
+                  <td className={td}>{numCell(r, "xp", canWrite)}</td>
+                  <td className={td}>{numCell(r, "sparks", canWrite)}</td>
                   <td className={td}>
-                    {numCell(r, "xp", canWrite)}
-                  </td>
-                  <td className={td}>
-                    {numCell(r, "sparks", canWrite)}
-                  </td>
-                  <td className={td}>
-                    <Toggle on={!!r.active} label={`${r.title} active`} disabled={!canWrite || patch.isPending} onChange={(v) => patch.mutate({ id: r.id, patch: { active: v } })} />
+                    <Toggle
+                      on={!!r.active}
+                      label={`${r.title} active`}
+                      disabled={!canWrite || patch.isPending}
+                      onChange={(v) => patch.mutate({ id: r.id, patch: { active: v } })}
+                    />
                   </td>
                 </tr>
               ))}
@@ -236,7 +256,10 @@ export function ShopPage({ canWrite, canPrice }: { canWrite: boolean; canPrice: 
 /* ---------------- Feature flags ---------------- */
 
 export function FlagsPage({ canWrite }: { canWrite: boolean }) {
-  const q = useAdminQuery<{ rows: { key: string; enabled: boolean; payload: Record<string, unknown>; updated_at: string }[] }>(["flags"], "/api/admin/flags");
+  const q = useAdminQuery<{ rows: { key: string; enabled: boolean; payload: Record<string, unknown>; updated_at: string }[] }>(
+    ["flags"],
+    "/api/admin/flags",
+  );
   const put = useAdminAction<{ key: string; enabled: boolean; payload?: Record<string, unknown> }>("PUT", "/api/admin/flags");
   const [key, setKey] = useState("");
   return (
@@ -254,7 +277,15 @@ export function FlagsPage({ canWrite }: { canWrite: boolean }) {
           }}
         >
           <Field label="New flag key" htmlFor="flagkey">
-            <input id="flagkey" value={key} onChange={(e) => setKey(e.target.value.toLowerCase())} placeholder="event.exam_season" pattern="[a-z0-9_.:\-]{2,60}" required className={`${inputCls} w-72`} />
+            <input
+              id="flagkey"
+              value={key}
+              onChange={(e) => setKey(e.target.value.toLowerCase())}
+              placeholder="event.exam_season"
+              pattern="[a-z0-9_.:\-]{2,60}"
+              required
+              className={`${inputCls} w-72`}
+            />
           </Field>
           <Btn type="submit" icon="plus" disabled={put.isPending}>
             Add (off)
@@ -268,7 +299,12 @@ export function FlagsPage({ canWrite }: { canWrite: boolean }) {
               <tr key={f.key}>
                 <td className={`${td} num font-semibold`}>{f.key}</td>
                 <td className={td}>
-                  <Toggle on={f.enabled} label={f.key} disabled={!canWrite || put.isPending} onChange={(v) => put.mutate({ key: f.key, enabled: v })} />
+                  <Toggle
+                    on={f.enabled}
+                    label={f.key}
+                    disabled={!canWrite || put.isPending}
+                    onChange={(v) => put.mutate({ key: f.key, enabled: v })}
+                  />
                 </td>
                 <td className={td}>
                   <PayloadCell flag={f} canWrite={canWrite} onSave={(payload) => put.mutate({ key: f.key, enabled: f.enabled, payload })} />
@@ -283,7 +319,15 @@ export function FlagsPage({ canWrite }: { canWrite: boolean }) {
   );
 }
 
-function PayloadCell({ flag, canWrite, onSave }: { flag: { key: string; payload: Record<string, unknown> }; canWrite: boolean; onSave: (p: Record<string, unknown>) => void }) {
+function PayloadCell({
+  flag,
+  canWrite,
+  onSave,
+}: {
+  flag: { key: string; payload: Record<string, unknown> };
+  canWrite: boolean;
+  onSave: (p: Record<string, unknown>) => void;
+}) {
   const initial = JSON.stringify(flag.payload ?? {});
   const [text, setText] = useState(initial);
   let valid = true;
@@ -338,7 +382,10 @@ export function AuditPage() {
     ...(to && { to }),
     ...(before && { before: String(before) }),
   });
-  const q = useAdminQuery<{ rows: AuditRow[]; actors: { id: string; email: string | null; role: Role }[] }>(["audit", qs.toString()], `/api/admin/audit?${qs}`);
+  const q = useAdminQuery<{ rows: AuditRow[]; actors: { id: string; email: string | null; role: Role }[] }>(
+    ["audit", qs.toString()],
+    `/api/admin/audit?${qs}`,
+  );
   const who = (id: string | null) => (id ? (q.data?.actors.find((a) => a.id === id)?.email ?? id.slice(0, 8)) : "system");
   return (
     <div className="flex flex-col gap-3.5 px-6 py-5">
@@ -358,16 +405,42 @@ export function AuditPage() {
           </select>
         </Field>
         <Field label="Action starts with" htmlFor="a-action">
-          <input id="a-action" value={action} placeholder="daily." onChange={(e) => (setAction(e.target.value.toLowerCase()), setBefore(null))} className={`${inputCls} w-40`} />
+          <input
+            id="a-action"
+            value={action}
+            placeholder="daily."
+            onChange={(e) => (setAction(e.target.value.toLowerCase()), setBefore(null))}
+            className={`${inputCls} w-40`}
+          />
         </Field>
         <Field label="Target contains" htmlFor="a-target">
-          <input id="a-target" value={target} placeholder="crownfall" onChange={(e) => (setTarget(e.target.value), setBefore(null))} className={`${inputCls} w-40`} />
+          <input
+            id="a-target"
+            value={target}
+            placeholder="crownfall"
+            onChange={(e) => (setTarget(e.target.value), setBefore(null))}
+            className={`${inputCls} w-40`}
+          />
         </Field>
         <Field label="From" htmlFor="a-from">
-          <input id="a-from" type="date" max={todayIso()} value={from} onChange={(e) => (setFrom(e.target.value), setBefore(null))} className={`${inputCls} w-40`} />
+          <input
+            id="a-from"
+            type="date"
+            max={todayIso()}
+            value={from}
+            onChange={(e) => (setFrom(e.target.value), setBefore(null))}
+            className={`${inputCls} w-40`}
+          />
         </Field>
         <Field label="To" htmlFor="a-to">
-          <input id="a-to" type="date" max={todayIso()} value={to} onChange={(e) => (setTo(e.target.value), setBefore(null))} className={`${inputCls} w-40`} />
+          <input
+            id="a-to"
+            type="date"
+            max={todayIso()}
+            value={to}
+            onChange={(e) => (setTo(e.target.value), setBefore(null))}
+            className={`${inputCls} w-40`}
+          />
         </Field>
       </div>
       <Frame q={q}>
@@ -403,10 +476,17 @@ export function AuditPage() {
 /* ---------------- Team ---------------- */
 
 export function TeamPage() {
-  const q = useAdminQuery<{ me: string; rows: { user_id: string; role: Role; email: string | null; totp_enrolled: boolean; disabled_at: string | null; last_sign_in_at: string | null }[] }>(
-    ["team"],
-    "/api/admin/team",
-  );
+  const q = useAdminQuery<{
+    me: string;
+    rows: {
+      user_id: string;
+      role: Role;
+      email: string | null;
+      totp_enrolled: boolean;
+      disabled_at: string | null;
+      last_sign_in_at: string | null;
+    }[];
+  }>(["team"], "/api/admin/team");
   const add = useAdminAction<{ email: string; role: Role }, { resetSent: boolean }>("POST", "/api/admin/team");
   const patch = useAdminAction<{ id: string; role?: Role; disabled?: boolean }>("PATCH", (i) => `/api/admin/team/${i.id}`);
   const [email, setEmail] = useState("");
@@ -414,7 +494,9 @@ export function TeamPage() {
   return (
     <div className="flex flex-col gap-3.5 px-6 py-5">
       <PageTitle title="Team">
-        <span className="text-muted text-[14px]">New admins get a password-reset email, then set up their authenticator on first sign-in.</span>
+        <span className="text-muted text-[14px]">
+          New admins get a password-reset email, then set up their authenticator on first sign-in.
+        </span>
       </PageTitle>
       <form
         className="flex flex-wrap items-end gap-2"
@@ -424,7 +506,14 @@ export function TeamPage() {
         }}
       >
         <Field label="Email" htmlFor="t-email">
-          <input id="t-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={`${inputCls} w-72`} />
+          <input
+            id="t-email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={`${inputCls} w-72`}
+          />
         </Field>
         <Field label="Role" htmlFor="t-role">
           <select id="t-role" value={role} onChange={(e) => setRole(e.target.value as Role)} className={`${inputCls} w-48`}>
@@ -477,7 +566,13 @@ export function TeamPage() {
                     {self ? (
                       <span className="text-muted text-[13px]">Active</span>
                     ) : (
-                      <Btn size="sm" tone={a.disabled_at ? "secondary" : "ghost"} icon={a.disabled_at ? "user-plus" : "user-minus"} disabled={patch.isPending} onClick={() => patch.mutate({ id: a.user_id, disabled: !a.disabled_at })}>
+                      <Btn
+                        size="sm"
+                        tone={a.disabled_at ? "secondary" : "ghost"}
+                        icon={a.disabled_at ? "user-plus" : "user-minus"}
+                        disabled={patch.isPending}
+                        onClick={() => patch.mutate({ id: a.user_id, disabled: !a.disabled_at })}
+                      >
                         {a.disabled_at ? "Enable" : "Disable"}
                       </Btn>
                     )}

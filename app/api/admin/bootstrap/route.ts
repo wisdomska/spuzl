@@ -17,6 +17,11 @@ export const POST = handle(async (req: Request) => {
   const email = process.env.INITIAL_OWNER_EMAIL;
   if (!email) throw new ApiError(503, "no_owner_email", "Set INITIAL_OWNER_EMAIL first.");
   const site = process.env.NEXT_PUBLIC_SITE_URL || new URL(req.url).origin;
-  const r = await provisionAdmin(supabaseAdmin(), { email, role: "owner", redirectTo: resetRedirect(site), resend: new URL(req.url).searchParams.has("resend") });
+  const r = await provisionAdmin(supabaseAdmin(), {
+    email,
+    role: "owner",
+    redirectTo: resetRedirect(site),
+    resend: new URL(req.url).searchParams.has("resend"),
+  });
   return ok({ ...r, email: r.email.replace(/^(.).*(@.*)$/, "$1***$2") });
 });

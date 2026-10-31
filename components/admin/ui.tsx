@@ -24,7 +24,12 @@ export function Btn({
   children,
   ...rest
 }: ButtonHTMLAttributes<HTMLButtonElement> & { tone?: Tone; icon?: string; size?: "sm" | "md" | "lg" }) {
-  const h = size === "lg" ? "h-11 rounded-[12px] px-4 text-[14px]" : size === "sm" ? "h-9 rounded-[10px] px-3 text-[13px]" : "h-10 rounded-[10px] px-3 text-[13px]";
+  const h =
+    size === "lg"
+      ? "h-11 rounded-[12px] px-4 text-[14px]"
+      : size === "sm"
+        ? "h-9 rounded-[10px] px-3 text-[13px]"
+        : "h-10 rounded-[10px] px-3 text-[13px]";
   return (
     <button
       type="button"
@@ -45,7 +50,13 @@ const PILL: Record<PillTone, string> = {
   neutral: "bg-surface-raised text-muted",
 };
 export function Pill({ tone = "neutral", children, className = "" }: { tone?: PillTone; children: ReactNode; className?: string }) {
-  return <span className={`num inline-flex items-center gap-1 rounded-[6px] px-2 py-[3px] text-[12px] font-semibold whitespace-nowrap ${PILL[tone]} ${className}`}>{children}</span>;
+  return (
+    <span
+      className={`num inline-flex items-center gap-1 rounded-[6px] px-2 py-[3px] text-[12px] font-semibold whitespace-nowrap ${PILL[tone]} ${className}`}
+    >
+      {children}
+    </span>
+  );
 }
 
 export function PageTitle({ title, children, aside }: { title: string; children?: ReactNode; aside?: ReactNode }) {
@@ -59,7 +70,17 @@ export function PageTitle({ title, children, aside }: { title: string; children?
 }
 
 /** Segmented tabs (moderation): surface track, raised active tab. */
-export function Tabs<T extends string>({ value, onChange, items, label }: { value: T; onChange: (v: T) => void; items: { id: T; label: string; count?: number }[]; label: string }) {
+export function Tabs<T extends string>({
+  value,
+  onChange,
+  items,
+  label,
+}: {
+  value: T;
+  onChange: (v: T) => void;
+  items: { id: T; label: string; count?: number }[];
+  label: string;
+}) {
   return (
     <div role="tablist" aria-label={label} className="bg-surface flex gap-1 rounded-[10px] p-[3px]">
       {items.map((t) => (
@@ -72,7 +93,7 @@ export function Tabs<T extends string>({ value, onChange, items, label }: { valu
           className={`flex h-[38px] items-center gap-1.5 rounded-[8px] px-2.5 text-[13px] font-semibold ${value === t.id ? "bg-surface-raised text-text" : "text-muted hover:text-text"}`}
         >
           {t.label}
-          {t.count ? <span className="num text-[12px] text-muted">{t.count}</span> : null}
+          {t.count ? <span className="num text-muted text-[12px]">{t.count}</span> : null}
         </button>
       ))}
     </div>
@@ -92,7 +113,7 @@ export function Field({ label, children, hint, htmlFor }: { label: string; child
 }
 
 export const inputCls =
-  "bg-bg h-10 w-full rounded-[10px] px-3 text-[14px] shadow-[inset_0_0_0_1px_var(--line)] outline-none placeholder:text-muted focus-visible:shadow-[inset_0_0_0_2px_var(--accent)]";
+  "bg-bg h-10 rounded-[10px] px-3 text-[14px] shadow-[inset_0_0_0_1px_var(--line)] outline-none placeholder:text-muted focus-visible:shadow-[inset_0_0_0_2px_var(--accent)]";
 export const textareaCls =
   "bg-bg w-full rounded-[10px] px-3 py-2.5 text-[14px] leading-[1.4] shadow-[inset_0_0_0_1px_var(--line)] outline-none placeholder:text-muted focus-visible:shadow-[inset_0_0_0_2px_var(--accent)]";
 
@@ -100,17 +121,40 @@ export function ReadField({ label, value }: { label: string; value: ReactNode })
   return (
     <div className="flex flex-col gap-1">
       <span className="num text-muted text-[12px] font-semibold">{label}</span>
-      <div className="bg-bg flex min-h-10 items-center rounded-[10px] px-3 text-[14px] font-medium shadow-[inset_0_0_0_1px_var(--line)]">{value}</div>
+      <div className="bg-bg flex min-h-10 items-center rounded-[10px] px-3 text-[14px] font-medium shadow-[inset_0_0_0_1px_var(--line)]">
+        {value}
+      </div>
     </div>
   );
 }
 
-export function Notice({ tone = "neutral", icon, children, action }: { tone?: PillTone; icon?: string; children: ReactNode; action?: ReactNode }) {
+export function Notice({
+  tone = "neutral",
+  icon,
+  children,
+  action,
+}: {
+  tone?: PillTone;
+  icon?: string;
+  children: ReactNode;
+  action?: ReactNode;
+}) {
   const ring = tone === "danger" ? "var(--danger)" : tone === "warn" ? "var(--gold)" : tone === "ok" ? "var(--accent)" : "var(--line)";
-  const bg = tone === "danger" ? "var(--danger-tint)" : tone === "warn" ? "var(--warn-tint)" : tone === "ok" ? "var(--success-tint)" : "var(--surface)";
+  const bg =
+    tone === "danger"
+      ? "var(--danger-tint)"
+      : tone === "warn"
+        ? "var(--warn-tint)"
+        : tone === "ok"
+          ? "var(--success-tint)"
+          : "var(--surface)";
   const fg = tone === "danger" ? "text-danger" : tone === "warn" ? "text-gold" : tone === "ok" ? "text-accent" : "text-muted";
   return (
-    <div role={tone === "danger" ? "alert" : "status"} className="flex items-center gap-2.5 rounded-[12px] px-3.5 py-3 text-[14px] font-medium" style={{ background: bg, boxShadow: `inset 0 0 0 1px ${ring}` }}>
+    <div
+      role={tone === "danger" ? "alert" : "status"}
+      className="flex items-center gap-2.5 rounded-[12px] px-3.5 py-3 text-[14px] font-medium"
+      style={{ background: bg, boxShadow: `inset 0 0 0 1px ${ring}` }}
+    >
       {icon && <Icon name={icon} size={20} className={fg} />}
       <span className="flex-1">{children}</span>
       {action}

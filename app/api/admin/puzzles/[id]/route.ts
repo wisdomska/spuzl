@@ -32,7 +32,12 @@ export const PATCH = handle(async (req: Request, rc: RouteContext<"/api/admin/pu
   const ctx = await requireAdmin("calendar.write");
   const id = Id.parse((await rc.params).id);
   const { note } = await body(req, Patch);
-  const { data, error } = await ctx.db.from("puzzles").update({ reviewer_note: note || null }).eq("id", id).select("id").maybeSingle();
+  const { data, error } = await ctx.db
+    .from("puzzles")
+    .update({ reviewer_note: note || null })
+    .eq("id", id)
+    .select("id")
+    .maybeSingle();
   if (error) throw error;
   if (!data) throw new ApiError(404, "puzzle_not_found");
   await audit(ctx, "puzzle.note", `puzzle:${id}`, { note });

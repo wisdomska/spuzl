@@ -12,9 +12,16 @@ const Body = z.object({ decision: z.enum(["approve", "reject"]), notes: z.string
  */
 export const POST = handle(async (req: Request, rc: RouteContext<"/api/admin/content/[id]/review">) => {
   const ctx = await requireAdmin("content.approve");
-  const id = z.string().uuid().parse((await rc.params).id);
+  const id = z
+    .string()
+    .uuid()
+    .parse((await rc.params).id);
   const { decision, notes } = await body(req, Body);
-  const { data: item } = await ctx.db.from("content_items").select("id, game_id, payload, author_id, status, notes").eq("id", id).maybeSingle();
+  const { data: item } = await ctx.db
+    .from("content_items")
+    .select("id, game_id, payload, author_id, status, notes")
+    .eq("id", id)
+    .maybeSingle();
   if (!item) throw new ApiError(404, "item_not_found");
   if (item.author_id === ctx.user.id) throw new ApiError(403, "own_item", "A second person must review this item.");
   if (item.status !== "in_review") throw new ApiError(409, "not_in_review");

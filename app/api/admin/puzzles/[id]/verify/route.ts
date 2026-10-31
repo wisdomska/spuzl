@@ -9,7 +9,10 @@ const Body = z.object({ state: z.unknown() });
 /** POST /api/admin/puzzles/:id/verify: Play test. The game's verify() judges the board state against the stored solution. */
 export const POST = handle(async (req: Request, rc: RouteContext<"/api/admin/puzzles/[id]/verify">) => {
   const ctx = await requireAdmin("calendar.read");
-  const id = z.string().uuid().parse((await rc.params).id);
+  const id = z
+    .string()
+    .uuid()
+    .parse((await rc.params).id);
   const { state } = await body(req, Body);
   const p = await getPuzzle(ctx.db, id);
   const logic = await logicFor(p.game_id);

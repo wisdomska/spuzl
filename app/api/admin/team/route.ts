@@ -9,7 +9,10 @@ const site = () => process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 /** GET /api/admin/team: every admin with role, TOTP status and last sign-in (owner only). */
 export const GET = handle(async () => {
   const ctx = await requireAdmin("team.manage");
-  const { data, error } = await ctx.db.from("admins").select("user_id, role, email, totp_enrolled, disabled_at, created_at").order("created_at");
+  const { data, error } = await ctx.db
+    .from("admins")
+    .select("user_id, role, email, totp_enrolled, disabled_at, created_at")
+    .order("created_at");
   if (error) throw error;
   const rows = await Promise.all(
     (data ?? []).map(async (a) => {

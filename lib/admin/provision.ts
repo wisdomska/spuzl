@@ -15,6 +15,8 @@ export interface ProvisionResult {
   createdAdmin: boolean;
   roleChanged: boolean;
   resetSent: boolean;
+  /** why the reset email could not be sent (rate limit), if it was attempted */
+  resetError: string | null;
 }
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -69,10 +71,12 @@ export async function provisionAdmin(
   }
 
   let resetSent = false;
+  let resetError: string | null = null;
   if (createdUser || (input.resend && !user.last_sign_in_at)) {
+    // Auth rate-limits reset emails; the account and role still stand, and a later run can resend.
     const { error } = await db.auth.resetPasswordForEmail(email, { redirectTo: input.redirectTo });
-    if (error) throw error;
-    resetSent = true;
+    if (error) resetError = error.message;
+    else resetSent = true;
   }
 
   if (createdAdmin || roleChanged || resetSent) {
@@ -83,7 +87,7 @@ export async function provisionAdmin(
       detail: { email, role: input.role, created_user: createdUser, reset_sent: resetSent },
     });
   }
-  return { userId: user.id, email, role: input.role, createdUser, createdAdmin, roleChanged, resetSent };
+  return { userId: user.id, email, role: input.role, createdUser, createdAdmin, roleChanged, resetSent, resetError };
 }
 
 /** Where password-reset links land: the admin login, which handles the recovery session. */

@@ -16,14 +16,23 @@ export const GET = handle(async (_req: Request, rc: RouteContext<"/api/admin/mod
   const id = Id.parse((await rc.params).id);
   const { data: a } = await ctx.db
     .from("attempts")
-    .select("id, player_id, game_id, mode, daily_date, puzzle_id, started_at, first_move_at, finished_at, time_ms, active_ms, hints, mistakes, deaths, score, state, moves, status, flag_reason, relaxed, offline")
+    .select(
+      "id, player_id, game_id, mode, daily_date, puzzle_id, started_at, first_move_at, finished_at, time_ms, active_ms, hints, mistakes, deaths, score, state, moves, status, flag_reason, relaxed, offline",
+    )
     .eq("id", id)
     .maybeSingle();
   if (!a) throw new ApiError(404, "attempt_not_found");
   const [players, best] = await Promise.all([
     playerSummaries(ctx.db, [a.player_id]),
     a.daily_date
-      ? ctx.db.from("daily_results").select("time_ms").eq("game_id", a.game_id).eq("date", a.daily_date).order("time_ms").limit(1).maybeSingle()
+      ? ctx.db
+          .from("daily_results")
+          .select("time_ms")
+          .eq("game_id", a.game_id)
+          .eq("date", a.daily_date)
+          .order("time_ms")
+          .limit(1)
+          .maybeSingle()
       : ctx.db.from("daily_results").select("time_ms").eq("game_id", a.game_id).order("time_ms").limit(1).maybeSingle(),
   ]);
   const meta = GAME_BY_ID[a.game_id];
@@ -50,7 +59,12 @@ export const POST = handle(async (req: Request, rc: RouteContext<"/api/admin/mod
   const ctx = await requireAdmin("moderation.write");
   const id = Id.parse((await rc.params).id);
   const { decision, note, ban } = await body(req, Body);
-  const { data, error } = await ctx.db.rpc("svc_admin_resolve_flagged", { p_attempt: id, p_decision: decision, p_actor: ctx.user.id, p_note: note ?? null });
+  const { data, error } = await ctx.db.rpc("svc_admin_resolve_flagged", {
+    p_attempt: id,
+    p_decision: decision,
+    p_actor: ctx.user.id,
+    p_note: note ?? null,
+  });
   if (error) {
     if (error.code === "P0002") throw new ApiError(404, "attempt_not_found");
     if (error.code === "P0001") throw new ApiError(409, "not_flagged");

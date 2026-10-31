@@ -29,7 +29,8 @@ const label = (s: string) => s.replace("_", " ");
 function summary(p: unknown): string {
   if (!p || typeof p !== "object") return "";
   const o = p as Record<string, unknown>;
-  for (const k of ["theme", "category", "q", "name", "label", "phrase", "pangram"]) if (typeof o[k] === "string" && o[k]) return o[k] as string;
+  for (const k of ["theme", "category", "q", "name", "label", "phrase", "pangram"])
+    if (typeof o[k] === "string" && o[k]) return o[k] as string;
   if (Array.isArray(o.words)) return (o.words as string[]).filter(Boolean).join(" ");
   if (Array.isArray(o.groups)) return (o.groups as { label: string }[]).map((g) => g.label).join(" / ");
   if (Array.isArray(o.rows)) return (o.rows as string[]).join(" ");
@@ -106,7 +107,10 @@ function Items({ canWrite, canApprove, canSchedule }: { canWrite: boolean; canAp
               </thead>
               <tbody>
                 {q.data.rows.map((r) => (
-                  <tr key={r.id} className={`border-line border-t ${open === r.id ? "bg-[var(--success-tint)]" : "hover:bg-surface-raised/50"}`}>
+                  <tr
+                    key={r.id}
+                    className={`border-line border-t ${open === r.id ? "bg-[var(--success-tint)]" : "hover:bg-surface-raised/50"}`}
+                  >
                     <td className="px-3 py-2">
                       <span className="flex items-center gap-2 font-semibold">
                         <Swatch world={GAME_BY_ID[r.game_id]?.world ?? "word"} />
@@ -114,14 +118,20 @@ function Items({ canWrite, canApprove, canSchedule }: { canWrite: boolean; canAp
                       </span>
                     </td>
                     <td className="max-w-[280px] px-3 py-2">
-                      <button type="button" onClick={() => setOpen(r.id)} className="block w-full truncate text-left font-medium hover:underline">
+                      <button
+                        type="button"
+                        onClick={() => setOpen(r.id)}
+                        className="block w-full truncate text-left font-medium hover:underline"
+                      >
                         {summary(r.payload) || "Untitled"}
                       </button>
                     </td>
                     <td className="px-3 py-2">
                       <Pill tone={TONE[r.status]}>{label(r.status)}</Pill>
                     </td>
-                    <td className="text-muted max-w-[160px] truncate px-3 py-2 text-[13px]">{r.author_id === q.data.me ? "you" : (r.author_email ?? "editor")}</td>
+                    <td className="text-muted max-w-[160px] truncate px-3 py-2 text-[13px]">
+                      {r.author_id === q.data.me ? "you" : (r.author_email ?? "editor")}
+                    </td>
                     <td className="num text-muted px-3 py-2 text-[13px]">{age(r.updated_at)}</td>
                   </tr>
                 ))}
@@ -202,7 +212,7 @@ function Editor({
               setGame(g);
               setText(JSON.stringify(TEMPLATES[g], null, 2));
             }}
-            className={inputCls}
+            className={`${inputCls} w-full`}
           >
             {CONTENT_GAMES.map((g) => (
               <option key={g} value={g}>
@@ -212,7 +222,15 @@ function Editor({
           </select>
         </Field>
       )}
-      <Field label="Payload (JSON)" htmlFor="payload" hint={item ? `By ${item.author_id === me ? "you" : (item.author_email ?? "an editor")}${item.reviewer_email ? `, reviewed by ${item.reviewer_email}` : ""}` : undefined}>
+      <Field
+        label="Payload (JSON)"
+        htmlFor="payload"
+        hint={
+          item
+            ? `By ${item.author_id === me ? "you" : (item.author_email ?? "an editor")}${item.reviewer_email ? `, reviewed by ${item.reviewer_email}` : ""}`
+            : undefined
+        }
+      >
         <textarea
           id="payload"
           value={text}
@@ -243,7 +261,14 @@ function Editor({
         )}
       </div>
       <Field label="Notes" htmlFor="notes">
-        <textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} readOnly={!editable && !(canApprove && !mine)} rows={2} className={`${textareaCls} resize-y`} />
+        <textarea
+          id="notes"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          readOnly={!editable && !(canApprove && !mine)}
+          rows={2}
+          className={`${textareaCls} resize-y`}
+        />
       </Field>
       {err && <Notice tone="danger">{errorText(err)}</Notice>}
       {schedule.data && (
@@ -292,10 +317,13 @@ function Editor({
       {item?.status === "approved" && canSchedule && (
         <div className="bg-bg flex flex-col gap-2 rounded-[12px] p-3 shadow-[inset_0_0_0_1px_var(--line)]">
           {!plan ? (
-            <span className="text-muted text-[13px]">Approved. {GAME_BY_ID[game]?.name} items join the content pool rather than a single Daily.</span>
+            <span className="text-muted text-[13px]">
+              Approved. {GAME_BY_ID[game]?.name} items join the content pool rather than a single Daily.
+            </span>
           ) : plan.guessRoute ? (
             <span className="text-muted text-[13px]">
-              Approved. {GAME_BY_ID[game]?.name} checks guesses against content.ts, so scheduling a custom item waits for the guess route to resolve by puzzle.
+              Approved. {GAME_BY_ID[game]?.name} checks guesses against content.ts, so scheduling a custom item waits for the guess route to
+              resolve by puzzle.
             </span>
           ) : (
             <form
@@ -306,7 +334,14 @@ function Editor({
               }}
             >
               <Field label="Schedule on" htmlFor="sched">
-                <input id="sched" type="date" min={addDays(todayIso(), 1)} value={date} onChange={(e) => setDate(e.target.value)} className={inputCls} />
+                <input
+                  id="sched"
+                  type="date"
+                  min={addDays(todayIso(), 1)}
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className={inputCls}
+                />
               </Field>
               <Btn type="submit" tone="primary" size="lg" disabled={schedule.isPending}>
                 Schedule
@@ -316,7 +351,10 @@ function Editor({
         </div>
       )}
       {item?.status === "scheduled" && item.scheduled_for && (
-        <Link href={`/admin/calendar/${item.game_id}/${item.scheduled_for}`} className="text-accent text-[14px] font-semibold hover:underline">
+        <Link
+          href={`/admin/calendar/${item.game_id}/${item.scheduled_for}`}
+          className="text-accent text-[14px] font-semibold hover:underline"
+        >
           Scheduled for {dayMonth(item.scheduled_for)}
         </Link>
       )}
@@ -368,7 +406,8 @@ function FileReview({ isOwner }: { isOwner: boolean }) {
       <div className="flex min-w-0 flex-col gap-3">
         {!game ? (
           <Notice icon="info">
-            Every content.ts below is marked needsReview. {isOwner ? "Approve entries to record your review." : "Only the owner can approve these."}
+            Every content.ts below is marked needsReview.{" "}
+            {isOwner ? "Approve entries to record your review." : "Only the owner can approve these."}
           </Notice>
         ) : (
           <>
@@ -384,10 +423,21 @@ function FileReview({ isOwner }: { isOwner: boolean }) {
               />
               {isOwner && (
                 <div className="ml-auto flex gap-2">
-                  <Btn disabled={!picked.size || act.isPending} onClick={() => act.mutate({ game, indexes: [...picked], decision: "reject" }, { onSuccess: () => setPicked(new Set()) })}>
+                  <Btn
+                    disabled={!picked.size || act.isPending}
+                    onClick={() =>
+                      act.mutate({ game, indexes: [...picked], decision: "reject" }, { onSuccess: () => setPicked(new Set()) })
+                    }
+                  >
                     Reject {picked.size || ""}
                   </Btn>
-                  <Btn tone="primary" disabled={!picked.size || act.isPending} onClick={() => act.mutate({ game, indexes: [...picked], decision: "approve" }, { onSuccess: () => setPicked(new Set()) })}>
+                  <Btn
+                    tone="primary"
+                    disabled={!picked.size || act.isPending}
+                    onClick={() =>
+                      act.mutate({ game, indexes: [...picked], decision: "approve" }, { onSuccess: () => setPicked(new Set()) })
+                    }
+                  >
                     Approve {picked.size || ""}
                   </Btn>
                 </div>
@@ -447,7 +497,9 @@ function FileReview({ isOwner }: { isOwner: boolean }) {
                         <td className="num text-muted px-3 py-2 text-[13px]">{e.index}</td>
                         <td className="px-3 py-2">
                           <span className="font-semibold">{summary(e.entry)}</span>
-                          <pre className="num text-muted mt-1 max-h-24 overflow-auto text-[12px] leading-[1.35] whitespace-pre-wrap">{JSON.stringify(e.entry)}</pre>
+                          <pre className="num text-muted mt-1 max-h-24 overflow-auto text-[12px] leading-[1.35] whitespace-pre-wrap">
+                            {JSON.stringify(e.entry)}
+                          </pre>
                         </td>
                         <td className="px-3 py-2">
                           <Pill tone={FILE_TONE[e.state]}>{e.state === "changed" ? "changed since" : e.state}</Pill>

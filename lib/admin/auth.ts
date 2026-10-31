@@ -57,8 +57,7 @@ export async function adminIdentity(): Promise<{ user: User; aal: "aal1" | "aal2
 }
 
 export type GateResult =
-  | { ok: true; ctx: AdminCtx }
-  | { ok: false; status: 401 | 403; code: "unauthenticated" | "not_admin" | "aal2_required" | "forbidden" };
+  { ok: true; ctx: AdminCtx } | { ok: false; status: 401 | 403; code: "unauthenticated" | "not_admin" | "aal2_required" | "forbidden" };
 
 /**
  * The admin gate. Order: signed in (401), listed in `admins` and not disabled (403 not_admin),

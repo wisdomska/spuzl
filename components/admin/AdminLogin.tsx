@@ -55,7 +55,10 @@ export function AdminLogin({ next, reason }: { next: string; reason: string | nu
     (async () => {
       const hash = new URLSearchParams(window.location.hash.slice(1));
       if (hash.get("type") === "recovery" && hash.get("access_token") && hash.get("refresh_token")) {
-        const { error: e } = await sb.auth.setSession({ access_token: hash.get("access_token")!, refresh_token: hash.get("refresh_token")! });
+        const { error: e } = await sb.auth.setSession({
+          access_token: hash.get("access_token")!,
+          refresh_token: hash.get("refresh_token")!,
+        });
         history.replaceState(null, "", window.location.pathname + window.location.search);
         if (e) {
           setError("This reset link has expired. Ask the owner for a new one.");
@@ -76,8 +79,12 @@ export function AdminLogin({ next, reason }: { next: string; reason: string | nu
     const sb = adminSupabase();
     (async () => {
       const { data: list } = await sb.auth.mfa.listFactors();
-      for (const f of list?.all ?? []) if (f.factor_type === "totp" && f.status !== "verified") await sb.auth.mfa.unenroll({ factorId: f.id });
-      const { data, error: e } = await sb.auth.mfa.enroll({ factorType: "totp", friendlyName: `SPUZL admin ${new Date().toISOString().slice(0, 10)}` });
+      for (const f of list?.all ?? [])
+        if (f.factor_type === "totp" && f.status !== "verified") await sb.auth.mfa.unenroll({ factorId: f.id });
+      const { data, error: e } = await sb.auth.mfa.enroll({
+        factorType: "totp",
+        friendlyName: `SPUZL admin ${new Date().toISOString().slice(0, 10)}`,
+      });
       if (e || !data) return setError("Could not start authenticator setup. Reload and try again.");
       setEnroll({ factorId: data.id, qr: data.totp.qr_code, secret: data.totp.secret });
     })();
@@ -88,7 +95,10 @@ export function AdminLogin({ next, reason }: { next: string; reason: string | nu
     const f = new FormData(ev.currentTarget);
     setBusy(true);
     setError(null);
-    const { error: e } = await adminSupabase().auth.signInWithPassword({ email: String(f.get("email")), password: String(f.get("password")) });
+    const { error: e } = await adminSupabase().auth.signInWithPassword({
+      email: String(f.get("email")),
+      password: String(f.get("password")),
+    });
     setBusy(false);
     if (e) return setError(e.status === 429 ? "Too many tries. Wait a minute and try again." : "Email or password is wrong.");
     await route();
@@ -143,9 +153,9 @@ export function AdminLogin({ next, reason }: { next: string; reason: string | nu
   };
 
   return (
-    <main className="bg-[var(--admin-canvas)] flex min-h-dvh items-center justify-center px-4 py-10">
+    <main className="flex min-h-dvh items-center justify-center bg-[var(--admin-canvas)] px-4 py-10">
       <div className="bg-surface w-full max-w-[400px] rounded-[16px] p-6 shadow-[0_0_0_1px_var(--line)]">
-        <div className="flex items-end pb-5 font-display text-[22px] leading-[0.9] font-black tracking-[-0.05em]">
+        <div className="font-display flex items-end pb-5 text-[22px] leading-[0.9] font-black tracking-[-0.05em]">
           <span>SPU</span>
           <span className="text-accent">Z</span>
           <span>L</span>
@@ -164,15 +174,24 @@ export function AdminLogin({ next, reason }: { next: string; reason: string | nu
           <form onSubmit={signIn} className="flex flex-col gap-3.5">
             <h1 className="font-display text-[20px] font-extrabold">Sign in</h1>
             <Field label="Email" htmlFor="email">
-              <input id="email" name="email" type="email" autoComplete="username" required className={inputCls} />
+              <input id="email" name="email" type="email" autoComplete="username" required className={`${inputCls} w-full`} />
             </Field>
             <Field label="Password" htmlFor="password">
-              <input id="password" name="password" type="password" autoComplete="current-password" required className={inputCls} />
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                className={`${inputCls} w-full`}
+              />
             </Field>
             <Btn type="submit" tone="primary" size="lg" disabled={busy} className="mt-1 w-full">
               Continue
             </Btn>
-            <p className="text-muted text-[13px] leading-[1.4]">Admin accounts are added by the owner. Your authenticator app is needed next.</p>
+            <p className="text-muted text-[13px] leading-[1.4]">
+              Admin accounts are added by the owner. Your authenticator app is needed next.
+            </p>
           </form>
         )}
 
@@ -180,10 +199,26 @@ export function AdminLogin({ next, reason }: { next: string; reason: string | nu
           <form onSubmit={setPassword} className="flex flex-col gap-3.5">
             <h1 className="font-display text-[20px] font-extrabold">Choose a password</h1>
             <Field label="New password" htmlFor="password" hint="At least 12 characters.">
-              <input id="password" name="password" type="password" autoComplete="new-password" minLength={12} required className={inputCls} />
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="new-password"
+                minLength={12}
+                required
+                className={`${inputCls} w-full`}
+              />
             </Field>
             <Field label="Repeat it" htmlFor="confirm">
-              <input id="confirm" name="confirm" type="password" autoComplete="new-password" minLength={12} required className={inputCls} />
+              <input
+                id="confirm"
+                name="confirm"
+                type="password"
+                autoComplete="new-password"
+                minLength={12}
+                required
+                className={`${inputCls} w-full`}
+              />
             </Field>
             <Btn type="submit" tone="primary" size="lg" disabled={busy} className="mt-1 w-full">
               Save password
@@ -194,7 +229,9 @@ export function AdminLogin({ next, reason }: { next: string; reason: string | nu
         {step === "enroll" && (
           <form onSubmit={verify} className="flex flex-col gap-3.5">
             <h1 className="font-display text-[20px] font-extrabold">Set up your authenticator</h1>
-            <p className="text-muted text-[14px] leading-[1.4]">Scan this code with an authenticator app, then enter the 6 digit code it shows.</p>
+            <p className="text-muted text-[14px] leading-[1.4]">
+              Scan this code with an authenticator app, then enter the 6 digit code it shows.
+            </p>
             <div className="flex items-center justify-center rounded-[12px] bg-white p-3">
               {enroll ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -262,7 +299,7 @@ function CodeInput() {
         maxLength={7}
         required
         autoFocus
-        className={`${inputCls} num text-center text-[20px] tracking-[0.3em]`}
+        className={`${inputCls} num w-full text-center text-[20px] tracking-[0.3em]`}
       />
     </Field>
   );

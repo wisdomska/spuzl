@@ -20,7 +20,13 @@ interface Row {
   dailies: { date: string }[];
 }
 
-const STATUS_TONE: Record<string, "ok" | "warn" | "neutral"> = { scheduled: "ok", approved: "ok", in_review: "warn", draft: "warn", retired: "neutral" };
+const STATUS_TONE: Record<string, "ok" | "warn" | "neutral"> = {
+  scheduled: "ok",
+  approved: "ok",
+  in_review: "warn",
+  draft: "warn",
+  retired: "neutral",
+};
 
 /** The puzzle library: every stored puzzle with its status and Daily dates. */
 export function PuzzleLibrary() {
@@ -43,7 +49,12 @@ export function PuzzleLibrary() {
                 </option>
               ))}
             </select>
-            <select aria-label="Status" value={status} onChange={(e) => (setStatus(e.target.value), setOffset(0))} className={`${inputCls} w-40`}>
+            <select
+              aria-label="Status"
+              value={status}
+              onChange={(e) => (setStatus(e.target.value), setOffset(0))}
+              className={`${inputCls} w-40`}
+            >
               <option value="">Any status</option>
               {["in_review", "scheduled", "approved", "draft", "retired"].map((s) => (
                 <option key={s} value={s}>
@@ -82,7 +93,7 @@ export function PuzzleLibrary() {
               {q.data.rows.map((r) => (
                 <tr key={r.id} className="border-line hover:bg-surface-raised/50 border-t">
                   <td className="px-3 py-2">
-                    <Link href={`/admin/puzzles/${r.id}`} className="flex items-center gap-2 font-semibold text-text hover:underline">
+                    <Link href={`/admin/puzzles/${r.id}`} className="text-text flex items-center gap-2 font-semibold hover:underline">
                       <Swatch world={GAME_BY_ID[r.game_id]?.world ?? "logic"} />
                       {GAME_BY_ID[r.game_id]?.name ?? r.game_id}
                     </Link>

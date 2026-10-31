@@ -10,11 +10,17 @@ import { ISO_DATE } from "@/lib/admin/dates";
  */
 export const POST = handle(async (req: Request, rc: RouteContext<"/api/admin/puzzles/[id]/check">) => {
   const ctx = await requireAdmin("calendar.write");
-  const id = z.string().uuid().parse((await rc.params).id);
+  const id = z
+    .string()
+    .uuid()
+    .parse((await rc.params).id);
   const date = new URL(req.url).searchParams.get("date") ?? undefined;
   if (date && !ISO_DATE.test(date)) throw new ApiError(400, "bad_date");
   const p = await getPuzzle(ctx.db, id);
   const report = await checkAndStore(ctx.db, p, date);
-  await audit(ctx, "puzzle.check", `puzzle:${id}`, { ok: report.ok, failed: report.checks.filter((c) => c.status === "fail").map((c) => c.id) });
+  await audit(ctx, "puzzle.check", `puzzle:${id}`, {
+    ok: report.ok,
+    failed: report.checks.filter((c) => c.status === "fail").map((c) => c.id),
+  });
   return ok(report);
 });

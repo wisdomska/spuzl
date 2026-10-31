@@ -9,9 +9,7 @@ export function aalOf(accessToken: string): "aal1" | "aal2" | null {
   try {
     const part = accessToken.split(".")[1];
     const json = JSON.parse(
-      typeof atob === "function"
-        ? atob(part.replace(/-/g, "+").replace(/_/g, "/"))
-        : Buffer.from(part, "base64url").toString("utf8"),
+      typeof atob === "function" ? atob(part.replace(/-/g, "+").replace(/_/g, "/")) : Buffer.from(part, "base64url").toString("utf8"),
     ) as { aal?: string };
     return json.aal === "aal2" ? "aal2" : json.aal === "aal1" ? "aal1" : null;
   } catch {

@@ -38,7 +38,10 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
   const [tab, setTab] = useState<Tab>("reports");
   const [status, setStatus] = useState("open");
   const [sel, setSel] = useState<string | null>(null);
-  const q = useAdminQuery<Queue>(["moderation", tab, status], `/api/admin/moderation?tab=${tab}&status=${tab === "flagged" ? "open" : status}`);
+  const q = useAdminQuery<Queue>(
+    ["moderation", tab, status],
+    `/api/admin/moderation?tab=${tab}&status=${tab === "flagged" ? "open" : status}`,
+  );
   const selected = q.data?.rows.find((r) => r.id === sel) ?? q.data?.rows[0] ?? null;
 
   return (
@@ -64,7 +67,12 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
         {tab !== "flagged" && (
           <label className="text-muted flex items-center gap-2 self-start text-[13px] font-semibold">
             Showing
-            <select value={status} onChange={(e) => (setStatus(e.target.value), setSel(null))} style={{ fontSize: 13 }} className="bg-surface text-text h-9 rounded-[10px] px-2 font-semibold">
+            <select
+              value={status}
+              onChange={(e) => (setStatus(e.target.value), setSel(null))}
+              style={{ fontSize: 13 }}
+              className="bg-surface text-text h-9 rounded-[10px] px-2 font-semibold"
+            >
               <option value="open">Open</option>
               <option value="actioned">Actioned</option>
               <option value="dismissed">Dismissed</option>
@@ -105,7 +113,11 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
                 {q.data.rows.map((r) => {
                   const on = selected?.id === r.id;
                   return (
-                    <tr key={r.id} className={`border-line cursor-pointer border-t ${on ? "bg-[var(--success-tint)]" : "hover:bg-surface-raised/50"}`} onClick={() => setSel(r.id)}>
+                    <tr
+                      key={r.id}
+                      className={`border-line cursor-pointer border-t ${on ? "bg-[var(--success-tint)]" : "hover:bg-surface-raised/50"}`}
+                      onClick={() => setSel(r.id)}
+                    >
                       <td className="num text-muted px-3 py-2.5 align-top text-[13px] font-semibold">{r.ref}</td>
                       <td className="px-3 py-2.5 align-top text-[14px] font-medium">
                         <button type="button" aria-pressed={on} onClick={() => setSel(r.id)} className="text-left hover:underline">
@@ -141,7 +153,9 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
 function Stat({ value, label, tone }: { value: ReactNode; label: string; tone?: "danger" | "gold" }) {
   return (
     <div className="bg-bg flex flex-col gap-0.5 rounded-[10px] p-2.5">
-      <span className={`num text-[18px] font-semibold ${tone === "danger" ? "text-danger" : tone === "gold" ? "text-gold" : ""}`}>{value}</span>
+      <span className={`num text-[18px] font-semibold ${tone === "danger" ? "text-danger" : tone === "gold" ? "text-gold" : ""}`}>
+        {value}
+      </span>
       <span className="text-muted text-[12px] font-medium">{label}</span>
     </div>
   );
@@ -154,14 +168,26 @@ const accountAge = (iso: string) => {
 
 function FlaggedCase({ id, canWrite }: { id: string; canWrite: boolean }) {
   const q = useAdminQuery<{
-    attempt: { ref: string; time_ms: number; flag_reason: string | null; daily_date: string | null; dailyNumber: number | null; hints: number; mistakes: number; mode: string };
+    attempt: {
+      ref: string;
+      time_ms: number;
+      flag_reason: string | null;
+      daily_date: string | null;
+      dailyNumber: number | null;
+      hints: number;
+      mistakes: number;
+      mode: string;
+    };
     game: { name: string; minTimeMs: number | null };
     player: Player | null;
     bestMs: number | null;
     wallMs: number | null;
     gaps: number[];
   }>(["flagged", id], `/api/admin/moderation/flagged/${id}`);
-  const act = useAdminAction<{ decision: "clear" | "reject"; note?: string; ban?: { days: number | null } }>("POST", `/api/admin/moderation/flagged/${id}`);
+  const act = useAdminAction<{ decision: "clear" | "reject"; note?: string; ban?: { days: number | null } }>(
+    "POST",
+    `/api/admin/moderation/flagged/${id}`,
+  );
   if (q.isPending) return <RowsSkeleton rows={5} height={56} />;
   if (q.error) return <Notice tone="danger">{errorText(q.error)}</Notice>;
   const { attempt: a, player, gaps } = q.data;
@@ -175,7 +201,10 @@ function FlaggedCase({ id, canWrite }: { id: string; canWrite: boolean }) {
       </h2>
       <div className="grid grid-cols-2 gap-2">
         <Stat value={clock(a.time_ms)} label="claimed time" tone="danger" />
-        <Stat value={q.data.bestMs ? clock(q.data.bestMs) : "none"} label={a.daily_date ? "fastest verified that day" : "fastest verified"} />
+        <Stat
+          value={q.data.bestMs ? clock(q.data.bestMs) : "none"}
+          label={a.daily_date ? "fastest verified that day" : "fastest verified"}
+        />
         <Stat value={acc?.text ?? "?"} label="account age" tone={acc?.young ? "gold" : undefined} />
         <Stat value={player?.reports ?? 0} label="reports" />
       </div>
@@ -187,7 +216,11 @@ function FlaggedCase({ id, canWrite }: { id: string; canWrite: boolean }) {
         {gaps.length ? (
           <div className="flex h-[60px] items-end gap-0.5" role="img" aria-label={`${gaps.length} inputs, median gap ${median} ms`}>
             {gaps.slice(-40).map((g, i) => (
-              <span key={i} className="flex-1 rounded-[2px]" style={{ height: `${Math.max(8, (g / max) * 100)}%`, background: g < 250 ? "var(--danger)" : "var(--admin-bar)" }} />
+              <span
+                key={i}
+                className="flex-1 rounded-[2px]"
+                style={{ height: `${Math.max(8, (g / max) * 100)}%`, background: g < 250 ? "var(--danger)" : "var(--admin-bar)" }}
+              />
             ))}
           </div>
         ) : (
@@ -201,10 +234,19 @@ function FlaggedCase({ id, canWrite }: { id: string; canWrite: boolean }) {
         </span>
       </div>
       {act.error && <Notice tone="danger">{errorText(act.error)}</Notice>}
-      {act.isSuccess && <Notice tone="ok" icon="check-circle">Resolved.</Notice>}
+      {act.isSuccess && (
+        <Notice tone="ok" icon="check-circle">
+          Resolved.
+        </Notice>
+      )}
       {canWrite && !act.isSuccess && (
         <div className="mt-auto flex flex-col gap-2">
-          <Btn size="lg" tone="danger" disabled={act.isPending} onClick={() => act.mutate({ decision: "reject", note: "Void times + 7-day ban", ban: { days: 7 } })}>
+          <Btn
+            size="lg"
+            tone="danger"
+            disabled={act.isPending}
+            onClick={() => act.mutate({ decision: "reject", note: "Void times + 7-day ban", ban: { days: 7 } })}
+          >
             Void times + 7-day ban
           </Btn>
           <div className="grid grid-cols-2 gap-2">
@@ -223,22 +265,37 @@ function FlaggedCase({ id, canWrite }: { id: string; canWrite: boolean }) {
 
 function ReportCase({ id, nickname, canWrite }: { id: string; nickname: boolean; canWrite: boolean }) {
   const q = useAdminQuery<{
-    report: { ref: string; reason: string; status: string; target_type: string; target_id: string; created_at: string; resolution: string | null };
+    report: {
+      ref: string;
+      reason: string;
+      status: string;
+      target_type: string;
+      target_id: string;
+      created_at: string;
+      resolution: string | null;
+    };
     target: Player | null;
     reporter: { nickname: string } | null;
     related: { ref: string; reason: string; status: string; created_at: string }[];
   }>(["report", id], `/api/admin/moderation/reports/${id}`);
-  const decide = useAdminAction<{ decision: "dismiss" | "actioned" | "reopen"; note?: string }>("POST", `/api/admin/moderation/reports/${id}`);
-  const player = useAdminAction<{ action: string; days?: number | null; reason?: string; nickname?: string; pid: string }, { nickname: string | null }>(
+  const decide = useAdminAction<{ decision: "dismiss" | "actioned" | "reopen"; note?: string }>(
     "POST",
-    (i) => `/api/admin/players/${i.pid}`,
+    `/api/admin/moderation/reports/${id}`,
   );
+  const player = useAdminAction<
+    { action: string; days?: number | null; reason?: string; nickname?: string; pid: string },
+    { nickname: string | null }
+  >("POST", (i) => `/api/admin/players/${i.pid}`);
   const [rename, setRename] = useState("");
   if (q.isPending) return <RowsSkeleton rows={5} height={56} />;
   if (q.error) return <Notice tone="danger">{errorText(q.error)}</Notice>;
   const { report: r, target: t } = q.data;
   const acc = t ? accountAge(t.created_at) : null;
-  const run = async (action: string, extra: { days?: number | null; reason?: string; nickname?: string } = {}, close: "actioned" | null = "actioned") => {
+  const run = async (
+    action: string,
+    extra: { days?: number | null; reason?: string; nickname?: string } = {},
+    close: "actioned" | null = "actioned",
+  ) => {
     if (!t) return;
     await player.mutateAsync({ pid: t.id, action, ...extra });
     if (close) await decide.mutateAsync({ decision: close, note: action });
@@ -261,9 +318,13 @@ function ReportCase({ id, nickname, canWrite }: { id: string; nickname: boolean;
           Reported by {q.data.reporter?.nickname ?? "a player"} {age(r.created_at)} ago. Status <b>{r.status}</b>
           {r.resolution ? `, ${r.resolution}` : ""}.
         </span>
-        {t?.banned_at && <span className="text-danger font-semibold">Banned{t.banned_until ? ` until ${t.banned_until.slice(0, 10)}` : ""}.</span>}
+        {t?.banned_at && (
+          <span className="text-danger font-semibold">Banned{t.banned_until ? ` until ${t.banned_until.slice(0, 10)}` : ""}.</span>
+        )}
         {t?.ranking_revoked && <span className="text-gold font-semibold">Ranking revoked.</span>}
-        {q.data.related.length > 0 && <span className="text-muted">Also: {q.data.related.map((x) => `${x.ref} ${x.reason}`).join(", ")}</span>}
+        {q.data.related.length > 0 && (
+          <span className="text-muted">Also: {q.data.related.map((x) => `${x.ref} ${x.reason}`).join(", ")}</span>
+        )}
       </div>
       {err && <Notice tone="danger">{errorText(err)}</Notice>}
       {player.data?.nickname && (
@@ -282,7 +343,13 @@ function ReportCase({ id, nickname, canWrite }: { id: string; nickname: boolean;
           <label htmlFor="rename" className="sr-only">
             New nickname
           </label>
-          <input id="rename" value={rename} onChange={(e) => setRename(e.target.value)} placeholder="New nickname (blank: Spuzler1234)" className="bg-bg h-11 min-w-0 flex-1 rounded-[12px] px-3 text-[14px] shadow-[inset_0_0_0_1px_var(--line)]" />
+          <input
+            id="rename"
+            value={rename}
+            onChange={(e) => setRename(e.target.value)}
+            placeholder="New nickname (blank: Spuzler1234)"
+            className="bg-bg h-11 min-w-0 flex-1 rounded-[12px] px-3 text-[14px] shadow-[inset_0_0_0_1px_var(--line)]"
+          />
           <Btn type="submit" size="lg" disabled={player.isPending}>
             Rename
           </Btn>
@@ -291,7 +358,12 @@ function ReportCase({ id, nickname, canWrite }: { id: string; nickname: boolean;
       {canWrite && (
         <div className="mt-auto flex flex-col gap-2">
           {t && (
-            <Btn size="lg" tone="danger" disabled={player.isPending} onClick={() => run(nickname ? "ban" : "ban_void", { days: 7, reason: `Report ${r.ref}: ${r.reason}` })}>
+            <Btn
+              size="lg"
+              tone="danger"
+              disabled={player.isPending}
+              onClick={() => run(nickname ? "ban" : "ban_void", { days: 7, reason: `Report ${r.ref}: ${r.reason}` })}
+            >
               {nickname ? "Ban 7 days" : "Void times + 7-day ban"}
             </Btn>
           )}
@@ -319,7 +391,12 @@ function ReportCase({ id, nickname, canWrite }: { id: string; nickname: boolean;
                 </Btn>
               </>
             ) : (
-              <Btn size="lg" icon="arrow-counter-clockwise" disabled={decide.isPending} onClick={() => decide.mutate({ decision: "reopen" })}>
+              <Btn
+                size="lg"
+                icon="arrow-counter-clockwise"
+                disabled={decide.isPending}
+                onClick={() => decide.mutate({ decision: "reopen" })}
+              >
                 Reopen
               </Btn>
             )}

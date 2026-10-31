@@ -7,7 +7,13 @@ import { clock } from "./dates";
 export const shortRef = (prefix: string, id: string) => `${prefix}-${id.replace(/-/g, "").slice(0, 4).toUpperCase()}`;
 
 const KIND: Record<string, string> = { player: "Player", nickname: "Nickname", crew: "Crew", score: "Anti-cheat", content: "Content" };
-const REASON: Record<string, string> = { nickname: "Nickname", cheating: "Cheating", harassment: "Harassment", spam: "Spam", other: "Other" };
+const REASON: Record<string, string> = {
+  nickname: "Nickname",
+  cheating: "Cheating",
+  harassment: "Harassment",
+  spam: "Spam",
+  other: "Other",
+};
 
 export interface ModRow {
   id: string;
@@ -44,7 +50,12 @@ export async function playerSummaries(db: SupabaseClient, ids: string[]): Promis
   return Object.fromEntries(
     (players ?? []).map((p) => [
       p.id,
-      { ...p, nickname: String(p.nickname), reports: count(reports, "target_id", p.id), flagged: count(flags, "player_id", p.id) } as PlayerSummary,
+      {
+        ...p,
+        nickname: String(p.nickname),
+        reports: count(reports, "target_id", p.id),
+        flagged: count(flags, "player_id", p.id),
+      } as PlayerSummary,
     ]),
   );
 }
@@ -52,7 +63,11 @@ export async function playerSummaries(db: SupabaseClient, ids: string[]): Promis
 const UUID = /^[0-9a-f-]{36}$/i;
 
 export async function reportRows(db: SupabaseClient, tab: "reports" | "nicknames", status: string): Promise<ModRow[]> {
-  let q = db.from("reports").select("id, reporter_id, target_type, target_id, reason, status, created_at").order("created_at", { ascending: false }).limit(200);
+  let q = db
+    .from("reports")
+    .select("id, reporter_id, target_type, target_id, reason, status, created_at")
+    .order("created_at", { ascending: false })
+    .limit(200);
   q = tab === "nicknames" ? q.or("target_type.eq.nickname,reason.eq.nickname") : q.neq("target_type", "nickname").neq("reason", "nickname");
   if (status !== "all") q = q.eq("status", status);
   const { data, error } = await q;
@@ -113,7 +128,13 @@ export async function flaggedRows(db: SupabaseClient): Promise<ModRow[]> {
 export function moveGaps(moves: unknown): number[] {
   if (!Array.isArray(moves)) return [];
   const ts = moves
-    .map((m) => (Array.isArray(m) ? m[0] : m && typeof m === "object" ? ((m as Record<string, unknown>).t ?? (m as Record<string, unknown>).at ?? (m as Record<string, unknown>).ms) : null))
+    .map((m) =>
+      Array.isArray(m)
+        ? m[0]
+        : m && typeof m === "object"
+          ? ((m as Record<string, unknown>).t ?? (m as Record<string, unknown>).at ?? (m as Record<string, unknown>).ms)
+          : null,
+    )
     .map((t) => (typeof t === "string" ? Date.parse(t) : t))
     .filter((t): t is number => typeof t === "number" && Number.isFinite(t));
   const gaps: number[] = [];

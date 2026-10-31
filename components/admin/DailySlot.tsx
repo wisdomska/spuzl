@@ -9,7 +9,15 @@ import { PuzzlePreview } from "./PuzzlePreview";
 import { Btn, Empty, Notice, Pill, RowsSkeleton } from "./ui";
 
 export interface Slot {
-  slot: { date: string; game_id: string; puzzle_id: string; locked: boolean; published_at: string | null; swapped_from: string | null; swapped_at: string | null } | null;
+  slot: {
+    date: string;
+    game_id: string;
+    puzzle_id: string;
+    locked: boolean;
+    published_at: string | null;
+    swapped_from: string | null;
+    swapped_at: string | null;
+  } | null;
   number: number;
   difficulty: string;
   today: string;
@@ -28,12 +36,17 @@ export function DailySlot({ game, date, canWrite, canSwap }: { game: string; dat
         </Notice>
       </div>
     );
-  if (q.data.slot) return <PuzzlePreview puzzleId={q.data.slot.puzzle_id} game={game} date={date} slot={q.data} canWrite={canWrite} canSwap={canSwap} />;
+  if (q.data.slot)
+    return <PuzzlePreview puzzleId={q.data.slot.puzzle_id} game={game} date={date} slot={q.data} canWrite={canWrite} canSwap={canSwap} />;
   const meta = GAME_BY_ID[game];
   return (
     <div className="flex flex-col gap-4 px-6 py-5">
       <div className="flex items-center gap-3">
-        <Link href="/admin/calendar" aria-label="Back to the calendar" className="hover:bg-surface-raised -ml-2 flex size-11 items-center justify-center rounded-[10px]">
+        <Link
+          href="/admin/calendar"
+          aria-label="Back to the calendar"
+          className="hover:bg-surface-raised -ml-2 flex size-11 items-center justify-center rounded-[10px]"
+        >
           <Icon name="arrow-left" size={20} />
         </Link>
         <h1 className="font-display text-[20px] font-extrabold">

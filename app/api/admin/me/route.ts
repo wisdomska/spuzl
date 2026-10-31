@@ -31,7 +31,10 @@ export const POST = handle(async () => {
   const ctx = await requireAdmin();
   const { data } = await ctx.db.from("admins").select("totp_enrolled").eq("user_id", ctx.user.id).single();
   if (!data?.totp_enrolled) {
-    await ctx.db.from("admins").update({ totp_enrolled: true, email: ctx.user.email ?? null }).eq("user_id", ctx.user.id);
+    await ctx.db
+      .from("admins")
+      .update({ totp_enrolled: true, email: ctx.user.email ?? null })
+      .eq("user_id", ctx.user.id);
     await ctx.db
       .from("audit_log")
       .insert({ actor_id: ctx.user.id, action: "admin.totp_enrolled", target: `admin:${ctx.user.id}`, detail: { role: ctx.role } });

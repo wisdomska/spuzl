@@ -21,11 +21,10 @@ export const CONTENT_SCHEMAS = {
     .refine((e) => e.words.join("").length === 30, { message: "Words must use exactly 30 letters (the 6 x 5 grid)", path: ["words"] }),
   rungs: z
     .object({ words: z.array(word(4, 4)).length(7), clues: z.array(text(80)).length(7) })
-    .refine(
-      (e) =>
-        e.words.every((w, i) => i === 0 || [...w].filter((ch, k) => ch !== e.words[i - 1][k]).length === 1),
-      { message: "Each word must be one letter away from the one above", path: ["words"] },
-    ),
+    .refine((e) => e.words.every((w, i) => i === 0 || [...w].filter((ch, k) => ch !== e.words[i - 1][k]).length === 1), {
+      message: "Each word must be one letter away from the one above",
+      path: ["words"],
+    }),
   quads: z.object({
     groups: z
       .array(z.object({ label: text(40), words: z.array(word(2, 12)).length(4) }))
@@ -87,7 +86,13 @@ export const CONTENT_SCHEMAS = {
     flag: z.record(z.string(), z.unknown()).optional(),
   }),
   pixl: z
-    .object({ name: text(40), rows: z.array(z.string().regex(/^[#.]+$/, "Only # and .")).min(5).max(15) })
+    .object({
+      name: text(40),
+      rows: z
+        .array(z.string().regex(/^[#.]+$/, "Only # and ."))
+        .min(5)
+        .max(15),
+    })
     .refine((e) => e.rows.every((r) => r.length === e.rows[0].length), { message: "Rows must share one width", path: ["rows"] }),
 } as const;
 
@@ -134,7 +139,8 @@ export const QuickfireSet = z.object({ items: z.array(CONTENT_SCHEMAS.quickfire)
 
 export function validatePayload(game: string, payload: unknown) {
   if (!isContentGame(game)) return { success: false as const, issues: [{ path: [] as PropertyKey[], message: "Not a content game" }] };
-  const schema = game === "quickfire" && payload && typeof payload === "object" && "items" in payload ? QuickfireSet : CONTENT_SCHEMAS[game];
+  const schema =
+    game === "quickfire" && payload && typeof payload === "object" && "items" in payload ? QuickfireSet : CONTENT_SCHEMAS[game];
   const r = schema.safeParse(payload);
   return r.success
     ? { success: true as const, data: r.data as unknown }

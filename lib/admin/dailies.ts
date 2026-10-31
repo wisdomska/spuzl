@@ -12,7 +12,12 @@ export interface DailyRow {
 }
 
 export async function getDaily(db: SupabaseClient, date: string, game: string): Promise<DailyRow | null> {
-  const { data } = await db.from("dailies").select("date, game_id, puzzle_id, locked, swapped_from").eq("date", date).eq("game_id", game).maybeSingle();
+  const { data } = await db
+    .from("dailies")
+    .select("date, game_id, puzzle_id, locked, swapped_from")
+    .eq("date", date)
+    .eq("game_id", game)
+    .maybeSingle();
   return (data as DailyRow | null) ?? null;
 }
 

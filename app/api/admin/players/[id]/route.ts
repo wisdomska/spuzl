@@ -38,7 +38,12 @@ export const POST = handle(async (req: Request, rc: RouteContext<"/api/admin/pla
   const b = await body(req, Body);
   let nickname: string | null = null;
   if (b.action === "rename") {
-    nickname = b.nickname || `Spuzler${randomInt(1000, 10000)}`;
+    // Leet digits can spell a blocked word ("Spuzler4551"), so draw until the filter passes.
+    nickname = b.nickname || "";
+    for (let i = 0; !nickname && i < 50; i++) {
+      const n = `Spuzler${randomInt(1000, 10000)}`;
+      if (!nicknameProblem(n)) nickname = n;
+    }
     const problem = nicknameProblem(nickname);
     if (problem) throw new ApiError(422, "bad_nickname", problem);
   }

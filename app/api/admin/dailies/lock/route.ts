@@ -27,7 +27,11 @@ export const POST = handle(async (req: Request) => {
     throw new ApiError(409, "inside_lock_window", "Dailies inside the next 7 days stay locked. Use Swap Daily for emergencies.");
   const { data, error } = await ctx.db
     .from("dailies")
-    .update(b.locked ? { locked: true, locked_at: new Date().toISOString(), locked_by: ctx.user.id } : { locked: false, locked_at: null, locked_by: null })
+    .update(
+      b.locked
+        ? { locked: true, locked_at: new Date().toISOString(), locked_by: ctx.user.id }
+        : { locked: false, locked_at: null, locked_by: null },
+    )
     .eq("date", b.date)
     .eq("game_id", b.game)
     .select("date")

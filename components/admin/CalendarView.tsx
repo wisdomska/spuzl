@@ -64,7 +64,12 @@ export function CalendarView({ canWrite }: { canWrite: boolean }) {
             </label>
             {canWrite && (
               <>
-                <Btn size="sm" icon="lock-simple" disabled={lock.isPending} onClick={() => lock.mutate({ through: addDays(todayIso(), 7) })}>
+                <Btn
+                  size="sm"
+                  icon="lock-simple"
+                  disabled={lock.isPending}
+                  onClick={() => lock.mutate({ through: addDays(todayIso(), 7) })}
+                >
                   Lock next 7 days
                 </Btn>
                 <Btn size="sm" tone="primary" icon="magic-wand" disabled={fill.isPending} onClick={() => fill.mutate({ days: 21 })}>
@@ -77,8 +82,22 @@ export function CalendarView({ canWrite }: { canWrite: boolean }) {
       >
         <span className="text-muted text-[14px] font-medium">{from ? `Week ${isoWeek(from)} · ${weekRange(from)}` : " "}</span>
         <div className="flex">
-          <Btn size="sm" tone="ghost" icon="caret-left" aria-label="Previous week" className="px-0" onClick={() => setWeek(addDays(from ?? week, -7))} />
-          <Btn size="sm" tone="ghost" icon="caret-right" aria-label="Next week" className="px-0" onClick={() => setWeek(addDays(from ?? week, 7))} />
+          <Btn
+            size="sm"
+            tone="ghost"
+            icon="caret-left"
+            aria-label="Previous week"
+            className="px-0"
+            onClick={() => setWeek(addDays(from ?? week, -7))}
+          />
+          <Btn
+            size="sm"
+            tone="ghost"
+            icon="caret-right"
+            aria-label="Next week"
+            className="px-0"
+            onClick={() => setWeek(addDays(from ?? week, 7))}
+          />
           {from && from !== mondayOf(todayIso()) && (
             <Btn size="sm" tone="ghost" onClick={() => setWeek(todayIso())}>
               This week
@@ -126,7 +145,11 @@ export function CalendarView({ canWrite }: { canWrite: boolean }) {
                   Game
                 </th>
                 {q.data.days.map((d) => (
-                  <th key={d} scope="col" className={`num p-2.5 text-left text-[12px] font-semibold ${d === q.data.today ? "text-accent" : "text-muted"}`}>
+                  <th
+                    key={d}
+                    scope="col"
+                    className={`num p-2.5 text-left text-[12px] font-semibold ${d === q.data.today ? "text-accent" : "text-muted"}`}
+                  >
                     {shortDay(d)}
                     {d === q.data.today && <span className="sr-only"> (today)</span>}
                   </th>
@@ -174,7 +197,11 @@ export function CalendarView({ canWrite }: { canWrite: boolean }) {
       <div className="text-muted flex flex-wrap gap-4 text-[13px] font-medium">
         {(["verified", "review", "missing"] as const).map((k) => (
           <span key={k} className="flex items-center gap-1">
-            <Icon name={CELL[k].icon} size={14} className={k === "verified" ? "text-accent" : k === "review" ? "text-gold" : "text-danger"} />
+            <Icon
+              name={CELL[k].icon}
+              size={14}
+              className={k === "verified" ? "text-accent" : k === "review" ? "text-gold" : "text-danger"}
+            />
             {CELL[k].label}
           </span>
         ))}

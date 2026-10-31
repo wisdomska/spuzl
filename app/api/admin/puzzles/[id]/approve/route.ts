@@ -12,7 +12,10 @@ const Body = z.object({ note: z.string().max(2000).optional(), date: z.string().
  */
 export const POST = handle(async (req: Request, rc: RouteContext<"/api/admin/puzzles/[id]/approve">) => {
   const ctx = await requireAdmin("calendar.write");
-  const id = z.string().uuid().parse((await rc.params).id);
+  const id = z
+    .string()
+    .uuid()
+    .parse((await rc.params).id);
   const { note, date } = await body(req, Body);
   const p = await getPuzzle(ctx.db, id);
   if (p.status === "retired") throw new ApiError(409, "retired");

@@ -4,11 +4,26 @@ import { audit, requireAdmin } from "@/lib/admin/auth";
 import { isContentGame, type ContentGame } from "@/lib/admin/content-schemas";
 import { fileEntry, needsReviewEntries } from "@/lib/admin/content-files";
 
-type Review = { source_ref: string; source_hash: string | null; status: string; reviewer_id: string | null; reviewed_at: string | null; notes: string | null };
+type Review = {
+  source_ref: string;
+  source_hash: string | null;
+  status: string;
+  reviewer_id: string | null;
+  reviewed_at: string | null;
+  notes: string | null;
+};
 
 /** Review state of a content.ts entry: approved or rejected only while the entry is unchanged since. */
 const stateOf = (r: Review | undefined, hash: string) =>
-  !r ? "pending" : r.source_hash !== hash ? "changed" : r.status === "approved" ? "approved" : r.status === "rejected" ? "rejected" : "pending";
+  !r
+    ? "pending"
+    : r.source_hash !== hash
+      ? "changed"
+      : r.status === "approved"
+        ? "approved"
+        : r.status === "rejected"
+          ? "rejected"
+          : "pending";
 
 /**
  * GET /api/admin/content/files?game=: the content.ts entries flagged `needsReview`, with the owner's
@@ -73,7 +88,12 @@ export const POST = handle(async (req: Request) => {
       needs_owner_review: false,
       notes: notes || null,
     };
-    const { data: existing } = await ctx.db.from("content_items").select("id").eq("source", "content_file").eq("source_ref", e.ref).maybeSingle();
+    const { data: existing } = await ctx.db
+      .from("content_items")
+      .select("id")
+      .eq("source", "content_file")
+      .eq("source_ref", e.ref)
+      .maybeSingle();
     const { error } = existing
       ? await ctx.db.from("content_items").update(row).eq("id", existing.id)
       : await ctx.db.from("content_items").insert(row);

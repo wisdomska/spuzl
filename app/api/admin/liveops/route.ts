@@ -27,7 +27,12 @@ export const GET = handle(async () => {
     ctx.db.rpc("svc_admin_streak_distribution"),
     ctx.db.rpc("svc_admin_activity_series", { p_now: new Date().toISOString() }),
     ctx.db.from("dailies").select("date, game_id").gte("date", today).lte("date", addDays(today, 6)),
-    ctx.db.from("dailies").select("date", { count: "exact", head: true }).eq("locked", false).gte("date", today).lte("date", addDays(today, 7)),
+    ctx.db
+      .from("dailies")
+      .select("date", { count: "exact", head: true })
+      .eq("locked", false)
+      .gte("date", today)
+      .lte("date", addDays(today, 7)),
   ]);
   for (const r of [kpis, byGame, retention, streaks, series]) if (r.error) throw r.error;
 

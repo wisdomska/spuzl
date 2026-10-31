@@ -32,6 +32,6 @@ console.log(
     `owner ${masked}`,
     r.createdUser ? "auth user created" : "auth user exists",
     r.createdAdmin ? "added to admins as owner" : r.roleChanged ? "role set to owner" : "already owner",
-    r.resetSent ? "password-reset email sent" : "no email sent",
+    r.resetSent ? "password-reset email sent" : r.resetError ? `reset email not sent: ${r.resetError}` : "no email sent",
   ].join(", "),
 );

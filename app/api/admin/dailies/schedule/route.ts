@@ -5,7 +5,7 @@ import { difficultyForDate } from "@/games/types";
 import { ISO_DATE, todayIso } from "@/lib/admin/dates";
 import { SCHEDULABLE, isContentGame } from "@/lib/admin/content-schemas";
 import { buildFromItem } from "@/lib/admin/content-files";
-import { checkAndStore, getPuzzle, hashSolution, insertPuzzle } from "@/lib/admin/puzzles";
+import { checkAndStore, getPuzzle, canonicalHash, insertPuzzle } from "@/lib/admin/puzzles";
 import { getDaily, retireIfUnused } from "@/lib/admin/dailies";
 
 const Body = z.object({ itemId: z.string().uuid(), date: z.string().regex(ISO_DATE) });
@@ -38,7 +38,7 @@ export const POST = handle(async (req: Request) => {
   const gen = await buildFromItem(game as never, item.payload, difficulty);
   const puzzleId = await insertPuzzle(
     ctx.db,
-    { game_id: game, seed: `item:${itemId}:${date}`, difficulty, gen, hash: hashSolution(gen.solution) },
+    { game_id: game, seed: `item:${itemId}:${date}`, difficulty, gen, hash: canonicalHash(gen.solution) },
     { status: "scheduled", source: "human", content_item_id: itemId, reviewed_by: ctx.user.id },
   );
   const report = await checkAndStore(ctx.db, await getPuzzle(ctx.db, puzzleId), date);
