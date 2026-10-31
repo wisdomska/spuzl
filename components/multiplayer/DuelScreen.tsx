@@ -18,21 +18,25 @@ import { ShareCode } from "./party";
 
 type Outcome = "me" | "them" | "draw";
 
-/** /duel: entry sheet, matchmaking and friend invites; /duel?m=<id>: the match; /duel?code=<code>: join a friend. */
+/**
+ * /duel: entry sheet, matchmaking and friend invites; /duel?m=<id>: the match; /duel?code=<code>: join a friend;
+ * /duel?friend=<nickname>: from a friend's card, opens straight on a challenge link to send them.
+ */
 export function DuelScreen() {
   const gate = useProfileGate();
   const sp = useSearchParams();
   const m = sp.get("m");
   const code = sp.get("code");
+  const friendName = sp.get("friend")?.slice(0, 16) || null;
   if (gate === "loading") return <LoadingScreen />;
   if (gate === "no_profile") return <NeedProfile />;
   if (m) return <DuelMatch id={m} />;
-  return <DuelLobby joinCode={code} />;
+  return <DuelLobby joinCode={code} friendName={friendName} />;
 }
 
 /* ---------------- Entry, matchmaking, friend invite ---------------- */
 
-function DuelLobby({ joinCode }: { joinCode: string | null }) {
+function DuelLobby({ joinCode, friendName }: { joinCode: string | null; friendName: string | null }) {
   const router = useRouter();
   const me = useMe();
   const relaxed = useSettings((s) => s.relaxed);
@@ -128,6 +132,14 @@ function DuelLobby({ joinCode }: { joinCode: string | null }) {
     }
   };
 
+  // From a friend's card (/duel?friend=<nickname>): make the challenge link at once.
+  const autoChallenged = useRef(false);
+  useEffect(() => {
+    if (!friendName || joinCode || autoChallenged.current) return;
+    autoChallenged.current = true;
+    void challengeFriend();
+  }, [friendName, joinCode]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (relaxed)
     return (
       <Screen label="Duel relaxed">
@@ -163,7 +175,9 @@ function DuelLobby({ joinCode }: { joinCode: string | null }) {
         <div className="flex flex-1 flex-col gap-4 px-4 pt-[max(56px,env(safe-area-inset-top))] pb-[max(28px,env(safe-area-inset-bottom))]">
           <div className="flex items-center gap-3">
             <TopButton icon="arrow-left" label="Back" onClick={cancel} />
-            <h1 className="font-display text-[22px] font-black">Challenge a friend</h1>
+            <h1 className="font-display min-w-0 truncate text-[22px] font-black">
+              {friendName ? `Challenge ${friendName}` : "Challenge a friend"}
+            </h1>
           </div>
           <p className="text-muted text-[16px]">
             Unranked. {game ? gameName(game) : "Any game"}, best of 3. The duel starts the moment they join.

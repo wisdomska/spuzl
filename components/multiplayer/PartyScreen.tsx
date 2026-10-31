@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Icon } from "@/components/ui/Icon";
 import { Spuz } from "@/components/brand/Spuz";
 import { api, HttpError, useMe } from "@/lib/client/api";
+import { useCrew } from "@/lib/client/social";
 import { matchAction, matchKey, useEmotes, useMatch, useProfileGate, useServerNow } from "@/lib/client/multiplayer";
 import { useSettings } from "@/lib/settings/store";
 import { normalizeRoomCode } from "@/lib/multiplayer/roomCode";
@@ -21,6 +22,8 @@ import { Avatar, CountdownNumber, Cta, LoadingScreen, MpToast, NeedProfile, Scre
 export function PartyHome() {
   const gate = useProfileGate();
   const router = useRouter();
+  // From a crew page (/party?crew=<id>): the room is for the crew; its code goes in the crew chat.
+  const crewId = useSearchParams().get("crew");
   const relaxed = useSettings((s) => s.relaxed);
   const [busy, setBusy] = useState(false);
   const { toast, show } = useToast();
@@ -49,8 +52,22 @@ export function PartyHome() {
           Relaxed mode hides race strips. Turn it off in Settings to race.
         </p>
       )}
+      {crewId && /^[0-9a-f-]{36}$/i.test(crewId) && <CrewNote id={crewId} />}
       <CreateRoom busy={busy} onOpen={open} onBack={() => router.push("/")} onJoin={join} />
     </Screen>
+  );
+}
+
+function CrewNote({ id }: { id: string }) {
+  const crew = useCrew(id);
+  if (!crew.data?.member) return null;
+  return (
+    <p className="bg-surface mx-4 mt-4 flex items-center gap-2.5 rounded-[14px] px-3.5 py-2.5 text-[14px]" role="note">
+      <span className="size-3 flex-none rounded-full" style={{ background: crew.data.color }} aria-hidden />
+      <span>
+        Party for <b className="font-semibold">{crew.data.name}</b>. Open a room, then share its code with your crew.
+      </span>
+    </p>
   );
 }
 
