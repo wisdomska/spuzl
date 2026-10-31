@@ -1,6 +1,6 @@
 # QA report
 
-Release candidate on `feat/core-engine`, tested 31 October 2026. Local runs used a production build (`pnpm build && pnpm start`) against the local Supabase stack, all on one 4-vCPU container.
+Release 1.0.0, tested 31 October 2026 and live at https://spuzl.vercel.app. Local runs used a production build (`pnpm build && pnpm start`) against the local Supabase stack, all on one 4-vCPU container.
 
 ## Summary
 
@@ -8,7 +8,7 @@ Release candidate on `feat/core-engine`, tested 31 October 2026. Local runs used
 | ----------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | Unit tests (Vitest)                       | 768 passed, about 98% line coverage on `games/`                                                           |
 | API integration (`vitest.api.config.mts`) | 64 passed                                                                                                 |
-| Database (pgTAP, `supabase test db`)      | 108 passed in 8 files: RLS, grants, service functions, multiplayer, admin                                 |
+| Database (pgTAP, `supabase test db`)      | 112 passed in 9 files: RLS, grants, service functions, multiplayer, admin                                 |
 | All 51 games                              | Smoke test: every game loads, accepts input and verifies on the server                                    |
 | Daily loop e2e                            | Intro, onboarding, Daily clear, results, celebrations, free play: no console errors                       |
 | Accessibility (axe-core)                  | 0 serious or critical issues across 28 routes, in dark, light, desktop, colour-blind and large-text modes |

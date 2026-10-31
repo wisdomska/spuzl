@@ -1,6 +1,6 @@
 # Progress
 
-Status on 31 October 2026: feature-complete release candidate on `feat/core-engine` (PR into `preview`).
+Status on 31 October 2026: 1.0.0 released.
 
 ## Done
 
@@ -25,9 +25,13 @@ Status on 31 October 2026: feature-complete release candidate on `feat/core-engi
 - **PWA:** service worker, offline Dailies, an offline finish queue and an install prompt.
 - **QA:** see `docs/QA_REPORT.md`.
 
-## Release steps left
+## Released
 
-1. Owner: remove the auto-appended footer from the PR body (the Authorship check reads it), then merge the PR into `preview`.
-2. Open and merge `preview` → `main` (production deploy).
-3. Bootstrap the owner admin (`POST /api/admin/bootstrap` or `scripts/bootstrap-owner.mts`) and verify `/admin`.
-4. Tag `v1.0.0`.
+1.0.0 is live at https://spuzl.vercel.app (tag `v1.0.0`, see `CHANGELOG.md`). The owner admin is bootstrapped; the set-password email went to `INITIAL_OWNER_EMAIL`.
+
+## Owner follow-ups
+
+- Delete the auto-appended footer from the merged PR's body (merged PR into `preview`).
+- Turn on branch protection for `main` and `preview` (required checks, squash or merge only).
+- Rotate the GitHub, Vercel and Supabase tokens shared during the build.
+- Enable the Google provider in Supabase Auth to offer Google sign-in.
