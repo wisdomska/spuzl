@@ -4,18 +4,33 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { play } from "@/lib/audio";
+import { useGameSettings } from "@/lib/game-settings/client";
+import { logicGames } from "@/lib/copy/logic-games";
 import { classify, FALSE_START_PENALTY, pointsFor, tally, type FlinchPuzzle, type FlinchRound, type FlinchState } from "./logic";
 
+const t = logicGames.flinch;
 const INK = "#0E0F1A";
 type Phase = "ready" | "armed" | "go" | "result" | "over";
 
+/* The auto-start bar fills once over the wait (transform only). Reduced motion shows it full and still. */
+const CSS = `
+@keyframes flinch-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.flinch-fill { transform-origin: left center; animation: flinch-fill var(--flinch-wait) linear both; }
+[data-motion="reduce"] .flinch-fill { animation: none; transform: none; }
+@media (prefers-reduced-motion: reduce) { .flinch-fill { animation: none; transform: none; } }
+`;
+
 /**
- * Flinch board. One big pad: tap to arm a round, wait while it reads "Wait", tap the moment it turns
- * to the world colour with a lightning glyph. The change is a single solid fill once per round (at
- * least 1.5 s after arming), never a strobe. Early taps hatch the pad and cost points.
+ * Flinch board. One big pad: tap to arm a round, wait while it reads "Wait" (open hand, dashed
+ * frame), tap the moment it changes to "Tap!" (lightning glyph, solid frame, world colour). The
+ * signal never relies on colour alone: text, glyph and frame all change. The change is a single
+ * solid fill once per round (at least 1.5 s after arming), never a strobe. Early taps hatch the pad
+ * and cost points. After a round the next one starts on its own after `flinch.autoStartMs`; a tap
+ * skips the wait.
  */
 export default function FlinchBoard({ puzzle, initialState, disabled, mode, api }: BoardProps<FlinchPuzzle, FlinchState>) {
   const total = puzzle.delays.length;
+  const autoStartMs = useGameSettings()["flinch.autoStartMs"];
   const [rounds, setRounds] = useState<FlinchRound[]>(() => initialState?.rounds ?? []);
   const [phase, setPhase] = useState<Phase>(() => ((initialState?.rounds.length ?? 0) >= total ? "over" : "ready"));
   const [last, setLast] = useState<FlinchRound | null>(null);
@@ -45,25 +60,25 @@ export default function FlinchBoard({ puzzle, initialState, disabled, mode, api 
       if (kind === "early") {
         setShakeN((k) => k + 1);
         api.onMove(state, { mistake: true });
-        api.ruleBreak(`Too soon. False start, minus ${FALSE_START_PENALTY}.`);
+        api.ruleBreak(t.falseStart(FALSE_START_PENALTY));
       } else if (kind === "timeout") {
         api.onMove(state, { mistake: true });
         play("fizzle");
-        api.feedback("Too slow. No points this round.", "danger", "timer");
-        api.announce("Round timed out.");
+        api.feedback(t.timeout, "danger", "timer");
+        api.announce(t.timeoutAnnounce);
       } else {
         api.onMove(state, { correctStreak: i });
         play("pop", { step: Math.min(7, Math.max(0, Math.round((400 - r.reaction!) / 40))) });
-        api.feedback(`${r.reaction} ms. Round ${i} of ${total}.`, "info", "lightning");
-        api.announce(`${r.reaction} milliseconds.`);
+        api.feedback(t.reaction(r.reaction!, i, total), "info", "lightning");
+        api.announce(t.reactionAnnounce(r.reaction!, i < total));
       }
       if (i >= total) {
         setPhase("over");
-        const t = tally(puzzle, state);
+        const tl = tally(puzzle, state);
         timers.current.push(
           window.setTimeout(() => {
             play("jingle");
-            api.feedback(t.best === null ? `Done. Score ${t.score}.` : `Best ${t.best} ms. Score ${t.score}.`, "success", "check-circle");
+            api.feedback(t.done(tl.best, tl.score), "success", "check-circle");
             api.onSolved(state);
           }, 700),
         );
@@ -80,16 +95,24 @@ export default function FlinchBoard({ puzzle, initialState, disabled, mode, api 
     setLast(null);
     armedAt.current = performance.now();
     play("tick");
-    api.announce(`Round ${i + 1}. Wait for the change.`);
+    api.announce(t.armAnnounce(i + 1));
     const delay = puzzle.delays[i];
     timers.current.push(
       window.setTimeout(() => {
         setPhase("go");
-        api.announce("Now.");
+        api.announce(t.goAnnounce);
       }, delay),
     );
     timers.current.push(window.setTimeout(() => record({ tapAt: null, reaction: null }), delay + puzzle.window + 50));
   }, [api, puzzle, record, total]);
+
+  // Auto-start: after a round's result the next one arms itself (tap to skip). Paused or locked: no
+  // countdown; it starts again from the full wait once play resumes.
+  useEffect(() => {
+    if (phase !== "result" || disabled) return;
+    const id = window.setTimeout(arm, autoStartMs);
+    return () => window.clearTimeout(id);
+  }, [phase, disabled, arm, autoStartMs, rounds.length]);
 
   const press = useCallback(
     (at: number) => {
@@ -129,29 +152,25 @@ export default function FlinchBoard({ puzzle, initialState, disabled, mode, api 
   }, [api, arm, disabled, phase, rounds.length]);
 
   useEffect(() => {
-    api.feedback(
-      mode === "tutorial"
-        ? "Tap to arm, then tap the moment the pad turns blue."
-        : `Best of ${total}. Early taps cost ${FALSE_START_PENALTY}.`,
-      "info",
-      "hand-pointing",
-    );
+    api.feedback(mode === "tutorial" ? t.tutorial : t.intro(total, FALSE_START_PENALTY), "info", "hand-pointing");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const go = phase === "go";
+  const armed = phase === "armed";
+  const counting = phase === "result" && !disabled;
   const early = last && classify(puzzle.delays[rounds.length - 1], last.tapAt, puzzle.window) === "early";
   const look = go
-    ? { bg: "var(--world)", fg: INK, icon: "lightning", big: "Tap!", small: "Now" }
-    : phase === "armed"
-      ? { bg: "var(--surface)", fg: "var(--text)", icon: "hand-palm", big: "Wait", small: "Tap when it turns blue" }
+    ? { bg: "var(--world)", fg: INK, icon: "lightning", big: t.go, small: t.goSmall }
+    : armed
+      ? { bg: "var(--surface)", fg: "var(--text)", icon: "hand-palm", big: t.wait, small: t.waitSmall }
       : phase === "over"
         ? {
             bg: "var(--surface-raised)",
             fg: "var(--text)",
             icon: "flag-checkered",
             big: `${tally(puzzle, { rounds }).score}`,
-            small: "Score",
+            small: t.score,
           }
         : last
           ? last.reaction !== null
@@ -160,29 +179,35 @@ export default function FlinchBoard({ puzzle, initialState, disabled, mode, api 
                 fg: "var(--text)",
                 icon: "lightning",
                 big: `${last.reaction} ms`,
-                small: "Tap for the next round",
+                small: t.nextSoon,
               }
             : {
                 bg: "var(--surface-raised)",
                 fg: "var(--text)",
                 icon: early ? "warning" : "timer",
-                big: early ? "Too soon" : "Too slow",
-                small: "Tap for the next round",
+                big: early ? t.tooSoon : t.tooSlow,
+                small: t.nextSoon,
               }
           : {
               bg: "var(--surface-raised)",
               fg: "var(--text)",
               icon: "hand-tap",
-              big: "Ready",
-              small: `Tap to start round ${rounds.length + 1}`,
+              big: t.ready,
+              small: t.readySmall(rounds.length + 1),
             };
 
+  // Frame: dashed while waiting, a thick solid ring on "Tap!" (shape cue on top of colour and text).
+  const frame = go ? `inset 0 0 0 8px ${INK}` : "";
   return (
     <div className="flex w-[min(358px,calc(100vw-36px))] flex-col gap-3 rounded-[20px] p-3" style={{ background: "var(--board-bg)" }}>
+      <style href="spuzl-flinch" precedence="default">
+        {CSS}
+      </style>
       <button
         type="button"
         aria-label={`${look.big}. ${look.small}`}
         aria-live="off"
+        data-phase={phase}
         disabled={disabled || phase === "over"}
         onPointerDown={(e) => {
           e.preventDefault();
@@ -198,21 +223,37 @@ export default function FlinchBoard({ puzzle, initialState, disabled, mode, api 
         style={{
           background: look.bg,
           color: look.fg,
-          boxShadow:
-            early && phase === "result"
-              ? "inset 0 0 0 3px var(--danger), 0 6px 0 var(--depth)"
-              : go
-                ? "0 6px 0 var(--world-depth)"
-                : "0 6px 0 var(--depth)",
+          boxShadow: [
+            early && phase === "result" ? "inset 0 0 0 3px var(--danger)" : frame,
+            go ? "0 6px 0 var(--world-depth)" : "0 6px 0 var(--depth)",
+          ]
+            .filter(Boolean)
+            .join(", "),
           touchAction: "manipulation",
         }}
       >
         {early && phase === "result" && <span aria-hidden className="hatch absolute inset-0" />}
-        <Icon name={look.icon} size={64} className="relative" />
-        <span className="font-display relative text-[32px] font-black">{look.big}</span>
+        {armed && (
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-3 rounded-[20px] border-2 border-dashed"
+            style={{ borderColor: "var(--line)" }}
+          />
+        )}
+        <Icon name={look.icon} size={go ? 96 : 64} className="relative" />
+        <span className={`font-display relative font-black ${go ? "text-[48px] uppercase" : "text-[32px]"}`}>{look.big}</span>
         <span className="relative text-[15px] font-medium" style={{ color: go ? INK : "var(--text-muted)" }}>
           {look.small}
         </span>
+        {counting && (
+          <span aria-hidden className="absolute inset-x-6 bottom-4 h-1 overflow-hidden rounded-full" style={{ background: "var(--line)" }}>
+            <span
+              key={rounds.length}
+              className="flinch-fill block h-full w-full rounded-full"
+              style={{ background: "var(--text-muted)", ["--flinch-wait" as string]: `${autoStartMs}ms` }}
+            />
+          </span>
+        )}
       </button>
       <ol
         className="m-0 grid list-none gap-1.5 p-0"
