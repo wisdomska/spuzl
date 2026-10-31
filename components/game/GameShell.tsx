@@ -41,6 +41,8 @@ export interface GameShellProps<P, St> {
   locked?: boolean;
   /** a key that changes per puzzle so the board remounts (free play next puzzle) */
   puzzleKey?: string | number;
+  /** extra props passed straight to the board (e.g. `ghost` for Ghost Race) */
+  extra?: Record<string, unknown>;
 }
 
 interface FeedbackState {
@@ -68,6 +70,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
     strip,
     locked,
     puzzleKey,
+    extra,
   } = props;
   const world = WORLD_BY_ID[meta.world];
   const relaxed = useSettings((s) => s.relaxed);
@@ -163,9 +166,10 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   }, [hints, requestHint, solved]);
 
   // Hint controls registered by the board call into the shell.
-  const shownControls = controls.map((c) =>
-    c.id === "hint" ? { ...c, onPress: askHint, disabled: hints <= 0 || solved || c.disabled } : c,
-  );
+  // No hint source (Duels, Party Races): the Hint control is hidden rather than dead.
+  const shownControls = controls
+    .filter((c) => c.id !== "hint" || requestHint)
+    .map((c) => (c.id === "hint" ? { ...c, onPress: askHint, disabled: hints <= 0 || solved || c.disabled } : c));
 
   const style = {
     "--world": world.color,
@@ -212,6 +216,8 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
       {/* 4 Board slot */}
       <main className="relative z-0 flex justify-center p-[18px]" aria-label={`${meta.name} board`}>
         <Board
+          {...extra}
+          extra={extra}
           key={puzzleKey}
           puzzle={puzzle}
           mode={mode}

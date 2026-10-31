@@ -210,6 +210,10 @@ import {
   XCircle,
   XLogo,
   TiktokLogo,
+  // multiplayer
+  ArrowFatLinesDown,
+  BellRinging,
+  ClockCountdown,
 } from "@phosphor-icons/react/dist/ssr";
 import type { Icon } from "@phosphor-icons/react";
 
@@ -425,4 +429,8 @@ export const ICONS: Record<string, Icon> = {
   "instagram-logo": InstagramLogo,
   "tiktok-logo": TiktokLogo,
   "x-logo": XLogo,
+  // multiplayer
+  "arrow-fat-lines-down": ArrowFatLinesDown,
+  "bell-ringing": BellRinging,
+  "clock-countdown": ClockCountdown,
 };
