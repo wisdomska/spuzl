@@ -89,4 +89,27 @@ describe("api: daily clear flow", () => {
     const fin = await g.api(`/api/v1/attempts/${s.data.attemptId}/finish`, { json: { state, activeMs: 6100, mistakes: 0 } });
     expect(fin.data.reward).toMatchObject({ xp: 10, sparks: 5 });
   });
+
+  it("spends Shop hint packs only after the 3 free hints, and only in free play", async () => {
+    const g = await guest(uniq("hint_"));
+    const s = await g.api("/api/v1/attempts", { json: { game: "crownfall", mode: "free", difficulty: "easy" } });
+    expect(s.data.hintsBanked).toBe(0);
+    const hint = () => g.api(`/api/v1/attempts/${s.data.attemptId}/hint`, { json: { state: null } });
+    for (let i = 0; i < 3; i++) expect((await hint()).status).toBe(200);
+    expect((await hint()).status).toBe(429); // free hints used, nothing banked
+
+    await admin().from("players").update({ practice_hints: 1 }).eq("id", g.userId);
+    expect((await hint()).status).toBe(200); // spends the banked hint
+    expect((await hint()).status).toBe(429);
+    const { data } = await admin().from("players").select("practice_hints").eq("id", g.userId).single();
+    expect(data!.practice_hints).toBe(0);
+
+    // The ranked Daily never uses banked hints.
+    await admin().from("players").update({ practice_hints: 5 }).eq("id", g.userId);
+    const d = await g.api("/api/v1/attempts", { json: { game: "crownfall", mode: "daily" } });
+    expect(d.data.hintsBanked ?? 0).toBe(0);
+    const dh = () => g.api(`/api/v1/attempts/${d.data.attemptId}/hint`, { json: { state: null } });
+    for (let i = 0; i < 3; i++) expect((await dh()).status).toBe(200);
+    expect((await dh()).status).toBe(429);
+  });
 });

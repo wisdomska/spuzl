@@ -72,12 +72,13 @@ The first limit in production will be the Supabase free tier's shared compute. W
 
 ## Known gaps (not blocking release)
 
+Resolved after this report was first written: Shop hint packs now extend the 3 free hints in free play and the archive (never the ranked Daily). A fresh database also lost the Realtime match-channel grant; that is fixed by migration `20261104000001`.
+
 - **Clue Cave:** answers ship to the client scrambled, not hidden. An answer-reveal endpoint would close this.
 - **Rage Ridge:** the shell timer and the simulation clock can differ by a few hundred ms.
 - **Custom word content:** the guess route should look up puzzles by id, so that admin-scheduled custom word content verifies.
 - **Board themes:** equipped board themes are not yet applied to boards.
 - **Crew Clash:** winners are not written at week end.
 - **Deep links:** `/duel?friend=` and `/party?crew=` are not handled yet.
-- **Hint packs:** the hint-pack purchase route does not spend hints yet.
 - **Shop catalogue:** it has fewer hats than the design frame (art needed).
 - **Google sign-in:** it needs the Google provider enabled in Supabase (owner step).

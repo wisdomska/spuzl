@@ -112,6 +112,8 @@ export interface StartRes {
   resumed: boolean;
   activeMs: number;
   hints: number;
+  /** Shop hint packs usable after the 3 free hints (free play and archive only) */
+  hintsBanked?: number;
   seed?: string | null;
   date: string | null;
   difficulty: string;

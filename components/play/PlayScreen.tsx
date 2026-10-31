@@ -301,7 +301,7 @@ export function PlayScreen({
           mode={mode === "archive" ? "archive" : mode}
           label={label}
           initialState={attempt.state ?? undefined}
-          hintsLeft={Math.max(0, 3 - (attempt.hints ?? 0))}
+          hintsLeft={Math.max(0, 3 - (attempt.hints ?? 0)) + (attempt.hintsBanked ?? 0)}
           requestHint={hint}
           onMove={onMove}
           onSolved={onSolved}

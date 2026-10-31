@@ -157,8 +157,19 @@ export async function startAttempt(admin: SupabaseClient, playerId: string, ref:
     resumed: false,
     activeMs: 0,
     hints: 0,
+    // Hint packs from the Shop extend the 3 free hints in free play and the archive (never the ranked Daily).
+    hintsBanked: usesBankedHints(ref.mode) ? await bankedHints(admin, playerId) : 0,
     seed,
   };
+}
+
+/** Free hints per puzzle before banked (bought) hints are spent. */
+export const FREE_HINTS = 3;
+const usesBankedHints = (mode: Mode) => mode === "free" || mode === "archive";
+
+async function bankedHints(admin: SupabaseClient, playerId: string): Promise<number> {
+  const { data } = await admin.from("players").select("practice_hints").eq("id", playerId).maybeSingle();
+  return data?.practice_hints ?? 0;
 }
 
 interface AttemptRow {
@@ -207,11 +218,18 @@ export async function saveAttempt(admin: SupabaseClient, playerId: string, id: s
 export async function hintFor(admin: SupabaseClient, playerId: string, id: string, state: unknown): Promise<Hint | null> {
   const a = await getAttempt(admin, playerId, id);
   if (a.status !== "in_progress") throw new ApiError(409, "attempt_closed");
-  if (a.hints >= 3) throw new ApiError(429, "no_hints_left");
+  const banked = a.hints >= FREE_HINTS;
+  if (banked && !usesBankedHints(a.mode)) throw new ApiError(429, "no_hints_left");
   const logic = await loadLogic(a.game_id);
   if (!logic.hint) return null;
   const l = await loadForAttempt(admin, a);
   const h = logic.hint(l.puzzle, l.solution, state);
+  if (h && banked) {
+    // Past the free hints: spend one from the Shop hint packs, or stop.
+    const { data: spent, error } = await admin.rpc("svc_spend_practice_hint", { p_player: playerId });
+    if (error) throw error;
+    if (!spent) throw new ApiError(429, "no_hints_left");
+  }
   if (h)
     await admin
       .from("attempts")
