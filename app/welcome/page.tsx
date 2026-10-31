@@ -18,7 +18,7 @@ import { formatShort } from "@/lib/format";
 import { play, duck } from "@/lib/audio";
 import { PATTERNS, haptic } from "@/lib/haptics";
 
-type Step = "age" | "under13" | "tutorial" | "firstclear" | "nickname";
+type Step = "age" | "under13" | "start" | "tutorial" | "firstclear" | "nickname";
 type Age = "13-15" | "16-17" | "18+";
 
 const AGES: { v: Age; t: string; d: string }[] = [
@@ -50,6 +50,13 @@ const IDEAS = [
 ];
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
+/** O2 How to start: nobody is forced into the tutorial. */
+const STARTS = [
+  { id: "tutorial", icon: "graduation-cap", t: "Show me how", d: "A 30-second Crownfall lesson. Earns your first XP, Sparks and streak." },
+  { id: "pick", icon: "squares-four", t: "Pick a game", d: "Make your Spuz, then choose any of the 51 games." },
+  { id: "jump", icon: "lightning", t: "Jump straight in", d: "Make your Spuz and go straight to the Grid." },
+] as const;
+
 export default function Welcome() {
   const router = useRouter();
   const qc = useQueryClient();
@@ -65,6 +72,8 @@ export default function Welcome() {
   const t0 = useRef<number | null>(null);
   const clear = useRef<{ state: CrownfallState; ms: number } | null>(null);
   const [clearMs, setClearMs] = useState(0);
+  // Where the player lands after making their Spuz: the Grid, or All games when they chose to pick one.
+  const [dest, setDest] = useState<"/" | "/library">("/");
 
   const a = analyze(TUTORIAL_PUZZLE, cells);
   const rules = [
@@ -115,10 +124,10 @@ export default function Welcome() {
         const s = await startAttempt({ game: "crownfall", mode: "tutorial" });
         await finishAttempt(s.attemptId, { state: clear.current.state, activeMs: clear.current.ms, mistakes: 0 });
       }
-      writeOnboarding({ tutorialDone: true });
+      writeOnboarding({ tutorialDone: !!clear.current });
       qc.removeQueries({ queryKey: ["me"] });
       qc.removeQueries({ queryKey: ["today"] });
-      router.replace("/");
+      router.replace(dest);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Something went wrong. Try again.";
       setError(msg === "nickname_taken" ? "That name is taken." : msg);
@@ -126,7 +135,7 @@ export default function Welcome() {
     }
   };
 
-  const progress = { age: 1, under13: 1, tutorial: 2, firstclear: 3, nickname: 4 }[step];
+  const progress = { age: 1, under13: 1, start: 2, tutorial: 3, firstclear: 3, nickname: 4 }[step];
 
   return (
     <main className="safe-top bg-bg relative mx-auto flex min-h-dvh max-w-[560px] flex-col overflow-hidden">
@@ -188,7 +197,7 @@ export default function Welcome() {
               disabled={!age}
               onClick={() => {
                 writeOnboarding({ ageBand: age! });
-                setStep("tutorial");
+                setStep("start");
               }}
             >
               Continue
@@ -209,10 +218,60 @@ export default function Welcome() {
           </Screen>
         )}
 
+        {step === "start" && (
+          <Screen key="start">
+            <Progress n={progress} />
+            <div className="flex items-end gap-3">
+              <Spuz mood="wave" size={96} decorative />
+              <h1 className="font-display mb-2 text-[28px] leading-[1.1] font-black tracking-[-0.02em] text-balance">
+                How do you want to start?
+              </h1>
+            </div>
+            <div className="flex flex-col gap-2.5">
+              {STARTS.map((o) => (
+                <button
+                  key={o.id}
+                  type="button"
+                  onClick={() => {
+                    if (o.id === "tutorial") {
+                      setDest("/");
+                      setStep("tutorial");
+                    } else {
+                      setDest(o.id === "pick" ? "/library" : "/");
+                      setStep("nickname");
+                    }
+                  }}
+                  className="toy bg-surface-raised flex min-h-[76px] items-center gap-3.5 rounded-[20px] px-4 py-3 text-left"
+                  style={{ boxShadow: "0 5px 0 var(--depth)" }}
+                >
+                  <span className="bg-surface flex size-12 flex-none items-center justify-center rounded-[14px]">
+                    <Icon name={o.icon} size={24} className="text-accent" />
+                  </span>
+                  <span className="flex min-w-0 flex-col gap-0.5">
+                    <span className="font-display text-[17px] font-extrabold">{o.t}</span>
+                    <span className="text-muted text-[14px] leading-snug">{o.d}</span>
+                  </span>
+                  <Icon name="caret-right" size={18} className="text-muted ml-auto flex-none" />
+                </button>
+              ))}
+            </div>
+            <p className="text-muted mt-auto text-center text-[14px]">You can learn any game later from its Help button.</p>
+          </Screen>
+        )}
+
         {step === "tutorial" && (
           <Screen key="tutorial">
             <Progress n={progress} />
-            <h1 className="font-display text-logic text-[24px] font-black">Crownfall</h1>
+            <div className="flex items-center justify-between gap-3">
+              <h1 className="font-display text-logic text-[24px] font-black">Crownfall</h1>
+              <button
+                type="button"
+                onClick={() => setStep("nickname")}
+                className="text-muted min-h-11 px-2 text-[15px] font-semibold underline-offset-4 hover:underline"
+              >
+                Skip
+              </button>
+            </div>
             <ul className="flex flex-col gap-2">
               {rules.map((r) => (
                 <li

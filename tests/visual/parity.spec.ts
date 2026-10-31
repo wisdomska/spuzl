@@ -47,10 +47,11 @@ test.beforeAll(async ({ browser }) => {
     // local builds have no /_vercel analytics endpoints; anything else failing is a real error
     if (r.status() >= 400 && !new URL(r.url()).pathname.startsWith("/_vercel/")) errors.push(`${r.status()} ${r.url()}`);
   });
-  // First run: age gate, the 4 × 4 tutorial board, nickname.
+  // First run: age gate, the start choice (tutorial), the 4 × 4 tutorial board, nickname.
   await page.goto("/welcome");
   await page.getByRole("radio", { name: /18 or older/ }).click();
   await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: /Show me how/ }).click();
   for (const [r, c] of [
     [0, 1],
     [1, 3],
