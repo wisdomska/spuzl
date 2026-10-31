@@ -69,6 +69,6 @@
   "author": "wisdomska(senya)",
   "license": "UNLICENSED",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   }
 }
