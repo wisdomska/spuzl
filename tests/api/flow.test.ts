@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { admin, guest, uniq } from "./helpers";
+import { TUTORIAL_PUZZLE, TUTORIAL_SOLUTION } from "@/games/crownfall/tutorial";
 
 /** Full solo loop through the real API: guest → profile → Daily → finish → rewards, streak, results. */
 describe("api: daily clear flow", () => {
@@ -136,5 +137,21 @@ describe("api: daily clear flow", () => {
     const r = await g.api(`/api/v1/attempts/${s.data.attemptId}/hint`, { json: {} });
     expect(r.status, JSON.stringify(r.data)).toBe(200);
     expect(r.data.hint?.text).toBeTruthy();
+  });
+
+  it("counts the onboarding lesson as today's first clear (SPZ-05)", async () => {
+    const g = await guest(uniq("ls_"));
+    const start = await g.api("/api/v1/attempts", { json: { game: "crownfall", mode: "tutorial" } });
+    expect(start.status).toBe(200);
+    const n = TUTORIAL_PUZZLE.size;
+    const state = new Array(n * n).fill(0);
+    TUTORIAL_SOLUTION.forEach((c: number, r: number) => (state[r * n + c] = 2));
+    const fin = await g.api(`/api/v1/attempts/${start.data.attemptId}/finish`, { json: { state, activeMs: 8000, mistakes: 0 } });
+    expect(fin.data).toMatchObject({ ok: true, status: "cleared" });
+    expect(fin.data.streak.current).toBe(1);
+    const me = await g.api("/api/v1/me");
+    expect(me.data.streak.current).toBe(1);
+    expect(me.data.today.counted).toBe(1);
+    expect(me.data.today.cleared).toEqual({}); // no Daily is marked done by the lesson
   });
 });

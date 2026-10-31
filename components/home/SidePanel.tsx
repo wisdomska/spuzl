@@ -34,7 +34,7 @@ export function SidePanel() {
   const ready = (id: string) => today.data?.games.find((g) => g.id === id)?.ready ?? id === "crownfall";
   const next = nextDaily(cleared, ready);
   const nextMeta = next ? GAME_BY_ID[next] : null;
-  const done = LAUNCH_IDS.filter((id) => cleared[id] !== undefined).length;
+  const done = Math.max(LAUNCH_IDS.filter((id) => cleared[id] !== undefined).length, d?.today.counted ?? 0);
   const online = (friends.data?.friends ?? []).filter((f) => f.presence.online).slice(0, 6);
   const pct = d ? Math.round((d.xpInto / Math.max(1, d.xpNeed)) * 100) : 0;
 

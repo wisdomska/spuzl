@@ -47,7 +47,8 @@ export function HomeScreen() {
   const featuredDone = LAUNCH_IDS.filter((id) => cleared[id] !== undefined).length;
   const hour = now === null ? 0 : new Date(now).getHours();
   const streak = me.data?.streak.current ?? 0;
-  const clearedToday = Object.keys(cleared).length > 0;
+  const counted = Math.max(featuredDone, me.data?.today.counted ?? 0);
+  const clearedToday = Object.keys(cleared).length > 0 || counted > 0;
   const atRisk = streak > 0 && !clearedToday && hour >= 19;
   const allDone = featuredDone >= LAUNCH_IDS.length;
   const mood = allDone ? "party" : atRisk ? "sleepy" : streak >= 7 ? "fire" : "idle";
@@ -122,7 +123,7 @@ export function HomeScreen() {
           )}
           <div className="flex items-center justify-between px-1">
             <p className="text-[15px] font-semibold">
-              Today <span className="num text-accent">{featuredDone}</span>
+              Today <span className="num text-accent">{counted}</span>
               <span className="text-muted"> of {LAUNCH_IDS.length} cleared</span>
             </p>
           </div>

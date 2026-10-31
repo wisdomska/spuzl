@@ -69,6 +69,9 @@ export async function loadMe(user: User, player: PlayerRow, admin: SupabaseClien
       cleared: Object.fromEntries((cleared ?? []).map((c) => [c.game_id, c.time_ms])),
       featured: LAUNCH_IDS.length,
       featuredCleared: (cleared ?? []).filter((c) => LAUNCH_IDS.includes(c.game_id)).length,
+      // Today's clears as the player sees them: the onboarding lesson lights the streak and counts as the
+      // first clear of the day (SPZ-05), without marking any Daily as done.
+      counted: Math.max((cleared ?? []).filter((c) => LAUNCH_IDS.includes(c.game_id)).length, streak?.last_clear_date === today ? 1 : 0),
     },
   } as Me;
 }
