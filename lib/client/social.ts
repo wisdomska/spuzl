@@ -8,6 +8,9 @@ import type { Scope } from "@/lib/meta";
 import type { Zone } from "@/lib/leagues";
 
 // ---------- types (mirror the route responses) ----------
+/** /api/v1/me also returns these profile fields (see app/api/v1/me/route.ts). */
+export type MeExtra = { hide_activity: boolean; country: string | null; city: string | null };
+
 export interface CardDTO {
   id: string;
   nickname: string;
@@ -335,7 +338,8 @@ export const useCreateCup = () =>
 export const useJoinCup = () => useAct((code: string) => api<{ id: string }>("/api/v1/school-cup/join", { json: { code } }), [["cups"]]);
 export const usePatchProfile = () =>
   useAct(
-    (input: { settings?: Record<string, unknown>; hideActivity?: boolean }) => api("/api/v1/profile", { method: "PATCH", json: input }),
+    (input: { settings?: Record<string, unknown>; hideActivity?: boolean; country?: string | null; city?: string | null }) =>
+      api("/api/v1/profile", { method: "PATCH", json: input }),
     [["me"]],
   );
 

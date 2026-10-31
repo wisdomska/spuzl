@@ -417,6 +417,13 @@ select {
   height: 720px;
   transform-origin: top left;
 }
+/* World-coloured text: fill on dark, the AA ink token on light (README colour rules). */
+.world-text {
+  color: var(--wc);
+}
+[data-theme="light"] .world-text {
+  color: var(--wi);
+}
 /* SpuzWear: a worn hat replaces the tuft (Spuz draws the tuft as the first child of its body layer).
    Path: root > hop layer > body > animated body > tuft. */
 .spuz-no-tuft > .spuz-root > div:nth-child(2) > div:nth-child(3) > div:first-child > div:first-child {
