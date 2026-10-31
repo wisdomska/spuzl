@@ -387,3 +387,29 @@ select {
 [data-motion="reduce"] .ambient {
   animation: none !important;
 }
+
+/* ---------- Admin console (/admin) ----------
+   Utilitarian, same tokens, denser (design: SPUZL Admin). No Spuz, no motion beyond 150 ms state changes.
+   Tints for calendar cells and chart bars, defined for both themes. */
+.admin {
+  --admin-ok-tint: #1e2a16;
+  --admin-bar: #3a4466;
+  --admin-canvas: #0a0b14;
+}
+[data-theme="light"] .admin {
+  --admin-ok-tint: #e7f2d8;
+  --admin-bar: #c3c9dc;
+  --admin-canvas: #eceef4;
+}
+.admin button,
+.admin a,
+.admin [role="tab"] {
+  transition:
+    background-color 150ms var(--ease-out),
+    color 150ms var(--ease-out),
+    box-shadow 150ms var(--ease-out);
+}
+[data-motion="reduce"] .admin button,
+[data-motion="reduce"] .admin a {
+  transition: none;
+}
