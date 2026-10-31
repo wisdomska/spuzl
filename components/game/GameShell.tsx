@@ -8,6 +8,8 @@ import { WORLD_BY_ID } from "@/lib/catalog";
 import { IconButton } from "@/components/ui/IconButton";
 import { Icon } from "@/components/ui/Icon";
 import { useSettings } from "@/lib/settings/store";
+import { useMe } from "@/lib/client/api";
+import { BOARD_THEMES } from "@/lib/gamification/cosmetics";
 import { play } from "@/lib/audio";
 import { formatClock } from "@/lib/format";
 import { PauseOverlay } from "./PauseOverlay";
@@ -41,6 +43,8 @@ export interface GameShellProps<P, St> {
   locked?: boolean;
   /** a key that changes per puzzle so the board remounts (free play next puzzle) */
   puzzleKey?: string | number;
+  /** extra props passed straight to the board (e.g. `ghost` for Ghost Race) */
+  extra?: Record<string, unknown>;
 }
 
 interface FeedbackState {
@@ -51,9 +55,30 @@ interface FeedbackState {
 }
 
 export function GameShell<P, St>(props: GameShellProps<P, St>) {
-  const { meta, Board, puzzle, mode, label, initialState, hintsLeft = 3, requestHint, onSolved, onFailed, onMove, onExit, onHelp, strip, locked, puzzleKey } = props;
+  const {
+    meta,
+    Board,
+    puzzle,
+    mode,
+    label,
+    initialState,
+    hintsLeft = 3,
+    requestHint,
+    onSolved,
+    onFailed,
+    onMove,
+    onExit,
+    onHelp,
+    strip,
+    locked,
+    puzzleKey,
+    extra,
+  } = props;
   const world = WORLD_BY_ID[meta.world];
   const relaxed = useSettings((s) => s.relaxed);
+  // Equipped Shop board theme: colours the backdrop and frame around the board, never the cells.
+  const boardTheme = useMe().data?.boardTheme ?? null;
+  const theme = boardTheme ? BOARD_THEMES[boardTheme] : undefined;
 
   const [elapsed, setElapsed] = useState(0);
   const [started, setStarted] = useState(false);
@@ -73,10 +98,11 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   const running = started && !paused && !solved;
   useEffect(() => {
     if (!running) return;
-    clock.current.since = performance.now();
-    const id = setInterval(() => setElapsed(clock.current.base + performance.now() - clock.current.since), 200);
+    const c = clock.current; // one mutable clock for the shell's lifetime
+    c.since = performance.now();
+    const id = setInterval(() => setElapsed(c.base + performance.now() - c.since), 200);
     return () => {
-      clock.current.base += performance.now() - clock.current.since;
+      c.base += performance.now() - c.since;
       clearInterval(id);
     };
   }, [running]);
@@ -90,18 +116,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
     return () => document.removeEventListener("visibilitychange", onVis);
   }, [started, solved]);
 
-  // Fresh puzzle (free play next): reset per-puzzle state.
-  useEffect(() => {
-    clock.current = { base: 0, since: 0 };
-    setElapsed(0);
-    setStarted(false);
-    setSolved(false);
-    setHint(null);
-    setFeedback({ text: "", tone: "info", n: 0 });
-    mistakes.current = 0;
-    hintsUsed.current = 0;
-    stateRef.current = initialState;
-  }, [puzzleKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  // A new puzzle remounts the shell (parents pass key={puzzleKey}), which resets all per-puzzle state.
 
   const api = useMemo<BoardApi<St>>(
     () => ({
@@ -156,24 +171,37 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   }, [hints, requestHint, solved]);
 
   // Hint controls registered by the board call into the shell.
-  const shownControls = controls.map((c) => (c.id === "hint" ? { ...c, onPress: askHint, disabled: hints <= 0 || solved || c.disabled } : c));
+  // No hint source (Duels, Party Races): the Hint control is hidden rather than dead.
+  const shownControls = controls
+    .filter((c) => c.id !== "hint" || requestHint)
+    .map((c) => (c.id === "hint" ? { ...c, onPress: askHint, disabled: hints <= 0 || solved || c.disabled } : c));
 
-  const style = { "--world": world.color, "--world-ink": world.ink, "--world-depth": `color-mix(in srgb, ${world.color} 55%, #0E0F1A)` } as CSSProperties;
+  const style = {
+    "--world": world.color,
+    "--world-ink": world.ink,
+    "--world-depth": `color-mix(in srgb, ${world.color} 55%, #0E0F1A)`,
+  } as CSSProperties;
 
   return (
-    <div className="relative mx-auto flex min-h-dvh w-full max-w-[560px] flex-col bg-bg" style={style} data-world={meta.world}>
+    <div className="bg-bg relative mx-auto flex min-h-dvh w-full max-w-[560px] flex-col" style={style} data-world={meta.world}>
       {/* 1 Top bar */}
       <header className="safe-top relative z-10 flex items-center gap-2 px-3 pb-2 lg:pt-6">
         <IconButton icon="arrow-left" label="Back" onClick={onExit} />
-        <div className="flex flex-1 justify-center">
+        <div className="flex min-w-0 flex-1 justify-center">
           {!relaxed && (
-            <div className="num flex h-11 items-center gap-2 rounded-[14px] bg-surface px-4 text-[22px] font-semibold" role="timer" aria-label={`Time ${formatClock(elapsed)}`}>
-              <Icon name="timer" size={18} className="text-muted" />
+            <div
+              className="num bg-surface flex h-11 items-center gap-2 rounded-[14px] px-4 text-[22px] font-semibold max-[359px]:px-2.5 max-[359px]:text-[19px]"
+              role="timer"
+              aria-label={`Time ${formatClock(elapsed)}`}
+            >
+              <Icon name="timer" size={18} className="text-muted max-[359px]:hidden" />
               {formatClock(elapsed)}
             </div>
           )}
         </div>
-        {requestHint && <IconButton icon="lightbulb" label="Hints" tone="gold" badge={hints} onClick={askHint} disabled={hints <= 0 || solved} />}
+        {requestHint && (
+          <IconButton icon="lightbulb" label="Hints" tone="gold" badge={hints} onClick={askHint} disabled={hints <= 0 || solved} />
+        )}
         <IconButton icon="question" label="Help" onClick={onHelp} />
         <IconButton icon="pause" label="Pause" onClick={() => setPaused(true)} disabled={solved} />
       </header>
@@ -183,14 +211,31 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
 
       {/* 3 Title + rule */}
       <div className="flex items-baseline justify-between gap-3 px-5 pt-1.5 pb-3.5">
-        <h1 className="font-display text-[24px] font-black text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]">{meta.name}</h1>
-        <span className="num text-[14px] font-medium whitespace-nowrap text-muted">{label}</span>
+        <h1 className="font-display text-[24px] font-black text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]">
+          {meta.name}
+        </h1>
+        <span className="num text-muted text-[14px] font-medium whitespace-nowrap">{label}</span>
       </div>
-      <p className="px-[18px] text-[15px] leading-[1.4] text-muted">{meta.rule}</p>
+      <p className="text-muted px-[18px] text-[15px] leading-[1.4]">{meta.rule}</p>
 
       {/* 4 Board slot */}
-      <main className="relative z-0 flex justify-center p-[18px]" aria-label={`${meta.name} board`}>
-        <Board key={puzzleKey} puzzle={puzzle} mode={mode} initialState={initialState} hint={hint} disabled={locked || paused || solved} api={api} />
+      <main
+        className={`relative z-0 flex justify-center p-[18px] ${theme ? "rounded-[26px]" : ""}`}
+        style={theme ? { background: theme.bg, boxShadow: `inset 0 0 0 2px ${theme.mark}` } : undefined}
+        data-board-theme={theme ? boardTheme! : undefined}
+        aria-label={`${meta.name} board`}
+      >
+        <Board
+          {...extra}
+          extra={extra}
+          key={puzzleKey}
+          puzzle={puzzle}
+          mode={mode}
+          initialState={initialState}
+          hint={hint}
+          disabled={locked || paused || solved}
+          api={api}
+        />
       </main>
 
       {/* 5 Feedback line: never overlays the board */}
@@ -202,7 +247,10 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
 
       {/* 6 Controls */}
       {shownControls.length > 0 && (
-        <div className="safe-bottom mt-auto grid gap-2.5 px-4 pt-3.5 pb-7" style={{ gridTemplateColumns: `repeat(${shownControls.length}, minmax(0, 1fr))` }}>
+        <div
+          className="safe-bottom mt-auto grid gap-2.5 px-4 pt-3.5 pb-7"
+          style={{ gridTemplateColumns: `repeat(${shownControls.length}, minmax(0, 1fr))` }}
+        >
           {shownControls.map((c) => (
             <ToolButton key={c.id} c={c} />
           ))}
@@ -231,7 +279,12 @@ export function FeedbackLine({ text, tone, icon }: Omit<FeedbackState, "n">) {
       ? { bg: "var(--danger-tint)", ring: "inset 0 0 0 2px var(--danger)", ic: "var(--danger)", i: icon ?? "warning" }
       : tone === "success"
         ? { bg: "var(--success-tint)", ring: "inset 0 0 0 2px var(--accent)", ic: "var(--accent)", i: icon ?? "check-circle" }
-        : { bg: "var(--surface)", ring: "none", ic: icon === "lightbulb" ? "var(--gold)" : "var(--text-muted)", i: icon ?? "hand-pointing" };
+        : {
+            bg: "var(--surface)",
+            ring: "none",
+            ic: icon === "lightbulb" ? "var(--gold)" : "var(--text-muted)",
+            i: icon ?? "hand-pointing",
+          };
   return (
     <motion.div
       role={tone === "danger" ? "alert" : "status"}
@@ -261,7 +314,11 @@ function ToolButton({ c }: { c: ControlSpec }) {
       disabled={c.disabled}
       aria-pressed={c.active ?? undefined}
       className="toy flex h-16 flex-col items-center justify-center gap-[3px] rounded-[18px]"
-      style={{ background: look.bg, color: look.fg, ["--btn-depth" as string]: look.sh, boxShadow: `0 5px 0 ${look.sh}` }}
+      style={
+        c.disabled
+          ? undefined
+          : { background: look.bg, color: look.fg, ["--btn-depth" as string]: look.sh, boxShadow: `0 5px 0 ${look.sh}` }
+      }
     >
       <Icon name={c.icon} size={22} />
       <span className="text-[13px] font-semibold">{c.label}</span>

@@ -92,12 +92,7 @@ export function hapticsEnabled(s: Settings): boolean {
 export function applyToDocument(s: Settings) {
   if (typeof document === "undefined") return;
   const el = document.documentElement;
-  const theme =
-    s.theme === "system"
-      ? window.matchMedia("(prefers-color-scheme: light)").matches
-        ? "light"
-        : "dark"
-      : s.theme;
+  const theme = s.theme === "system" ? (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark") : s.theme;
   el.dataset.theme = theme;
   if (s.cb === "off") delete el.dataset.cb;
   else el.dataset.cb = s.cb;

@@ -55,6 +55,9 @@ export function supportsVibration() {
 export function haptic(pattern: readonly number[]) {
   if (!enabled || typeof window === "undefined") return;
   window.dispatchEvent(new CustomEvent("spuzl:haptic", { detail: { pattern } }));
+  // Before the first tap browsers block vibrate() and log a console error: skip it quietly.
+  const activation = (navigator as Navigator & { userActivation?: { hasBeenActive: boolean } }).userActivation;
+  if (activation && !activation.hasBeenActive) return;
   try {
     if (supportsVibration()) navigator.vibrate([...pattern]);
     else window.dispatchEvent(new CustomEvent("spuzl:haptic-fallback", { detail: { pattern } }));

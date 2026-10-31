@@ -1,79 +1,184 @@
 /* SPUZL design tokens. Dark is default; [data-theme="light"] and [data-cb="protan|deutan|tritan"] override. */
 :root {
   /* colour */
-  --bg: #0E0F1A; --surface: #171929; --surface-raised: #20233A; --line: #2B2F4A;
-  --text: #F4F5FB; --text-muted: #A2A6C2;
-  --accent: #B8F23A; --accent-depth: #6F9A1C; --on-accent: #0E0F1A;
-  --gold: #FFC93C; --danger: #FF5A5F; --danger-depth: #9E2A2E; --freeze: #6FB6FF;
-  --depth: #0A0B12;            /* toy-button bottom shadow on dark surfaces */
-  --success-tint: #24331A; --danger-tint: #2A1520; --warn-tint: #2A2410;
+  --bg: #0e0f1a;
+  --surface: #171929;
+  --surface-raised: #20233a;
+  --line: #2b2f4a;
+  --text: #f4f5fb;
+  --text-muted: #a2a6c2;
+  --accent: #b8f23a;
+  --accent-depth: #6f9a1c;
+  --on-accent: #0e0f1a;
+  --gold: #ffc93c;
+  --danger: #ff5a5f;
+  --danger-depth: #9e2a2e;
+  --freeze: #6fb6ff;
+  --depth: #0a0b12; /* toy-button bottom shadow on dark surfaces */
+  --success-tint: #24331a;
+  --danger-tint: #2a1520;
+  --warn-tint: #2a2410;
   /* worlds: fill / text-on-light */
-  --w-logic: #8B7CFF;  --w-logic-ink: #5B4BD6;
-  --w-line: #2FD3E0;   --w-line-ink: #0B7F8A;
-  --w-shape: #FF8A3D;  --w-shape-ink: #B4520F;
-  --w-number: #FFD23F; --w-number-ink: #8A6A00;
-  --w-word: #3DDC84;   --w-word-ink: #167A45;
-  --w-clue: #FF6B6B;   --w-clue-ink: #B83232;
-  --w-reflex: #4D8BFF; --w-reflex-ink: #1F5BD6;
-  --w-rage: #FF3B3B;   --w-rage-ink: #B81E1E;
-  --w-board: #F27ADB;  --w-board-ink: #A3348F;   /* Board Bay: chess, draughts, oware, ludo, four up, flip */
+  --w-logic: #8b7cff;
+  --w-logic-ink: #5b4bd6;
+  --w-line: #2fd3e0;
+  --w-line-ink: #0b7f8a;
+  --w-shape: #ff8a3d;
+  --w-shape-ink: #b4520f;
+  --w-number: #ffd23f;
+  --w-number-ink: #8a6a00;
+  --w-word: #3ddc84;
+  --w-word-ink: #167a45;
+  --w-clue: #ff6b6b;
+  --w-clue-ink: #b83232;
+  --w-reflex: #4d8bff;
+  --w-reflex-ink: #1f5bd6;
+  --w-rage: #ff3b3b;
+  --w-rage-ink: #b81e1e;
+  --w-board: #f27adb;
+  --w-board-ink: #a3348f; /* Board Bay: chess, draughts, oware, ludo, four up, flip */
   /* podium + tiers */
-  --pos-1: #FFC93C; --pos-2: #D7DAE8; --pos-3: #E09A5C;
-  --tier-bronze: #C08A4A; --tier-silver: #C9CCDD; --tier-gold: #FFC93C; --tier-prism: #B8F23A;
-  --rule-hatch: repeating-linear-gradient(135deg, rgb(255 90 95 / .45) 0 4px, transparent 4px 9px);
+  --pos-1: #ffc93c;
+  --pos-2: #d7dae8;
+  --pos-3: #e09a5c;
+  --tier-bronze: #c08a4a;
+  --tier-silver: #c9ccdd;
+  --tier-gold: #ffc93c;
+  --tier-prism: #b8f23a;
+  --rule-hatch: repeating-linear-gradient(135deg, rgb(255 90 95 / 0.45) 0 4px, transparent 4px 9px);
 
   /* type */
-  --font-display: "Unbounded", system-ui, sans-serif;  /* 700–900 */
-  --font-ui: "Geist", system-ui, sans-serif;            /* 400–600 */
-  --font-mono: "Geist Mono", ui-monospace, monospace;   /* tabular-nums always */
-  --fs-12: 12px; --fs-14: 14px; --fs-16: 16px; --fs-18: 18px; --fs-20: 20px; --fs-24: 24px;
-  --fs-32: 32px; --fs-44: 44px; --fs-56: 56px; --fs-72: 72px;
+  --font-display: "Unbounded", system-ui, sans-serif; /* 700–900 */
+  --font-ui: "Geist", system-ui, sans-serif; /* 400–600 */
+  --font-mono: "Geist Mono", ui-monospace, monospace; /* tabular-nums always */
+  --fs-12: 12px;
+  --fs-14: 14px;
+  --fs-16: 16px;
+  --fs-18: 18px;
+  --fs-20: 20px;
+  --fs-24: 24px;
+  --fs-32: 32px;
+  --fs-44: 44px;
+  --fs-56: 56px;
+  --fs-72: 72px;
 
   /* spacing (4 pt) */
-  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px; --sp-6: 24px; --sp-8: 32px; --sp-10: 40px; --sp-12: 48px;
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
 
   /* radius */
-  --r-cell: 10px; --r-chip: 12px; --r-icon: 14px; --r-control: 16px; --r-button: 20px; --r-card: 24px; --r-sheet: 32px; --r-pill: 999px;
+  --r-cell: 10px;
+  --r-chip: 12px;
+  --r-icon: 14px;
+  --r-control: 16px;
+  --r-button: 20px;
+  --r-card: 24px;
+  --r-sheet: 32px;
+  --r-pill: 999px;
 
   /* elevation (toy depth, not blur) */
-  --press-depth: 6px; --press-depth-pressed: 1px;
+  --press-depth: 6px;
+  --press-depth-pressed: 1px;
   --shadow-btn: 0 var(--press-depth) 0 var(--depth);
   --shadow-btn-accent: 0 var(--press-depth) 0 var(--accent-depth);
-  --shadow-float: 0 10px 30px rgb(0 0 0 / .45);
+  --shadow-float: 0 10px 30px rgb(0 0 0 / 0.45);
   --focus-ring: 0 0 0 3px var(--surface), 0 0 0 6px var(--text);
 
   /* motion */
-  --ease-out: cubic-bezier(.23, 1, .32, 1);
-  --ease-in-out: cubic-bezier(.77, 0, .175, 1);
-  --spring-press: cubic-bezier(.34, 1.56, .64, 1);   /* Motion: stiffness 600, damping 30 */
-  --spring-party: cubic-bezier(.34, 1.8, .64, 1);    /* Motion: stiffness 300, damping 12 */
-  --dur-instant: 120ms; --dur-pop: 140ms; --dur-fast: 180ms; --dur-ui: 220ms; --dur-shake: 240ms;
-  --dur-move: 320ms; --dur-reward: 600ms; --dur-celebrate: 900ms; --dur-max: 1200ms;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --spring-press: cubic-bezier(0.34, 1.56, 0.64, 1); /* Motion: stiffness 600, damping 30 */
+  --spring-party: cubic-bezier(0.34, 1.8, 0.64, 1); /* Motion: stiffness 300, damping 12 */
+  --dur-instant: 120ms;
+  --dur-pop: 140ms;
+  --dur-fast: 180ms;
+  --dur-ui: 220ms;
+  --dur-shake: 240ms;
+  --dur-move: 320ms;
+  --dur-reward: 600ms;
+  --dur-celebrate: 900ms;
+  --dur-max: 1200ms;
 
   /* z-index */
-  --z-board: 0; --z-hud: 10; --z-strip: 20; --z-dock: 30; --z-sheet: 40; --z-overlay: 50; --z-toast: 60; --z-celebration: 70; --z-system: 80;
+  --z-board: 0;
+  --z-hud: 10;
+  --z-strip: 20;
+  --z-dock: 30;
+  --z-sheet: 40;
+  --z-overlay: 50;
+  --z-toast: 60;
+  --z-celebration: 70;
+  --z-system: 80;
 
   /* layout */
-  --tap-min: 44px; --board-max: 358px; --phone-max: 420px;
+  --tap-min: 44px;
+  --board-max: 358px;
+  --phone-max: 420px;
 }
 
 [data-theme="light"] {
-  --bg: #F5F6FA; --surface: #FFFFFF; --surface-raised: #EEF0F6; --line: #D8DCE8;
-  --text: #12131D; --text-muted: #5A5E78;
-  --accent: #437A00;  /* was #4E8A00: 4.2:1 → 5.2:1 with white */
-  --accent-depth: #2B5000; --on-accent: #FFFFFF;
-  --gold: #8F5E00;    /* was #A86F00: 4.2:1 → 5.6:1 on white */
-  --danger: #C62828; --danger-depth: #8A1C1C; --freeze: #1F6FC2;
-  --depth: #D8DCE8; --success-tint: #E7F2D8; --danger-tint: #FBE6E6; --warn-tint: #FBF1DA;
+  --bg: #f5f6fa;
+  --surface: #ffffff;
+  --surface-raised: #eef0f6;
+  --line: #d8dce8;
+  --text: #12131d;
+  --text-muted: #5a5e78;
+  --accent: #437a00; /* was #4E8A00: 4.2:1 → 5.2:1 with white */
+  --accent-depth: #2b5000;
+  --on-accent: #ffffff;
+  --gold: #8f5e00; /* was #A86F00: 4.2:1 → 5.6:1 on white */
+  --danger: #c62828;
+  --danger-depth: #8a1c1c;
+  --freeze: #1f6fc2;
+  --depth: #d8dce8;
+  --success-tint: #e7f2d8;
+  --danger-tint: #fbe6e6;
+  --warn-tint: #fbf1da;
 }
 
 /* Colour-blind modes swap hues AND turn on glyph/pattern helpers (data-cb also toggles .cb-patterns in components) */
-[data-cb="protan"] { --danger: #FFB000; --accent: #B8F23A; --gold: #FFC93C; --w-clue: #FF9E3D; --w-rage: #FFB000; }
-[data-cb="deutan"] { --danger: #FF7A1A; --accent: #4DD0E1; --accent-depth: #2A8C99; --w-word: #4DD0E1; }
-[data-cb="tritan"] { --danger: #FF4F9A; --gold: #FF9E7A; --w-line: #3DDCC0; --w-reflex: #8B7CFF; }
+[data-cb="protan"] {
+  --danger: #ffb000;
+  --accent: #b8f23a;
+  --gold: #ffc93c;
+  --w-clue: #ff9e3d;
+  --w-rage: #ffb000;
+}
+[data-cb="deutan"] {
+  --danger: #ff7a1a;
+  --accent: #4dd0e1;
+  --accent-depth: #2a8c99;
+  --w-word: #4dd0e1;
+}
+[data-cb="tritan"] {
+  --danger: #ff4f9a;
+  --gold: #ff9e7a;
+  --w-line: #3ddcc0;
+  --w-reflex: #8b7cff;
+}
 
 @media (prefers-reduced-motion: reduce) {
-  :root { --dur-move: 0ms; --dur-shake: 0ms; }
-  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
+  :root {
+    --dur-move: 0ms;
+    --dur-shake: 0ms;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
 }
-.num, [data-num] { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.num,
+[data-num] {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}

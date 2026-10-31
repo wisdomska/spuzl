@@ -16,7 +16,7 @@ Production: https://spuzl.vercel.app · Admin: https://spuzl.vercel.app/admin
 ## Getting started
 
 ```bash
-nvm use            # Node 20+
+nvm use            # Node 22+
 pnpm install
 pnpm supabase start   # local Postgres, Auth and Realtime in Docker
 cp .env.example .env.local   # fill in the values printed by supabase start
@@ -25,17 +25,17 @@ pnpm dev
 
 ## Scripts
 
-| Script | What it does |
-|---|---|
-| `pnpm dev` | Dev server on :3000 |
-| `pnpm build` | Production build |
-| `pnpm check` | Typecheck, lint, format check and unit tests |
-| `pnpm test` / `pnpm test:coverage` | Vitest |
-| `pnpm test:e2e` | Playwright end-to-end |
-| `pnpm test:visual` | Visual parity against `tests/visual/reference` |
-| `pnpm test:db` | pgTAP database tests |
-| `pnpm gen:puzzles` | Generate and schedule Dailies |
-| `pnpm validate:dailies` | Prove every scheduled logic Daily has exactly one solution |
+| Script                             | What it does                                               |
+| ---------------------------------- | ---------------------------------------------------------- |
+| `pnpm dev`                         | Dev server on :3000                                        |
+| `pnpm build`                       | Production build                                           |
+| `pnpm check`                       | Typecheck, lint, format check and unit tests               |
+| `pnpm test` / `pnpm test:coverage` | Vitest                                                     |
+| `pnpm test:e2e`                    | Playwright end-to-end                                      |
+| `pnpm test:visual`                 | Visual parity against `tests/visual/reference`             |
+| `pnpm test:db`                     | pgTAP database tests                                       |
+| `pnpm gen:puzzles`                 | Generate and schedule Dailies                              |
+| `pnpm validate:dailies`            | Prove every scheduled logic Daily has exactly one solution |
 
 ## Layout
 

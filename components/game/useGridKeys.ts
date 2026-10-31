@@ -10,18 +10,38 @@ export function useGridKeys(rows: number, cols: number, onCycle: (i: number) => 
   const [focus, setFocus] = useState(0);
   const onKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      const r = Math.floor(focus / cols), c = focus % cols;
+      const r = Math.floor(focus / cols),
+        c = focus % cols;
       let next = focus;
       switch (e.key) {
-        case "ArrowUp": next = Math.max(0, r - 1) * cols + c; break;
-        case "ArrowDown": next = Math.min(rows - 1, r + 1) * cols + c; break;
-        case "ArrowLeft": next = r * cols + Math.max(0, c - 1); break;
-        case "ArrowRight": next = r * cols + Math.min(cols - 1, c + 1); break;
-        case "Home": next = r * cols; break;
-        case "End": next = r * cols + cols - 1; break;
-        case " ": e.preventDefault(); onCycle(focus); return;
-        case "Enter": e.preventDefault(); (onConfirm ?? onCycle)(focus); return;
-        default: return;
+        case "ArrowUp":
+          next = Math.max(0, r - 1) * cols + c;
+          break;
+        case "ArrowDown":
+          next = Math.min(rows - 1, r + 1) * cols + c;
+          break;
+        case "ArrowLeft":
+          next = r * cols + Math.max(0, c - 1);
+          break;
+        case "ArrowRight":
+          next = r * cols + Math.min(cols - 1, c + 1);
+          break;
+        case "Home":
+          next = r * cols;
+          break;
+        case "End":
+          next = r * cols + cols - 1;
+          break;
+        case " ":
+          e.preventDefault();
+          onCycle(focus);
+          return;
+        case "Enter":
+          e.preventDefault();
+          (onConfirm ?? onCycle)(focus);
+          return;
+        default:
+          return;
       }
       e.preventDefault();
       setFocus(next);

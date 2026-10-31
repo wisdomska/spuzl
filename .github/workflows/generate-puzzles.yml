@@ -1,0 +1,30 @@
+name: Generate puzzles
+
+# Manual fallback. The daily Vercel cron (/api/cron/generate) keeps the 60-day buffer full.
+# Needs SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in the production and preview GitHub environments.
+on:
+  workflow_dispatch:
+    inputs:
+      days:
+        description: Days ahead to fill
+        default: "60"
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [production, preview]
+    environment: ${{ matrix.target }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm gen:puzzles --days ${{ github.event.inputs.days || '60' }}
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

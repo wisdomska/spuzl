@@ -14,15 +14,24 @@
   --color-danger: var(--danger);
   --color-freeze: var(--freeze);
   --color-depth: var(--depth);
-  --color-logic: var(--w-logic);   --color-logic-ink: var(--w-logic-ink);
-  --color-line-lane: var(--w-line); --color-line-lane-ink: var(--w-line-ink);
-  --color-shape: var(--w-shape);   --color-shape-ink: var(--w-shape-ink);
-  --color-number: var(--w-number); --color-number-ink: var(--w-number-ink);
-  --color-word: var(--w-word);     --color-word-ink: var(--w-word-ink);
-  --color-clue: var(--w-clue);     --color-clue-ink: var(--w-clue-ink);
-  --color-reflex: var(--w-reflex); --color-reflex-ink: var(--w-reflex-ink);
-  --color-rage: var(--w-rage);     --color-rage-ink: var(--w-rage-ink);
-  --color-board: var(--w-board);   --color-board-ink: var(--w-board-ink);
+  --color-logic: var(--w-logic);
+  --color-logic-ink: var(--w-logic-ink);
+  --color-line-lane: var(--w-line);
+  --color-line-lane-ink: var(--w-line-ink);
+  --color-shape: var(--w-shape);
+  --color-shape-ink: var(--w-shape-ink);
+  --color-number: var(--w-number);
+  --color-number-ink: var(--w-number-ink);
+  --color-word: var(--w-word);
+  --color-word-ink: var(--w-word-ink);
+  --color-clue: var(--w-clue);
+  --color-clue-ink: var(--w-clue-ink);
+  --color-reflex: var(--w-reflex);
+  --color-reflex-ink: var(--w-reflex-ink);
+  --color-rage: var(--w-rage);
+  --color-rage-ink: var(--w-rage-ink);
+  --color-board: var(--w-board);
+  --color-board-ink: var(--w-board-ink);
 
   --font-display: var(--font-display);
   --font-sans: var(--font-ui);
@@ -50,18 +59,77 @@
   --animate-drop-in: drop-in 420ms var(--spring-party) both;
   --animate-punch: punch 500ms var(--ease-out) both;
   --animate-float-up: float-up 1400ms var(--ease-out) both;
-  @keyframes pop { 50% { transform: scale(1.08); } }
-  @keyframes shake { 16%, 50%, 83% { transform: translateX(-6px); } 33%, 66% { transform: translateX(6px); } }
-  @keyframes drop-in { 0% { transform: translateY(-40px) scale(.8); opacity: 0; } 60% { transform: translateY(4px) scale(1.04); opacity: 1; } 100% { transform: none; } }
-  @keyframes punch { 0% { transform: scale(2.2); opacity: 0; } 40% { transform: scale(.92); opacity: 1; } 100% { transform: scale(1); } }
-  @keyframes float-up { 0% { transform: translateY(6px) scale(.6); opacity: 0; } 20% { transform: none; opacity: 1; } 100% { transform: translateY(-40px); opacity: 0; } }
+  @keyframes pop {
+    50% {
+      transform: scale(1.08);
+    }
+  }
+  @keyframes shake {
+    16%,
+    50%,
+    83% {
+      transform: translateX(-6px);
+    }
+    33%,
+    66% {
+      transform: translateX(6px);
+    }
+  }
+  @keyframes drop-in {
+    0% {
+      transform: translateY(-40px) scale(0.8);
+      opacity: 0;
+    }
+    60% {
+      transform: translateY(4px) scale(1.04);
+      opacity: 1;
+    }
+    100% {
+      transform: none;
+    }
+  }
+  @keyframes punch {
+    0% {
+      transform: scale(2.2);
+      opacity: 0;
+    }
+    40% {
+      transform: scale(0.92);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  @keyframes float-up {
+    0% {
+      transform: translateY(6px) scale(0.6);
+      opacity: 0;
+    }
+    20% {
+      transform: none;
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(-40px);
+      opacity: 0;
+    }
+  }
 }
 
 /* Toy button utility */
 @utility btn-toy {
   border-radius: var(--r-button);
   box-shadow: var(--shadow-btn);
-  transition: transform var(--dur-instant) var(--spring-press), box-shadow var(--dur-instant) var(--spring-press);
-  &:active { transform: translateY(5px) scale(.98); box-shadow: 0 1px 0 var(--depth); }
-  &:focus-visible { outline: none; box-shadow: var(--shadow-btn), var(--focus-ring); }
+  transition:
+    transform var(--dur-instant) var(--spring-press),
+    box-shadow var(--dur-instant) var(--spring-press);
+  &:active {
+    transform: translateY(5px) scale(0.98);
+    box-shadow: 0 1px 0 var(--depth);
+  }
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-btn), var(--focus-ring);
+  }
 }

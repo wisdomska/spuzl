@@ -8,7 +8,11 @@ const BASE = process.env.DESIGN_URL || "http://localhost:5055/design/";
 const OUT = path.resolve("tests/visual/reference");
 const dir = path.resolve("design/design_handoff_spuzl/design");
 const files = fs.readdirSync(dir).filter((f) => f.endsWith(".dc.html"));
-const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const slug = (s) =>
+  s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 
 const browser = await chromium.launch();
 const index = [];

@@ -8,3 +8,7 @@ tests/visual/
 .claude/skills/
 supabase/.temp/
 public/
+.claude/worktrees/
+.agents/
+supabase/seed.sql
+components/ui/icons.generated.ts

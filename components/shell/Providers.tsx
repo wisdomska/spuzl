@@ -9,7 +9,9 @@ import { setHapticsEnabled } from "@/lib/haptics";
 import { HapticFallback } from "./HapticFallback";
 
 export function Providers({ children }: { children: ReactNode }) {
-  const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false } } }));
+  const [client] = useState(
+    () => new QueryClient({ defaultOptions: { queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false } } }),
+  );
   const settings = useSettings();
   const { hydrate, hydrated } = settings;
 

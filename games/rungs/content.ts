@@ -1,0 +1,496 @@
+/**
+ * Rungs ladders. Original SPUZL content, needs owner review. Seven 4 letter words, top to bottom, each one
+ * letter away from the next. Rungs 2 to 6 are the trivia rungs (their order is unique up to reversal); the top
+ * and bottom words are cracked last. About 1 in 5 clues points at Ghana or West Africa.
+ */
+export interface RungsEntry {
+  /** top, five trivia rungs, bottom */
+  words: string[];
+  /** one clue per word, same order */
+  clues: string[];
+}
+
+export const needsReview = true;
+
+export const CONTENT: RungsEntry[] = [
+  {
+    words: ["FOIL", "FOAL", "GOAL", "GOAT", "COAT", "CHAT", "CHAP"],
+    clues: [
+      "Shiny kitchen wrap",
+      "A young horse",
+      "What the Black Stars want to score",
+      "Main meat in a pot of Ghanaian light soup",
+      "Something you hang on a hook",
+      "A friendly talk",
+      "A fellow, informally",
+    ],
+  },
+  {
+    words: ["PROP", "CROP", "COOP", "HOOP", "HOOF", "ROOF", "ROOK"],
+    clues: [
+      "Theatre object held by an actor",
+      "Cocoa is Ghana's biggest cash one",
+      "Home for hens",
+      "Basketball ring",
+      "A horse's foot",
+      "Top of a house",
+      "Chess piece that moves in straight lines",
+    ],
+  },
+  {
+    words: ["WIFE", "WINE", "FINE", "FIRE", "FIRM", "FORM", "FORK"],
+    clues: [
+      "Married woman",
+      "Drink made from grapes",
+      "Money paid for a late library book",
+      "What a smoke alarm warns you about",
+      "Not soft",
+      "A paper you fill in",
+      "It sits to the left of the plate",
+    ],
+  },
+  {
+    words: ["AUNT", "HUNT", "HURT", "HURL", "FURL", "FULL", "FILL"],
+    clues: [
+      "Your mother's sister",
+      "Search hard for",
+      "In pain",
+      "Throw with force",
+      "Roll up a flag or sail",
+      "No room left",
+      "Top up the tank",
+    ],
+  },
+  {
+    words: ["MALT", "SALT", "SILT", "SIFT", "SOFT", "SOFA", "SODA"],
+    clues: [
+      "Drink in the brown bottle at many Ghanaian parties",
+      "Sodium chloride, at the table",
+      "Fine mud left by a river",
+      "Shake flour through a sieve",
+      "Like a pillow",
+      "Settee",
+      "Fizzy drink",
+    ],
+  },
+  {
+    words: ["CHAP", "CHIP", "SHIP", "SKIP", "SKIN", "SPIN", "SPAN"],
+    clues: [
+      "Fellow",
+      "Small piece of a cup that broke off",
+      "Big boat",
+      "Jump over a rope",
+      "Your largest organ",
+      "What a top does",
+      "Distance across a bridge",
+    ],
+  },
+  {
+    words: ["NEXT", "NEAT", "FEAT", "FEET", "FRET", "FREE", "TREE"],
+    clues: [
+      "Coming right after",
+      "Tidy",
+      "A great achievement",
+      "There are three in a yard",
+      "Worry",
+      "Costs nothing",
+      "The baobab is one",
+    ],
+  },
+  {
+    words: ["FOUR", "POUR", "POOR", "POOL", "TOOL", "TOOK", "COOK"],
+    clues: [
+      "Number of legs on a table",
+      "Tip water out of a jug",
+      "Short of money",
+      "Place to swim",
+      "A hammer or a hoe",
+      "Grabbed, yesterday",
+      "Make food",
+    ],
+  },
+  {
+    words: ["BOND", "POND", "PONY", "POSY", "POST", "MOST", "MUST"],
+    clues: [
+      "A strong tie between friends",
+      "Small lake for ducks",
+      "Small horse",
+      "Small bunch of flowers",
+      "Send a letter",
+      "The greatest amount",
+      "Have to",
+    ],
+  },
+  {
+    words: ["CLAY", "CLAW", "FLAW", "FLAT", "FLIT", "FLIP", "CLIP"],
+    clues: [
+      "Potters in Vume shape it",
+      "A crab's pincer",
+      "A small fault",
+      "Level and even",
+      "Dart about like a butterfly",
+      "Turn a pancake over",
+      "Hold papers together",
+    ],
+  },
+  {
+    words: ["WOOL", "WOOD", "GOOD", "GOLD", "FOLD", "FOLK", "FORK"],
+    clues: [
+      "What a sheep grows",
+      "What a carver of stools works with",
+      "Not bad",
+      "Ghana was once the ___ Coast",
+      "Crease paper",
+      "Music of ordinary people",
+      "Tool with prongs",
+    ],
+  },
+  {
+    words: ["DRIP", "DROP", "CROP", "CROW", "PROW", "PROM", "PRAM"],
+    clues: ["Leaky tap sound", "Let fall", "A farmer's harvest", "Black bird", "Front of a boat", "School dance", "Baby carriage"],
+  },
+  {
+    words: ["SEAL", "SEAM", "SLAM", "SLAT", "SPAT", "SPIT", "SUIT"],
+    clues: [
+      "Sea mammal that barks",
+      "Line where two pieces are sewn",
+      "Shut a door hard",
+      "Thin strip of wood in a blind",
+      "A small quarrel",
+      "Small strip of land into the sea, like the one at Ada",
+      "Jacket and trousers that match",
+    ],
+  },
+  {
+    words: ["BALL", "BILL", "GILL", "GILD", "GOLD", "TOLD", "TOLL"],
+    clues: [
+      "Round thing in football",
+      "A bird's beak",
+      "A fish breathes through it",
+      "Cover with a thin layer of gold",
+      "Ashanti region is rich in it",
+      "Said to someone",
+      "Fee to use a road",
+    ],
+  },
+  {
+    words: ["CASK", "CASE", "CANE", "PANE", "PALE", "POLE", "PORE"],
+    clues: [
+      "Barrel",
+      "A detective's job",
+      "Sugar ___",
+      "A sheet of glass in a window",
+      "Light in colour",
+      "North or South end of the Earth",
+      "Tiny hole in your skin",
+    ],
+  },
+  {
+    words: ["PLUM", "SLUM", "SLIM", "SKIM", "SKID", "SAID", "RAID"],
+    clues: [
+      "Purple fruit with a stone",
+      "Run down neighbourhood",
+      "Thin",
+      "Take the cream off milk",
+      "Slide on a wet road",
+      "Spoke",
+      "A sudden attack",
+    ],
+  },
+  {
+    words: ["FINE", "FINS", "FIRS", "FIRM", "FARM", "WARM", "WORM"],
+    clues: [
+      "Very well, thanks",
+      "A fish swims with them",
+      "Christmas trees",
+      "Steady and strong",
+      "Where crops grow",
+      "A bit hot",
+      "Early bird's catch",
+    ],
+  },
+  {
+    words: ["TORN", "CORN", "COIN", "LOIN", "LAIN", "LAIR", "PAIR"],
+    clues: [
+      "Ripped",
+      "Kenkey is made from it",
+      "A pesewa is one",
+      "Cut of meat from the back",
+      "Rested, past tense",
+      "A wild animal's den",
+      "Two of a kind",
+    ],
+  },
+  {
+    words: ["FAST", "PAST", "PACT", "PACE", "PALE", "PALM", "BALM"],
+    clues: [
+      "Quick",
+      "Time gone by",
+      "An agreement",
+      "Speed of walking",
+      "Looking unwell",
+      "Tree that gives Ghana red oil",
+      "Soothing ointment",
+    ],
+  },
+  {
+    words: ["LAST", "EAST", "EASE", "VASE", "VISE", "WISE", "WIDE"],
+    clues: ["Final", "Where the sun rises", "Comfort", "Jar for flowers", "Workshop clamp", "Like Ananse thought he was", "Broad"],
+  },
+  {
+    words: ["LAKE", "WAKE", "WANE", "PANE", "PALE", "HALE", "HALL"],
+    clues: [
+      "Bosumtwi is one",
+      "Stop sleeping",
+      "Shrink, like the moon",
+      "Window glass",
+      "Not dark",
+      "Healthy and strong",
+      "Big room for events",
+    ],
+  },
+  {
+    words: ["CAME", "DAME", "DATE", "LATE", "LANE", "LINE", "DINE"],
+    clues: ["Arrived", "A woman with a title", "Day on a calendar", "Not on time", "Narrow road", "A queue", "Have dinner"],
+  },
+  {
+    words: ["COUP", "SOUP", "SOAP", "SWAP", "SWAB", "STAB", "STAG"],
+    clues: [
+      "A clever win",
+      "Light, palmnut or groundnut",
+      "You wash with it",
+      "Trade",
+      "Cotton pad for a cut",
+      "Have a ___ at it: give it a try",
+      "Male deer",
+    ],
+  },
+  {
+    words: ["TUBA", "TUNA", "TUNE", "TONE", "TOTE", "ROTE", "ROBE"],
+    clues: ["Big brass instrument", "Fish in a sandwich", "A melody", "Sound quality", "Carry", "Learning by heart", "Long loose garment"],
+  },
+  {
+    words: ["HOST", "MOST", "MOAT", "MEAT", "NEAT", "NEST", "VEST"],
+    clues: [
+      "Person who throws the party",
+      "Nearly all",
+      "Water around a castle",
+      "Beef or goat",
+      "In good order",
+      "Bird's home",
+      "Sleeveless top",
+    ],
+  },
+  {
+    words: ["HIDE", "TIDE", "TIME", "TOME", "HOME", "HOLE", "MOLE"],
+    clues: [
+      "Keep out of sight",
+      "Sea rising and falling",
+      "What a clock tells",
+      "Big heavy book",
+      "Where you live",
+      "Gap or opening",
+      "Ghana's biggest national park",
+    ],
+  },
+  {
+    words: ["CLIP", "FLIP", "FLAP", "FLAG", "FLOG", "FLOW", "BLOW"],
+    clues: [
+      "Short video",
+      "Somersault",
+      "Wave wings",
+      "Red, gold and green with a black star",
+      "Sell, informally",
+      "What a river does",
+      "What the harmattan wind does",
+    ],
+  },
+  {
+    words: ["RUIN", "REIN", "VEIN", "VEIL", "VEAL", "REAL", "REAP"],
+    clues: ["Destroy", "Strap to steer a horse", "Blood vessel", "Bride's face covering", "Calf meat", "Not fake", "Harvest"],
+  },
+  {
+    words: ["JARS", "JAWS", "PAWS", "PAWN", "YAWN", "YARN", "DARN"],
+    clues: [
+      "Glass containers",
+      "Shark's bite",
+      "Dog's feet",
+      "Smallest chess piece",
+      "Sign you are sleepy",
+      "Thread for knitting",
+      "Mend a sock",
+    ],
+  },
+  {
+    words: ["LOAM", "FOAM", "FORM", "FARM", "FARE", "FATE", "MATE"],
+    clues: ["Rich soil", "Bubbles on top", "Shape", "Cocoa grows on one", "Price of a trotro ride", "Destiny", "Trotro conductor in Ghana"],
+  },
+  {
+    words: ["BEAK", "BEAR", "BOAR", "BOAT", "COAT", "COAL", "COOL"],
+    clues: ["Bird's mouth", "Big furry animal", "Wild pig", "Fishing canoe at Elmina", "Layer of paint", "Black fuel", "A bit cold"],
+  },
+  {
+    words: ["FOAM", "ROAM", "REAM", "BEAM", "BEAN", "BEEN", "BEET"],
+    clues: ["Sea froth", "Wander", "500 sheets of paper", "Ray of light", "Cocoa ___", "Gone, in the past", "Red root vegetable"],
+  },
+  {
+    words: ["FAST", "LAST", "LIST", "LISP", "LIMP", "LUMP", "JUMP"],
+    clues: ["Rapid", "At the end", "Shopping note", "Speech sound for S", "Walk unevenly", "Bump", "Leap"],
+  },
+  {
+    words: ["LETS", "LESS", "LASS", "LASH", "HASH", "HUSH", "PUSH"],
+    clues: ["Allows", "Fewer", "Girl", "Eye hair", "The # symbol", "Be quiet", "Opposite of pull"],
+  },
+  {
+    words: ["PALM", "CALM", "CALF", "HALF", "HALE", "GALE", "GAPE"],
+    clues: ["Inside of your hand", "Peaceful", "Baby cow", "Fifty percent", "Healthy", "Strong wind", "Stare with open mouth"],
+  },
+  {
+    words: ["CAKE", "RAKE", "RACE", "RACY", "LACY", "LAZY", "HAZY"],
+    clues: [
+      "Birthday treat",
+      "Garden tool",
+      "Contest of speed",
+      "Lively",
+      "Like fine net cloth",
+      "Not keen on work",
+      "Misty, like harmattan mornings",
+    ],
+  },
+  {
+    words: ["PANE", "PINE", "PINK", "LINK", "LINT", "MINT", "MITT"],
+    clues: ["Glass sheet", "Tall evergreen tree", "Pale red", "Chain part", "Fluff", "Fresh herb", "Baseball glove"],
+  },
+  {
+    words: ["DEAD", "HEAD", "HELD", "HELP", "KELP", "KEEP", "SEEP"],
+    clues: ["No longer alive", "Top of the body", "Grasped", "Assist", "Seaweed", "Hold on to", "Leak slowly"],
+  },
+  {
+    words: ["SOFT", "SOOT", "TOOT", "TOOK", "COOK", "CORK", "CORN"],
+    clues: ["Gentle", "Black powder from a chimney", "Horn sound", "Carried off", "Chef", "Bottle stopper", "Maize"],
+  },
+  {
+    words: ["CARP", "CAMP", "LAMP", "LAME", "LACE", "FACE", "FADE"],
+    clues: [
+      "Freshwater fish",
+      "Tents in a row",
+      "Light on a desk",
+      "Weak, as an excuse",
+      "Shoe string",
+      "Front of the head",
+      "Lose colour",
+    ],
+  },
+  {
+    words: ["CLOG", "CLOD", "CLAD", "CLAN", "PLAN", "PLAY", "PLOY"],
+    clues: ["Wooden shoe", "Lump of earth", "Dressed", "Family group", "Scheme", "Have fun", "A clever trick"],
+  },
+  {
+    words: ["SWAN", "SCAN", "SCAR", "SEAR", "HEAR", "HEAL", "REAL"],
+    clues: [
+      "Graceful white bird",
+      "Look over quickly",
+      "Mark left by a cut",
+      "Burn the outside of meat",
+      "Listen",
+      "Get better",
+      "Genuine",
+    ],
+  },
+  {
+    words: ["HAIR", "LAIR", "LAIN", "LOIN", "COIN", "COIL", "BOIL"],
+    clues: ["Grows on your head", "Den", "Rested", "Lower back", "Money you can flip", "Spiral", "Cook in hot water"],
+  },
+  {
+    words: ["POLE", "POLO", "SOLO", "SILO", "SILL", "PILL", "PULL"],
+    clues: ["Long stick", "Game played on horses", "Alone on stage", "Tall store for grain", "Window ledge", "Tablet", "Tug"],
+  },
+  {
+    words: ["GLUM", "PLUM", "PLUG", "SLUG", "SNUG", "SNUB", "STUB"],
+    clues: ["Gloomy", "Purple fruit", "Goes in a socket", "Snail without a shell", "Cosy", "Ignore on purpose", "Leftover end of a pencil"],
+  },
+  {
+    words: ["RAGE", "SAGE", "SAKE", "FAKE", "FACE", "FACT", "PACT"],
+    clues: ["Fury", "Wise person", "For goodness ___", "Not real", "Clock front", "Something true", "Deal"],
+  },
+  {
+    words: ["LEAF", "LEAN", "LOAN", "MOAN", "MORN", "WORN", "WORM"],
+    clues: ["Kontomire is a cocoyam one", "Thin", "Money borrowed", "Complain", "Morning", "Used a lot", "Lives in soil"],
+  },
+  {
+    words: ["WEED", "FEED", "FEND", "LEND", "LEAD", "LEAN", "BEAN"],
+    clues: ["Unwanted plant", "Give food to", "Look after yourself", "Let someone borrow", "Go in front", "Rest against", "Seed in a pod"],
+  },
+  {
+    words: ["SIRE", "SURE", "SURF", "TURF", "TURN", "BURN", "BARN"],
+    clues: ["Father of a horse", "Certain", "Ride waves at Busua", "Grass", "Change direction", "Hurt from fire", "Farm building"],
+  },
+  {
+    words: ["HORN", "CORN", "CORK", "COOK", "COOL", "WOOL", "WOOF"],
+    clues: ["A bull has two", "Crop on the cob", "Bark used for stoppers", "Make dinner", "Chilled", "Sheep's coat", "Dog's bark"],
+  },
+  {
+    words: ["COLD", "MOLD", "MILD", "MIND", "KIND", "KING", "SING"],
+    clues: ["Chilly", "Shape for jelly", "Gentle", "Brain", "Nice", "Asantehene, for one", "Use your voice"],
+  },
+  {
+    words: ["HAIL", "PAIL", "PAIN", "RAIN", "REIN", "VEIN", "VEIL"],
+    clues: ["Ice falling from the sky", "Bucket", "Hurt", "Wet weather", "Horse strap", "Blood tube", "Thin face cover"],
+  },
+  {
+    words: ["ZOOM", "ROOM", "ROAM", "LOAM", "LOAN", "MOAN", "MOON"],
+    clues: ["Move fast", "Part of a house", "Wander", "Good garden soil", "Money you must give back", "Groan", "It lights the night"],
+  },
+  {
+    words: ["GOAL", "GOAT", "GOUT", "ROUT", "ROOT", "FOOT", "FORT"],
+    clues: [
+      "Aim",
+      "Animal with a beard",
+      "Painful joint illness",
+      "Big defeat",
+      "Cassava is one",
+      "Twelve inches",
+      "Castle like the ones on Ghana's coast",
+    ],
+  },
+  {
+    words: ["WOLF", "WOOF", "WOOD", "WORD", "WORK", "CORK", "CORE"],
+    clues: ["Wild dog that howls", "Bark", "Timber", "Unit of language", "Your job", "Stopper", "Middle of an apple"],
+  },
+  {
+    words: ["DRUM", "DRUG", "DRAG", "DRAW", "DREW", "BREW", "BROW"],
+    clues: ["Ghana's talking one sends messages", "Medicine", "Pull along", "Make a picture", "Sketched", "Make tea", "Forehead"],
+  },
+  {
+    words: ["MOOD", "FOOD", "FOND", "POND", "PONY", "POSY", "POSE"],
+    clues: [
+      "How you feel",
+      "What you eat",
+      "Liking",
+      "Still water where ducks paddle",
+      "Little horse",
+      "Flower bunch",
+      "Stand for a photo",
+    ],
+  },
+  {
+    words: ["GOLD", "SOLD", "SOLE", "HOLE", "HALE", "HALF", "CALF"],
+    clues: ["Medal for first", "Bought by someone", "Bottom of a shoe", "Gap", "Fit", "One of two parts", "Back of the leg"],
+  },
+  {
+    words: ["RUNS", "RUNG", "SUNG", "SONG", "GONG", "GANG", "HANG"],
+    clues: [
+      "Cricket points",
+      "Step on a ladder",
+      "Performed a song",
+      "Highlife hit, for one",
+      "Metal disc you strike",
+      "Group",
+      "Put up a picture",
+    ],
+  },
+  {
+    words: ["HIKE", "HIRE", "HERE", "HERB", "VERB", "VERY", "VARY"],
+    clues: ["Long walk on a trail", "Give someone a job", "In this place", "Basil or mint", "A doing word", "Extremely", "Change a little"],
+  },
+];

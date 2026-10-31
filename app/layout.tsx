@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Unbounded, Geist, Geist_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Providers } from "@/components/shell/Providers";
 import { settingsBootScript } from "@/lib/settings/store";
 import "./globals.css";
@@ -13,7 +15,8 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://spuzl.vercel.app";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: { default: "SPUZL · 51 games, one Grid", template: "%s · SPUZL" },
-  description: "Daily puzzles, skill games and classic board games across 9 worlds. Play anytime, duel your friends, keep your streak alive.",
+  description:
+    "Daily puzzles, skill games and classic board games across 9 worlds. Play anytime, duel your friends, keep your streak alive.",
   applicationName: "SPUZL",
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "SPUZL" },
@@ -39,6 +42,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body>
         <Providers>{children}</Providers>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
