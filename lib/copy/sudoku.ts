@@ -22,6 +22,7 @@ export const sudoku = {
   number: (d: number) => `Number ${d}`,
   note: (d: number) => `Note ${d}`,
   allPlaced: "all placed",
+  left: (k: number) => `${k} left`,
   undo: "Undo",
   erase: "Erase",
   notesTool: "Notes",

@@ -3,34 +3,30 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
-import { useCellSize } from "@/components/game/useBoardSize";
+import { fitCell, useViewportWidth } from "@/components/game/useBoardSize";
 import { useGridKeys } from "@/components/game/useGridKeys";
 import { play } from "@/lib/audio";
 import { popClass, shakeClass, waveStyle } from "@/games/_shared/logiclab/fx";
 import { sudoku as t } from "@/lib/copy/sudoku";
 import { analyze, emptyState, geometry, type SudokuPuzzle, type SudokuState } from "./logic";
-import { boundaryTracks, boxIndex, digitCounts, trackList } from "./layout";
+import { boundaryTracks, boxIndex, digitCounts, gapTotal, trackList } from "./layout";
 import { statusLine, type StatusLine } from "./status";
 
-/** Gap between cells inside a box. */
-const GAP = 2;
 /** Box borders (and the outer frame): 2 px in a lighter tone than the cell gaps. */
 const LINE = 2;
 const PAD = LINE;
 const BOX_LINE = "color-mix(in srgb, var(--text-muted) 60%, var(--line))";
+/** Gap between cells inside a box: 1 px on Nine so 40 px cells fit a 375 px phone, 2 px on Sixer. */
+const gapFor = (size: number) => (size > 6 ? 1 : 2);
 
-/** 9 × 9 cannot fit 44 px cells in a 390 px phone, so Nine keeps a 34 px floor instead of panning. */
-function useSudokuCell(size: number) {
-  const fit44 = useCellSize(size, GAP, PAD * 2, 56);
-  const [vw, setVw] = useState(390);
-  useEffect(() => {
-    const on = () => setVw(window.innerWidth);
-    on();
-    window.addEventListener("resize", on);
-    return () => window.removeEventListener("resize", on);
-  }, []);
-  if (size <= 7) return fit44;
-  return Math.max(34, Math.min(56, Math.floor((Math.min(vw, 460) - 36 - GAP * (size - 1) - PAD * 2) / size)));
+/**
+ * Cell size: Sixer keeps 44 px or more everywhere. Nine keeps 40 px from 375 px wide up (using the
+ * shell's board padding when it has to) and only goes smaller on narrower phones (34 px at 320).
+ */
+function useSudokuCell(size: number, boxW: number) {
+  const vw = useViewportWidth();
+  const overhead = gapTotal(size, boxW, gapFor(size), LINE) + PAD * 2;
+  return fitCell(vw, size, overhead, size > 6 ? 40 : 44, 56);
 }
 
 /**
@@ -66,7 +62,7 @@ export function SudokuBoard({
   const stRef = useRef(st);
   // The shell shows one feedback line; only replace it when the text or tone actually changes.
   const shown = useRef("");
-  const cell = useSudokuCell(n);
+  const cell = useSudokuCell(n, puzzle.boxW);
   const a = analyze(puzzle, st.values);
   const given = (i: number) => puzzle.givens[i] !== 0;
   const locked = disabled || done;
@@ -272,10 +268,12 @@ export function SudokuBoard({
   const counts = digitCounts(st.values, n);
   const noteCols = puzzle.boxW;
   const noteRows = Math.ceil(n / noteCols);
-  const width = n * cell + (n - 1) * GAP + PAD * 2; // box lines are as wide as cell gaps (LINE === GAP)
-  const cols = trackList(n, puzzle.boxW, cell, GAP, LINE);
-  const rows = trackList(n, puzzle.boxH, cell, GAP, LINE);
-  const padCols = n <= 6 ? n : 5;
+  const gap = gapFor(n);
+  const width = n * cell + gapTotal(n, puzzle.boxW, gap, LINE) + PAD * 2;
+  const cols = trackList(n, puzzle.boxW, cell, gap, LINE);
+  const rows = trackList(n, puzzle.boxH, cell, gap, LINE);
+  // Sixer: one row of 6. Nine: a 3 × 3 pad on phones, one row of 9 from 640 px up.
+  const padGrid = n <= 6 ? "" : "grid-cols-3 sm:grid-cols-9";
 
   return (
     <div className={`flex flex-col items-center gap-3 ${done ? "board-pulse" : ""}`}>
@@ -391,31 +389,41 @@ export function SudokuBoard({
 
       {/* Number pad */}
       <div
-        className="grid gap-2"
-        style={{ width, gridTemplateColumns: `repeat(${padCols}, minmax(0, 1fr))` }}
+        className={`grid gap-2 ${padGrid}`}
+        style={{ width, gridTemplateColumns: padGrid ? undefined : `repeat(${n}, minmax(0, 1fr))` }}
         role="group"
         aria-label={notesMode ? t.padNotes : t.pad}
       >
         {Array.from({ length: n }, (_, k) => {
           const d = k + 1;
-          const full = counts[d] >= n;
+          // Every copy of a digit is on the board: the button shows done (tick, dimmed) and is disabled.
+          const left = Math.max(0, n - counts[d]);
+          const full = left === 0;
           return (
             <button
               key={d}
               type="button"
-              disabled={locked}
+              disabled={locked || full}
               onClick={() => enter(d)}
-              aria-label={notesMode ? t.note(d) : `${t.number(d)}${full ? `, ${t.allPlaced}` : ""}`}
+              aria-label={`${notesMode ? t.note(d) : t.number(d)}, ${full ? t.allPlaced : t.left(left)}`}
               className={`toy num relative flex h-12 items-center justify-center rounded-[14px] text-[22px] font-semibold ${notesMode ? "text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]" : ""}`}
               style={{
                 background: "var(--surface-raised)",
                 ["--btn-depth" as string]: "var(--depth)",
                 boxShadow: "0 5px 0 var(--depth)",
-                opacity: full && !notesMode ? 0.4 : 1,
+                opacity: full ? 0.4 : 1,
               }}
             >
               {d}
-              {notesMode && <Icon name="pencil-simple" size={11} className="absolute top-1.5 right-1.5" />}
+              {notesMode ? (
+                <Icon name="pencil-simple" size={11} className="absolute top-1.5 right-1.5" />
+              ) : full ? (
+                <Icon name="check" size={12} className="absolute top-1.5 right-1.5" />
+              ) : (
+                <span aria-hidden className="text-muted absolute top-1 right-2 text-[12px] font-medium">
+                  {left}
+                </span>
+              )}
             </button>
           );
         })}
