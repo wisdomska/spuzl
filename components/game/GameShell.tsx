@@ -103,6 +103,13 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   const [confirmHint, setConfirmHint] = useState(false);
   const stateRef = useRef<St | undefined>(initialState);
   const mistakes = useRef(0);
+  // Boards may report one slip twice (onMove {mistake} and ruleBreak in the same tick): count it once.
+  const lastMistakeAt = useRef(-Infinity);
+  const countMistake = () => {
+    const t = performance.now();
+    if (t - lastMistakeAt.current > 50) mistakes.current++;
+    lastMistakeAt.current = t;
+  };
   const hintsUsed = useRef(0);
   const clock = useRef({ base: 0, since: 0 });
   // A board with its own clock (fixed-step simulation) replaces the wall clock for display and scoring.
@@ -145,7 +152,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
       onMove(state, info) {
         stateRef.current = state;
         if (!started) setStarted(true);
-        if (info?.mistake) mistakes.current++;
+        if (info?.mistake) countMistake();
         setHint(null);
         onMove?.(state, now(), info);
       },
@@ -166,7 +173,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
         setFeedback((f) => ({ text, tone, icon, n: f.n + 1 }));
       },
       ruleBreak(message) {
-        mistakes.current++;
+        countMistake();
         setFeedback((f) => ({ text: message, tone: "danger", icon: "warning", n: f.n + 1 }));
         setLive(message);
         play("buzz");

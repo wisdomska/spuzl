@@ -7,7 +7,7 @@ import { GameShell } from "@/components/game/GameShell";
 import { BoardSkeleton } from "@/components/game/BoardSkeleton";
 import { BOARDS } from "@/games/board-registry";
 import { setGuessAttempt } from "@/games/_shared/guess";
-import { GAME_BY_ID, WORLD_BY_ID, type GameMeta } from "@/lib/catalog";
+import { WORLD_BY_ID, type GameMeta } from "@/lib/catalog";
 import { Skeleton } from "@/components/ui/Skeleton";
 import {
   finishAttempt,

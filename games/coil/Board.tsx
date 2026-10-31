@@ -168,7 +168,6 @@ export default function CoilBoard({ puzzle, initialState, hint, disabled, mode, 
       api.feedback(copy, "info", "info");
       api.announce(copy);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [api, locked, puzzle.count, puzzle.ref, letters]);
 
   const clear = useCallback(() => {
