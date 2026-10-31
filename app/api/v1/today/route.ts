@@ -26,6 +26,7 @@ export const GET = handle(async () => {
         a.status === "cleared" ? { state: "cleared", timeMs: a.time_ms } : a.first_move_at ? { state: "in_progress" } : { state: "new" };
   }
   return ok({
+    signedIn: !!user,
     date,
     number: dailyNumber(date),
     resetsInMs: msToReset(),

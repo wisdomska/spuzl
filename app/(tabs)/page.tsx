@@ -1,5 +1,9 @@
 import { HomeScreen } from "@/components/home/HomeScreen";
+import { requirePlayerPage } from "@/lib/auth/gate";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  await requirePlayerPage();
   return <HomeScreen />;
 }

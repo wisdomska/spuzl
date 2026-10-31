@@ -51,6 +51,8 @@ export async function prefetchDailies(): Promise<number> {
   } catch {
     /* storage blocked: prefetch anyway, the worker dedupes per day */
   }
+  // Nobody signed in yet (first run): nothing to prefetch, and no 401s in the console.
+  if ((today as { signedIn?: boolean }).signedIn === false) return 0;
   const todo = today.games.filter((g) => g.ready && g.state !== "cleared" && LAUNCH_IDS.includes(g.id));
   let saved = 0;
   for (const g of todo) {

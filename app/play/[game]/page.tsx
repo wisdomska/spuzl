@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { GAME_BY_ID } from "@/lib/catalog";
 import { hasLogic } from "@/games/logic-registry";
 import { PlayScreen } from "@/components/play/PlayScreen";
+import { requirePlayerPage } from "@/lib/auth/gate";
 
 export async function generateMetadata({ params }: PageProps<"/play/[game]">): Promise<Metadata> {
   const { game } = await params;
@@ -16,6 +17,7 @@ export default async function Play({ params, searchParams }: PageProps<"/play/[g
   const sp = await searchParams;
   const meta = GAME_BY_ID[game];
   if (!meta || !hasLogic(game)) notFound();
+  await requirePlayerPage();
   const mode = sp.mode === "free" || sp.mode === "archive" ? sp.mode : "daily";
   const date = typeof sp.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sp.date) ? sp.date : undefined;
   const difficulty =

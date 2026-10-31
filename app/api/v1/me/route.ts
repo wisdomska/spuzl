@@ -1,11 +1,20 @@
 import { handle, ok, requirePlayer, todayGmt } from "@/lib/api/server";
+import { currentUser } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { levelFromXp, flameTier } from "@/lib/rewards";
 import { rankFor } from "@/lib/rating/glicko2";
 import { LAUNCH_IDS } from "@/lib/catalog";
 
 export const dynamic = "force-dynamic";
 
-export const GET = handle(async () => {
+/** GET /api/v1/me. With ?optional=1, "no session" and "no profile yet" answer 200 null instead of 401/409. */
+export const GET = handle(async (req: Request) => {
+  if (new URL(req.url).searchParams.get("optional") === "1") {
+    const user = await currentUser();
+    if (!user) return ok(null);
+    const { data } = await supabaseAdmin().from("players").select("id").eq("id", user.id).maybeSingle();
+    if (!data) return ok(null);
+  }
   const { admin, player, user } = await requirePlayer();
   const today = todayGmt();
   const [{ data: profile }, { data: streak }, { data: ratings }, { data: cleared }] = await Promise.all([

@@ -1,7 +1,6 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabaseBrowser } from "@/lib/supabase/browser";
 import { hasSupabase } from "@/lib/supabase/env";
 import type { Hint } from "@/games/types";
 
@@ -33,6 +32,8 @@ export async function api<T>(path: string, init: RequestInit & { json?: unknown 
 /** Ensures a Supabase session exists (anonymous guest on first need, FR-AC-01). */
 export async function ensureSession(): Promise<string | null> {
   if (!hasSupabase()) return null;
+  // Loaded on demand: the Supabase client stays out of the first-screen bundle.
+  const { supabaseBrowser } = await import("@/lib/supabase/browser");
   const sb = supabaseBrowser();
   const { data } = await sb.auth.getSession();
   if (data.session) return data.session.user.id;
@@ -75,6 +76,7 @@ export interface Me {
 }
 
 export interface Today {
+  signedIn?: boolean;
   date: string;
   number: number;
   resetsInMs: number;
@@ -87,12 +89,9 @@ export function useMe(enabled = true) {
     enabled,
     retry: false,
     queryFn: async () => {
-      if (hasSupabase()) {
-        const { data } = await supabaseBrowser().auth.getSession();
-        if (!data.session) return null; // first run: no guest yet
-      }
       try {
-        return await api<Me>("/api/v1/me");
+        // optional=1: no session or no profile yet answers null (first run) without a 401 in the console
+        return await api<Me | null>("/api/v1/me?optional=1");
       } catch (e) {
         if (e instanceof HttpError && (e.status === 401 || e.status === 409)) return null; // no session or no profile yet
         throw e;
