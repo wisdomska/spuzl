@@ -21,6 +21,7 @@ import { OfflineBanner } from "@/components/pwa/OfflineBanner";
 import { ShareSheet } from "@/components/share/ShareSheet";
 import { dailyShareText } from "@/lib/share/text";
 import { cardUrl } from "@/lib/share/urls";
+import { createChallengeLink, GHOST_GAMES, saveGhostRun } from "@/lib/client/challenge";
 import { HowToSheet } from "./HowToSheet";
 import { Spuz } from "@/components/brand/Spuz";
 import { Button } from "@/components/ui/Button";
@@ -30,7 +31,18 @@ type Phase = "loading" | "playing" | "results" | "celebrate" | "failed" | "error
 
 const SAVE_EVERY_MS = 10_000;
 
-export function PlayScreen({ meta, initialMode, date }: { meta: GameMeta; initialMode: Mode; date?: string }) {
+export function PlayScreen({
+  meta,
+  initialMode,
+  date,
+  difficulty,
+}: {
+  meta: GameMeta;
+  initialMode: Mode;
+  date?: string;
+  /** Free play difficulty chosen in Practice; defaults to medium on the server */
+  difficulty?: "easy" | "medium" | "hard" | "expert" | "mega";
+}) {
   const router = useRouter();
   const qc = useQueryClient();
   const me = useMe();
@@ -62,7 +74,12 @@ export function PlayScreen({ meta, initialMode, date }: { meta: GameMeta; initia
       setPhase("loading");
       setResult(null);
       try {
-        const a = await startAttempt({ game: meta.id, mode: m, date: m === "archive" ? date : undefined });
+        const a = await startAttempt({
+          game: meta.id,
+          mode: m,
+          date: m === "archive" ? date : undefined,
+          difficulty: m === "free" ? difficulty : undefined,
+        });
         latestState.current = a.state ?? undefined;
         setAttempt(a);
         setMode(m);
@@ -76,7 +93,7 @@ export function PlayScreen({ meta, initialMode, date }: { meta: GameMeta; initia
         setPhase("error");
       }
     },
-    [meta.id, date],
+    [meta.id, date, difficulty],
   );
   useEffect(() => {
     beginRef.current = begin;
@@ -143,6 +160,8 @@ export function PlayScreen({ meta, initialMode, date }: { meta: GameMeta; initia
         return;
       }
       setResult(res);
+      // Rage Ridge ghost games keep the run so friends can race it (Ghost Race).
+      if (res.status === "cleared" && GHOST_GAMES.includes(meta.id)) saveGhostRun(attempt.attemptId).catch(() => {});
       if (mode === "free") {
         // Free play: a quick toast and straight into the next puzzle (prototype onClear()).
         setNotice(res.reward.xp > 0 ? `Clean. +${res.reward.xp} XP. Puzzle ${freeN + 1} loading.` : `Clean. Puzzle ${freeN + 1} loading.`);
@@ -155,7 +174,7 @@ export function PlayScreen({ meta, initialMode, date }: { meta: GameMeta; initia
       }
       setTimeout(() => setPhase("results"), 1100);
     },
-    [attempt, relaxed, qc, mode, freeN],
+    [attempt, relaxed, qc, mode, freeN, meta.id],
   );
 
   const onFailed = useCallback(
@@ -214,6 +233,23 @@ export function PlayScreen({ meta, initialMode, date }: { meta: GameMeta; initia
           relaxed={relaxed}
           color={me.data?.avatar_color ?? "#B8F23A"}
           onShare={() => setShareOpen(true)}
+          onChallenge={
+            attempt && result.status === "cleared"
+              ? async () => {
+                  try {
+                    const url = await createChallengeLink(attempt.attemptId);
+                    const text = `Beat my ${meta.name} time on SPUZL`;
+                    if (navigator.share) await navigator.share({ text, url });
+                    else {
+                      await navigator.clipboard.writeText(`${text} ${url}`);
+                      setNotice("Challenge link copied. Send it to a friend.");
+                    }
+                  } catch {
+                    /* share sheet dismissed */
+                  }
+                }
+              : undefined
+          }
           onNext={() => {
             const chain = buildCelebrations(result);
             if (chain.length) {

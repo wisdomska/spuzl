@@ -28,6 +28,7 @@ export function ResultsScreen({
   color,
   onNext,
   onShare,
+  onChallenge,
 }: {
   meta: GameMeta;
   result: FinishRes;
@@ -37,6 +38,8 @@ export function ResultsScreen({
   color: string;
   onNext: () => void;
   onShare: () => void;
+  /** "Beat my time": sends a friend this exact puzzle with your time as a ghost timer */
+  onChallenge?: () => void;
 }) {
   const reduce = useReducedMotion();
   const [progress, setT] = useState(0);
@@ -161,6 +164,11 @@ export function ResultsScreen({
         >
           <Icon name="share-fat" size={22} />
         </button>
+        {onChallenge && (
+          <Button size="md" variant="secondary" icon="sword" onClick={onChallenge} className="col-span-2 w-full">
+            Challenge a friend
+          </Button>
+        )}
         <Link href="/" className="text-muted col-span-2 py-2 text-center text-[15px] font-medium">
           Back to the Grid
         </Link>
