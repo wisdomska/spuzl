@@ -32,7 +32,7 @@ export function SpuzWear({
   const m: SpuzMood = hat && mood === "party" ? "cheer" : mood;
   return (
     <div
-      className={`relative shrink-0 ${className ?? ""}`}
+      className={`relative shrink-0 ${hat ? "spuz-no-tuft" : ""} ${className ?? ""}`}
       style={{ width: size, height: size, ...style }}
       role={label ? "img" : undefined}
       aria-label={label}

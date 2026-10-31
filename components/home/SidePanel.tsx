@@ -114,7 +114,7 @@ export function SidePanel() {
               All
             </Link>
           </div>
-          {friends.isLoading ? (
+          {friends.isPending ? (
             <Skeleton className="h-10 rounded-[12px]" />
           ) : online.length === 0 ? (
             <p className="text-muted text-[14px]">

@@ -96,7 +96,7 @@ export default function LeaderboardsPage() {
         </label>
       </div>
 
-      {q.isLoading ? (
+      {q.isPending ? (
         <ListSkeleton rows={8} />
       ) : q.isError ? (
         <ErrorState onRetry={() => q.refetch()} />

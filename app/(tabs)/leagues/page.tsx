@@ -39,7 +39,7 @@ export default function LeaguesPage() {
   return (
     <TabPage label="Leagues">
       {ceremony && <LeagueCeremony c={ceremony} onDone={() => setSeen(ceremony.leagueId)} />}
-      {q.isLoading ? (
+      {q.isPending ? (
         <ListSkeleton rows={10} height={44} />
       ) : q.isError ? (
         <ErrorState onRetry={() => q.refetch()} />

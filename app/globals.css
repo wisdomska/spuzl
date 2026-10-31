@@ -417,3 +417,8 @@ select {
   height: 720px;
   transform-origin: top left;
 }
+/* SpuzWear: a worn hat replaces the tuft (Spuz draws the tuft as the first child of its body layer).
+   Path: root > hop layer > body > animated body > tuft. */
+.spuz-no-tuft > .spuz-root > div:nth-child(2) > div:nth-child(3) > div:first-child > div:first-child {
+  display: none;
+}
