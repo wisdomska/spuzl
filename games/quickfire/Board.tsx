@@ -4,12 +4,17 @@ import { useMemo } from "react";
 import type { BoardProps } from "@/games/types";
 import { QuizBoard, type QuizRound } from "@/games/_shared/QuizBoard";
 import { unseal } from "@/games/_shared/cluecave";
+import { useGameSettings } from "@/lib/game-settings/client";
 import { sealKey, type QuickfirePuzzle, type QuickfireState } from "./logic";
 
 const CAT_LABEL = { africa: "Africa", sport: "Sport", music: "Music", science: "Science", world: "World" } as const;
 
-/** Quickfire: five questions, 15 seconds each, on the shared timed quiz board. */
+/**
+ * Quickfire: five questions, 15 seconds each, on the shared timed quiz board. Answers stay hidden until
+ * Start; each answer is revealed, then the next question follows after the admin-tunable delay.
+ */
 export default function QuickfireBoard({ puzzle, initialState, hint, disabled, mode, api }: BoardProps<QuickfirePuzzle, QuickfireState>) {
+  const advanceMs = useGameSettings()["quickfire.autoAdvanceMs"];
   const correct = useMemo(() => unseal<number[]>(puzzle.sealed, sealKey(puzzle.ref)), [puzzle]);
   const rounds = useMemo<QuizRound[]>(
     () =>
@@ -32,6 +37,7 @@ export default function QuickfireBoard({ puzzle, initialState, hint, disabled, m
       disabled={disabled}
       mode={mode}
       api={api}
+      advanceMs={advanceMs}
     />
   );
 }
