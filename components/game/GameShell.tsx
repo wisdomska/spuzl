@@ -287,8 +287,9 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
       </main>
 
       {/* 5 Feedback line: never overlays the board */}
-      <div className="mx-4 min-h-12">
-        <AnimatePresence mode="popLayout" initial={false}>
+      {/* One status at a time: the old line leaves (120 ms) before the new one enters. */}
+      <div className="relative mx-4 min-h-12">
+        <AnimatePresence mode="wait" initial={false}>
           {feedback.text && <FeedbackLine key={feedback.n} {...feedback} />}
         </AnimatePresence>
       </div>
