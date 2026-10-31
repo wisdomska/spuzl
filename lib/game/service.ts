@@ -17,7 +17,7 @@ import {
   levelFromXp,
   type Reward,
 } from "@/lib/rewards";
-import { update as glicko, dailyResult, DEFAULT_RATING } from "@/lib/rating/glicko2";
+import { update as glicko, clampOneTier, dailyResult, DEFAULT_RATING } from "@/lib/rating/glicko2";
 import { decodeSolution, encodeSolution } from "./solution-codec";
 import { evaluateAfterClear, type Unlock } from "@/lib/gamification/progress";
 
@@ -534,7 +534,8 @@ export async function finishAttempt(
 async function updateRating(admin: SupabaseClient, playerId: string, track: string, percentile: number, hints: number, mistakes: number) {
   const { data } = await admin.from("ratings").select("rating, rd, vol, games").eq("player_id", playerId).eq("track", track).maybeSingle();
   const cur = data ? { rating: Number(data.rating), rd: Number(data.rd), vol: Number(data.vol) } : DEFAULT_RATING;
-  const next = glicko(cur, [dailyResult(percentile, hints, mistakes)]);
+  const raw = glicko(cur, [dailyResult(percentile, hints, mistakes)]);
+  const next = { ...raw, rating: clampOneTier(cur.rating, raw.rating) };
   await admin.from("ratings").upsert({
     player_id: playerId,
     track,

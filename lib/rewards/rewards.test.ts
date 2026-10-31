@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { dailyClearReward, freePlayReward, levelFromXp, speedBonus, xpForLevel, flameTier, FREE_XP_DAILY_CAP } from "./index";
-import { update, DEFAULT_RATING, dailyResult, rankFor } from "@/lib/rating/glicko2";
+import { update, DEFAULT_RATING, dailyResult, rankFor, clampOneTier, RANKS } from "@/lib/rating/glicko2";
 
 describe("rewards", () => {
   it("matches the designed Results screen: no hints, 0 slips, fast = +120 XP, +25 Sparks", () => {
@@ -93,5 +93,26 @@ describe("glicko-2", () => {
     const r = dailyClearReward({ ...base, hintXpKeptPct: 75 });
     expect(r.xp).toBe(Math.floor((full * 75) / 100));
     expect(r.lines.at(-1)).toMatchObject({ label: "Hints used, 75% kept" });
+  });
+});
+
+describe("rank tiers (SPZ-26)", () => {
+  it("one result never skips a tier, up or down", () => {
+    expect(rankFor(clampOneTier(1150, 1450)).name).toBe("Solver");
+    expect(clampOneTier(1150, 1450)).toBeLessThan(1400);
+    expect(rankFor(clampOneTier(1650, 1150)).name).toBe("Strategist");
+    expect(clampOneTier(1150, 1250)).toBe(1250);
+    expect(clampOneTier(1150, 1100)).toBe(1100);
+  });
+  it("a brand-new player's best possible first results climb one rank at a time", () => {
+    let r = { ...DEFAULT_RATING };
+    let tier = RANKS.findIndex((t) => t.name === rankFor(r.rating).name);
+    for (let i = 0; i < 40; i++) {
+      const raw = update(r, [dailyResult(100, 0, 0)]);
+      r = { ...raw, rating: clampOneTier(r.rating, raw.rating) };
+      const now = RANKS.findIndex((t) => t.name === rankFor(r.rating).name);
+      expect(now - tier).toBeLessThanOrEqual(1);
+      tier = now;
+    }
   });
 });

@@ -100,3 +100,21 @@ export function rankFor(rating: number): { name: string; division: "III" | "II" 
   const third = Math.min(2, Math.max(0, Math.floor(((rating - lo) / span) * 3)));
   return { name: r.name, division: (["III", "II", "I"] as const)[third], emblem: r.emblem };
 }
+
+const tierIndex = (rating: number) => {
+  let idx = 0;
+  for (let i = 0; i < RANKS.length; i++) if (rating >= RANKS[i].min) idx = i;
+  return idx;
+};
+
+/**
+ * A single result moves a player at most one rank (SPZ-26): a big jump from Thinker lands at the top of
+ * Solver, never straight in Strategist; a big drop lands at the bottom of the rank below.
+ */
+export function clampOneTier(before: number, after: number): number {
+  const from = tierIndex(before);
+  const to = tierIndex(after);
+  if (to > from + 1) return RANKS[from + 2].min - 0.01;
+  if (to < from - 1) return RANKS[from - 1].min;
+  return after;
+}
