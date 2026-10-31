@@ -90,10 +90,11 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   const running = started && !paused && !solved;
   useEffect(() => {
     if (!running) return;
-    clock.current.since = performance.now();
-    const id = setInterval(() => setElapsed(clock.current.base + performance.now() - clock.current.since), 200);
+    const c = clock.current; // one mutable clock for the shell's lifetime
+    c.since = performance.now();
+    const id = setInterval(() => setElapsed(c.base + performance.now() - c.since), 200);
     return () => {
-      clock.current.base += performance.now() - clock.current.since;
+      c.base += performance.now() - c.since;
       clearInterval(id);
     };
   }, [running]);
@@ -107,18 +108,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
     return () => document.removeEventListener("visibilitychange", onVis);
   }, [started, solved]);
 
-  // Fresh puzzle (free play next): reset per-puzzle state.
-  useEffect(() => {
-    clock.current = { base: 0, since: 0 };
-    setElapsed(0);
-    setStarted(false);
-    setSolved(false);
-    setHint(null);
-    setFeedback({ text: "", tone: "info", n: 0 });
-    mistakes.current = 0;
-    hintsUsed.current = 0;
-    stateRef.current = initialState;
-  }, [puzzleKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  // A new puzzle remounts the shell (parents pass key={puzzleKey}), which resets all per-puzzle state.
 
   const api = useMemo<BoardApi<St>>(
     () => ({
