@@ -1,11 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Spuz } from "@/components/brand/Spuz";
 import { Button } from "@/components/ui/Button";
+import { PageLoader } from "@/components/ui/PageLoader";
 import { Icon } from "@/components/ui/Icon";
 import CrownfallBoard from "@/games/crownfall/Board";
 import { TUTORIAL_PUZZLE } from "@/games/crownfall/tutorial";
@@ -74,6 +75,12 @@ export default function Welcome() {
   const [clearMs, setClearMs] = useState(0);
   // Where the player lands after making their Spuz: the Grid, or All games when they chose to pick one.
   const [dest, setDest] = useState<"/" | "/library">("/");
+  // Saved and on the way: cover the screen with the loader while the next page renders on the server.
+  const [leaving, setLeaving] = useState(false);
+  // Fetch the destination's shell ahead of time, so the hand-off after "Enter The Grid" is quick.
+  useEffect(() => {
+    if (step === "nickname") router.prefetch(dest);
+  }, [step, dest, router]);
 
   const a = analyze(TUTORIAL_PUZZLE, cells);
   const rules = [
@@ -127,6 +134,7 @@ export default function Welcome() {
       writeOnboarding({ tutorialDone: !!clear.current });
       qc.removeQueries({ queryKey: ["me"] });
       qc.removeQueries({ queryKey: ["today"] });
+      setLeaving(true);
       router.replace(dest);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Something went wrong. Try again.";
@@ -139,6 +147,7 @@ export default function Welcome() {
 
   return (
     <main className="safe-top bg-bg relative mx-auto flex min-h-dvh max-w-[560px] flex-col overflow-hidden">
+      {leaving && <PageLoader message={dest === "/library" ? "Opening all games" : "Opening the Grid"} />}
       <AnimatePresence mode="wait" initial={false}>
         {step === "age" && (
           <Screen key="age">
@@ -380,7 +389,7 @@ export default function Welcome() {
               </p>
             </div>
             <Button size="lg" className="mt-auto w-full text-[17px]" disabled={!nick || !!problem} loading={saving} onClick={enter}>
-              Enter The Grid
+              {saving ? "Making your Spuz…" : "Enter The Grid"}
             </Button>
           </Screen>
         )}

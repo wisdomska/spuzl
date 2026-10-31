@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { WORLDS, gamesInWorld, LAUNCH_IDS, type WorldId } from "@/lib/catalog";
 import { Island } from "./Island";
@@ -45,6 +45,12 @@ export function HomeMap({
   const busy = useRef(false);
   const idx = (w: WorldId) => WORLDS.findIndex((x) => x.id === w);
   const width = 390;
+
+  // Islands navigate in code (after Spuz's hop), so prefetch every world: the loading screen is then ready
+  // the moment the hop ends, even on a slow connection.
+  useEffect(() => {
+    for (const w of WORLDS) router.prefetch(`/world/${w.id}`);
+  }, [router]);
 
   // World travel (Handoff): camera + Spuz hops along the dotted path in 3 arcs over 700 ms; RM cross-fades.
   const travel = (w: WorldId) => {

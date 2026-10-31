@@ -70,6 +70,11 @@ export function PlayScreen({
     if (me.isSuccess && me.data === null) router.replace(readOnboarding().introSeen ? "/welcome" : "/intro");
   }, [me.isSuccess, me.data, router]);
 
+  // Back goes to the world page in code, so have its loading screen ready.
+  useEffect(() => {
+    router.prefetch(`/world/${meta.world}`);
+  }, [router, meta.world]);
+
   const beginRef = useRef<(m: Mode) => Promise<void>>(async () => {});
   const begin = useCallback(
     async (m: Mode): Promise<void> => {

@@ -630,3 +630,67 @@ select {
   outline: none;
   box-shadow: var(--focus-ring);
 }
+
+/* ---------- page loader (components/ui/PageLoader.tsx) ---------- */
+.spuz-page-loader {
+  animation: spuz-loader-in 0.25s ease-out 0.2s both;
+}
+@keyframes spuz-loader-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.spuz-page-loader-bob {
+  animation: spuz-loader-bob 1.4s ease-in-out infinite;
+}
+@keyframes spuz-loader-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+.spuz-page-loader-dots span {
+  animation: spuz-loader-dot 1.2s ease-in-out infinite;
+}
+.spuz-page-loader-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.spuz-page-loader-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+@keyframes spuz-loader-dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.25;
+  }
+  30% {
+    opacity: 1;
+  }
+}
+.spuz-page-loader-bar {
+  animation: spuz-loader-bar 1.1s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+@keyframes spuz-loader-bar {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+[data-motion="reduce"] .spuz-page-loader-bob,
+[data-motion="reduce"] .spuz-page-loader-dots span,
+[data-motion="reduce"] .spuz-page-loader-bar {
+  animation: none;
+}
+[data-motion="reduce"] .spuz-page-loader-bar {
+  width: 100%;
+  opacity: 0.6;
+}
