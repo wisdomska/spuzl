@@ -128,7 +128,8 @@ export function saveAttempt(id: string, state: unknown, activeMs: number) {
   return api<{ ok: true }>(`/api/v1/attempts/${id}`, { method: "PATCH", json: { state, activeMs } });
 }
 export function requestHint(id: string, state: unknown) {
-  return api<{ hint: Hint | null }>(`/api/v1/attempts/${id}/hint`, { json: { state } });
+  // `null`, not undefined: "no moves yet" must still send the key
+  return api<{ hint: Hint | null }>(`/api/v1/attempts/${id}/hint`, { json: { state: state ?? null } });
 }
 
 export interface FinishRes {

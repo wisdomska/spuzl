@@ -3,7 +3,7 @@ import { body, handle, ok, rateLimit, requirePlayer } from "@/lib/api/server";
 import { finishAttempt } from "@/lib/game/service";
 
 const Finish = z.object({
-  state: z.unknown(),
+  state: z.unknown().default(null),
   activeMs: z.number().min(0).max(86_400_000),
   mistakes: z.number().int().min(0).max(10_000).default(0),
   deaths: z.number().int().min(0).max(100_000).optional(),

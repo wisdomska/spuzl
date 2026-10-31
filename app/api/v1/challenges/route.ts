@@ -5,7 +5,7 @@ import { createChallenge } from "@/lib/multiplayer/server/async";
 const Create = z.object({
   attemptId: z.string().uuid(),
   timeline: z
-    .array(z.object({ ms: z.number().min(0).max(86_400_000), state: z.unknown() }))
+    .array(z.object({ ms: z.number().min(0).max(86_400_000), state: z.unknown().default(null) }))
     .max(60)
     .optional(),
 });

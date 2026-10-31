@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/admin/auth";
 import { getPuzzle, logicFor } from "@/lib/admin/puzzles";
 import { decodeSolution } from "@/lib/game/solution-codec";
 
-const Body = z.object({ state: z.unknown() });
+const Body = z.object({ state: z.unknown().default(null) });
 
 /** POST /api/admin/puzzles/:id/verify: Play test. The game's verify() judges the board state against the stored solution. */
 export const POST = handle(async (req: Request, rc: RouteContext<"/api/admin/puzzles/[id]/verify">) => {

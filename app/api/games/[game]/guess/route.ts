@@ -6,7 +6,7 @@ import { attemptPuzzle } from "@/lib/game/service";
 
 const Guess = z.object({
   ref: z.object({ game: z.string(), i: z.number().int().min(0).max(100_000), d: z.enum(["easy", "medium", "hard", "expert", "mega"]) }),
-  guess: z.unknown(),
+  guess: z.unknown().default(null),
   /** the open attempt this guess belongs to; the server checks against that attempt's stored puzzle */
   attemptId: z.uuid().optional(),
 });

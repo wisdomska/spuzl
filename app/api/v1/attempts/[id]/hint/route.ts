@@ -2,7 +2,7 @@ import { z } from "zod";
 import { body, handle, ok, rateLimit, requirePlayer } from "@/lib/api/server";
 import { hintFor } from "@/lib/game/service";
 
-const HintReq = z.object({ state: z.unknown() });
+const HintReq = z.object({ state: z.unknown().default(null) });
 
 /** POST /api/v1/attempts/:id/hint: one safe deduction computed server-side (solutions never reach the client). */
 export const POST = handle(async (req: Request, ctx: RouteContext<"/api/v1/attempts/[id]/hint">) => {

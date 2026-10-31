@@ -2,7 +2,7 @@ import { z } from "zod";
 import { body, handle, ok, rateLimit, requirePlayer } from "@/lib/api/server";
 import { saveAttempt } from "@/lib/game/service";
 
-const Save = z.object({ state: z.unknown(), activeMs: z.number().min(0).max(86_400_000) });
+const Save = z.object({ state: z.unknown().default(null), activeMs: z.number().min(0).max(86_400_000) });
 
 /** PATCH /api/v1/attempts/:id: autosave every 10 s or on pause (FR-GP-05). */
 export const PATCH = handle(async (req: Request, ctx: RouteContext<"/api/v1/attempts/[id]">) => {

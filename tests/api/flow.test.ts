@@ -129,4 +129,12 @@ describe("api: daily clear flow", () => {
     const c = await g.api("/api/v1/attempts", { json: { game: "crownfall", mode: "free", difficulty: "easy" } });
     expect((await g.api("/api/games/rungs/guess", { json: { ref, guess, attemptId: c.data.attemptId } })).status).toBe(400);
   });
+
+  it("gives a hint before the first move (no state sent)", async () => {
+    const g = await guest(uniq("first_"));
+    const s = await g.api("/api/v1/attempts", { json: { game: "crownfall", mode: "free", difficulty: "easy" } });
+    const r = await g.api(`/api/v1/attempts/${s.data.attemptId}/hint`, { json: {} });
+    expect(r.status, JSON.stringify(r.data)).toBe(200);
+    expect(r.data.hint?.text).toBeTruthy();
+  });
 });
