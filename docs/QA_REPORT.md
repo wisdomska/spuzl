@@ -74,7 +74,7 @@ The first limit in production will be the Supabase free tier's shared compute. W
 
 Resolved after this report was first written: Shop hint packs now extend the 3 free hints in free play and the archive (never the ranked Daily). `/duel?friend=` opens a ready challenge link named for the friend, and `/party?crew=` labels the room for the crew. Crew Clash results are settled every Monday at 00:07 GMT. Content-game guesses are checked against the player's own attempt, so admin-scheduled custom word items work. Equipped Shop board themes colour the backdrop and frame around every board (cells keep their game colours). A fresh database also lost the Realtime match-channel grant; that is fixed by migration `20261104000001`.
 
-- **Clue Cave:** answers ship to the client scrambled, not hidden. An answer-reveal endpoint would close this.
+- **Clue Cave:** answers ship sealed so feedback is instant and offline Dailies work (decision M8). The server re-checks every finish.
 - **Rage Ridge:** the shell timer and the simulation clock can differ by a few hundred ms.
 - **Shop catalogue:** it has fewer hats than the design frame (art needed).
 - **Google sign-in:** it needs the Google provider enabled in Supabase (owner step).
