@@ -118,7 +118,7 @@ function Archive() {
               <Icon name="caret-right" size={20} />
             </button>
           </div>
-          <div role="grid" aria-label={`${meta.name} Dailies, ${monthName}`} className="grid grid-cols-7 gap-1.5">
+          <div role="group" aria-label={`${meta.name} Dailies, ${monthName}`} className="grid grid-cols-7 gap-1.5">
             {DOW.map((d, i) => (
               <span key={i} aria-hidden className="text-muted text-center text-[12px] font-semibold">
                 {d}
@@ -210,9 +210,8 @@ function DayCell({ d, color, selected, onPick }: { d: Day; color: string; select
   const status = isToday ? "today" : future ? "not yet" : cleared ? "cleared" : locked ? "locked, SPUZL+" : d.state;
   return (
     <button
-      role="gridcell"
       aria-label={`${shortDate(d.date)}, ${status}`}
-      aria-selected={selected}
+      aria-pressed={selected}
       disabled={future}
       onClick={onPick}
       className="flex aspect-square flex-col items-center justify-center gap-px rounded-[12px]"
