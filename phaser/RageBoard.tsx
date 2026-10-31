@@ -94,7 +94,6 @@ const mono: CSSProperties = {
 
 interface Hud {
   deaths: number;
-  timeMs: number;
   metres: number;
   score: number;
   progress: number;
@@ -160,7 +159,6 @@ export function RageBoard<S extends SimCore>({
   const readHud = useCallback(
     (): Hud => ({
       deaths: ctl.sim.deaths,
-      timeMs: ctl.timeMs(),
       metres: spec.metres?.(ctl.sim) ?? 0,
       score: ctl.sim.score(),
       progress: ctl.sim.progress(),
@@ -244,6 +242,7 @@ export function RageBoard<S extends SimCore>({
   }, [ctl, disabled]);
 
   // The shell timer shows the simulation clock (fixed steps), which is the time the server replays and scores.
+  // It is the only clock on screen: the in-canvas HUD carries deaths, score, distance and the ghost read.
   useEffect(() => {
     api.setClock?.(() => ctl.timeMs());
     return () => api.setClock?.(null);
@@ -477,11 +476,6 @@ export function RageBoard<S extends SimCore>({
                 >
                   <Icon name="skull" size={18} style={{ color: "var(--w-rage)" }} />
                   {hud.deaths}
-                </div>
-              )}
-              {spec.hud !== "distance" && spec.hud !== "race" && (
-                <div style={{ ...chip, ...mono }} aria-label={`Time ${formatClock(hud.timeMs)}`}>
-                  {formatClock(hud.timeMs)}
                 </div>
               )}
             </div>
