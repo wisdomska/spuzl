@@ -7,6 +7,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Spuz } from "@/components/brand/Spuz";
 import { Button } from "@/components/ui/Button";
 import { PageLoader } from "@/components/ui/PageLoader";
+import { EmailCodeSignIn } from "@/components/onboarding/EmailCodeSignIn";
+import { copy } from "@/lib/copy";
 import { Icon } from "@/components/ui/Icon";
 import CrownfallBoard from "@/games/crownfall/Board";
 import { TUTORIAL_PUZZLE } from "@/games/crownfall/tutorial";
@@ -19,7 +21,7 @@ import { formatShort } from "@/lib/format";
 import { play, duck } from "@/lib/audio";
 import { PATTERNS, haptic } from "@/lib/haptics";
 
-type Step = "age" | "under13" | "start" | "tutorial" | "firstclear" | "nickname";
+type Step = "hello" | "signin" | "age" | "under13" | "start" | "tutorial" | "firstclear" | "nickname";
 type Age = "13-15" | "16-17" | "18+";
 
 const AGES: { v: Age; t: string; d: string }[] = [
@@ -61,7 +63,9 @@ const STARTS = [
 export default function Welcome() {
   const router = useRouter();
   const qc = useQueryClient();
-  const [step, setStep] = useState<Step>("age");
+  const [step, setStep] = useState<Step>("hello");
+  // Signed in with email during onboarding: the profile then belongs to that account, not a guest.
+  const [signedIn, setSignedIn] = useState(false);
   const [age, setAge] = useState<Age | null>(null);
   const [color, setColor] = useState(SKINS[1].c);
   const [nick, setNick] = useState("");
@@ -77,6 +81,29 @@ export default function Welcome() {
   const [dest, setDest] = useState<"/" | "/library">("/");
   // Saved and on the way: cover the screen with the loader while the next page renders on the server.
   const [leaving, setLeaving] = useState(false);
+  // Back from the sign-in email's link (/auth/callback?next=/welcome): returning players go home, new
+  // accounts finish onboarding signed in.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("auth") !== "linked") return;
+    let live = true;
+    api<{ id: string } | null>("/api/v1/me?optional=1")
+      .then((me) => {
+        if (!live) return;
+        if (me) {
+          writeOnboarding({ introSeen: true, tutorialDone: true });
+          setLeaving(true);
+          router.replace("/");
+        } else {
+          setSignedIn(true);
+          setStep("age");
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [router]);
+
   // Fetch the destination's shell ahead of time, so the hand-off after "Enter The Grid" is quick.
   useEffect(() => {
     if (step === "nickname") router.prefetch(dest);
@@ -143,12 +170,72 @@ export default function Welcome() {
     }
   };
 
-  const progress = { age: 1, under13: 1, start: 2, tutorial: 3, firstclear: 3, nickname: 4 }[step];
+  const progress = { hello: 0, signin: 0, age: 1, under13: 1, start: 2, tutorial: 3, firstclear: 3, nickname: 4 }[step];
 
   return (
     <main className="safe-top bg-bg relative mx-auto flex min-h-dvh max-w-[560px] flex-col overflow-hidden">
       {leaving && <PageLoader message={dest === "/library" ? "Opening all games" : "Opening the Grid"} />}
       <AnimatePresence mode="wait" initial={false}>
+        {step === "hello" && (
+          <Screen key="hello">
+            <motion.div
+              className="mt-8 flex justify-center"
+              initial={{ opacity: 0, transform: "translateY(24px) scale(0.85)" }}
+              animate={{ opacity: 1, transform: "translateY(0px) scale(1)" }}
+              transition={{ type: "spring", stiffness: 260, damping: 16 }}
+            >
+              <Spuz mood="wave" size={180} decorative />
+            </motion.div>
+            <h1 className="font-display text-center text-[32px] leading-[1.08] font-black tracking-[-0.02em] text-balance">
+              {copy.welcome.helloTitle}
+            </h1>
+            <p className="text-muted text-center text-[16px] leading-normal text-balance">{copy.welcome.helloBody}</p>
+            <div className="mt-auto flex flex-col gap-3">
+              <Button size="lg" className="w-full text-[17px]" icon="play" onClick={() => setStep("age")}>
+                {copy.welcome.playAsGuest}
+              </Button>
+              <Button size="lg" variant="secondary" className="w-full text-[17px]" icon="envelope-simple" onClick={() => setStep("signin")}>
+                {copy.welcome.signInWithEmail}
+              </Button>
+              <p className="text-muted text-center text-[13px]">{copy.welcome.signInLater}</p>
+            </div>
+          </Screen>
+        )}
+
+        {step === "signin" && (
+          <Screen key="signin">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                aria-label="Back"
+                onClick={() => setStep("hello")}
+                className="press bg-surface-raised flex size-11 items-center justify-center rounded-[14px]"
+              >
+                <Icon name="arrow-left" size={20} />
+              </button>
+              <h1 className="font-display text-[26px] leading-[1.1] font-black tracking-[-0.02em]">{copy.welcome.signInTitle}</h1>
+            </div>
+            <div className="flex justify-center">
+              <Spuz mood="thinking" size={120} decorative />
+            </div>
+            <EmailCodeSignIn
+              onDone={(hasProfile) => {
+                if (hasProfile) {
+                  qc.removeQueries({ queryKey: ["me"] });
+                  qc.removeQueries({ queryKey: ["today"] });
+                  writeOnboarding({ introSeen: true, tutorialDone: true });
+                  setLeaving(true);
+                  router.replace("/");
+                } else {
+                  // New account: set it up like any new player, signed in from the start.
+                  setSignedIn(true);
+                  setStep("age");
+                }
+              }}
+            />
+          </Screen>
+        )}
+
         {step === "age" && (
           <Screen key="age">
             <Progress n={progress} />
@@ -318,6 +405,12 @@ export default function Welcome() {
           <Screen key="nickname">
             <Progress n={progress} />
             <h1 className="font-display text-[28px] leading-[1.1] font-black tracking-[-0.02em]">Make Spuz yours</h1>
+            {signedIn && (
+              <p className="text-accent -mt-2 flex items-center gap-1.5 text-[14px] font-semibold">
+                <Icon name="check-circle" size={16} />
+                {copy.welcome.signedInNote}
+              </p>
+            )}
             <div className="bg-surface flex size-[220px] items-center justify-center self-center rounded-full">
               <Spuz mood="proud" size={190} color={color} decorative />
             </div>

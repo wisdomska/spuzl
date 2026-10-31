@@ -6,6 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSettings, prefersReducedMotion, type Settings } from "@/lib/settings/store";
 import { api, HttpError, useMe } from "@/lib/client/api";
+import { EmailCodeSignIn } from "@/components/onboarding/EmailCodeSignIn";
+import { copy } from "@/lib/copy";
 import { useBlocks, usePatchProfile, useUnblock, type MeExtra } from "@/lib/client/social";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { hasSupabase } from "@/lib/supabase/env";
@@ -339,14 +341,12 @@ function AccountSheet({ open, onClose, onDelete }: { open: boolean; onClose: () 
     setErr(null);
     setBusy(true);
     const sb = supabaseBrowser();
-    const { error } =
-      mode === "link"
-        ? await sb.auth.updateUser({ email: email.trim() }, { emailRedirectTo: redirect() })
-        : await sb.auth.signInWithOtp({ email: email.trim(), options: { shouldCreateUser: false, emailRedirectTo: redirect() } });
+    // Saving a guest: attach the email to this same account (the confirmation link keeps all progress).
+    const { error } = await sb.auth.updateUser({ email: email.trim() }, { emailRedirectTo: redirect() });
     setBusy(false);
     if (error)
       setErr(
-        mode === "link" && /already/i.test(error.message)
+        /already/i.test(error.message)
           ? "That email has an account. Use “Sign in instead” below."
           : "That didn't send. Check the address and try again.",
       );
@@ -381,10 +381,25 @@ function AccountSheet({ open, onClose, onDelete }: { open: boolean; onClose: () 
             <p role="status" className="bg-surface-raised rounded-[14px] px-3.5 py-3 text-[15px]">
               Check {sent}. Tap the link in the email to finish. Your progress stays put.
             </p>
+          ) : mode === "signin" ? (
+            <div className="flex flex-col gap-2">
+              <p className="text-[15px] font-semibold">{copy.account.signInExisting}</p>
+              <p className="text-gold text-[13px]">{copy.account.signInLeavesGuest}</p>
+              <EmailCodeSignIn
+                autoFocus={false}
+                onDone={(hasProfile) => {
+                  qc.clear();
+                  router.replace(hasProfile ? "/" : "/welcome");
+                }}
+              />
+              <button type="button" onClick={() => setMode("link")} className="text-accent h-11 text-[14px] font-semibold">
+                {copy.account.backToSaving}
+              </button>
+            </div>
           ) : (
             <form onSubmit={byEmail} className="flex flex-col gap-2">
               <label htmlFor="acct-email" className="text-[15px] font-semibold">
-                {mode === "link" ? "Or get a magic link by email" : "Sign in to an existing account"}
+                Or get a magic link by email
               </label>
               <input
                 id="acct-email"
@@ -396,20 +411,11 @@ function AccountSheet({ open, onClose, onDelete }: { open: boolean; onClose: () 
                 placeholder="you@example.com"
                 className="bg-surface-raised h-12 rounded-[14px] px-3.5 text-[16px] outline-none"
               />
-              {mode === "signin" && (
-                <p className="text-gold text-[13px]">
-                  Signing in to another account leaves this guest&apos;s progress on this phone behind.
-                </p>
-              )}
               <Button type="submit" loading={busy} disabled={!/^\S+@\S+\.\S+$/.test(email)}>
                 Send magic link
               </Button>
-              <button
-                type="button"
-                onClick={() => setMode(mode === "link" ? "signin" : "link")}
-                className="text-accent h-11 text-[14px] font-semibold"
-              >
-                {mode === "link" ? "Already have an account? Sign in instead" : "Back to saving this guest"}
+              <button type="button" onClick={() => setMode("signin")} className="text-accent h-11 text-[14px] font-semibold">
+                Already have an account? Sign in instead
               </button>
             </form>
           )}
