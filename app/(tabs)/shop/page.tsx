@@ -16,12 +16,21 @@ import { formatNumber } from "@/lib/format";
 import { play } from "@/lib/audio";
 
 const THEMES = BOARD_THEMES;
+/** Shop tile icon and colour per hat. */
+const HAT_ICON: Record<string, [string, string]> = {
+  party: ["confetti", "#FFC93C"],
+  crown: ["crown-simple", "#FFC93C"],
+  kente: ["baseball-cap", "#FF8A3D"],
+  shades: ["sunglasses", "#2FD3E0"],
+  headphones: ["headphones", "#8B7CFF"],
+  chef: ["chef-hat", "#F4F5FB"],
+};
 
 function itemIcon(i: ShopItem): { icon: string; color: string } {
   if (i.type === "hat")
     return {
-      icon: i.payload.hat === "crown" ? "crown-simple" : i.payload.hat === "kente" ? "baseball-cap" : "confetti",
-      color: i.payload.hat === "kente" ? "#FF8A3D" : "#FFC93C",
+      icon: HAT_ICON[String(i.payload.hat)]?.[0] ?? "confetti",
+      color: HAT_ICON[String(i.payload.hat)]?.[1] ?? "#FFC93C",
     };
   if (i.type === "skin") return { icon: i.payload.effect === "prism" ? "sparkle" : "drop", color: String(i.payload.color ?? "#B8F23A") };
   if (i.type === "board_theme") return { icon: "grid-four", color: THEMES[String(i.payload.theme)]?.mark ?? "#B8F23A" };

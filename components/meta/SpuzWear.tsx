@@ -7,7 +7,7 @@ import { Spuz, type SpuzMood } from "@/components/brand/Spuz";
  * Spuz wearing Shop cosmetics: skin colour plus a hat drawn over the head (Spuz itself only draws the
  * party hat in its party mood). Units are Spuz em (size / 12) so hats scale with any avatar size.
  */
-export type HatId = "party" | "crown" | "kente" | string;
+export type HatId = "party" | "crown" | "kente" | "shades" | "headphones" | "chef" | string;
 
 export function SpuzWear({
   size,
@@ -96,6 +96,133 @@ function Hat({ id, size }: { id: HatId; size: number }) {
         />
       </div>
     );
+  // Spuz geometry in em (root box): body x 1.5..10.5 from y 3.05; left eye x 3.2..5.6, y 4.7..7.3;
+  // right eye x 6.65..8.25, y 5.3..7.05; side ear x 9.5..11.6, y 5.65..7.75.
+  if (id === "shades") {
+    const lens = (l: number, t: number, w: number, h: number): CSSProperties => ({
+      position: "absolute",
+      left: l * em,
+      top: t * em,
+      width: w * em,
+      height: h * em,
+      borderRadius: `${0.45 * em}px ${0.45 * em}px ${1 * em}px ${1 * em}px`,
+      background: "linear-gradient(160deg,#2B2F4A 0 30%,#0E0F1A 30%)",
+      boxShadow: `inset 0 0 0 ${0.16 * em}px #0E0F1A`,
+    });
+    return (
+      <div aria-hidden style={{ ...box, inset: 0, transform: "rotate(-3deg)", transformOrigin: "50% 50%" }}>
+        <div
+          style={{
+            position: "absolute",
+            left: 1.75 * em,
+            top: 5.05 * em,
+            width: 7.9 * em,
+            height: 0.32 * em,
+            borderRadius: 0.16 * em,
+            background: "#0E0F1A",
+          }}
+        />
+        <div style={lens(2.85, 4.55, 3.1, 2.75)} />
+        <div style={lens(6.4, 4.85, 2.25, 2.3)} />
+        <div
+          style={{
+            position: "absolute",
+            left: 3.3 * em,
+            top: 4.95 * em,
+            width: 0.9 * em,
+            height: 0.22 * em,
+            borderRadius: 0.11 * em,
+            background: "#2FD3E0",
+            opacity: 0.8,
+          }}
+        />
+      </div>
+    );
+  }
+  if (id === "headphones") {
+    const cup = (l: number): CSSProperties => ({
+      position: "absolute",
+      left: l * em,
+      top: 5.0 * em,
+      width: 1.55 * em,
+      height: 2.6 * em,
+      borderRadius: 0.75 * em,
+      background: "#8B7CFF",
+      boxShadow: `inset ${-0.25 * em}px ${-0.3 * em}px 0 rgba(0,0,0,.22), 0 0 0 ${0.14 * em}px #0E0F1A`,
+    });
+    return (
+      <div aria-hidden style={{ ...box, inset: 0 }}>
+        <div
+          style={{
+            position: "absolute",
+            left: 1.25 * em,
+            top: 1.75 * em,
+            width: 9.6 * em,
+            height: 5.2 * em,
+            border: `${0.55 * em}px solid #5B4BD6`,
+            borderBottom: "none",
+            borderRadius: `${4.8 * em}px ${4.8 * em}px 0 0`,
+            boxSizing: "border-box",
+          }}
+        />
+        <div style={cup(0.7)} />
+        <div style={cup(9.85)} />
+        <div
+          style={{
+            position: "absolute",
+            left: 10.15 * em,
+            top: 5.55 * em,
+            width: 0.5 * em,
+            height: 0.5 * em,
+            borderRadius: "50%",
+            background: "#B8F23A",
+          }}
+        />
+      </div>
+    );
+  }
+  if (id === "chef") {
+    const puff = (l: number, t: number, s: number): CSSProperties => ({
+      position: "absolute",
+      left: l * em,
+      top: t * em,
+      width: s * em,
+      height: s * em,
+      borderRadius: "50%",
+      background: "#F4F5FB",
+      boxShadow: `inset ${-0.25 * em}px ${-0.25 * em}px 0 rgba(14,15,26,.10)`,
+    });
+    return (
+      <div aria-hidden style={{ ...box, inset: 0, transform: "rotate(-5deg)", transformOrigin: "50% 30%" }}>
+        <div style={puff(3.2, 0.75, 2.4)} />
+        <div style={puff(6.1, 0.75, 2.4)} />
+        <div style={puff(4.45, -0.05, 2.9)} />
+        <div
+          style={{
+            position: "absolute",
+            left: 3.75 * em,
+            top: 1.9 * em,
+            width: 4.3 * em,
+            height: 1.55 * em,
+            background: "#F4F5FB",
+            borderRadius: `0 0 ${0.3 * em}px ${0.3 * em}px`,
+            boxShadow: `inset 0 ${-0.3 * em}px 0 rgba(14,15,26,.10)`,
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            left: 3.6 * em,
+            top: 3.0 * em,
+            width: 4.6 * em,
+            height: 0.55 * em,
+            background: "#D9DCEB",
+            borderRadius: 0.27 * em,
+          }}
+        />
+      </div>
+    );
+  }
   // party (default)
   return (
     <div
