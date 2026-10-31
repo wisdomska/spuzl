@@ -5,6 +5,7 @@
  */
 import { createHash } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
+import { encodeSolution } from "../lib/game/solution-codec.ts";
 import { argDays, dailyFor, datesFrom, readyGames, requiresUnique } from "./lib-dailies.mts";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -37,7 +38,7 @@ for (const game of readyGames()) {
           difficulty,
           grade: gen.grade,
           data: gen.puzzle,
-          solution: gen.solution,
+          solution: encodeSolution(gen.solution),
           solution_hash: hash,
           status: "scheduled",
         },

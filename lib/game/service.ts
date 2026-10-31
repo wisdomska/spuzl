@@ -16,6 +16,7 @@ import {
   type Reward,
 } from "@/lib/rewards";
 import { update as glicko, dailyResult, DEFAULT_RATING } from "@/lib/rating/glicko2";
+import { decodeSolution, encodeSolution } from "./solution-codec";
 import { evaluateAfterClear, type Unlock } from "@/lib/gamification/progress";
 
 export type Mode = "tutorial" | "daily" | "free" | "archive" | "challenge";
@@ -54,7 +55,7 @@ export async function loadDaily(admin: SupabaseClient, gameId: string, date: str
     .eq("date", date)
     .maybeSingle();
   const p = data?.puzzles as unknown as { data: unknown; solution: unknown; difficulty: Difficulty } | undefined;
-  if (data && p) return { puzzleId: data.puzzle_id, puzzle: p.data, solution: p.solution, difficulty: p.difficulty };
+  if (data && p) return { puzzleId: data.puzzle_id, puzzle: p.data, solution: decodeSolution(p.solution), difficulty: p.difficulty };
   // Safety net: no scheduled Daily (should never happen; the rollover alerts). Generate deterministically
   // from the date so every player still gets the same puzzle, and persist it.
   const difficulty = difficultyForDate(date);
@@ -69,7 +70,7 @@ export async function loadDaily(admin: SupabaseClient, gameId: string, date: str
         difficulty,
         grade: g.grade,
         data: g.puzzle,
-        solution: g.solution,
+        solution: encodeSolution(g.solution),
         solution_hash: solutionHash(g.solution),
         status: "scheduled",
       },
@@ -187,7 +188,7 @@ async function getAttempt(admin: SupabaseClient, playerId: string, id: string): 
 async function loadForAttempt(admin: SupabaseClient, a: AttemptRow): Promise<Loaded> {
   if (a.puzzle_id) {
     const { data } = await admin.from("puzzles").select("data, solution, difficulty").eq("id", a.puzzle_id).single();
-    return { puzzleId: a.puzzle_id, puzzle: data!.data, solution: data!.solution, difficulty: data!.difficulty };
+    return { puzzleId: a.puzzle_id, puzzle: data!.data, solution: decodeSolution(data!.solution), difficulty: data!.difficulty };
   }
   const [seed, difficulty] = (a.free_seed ?? "").split("|");
   return loadFree(a.game_id, seed, (difficulty as Difficulty) || "easy");

@@ -27,6 +27,9 @@ export const POST = handle(async (req: Request) => {
       avatar_color: input.color,
       country: input.country ?? null,
       is_guest: !!user.is_anonymous,
+      // Set SPUZL_TEST_ACCOUNTS=1 on a deployment that shares a production database: its players are
+      // test accounts and stay off public boards, medians and leagues.
+      is_test: process.env.SPUZL_TEST_ACCOUNTS === "1",
     },
     { onConflict: "id" },
   );

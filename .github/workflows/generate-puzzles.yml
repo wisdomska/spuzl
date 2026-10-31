@@ -1,9 +1,8 @@
 name: Generate puzzles
 
-# Keeps a 60-day Daily buffer for every game (SRS 9.1: generators run offline, weekly).
+# Manual fallback. The daily Vercel cron (/api/cron/generate) keeps the 60-day buffer full.
+# Needs SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in the production and preview GitHub environments.
 on:
-  schedule:
-    - cron: "41 2 * * 1"
   workflow_dispatch:
     inputs:
       days:
