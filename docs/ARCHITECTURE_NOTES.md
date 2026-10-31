@@ -77,8 +77,8 @@ screens are touched.
 ## Admin console
 
 `app/admin/(console)/*` pages backed by `/api/admin/*`; roles in `lib/admin/roles.ts`; every action writes the
-audit log (`admin_audit`). Feature flags table `feature_flags` (admin Flags page). Admin settings for new
-tunables will live in a `game_settings` key/value table read at runtime (added with the first ticket that needs it).
+audit log (`audit_log`). Feature flags table `feature_flags` (admin Flags page). Runtime tunables live in the
+`game_settings` key/value table (`lib/game-settings/*`, admin page "Game settings"), read at runtime with a 30 s cache.
 
 ## Tests and tooling
 
