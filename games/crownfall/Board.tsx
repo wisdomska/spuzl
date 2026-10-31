@@ -6,15 +6,24 @@ import { Icon } from "@/components/ui/Icon";
 import { useCellSize } from "@/components/game/useBoardSize";
 import { useGridKeys } from "@/components/game/useGridKeys";
 import { play } from "@/lib/audio";
+import { CROWNFALL_COPY } from "@/lib/copy/crownfall";
 import { analyze, CROWN, EMPTY, MARK, type CrownfallPuzzle, type CrownfallState } from "./logic";
+import { PatternsOffer } from "./PatternsOffer";
 
 type Tool = "crown" | "x";
-const GAP = 3;
+/** Region edge (each side of a boundary, so a boundary reads 4 px) and the hairline inside a region. */
+const EDGE = 2;
+const EDGE_COLOUR = "var(--text)";
+const HAIRLINE = "color-mix(in srgb, var(--text) 18%, transparent)";
+const CORNER = 10;
 
 /**
  * Crownfall board (Game Boards: Crownfall states). Tap cycles empty → X → crown (prototype `tap()`),
  * or with a tool selected, places that mark. Drag paints X. Rule breaks shake, hatch and ring the
  * offending cells; the clear wave flips cells to world colour from the last move.
+ *
+ * Cells touch (no gaps). Every side that faces another region or the board edge gets a thick line in
+ * var(--text), so region shapes never rely on colour alone; the palette keeps >= 4.5:1 against it.
  */
 export default function CrownfallBoard({ puzzle, initialState, hint, disabled, mode, api }: BoardProps<CrownfallPuzzle, CrownfallState>) {
   const n = puzzle.size;
@@ -28,8 +37,7 @@ export default function CrownfallBoard({ puzzle, initialState, hint, disabled, m
   const streak = useRef(0);
   const cellsRef = useRef(cells);
   const painting = useRef<null | { value: number }>(null);
-  const gap = n <= 4 ? 4 : GAP;
-  const cell = useCellSize(n, gap, 6, n <= 4 ? 72 : 64);
+  const cell = useCellSize(n, 0, 6, n <= 4 ? 72 : 64);
   const a = analyze(puzzle, cells);
 
   const commit = useCallback(
@@ -63,7 +71,7 @@ export default function CrownfallBoard({ puzzle, initialState, hint, disabled, m
       } else {
         if (value === CROWN) streak.current++;
         play("pop", { step: streak.current });
-        api.announce(`Row ${r}, column ${c}, region ${puzzle.regions[i] + 1}, ${markName}`);
+        api.announce(CROWNFALL_COPY.cellLabel(r - 1, c - 1, CROWNFALL_COPY.regionName(puzzle.regions[i]), markName));
         if (after.bad.size === 0) {
           const tip = mode === "tutorial" && after.crowns === n - 1 ? "One spot left that breaks no rule. Find the glow." : null;
           api.feedback(tip ?? `${after.crowns} of ${n} crowns`, "info", tip ? "hand-pointing" : "crown-simple");
@@ -140,87 +148,129 @@ export default function CrownfallBoard({ puzzle, initialState, hint, disabled, m
   const hintTarget = typeof hint?.target === "number" ? hint.target : -1;
   const tutorialGlow = mode === "tutorial" && !done && a.crowns === n - 1 && a.bad.size === 0;
 
+  const T = CROWNFALL_COPY;
+  const regionAt = (r: number, c: number) => (r < 0 || c < 0 || r >= n || c >= n ? -1 : puzzle.regions[r * n + c]);
+  const cornerRadius = (r: number, c: number) => {
+    const at = (rr: number, cc: number) => (r === rr && c === cc ? CORNER : 0);
+    return {
+      borderTopLeftRadius: at(0, 0),
+      borderTopRightRadius: at(0, n - 1),
+      borderBottomLeftRadius: at(n - 1, 0),
+      borderBottomRightRadius: at(n - 1, n - 1),
+    };
+  };
+
   return (
-    <div className={`overflow-x-auto ${done ? "board-pulse" : ""}`} style={{ maxWidth: "100%" }}>
-      <div
-        role="grid"
-        aria-label={`Crownfall board, ${n} by ${n}`}
-        aria-rowcount={n}
-        aria-colcount={n}
-        onKeyDown={keys.onKeyDown}
-        className="grid rounded-[20px] p-1.5"
-        style={{
-          gridTemplateColumns: `repeat(${n}, ${cell}px)`,
-          gap,
-          background: "var(--board-bg)",
-          boxShadow: "0 0 0 2px var(--line)",
-          perspective: 600,
-        }}
-      >
-        {Array.from({ length: n }, (_, r) => (
-          <div role="row" key={r} className="contents">
-            {Array.from({ length: n }, (_, c) => {
-              const i = r * n + c;
-              const v = cells[i];
-              const bad = a.bad.has(i);
-              const dist = Math.abs(r - lastR) + Math.abs(c - lastC);
-              let anim = "";
-              if (done) anim = "";
-              else if (bad && i === last) anim = shakeN % 2 ? "cell-shake-a" : "cell-shake-b";
-              else if (i === last) anim = tapN % 2 ? "cell-pop-a" : "cell-pop-b";
-              const glow = (tutorialGlow && v !== CROWN && isSafeCrown(puzzle, cells, i)) || i === hintTarget;
-              const fg = bad ? "var(--danger)" : v === MARK ? "#8A8EB0" : "var(--text)";
-              return (
-                <div
-                  key={i}
-                  role="gridcell"
-                  data-i={i}
-                  data-region={puzzle.regions[i]}
-                  tabIndex={keys.focus === i ? 0 : -1}
-                  aria-label={`Row ${r + 1}, column ${c + 1}, region ${puzzle.regions[i] + 1}, ${v === CROWN ? "crown" : v === MARK ? "marked empty" : "empty"}${bad ? ", breaks a rule" : ""}`}
-                  aria-selected={v === CROWN}
-                  onClick={() => {
-                    keys.setFocus(i);
-                    cycle(i);
-                  }}
-                  onPointerDown={onPointerDown(i)}
-                  onPointerEnter={onPointerEnter(i)}
-                  className={`relative flex cursor-pointer items-center justify-center rounded-[10px] outline-none focus-visible:z-10 ${anim} ${glow ? "hint-ring" : ""}`}
-                  style={{
-                    width: cell,
-                    height: cell,
-                    backgroundColor: `var(--reg-${puzzle.regions[i]})`,
-                    color: fg,
-                    boxShadow: glow ? "inset 0 0 0 4px var(--accent)" : bad ? "inset 0 0 0 3px var(--danger)" : undefined,
-                    fontSize: Math.round(cell / 2),
-                  }}
-                >
-                  {done && (
+    <div className="flex w-full flex-col items-center gap-3">
+      <div className={`max-w-full overflow-x-auto ${done ? "board-pulse" : ""}`}>
+        <div
+          role="grid"
+          aria-label={`Crownfall board, ${n} by ${n}`}
+          aria-rowcount={n}
+          aria-colcount={n}
+          onKeyDown={keys.onKeyDown}
+          className="grid rounded-[16px] p-1.5"
+          style={{
+            gridTemplateColumns: `repeat(${n}, ${cell}px)`,
+            background: "var(--board-bg)",
+            boxShadow: "0 0 0 2px var(--line)",
+            perspective: 600,
+          }}
+        >
+          {Array.from({ length: n }, (_, r) => (
+            <div role="row" key={r} className="contents">
+              {Array.from({ length: n }, (_, c) => {
+                const i = r * n + c;
+                const v = cells[i];
+                const reg = puzzle.regions[i];
+                const bad = a.bad.has(i);
+                const dist = Math.abs(r - lastR) + Math.abs(c - lastC);
+                let anim = "";
+                if (done) anim = "";
+                else if (bad && i === last) anim = shakeN % 2 ? "cell-shake-a" : "cell-shake-b";
+                else if (i === last) anim = tapN % 2 ? "cell-pop-a" : "cell-pop-b";
+                const glow = (tutorialGlow && v !== CROWN && isSafeCrown(puzzle, cells, i)) || i === hintTarget;
+                const fg = bad ? "var(--danger)" : v === MARK ? "#8A8EB0" : "var(--text)";
+                const radius = cornerRadius(r, c);
+                // Thick edge where the neighbour is another region or the board edge; a hairline inside a region
+                // (drawn on the right and bottom only, so it is never doubled).
+                const top = regionAt(r - 1, c) !== reg;
+                const left = regionAt(r, c - 1) !== reg;
+                const right = regionAt(r, c + 1) !== reg;
+                const bottom = regionAt(r + 1, c) !== reg;
+                const state = v === CROWN ? T.cellState.crown : v === MARK ? T.cellState.mark : T.cellState.empty;
+                return (
+                  <div
+                    key={i}
+                    role="gridcell"
+                    data-i={i}
+                    data-region={reg}
+                    data-edges={`${+top}${+right}${+bottom}${+left}`}
+                    tabIndex={keys.focus === i ? 0 : -1}
+                    aria-label={T.cellLabel(r, c, T.regionName(reg), state) + (bad ? T.cellState.bad : "")}
+                    aria-selected={v === CROWN}
+                    onClick={() => {
+                      keys.setFocus(i);
+                      cycle(i);
+                    }}
+                    onPointerDown={onPointerDown(i)}
+                    onPointerEnter={onPointerEnter(i)}
+                    className={`relative flex cursor-pointer items-center justify-center outline-none focus-visible:z-10 ${anim} ${glow ? "hint-ring" : ""}`}
+                    style={{
+                      width: cell,
+                      height: cell,
+                      backgroundColor: `var(--reg-${reg})`,
+                      color: fg,
+                      boxShadow: glow ? "inset 0 0 0 6px var(--accent)" : bad ? "inset 0 0 0 5px var(--danger)" : undefined,
+                      fontSize: Math.round(cell / 2),
+                      ...radius,
+                    }}
+                  >
                     <span
                       aria-hidden
-                      className="absolute inset-0 rounded-[10px]"
+                      className="pointer-events-none absolute inset-0"
                       style={{
-                        background: v === CROWN ? "var(--gold)" : "var(--world)",
-                        animation: `cell-flip 500ms var(--ease-out) ${dist * 70}ms both, fade-in 1ms linear ${dist * 70 + 250}ms both`,
+                        ...radius,
+                        borderStyle: "solid",
+                        borderTopWidth: top ? EDGE : 0,
+                        borderLeftWidth: left ? EDGE : 0,
+                        borderRightWidth: right ? EDGE : 1,
+                        borderBottomWidth: bottom ? EDGE : 1,
+                        borderTopColor: EDGE_COLOUR,
+                        borderLeftColor: EDGE_COLOUR,
+                        borderRightColor: right ? EDGE_COLOUR : HAIRLINE,
+                        borderBottomColor: bottom ? EDGE_COLOUR : HAIRLINE,
                       }}
                     />
-                  )}
-                  {bad && <span aria-hidden className="hatch absolute inset-0 rounded-[10px]" />}
-                  {v === CROWN && (
-                    <Icon
-                      name="crown-simple"
-                      size={Math.round(cell * 0.5)}
-                      className="relative"
-                      style={done ? { color: "#0E0F1A" } : undefined}
-                    />
-                  )}
-                  {v === MARK && !done && <Icon name="x" size={Math.round(cell * 0.45)} className="relative" />}
-                </div>
-              );
-            })}
-          </div>
-        ))}
+                    {done && (
+                      <span
+                        aria-hidden
+                        className="absolute inset-0"
+                        style={{
+                          ...radius,
+                          background: v === CROWN ? "var(--gold)" : "var(--world)",
+                          animation: `cell-flip 500ms var(--ease-out) ${dist * 70}ms both, fade-in 1ms linear ${dist * 70 + 250}ms both`,
+                        }}
+                      />
+                    )}
+                    {bad && <span aria-hidden className="hatch absolute inset-0" style={radius} />}
+                    {v === CROWN && (
+                      <Icon
+                        name="crown-simple"
+                        size={Math.round(cell * 0.5)}
+                        className="relative"
+                        style={done ? { color: "#0E0F1A" } : undefined}
+                      />
+                    )}
+                    {v === MARK && !done && <Icon name="x" size={Math.round(cell * 0.45)} className="relative" />}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
       </div>
+      {mode !== "tutorial" && <PatternsOffer onAccepted={(text) => api.announce(text)} />}
     </div>
   );
 }

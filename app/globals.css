@@ -236,31 +236,37 @@ select {
   filter: brightness(0.9);
 }
 
-/* Region palette for colour-region games (Crownfall). First 6 from the design; 7-10 extend the same muted family. */
+/*
+ * Region palette for colour-region games (Crownfall). Order and names (purple, teal, pink, green, orange,
+ * blue, red, olive, gold, grey) match CROWNFALL_COPY.regionNames. Every pair must stay CIEDE2000 ΔE >= 18
+ * for normal vision and >= 9 under simulated protanopia, deuteranopia and tritanopia, and every colour
+ * >= 4.5:1 against var(--text) (crowns, region edges). Enforced by games/crownfall/palette.test.ts; see
+ * docs/qa/CROWNFALL_PALETTE.md before changing a value.
+ */
 :root {
-  --reg-0: #4a3f8f;
-  --reg-1: #1f5468;
-  --reg-2: #6b3a6e;
-  --reg-3: #3f5a2e;
-  --reg-4: #7a4a2a;
-  --reg-5: #2b3f80;
-  --reg-6: #5e2e3e;
-  --reg-7: #2e5e58;
-  --reg-8: #6a5a1f;
-  --reg-9: #4e4e5e;
+  --reg-0: #382d79;
+  --reg-1: #007d86;
+  --reg-2: #680746;
+  --reg-3: #577957;
+  --reg-4: #a4602b;
+  --reg-5: #0e5c9b;
+  --reg-6: #7e3e3a;
+  --reg-7: #253a12;
+  --reg-8: #624d00;
+  --reg-9: #585859;
   --board-bg: #0a0b12;
 }
 [data-theme="light"] {
-  --reg-0: #cfc8ff;
-  --reg-1: #b5e3ee;
-  --reg-2: #eac4ec;
-  --reg-3: #c9e3b8;
-  --reg-4: #f2cfb2;
-  --reg-5: #bfcbf5;
-  --reg-6: #f1c2cf;
-  --reg-7: #b6e6de;
-  --reg-8: #ebdda4;
-  --reg-9: #d5d5e2;
+  --reg-0: #888deb;
+  --reg-1: #5af7f6;
+  --reg-2: #d09ec5;
+  --reg-3: #b4dbac;
+  --reg-4: #f1a872;
+  --reg-5: #6ac3fe;
+  --reg-6: #ef6d77;
+  --reg-7: #9c9a2f;
+  --reg-8: #ffe381;
+  --reg-9: #9d9d9d;
   --board-bg: #d8dce8;
 }
 /* Colour-blind modes add a per-region pattern so regions never rely on hue alone */
