@@ -6,7 +6,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { Spuz } from "@/components/brand/Spuz";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
-import { formatClock, formatNumber, formatShort } from "@/lib/format";
+import { formatClock, formatNumber } from "@/lib/format";
 import { play } from "@/lib/audio";
 import type { GameMeta } from "@/lib/catalog";
 import { WORLD_BY_ID } from "@/lib/catalog";
@@ -26,7 +26,9 @@ export function ResultsScreen({
   mistakes,
   relaxed,
   color,
-  onNext,
+  next,
+  another,
+  chips = [],
   onShare,
   onChallenge,
 }: {
@@ -36,7 +38,12 @@ export function ResultsScreen({
   mistakes: number;
   relaxed: boolean;
   color: string;
-  onNext: () => void;
+  /** primary: the named next game on the Home path ("Next in Logic Lab: Dusk") */
+  next: { label: string; onClick: () => void };
+  /** secondary: another puzzle of this game, same difficulty */
+  another: { label: string; onClick: () => void };
+  /** rank ups, badges, streaks: inline chips, never interstitials */
+  chips?: { icon: string; label: string }[];
   onShare: () => void;
   /** "Beat my time": sends a friend this exact puzzle with your time as a ghost timer */
   onChallenge?: () => void;
@@ -71,10 +78,10 @@ export function ResultsScreen({
     : relaxed
       ? `Relaxed clear. ${hints ? `${hints} hint${hints > 1 ? "s" : ""}.` : "No hints."}`
       : hints === 0 && mistakes === 0
-        ? `Clean. ${formatShort(result.timeMs)}, no hints. Who taught you?`
+        ? `Clean. ${formatClock(result.timeMs)}, no hints. Who taught you?`
         : hints === 0
-          ? `${formatShort(result.timeMs)}, no hints. Nice.`
-          : `${formatShort(result.timeMs)} with ${hints} hint${hints > 1 ? "s" : ""}. Next time, solo.`;
+          ? `${formatClock(result.timeMs)}, no hints. Nice.`
+          : `${formatClock(result.timeMs)} with ${hints} hint${hints > 1 ? "s" : ""}. Next time, solo.`;
   const fill = result.level.need ? result.level.into / result.level.need : 0;
   const levelled = result.level.after > result.level.before;
 
@@ -152,9 +159,25 @@ export function ResultsScreen({
           </div>
         )}
       </section>
+      {chips.length > 0 && (
+        <ul className="flex flex-wrap justify-center gap-2 px-4 pt-3" aria-label="Unlocked">
+          {chips.map((c) => (
+            <motion.li
+              key={c.label}
+              className="bg-surface-raised text-gold flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[14px] font-semibold"
+              initial={reduce ? false : { opacity: 0, transform: "scale(0.8)" }}
+              animate={{ opacity: 1, transform: "scale(1)" }}
+              transition={{ type: "spring", stiffness: 400, damping: 18, delay: 0.6 }}
+            >
+              <Icon name={c.icon} size={16} />
+              {c.label}
+            </motion.li>
+          ))}
+        </ul>
+      )}
       <div className="safe-bottom mt-auto grid grid-cols-[1fr_60px] gap-2.5 px-4 pt-4 pb-7">
-        <Button size="lg" icon="play" onClick={onNext} className="text-[17px]" autoFocus>
-          Next puzzle
+        <Button size="lg" icon="play" onClick={next.onClick} className="text-[17px]" autoFocus>
+          {next.label}
         </Button>
         <button
           type="button"
@@ -169,6 +192,9 @@ export function ResultsScreen({
             Challenge a friend
           </Button>
         )}
+        <Button size="lg" variant="secondary" onClick={another.onClick} className="col-span-2">
+          {another.label}
+        </Button>
         <Link href="/" className="text-muted col-span-2 py-2 text-center text-[15px] font-medium">
           Back to the Grid
         </Link>

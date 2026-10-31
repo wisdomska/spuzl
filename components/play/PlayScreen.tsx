@@ -7,16 +7,28 @@ import { GameShell } from "@/components/game/GameShell";
 import { BoardSkeleton } from "@/components/game/BoardSkeleton";
 import { BOARDS } from "@/games/board-registry";
 import { setGuessAttempt } from "@/games/_shared/guess";
-import { WORLD_BY_ID, type GameMeta } from "@/lib/catalog";
+import { GAME_BY_ID, WORLD_BY_ID, type GameMeta } from "@/lib/catalog";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { finishAttempt, HttpError, requestHint, saveAttempt, startAttempt, useMe, type FinishRes, type StartRes } from "@/lib/client/api";
+import {
+  finishAttempt,
+  HttpError,
+  requestHint,
+  saveAttempt,
+  startAttempt,
+  useMe,
+  useToday,
+  type FinishRes,
+  type StartRes,
+} from "@/lib/client/api";
 import { readOnboarding } from "@/lib/client/onboarding";
-import { dailyNumber } from "@/lib/format";
+import { dailyNumber, formatClock } from "@/lib/format";
+import { nextInPath, nextLabel } from "@/lib/game/next";
+import { useGameSettings } from "@/lib/game-settings/client";
+import { copy } from "@/lib/copy";
 import { useSettings } from "@/lib/settings/store";
 import { rankFor } from "@/lib/rating/glicko2";
 import { STREAK_MILESTONE_SPARKS } from "@/lib/rewards";
 import { ResultsScreen } from "@/components/results/ResultsScreen";
-import { CelebrationChain, type Celebration } from "@/components/celebrate/Celebrations";
 import { PhotosensitivityNotice } from "./PhotosensitivityNotice";
 import { finishOrQueue } from "@/lib/offline/queue";
 import { OfflineBanner } from "@/components/pwa/OfflineBanner";
@@ -29,7 +41,8 @@ import { Spuz } from "@/components/brand/Spuz";
 import { Button } from "@/components/ui/Button";
 
 type Mode = "daily" | "free" | "archive";
-type Phase = "loading" | "playing" | "results" | "celebrate" | "failed" | "error";
+type Phase = "loading" | "playing" | "results" | "failed" | "error";
+type Difficulty = "easy" | "medium" | "hard" | "expert" | "mega";
 
 const SAVE_EVERY_MS = 10_000;
 
@@ -48,6 +61,8 @@ export function PlayScreen({
   const router = useRouter();
   const qc = useQueryClient();
   const me = useMe();
+  const today = useToday();
+  const settings = useGameSettings();
   const relaxed = useSettings((s) => s.relaxed);
   const [mode, setMode] = useState<Mode>(initialMode);
   const [attempt, setAttempt] = useState<StartRes | null>(null);
@@ -57,7 +72,10 @@ export function PlayScreen({
   const [freeN, setFreeN] = useState(1);
   const [notice, setNotice] = useState<string | null>(null);
   const [howTo, setHowTo] = useState(false);
-  const [celebrations, setCelebrations] = useState<Celebration[]>([]);
+  // Solved: hold the highlighted board (admin "play.solvedHoldMs") before results or the free-play bar.
+  const [holding, setHolding] = useState(false);
+  const [freeResult, setFreeResult] = useState<{ timeMs: number; xp: number; accuracy: number } | null>(null);
+  const moves = useRef(0);
   const [error, setError] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const lastSave = useRef(0);
@@ -75,17 +93,21 @@ export function PlayScreen({
     router.prefetch(`/world/${meta.world}`);
   }, [router, meta.world]);
 
-  const beginRef = useRef<(m: Mode) => Promise<void>>(async () => {});
+  const beginRef = useRef<(m: Mode, d?: Difficulty) => Promise<void>>(async () => {});
   const begin = useCallback(
-    async (m: Mode): Promise<void> => {
+    async (m: Mode, d?: Difficulty): Promise<void> => {
       setPhase("loading");
       setResult(null);
+      setHolding(false);
+      setFreeResult(null);
+      moves.current = 0;
       try {
         const a = await startAttempt({
           game: meta.id,
           mode: m,
           date: m === "archive" ? date : undefined,
-          difficulty: m === "free" ? difficulty : undefined,
+          // "Another <Game>" keeps the difficulty just played, so free play never drops abruptly after a Daily.
+          difficulty: m === "free" ? (d ?? difficulty) : undefined,
         });
         latestState.current = a.state ?? undefined;
         setGuessAttempt(a.attemptId);
@@ -122,6 +144,7 @@ export function PlayScreen({
     (state: unknown, elapsedMs: number) => {
       latestState.current = state;
       elapsedRef.current = elapsedMs;
+      moves.current++;
       if (!attempt) return;
       try {
         localStorage.setItem(`spuzl.attempt.${attempt.attemptId}`, JSON.stringify({ state, elapsedMs }));
@@ -141,6 +164,9 @@ export function PlayScreen({
     async (state: unknown, elapsedMs: number, s: { hints: number; mistakes: number }) => {
       if (!attempt) return;
       setStats(s);
+      setHolding(true);
+      const solvedAt = Date.now();
+      const afterHold = (fn: () => void) => setTimeout(fn, Math.max(0, settings["play.solvedHoldMs"] - (Date.now() - solvedAt)));
       let res: FinishRes;
       try {
         // Offline (or the request never lands): the clear is queued on this device and synced later.
@@ -173,18 +199,16 @@ export function PlayScreen({
       // Rage Ridge ghost games keep the run so friends can race it (Ghost Race).
       if (res.status === "cleared" && GHOST_GAMES.includes(meta.id)) saveGhostRun(attempt.attemptId).catch(() => {});
       if (mode === "free") {
-        // Free play: a quick toast and straight into the next puzzle (prototype onClear()).
-        setNotice(res.reward.xp > 0 ? `Clean. +${res.reward.xp} XP. Puzzle ${freeN + 1} loading.` : `Clean. Puzzle ${freeN + 1} loading.`);
-        setCelebrations(buildCelebrations(res));
-        setTimeout(() => {
-          setFreeN((n) => n + 1);
-          void beginRef.current("free");
-        }, 1500);
+        // Free play: hold the solved board, then a compact result bar with named Next actions (never a blank screen).
+        const accuracy = moves.current ? Math.round((100 * Math.max(0, moves.current - s.mistakes)) / moves.current) : 100;
+        afterHold(() => setFreeResult({ timeMs: res.timeMs, xp: res.reward.xp, accuracy }));
+        const chips = celebrationChips(res);
+        if (chips.length) setNotice(chips.map((c) => c.label).join(" · "));
         return;
       }
-      setTimeout(() => setPhase("results"), 1100);
+      afterHold(() => setPhase("results"));
     },
-    [attempt, relaxed, qc, mode, freeN, meta.id],
+    [attempt, relaxed, qc, mode, meta.id, settings],
   );
 
   const onFailed = useCallback(
@@ -207,6 +231,24 @@ export function PlayScreen({
     },
     [attempt],
   );
+
+  // Named Next actions (audit: "Next is always named"): the Home path's next game, or another of this one.
+  const clearedNow = { ...(me.data?.today.cleared ?? {}), ...(result?.status === "cleared" && mode === "daily" ? { [meta.id]: 1 } : {}) };
+  const readyIds = new Set((today.data?.games ?? []).filter((g) => g.ready).map((g) => g.id));
+  const nextId = nextInPath(meta.id, clearedNow, (id) => (today.data ? readyIds.has(id) : true));
+  const nextAction = nextId
+    ? { label: nextLabel(nextId), onClick: () => router.push(`/play/${nextId}`) }
+    : { label: copy.play.backToGrid, onClick: () => router.push("/") };
+  const anotherAction = {
+    label: copy.play.another(meta.name),
+    onClick: () => {
+      setFreeN((n) => (mode === "free" ? n + 1 : 1));
+      void begin("free", (attempt?.difficulty as Difficulty | undefined) ?? difficulty);
+    },
+  };
+  useEffect(() => {
+    if (nextId && settings["perf.prefetch"]) router.prefetch(`/play/${nextId}`);
+  }, [nextId, router, settings]);
 
   const label =
     mode === "daily" && attempt?.date
@@ -260,20 +302,12 @@ export function PlayScreen({
                 }
               : undefined
           }
-          onNext={() => {
-            const chain = buildCelebrations(result);
-            if (chain.length) {
-              setCelebrations(chain);
-              setPhase("celebrate");
-            } else void begin("free");
-          }}
+          next={nextAction}
+          another={anotherAction}
+          chips={celebrationChips(result)}
         />
       </>
     );
-  }
-
-  if (phase === "celebrate") {
-    return <CelebrationChain items={celebrations} onDone={() => void begin("free")} />;
   }
 
   if (phase === "failed" || phase === "error") {
@@ -321,7 +355,21 @@ export function PlayScreen({
             router.push(`/world/${meta.world}`);
           }}
           onHelp={() => setHowTo(true)}
+          pausedExternally={howTo}
+          celebrate={holding}
           puzzleKey={attempt.attemptId}
+          endBar={
+            freeResult ? (
+              <FreeResultBar
+                timeMs={freeResult.timeMs}
+                xp={freeResult.xp}
+                accuracy={freeResult.accuracy}
+                relaxed={relaxed}
+                next={nextAction}
+                another={anotherAction}
+              />
+            ) : undefined
+          }
         />
       )}
       <OfflineBanner floating />
@@ -331,32 +379,23 @@ export function PlayScreen({
   );
 }
 
-/** Builds the celebration chain from a server result (prototype order: level, rank, badge, streak, Full Spuzl). */
-export function buildCelebrations(r: FinishRes): Celebration[] {
-  const out: Celebration[] = [];
-  if (r.level.after > r.level.before)
-    out.push({
-      kind: "level",
-      level: r.level.after,
-      sparks: 20 * (r.level.after - r.level.before),
-      unlock: r.level.after % 5 === 0 ? "New cosmetic" : undefined,
-    });
+/**
+ * Rank ups, badges, streak milestones and Full Spuzl as inline chips on the results card (audit: never
+ * full-screen interstitials between puzzles).
+ */
+export function celebrationChips(r: FinishRes): { icon: string; label: string }[] {
+  const out: { icon: string; label: string }[] = [];
+  if (r.level.after > r.level.before) out.push({ icon: "arrow-fat-up", label: copy.play.levelUp(r.level.after) });
   if (r.rank) {
     const a = rankFor(r.rank.before),
       b = rankFor(r.rank.after);
     if (a.name !== b.name && r.rank.after > r.rank.before)
-      out.push({ kind: "rank", world: worldName(r.rank.track), rank: b.name, from: a.name });
+      out.push({ icon: "medal", label: copy.play.rankUp(b.name, worldName(r.rank.track)) });
   }
-  for (const u of r.unlocks)
-    if (u.type === "badge") out.push({ kind: "badge", name: u.name, tier: u.tier, icon: u.icon, description: "", sparks: u.sparks });
+  for (const u of r.unlocks) if (u.type === "badge") out.push({ icon: u.icon, label: copy.play.badge(u.name) });
   if (r.streak?.milestone)
-    out.push({
-      kind: "streak",
-      days: r.streak.milestone,
-      sparks: STREAK_MILESTONE_SPARKS[r.streak.milestone] ?? 0,
-      freeze: r.streak.freezeEarned,
-    });
-  if (r.fullSpuzl) out.push({ kind: "full", xp: 150, totalMs: r.timeMs });
+    out.push({ icon: "fire", label: copy.play.streak(r.streak.milestone, STREAK_MILESTONE_SPARKS[r.streak.milestone] ?? 0) });
+  if (r.fullSpuzl) out.push({ icon: "crown", label: copy.play.fullSpuzl });
   return out;
 }
 
@@ -421,6 +460,40 @@ function PlayLoading({ meta }: { meta: GameMeta }) {
       <main className="flex justify-center p-[18px]">
         <BoardSkeleton />
       </main>
+    </div>
+  );
+}
+
+/** Free play's compact result bar: time, XP and accuracy, then the two named Next actions. The header stays. */
+function FreeResultBar({
+  timeMs,
+  xp,
+  accuracy,
+  relaxed,
+  next,
+  another,
+}: {
+  timeMs: number;
+  xp: number;
+  accuracy: number;
+  relaxed: boolean;
+  next: { label: string; onClick: () => void };
+  another: { label: string; onClick: () => void };
+}) {
+  return (
+    <div className="bg-surface flex flex-col gap-3 rounded-[22px] p-3.5" role="status" aria-live="polite">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-1">
+        <span className="font-display text-accent text-[18px] font-black">{copy.play.cleared}</span>
+        {!relaxed && <span className="num text-[15px] font-semibold">{formatClock(timeMs)}</span>}
+        {xp > 0 && <span className="num text-[15px] font-semibold">+{xp} XP</span>}
+        <span className="text-muted text-[14px]">{copy.play.accuracy(accuracy)}</span>
+      </div>
+      <Button size="lg" icon="play" className="w-full" onClick={next.onClick} autoFocus>
+        {next.label}
+      </Button>
+      <Button size="lg" variant="secondary" className="w-full" onClick={another.onClick}>
+        {another.label}
+      </Button>
     </div>
   );
 }
