@@ -367,7 +367,9 @@ function AccountSheet({ open, onClose, onDelete }: { open: boolean; onClose: () 
       description={
         d?.guest
           ? "You're playing as a guest. Sign in to keep your streak, Sparks and friends on any phone."
-          : `Signed in${d?.email ? ` as ${d.email}` : ""}.`
+          : d
+            ? `Signed in as ${d.nickname}${d.email ? ` (${d.email})` : ""}.`
+            : "Signed in."
       }
     >
       {d?.guest && (

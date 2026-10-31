@@ -30,7 +30,8 @@ export function WorldScreen({ id }: { id: WorldId }) {
         className="dotgrid relative overflow-hidden pb-5"
         style={{ backgroundColor: `color-mix(in srgb, ${world.color} 14%, var(--bg))` }}
       >
-        <div className="safe-top px-4">
+        {/* z-10: the scaled island below would otherwise sit on top of the button and swallow taps */}
+        <div className="safe-top relative z-10 px-4">
           <Link
             href="/"
             aria-label="Back to the Grid"
@@ -40,7 +41,7 @@ export function WorldScreen({ id }: { id: WorldId }) {
           </Link>
         </div>
         <motion.div
-          className="-mt-6 flex justify-center"
+          className="pointer-events-none -mt-6 flex justify-center"
           initial={{ opacity: 0, transform: "scale(0.9)" }}
           animate={{ opacity: 1, transform: "scale(1.6)" }}
           transition={{ duration: 0.32, ease: [0.77, 0, 0.175, 1] }}

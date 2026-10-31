@@ -39,6 +39,13 @@ export async function loadMe(user: User, player: PlayerRow, admin: SupabaseClien
     admin.from("daily_results").select("game_id, time_ms").eq("player_id", player.id).eq("date", today),
     admin.from("inventory").select("cosmetic_id").eq("player_id", player.id).eq("equipped", true),
   ]);
+  // The request identity comes from JWT claims, which can lack the email (e.g. a token minted before an
+  // email was linked). Signed-in players see who they are, so read it from the auth record when missing.
+  let email = user.email ?? null;
+  if (!email && !user.is_anonymous) {
+    const { data: au } = await admin.auth.admin.getUserById(player.id);
+    email = au.user?.email ?? null;
+  }
   const theme = COSMETICS.find((c) => c.type === "board_theme" && (equipped ?? []).some((e) => e.cosmetic_id === c.id));
   const lv = levelFromXp(player.xp);
   const worldRatings = (ratings ?? []).filter((r) => !r.track.startsWith("duel") && !r.track.startsWith("board:"));
@@ -46,7 +53,7 @@ export async function loadMe(user: User, player: PlayerRow, admin: SupabaseClien
   return {
     id: player.id,
     guest: player.is_guest || !!user.is_anonymous,
-    email: user.email ?? null,
+    email,
     ...profile,
     level: lv.level,
     xp: player.xp,
