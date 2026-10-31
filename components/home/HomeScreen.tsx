@@ -22,10 +22,13 @@ export function HomeScreen() {
   const router = useRouter();
   const me = useMe();
   const today = useToday();
-  const [now, setNow] = useState(() => Date.now());
+  // The clock is client-only (null on the server pass): the at-risk banner and countdown use local time.
+  const [now, setNow] = useState<number | null>(null);
   const { notices, dismiss } = useNotices({ me: me.data ?? null, today: today.data ?? null });
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- starts the local clock after hydration
+    setNow(Date.now());
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, []);
@@ -42,7 +45,7 @@ export function HomeScreen() {
   const progress = worldProgress(cleared);
   const currentWorld: WorldId = nextMeta?.world ?? "logic";
   const featuredDone = LAUNCH_IDS.filter((id) => cleared[id] !== undefined).length;
-  const hour = new Date(now).getHours();
+  const hour = now === null ? 0 : new Date(now).getHours();
   const streak = me.data?.streak.current ?? 0;
   const clearedToday = Object.keys(cleared).length > 0;
   const atRisk = streak > 0 && !clearedToday && hour >= 19;
@@ -113,7 +116,7 @@ export function HomeScreen() {
                 <p className="text-[16px] leading-[1.3] font-semibold text-pretty">
                   Your {streak}-day streak is sleepy. One clear wakes it up.
                 </p>
-                <p className="num text-gold text-[13px] font-medium">Resets in {formatCountdown(msToReset(new Date(now)))}</p>
+                <p className="num text-gold text-[13px] font-medium">Resets in {formatCountdown(msToReset(new Date(now ?? 0)))}</p>
               </div>
             </motion.div>
           )}

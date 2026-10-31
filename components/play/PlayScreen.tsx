@@ -6,7 +6,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { GameShell } from "@/components/game/GameShell";
 import { BoardSkeleton } from "@/components/game/BoardSkeleton";
 import { BOARDS } from "@/games/board-registry";
-import type { GameMeta } from "@/lib/catalog";
+import { WORLD_BY_ID, type GameMeta } from "@/lib/catalog";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { finishAttempt, HttpError, requestHint, saveAttempt, startAttempt, useMe, type FinishRes, type StartRes } from "@/lib/client/api";
 import { readOnboarding } from "@/lib/client/onboarding";
 import { dailyNumber } from "@/lib/format";
@@ -290,9 +291,7 @@ export function PlayScreen({
     <>
       {meta.photosensitive && <PhotosensitivityNotice />}
       {phase === "loading" || !attempt || !Board ? (
-        <main className="mx-auto flex min-h-dvh max-w-[560px] flex-col items-center justify-center gap-6" aria-busy>
-          <BoardSkeleton />
-        </main>
+        <PlayLoading meta={meta} />
       ) : (
         <GameShell
           key={attempt.attemptId}
@@ -379,6 +378,40 @@ function Toast({ text, onDone }: { text: string; onDone: () => void }) {
       style={{ animation: "fade-in 180ms var(--ease-out)" }}
     >
       {text}
+    </div>
+  );
+}
+
+/**
+ * Loading frame in the final GameShell layout: the title and rule are real text from the first server
+ * paint (they are the largest content), and only the timer, tools and board are placeholders.
+ */
+function PlayLoading({ meta }: { meta: GameMeta }) {
+  const world = WORLD_BY_ID[meta.world];
+  return (
+    <div
+      className="bg-bg relative mx-auto flex min-h-dvh w-full max-w-[560px] flex-col"
+      style={{ ["--world" as string]: world.color, ["--world-ink" as string]: world.ink }}
+      data-world={meta.world}
+      aria-busy
+    >
+      <div className="safe-top flex items-center gap-2 px-3 pb-2 lg:pt-6">
+        <Skeleton className="size-11 rounded-[14px]" />
+        <div className="flex flex-1 justify-center">
+          <Skeleton className="h-11 w-[116px] rounded-[14px]" />
+        </div>
+        <Skeleton className="size-11 rounded-[14px]" />
+        <Skeleton className="size-11 rounded-[14px]" />
+      </div>
+      <div className="flex items-baseline justify-between gap-3 px-5 pt-1.5 pb-3.5">
+        <h1 className="font-display text-[24px] font-black text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]">
+          {meta.name}
+        </h1>
+      </div>
+      <p className="text-muted px-[18px] text-[15px] leading-[1.4]">{meta.rule}</p>
+      <main className="flex justify-center p-[18px]">
+        <BoardSkeleton />
+      </main>
     </div>
   );
 }
