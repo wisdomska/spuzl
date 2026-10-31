@@ -23,6 +23,9 @@ export interface AdminSession {
   userId: string;
   email: string;
   role: Role | null;
+  password: string;
+  /** base32 TOTP secret of the verified factor */
+  secret: string;
   /** password + TOTP verified */
   aal2: Call;
   /** password only */
@@ -66,5 +69,5 @@ export async function adminSession(role: Role | null): Promise<AdminSession> {
   const { error: e5 } = await sb.auth.mfa.challengeAndVerify({ factorId: factor.id, code: totp(factor.totp.secret) });
   if (e5) throw e5;
   const { data: s2 } = await sb.auth.getSession();
-  return { userId, email, role, aal1: caller(aal1Token), aal2: caller(s2.session!.access_token) };
+  return { userId, email, role, password, secret: factor.totp.secret, aal1: caller(aal1Token), aal2: caller(s2.session!.access_token) };
 }
