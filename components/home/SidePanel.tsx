@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 import { useMe, useToday } from "@/lib/client/api";
-import { useFriends } from "@/lib/client/social";
+import { useAcceptInvite, useFriends } from "@/lib/client/social";
+import { takePendingInvite } from "@/lib/client/invite";
 import { GAME_BY_ID, LAUNCH_IDS } from "@/lib/catalog";
 import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -18,6 +20,15 @@ export function SidePanel() {
   const me = useMe();
   const today = useToday();
   const friends = useFriends(!!me.data);
+  // Mounted on Home and every tabbed screen (hidden below 1024 px): an invite opened before onboarding
+  // is accepted as soon as the new player has a profile.
+  const accept = useAcceptInvite();
+  const hasMe = !!me.data;
+  useEffect(() => {
+    if (!hasMe) return;
+    const code = takePendingInvite();
+    if (code) accept.mutate(code);
+  }, [hasMe]); // eslint-disable-line react-hooks/exhaustive-deps
   const d = me.data;
   const cleared = d?.today.cleared ?? {};
   const ready = (id: string) => today.data?.games.find((g) => g.id === id)?.ready ?? id === "crownfall";

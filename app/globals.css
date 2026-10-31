@@ -417,6 +417,52 @@ select {
   height: 720px;
   transform-origin: top left;
 }
+/* Static pages (How to play, Fair play, Privacy, Terms, Contact) */
+.info-prose {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-size: 16px;
+  line-height: 1.55;
+}
+.info-prose h1 {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 30px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+.info-prose h2 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 19px;
+  margin-top: 14px;
+}
+.info-prose h3 {
+  font-weight: 700;
+  font-size: 16px;
+}
+.info-prose p,
+.info-prose li {
+  color: var(--text);
+  text-wrap: pretty;
+}
+.info-prose ul {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-left: 20px;
+  list-style: disc;
+}
+.info-prose a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.info-prose .lede {
+  color: var(--text-muted);
+}
 /* World-coloured text: fill on dark, the AA ink token on light (README colour rules). */
 .world-text {
   color: var(--wc);

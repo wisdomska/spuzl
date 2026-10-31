@@ -9,6 +9,7 @@ import { api, HttpError, useMe } from "@/lib/client/api";
 import { useBlocks, usePatchProfile, useUnblock, type MeExtra } from "@/lib/client/social";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { hasSupabase } from "@/lib/supabase/env";
+import { clearOfflineUserData } from "@/lib/offline/register";
 import { TabPage } from "@/components/meta/TabPage";
 import { AvatarChip, PageTitle, Switch } from "@/components/meta/ui";
 import { Sheet } from "@/components/meta/Sheet";
@@ -339,6 +340,7 @@ function AccountSheet({ open, onClose, onDelete }: { open: boolean; onClose: () 
   };
   const signOut = async () => {
     await supabaseBrowser().auth.signOut();
+    await clearOfflineUserData();
     qc.clear();
     router.replace("/intro");
   };
@@ -434,6 +436,7 @@ function DeleteSheet({ open, onClose }: { open: boolean; onClose: () => void }) 
     try {
       await api("/api/v1/account", { method: "DELETE", json: { confirm } });
       await supabaseBrowser().auth.signOut();
+      await clearOfflineUserData();
       try {
         localStorage.removeItem("spuzl.onboarding");
       } catch {
