@@ -32,6 +32,8 @@ export const PERMISSIONS = {
   "liveops.read": ["owner", "analyst", "moderator", "content_editor"],
   "flags.read": ["owner", "content_editor", "analyst"],
   "flags.write": ["owner"],
+  "settings.read": ["owner", "content_editor", "analyst"],
+  "settings.write": ["owner"],
   "catalog.read": ["owner", "content_editor", "analyst"],
   "catalog.write": EDIT,
   "prices.write": ["owner"],

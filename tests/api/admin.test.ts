@@ -571,3 +571,36 @@ describe("owner bootstrap server path", () => {
     expect(JSON.stringify(second)).not.toMatch(/password/i);
   });
 });
+
+describe("game settings (admin cascade)", () => {
+  it("owner sets a tunable within range; public endpoint serves it; roles are enforced; audit records it", async () => {
+    const list = await S.owner.aal2("/api/admin/settings");
+    expect(list.status).toBe(200);
+    expect(list.data.rows.some((r: { key: string }) => r.key === "duel.roundResultMs")).toBe(true);
+
+    const bad = await S.owner.aal2("/api/admin/settings", { method: "PUT", json: { key: "duel.roundResultMs", value: 99 } });
+    expect([bad.status, bad.data.error]).toEqual([422, "invalid_setting"]);
+    const unknown = await S.owner.aal2("/api/admin/settings", { method: "PUT", json: { key: "made.up", value: 1 } });
+    expect(unknown.status).toBe(422);
+
+    const set = await S.owner.aal2("/api/admin/settings", { method: "PUT", json: { key: "duel.roundResultMs", value: 2500 } });
+    expect(set.status).toBe(200);
+    const pub = await fetch(`${BASE}/api/v1/settings/game`).then((r) => r.json());
+    expect(pub["duel.roundResultMs"]).toBe(2500);
+
+    expect((await S.analyst.aal2("/api/admin/settings")).status).toBe(200);
+    expect((await S.analyst.aal2("/api/admin/settings", { method: "PUT", json: { key: "duel.roundResultMs", value: 2000 } })).status).toBe(
+      403,
+    );
+    expect((await S.moderator.aal2("/api/admin/settings")).status).toBe(403);
+
+    const { data: log } = await admin()
+      .from("audit_log")
+      .select("action, target")
+      .eq("action", "setting.update")
+      .eq("target", "setting:duel.roundResultMs")
+      .limit(1);
+    expect(log?.length).toBe(1);
+    await S.owner.aal2("/api/admin/settings", { method: "PUT", json: { key: "duel.roundResultMs", value: 2000 } });
+  });
+});
