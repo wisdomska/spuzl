@@ -26,7 +26,10 @@ export function WorldScreen({ id }: { id: WorldId }) {
       className="bg-bg mx-auto min-h-dvh max-w-[560px]"
       style={{ ["--world" as string]: world.color, ["--world-ink" as string]: world.ink }}
     >
-      <header className="dotgrid relative overflow-hidden pb-5" style={{ background: `color-mix(in srgb, ${world.color} 14%, var(--bg))` }}>
+      <header
+        className="dotgrid relative overflow-hidden pb-5"
+        style={{ backgroundColor: `color-mix(in srgb, ${world.color} 14%, var(--bg))` }}
+      >
         <div className="safe-top px-4">
           <Link
             href="/"

@@ -127,7 +127,7 @@ export default function ShopPage() {
         aria-label="Try-on"
         className="bg-surface relative flex h-[230px] items-center justify-center overflow-hidden rounded-[28px]"
       >
-        <div aria-hidden className="dotgrid absolute inset-0" />
+        <div aria-hidden className="dotgrid on-surface absolute inset-0" />
         {preview?.theme ? (
           <div
             className="relative grid grid-cols-4 gap-1.5 rounded-[18px] p-2"
