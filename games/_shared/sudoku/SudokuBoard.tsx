@@ -7,10 +7,16 @@ import { useCellSize } from "@/components/game/useBoardSize";
 import { useGridKeys } from "@/components/game/useGridKeys";
 import { play } from "@/lib/audio";
 import { popClass, shakeClass, waveStyle } from "@/games/_shared/logiclab/fx";
+import { sudoku as t } from "@/lib/copy/sudoku";
 import { analyze, emptyState, geometry, type SudokuPuzzle, type SudokuState } from "./logic";
+import { boundaryTracks, boxIndex, digitCounts, trackList } from "./layout";
 
+/** Gap between cells inside a box. */
 const GAP = 2;
-const PAD = 6;
+/** Box borders (and the outer frame): 2 px in a lighter tone than the cell gaps. */
+const LINE = 2;
+const PAD = LINE;
+const BOX_LINE = "color-mix(in srgb, var(--text-muted) 60%, var(--line))";
 
 /** 9 × 9 cannot fit 44 px cells in a 390 px phone, so Nine keeps a 34 px floor instead of panning. */
 function useSudokuCell(size: number) {
@@ -28,8 +34,9 @@ function useSudokuCell(size: number) {
 
 /**
  * Sudoku board shared by Sixer and Nine (Game Boards: Sixer). Tap a cell, tap a number. Notes mode
- * toggles pencil marks. Givens are bolder and locked; your digits use the world colour. Peers of the
- * selected cell and matching digits are tinted so the eye can scan.
+ * toggles pencil marks. Givens are bolder and locked; your digits use the world colour. Boxes have 2 px
+ * borders in a lighter tone. The selected cell's row, column and box are tinted, and every cell holding
+ * the selected number gets a stronger tint and a bolder digit so the eye can scan.
  */
 export function SudokuBoard({
   puzzle,
@@ -68,14 +75,14 @@ export function SudokuBoard({
     setHist((h) => [...h, prev]);
   }, []);
 
-  const where = (i: number) => `Row ${Math.floor(i / n) + 1}, column ${(i % n) + 1}`;
+  const where = (i: number) => t.where(Math.floor(i / n) + 1, (i % n) + 1, boxIndex(i, n, puzzle.boxW, puzzle.boxH) + 1);
 
   /** Place (or clear with 0) a digit in a cell. */
   const place = useCallback(
     (i: number, d: number) => {
       if (locked || i < 0) return;
       if (given(i)) {
-        api.feedback("That number came with the puzzle.", "info", "lock-simple");
+        api.feedback(t.givenLocked, "info", "lock-simple");
         return;
       }
       const prev = stRef.current;
@@ -102,13 +109,13 @@ export function SudokuBoard({
       } else if (after.clear) {
         setDone(true);
         play("jingle");
-        api.feedback("Every number home. Board cleared.", "success", "check-circle");
-        api.announce("Board cleared.");
+        api.feedback(t.cleared, "success", "check-circle");
+        api.announce(t.clearedShort);
       } else {
         if (d) streak.current++;
         play("pop", { step: streak.current });
-        api.announce(d ? `${where(i)}, ${d}` : `${where(i)}, cleared`);
-        if (after.bad.size === 0) api.feedback(`${after.filled} of ${n * n} placed`, "info", "grid-nine");
+        api.announce(`${where(i)}, ${d || t.cellCleared}`);
+        if (after.bad.size === 0) api.feedback(t.placed(after.filled, n * n), "info", "grid-nine");
       }
       api.onMove(next, { correctStreak: streak.current, mistake: broke });
       if (after.clear) api.onSolved(next);
@@ -128,7 +135,7 @@ export function SudokuBoard({
       setLast(i);
       setTapN((t) => t + 1);
       play("tick");
-      api.announce(`${where(i)}, note ${d} ${notes[i] & (1 << (d - 1)) ? "added" : "removed"}`);
+      api.announce(`${where(i)}, ${t.noteToggled(d, (notes[i] & (1 << (d - 1))) !== 0)}`);
       api.onMove(next);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -138,7 +145,7 @@ export function SudokuBoard({
   const enter = useCallback(
     (d: number) => {
       if (selected < 0) {
-        api.feedback("Tap a cell first, then a number.", "info", "hand-pointing");
+        api.feedback(t.tapCellFirst, "info", "hand-pointing");
         return;
       }
       if (notesMode && d) toggleNote(selected, d);
@@ -156,7 +163,7 @@ export function SudokuBoard({
       notes[selected] = 0;
       const next = { values: prev.values, notes };
       push(next);
-      api.announce(`${where(selected)}, notes cleared`);
+      api.announce(`${where(selected)}, ${t.notesCleared}`);
       api.onMove(next);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -175,21 +182,21 @@ export function SudokuBoard({
 
   useEffect(() => {
     api.setControls([
-      { id: "undo", label: "Undo", icon: "arrow-counter-clockwise", onPress: undo, disabled: !hist.length || done },
-      { id: "erase", label: "Erase", icon: "eraser", onPress: erase, disabled: done },
+      { id: "undo", label: t.undo, icon: "arrow-counter-clockwise", onPress: undo, disabled: !hist.length || done },
+      { id: "erase", label: t.erase, icon: "eraser", onPress: erase, disabled: done },
       {
         id: "notes",
-        label: notesMode ? "Notes on" : "Notes",
+        label: notesMode ? t.notesOn : t.notesTool,
         icon: "pencil-simple",
         onPress: () => setNotesMode((m) => !m),
         active: notesMode,
       },
-      { id: "hint", label: "Hint", icon: "lightbulb", onPress: () => {}, tone: "gold" },
+      { id: "hint", label: t.hint, icon: "lightbulb", onPress: () => {}, tone: "gold" },
     ]);
   }, [api, undo, erase, hist.length, done, notesMode]);
 
   useEffect(() => {
-    api.feedback(mode === "tutorial" ? "Tap a cell, then tap a number below." : "Tap a cell, then a number.", "info", "hand-pointing");
+    api.feedback(mode === "tutorial" ? t.startTutorial : t.start, "info", "hand-pointing");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -241,24 +248,41 @@ export function SudokuBoard({
     lastC = last % n;
   const hintTarget = typeof hint?.target === "number" ? hint.target : -1;
   const selVal = selected >= 0 ? st.values[selected] : 0;
+  // Peers are the selected cell's row, column and box.
   const peerSet = new Set(selected >= 0 ? g.peers[selected] : []);
-  const placed = (d: number) => st.values.filter((v) => v === d).length;
+  const counts = digitCounts(st.values, n);
   const noteCols = puzzle.boxW;
   const noteRows = Math.ceil(n / noteCols);
-  const width = n * cell + (n - 1) * GAP + PAD * 2;
+  const width = n * cell + (n - 1) * GAP + PAD * 2; // box lines are as wide as cell gaps (LINE === GAP)
+  const cols = trackList(n, puzzle.boxW, cell, GAP, LINE);
+  const rows = trackList(n, puzzle.boxH, cell, GAP, LINE);
   const padCols = n <= 6 ? n : 5;
 
   return (
     <div className={`flex flex-col items-center gap-3 ${done ? "board-pulse" : ""}`}>
       <div
         role="grid"
-        aria-label={`${title} board, ${n} by ${n}`}
+        aria-label={t.grid(title, n)}
         aria-rowcount={n}
         aria-colcount={n}
         onKeyDown={onKeyDown}
-        className="grid rounded-[16px]"
-        style={{ gridTemplateColumns: `repeat(${n}, ${cell}px)`, gap: GAP, padding: PAD, background: "var(--line)", perspective: 600 }}
+        className="grid rounded-[12px]"
+        style={{
+          gridTemplateColumns: cols,
+          gridTemplateRows: rows,
+          padding: PAD,
+          background: "var(--line)",
+          boxShadow: `inset 0 0 0 ${PAD}px ${BOX_LINE}`,
+          perspective: 600,
+        }}
       >
+        {/* Box borders, painted into the boundary gap tracks */}
+        {boundaryTracks(n, puzzle.boxW).map((track) => (
+          <div key={`c${track}`} aria-hidden style={{ gridColumn: track, gridRow: "1 / -1", background: BOX_LINE }} />
+        ))}
+        {boundaryTracks(n, puzzle.boxH).map((track) => (
+          <div key={`r${track}`} aria-hidden style={{ gridRow: track, gridColumn: "1 / -1", background: BOX_LINE }} />
+        ))}
         {Array.from({ length: n }, (_, r) => (
           <div role="row" key={r} className="contents">
             {Array.from({ length: n }, (_, c) => {
@@ -269,7 +293,8 @@ export function SudokuBoard({
               const sel = i === selected && !done;
               const glow = i === hintTarget && !done;
               const shade = (Math.floor(r / puzzle.boxH) + Math.floor(c / puzzle.boxW)) % 2 === 1;
-              const tint = !done && ((selVal && v === selVal && i !== selected) || peerSet.has(i));
+              const same = !done && selVal !== 0 && v === selVal && i !== selected;
+              const tint = !done && (same || peerSet.has(i));
               const dist = Math.abs(r - lastR) + Math.abs(c - lastC);
               let anim = "";
               if (!done && i === last) anim = bad ? shakeClass(shakeN) : popClass(tapN);
@@ -290,13 +315,15 @@ export function SudokuBoard({
                   tabIndex={keys.focus === i ? 0 : -1}
                   aria-selected={sel}
                   aria-readonly={fixed || undefined}
-                  aria-label={`Row ${r + 1}, column ${c + 1}, ${v ? v : "empty"}${fixed ? ", given" : ""}${noteList.length ? `, notes ${noteList.join(" ")}` : ""}${bad ? ", breaks a rule" : ""}`}
+                  aria-label={`${where(i)}, ${v ? v : t.empty}${fixed ? `, ${t.given}` : ""}${noteList.length ? `, ${t.notes(noteList)}` : ""}${bad ? `, ${t.breaksRule}` : ""}`}
                   onClick={() => {
                     keys.setFocus(i);
                     setSelected(i);
                   }}
-                  className={`num relative flex cursor-pointer items-center justify-center rounded-[8px] outline-none select-none focus-visible:z-10 ${anim} ${glow ? "hint-ring" : ""} ${fixed ? "font-semibold" : "font-medium"} ${!fixed && !bad ? "text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]" : ""}`}
+                  className={`num relative flex cursor-pointer items-center justify-center rounded-[8px] outline-none select-none focus-visible:z-10 ${anim} ${glow ? "hint-ring" : ""} ${same ? "font-extrabold" : fixed ? "font-semibold" : "font-medium"} ${!fixed && !bad ? "text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]" : ""}`}
                   style={{
+                    gridColumn: 2 * c + 1,
+                    gridRow: 2 * r + 1,
                     width: cell,
                     height: cell,
                     background: shade ? "var(--surface-raised)" : "color-mix(in srgb, var(--surface-raised) 45%, var(--surface))",
@@ -309,7 +336,7 @@ export function SudokuBoard({
                     <span
                       aria-hidden
                       className="absolute inset-0 rounded-[8px]"
-                      style={{ background: "color-mix(in srgb, var(--world) 10%, transparent)" }}
+                      style={{ background: `color-mix(in srgb, var(--world) ${same ? 30 : 10}%, transparent)` }}
                     />
                   )}
                   {done && <span aria-hidden className="absolute inset-0" style={waveStyle(dist, "var(--world)", 8)} />}
@@ -348,18 +375,18 @@ export function SudokuBoard({
         className="grid gap-2"
         style={{ width, gridTemplateColumns: `repeat(${padCols}, minmax(0, 1fr))` }}
         role="group"
-        aria-label={notesMode ? "Number pad, notes mode" : "Number pad"}
+        aria-label={notesMode ? t.padNotes : t.pad}
       >
         {Array.from({ length: n }, (_, k) => {
           const d = k + 1;
-          const full = placed(d) >= n;
+          const full = counts[d] >= n;
           return (
             <button
               key={d}
               type="button"
               disabled={locked}
               onClick={() => enter(d)}
-              aria-label={notesMode ? `Note ${d}` : `Number ${d}${full ? ", all placed" : ""}`}
+              aria-label={notesMode ? t.note(d) : `${t.number(d)}${full ? `, ${t.allPlaced}` : ""}`}
               className={`toy num relative flex h-12 items-center justify-center rounded-[14px] text-[22px] font-semibold ${notesMode ? "text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]" : ""}`}
               style={{
                 background: "var(--surface-raised)",
