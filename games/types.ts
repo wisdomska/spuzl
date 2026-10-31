@@ -97,6 +97,11 @@ export interface BoardApi<St> {
   announce(text: string): void;
   /** Register handlers for the controls row (Undo, Hint and game-specific actions) */
   setControls(controls: ControlSpec[]): void;
+  /**
+   * Optional: drive the shell timer from the board's own clock (fixed-step action games). The shell then
+   * shows and submits this time instead of wall-clock time, so the player sees exactly what is scored.
+   */
+  setClock?(clock: (() => number) | null): void;
 }
 
 export interface ControlSpec {

@@ -225,6 +225,12 @@ export function RageBoard<S extends SimCore>({
     ctl.setPaused(!!disabled && !ctl.sim.finished);
   }, [ctl, disabled]);
 
+  // The shell timer shows the simulation clock (fixed steps), which is the time the server replays and scores.
+  useEffect(() => {
+    api.setClock?.(() => ctl.timeMs());
+    return () => api.setClock?.(null);
+  }, [api, ctl]);
+
   // Dev fixture: ?ghost=demo races a scripted ghost, ?autoplay=1 plays the scripted run.
   useEffect(() => {
     if (process.env.NODE_ENV === "production" || !spec.demoLog) return;

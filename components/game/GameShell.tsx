@@ -93,6 +93,8 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   const mistakes = useRef(0);
   const hintsUsed = useRef(0);
   const clock = useRef({ base: 0, since: 0 });
+  // A board with its own clock (fixed-step simulation) replaces the wall clock for display and scoring.
+  const boardClock = useRef<(() => number) | null>(null);
 
   // Timer: starts on first interaction, stops while paused or hidden (FR-GP-02).
   const running = started && !paused && !solved;
@@ -100,13 +102,21 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
     if (!running) return;
     const c = clock.current; // one mutable clock for the shell's lifetime
     c.since = performance.now();
-    const id = setInterval(() => setElapsed(c.base + performance.now() - c.since), 200);
+    const id = setInterval(() => setElapsed(boardClock.current ? boardClock.current() : c.base + performance.now() - c.since), 200);
     return () => {
       c.base += performance.now() - c.since;
       clearInterval(id);
     };
   }, [running]);
-  const now = useCallback(() => (running ? clock.current.base + performance.now() - clock.current.since : clock.current.base), [running]);
+  const now = useCallback(
+    () =>
+      boardClock.current
+        ? boardClock.current()
+        : running
+          ? clock.current.base + performance.now() - clock.current.since
+          : clock.current.base,
+    [running],
+  );
 
   useEffect(() => {
     const onVis = () => {
@@ -153,6 +163,9 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
         setLive(text);
       },
       setControls,
+      setClock(fn) {
+        boardClock.current = fn;
+      },
     }),
     [started, now, onMove, onSolved, onFailed],
   );
