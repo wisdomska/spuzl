@@ -136,19 +136,19 @@ export function HomeScreen() {
             <span className="text-muted text-[13px] font-medium max-[359px]:hidden">51 games, no limit</span>
             <Icon name="caret-right" size={16} className="text-muted" />
           </Link>
-          <div className="grid grid-cols-[1fr_64px_64px] gap-2.5">
+          <div className="grid grid-cols-[1fr_64px_64px] gap-2.5 max-[359px]:grid-cols-[1fr_52px_52px] max-[359px]:gap-2">
             {nextMeta ? (
               <Link
                 href={`/play/${nextMeta.id}`}
                 className="toy bg-accent text-on-accent flex h-16 min-w-0 items-center justify-center gap-2.5 rounded-[20px] px-3"
                 style={{ ["--btn-depth" as string]: "var(--accent-depth)" }}
               >
-                <Icon name="play" size={20} />
+                <Icon name="play" size={20} className="max-[359px]:hidden" />
                 <span className="flex min-w-0 flex-col items-start">
-                  <span className="font-display max-w-full truncate text-[18px] font-black max-[359px]:text-[15px]">
+                  <span className="font-display max-w-full truncate text-[18px] font-black max-[359px]:text-[15px] max-[359px]:leading-[1.1] max-[359px]:whitespace-normal">
                     Play {nextMeta.name}
                   </span>
-                  <span className="max-w-full truncate text-[13px] font-medium">
+                  <span className="max-w-full truncate text-[13px] font-medium max-[359px]:hidden">
                     {WORLD_BY_ID[nextMeta.world].name}, {posInWorld} of {worldGames.length}
                   </span>
                 </span>
