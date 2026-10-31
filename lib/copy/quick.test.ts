@@ -21,3 +21,22 @@ describe("quick copy: quiz summary", () => {
     expect(quick.quiz.summarySay(right, 5, score)).toContain("3 of 5 right");
   });
 });
+
+describe("quick copy: quads", () => {
+  it("names all four difficulty levels, each different", () => {
+    expect(quick.quads.levels).toHaveLength(4);
+    expect(new Set(quick.quads.levels).size).toBe(4);
+  });
+
+  it("says one away and how many slips are left in one message", () => {
+    expect(quick.quads.oneAway(2)).toBe("One away. 2 slips left.");
+    expect(quick.quads.notGroup(1)).toBe("Not a group. 1 slip left.");
+  });
+
+  it("announces a found group with its name, level and words", () => {
+    expect(quick.quads.foundSay("Ghana regions", "Easy", ["ASHANTI", "VOLTA", "NORTHERN", "CENTRAL"], 1)).toBe(
+      "Group found: Ghana regions, Easy: ASHANTI, VOLTA, NORTHERN, CENTRAL. 1 of 4 groups.",
+    );
+    expect(quick.quads.found("Ghana regions", "Easy", 4)).toBe("Ghana regions (Easy). All four groups.");
+  });
+});

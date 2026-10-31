@@ -34,4 +34,35 @@ export const quick = {
       `Finished. ${right} of ${total} right, ${formatNumber(score)} ${plural(score, "point")}.`,
     summaryTitle: "Your run",
   },
+  quads: {
+    /** level 0 (most direct) to 3 (trickiest); always printed next to the colour */
+    levels: ["Easy", "Medium", "Tricky", "Hard"] as const,
+    start: "Find four groups of four.",
+    startTutorial: "Tap four words that share something, then Submit.",
+    starter: (label: string) => `Starter group: ${label}.`,
+    checking: "Checking your four…",
+    tried: "You tried those four already.",
+    offline: "No connection. Submit again.",
+    found: (label: string, level: string, n: number) =>
+      n >= 4 ? `${label} (${level}). All four groups.` : `${label} (${level}). ${n} of 4 groups.`,
+    foundSay: (label: string, level: string, words: string[], n: number) =>
+      `Group found: ${label}, ${level}: ${words.join(", ")}. ${n >= 4 ? "All four groups found." : `${n} of 4 groups.`}`,
+    oneAway: (left: number) => `One away. ${left} ${plural(left, "slip")} left.`,
+    notGroup: (left: number) => `Not a group. ${left} ${plural(left, "slip")} left.`,
+    outOfSlips: "Out of slips. The groups stay hidden this time.",
+    lifted: (w: string, n: number) => `${w} lifted. ${n} of 4.`,
+    putDown: (w: string, n: number) => `${w} put down. ${n} of 4 lifted.`,
+    fourLifted: "Four already lifted. Submit or put one down.",
+    shuffled: "Words shuffled.",
+    shuffle: "Shuffle",
+    deselect: "Deselect",
+    submit: "Submit",
+    hint: "Hint",
+    grid: "Quads words",
+    wordSay: (w: string, lifted: boolean, hinted: boolean, checking: boolean) =>
+      `${w}${lifted ? ", lifted" : ""}${checking ? ", checking" : ""}${hinted ? ", hinted" : ""}`,
+    slipsLeft: "Slips left",
+    slipsSay: (n: number, of: number) => `${n} of ${of} slips left`,
+    groupSay: (label: string, level: string, words: string[]) => `${level} group: ${label}. ${words.join(", ")}.`,
+  },
 } as const;

@@ -3,23 +3,35 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import type { BoardProps } from "@/games/types";
-import { Icon } from "@/components/ui/Icon";
 import { useGridKeys } from "@/components/game/useGridKeys";
 import { play } from "@/lib/audio";
 import { sendGuess } from "@/games/_shared/guess";
 import { reducedMotion } from "@/games/_shared/fly";
+import { quick } from "@/lib/copy/quick";
 import { setKey, SLIPS, type QuadsCheck, type QuadsPuzzle, type QuadsState, type SolvedGroup } from "./rules";
 
 const INK = "#0E0F1A";
 const EASE = [0.23, 1, 0.32, 1] as const;
+const t = quick.quads;
+/** "Checking…" only shows when the server is slow, so quick answers don't flash it */
+const CHECKING_AFTER_MS = 250;
+
+/**
+ * One colour per difficulty level, 0 most direct .. 3 trickiest: yellow, cyan, orange, violet. They differ
+ * in hue and lightness for the common colour-blind types, and the level name is always printed beside
+ * the colour, so the colour is never the only signal.
+ */
+const LEVEL_BG = ["var(--w-number)", "var(--w-line)", "var(--w-shape)", "var(--w-logic)"] as const;
+const levelOf = (g: SolvedGroup) => Math.max(0, Math.min(3, g.level));
 
 const fontFor = (w: string) =>
   w.length >= 11 ? 9.5 : w.length >= 10 ? 10 : w.length >= 9 ? 10.5 : w.length >= 8 ? 11 : w.length >= 7 ? 12 : 13;
 
 /**
- * Quads board (Game Boards: Quads). 4 × 4 word tiles; tap four to lift them, then Submit. Solved groups
- * become world-green bars with their name and words. Four slips, shown as dots that empty (hollow, so
- * the state never relies on colour). One away? The feedback line says so.
+ * Quads board (Game Boards: Quads). 4 × 4 word tiles; tap four to lift them, then Submit. The lifted four
+ * show a "checking" state at once while the server answers. Solved groups become bars coloured by
+ * difficulty, each labelled Easy, Medium, Tricky or Hard, with their name and words. Four slips, shown as
+ * dots that empty (hollow, so the state never relies on colour). One away? The feedback line says so.
  */
 export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode, api }: BoardProps<QuadsPuzzle, QuadsState>) {
   const [order, setOrder] = useState<string[]>(() => puzzle.words.slice());
@@ -29,6 +41,8 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
   const [shakeN, setShakeN] = useState(0);
   const [shaking, setShaking] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  /** the four being checked by the server right now */
+  const [checking, setChecking] = useState<string[]>([]);
   const [over, setOver] = useState(false);
   const guessesRef = useRef<string[][]>([]);
   const streak = useRef(0);
@@ -55,15 +69,7 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
   useEffect(() => {
     const saved = initialState?.guesses ?? [];
     if (!saved.length) {
-      api.feedback(
-        mode === "tutorial"
-          ? "Tap four words that share something, then Submit."
-          : puzzle.starter
-            ? `Starter group: ${puzzle.starter}.`
-            : "Find four groups of four.",
-        "info",
-        "hand-pointing",
-      );
+      api.feedback(mode === "tutorial" ? t.startTutorial : puzzle.starter ? t.starter(puzzle.starter) : t.start, "info", "hand-pointing");
       return;
     }
     let cancelled = false;
@@ -91,16 +97,16 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
       if (locked || !w) return;
       if (selected.includes(w)) {
         setSelected(selected.filter((x) => x !== w));
-        api.announce(`${w} put down. ${selected.length - 1} of 4 lifted.`);
+        api.announce(t.putDown(w, selected.length - 1));
         return;
       }
       if (selected.length >= 4) {
-        api.announce("Four already lifted. Submit or put one down.");
+        api.announce(t.fourLifted);
         return;
       }
       setSelected([...selected, w]);
       play("pop", { step: selected.length });
-      api.announce(`${w} lifted. ${selected.length + 1} of 4.`);
+      api.announce(t.lifted(w, selected.length + 1));
     },
     [api, locked, selected],
   );
@@ -109,20 +115,32 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
     if (locked || selected.length !== 4) return;
     const words = selected.slice();
     if (guessesRef.current.some((g) => setKey(g) === setKey(words))) {
-      api.feedback("You tried those four already.", "info", "info");
-      api.announce("You tried those four already.");
+      api.feedback(t.tried, "info", "info");
+      api.announce(t.tried);
       return;
     }
+    // Acknowledge at once: the four are marked as checking, and a slow answer gets a "Checking…" line.
     setBusy(true);
+    setChecking(words);
+    const slow = window.setTimeout(() => {
+      api.feedback(t.checking, "info", "hourglass");
+      api.announce(t.checking);
+    }, CHECKING_AFTER_MS);
+    const settle = () => {
+      window.clearTimeout(slow);
+      setBusy(false);
+      setChecking([]);
+    };
     let res: QuadsCheck;
     try {
       res = await sendGuess<QuadsCheck>(puzzle.ref, words);
     } catch {
-      setBusy(false);
-      api.feedback("No connection. Submit again.", "danger", "wifi-slash");
+      settle();
+      api.feedback(t.offline, "danger", "wifi-slash");
+      api.announce(t.offline);
       return;
     }
-    setBusy(false);
+    settle();
     const next = [...guessesRef.current, words];
     guessesRef.current = next;
     const state = { guesses: next };
@@ -130,14 +148,12 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
       streak.current++;
       apply(res, words, true);
       res.group.words.forEach((_, k) => setTimeout(() => play("chime", { step: k + res.group.level }), k * 40));
-      const done = solved.length + 1 === 4;
-      api.feedback(
-        `${res.group.label}. ${done ? "All four groups." : `${solved.length + 1} of 4 groups.`}`,
-        done ? "success" : "info",
-        "check-circle",
-      );
-      api.announce(`Group found: ${res.group.label}: ${res.group.words.join(", ")}.`);
+      const found = solved.length + 1;
+      const level = t.levels[levelOf(res.group)];
+      api.feedback(t.found(res.group.label, level, found), found === 4 ? "success" : "info", "check-circle");
+      api.announce(t.foundSay(res.group.label, level, res.group.words, found));
       api.onMove(state, { correctStreak: streak.current });
+      const done = found === 4;
       if (done) {
         setOver(true);
         setTimeout(() => play("jingle"), 200);
@@ -145,19 +161,22 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
       }
       return;
     }
-    if (res.invalid) return;
+    if (res.invalid) {
+      api.feedback("");
+      return;
+    }
     streak.current = 0;
     apply(res, words, true);
     const left = slips - 1;
     setTimeout(() => setShaking([]), 400);
-    api.ruleBreak(res.oneAway ? "One away." : "Not a group.");
+    // ruleBreak shows the line, buzzes and announces it once ("One away. 2 slips left.").
+    api.ruleBreak(res.oneAway ? t.oneAway(left) : t.notGroup(left));
     api.onMove(state, { mistake: true });
     if (left <= 0) {
       setOver(true);
-      api.feedback("Out of slips. The groups stay hidden this time.", "danger", "warning");
+      api.feedback(t.outOfSlips, "danger", "warning");
+      api.announce(t.outOfSlips);
       api.onFailed?.(state, "out of slips");
-    } else {
-      api.announce(`${res.oneAway ? "One away" : "Not a group"}. ${left} ${left === 1 ? "slip" : "slips"} left.`);
     }
   }, [api, apply, locked, puzzle.ref, selected, slips, solved.length]);
 
@@ -171,24 +190,25 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
       return a;
     });
     play("swoosh");
-    api.announce("Words shuffled.");
+    api.announce(t.shuffled);
   }, [api]);
 
   useEffect(() => {
     api.setControls([
-      { id: "shuffle", label: "Shuffle", icon: "shuffle", onPress: shuffle, disabled: locked },
-      { id: "deselect", label: "Deselect", icon: "x", onPress: () => setSelected([]), disabled: !selected.length || locked },
+      // Shuffling only moves tiles, so it stays available while a guess is being checked.
+      { id: "shuffle", label: t.shuffle, icon: "shuffle", onPress: shuffle, disabled: disabled || over },
+      { id: "deselect", label: t.deselect, icon: "x", onPress: () => setSelected([]), disabled: !selected.length || locked },
       {
         id: "submit",
-        label: "Submit",
+        label: t.submit,
         icon: "check",
         onPress: () => void submit(),
         disabled: selected.length !== 4 || locked,
         tone: selected.length === 4 ? "world" : "default",
       },
-      { id: "hint", label: "Hint", icon: "lightbulb", onPress: () => {}, tone: "gold" },
+      { id: "hint", label: t.hint, icon: "lightbulb", onPress: () => {}, tone: "gold" },
     ]);
-  }, [api, shuffle, submit, selected.length, locked]);
+  }, [api, shuffle, submit, selected.length, locked, disabled, over]);
 
   const keys = useGridKeys(
     Math.max(1, Math.ceil(remaining.length / 4)),
@@ -205,32 +225,46 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
       style={{ background: "var(--board-bg)" }}
     >
       <AnimatePresence initial={false}>
-        {solved.map((g) => (
-          <motion.div
-            key={g.label}
-            layout
-            initial={{ opacity: 0, transform: "scale(0.97)" }}
-            animate={{ opacity: 1, transform: "scale(1)" }}
-            transition={{ duration: dur, ease: EASE }}
-            role="status"
-            className="flex h-[52px] flex-col items-center justify-center rounded-[12px] px-2 text-center"
-            style={{ background: "var(--world)", color: INK }}
-          >
-            <span
-              className="flex items-center gap-1.5 text-[13px] leading-tight font-extrabold"
-              style={{ fontFamily: "var(--font-display)" }}
+        {solved.map((g) => {
+          const level = t.levels[levelOf(g)];
+          return (
+            <motion.div
+              key={g.label}
+              layout
+              initial={{ opacity: 0, transform: "scale(0.97)" }}
+              animate={{ opacity: 1, transform: "scale(1)" }}
+              transition={{ duration: dur, ease: EASE }}
+              // Announced once by the board when found; the bar itself is a labelled group, not a live region.
+              role="group"
+              aria-label={t.groupSay(g.label, level, g.words)}
+              data-level={levelOf(g)}
+              className="flex h-[52px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-[12px] px-2 text-center"
+              style={{ background: LEVEL_BG[levelOf(g)], color: INK }}
             >
-              <Icon name="check" size={12} />
-              {g.label}
-            </span>
-            <span className="truncate text-[13px] leading-tight font-medium">{g.words.join(" · ")}</span>
-          </motion.div>
-        ))}
+              <span className="flex max-w-full min-w-0 items-center gap-1.5 text-[13px] leading-tight font-extrabold">
+                <span
+                  aria-hidden
+                  className="flex-none rounded-full px-1.5 text-[10px] leading-[16px] font-bold tracking-[.06em] uppercase"
+                  style={{ background: `color-mix(in srgb, ${INK} 16%, transparent)` }}
+                >
+                  {level}
+                </span>
+                <span aria-hidden className="truncate" style={{ fontFamily: "var(--font-display)" }}>
+                  {g.label}
+                </span>
+              </span>
+              <span aria-hidden className="max-w-full truncate text-[13px] leading-tight font-medium">
+                {g.words.join(" · ")}
+              </span>
+            </motion.div>
+          );
+        })}
       </AnimatePresence>
 
       <div
         role="grid"
-        aria-label="Quads words"
+        aria-label={t.grid}
+        aria-busy={checking.length > 0}
         aria-rowcount={Math.ceil(remaining.length / 4)}
         aria-colcount={4}
         onKeyDown={keys.onKeyDown}
@@ -240,6 +274,7 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
           {remaining.map((w, i) => {
             const sel = selected.includes(w);
             const shake = shaking.includes(w);
+            const check = checking.includes(w);
             return (
               <motion.div
                 key={w}
@@ -250,7 +285,7 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
                 data-i={i}
                 tabIndex={keys.focus === i ? 0 : -1}
                 aria-selected={sel}
-                aria-label={`${w}${sel ? ", lifted" : ""}${hinted.includes(w) ? ", hinted" : ""}`}
+                aria-label={t.wordSay(w, sel, hinted.includes(w), check)}
                 onFocus={() => keys.setFocus(i)}
                 onClick={() => {
                   keys.setFocus(i);
@@ -260,9 +295,12 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
                 style={{
                   background: sel ? "var(--text)" : "var(--surface-raised)",
                   color: sel ? "var(--bg)" : "var(--text)",
-                  boxShadow: `0 3px 0 ${sel ? "var(--text-muted)" : "var(--depth)"}${shake ? ", inset 0 0 0 2px var(--danger)" : hinted.includes(w) ? ", inset 0 0 0 3px var(--gold)" : ""}`,
+                  boxShadow: `0 3px 0 ${sel ? "var(--text-muted)" : "var(--depth)"}${shake ? ", inset 0 0 0 2px var(--danger)" : check ? ", inset 0 0 0 3px var(--world)" : hinted.includes(w) ? ", inset 0 0 0 3px var(--gold)" : ""}`,
                   translate: sel ? "0 -3px" : "0 0",
-                  transition: "translate 120ms var(--ease-out), background-color 120ms var(--ease-out), color 120ms var(--ease-out)",
+                  // Checking: the lifted four get a ring and dim the moment Submit is pressed.
+                  opacity: check ? 0.75 : 1,
+                  transition:
+                    "translate 120ms var(--ease-out), background-color 120ms var(--ease-out), color 120ms var(--ease-out), opacity 120ms var(--ease-out)",
                 }}
               >
                 <span
@@ -278,8 +316,8 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
       </div>
 
       <div className="flex items-center justify-between pt-1">
-        <span className="text-muted text-[13px] font-medium">Slips left</span>
-        <div className="flex gap-[5px]" role="img" aria-label={`${slips} of ${SLIPS} slips left`}>
+        <span className="text-muted text-[13px] font-medium">{t.slipsLeft}</span>
+        <div className="flex gap-[5px]" role="img" aria-label={t.slipsSay(slips, SLIPS)}>
           {Array.from({ length: SLIPS }, (_, k) => (
             <span
               key={k}

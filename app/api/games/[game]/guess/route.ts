@@ -19,13 +19,18 @@ const Guess = z.object({
 export const POST = handle(async (req: Request, ctx: RouteContext<"/api/games/[game]/guess">) => {
   const { game } = await ctx.params;
   const { admin, player } = await requirePlayer();
-  await rateLimit(admin, `guess:${player.id}`, 600, 3600);
   const { ref, guess, attemptId } = await body(req, Guess);
+  // Instant feedback (Quads aims for under 600 ms): the rate limit, the attempt lookup and the logic
+  // import run side by side. The rate limit is still checked first, so a limited player learns nothing.
+  const limited = rateLimit(admin, `guess:${player.id}`, 600, 3600);
+  const attempt = attemptId ? attemptPuzzle(admin, player.id, attemptId) : null;
+  attempt?.catch(() => {}); // a failure is rethrown below, after the rate limit
+  await limited;
   if (ref.game !== game || !LOGIC[game]) throw new ApiError(404, "unknown_game");
   const logic = (await LOGIC[game]()).default as unknown as Partial<GuessLogic>;
   if (typeof logic.checkGuess !== "function" || typeof logic.generateAt !== "function") throw new ApiError(400, "no_guess_check");
-  if (attemptId) {
-    const a = await attemptPuzzle(admin, player.id, attemptId);
+  if (attempt) {
+    const a = await attempt;
     if (a.gameId !== game) throw new ApiError(400, "wrong_game");
     return ok(logic.checkGuess(a.puzzle, a.solution, guess));
   }
