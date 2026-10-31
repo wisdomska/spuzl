@@ -387,3 +387,33 @@ select {
 [data-motion="reduce"] .ambient {
   animation: none !important;
 }
+
+/* ---------- Social and meta screens (leagues, friends, shop, me, quests, settings) ---------- */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+/* S4: a claimable quest breathes (1 → 1.06 → 1). Reduced motion keeps the ring, drops the pulse. */
+@keyframes claim-pop {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+.claim-pop {
+  animation: claim-pop 1.2s var(--ease-in-out) infinite;
+}
+[data-motion="reduce"] .claim-pop {
+  animation: none;
+}
+/* TV mode (School Cup class board): fixed 1280 × 720 stage scaled to the screen. */
+.tv-stage {
+  width: 1280px;
+  height: 720px;
+  transform-origin: top left;
+}
