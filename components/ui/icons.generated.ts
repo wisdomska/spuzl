@@ -96,6 +96,7 @@ import {
   House,
   Infinity,
   Info,
+  InstagramLogo,
   Key,
   Keyboard,
   Ladder,
@@ -202,6 +203,8 @@ import {
   Wrench,
   X,
   XCircle,
+  XLogo,
+  TiktokLogo,
   // multiplayer
   ArrowFatLinesDown,
   BellRinging,
@@ -412,6 +415,10 @@ export const ICONS: Record<string, Icon> = {
   wrench: Wrench,
   x: X,
   "x-circle": XCircle,
+  // share sheet targets
+  "instagram-logo": InstagramLogo,
+  "tiktok-logo": TiktokLogo,
+  "x-logo": XLogo,
   // multiplayer
   "arrow-fat-lines-down": ArrowFatLinesDown,
   "bell-ringing": BellRinging,
