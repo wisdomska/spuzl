@@ -20,7 +20,8 @@
     "gen:puzzles": "tsx scripts/generate-puzzles.mts",
     "validate:dailies": "tsx scripts/validate-dailies.mts",
     "prerender:3d": "node scripts/prerender-3d.mjs",
-    "prepare": "husky || true"
+    "prepare": "husky || true",
+    "gen:icons": "node scripts/gen-icons.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
