@@ -33,7 +33,7 @@ export const POST = handle(async (req: Request) => {
   const seed = input.mode === "tutorial" ? `tutorial:${input.game}` : input.mode === "challenge" ? input.seed : undefined;
   // Free play defaults to medium; Dailies follow the weekday curve (Mon easy ... Sun mega).
   const difficulty =
-    input.difficulty ?? (input.mode === "tutorial" ? "easy" : input.mode === "free" ? "medium" : difficultyForDate(date ?? today));
+    input.difficulty ?? (input.mode === "tutorial" ? "easy" : input.mode === "free" ? "easy" : difficultyForDate(date ?? today));
   const mode = input.mode === "challenge" ? "free" : input.mode;
   const res = await startAttempt(admin, player.id, { gameId: input.game, mode, date, seed, difficulty });
   return ok({ ...res, date: date ?? null, difficulty });

@@ -16,7 +16,8 @@ export type Difficulty = "easy" | "medium" | "hard" | "expert" | "mega";
 /** Mon easy, Tue-Thu medium, Fri hard, Sat expert, Sun Weekly Mega (SRS 5, common rules). */
 export function difficultyForDate(isoDate: string): Difficulty {
   const day = new Date(isoDate + "T00:00:00Z").getUTCDay();
-  return (["mega", "easy", "medium", "medium", "medium", "hard", "expert"] as const)[day];
+  // Friendly week: easy most weekdays, a medium midweek and Friday, hard only at the weekend.
+  return (["hard", "easy", "easy", "medium", "easy", "medium", "hard"] as const)[day];
 }
 
 export interface Generated<P, S> {
