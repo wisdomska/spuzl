@@ -1,4 +1,5 @@
 import "server-only";
+import { getGameSettings } from "@/lib/game-settings/server";
 import { createHash, randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { GAME_BY_ID, LAUNCH_IDS, type GameMeta } from "@/lib/catalog";
@@ -373,6 +374,7 @@ export async function finishAttempt(
       .neq("id", id);
     const { data: median } = await admin.rpc("svc_daily_median", { p_game: a.game_id, p_date: a.daily_date });
     reward = dailyClearReward({
+      hintXpKeptPct: (await getGameSettings())["hints.dailyXpKeptPct"],
       timeMs,
       hints: a.hints,
       mistakes: input.mistakes,
@@ -473,6 +475,7 @@ export async function finishAttempt(
     await admin.rpc("svc_grant_reward", { p_player: playerId, p_source: "free", p_ref: id, p_xp: reward.xp, p_sparks: reward.sparks });
   } else if (a.mode === "archive" && a.daily_date) {
     reward = dailyClearReward({
+      hintXpKeptPct: (await getGameSettings())["hints.dailyXpKeptPct"],
       timeMs,
       hints: a.hints,
       mistakes: input.mistakes,

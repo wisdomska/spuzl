@@ -13,6 +13,8 @@ export interface DailyClearInput {
   firstClearOfGameEver: boolean;
   archive?: boolean;
   relaxed?: boolean;
+  /** share of Daily XP kept after a hint (admin setting hints.dailyXpKeptPct); default 50 = halved */
+  hintXpKeptPct?: number;
 }
 
 export interface Reward {
@@ -38,8 +40,10 @@ export function dailyClearReward(i: DailyClearInput): Reward {
   let xp = lines.reduce((s, l) => s + l.xp, 0);
   let sparks = lines.reduce((s, l) => s + (l.sparks ?? 0), 0);
   if (i.hints > 0) {
-    xp = Math.floor(xp / 2); // hint-used clears are halved
-    lines.push({ label: "Hints used, halved", xp: -Math.ceil(lines.reduce((s, l) => s + l.xp, 0) / 2) });
+    const kept = Math.max(0, Math.min(100, i.hintXpKeptPct ?? 50));
+    const before = xp;
+    xp = Math.floor((xp * kept) / 100);
+    lines.push({ label: kept === 50 ? "Hints used, halved" : `Hints used, ${kept}% kept`, xp: xp - before });
   }
   if (i.archive) {
     xp = Math.floor(xp / 2);

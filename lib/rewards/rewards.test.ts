@@ -85,4 +85,13 @@ describe("glicko-2", () => {
     expect(rankFor(1650).name).toBe("Mastermind");
     expect(rankFor(1900)).toMatchObject({ name: "Legend", division: "" });
   });
+  it("uses the admin setting for how much Daily XP a hint keeps", () => {
+    const base = { timeMs: 200_000, hints: 1, mistakes: 1, medianMs: 100_000, firstClearOfGameEver: false };
+    const full = dailyClearReward({ ...base, hints: 0 }).xp - 25; // same clear without the "No hints" line
+    expect(dailyClearReward({ ...base, hintXpKeptPct: 0 }).xp).toBe(0);
+    expect(dailyClearReward({ ...base, hintXpKeptPct: 100 }).xp).toBe(full);
+    const r = dailyClearReward({ ...base, hintXpKeptPct: 75 });
+    expect(r.xp).toBe(Math.floor((full * 75) / 100));
+    expect(r.lines.at(-1)).toMatchObject({ label: "Hints used, 75% kept" });
+  });
 });
