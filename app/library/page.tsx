@@ -39,7 +39,9 @@ export default function Library() {
               className="press flex h-9 shrink-0 items-center rounded-[12px] px-3 text-[14px] font-semibold whitespace-nowrap"
               style={
                 on
-                  ? { background: w.id === "all" ? "var(--accent)" : WORLD_BY_ID[w.id as WorldId].color, color: "#0E0F1A" }
+                  ? w.id === "all"
+                    ? { background: "var(--accent)", color: "var(--on-accent)" }
+                    : { background: WORLD_BY_ID[w.id as WorldId].color, color: "#0E0F1A" }
                   : { background: "var(--surface)", color: "var(--text-muted)" }
               }
             >
@@ -52,22 +54,33 @@ export default function Library() {
         {list.map((g) => {
           const daily = me.data?.today.cleared[g.id] === undefined;
           return (
-            <li key={g.id}>
-              <Link href={`/play/${g.id}?mode=free`} className="press bg-surface flex items-center gap-3 rounded-[20px] px-3 py-2.5">
+            <li key={g.id} className="bg-surface flex items-center gap-2 rounded-[20px] py-2.5 pr-2.5 pl-3">
+              {/* Two sibling links (never nested): the tile opens Free play, the chip opens today's Daily. */}
+              <Link
+                href={`/play/${g.id}?mode=free`}
+                className="press flex min-w-0 flex-1 items-center gap-3"
+                aria-label={`${g.name}, free play. ${g.blurb}`}
+              >
                 <GameIcon3D meta={g} size={52} />
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="font-display text-[16px] font-extrabold">{g.name}</span>
                   <span className="text-muted text-[13px] leading-[1.35]">{g.blurb}</span>
                 </span>
-                <span className="flex shrink-0 flex-col items-end gap-1">
-                  <span className="bg-surface-raised rounded-[12px] px-2.5 py-1.5 text-[13px] font-bold whitespace-nowrap">Free play</span>
-                  {daily && (
-                    <Link href={`/play/${g.id}`} className="text-accent text-[12px] font-semibold" onClick={(e) => e.stopPropagation()}>
-                      Daily open
-                    </Link>
-                  )}
+                <span className="bg-surface-raised shrink-0 rounded-[12px] px-2.5 py-1.5 text-[13px] font-bold whitespace-nowrap">
+                  Free play
                 </span>
               </Link>
+              {daily && (
+                <Link
+                  href={`/play/${g.id}`}
+                  aria-label={`${g.name}, today's Daily`}
+                  className="press flex size-11 shrink-0 flex-col items-center justify-center rounded-[12px] text-[11px] leading-none font-semibold"
+                  style={{ background: "var(--accent)", color: "var(--on-accent)" }}
+                >
+                  <Icon name="calendar-blank" size={16} />
+                  Daily
+                </Link>
+              )}
             </li>
           );
         })}
