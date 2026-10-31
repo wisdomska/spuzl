@@ -4,6 +4,8 @@
  * Games missing here fall back to submitting the solution itself (many games verify that shape directly);
  * if that is refused too, the check asks for a Play test, which verifies a real board state on the server.
  */
+import { turnsTo } from "@/games/flowline/logic";
+
 type Adapter = (puzzle: unknown, solution: unknown) => unknown;
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const sudoku: Adapter = (_p, s: any) => ({ values: (s as number[]).slice(), notes: new Array((s as number[]).length).fill(0) });
@@ -23,6 +25,7 @@ export const SOLVED_STATE: Record<string, Adapter> = {
     return Array.from({ length: p.w * p.h }, (_, i) => (mines.has(i) ? 2 : 1));
   },
   quilt: (_p, s: any) => s,
+  flowline: (p: any, s: any) => (p.tiles as number[]).map((t, i) => turnsTo(t, s[i])),
   deadon: (_p, s: any) => ({ steps: s.steps }),
   coil: (_p, s: any) => ({ found: s.paths }),
   quads: (_p, s: any) => ({ guesses: s.groups.map((g: { words: string[] }) => g.words) }),

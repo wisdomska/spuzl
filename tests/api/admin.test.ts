@@ -429,7 +429,7 @@ describe("moderation (FR-AD-05)", () => {
 
   it("renames, bans, resets and restores players; a banned player is locked out", async () => {
     const rn = await S.moderator.aal2(`/api/admin/players/${target.userId}`, { json: { action: "rename" } });
-    expect(rn.data.nickname).toMatch(/^Spuzler\d{4}$/);
+    expect(rn.data.nickname).toMatch(/^Puzzler\d{4}$/);
     const rude = await S.moderator.aal2(`/api/admin/players/${target.userId}`, { json: { action: "rename", nickname: "fuckface" } });
     expect(rude.status).toBe(422);
     expect((await S.owner.aal2(`/api/admin/players/${target.userId}`, { json: { action: "revoke_ranking" } })).status).toBe(200);

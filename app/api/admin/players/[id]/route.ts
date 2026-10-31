@@ -24,7 +24,7 @@ const Body = z.object({
   action: z.enum(["ban", "ban_void", "unban", "revoke_ranking", "restore_ranking", "reset", "rename"]),
   days: z.number().int().min(1).max(365).nullable().optional(),
   reason: z.string().trim().max(500).optional(),
-  /** rename: the new nickname, or omit for a neutral "Spuzler1234" */
+  /** rename: the new nickname, or omit for a neutral "Puzzler1234" */
   nickname: z.string().trim().max(16).optional(),
 });
 
@@ -38,10 +38,10 @@ export const POST = handle(async (req: Request, rc: RouteContext<"/api/admin/pla
   const b = await body(req, Body);
   let nickname: string | null = null;
   if (b.action === "rename") {
-    // Leet digits can spell a blocked word ("Spuzler4551"), so draw until the filter passes.
+    // Leet digits can spell a blocked word ("Puzzler4551"), so draw until the filter passes.
     nickname = b.nickname || "";
     for (let i = 0; !nickname && i < 50; i++) {
-      const n = `Spuzler${randomInt(1000, 10000)}`;
+      const n = `Puzzler${randomInt(1000, 10000)}`;
       if (!nicknameProblem(n)) nickname = n;
     }
     const problem = nicknameProblem(nickname);

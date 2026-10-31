@@ -38,6 +38,7 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
   const [tab, setTab] = useState<Tab>("reports");
   const [status, setStatus] = useState("open");
   const [sel, setSel] = useState<string | null>(null);
+  const [done, setDone] = useState<string | null>(null);
   const q = useAdminQuery<Queue>(
     ["moderation", tab, status],
     `/api/admin/moderation?tab=${tab}&status=${tab === "flagged" ? "open" : status}`,
@@ -53,7 +54,7 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
             <Tabs<Tab>
               label="Queue"
               value={tab}
-              onChange={(t) => (setTab(t), setSel(null))}
+              onChange={(t) => (setTab(t), setSel(null), setDone(null))}
               items={[
                 { id: "reports", label: "Reports" },
                 { id: "nicknames", label: "Nicknames" },
@@ -80,6 +81,13 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
             </select>
           </label>
         )}
+        <div aria-live="polite" className="empty:hidden">
+          {done && (
+            <Notice tone="ok" icon="check-circle">
+              {done}
+            </Notice>
+          )}
+        </div>
         <div className="bg-surface overflow-x-auto rounded-[12px]">
           {q.isPending ? (
             <RowsSkeleton />
@@ -141,9 +149,9 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
         {!selected ? (
           <Empty icon="shield-check">Pick a case to review.</Empty>
         ) : tab === "flagged" ? (
-          <FlaggedCase key={selected.id} id={selected.id} canWrite={canWrite} />
+          <FlaggedCase key={selected.id} id={selected.id} canWrite={canWrite} onDone={setDone} />
         ) : (
-          <ReportCase key={selected.id} id={selected.id} nickname={tab === "nicknames"} canWrite={canWrite} />
+          <ReportCase key={selected.id} id={selected.id} nickname={tab === "nicknames"} canWrite={canWrite} onDone={setDone} />
         )}
       </aside>
     </div>
@@ -166,7 +174,7 @@ const accountAge = (iso: string) => {
   return { text: d < 1 ? "today" : d === 1 ? "1 day" : `${d} days`, young: d < 7 };
 };
 
-function FlaggedCase({ id, canWrite }: { id: string; canWrite: boolean }) {
+function FlaggedCase({ id, canWrite, onDone }: { id: string; canWrite: boolean; onDone: (msg: string) => void }) {
   const q = useAdminQuery<{
     attempt: {
       ref: string;
@@ -245,15 +253,38 @@ function FlaggedCase({ id, canWrite }: { id: string; canWrite: boolean }) {
             size="lg"
             tone="danger"
             disabled={act.isPending}
-            onClick={() => act.mutate({ decision: "reject", note: "Void times + 7-day ban", ban: { days: 7 } })}
+            onClick={() =>
+              void act.mutateAsync({ decision: "reject", note: "Void times + 7-day ban", ban: { days: 7 } }).then(
+                () => onDone(`${a.ref} rejected, times voided, 7-day ban.`),
+                () => undefined,
+              )
+            }
           >
             Void times + 7-day ban
           </Btn>
           <div className="grid grid-cols-2 gap-2">
-            <Btn size="lg" disabled={act.isPending} onClick={() => act.mutate({ decision: "clear", note: "Cleared by moderator" })}>
+            <Btn
+              size="lg"
+              disabled={act.isPending}
+              onClick={() =>
+                void act.mutateAsync({ decision: "clear", note: "Cleared by moderator" }).then(
+                  () => onDone(`${a.ref} cleared to the boards.`),
+                  () => undefined,
+                )
+              }
+            >
               Clear to boards
             </Btn>
-            <Btn size="lg" disabled={act.isPending} onClick={() => act.mutate({ decision: "reject", note: "Rejected" })}>
+            <Btn
+              size="lg"
+              disabled={act.isPending}
+              onClick={() =>
+                void act.mutateAsync({ decision: "reject", note: "Rejected" }).then(
+                  () => onDone(`${a.ref} rejected.`),
+                  () => undefined,
+                )
+              }
+            >
               Reject
             </Btn>
           </div>
@@ -263,7 +294,17 @@ function FlaggedCase({ id, canWrite }: { id: string; canWrite: boolean }) {
   );
 }
 
-function ReportCase({ id, nickname, canWrite }: { id: string; nickname: boolean; canWrite: boolean }) {
+function ReportCase({
+  id,
+  nickname,
+  canWrite,
+  onDone,
+}: {
+  id: string;
+  nickname: boolean;
+  canWrite: boolean;
+  onDone: (msg: string) => void;
+}) {
   const q = useAdminQuery<{
     report: {
       ref: string;
@@ -297,8 +338,9 @@ function ReportCase({ id, nickname, canWrite }: { id: string; nickname: boolean;
     close: "actioned" | null = "actioned",
   ) => {
     if (!t) return;
-    await player.mutateAsync({ pid: t.id, action, ...extra });
+    const r = await player.mutateAsync({ pid: t.id, action, ...extra });
     if (close) await decide.mutateAsync({ decision: close, note: action });
+    onDone(r.nickname ? `${q.data!.report.ref}: renamed to ${r.nickname}.` : `${q.data!.report.ref}: ${action.replace("_", " ")} done.`);
   };
   const err = decide.error ?? player.error;
   return (
@@ -347,7 +389,7 @@ function ReportCase({ id, nickname, canWrite }: { id: string; nickname: boolean;
             id="rename"
             value={rename}
             onChange={(e) => setRename(e.target.value)}
-            placeholder="New nickname (blank: Spuzler1234)"
+            placeholder="New nickname (blank: Puzzler1234)"
             className="bg-bg h-11 min-w-0 flex-1 rounded-[12px] px-3 text-[14px] shadow-[inset_0_0_0_1px_var(--line)]"
           />
           <Btn type="submit" size="lg" disabled={player.isPending}>
