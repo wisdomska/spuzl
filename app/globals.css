@@ -413,3 +413,90 @@ select {
 [data-motion="reduce"] .admin a {
   transition: none;
 }
+/* ---------- Social and meta screens (leagues, friends, shop, me, quests, settings) ---------- */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+/* S4: a claimable quest breathes (1 → 1.06 → 1). Reduced motion keeps the ring, drops the pulse. */
+@keyframes claim-pop {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+.claim-pop {
+  animation: claim-pop 1.2s var(--ease-in-out) infinite;
+}
+[data-motion="reduce"] .claim-pop {
+  animation: none;
+}
+/* TV mode (School Cup class board): fixed 1280 × 720 stage scaled to the screen. */
+.tv-stage {
+  width: 1280px;
+  height: 720px;
+  transform-origin: top left;
+}
+/* Static pages (How to play, Fair play, Privacy, Terms, Contact): readable prose column. */
+.info-prose {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-size: 16px;
+  line-height: 1.55;
+}
+.info-prose h1 {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 30px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+.info-prose h2 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 19px;
+  margin-top: 14px;
+}
+.info-prose h3 {
+  font-weight: 700;
+  font-size: 16px;
+}
+.info-prose p,
+.info-prose li {
+  color: var(--text);
+  text-wrap: pretty;
+}
+.info-prose ul {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-left: 20px;
+  list-style: disc;
+}
+.info-prose a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.info-prose .lede {
+  color: var(--text-muted);
+}
+/* World-coloured text: fill on dark, the AA ink token on light (README colour rules). */
+.world-text {
+  color: var(--wc);
+}
+[data-theme="light"] .world-text {
+  color: var(--wi);
+}
+/* SpuzWear: a worn hat replaces the tuft (Spuz draws the tuft as the first child of its body layer).
+   Path: root > hop layer > body > animated body > tuft. */
+.spuz-no-tuft > .spuz-root > div:nth-child(2) > div:nth-child(3) > div:first-child > div:first-child {
+  display: none;
+}
