@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { duelCopy } from "@/lib/copy/duel";
 import { AnimatePresence, motion } from "motion/react";
 import { Icon } from "@/components/ui/Icon";
 import { Spuz, type SpuzMood } from "@/components/brand/Spuz";
@@ -467,6 +468,7 @@ export function RoundEnd({
   rounds,
   oppColor,
   msToNext,
+  totalMs,
   onEmote,
   emote,
 }: {
@@ -480,6 +482,7 @@ export function RoundEnd({
   rounds: ("me" | "them" | "draw")[];
   oppColor: string;
   msToNext: number;
+  totalMs: number;
   onEmote: (e: EmoteId) => void;
   emote: { e: EmoteId; n: number } | null;
 }) {
@@ -491,7 +494,7 @@ export function RoundEnd({
   const lost = rounds.filter((r) => r === "them").length;
   const decider = won === 1 && lost === 1;
   const margin = myMs !== null && theirMs !== null ? Math.abs(myMs - theirMs) / 1000 : null;
-  const title = draw ? "Dead level" : meWon ? "Round to you" : `${them.nickname} took it`;
+  const title = duelCopy.roundTitle(round, draw ? "draw" : meWon ? "me" : "them", them.nickname);
   const line = draw
     ? "Same tenth, same slips. Nobody scores."
     : meWon
@@ -536,10 +539,20 @@ export function RoundEnd({
         <span className="num">
           {won} - {lost}
         </span>
-        . {decider ? "Decider in" : "Next round in"}
+        . {duelCopy.nextRoundLabel(decider)}
       </div>
-      <div className="num text-accent text-[64px] leading-none font-semibold" aria-live="off">
-        {Math.max(0, Math.ceil(msToNext / 1000))}
+      <div
+        className="bg-line h-2 w-full max-w-[280px] overflow-hidden rounded-full"
+        role="progressbar"
+        aria-label={duelCopy.nextRoundLabel(decider)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(100 * (1 - Math.max(0, Math.min(1, msToNext / Math.max(1, totalMs)))))}
+      >
+        <div
+          className="bg-accent h-full origin-left rounded-full"
+          style={{ transform: `scaleX(${1 - Math.max(0, Math.min(1, msToNext / Math.max(1, totalMs)))})` }}
+        />
       </div>
       <div className="mt-auto">
         <EmoteBar onSend={onEmote} size="lg" />

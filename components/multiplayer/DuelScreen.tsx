@@ -7,7 +7,8 @@ import { Icon } from "@/components/ui/Icon";
 import { api, HttpError, useMe } from "@/lib/client/api";
 import { matchAction, matchKey, useEmotes, useMatch, useProfileGate, useServerNow } from "@/lib/client/multiplayer";
 import { useSettings } from "@/lib/settings/store";
-import { botProgress, duelPhase, BOT_ID } from "@/lib/multiplayer/duel";
+import { useGameSettings } from "@/lib/game-settings/client";
+import { botProgress, duelPhase, roundOutcomes, BOT_ID } from "@/lib/multiplayer/duel";
 import { DUEL_DEFAULT_GAME, gameName } from "@/lib/multiplayer/games";
 import { TIMING, type EmoteId } from "@/lib/multiplayer/constants";
 import type { MatchView } from "@/lib/multiplayer/types";
@@ -212,18 +213,7 @@ function DuelLobby({ joinCode, friendName }: { joinCode: string | null; friendNa
 /* ---------------- The match ---------------- */
 
 function outcomes(v: MatchView, meId: string, themId: string | null): Outcome[] {
-  const done = v.status === "finished" ? v.round : v.round - 1;
-  const out: Outcome[] = [];
-  for (let r = 1; r <= done; r++) {
-    const mine = v.rounds.find((x) => x.round === r && x.playerId === meId);
-    const theirs = themId ? v.rounds.find((x) => x.round === r && x.playerId === themId) : null;
-    if (!mine && !theirs) continue;
-    if (mine?.won) out.push("me");
-    else if (theirs?.won) out.push("them");
-    else if (v.isBot) out.push("them");
-    else out.push("draw");
-  }
-  return out;
+  return roundOutcomes(v.rounds, meId, themId, v.status === "finished" ? v.round : v.round - 1, v.isBot);
 }
 
 function DuelMatch({ id }: { id: string }) {
@@ -238,6 +228,7 @@ function DuelMatch({ id }: { id: string }) {
   const [rematchWaiting, setRematchWaiting] = useState(false);
   const [wipe, setWipe] = useState(0);
   const toasted = useRef<string>("");
+  const roundResultMs = useGameSettings()["duel.roundResultMs"];
 
   const me = view?.players.find((p) => p.id === view.me);
   const themP = view?.players.find((p) => p.id !== view.me && !p.spectator) ?? null;
@@ -387,6 +378,7 @@ function DuelMatch({ id }: { id: string }) {
         rounds={rounds}
         oppColor={them.color}
         msToNext={start - TIMING.countdownMs - now}
+        totalMs={roundResultMs}
         onEmote={sendEmote}
         emote={theirEmote ?? myEmote}
       />

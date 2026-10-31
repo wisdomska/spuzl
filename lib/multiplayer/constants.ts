@@ -8,8 +8,8 @@ export const TIMING = {
   /** 3, 2, 1 at 800 ms each, SPUZL! held for 1,600 ms (prototype: 5 ticks of 800 ms) */
   countdownMs: 4000,
   beatMs: 800,
-  /** M2 round end screen before the next countdown ("Decider in 5") */
-  roundEndMs: 5000,
+  /** M2 round end card before the next countdown; the live value is the admin setting duel.roundResultMs */
+  roundEndMs: 2000,
   /** tie window: finishes in the same tenth of a second */
   tieMs: 100,
   /** the server waits this long after the first finish before deciding, so near ties are seen */

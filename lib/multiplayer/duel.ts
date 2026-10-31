@@ -60,8 +60,34 @@ export function matchState(score: Score, roundsPlayed: number): MatchProgress {
 }
 
 /** When the next round's puzzle unlocks: round end screen, then the countdown. */
-export function nextRoundStart(now: number): number {
-  return now + TIMING.roundEndMs + TIMING.countdownMs;
+export function nextRoundStart(now: number, roundEndMs: number = TIMING.roundEndMs): number {
+  return now + roundEndMs + TIMING.countdownMs;
+}
+
+export type RoundSide = "me" | "them" | "draw";
+
+/**
+ * Who took each finished round, read from the server's round rows (SPZ-03). A tie gives both players
+ * place 1 and no point, so the listed rounds always add up to the score.
+ */
+export function roundOutcomes(
+  rows: { round: number; playerId: string; won: boolean; place: number | null }[],
+  meId: string,
+  themId: string | null,
+  roundsDone: number,
+  isBot: boolean,
+): RoundSide[] {
+  const out: RoundSide[] = [];
+  for (let r = 1; r <= roundsDone; r++) {
+    const mine = rows.find((x) => x.round === r && x.playerId === meId);
+    const theirs = themId ? rows.find((x) => x.round === r && x.playerId === themId) : undefined;
+    if (!mine && !theirs) continue;
+    if (mine?.won) out.push("me");
+    else if (theirs?.won) out.push("them");
+    else if (mine?.place === 1) out.push("draw");
+    else out.push(isBot ? "them" : "draw");
+  }
+  return out;
 }
 export function firstRoundStart(now: number): number {
   return now + TIMING.versusMs + TIMING.countdownMs;

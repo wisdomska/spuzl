@@ -8,6 +8,7 @@ import { placeRace, raceOver, nextHost, type Racer } from "../race";
 import { validateProgress } from "../progress";
 import type { MatchPlayerView, MatchRoundView, MatchView } from "../types";
 import { roundPuzzle } from "./puzzles";
+import { getGameSettings } from "@/lib/game-settings/server";
 import { finalizeDuel, finalizeRace } from "./rewards";
 
 export const matchTopic = (id: string) => `match:${id}`;
@@ -404,7 +405,7 @@ async function resolveDuel(admin: SupabaseClient, l: Loaded): Promise<boolean> {
   const applied = await commit(admin, l, {
     status: state.over ? "finished" : "playing",
     round: state.over ? m.round : m.round + 1,
-    startAt: state.over ? null : nextRoundStart(now),
+    startAt: state.over ? null : nextRoundStart(now, (await getGameSettings())["duel.roundResultMs"]),
     winner: state.over && state.winner && state.winner !== BOT_ID ? state.winner : null,
     result: state.over ? (state.draw ? "draw" : state.winner === BOT_ID ? "bot" : "win") : null,
     botRoundsWon: m.is_bot ? score[BOT_ID] : null,
