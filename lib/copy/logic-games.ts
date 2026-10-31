@@ -18,4 +18,17 @@ export const logicGames = {
     link: (same: boolean, dir: "right" | "left" | "above" | "below") =>
       `${same ? "equals" : "is opposite to"} the cell ${dir === "right" || dir === "left" ? `to the ${dir}` : dir}`,
   },
+  fourup: {
+    you: (winIn: number) => `You are the star. Win in ${winIn} drops.`,
+    start: (winIn: number) => `Win in ${winIn} drops. Tap a column.`,
+    boardLabel: (cols: number, rows: number) =>
+      `Four Up board, ${cols} columns by ${rows} rows. Each column is a button; arrow keys move between columns.`,
+    /** the whole column is one button: where the next disc lands, then what is in it, bottom up */
+    column: (col: number, landsOn: number | null, discs: string[]) =>
+      `Column ${col}. ${landsOn === null ? "Full" : `Drops to row ${landsOn}`}.${discs.length ? ` ${discs.join(", ")}.` : " Empty."}`,
+    disc: (row: number, star: boolean, winning: boolean) => `Row ${row} ${star ? "star" : "ring"}${winning ? ", winning four" : ""}`,
+    dropped: (col: number, row: number) => `Star disc in column ${col}, row ${row}`,
+    block: (col: number, left: number) => `They block column ${col}. Win in ${left} more.`,
+    blockAnnounce: (col: number, left: number) => `Ring disc in column ${col}. Win in ${left} more.`,
+  },
 } as const;

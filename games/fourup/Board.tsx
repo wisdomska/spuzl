@@ -1,21 +1,29 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { useCellSize } from "@/components/game/useBoardSize";
-import { useGridKeys } from "@/components/game/useGridKeys";
 import { play } from "@/lib/audio";
 import { BayStyles } from "@/games/_shared/BayStyles";
+import { logicGames } from "@/lib/copy/logic-games";
 import { COLS, ROWS, drop, dropRow, type Grid } from "./engine";
 import { COPY, replay, type FourUpPuzzle, type FourUpState } from "./logic";
 
+const t = logicGames.fourup;
 const GAP = 4;
+/* Disc materials (Board Games B8), the same in both themes. */
+const STAR_BG = "#F4F5FB";
+const INK = "#0E0F1A";
+const HOLE = "#2A1630";
+const STAR_LIP = "#C3B6D2";
 
 /**
- * Four Up Daily board (Board Games B8). Tap a column; the disc drops with gravity (ease-in-out
- * 280 ms, one bounce). Your discs carry a star, theirs a ring. Any drop that keeps the forced win is
- * answered by the rival's longest defence; the winning four rings lime.
+ * Four Up Daily board (Board Games B8). Each whole column is one full-height button, so a tap
+ * anywhere in it drops there; hovering, focusing or pressing a column shows a ghost disc where it
+ * would land. The disc drops with gravity (ease-in-out 280 ms, one bounce). Your discs carry a
+ * star, theirs a ring. Any drop that keeps the forced win is answered by the rival's longest
+ * defence; the winning four rings lime.
  */
 export default function FourUpBoard({ puzzle, initialState, hint, disabled, api }: BoardProps<FourUpPuzzle, FourUpState>) {
   const [cols, setCols] = useState<number[]>(() => initialState?.cols?.slice() ?? []);
@@ -24,8 +32,12 @@ export default function FourUpBoard({ puzzle, initialState, hint, disabled, api 
   const [fresh, setFresh] = useState<number>(-1);
   const [busy, setBusy] = useState(false);
   const [bad, setBad] = useState<{ cell: number; n: number }>({ cell: -1, n: 0 });
+  /** column under the pointer, focus or press: shows the drop preview */
+  const [preview, setPreview] = useState(-1);
+  const [focusCol, setFocusCol] = useState(0);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const streak = useRef(0);
+  const colsEl = useRef<(HTMLButtonElement | null)[]>([]);
   const cell = useCellSize(COLS, GAP, 16, 52);
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
   const later = (fn: () => void, ms: number) => timers.current.push(setTimeout(fn, ms));
@@ -46,7 +58,7 @@ export default function FourUpBoard({ puzzle, initialState, hint, disabled, api 
       setShown(g);
       setFresh(at);
       setBusy(true);
-      api.announce(`Star disc in column ${c + 1}, row ${ROWS - row}`);
+      api.announce(t.dropped(c + 1, ROWS - row));
       const next = [...cols, c];
       later(() => {
         const res = replay(puzzle, next);
@@ -83,8 +95,8 @@ export default function FourUpBoard({ puzzle, initialState, hint, disabled, api 
           setFresh(rr * COLS + reply);
           setBusy(false);
           const left = puzzle.winIn - res.good;
-          api.feedback(`They block column ${reply + 1}. Win in ${left} more.`, "info", "hand-pointing");
-          api.announce(`Ring disc in column ${reply + 1}. Win in ${left} more.`);
+          api.feedback(t.block(reply + 1, left), "info", "hand-pointing");
+          api.announce(t.blockAnnounce(reply + 1, left));
         }, 450);
       }, 300);
     },
@@ -109,12 +121,31 @@ export default function FourUpBoard({ puzzle, initialState, hint, disabled, api 
   }, [api, undo, busy, done, cols.length]);
 
   useEffect(() => {
-    api.feedback(`Win in ${puzzle.winIn} drops. Tap a column.`, "info", "hand-pointing");
+    api.feedback(t.start(puzzle.winIn), "info", "hand-pointing");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const keys = useGridKeys(ROWS, COLS, (i) => dropCol(i % COLS));
+  // Roving focus across the column buttons: one Tab stop, arrows move, Enter or Space drops.
+  const onKeyDown = (e: KeyboardEvent) => {
+    const to =
+      e.key === "ArrowLeft"
+        ? Math.max(0, focusCol - 1)
+        : e.key === "ArrowRight"
+          ? Math.min(COLS - 1, focusCol + 1)
+          : e.key === "Home"
+            ? 0
+            : e.key === "End"
+              ? COLS - 1
+              : -1;
+    if (to < 0) return;
+    e.preventDefault();
+    setFocusCol(to);
+    colsEl.current[to]?.focus();
+  };
+
   const hintCol = typeof hint?.target === "number" ? hint.target : -1;
+  const live = !disabled && !done && !busy;
+  const colH = ROWS * cell + (ROWS - 1) * GAP;
 
   return (
     <div className="flex flex-col items-center gap-3" data-board="fourup">
@@ -123,83 +154,118 @@ export default function FourUpBoard({ puzzle, initialState, hint, disabled, api 
         <span
           aria-hidden
           className="flex size-5 items-center justify-center rounded-full"
-          style={{ background: "#F4F5FB", color: "#0E0F1A", boxShadow: "0 0 0 2px var(--line)" }}
+          style={{ background: STAR_BG, color: INK, boxShadow: "0 0 0 2px var(--line)" }}
         >
           <Icon name="star" size={12} />
         </span>
-        You are the star. Win in {puzzle.winIn} drops.
+        {t.you(puzzle.winIn)}
       </div>
       <div
-        role="grid"
-        aria-label={`Four Up board, ${COLS} columns by ${ROWS} rows. Space drops a disc in the focused column.`}
-        aria-rowcount={ROWS}
-        aria-colcount={COLS}
-        onKeyDown={keys.onKeyDown}
-        className={`grid rounded-[18px] p-2 ${done ? "board-pulse" : ""}`}
+        role="group"
+        aria-label={t.boardLabel(COLS, ROWS)}
+        onKeyDown={onKeyDown}
+        className={`flex rounded-[18px] ${done ? "board-pulse" : ""}`}
         style={{
-          gridTemplateColumns: `repeat(${COLS}, ${cell}px)`,
-          gap: GAP,
+          padding: `8px ${8 - GAP / 2}px`,
           background: "var(--world)",
           boxShadow: "inset 0 -6px 0 rgba(0,0,0,.2)",
         }}
       >
-        {Array.from({ length: ROWS }, (_, row) => (
-          <div role="row" key={row} className="contents">
-            {Array.from({ length: COLS }, (_, c) => {
-              const i = row * COLS + c;
-              const v = shown[i];
-              const isWin = winLine.has(i);
-              const isBad = bad.cell === i;
-              const drops = i === fresh;
-              return (
-                <div
-                  key={i}
-                  role="gridcell"
-                  data-i={i}
-                  data-col={c}
-                  tabIndex={keys.focus === i ? 0 : -1}
-                  aria-label={`Column ${c + 1}, row ${ROWS - row}, ${v === 1 ? "star disc" : v === 2 ? "ring disc" : "empty"}${isWin ? ", winning four" : ""}`}
-                  onClick={() => {
-                    keys.setFocus(i);
-                    dropCol(c);
-                  }}
-                  className={`relative cursor-pointer overflow-visible rounded-full outline-none ${c === hintCol && row === 0 ? "hint-ring" : ""}`}
-                  style={{
-                    width: cell,
-                    height: cell,
-                    background: "#2A1630",
-                    boxShadow: c === hintCol ? "0 0 0 3px var(--gold)" : undefined,
-                  }}
-                >
-                  {!!v && (
-                    <span
-                      key={`${i}-${isBad ? bad.n : 0}`}
-                      aria-hidden
-                      className={`absolute inset-0 flex items-center justify-center rounded-full ${isBad ? "bay-shake" : ""}`}
-                      style={{
-                        background: v === 1 ? "#F4F5FB" : "#0E0F1A",
-                        color: v === 1 ? "#0E0F1A" : "var(--world)",
-                        boxShadow: isWin
-                          ? "0 0 0 3px var(--accent)"
-                          : isBad
-                            ? "0 0 0 3px var(--danger)"
-                            : v === 2
-                              ? "inset 0 0 0 2px var(--world)"
-                              : "inset 0 -3px 0 #C3B6D2",
-                        ["--drop-from" as string]: `-${(row + 1) * (cell + GAP) + 8}px`,
-                        animation: drops && !isBad ? "bay-drop 280ms var(--ease-in-out) both" : undefined,
-                        zIndex: 1,
-                      }}
-                    >
-                      <Icon name={v === 1 ? "star" : "circle"} size={Math.round(cell * 0.4)} />
-                    </span>
-                  )}
-                  {isBad && <span aria-hidden className="hatch absolute inset-0 rounded-full" style={{ zIndex: 2 }} />}
-                </div>
-              );
-            })}
-          </div>
-        ))}
+        {Array.from({ length: COLS }, (_, c) => {
+          const land = dropRow(shown, c);
+          const ghost = live && preview === c && land >= 0;
+          const discs: string[] = [];
+          for (let row = ROWS - 1; row >= 0; row--) {
+            const v = shown[row * COLS + c];
+            if (v) discs.push(t.disc(ROWS - row, v === 1, winLine.has(row * COLS + c)));
+          }
+          return (
+            <button
+              key={c}
+              ref={(el) => {
+                colsEl.current[c] = el;
+              }}
+              type="button"
+              data-col={c}
+              data-no-tick
+              tabIndex={focusCol === c ? 0 : -1}
+              aria-label={t.column(c + 1, land >= 0 ? ROWS - land : null, discs)}
+              aria-disabled={!live || land < 0 || undefined}
+              onClick={() => {
+                setFocusCol(c);
+                dropCol(c);
+              }}
+              onPointerEnter={() => setPreview(c)}
+              onPointerDown={() => setPreview(c)}
+              onPointerLeave={() => setPreview((p) => (p === c ? -1 : p))}
+              onFocus={() => {
+                setFocusCol(c);
+                setPreview(c);
+              }}
+              onBlur={() => setPreview((p) => (p === c ? -1 : p))}
+              className={`flex touch-manipulation flex-col rounded-[14px] outline-none select-none focus-visible:shadow-[0_0_0_3px_var(--accent)] ${live && land >= 0 ? "cursor-pointer" : "cursor-default"} ${c === hintCol ? "hint-ring" : ""}`}
+              style={{
+                width: cell + GAP,
+                height: colH,
+                padding: `0 ${GAP / 2}px`,
+                gap: GAP,
+                boxSizing: "content-box",
+                background: preview === c && live ? "color-mix(in srgb, var(--surface) 22%, transparent)" : "transparent",
+                boxShadow: c === hintCol ? "0 0 0 3px var(--gold)" : undefined,
+              }}
+            >
+              {Array.from({ length: ROWS }, (_, row) => {
+                const i = row * COLS + c;
+                const v = shown[i];
+                const isWin = winLine.has(i);
+                const isBad = bad.cell === i;
+                const drops = i === fresh;
+                return (
+                  <span
+                    key={i}
+                    aria-hidden
+                    data-i={i}
+                    className="relative block shrink-0 overflow-visible rounded-full"
+                    style={{ width: cell, height: cell, background: HOLE }}
+                  >
+                    {ghost && row === land && (
+                      <span
+                        data-ghost
+                        className="absolute inset-0 flex items-center justify-center rounded-full"
+                        style={{ background: STAR_BG, color: INK, opacity: 0.5, border: `2px dashed ${INK}` }}
+                      >
+                        <Icon name="star" size={Math.round(cell * 0.4)} />
+                      </span>
+                    )}
+                    {!!v && (
+                      <span
+                        key={`${i}-${isBad ? bad.n : 0}`}
+                        className={`absolute inset-0 flex items-center justify-center rounded-full ${isBad ? "bay-shake" : ""}`}
+                        style={{
+                          background: v === 1 ? STAR_BG : INK,
+                          color: v === 1 ? INK : "var(--world)",
+                          boxShadow: isWin
+                            ? "0 0 0 3px var(--accent)"
+                            : isBad
+                              ? "0 0 0 3px var(--danger)"
+                              : v === 2
+                                ? "inset 0 0 0 2px var(--world)"
+                                : `inset 0 -3px 0 ${STAR_LIP}`,
+                          ["--drop-from" as string]: `-${(row + 1) * (cell + GAP) + 8}px`,
+                          animation: drops && !isBad ? "bay-drop 280ms var(--ease-in-out) both" : undefined,
+                          zIndex: 1,
+                        }}
+                      >
+                        <Icon name={v === 1 ? "star" : "circle"} size={Math.round(cell * 0.4)} />
+                      </span>
+                    )}
+                    {isBad && <span className="hatch absolute inset-0 rounded-full" style={{ zIndex: 2 }} />}
+                  </span>
+                );
+              })}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
