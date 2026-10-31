@@ -27,7 +27,7 @@ export default function LeaguesPage() {
   const tailStart = members.length - 3;
   const collapsible = !expanded && members.length > headEnd + 4;
   const shown = collapsible ? [...members.slice(0, headEnd), null, ...members.slice(tailStart)] : members;
-  const left = l ? q.dataUpdatedAt + l.endsInMs - now : 0;
+  const left = l ? l.endsInMs - Math.max(0, now - q.dataUpdatedAt) : 0;
 
   return (
     <TabPage label="Leagues">

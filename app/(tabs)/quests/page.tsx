@@ -71,7 +71,7 @@ function QuestList() {
   if (q.isPending) return <ListSkeleton rows={3} height={68} />;
   if (q.isError) return <ErrorState onRetry={() => q.refetch()} />;
   const d = q.data;
-  const elapsed = now - q.dataUpdatedAt;
+  const elapsed = Math.max(0, now - q.dataUpdatedAt);
   const states = chainStates(d.weekly.map((w) => ({ completed: w.completed })));
   const doneCount = states.filter((s) => s === "done").length;
   const current = d.weekly.find((_, i) => states[i] === "current");

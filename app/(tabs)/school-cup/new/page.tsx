@@ -129,7 +129,7 @@ export default function NewCupPage() {
                     .slice(0, 16),
                 )
               }
-              placeholder="From your school's SPUZL letter"
+              placeholder="Your school's code"
               autoCapitalize="characters"
               className="num bg-surface placeholder:text-muted h-12 rounded-[14px] px-3.5 text-[16px] font-semibold tracking-[0.1em] outline-none"
             />

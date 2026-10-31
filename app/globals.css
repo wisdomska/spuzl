@@ -417,7 +417,7 @@ select {
   height: 720px;
   transform-origin: top left;
 }
-/* Static pages (How to play, Fair play, Privacy, Terms, Contact) */
+/* Static pages (How to play, Fair play, Privacy, Terms, Contact): readable prose column. */
 .info-prose {
   display: flex;
   flex-direction: column;

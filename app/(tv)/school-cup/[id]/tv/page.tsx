@@ -30,7 +30,7 @@ export default function CupTvPage({ params }: PageProps<"/school-cup/[id]/tv">) 
     };
   }, []);
   const c = q.data;
-  const left = c ? (c.startsInMs > 0 ? c.startsInMs : c.endsInMs) + q.dataUpdatedAt - now : 0;
+  const left = c ? (c.startsInMs > 0 ? c.startsInMs : c.endsInMs) - Math.max(0, now - q.dataUpdatedAt) : 0;
 
   return (
     <main aria-label="Class board, TV mode" className="bg-bg fixed inset-0 overflow-hidden">
