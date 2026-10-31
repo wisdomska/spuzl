@@ -50,6 +50,9 @@ export interface Me {
   skin: string | null;
   hat: string | null;
   title: string | null;
+  hide_activity: boolean;
+  country: string | null;
+  city: string | null;
   age_band: string;
   settings: Record<string, unknown>;
   level: number;

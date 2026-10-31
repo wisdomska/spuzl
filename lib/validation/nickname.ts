@@ -31,7 +31,7 @@ const BLOCK = [
   "olodo",
   "ode",
 ];
-const ALLOW = ["code", "model", "mode", "node", "episode"]; // contain a blocked substring innocently
+const ALLOW = ["code", "model", "mode", "node", "episode", "spuzler"]; // contain a blocked substring innocently ("Spuzler" is what players are called)
 
 export function normalise(s: string): string {
   return s

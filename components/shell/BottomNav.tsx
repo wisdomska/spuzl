@@ -13,7 +13,10 @@ export const NAV = [
 ] as const;
 
 export function isActive(pathname: string, href: string) {
-  return href === "/" ? pathname === "/" : pathname.startsWith(href);
+  if (href === "/") return pathname === "/";
+  // Leaderboards and quests live under the Leagues tab.
+  if (href === "/leagues") return ["/leagues", "/leaderboards", "/quests"].some((p) => pathname.startsWith(p));
+  return pathname.startsWith(href);
 }
 
 /** Mobile bottom nav: 80 px, 5 items, active lime (global chrome is always lime). */
