@@ -41,7 +41,7 @@ async function one(i) {
   const p = await fetch(`${APP}/api/v1/profile`, {
     method: "POST",
     headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
-    body: JSON.stringify({ nickname: `Load${i}x${Math.floor(Math.random() * 1e4)}`, ageBand: "18+", color: "#7C5CFF" }),
+    body: JSON.stringify({ nickname: `L${randomUUID().replace(/-/g, "").slice(0, 10)}`, ageBand: "18+", color: "#7C5CFF" }),
   });
   if (!p.ok) throw new Error(`profile ${p.status} ${await p.text()}`);
   tokens.push(token);

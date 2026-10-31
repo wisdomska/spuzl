@@ -16,6 +16,7 @@ const BASE = __ENV.BASE || "http://localhost:3400";
 const TOKENS = JSON.parse(open(__ENV.TOKENS || "./tokens.json"));
 const SOLUTION = __ENV.SOLUTION ? JSON.parse(__ENV.SOLUTION) : null;
 const DAILY_PLAYERS = Number(__ENV.DP || 300);
+const ROOM_BASE = Number(__ENV.ROOM_BASE || DAILY_PLAYERS);
 const ROOMS = Number(__ENV.ROOMS || 50);
 
 const finishTime = new Trend("finish_ms", true);
@@ -83,7 +84,7 @@ export function daily() {
 /** One Party room: host opens it, three friends join, everyone readies, the race runs to the end. */
 export function rooms() {
   const room = exec.scenario.iterationInTest; // 0..49
-  const ids = [0, 1, 2, 3].map((k) => DAILY_PLAYERS + room * 4 + k);
+  const ids = [0, 1, 2, 3].map((k) => ROOM_BASE + room * 4 + k);
   sleep(Math.random() * 20);
   const made = post(ids[0], "/api/v1/rooms", { game: "crownfall", difficulty: "easy", maxPlayers: 4 });
   if (!check(made, { "room created": (r) => r.status === 200 })) return;
