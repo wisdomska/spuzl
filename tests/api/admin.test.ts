@@ -359,7 +359,9 @@ describe("content editor and two-person approval (FR-AD-03)", () => {
     const list = await S.content_editor.aal2("/api/admin/content/files?game=quads");
     expect(list.data.canApprove).toBe(false);
     const g = list.data.games[0];
-    expect(g.entries.length).toBe(g.total);
+    expect(list.data).toMatchObject({ page: 1, pageSize: 25, total: g.total });
+    expect(g.entries.length).toBe(Math.min(g.total, 25));
+    expect(g.entries.map((e: { index: number }) => e.index)).toEqual(Array.from({ length: g.entries.length }, (_, i) => i));
     const r = await S.owner.aal2("/api/admin/content/files", {
       json: { game: "quads", indexes: [0, 1], decision: "approve", notes: "read through" },
     });
@@ -554,8 +556,186 @@ describe("live ops, flags, catalogue, audit and team (FR-AD-04, 06, 07, 08)", ()
     expect(r.data).toMatchObject({ createdUser: true, createdAdmin: true, resetSent: true, role: "analyst" });
     const again = await S.owner.aal2("/api/admin/team", { json: { email, role: "analyst" } });
     expect(again.data).toMatchObject({ createdUser: false, createdAdmin: false });
+    // Newest first, so the admin just added is on page 1.
     const list = await S.owner.aal2("/api/admin/team");
     expect(list.data.rows.some((a: { email: string }) => a.email === email)).toBe(true);
+    expect(list.data).toMatchObject({ page: 1, pageSize: 25 });
+    expect(list.data.total).toBeGreaterThanOrEqual(list.data.rows.length);
+  });
+});
+
+describe("pagination on every admin list", () => {
+  type Page = { status: number; data: { rows: { id?: string | number; key?: string }[]; page: number; pageSize: number; total: number } };
+  const idOf = (r: { id?: string | number; key?: string; user_id?: string }) => String(r.id ?? r.key ?? r.user_id);
+  /** Letters only: the audit action filter allows [a-z_.:]. */
+  const letters = (n: number) => Array.from({ length: n }, () => String.fromCharCode(97 + rand(0, 25))).join("");
+
+  const LISTS: { path: string; who: Role }[] = [
+    { path: "/api/admin/audit", who: "analyst" },
+    { path: "/api/admin/moderation?tab=reports&status=all", who: "moderator" },
+    { path: "/api/admin/moderation?tab=nicknames&status=all", who: "moderator" },
+    { path: "/api/admin/moderation?tab=flagged", who: "moderator" },
+    { path: "/api/admin/content", who: "content_editor" },
+    { path: "/api/admin/content/files?game=quads", who: "content_editor" },
+    { path: "/api/admin/puzzles", who: "content_editor" },
+    { path: "/api/admin/schools", who: "moderator" },
+    { path: "/api/admin/flags", who: "owner" },
+    { path: "/api/admin/catalog/quests", who: "content_editor" },
+    { path: "/api/admin/catalog/badges", who: "content_editor" },
+    { path: "/api/admin/catalog/cosmetics", who: "owner" },
+    { path: "/api/admin/team", who: "owner" },
+  ];
+  const withQs = (path: string, qs: string) => `${path}${path.includes("?") ? "&" : "?"}${qs}`;
+  /** content.ts review returns its page as games[0].entries; every other list as rows. */
+  const rowsOf = (d: { rows?: unknown[]; games?: { entries?: unknown[] }[] }) => d.rows ?? d.games?.[0]?.entries ?? [];
+
+  it("validates page and pageSize on every list (400 on pageSize=7 or page=0), and echoes them", async () => {
+    for (const { path, who } of LISTS) {
+      for (const bad of ["pageSize=7", "pageSize=0", "pageSize=abc", "page=0", "page=-2", "page=1.5"]) {
+        const r = await S[who].aal2(withQs(path, bad));
+        expect([path, bad, r.status, r.data.error]).toEqual([path, bad, 400, "bad_page"]);
+      }
+      const d = (await S[who].aal2(path)) as Page;
+      expect([path, d.status, d.data.page, d.data.pageSize]).toEqual([path, 200, 1, 25]);
+      expect(rowsOf(d.data).length).toBeLessThanOrEqual(25);
+      expect(typeof d.data.total).toBe("number");
+      const ten = (await S[who].aal2(withQs(path, "page=1&pageSize=10"))) as Page;
+      expect([path, ten.status, ten.data.pageSize]).toEqual([path, 200, 10]);
+      expect([path, rowsOf(ten.data).length]).toEqual([path, Math.min(10, ten.data.total)]);
+    }
+  });
+
+  it("audit log: page boundaries, totals and no repeats across pages, with filters", async () => {
+    const prefix = `test.pg${letters(8)}.`;
+    const rows = Array.from({ length: 27 }, (_, i) => ({ actor_id: S.owner.userId, action: `${prefix}${letters(4)}`, target: `t${i}` }));
+    const { error } = await admin().from("audit_log").insert(rows); // one statement: same created_at for every row
+    expect(error).toBeNull();
+    const get = async (qs: string) => (await S.analyst.aal2(`/api/admin/audit?action=${prefix}&${qs}`)) as Page;
+
+    const p1 = await get("page=1&pageSize=10");
+    const p2 = await get("page=2&pageSize=10");
+    const p3 = await get("page=3&pageSize=10");
+    const p4 = await get("page=4&pageSize=10");
+    expect([p1.data.total, p2.data.total, p3.data.total, p4.data.total]).toEqual([27, 27, 27, 27]);
+    expect([p1.data.rows.length, p2.data.rows.length, p3.data.rows.length, p4.data.rows.length]).toEqual([10, 10, 7, 0]);
+    const ids = [...p1.data.rows, ...p2.data.rows, ...p3.data.rows].map((r) => Number(r.id));
+    expect(new Set(ids).size).toBe(27);
+    expect(ids).toEqual([...ids].sort((a, b) => b - a)); // newest first across page boundaries
+
+    const big = await get("page=2&pageSize=25");
+    expect(big.data.rows.map((r) => Number(r.id))).toEqual(ids.slice(25));
+    // A page far past the end is empty but still reports the total, so the console can step back.
+    const past = await get("page=50&pageSize=100");
+    expect([past.status, past.data.rows.length, past.data.total]).toEqual([200, 0, 27]);
+    // Filters narrow the total and still page.
+    const mine = await S.analyst.aal2(`/api/admin/audit?action=${prefix}&actor=${S.analyst.userId}`);
+    expect(mine.data.total).toBe(0);
+  });
+
+  it("moderation: report and flagged pages follow the database order and never repeat", async () => {
+    const reporter = await guest(uniq("pr_"));
+    const db = admin();
+    const { error } = await db.from("reports").insert(
+      Array.from({ length: 23 }, () => ({
+        reporter_id: reporter.userId,
+        target_type: "content",
+        target_id: uniq("pg-content-"),
+        reason: "spam",
+      })),
+    );
+    expect(error).toBeNull();
+    const pg = async (qs: string) => (await S.moderator.aal2(`/api/admin/moderation?tab=reports&status=open&${qs}`)) as Page;
+    const [a, b] = [await pg("page=1&pageSize=10"), await pg("page=2&pageSize=10")];
+    const { data: expected, count } = await db
+      .from("reports")
+      .select("id", { count: "exact" })
+      .eq("status", "open")
+      .neq("target_type", "nickname")
+      .neq("reason", "nickname")
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .range(0, 19);
+    expect(a.data.total).toBe(count);
+    expect(count).toBeGreaterThanOrEqual(23);
+    expect([...a.data.rows, ...b.data.rows].map(idOf)).toEqual(expected!.map((r) => r.id));
+    expect(a.data.rows.filter((r) => b.data.rows.some((x) => x.id === r.id))).toEqual([]);
+
+    const f1 = (await S.moderator.aal2("/api/admin/moderation?tab=flagged&pageSize=10")) as Page;
+    const { count: flaggedCount } = await db.from("attempts").select("id", { count: "exact", head: true }).eq("status", "flagged");
+    expect(f1.data.total).toBe(flaggedCount);
+    if (f1.data.total > 10) {
+      const f2 = (await S.moderator.aal2("/api/admin/moderation?tab=flagged&page=2&pageSize=10")) as Page;
+      expect(f2.data.rows.some((r) => f1.data.rows.some((x) => x.id === r.id))).toBe(false);
+    }
+  });
+
+  it("content items: page boundaries with filters, ties broken by id", async () => {
+    const db = admin();
+    const notes = uniq("pg-notes-");
+    const { error } = await db.from("content_items").insert(
+      Array.from({ length: 28 }, (_, i) => ({
+        game_id: "hunch",
+        payload: { category: `Paged ${i}` },
+        author_id: S.content_editor.userId,
+        status: "draft",
+        source: "editor",
+        notes,
+      })),
+    ); // one statement: the rows share updated_at, so only the id tiebreaker keeps pages apart
+    expect(error).toBeNull();
+    const pg = async (qs: string) => (await S.content_editor.aal2(`/api/admin/content?status=draft&game=hunch&${qs}`)) as Page;
+    const { data: expected, count } = await db
+      .from("content_items")
+      .select("id", { count: "exact" })
+      .eq("source", "editor")
+      .eq("status", "draft")
+      .eq("game_id", "hunch")
+      .order("updated_at", { ascending: false })
+      .order("id", { ascending: false })
+      .range(0, 49);
+    const [p1, p2] = [await pg("page=1&pageSize=25"), await pg("page=2&pageSize=25")];
+    expect(p1.data.total).toBe(count);
+    expect(p1.data.rows).toHaveLength(25);
+    expect(p2.data.rows).toHaveLength(Math.min(25, count! - 25));
+    expect([...p1.data.rows, ...p2.data.rows].map(idOf)).toEqual(expected!.map((r) => r.id));
+    expect(p1.data.rows.some((r) => p2.data.rows.some((x) => x.id === r.id))).toBe(false);
+    // Dropping the game filter widens the total; an unknown status is still a 400.
+    const anyGame = (await S.content_editor.aal2("/api/admin/content?status=draft&pageSize=10")) as Page;
+    expect(anyGame.data.total).toBeGreaterThanOrEqual(count!);
+    expect((await S.content_editor.aal2("/api/admin/content?status=nope&page=2")).status).toBe(400);
+  });
+
+  it("content.ts review pages through the entries and filters to the ones still to review", async () => {
+    const all = await S.content_editor.aal2("/api/admin/content/files?game=quads&pageSize=10");
+    const total = all.data.games[0].total;
+    expect(all.data.total).toBe(total);
+    if (total > 10) {
+      const p2 = await S.content_editor.aal2("/api/admin/content/files?game=quads&page=2&pageSize=10");
+      expect(p2.data.games[0].entries[0].index).toBe(10);
+    }
+    const todo = await S.content_editor.aal2("/api/admin/content/files?game=quads&show=todo&pageSize=100");
+    expect(todo.data.games[0].entries.every((e: { state: string }) => e.state === "pending" || e.state === "changed")).toBe(true);
+    expect(todo.data.total).toBeLessThanOrEqual(total);
+    expect((await S.content_editor.aal2("/api/admin/content/files?game=quads&show=maybe")).status).toBe(400);
+  });
+
+  it("puzzles, schools, flags and the catalogue page without repeats", async () => {
+    const cases: { path: string; who: Role }[] = [
+      { path: "/api/admin/puzzles", who: "owner" },
+      { path: "/api/admin/schools", who: "owner" },
+      { path: "/api/admin/flags", who: "owner" },
+      { path: "/api/admin/catalog/badges", who: "owner" },
+      { path: "/api/admin/team", who: "owner" },
+    ];
+    for (const { path, who } of cases) {
+      const p1 = (await S[who].aal2(`${path}?page=1&pageSize=10`)) as Page;
+      if (p1.data.total <= 10) continue;
+      const p2 = (await S[who].aal2(`${path}?page=2&pageSize=10`)) as Page;
+      expect([path, p2.data.total]).toEqual([path, p1.data.total]);
+      expect([path, p2.data.rows.length]).toEqual([path, Math.min(10, p1.data.total - 10)]);
+      const one = new Set(p1.data.rows.map(idOf));
+      expect([path, p2.data.rows.filter((r) => one.has(idOf(r))).length]).toEqual([path, 0]);
+    }
   });
 });
 
