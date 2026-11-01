@@ -11,6 +11,7 @@ import { BOARDS } from "@/games/board-registry";
 import { GAME_BY_ID, WORLD_BY_ID } from "@/lib/catalog";
 import { api, finishAttempt, HttpError } from "@/lib/client/api";
 import { useProfileGate, useReduce } from "@/lib/client/multiplayer";
+import { useBackOrHome } from "@/lib/client/nav";
 import { formatClock } from "@/lib/format";
 import { play } from "@/lib/audio";
 import { haptic } from "@/lib/haptics";
@@ -276,6 +277,7 @@ function GhostTimer({ name, color, senderMs, startedAt }: { name: string; color:
 export function ChallengeScreen({ code }: { code: string }) {
   const gate = useProfileGate();
   const router = useRouter();
+  const back = useBackOrHome();
   const { toast, show } = useToast();
   const q = useQuery({
     queryKey: ["challenge", code],
@@ -389,7 +391,7 @@ export function ChallengeScreen({ code }: { code: string }) {
       {c.mine && !c.result ? (
         <div className="flex flex-1 flex-col gap-4 px-5 pt-[max(56px,env(safe-area-inset-top))] pb-[max(28px,env(safe-area-inset-bottom))]">
           <div className="flex items-center gap-3">
-            <TopButton icon="arrow-left" label="Back" href="/" />
+            <TopButton icon="arrow-left" label="Back" onClick={back} />
             <h1 className="font-display text-[22px] font-black">Your challenge</h1>
           </div>
           <p className="text-muted text-[16px]">

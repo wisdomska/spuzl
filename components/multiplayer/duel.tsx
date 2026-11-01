@@ -23,6 +23,7 @@ import {
   RoundDots,
   SPRING_PARTY,
   SPRING_PRESS,
+  TopButton,
   formatTenths,
 } from "./ui";
 
@@ -48,24 +49,28 @@ export function DuelEntrySheet({
   const reduce = useReduce();
   const [picking, setPicking] = useState(false);
   const named = game ? gameName(game) : "Sixer";
+  // A page, not a modal: /duel is often opened straight from a shared link or the home screen, so
+  // there is nothing behind it to dim. The app background, a Back header and the panel docked below.
   return (
-    <div className="fixed inset-0 z-40 bg-[radial-gradient(#22253C_1.5px,transparent_1.5px)] [background-size:24px_24px] [[data-theme=light]_&]:bg-[radial-gradient(#D8DCE8_1.5px,transparent_1.5px)]">
-      <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-[rgba(6,7,13,.55)]" data-no-tick />
-      <motion.div
-        role="dialog"
-        aria-modal
+    <div className="dotgrid flex flex-1 flex-col">
+      <header className="flex items-center gap-3 px-4 pt-[max(56px,env(safe-area-inset-top))]">
+        <TopButton icon="arrow-left" label={duelCopy.back} onClick={onClose} />
+      </header>
+      <div className="flex min-h-4 flex-1 items-center justify-center py-4 [@media(max-height:640px)]:[&>*]:hidden">
+        <Spuz mood="fire" size={120} decorative />
+      </div>
+      <motion.section
         aria-labelledby="duel-title"
         initial={reduce ? { opacity: 0 } : { transform: "translateY(100%)" }}
         animate={reduce ? { opacity: 1 } : { transform: "translateY(0%)" }}
         transition={{ duration: 0.32, ease: EASE_OUT }}
-        className="bg-surface absolute inset-x-0 bottom-0 mx-auto flex max-w-[560px] flex-col gap-3.5 rounded-t-[32px] px-5 pt-3.5 pb-[max(28px,env(safe-area-inset-bottom))]"
+        className="bg-surface flex w-full flex-col gap-3.5 rounded-t-[32px] px-5 pt-5 pb-[max(28px,env(safe-area-inset-bottom))]"
       >
-        <div className="bg-line h-[5px] w-11 self-center rounded-[3px]" />
         <div className="flex items-center gap-3">
           <Icon name="sword" size={28} className="text-accent" />
-          <h2 id="duel-title" className="font-display text-[26px] font-black">
-            Duel
-          </h2>
+          <h1 id="duel-title" className="font-display text-[26px] font-black">
+            {duelCopy.entryTitle}
+          </h1>
         </div>
         <div className="bg-bg flex gap-2 rounded-[16px] p-1" role="radiogroup" aria-label="Game">
           <button
@@ -153,7 +158,7 @@ export function DuelEntrySheet({
           </span>
           <Icon name="caret-right" size={20} className="text-muted" />
         </button>
-      </motion.div>
+      </motion.section>
     </div>
   );
 }

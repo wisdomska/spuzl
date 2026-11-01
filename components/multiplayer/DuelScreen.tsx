@@ -7,6 +7,7 @@ import { Icon } from "@/components/ui/Icon";
 import { api, HttpError, useMe } from "@/lib/client/api";
 import { matchAction, matchKey, useEmotes, useMatch, useProfileGate, useServerNow } from "@/lib/client/multiplayer";
 import { useSettings } from "@/lib/settings/store";
+import { useBackOrHome } from "@/lib/client/nav";
 import { useGameSettings } from "@/lib/game-settings/client";
 import { duelCopy } from "@/lib/copy/duel";
 import { botProgress, duelPhase, roundOutcomes, BOT_ID } from "@/lib/multiplayer/duel";
@@ -40,6 +41,7 @@ export function DuelScreen() {
 
 function DuelLobby({ joinCode, friendName }: { joinCode: string | null; friendName: string | null }) {
   const router = useRouter();
+  const back = useBackOrHome();
   const me = useMe();
   const relaxed = useSettings((s) => s.relaxed);
   const [game, setGame] = useState<string | null>(DUEL_DEFAULT_GAME ?? null);
@@ -215,7 +217,7 @@ function DuelLobby({ joinCode, friendName }: { joinCode: string | null; friendNa
           rating={rating}
           onQuick={() => quick()}
           onFriend={challengeFriend}
-          onClose={() => router.push("/")}
+          onClose={back}
           youngster={me.data?.age_band === "13-15"}
         />
       )}

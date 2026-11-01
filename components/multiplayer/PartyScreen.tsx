@@ -9,13 +9,14 @@ import { api, HttpError, useMe } from "@/lib/client/api";
 import { useCrew } from "@/lib/client/social";
 import { matchAction, matchKey, useEmotes, useMatch, useProfileGate, useServerNow } from "@/lib/client/multiplayer";
 import { useSettings } from "@/lib/settings/store";
+import { useBackOrHome } from "@/lib/client/nav";
 import { normalizeRoomCode } from "@/lib/multiplayer/roomCode";
 import { partyPhase } from "@/lib/multiplayer/race";
 import { gameName } from "@/lib/multiplayer/games";
 import type { MatchView } from "@/lib/multiplayer/types";
 import { MatchBoard } from "./MatchBoard";
 import { CreateRoom, DifficultyPicker, GamePicker, Lobby, Podium, RaceRail, TvMode, rowsOf, useJoinToasts, type Diff } from "./party";
-import { Avatar, CountdownNumber, Cta, LoadingScreen, MpToast, NeedProfile, Screen, useToast } from "./ui";
+import { Avatar, CountdownNumber, Cta, LoadingScreen, MpToast, NeedProfile, Screen, TopButton, useToast } from "./ui";
 
 /* ---------------- /party ---------------- */
 
@@ -24,6 +25,7 @@ export function PartyHome() {
   const router = useRouter();
   // From a crew page (/party?crew=<id>): the room is for the crew; its code goes in the crew chat.
   const crewId = useSearchParams().get("crew");
+  const back = useBackOrHome(); // SPZ-25: deep links go back to the Grid
   const relaxed = useSettings((s) => s.relaxed);
   const [busy, setBusy] = useState(false);
   const { toast, show } = useToast();
@@ -53,7 +55,7 @@ export function PartyHome() {
         </p>
       )}
       {crewId && /^[0-9a-f-]{36}$/i.test(crewId) && <CrewNote id={crewId} />}
-      <CreateRoom busy={busy} onOpen={open} onBack={() => router.push("/")} onJoin={join} />
+      <CreateRoom busy={busy} onOpen={open} onBack={back} onJoin={join} />
     </Screen>
   );
 }
@@ -83,6 +85,7 @@ type Preview =
 export function PartyRoom({ code: raw }: { code: string }) {
   const gate = useProfileGate();
   const router = useRouter();
+  const back = useBackOrHome();
   const code = normalizeRoomCode(raw) ?? raw.toUpperCase();
   const preview = useQuery({
     queryKey: ["room", code],
@@ -129,6 +132,9 @@ export function PartyRoom({ code: raw }: { code: string }) {
   };
   return (
     <Screen label="Join room">
+      <div className="absolute top-[max(56px,env(safe-area-inset-top))] left-4">
+        <TopButton icon="arrow-left" label="Back" onClick={back} />
+      </div>
       <div className="flex flex-1 flex-col items-center gap-4 px-5 pt-[max(80px,env(safe-area-inset-top))] pb-[max(28px,env(safe-area-inset-bottom))] text-center">
         <Spuz mood="wave" size={130} />
         <h1 className="font-display text-[26px] font-black">{room.host ? `${room.host}'s party` : "Party room"}</h1>

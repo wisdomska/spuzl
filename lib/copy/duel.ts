@@ -1,5 +1,8 @@
 /** Duel copy (SPZ-03, SPZ-12). */
 export const duelCopy = {
+  // SPZ-25: /duel is a page with its own Back (to the Grid when opened from a link).
+  entryTitle: "Duel",
+  back: "Back",
   roundTitle: (round: number, who: "me" | "them" | "draw", them: string) =>
     who === "draw" ? `Round ${round}: dead level` : who === "me" ? `Round ${round}: you win` : `Round ${round}: ${them} wins`,
   nextRound: "Next round",

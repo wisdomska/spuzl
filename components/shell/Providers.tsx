@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useSettings, hapticsEnabled, prefersReducedMotion } from "@/lib/settings/store";
 import { configure, unlock, play } from "@/lib/audio";
 import { setHapticsEnabled } from "@/lib/haptics";
+import { useNavTracker } from "@/lib/client/nav";
 import { HapticFallback } from "./HapticFallback";
 
 export function Providers({ children }: { children: ReactNode }) {
@@ -14,6 +15,7 @@ export function Providers({ children }: { children: ReactNode }) {
   );
   const settings = useSettings();
   const { hydrate, hydrated } = settings;
+  useNavTracker();
 
   useEffect(() => {
     hydrate();
