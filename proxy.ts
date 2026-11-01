@@ -24,7 +24,8 @@ export async function proxy(request: NextRequest) {
   // Keyed on the cookie, not on getUser(), so a slow or failed token refresh never hides Home from a player.
   // Full page loads only: in-app navigations and prefetches (RSC requests) keep the old flow, so a Home prefetched
   // just before a guest account is created is never cached as About.
-  const pageLoad = !request.headers.has("rsc") && !request.headers.has("next-router-prefetch");
+  const pageLoad =
+    (request.headers.get("accept") ?? "").includes("text/html") && !request.headers.has("rsc") && !request.nextUrl.searchParams.has("_rsc");
   if (!hasSession && pageLoad && request.nextUrl.pathname === "/") return NextResponse.rewrite(new URL("/about", request.url));
   return response;
 }
