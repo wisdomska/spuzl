@@ -32,3 +32,11 @@ export function writeDismissedAt(at: number) {
     localStorage.setItem(SAVE_PROMPT_KEY, String(at));
   } catch {}
 }
+
+/**
+ * After `auth.updateUser({ email })` for a guest: true when the project applied the change at once (no
+ * email confirmation), so the user already carries the new email and no email was sent.
+ */
+export function emailChangeApplied(user: { email?: string | null } | null | undefined, to: string): boolean {
+  return !!user?.email && user.email.trim().toLowerCase() === to.trim().toLowerCase();
+}

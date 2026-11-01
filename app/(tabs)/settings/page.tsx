@@ -8,6 +8,8 @@ import { useSettings, prefersReducedMotion, type Settings } from "@/lib/settings
 import { api, HttpError, useMe } from "@/lib/client/api";
 import { EmailCodeSignIn } from "@/components/onboarding/EmailCodeSignIn";
 import { copy } from "@/lib/copy";
+import { settingsCopy } from "@/lib/copy/settings";
+import { emailChangeApplied } from "@/lib/client/save-streak";
 import { useBlocks, usePatchProfile, useUnblock, type MeExtra } from "@/lib/client/social";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { hasSupabase } from "@/lib/supabase/env";
@@ -322,7 +324,8 @@ function AccountSheet({ open, onClose, onDelete }: { open: boolean; onClose: () 
   const qc = useQueryClient();
   const [email, setEmail] = useState("");
   const [mode, setMode] = useState<"link" | "signin">("link");
-  const [sent, setSent] = useState<string | null>(null);
+  /** where the magic link went, or `applied` when the email change took effect at once (no email sent) */
+  const [sent, setSent] = useState<{ to: string; applied: boolean } | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const d = me.data;
@@ -342,15 +345,27 @@ function AccountSheet({ open, onClose, onDelete }: { open: boolean; onClose: () 
     setBusy(true);
     const sb = supabaseBrowser();
     // Saving a guest: attach the email to this same account (the confirmation link keeps all progress).
-    const { error } = await sb.auth.updateUser({ email: email.trim() }, { emailRedirectTo: redirect() });
-    setBusy(false);
-    if (error)
+    const to = email.trim();
+    const { data, error } = await sb.auth.updateUser({ email: to }, { emailRedirectTo: redirect() });
+    if (error) {
+      setBusy(false);
       setErr(
         /already/i.test(error.message)
           ? "That email has an account. Use “Sign in instead” below."
           : "That didn't send. Check the address and try again.",
       );
-    else setSent(email.trim());
+      return;
+    }
+    // Projects without email confirmation apply the change at once and send nothing: the user already has
+    // the new email. Refresh the session (no longer anonymous) and mark the player as saved.
+    const applied = emailChangeApplied(data.user, to);
+    if (applied) {
+      await sb.auth.refreshSession().catch(() => null);
+      await api("/api/v1/account/sync", { method: "POST" }).catch(() => {});
+      void qc.invalidateQueries({ queryKey: ["me"] });
+    }
+    setBusy(false);
+    setSent({ to, applied });
   };
   const signOut = async () => {
     await supabaseBrowser().auth.signOut();
@@ -372,15 +387,22 @@ function AccountSheet({ open, onClose, onDelete }: { open: boolean; onClose: () 
             : "Signed in."
       }
     >
+      {sent?.applied && (
+        <p role="status" className="bg-surface-raised rounded-[14px] px-3.5 py-3 text-[15px]">
+          {settingsCopy.account.linkApplied(sent.to)}
+        </p>
+      )}
       {d?.guest && (
         <>
           <Button size="lg" variant="secondary" className="w-full" icon="globe" onClick={google}>
             Continue with Google
           </Button>
           {sent ? (
-            <p role="status" className="bg-surface-raised rounded-[14px] px-3.5 py-3 text-[15px]">
-              Check {sent}. Tap the link in the email to finish. Your progress stays put.
-            </p>
+            sent.applied ? null : (
+              <p role="status" className="bg-surface-raised rounded-[14px] px-3.5 py-3 text-[15px]">
+                {settingsCopy.account.linkSent(sent.to)}
+              </p>
+            )
           ) : mode === "signin" ? (
             <div className="flex flex-col gap-2">
               <p className="text-[15px] font-semibold">{copy.account.signInExisting}</p>
