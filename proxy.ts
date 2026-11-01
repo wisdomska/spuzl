@@ -7,6 +7,7 @@ export async function proxy(request: NextRequest) {
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   let response = NextResponse.next({ request });
   if (!url || !key) return response;
+  const hasSession = request.cookies.getAll().some((c) => c.name.startsWith("sb-") && c.name.includes("-auth-token"));
   const sb = createServerClient(url, key, {
     cookies: {
       getAll: () => request.cookies.getAll(),
@@ -17,14 +18,11 @@ export async function proxy(request: NextRequest) {
       },
     },
   });
-  const { data } = await sb.auth.getUser();
-  // Signed-out visitors (and Google's OAuth branding review) get the public About page at "/", not a redirect
-  // into the intro: the homepage must name the app and say what it does without a login.
-  if (!data.user && request.nextUrl.pathname === "/") {
-    const rewrite = NextResponse.rewrite(new URL("/about", request.url));
-    response.cookies.getAll().forEach((c) => rewrite.cookies.set(c));
-    return rewrite;
-  }
+  await sb.auth.getUser();
+  // Visitors with no session cookie at all (first visit, Google's OAuth branding review) get the public About page
+  // at "/", not a redirect into the intro: the homepage must name the app and say what it does without a login.
+  // Keyed on the cookie, not on getUser(), so a slow or failed token refresh never hides Home from a player.
+  if (!hasSession && request.nextUrl.pathname === "/") return NextResponse.rewrite(new URL("/about", request.url));
   return response;
 }
 
