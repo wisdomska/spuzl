@@ -668,6 +668,17 @@ export const LAB_GAMES: GameMeta[] = [
     "Slide cars and trucks along their lanes until the trotro can drive out of the exit.",
     { minTimeMs: 5000, lab: true },
   ),
+  g(
+    "lightup",
+    "Light Up",
+    "logic",
+    "lamp",
+    "M3+",
+    "grid",
+    "Light every cell with lamps",
+    "Light every white cell. Lamps never shine on each other; a number counts the lamps beside it.",
+    { unique: true, minTimeMs: 8000, lab: true },
+  ),
 ];
 
 export const GAME_BY_ID: Record<string, GameMeta> = Object.fromEntries([...GAMES, ...LAB_GAMES].map((x) => [x.id, x]));

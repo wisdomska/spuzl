@@ -85,6 +85,9 @@ insert into public.games (id, world_id, name, status, phase, engine, scoring, is
 insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
   ('trotro', 'shape', 'Trotro Jam', 'coming_soon', 'M3+', 'grid', 'time', false, 5000, 57)
 on conflict (id) do nothing;
+insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
+  ('lightup', 'logic', 'Light Up', 'coming_soon', 'M3+', 'grid', 'time', true, 8000, 58)
+on conflict (id) do nothing;
 insert into public.badges (id, family, tier, name, description, secret, sparks, rule, sort) values
   ('first-clear', 'starter', 'bronze', 'First Clear', 'Clear your first puzzle.', false, 10, '{"kind":"clears","n":1,"icon":"seal-check"}'::jsonb, 0),
   ('explorer-logic', 'explorer', 'gold', 'Logic Lab Explorer', 'Clear every game in Logic Lab.', false, 50, '{"kind":"world_all","world":"logic","icon":"flask"}'::jsonb, 1),

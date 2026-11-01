@@ -94,6 +94,12 @@ const SOLVERS: Record<string, (page: Page, seed: string, d: Difficulty) => Promi
       pos = applyMove(p, pos, [v, delta])!;
     }
   },
+  async lightup(page, seed, d) {
+    const { generate } = await import("@/games/lightup/logic");
+    const g = generate(createRng(seed), d);
+    // one tap on an empty white cell places a lamp
+    for (const i of g.solution.lamps) await tapCell(page, Math.floor(i / g.puzzle.size) + 1, (i % g.puzzle.size) + 1);
+  },
 };
 
 export async function solveTestBoard(page: Page, slug: string, seed = "qa", d: Difficulty = "easy") {

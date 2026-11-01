@@ -69,6 +69,7 @@ export const TYPICAL_SEC: Record<string, number> = {
   five: 150,
   emojihits: 120,
   trotro: 120,
+  lightup: 180,
 };
 
 /** Games with a clock pushing you (reaction, action, countdowns) are never "calm". */
