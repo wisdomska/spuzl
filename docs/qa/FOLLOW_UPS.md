@@ -60,8 +60,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   solved-state shape, so the admin solve-check asks for a Play test.
 - **Trotro Jam** lots grow from a bank of 96 deep starting lots, so their shapes can repeat; about 7% of medium
   boards have one vehicle more than the level's range.
-- **API coverage:** `tests/api/flow.test.ts` has no attempt-level cases yet for Five and Emoji Hits reveals or
-  Penalty King shots (unit tests cover the checks).
 - **Content-game references:** a content puzzle's `ref` (index and difficulty) is sent to the client, since the
   guess transport and the sealed quiz boards need it. The guess route answers a bare `ref` without an attempt
   (races, guided practice), so a player could try words on a Five board by reference before guessing on their
