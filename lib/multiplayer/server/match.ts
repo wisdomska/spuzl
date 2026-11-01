@@ -33,6 +33,8 @@ export interface MatchRow {
   finished_at: string | null;
   difficulty: string;
   games: string[];
+  /** party: the host's hand-picked games (empty: one game or a random mix) */
+  chosen_games: string[];
   max_players: number;
   classroom: boolean;
   rated: boolean;
@@ -224,6 +226,7 @@ export async function viewOf(admin: SupabaseClient, l: Loaded, me: string, rewar
     setNo: m.set_no,
     gameId: m.game_id,
     games: m.games,
+    chosenGames: m.chosen_games ?? [],
     difficulty: m.difficulty,
     mix: m.mix,
     classroom: m.classroom,

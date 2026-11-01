@@ -49,6 +49,8 @@ export interface MatchView {
   /** the room's chosen game, null for a random mix */
   gameId: string | null;
   games: string[];
+  /** party: the host's hand-picked games, each set races PARTY_GAMES of them (empty: gameId or a random mix) */
+  chosenGames: string[];
   difficulty: string;
   mix: boolean;
   classroom: boolean;

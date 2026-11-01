@@ -12,7 +12,8 @@ import { useSettings } from "@/lib/settings/store";
 import { useBackOrHome } from "@/lib/client/nav";
 import { normalizeRoomCode } from "@/lib/multiplayer/roomCode";
 import { partyPhase } from "@/lib/multiplayer/race";
-import { gameName, raceGameParam } from "@/lib/multiplayer/games";
+import { raceGameParam, roomGamesName } from "@/lib/multiplayer/games";
+import { PARTY_PICK_MIN } from "@/lib/multiplayer/constants";
 import { partyCopy } from "@/lib/copy/party";
 import type { MatchView } from "@/lib/multiplayer/types";
 import { MatchBoard } from "./MatchBoard";
@@ -28,7 +29,9 @@ import {
   TvMode,
   rowsOf,
   useJoinToasts,
+  choiceReady,
   type Diff,
+  type GameChoice,
   type PartyTab,
   type RoomRequest,
 } from "./party";
@@ -109,7 +112,16 @@ type Preview =
   | { member: true; view: MatchView }
   | {
       member: false;
-      room: { code: string; status: string; game: string | null; mix: boolean; count: number; max: number; host: string | null };
+      room: {
+        code: string;
+        status: string;
+        game: string | null;
+        mix: boolean;
+        chosen?: string[];
+        count: number;
+        max: number;
+        host: string | null;
+      };
     };
 
 export function PartyRoom({ code: raw }: { code: string }) {
@@ -169,7 +181,7 @@ export function PartyRoom({ code: raw }: { code: string }) {
         <Spuz mood="wave" size={130} />
         <h1 className="font-display text-[26px] font-black">{room.host ? `${room.host}'s party` : "Party room"}</h1>
         <p className="text-muted text-[16px]">
-          {room.mix ? "Random mix" : gameName(room.game)}, 3 games. <span className="num">{room.count}</span> of{" "}
+          {roomGamesName(room.game, room.chosen)}, 3 games. <span className="num">{room.count}</span> of{" "}
           <span className="num">{room.max}</span> in.
         </p>
         <div className="flex gap-2" aria-label={`Room code ${code}`}>
@@ -364,10 +376,13 @@ function RoomSettings({
 }: {
   view: MatchView;
   onClose: () => void;
-  onSave: (s: { game: string | null; difficulty: Diff }) => void;
+  onSave: (s: { game: string | null; games: string[] | null; difficulty: Diff }) => void;
   onTv: () => void;
 }) {
-  const [game, setGame] = useState<string | null>(view.gameId);
+  const [choice, setChoice] = useState<GameChoice>({
+    game: view.gameId,
+    picks: view.chosenGames.length ? view.chosenGames : null,
+  });
   const [difficulty, setDifficulty] = useState<Diff>(view.difficulty as Diff);
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center">
@@ -380,7 +395,7 @@ function RoomSettings({
       >
         <div className="bg-line h-[5px] w-11 self-center rounded-[3px]" />
         <h2 className="font-display text-[22px] font-black">Room settings</h2>
-        <GamePicker value={game} onChange={setGame} />
+        <GamePicker value={choice} onChange={setChoice} />
         <DifficultyPicker value={difficulty} onChange={setDifficulty} />
         <button
           type="button"
@@ -390,7 +405,9 @@ function RoomSettings({
           <Icon name="television" size={20} />
           TV mode
         </button>
-        <Cta onClick={() => onSave({ game, difficulty })}>Save</Cta>
+        <Cta disabled={!choiceReady(choice)} onClick={() => onSave({ game: choice.game, games: choice.picks, difficulty })}>
+          {choiceReady(choice) ? "Save" : partyCopy.host.pickMore(PARTY_PICK_MIN)}
+        </Cta>
       </div>
     </div>
   );

@@ -10,10 +10,10 @@ import { haptic } from "@/lib/haptics";
 import { formatClock, formatNumber } from "@/lib/format";
 import { GAME_BY_ID, WORLDS, WORLD_BY_ID, type WorldId } from "@/lib/catalog";
 import { useSettings } from "@/lib/settings/store";
-import { gameName, RACE_GAMES } from "@/lib/multiplayer/games";
+import { RACE_GAMES, roomGamesName } from "@/lib/multiplayer/games";
 import { partyCopy } from "@/lib/copy/party";
 import { overtakes, raceOrder } from "@/lib/multiplayer/race";
-import { PARTY_MAX, PARTY_MIN, type EmoteId } from "@/lib/multiplayer/constants";
+import { PARTY_GAMES, PARTY_MAX, PARTY_MIN, PARTY_PICK_MAX, PARTY_PICK_MIN, type EmoteId } from "@/lib/multiplayer/constants";
 import type { MatchPlayerView, MatchView } from "@/lib/multiplayer/types";
 import { useReduce } from "@/lib/client/multiplayer";
 import { Avatar, Cta, EASE_IN_OUT, EASE_OUT, EmoteBar, EmoteBubble, PODIUM, SPRING_PARTY, TopButton, placeLabel } from "./ui";
@@ -100,15 +100,27 @@ export function ShareCode({ code, url, text, count }: { code: string; url: strin
 
 const DIFFS = ["easy", "medium", "hard", "expert"] as const;
 export type Diff = (typeof DIFFS)[number];
-export type RoomRequest = { game: string | null; difficulty: Diff; maxPlayers: number; classroom: boolean };
+export type RoomRequest = { game: string | null; games: string[] | null; difficulty: Diff; maxPlayers: number; classroom: boolean };
+
+/** The host's choice: one game, a hand-picked list (`picks`, 2 to 8 games), or neither for a Random mix. */
+export type GameChoice = { game: string | null; picks: string[] | null };
+/** A choice the rooms API accepts: picking mode needs at least PARTY_PICK_MIN games. */
+export const choiceReady = (c: GameChoice) => c.picks === null || c.picks.length >= PARTY_PICK_MIN;
 
 /** Worlds that have at least one race game, in catalog order: the picker's filter chips. */
 const PARTY_WORLDS = WORLDS.filter((w) => RACE_GAMES.some((g) => g.world === w.id));
 
-/** Random mix, or any race game (filtered by world so 25 games fit a phone without a long scroll). */
-export function GamePicker({ value, onChange }: { value: string | null; onChange: (g: string | null) => void }) {
-  const [world, setWorld] = useState<WorldId>(() => (value && GAME_BY_ID[value]?.world) || PARTY_WORLDS[0].id);
+/**
+ * Random mix, any one race game, or several hand-picked ones (filtered by world so 25 games fit a phone without
+ * a long scroll). Picking mode turns the game tiles into checkboxes; each set races PARTY_GAMES of the picks.
+ */
+export function GamePicker({ value, onChange }: { value: GameChoice; onChange: (c: GameChoice) => void }) {
+  const picks = value.picks;
+  const first = value.game ?? picks?.[0];
+  const [world, setWorld] = useState<WorldId>(() => (first && GAME_BY_ID[first]?.world) || PARTY_WORLDS[0].id);
   const games = RACE_GAMES.filter((g) => g.world === world);
+  const toggle = (id: string) =>
+    picks && onChange({ game: null, picks: picks.includes(id) ? picks.filter((x) => x !== id) : [...picks, id] });
   const tile = (on: boolean) => ({
     background: on ? "color-mix(in srgb, var(--accent) 14%, var(--bg))" : "var(--surface)",
     boxShadow: on ? "inset 0 0 0 2px var(--accent)" : undefined,
@@ -135,14 +147,36 @@ export function GamePicker({ value, onChange }: { value: string | null; onChange
           );
         })}
       </div>
-      <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label={partyCopy.host.game}>
+      <button
+        type="button"
+        aria-pressed={picks !== null}
+        onClick={() => onChange(picks ? { game: null, picks: null } : { game: null, picks: value.game ? [value.game] : [] })}
+        className="press flex min-h-14 items-center gap-3 rounded-[18px] px-3 text-left"
+        style={tile(picks !== null)}
+      >
+        <span className="bg-surface-raised text-accent flex size-10 flex-none items-center justify-center rounded-[12px]">
+          <Icon name="list-checks" size={20} />
+        </span>
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="text-[15px] font-semibold">{partyCopy.host.pickSeveral}</span>
+          <span className="text-muted text-[13px]" aria-live="polite">
+            {picks ? partyCopy.host.picked(picks.length, PARTY_PICK_MAX) : partyCopy.host.pickSeveralHint(PARTY_GAMES)}
+          </span>
+        </span>
+      </button>
+      <div
+        className="grid grid-cols-3 gap-2"
+        role={picks ? "group" : "radiogroup"}
+        aria-label={picks ? partyCopy.host.yourGames : partyCopy.host.game}
+      >
         <button
           type="button"
           role="radio"
-          aria-checked={value === null}
-          onClick={() => onChange(null)}
+          aria-checked={!picks && value.game === null}
+          onClick={() => onChange({ game: null, picks: null })}
           className="press col-span-3 flex min-h-14 items-center gap-3 rounded-[18px] px-3 text-left"
-          style={tile(value === null)}
+          style={tile(!picks && value.game === null)}
+          hidden={!!picks}
         >
           <span className="bg-accent text-on-accent flex size-10 flex-none items-center justify-center rounded-[12px]">
             <Icon name="shuffle" size={20} />
@@ -153,14 +187,15 @@ export function GamePicker({ value, onChange }: { value: string | null; onChange
           </span>
         </button>
         {games.map((g) => {
-          const on = value === g.id;
+          const on = picks ? picks.includes(g.id) : value.game === g.id;
           return (
             <button
               key={g.id}
               type="button"
-              role="radio"
+              role={picks ? "checkbox" : "radio"}
               aria-checked={on}
-              onClick={() => onChange(g.id)}
+              disabled={!!picks && !on && picks.length >= PARTY_PICK_MAX}
+              onClick={() => (picks ? toggle(g.id) : onChange({ game: g.id, picks: null }))}
               className="press flex h-[84px] min-w-0 flex-col items-center justify-center gap-1.5 rounded-[18px] px-1"
               style={tile(on)}
             >
@@ -273,14 +308,14 @@ export function HostRoom({
   onOpen: (r: RoomRequest) => void;
   busy: boolean;
 }) {
-  const [game, setGame] = useState<string | null>(initialGame);
+  const [choice, setChoice] = useState<GameChoice>({ game: initialGame, picks: null });
   const [difficulty, setDifficulty] = useState<Diff>("medium");
   const [size, setSize] = useState(PARTY_MAX);
   const [classroom, setClassroom] = useState(false);
   return (
     <>
       <span className="text-[15px] font-semibold">{partyCopy.host.game}</span>
-      <GamePicker value={game} onChange={setGame} />
+      <GamePicker value={choice} onChange={setChoice} />
       <span className="mt-1 text-[15px] font-semibold">{partyCopy.host.difficulty}</span>
       <DifficultyPicker value={difficulty} onChange={setDifficulty} />
       <label htmlFor="room-size" className="mt-1 flex items-baseline justify-between text-[15px] font-semibold">
@@ -316,8 +351,12 @@ export function HostRoom({
           className="mp-switch flex-none"
         />
       </label>
-      <Cta className="mt-auto" disabled={busy} onClick={() => onOpen({ game, difficulty, maxPlayers: size, classroom })}>
-        {partyCopy.host.open}
+      <Cta
+        className="mt-auto"
+        disabled={busy || !choiceReady(choice)}
+        onClick={() => onOpen({ game: choice.game, games: choice.picks, difficulty, maxPlayers: size, classroom })}
+      >
+        {choiceReady(choice) ? partyCopy.host.open : partyCopy.host.pickMore(PARTY_PICK_MIN)}
       </Cta>
     </>
   );
@@ -405,7 +444,7 @@ export function Lobby({
   const ready = here.filter((p) => p.ready).length;
   const all = here.length >= 2 && ready === here.length;
   const slots = Array.from({ length: view.maxPlayers }, (_, i) => here[i] ?? null);
-  const gameLine = view.mix ? "Random mix, 3 games" : `${gameName(view.gameId)}, 3 games`;
+  const gameLine = partyCopy.host.gamesLine(roomGamesName(view.gameId, view.chosenGames), PARTY_GAMES);
   return (
     <div className="flex flex-1 flex-col pb-[max(28px,env(safe-area-inset-bottom))]" data-screen-label="P1 Lobby">
       <div className="flex items-center justify-between px-4 pt-[max(52px,env(safe-area-inset-top))]">
@@ -467,7 +506,10 @@ export function Lobby({
         className="bg-surface mx-4 mt-3.5 flex items-center gap-3 rounded-[18px] px-3.5 py-3 text-left"
       >
         <span className="bg-surface-raised text-accent flex size-11 items-center justify-center rounded-[14px]">
-          <Icon name={view.mix ? "shuffle" : (GAME_BY_ID[view.gameId ?? ""]?.icon ?? "shuffle")} size={22} />
+          <Icon
+            name={view.chosenGames.length ? "list-checks" : view.mix ? "shuffle" : (GAME_BY_ID[view.gameId ?? ""]?.icon ?? "shuffle")}
+            size={22}
+          />
         </span>
         <span className="flex flex-1 flex-col">
           <span className="text-[16px] font-semibold">{gameLine}</span>
@@ -657,7 +699,7 @@ export function Podium({
     play("cheer");
   }, []);
   const title = top?.id === view.me ? "You take it!" : `${top?.nickname ?? "Someone"} takes it`;
-  const sub = `${view.mix ? "Random mix" : gameName(view.gameId)}, ${final ? `${view.games.length} games` : `game ${view.round} of ${view.games.length}`}, ${standing.length} Spuzlers`;
+  const sub = `${roomGamesName(view.gameId, view.chosenGames)}, ${final ? `${view.games.length} games` : `game ${view.round} of ${view.games.length}`}, ${standing.length} Spuzlers`;
   const podium: [MatchPlayerView | undefined, number][] = [
     [standing[1], 1],
     [standing[0], 0],
@@ -818,7 +860,7 @@ export function TvMode({
         {phase === "lobby" ? (
           <>
             <div className="font-display mt-2.5 text-[64px] font-black tracking-[-0.03em]">
-              {view.mix ? "Random mix" : gameName(view.gameId)}
+              {roomGamesName(view.gameId, view.chosenGames)}
             </div>
             <div className="text-muted text-[30px] font-semibold">
               {racers.length} Spuzlers in · spuzl.app/party/{view.code}

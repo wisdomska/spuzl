@@ -54,3 +54,8 @@ export const roundSeed = (matchId: string, setNo: number, round: number) => `mp:
 export function gameName(id: string | null | undefined): string {
   return (id && GAME_BY_ID[id]?.name) || "Random mix";
 }
+
+/** A room's games in one line: the hand-picked names, the one game, or Random mix. */
+export function roomGamesName(gameId: string | null | undefined, chosen: readonly string[] | null | undefined): string {
+  return chosen?.length ? chosen.map((g) => gameName(g)).join(", ") : gameName(gameId);
+}

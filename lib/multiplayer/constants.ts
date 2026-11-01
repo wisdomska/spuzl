@@ -36,6 +36,9 @@ export const TIMING = {
 export const DUEL_ROUNDS = 3;
 export const DUEL_TO_WIN = 2;
 export const PARTY_GAMES = 3;
+/** A host's hand-picked list: at least two games (one is just "this game"), at most eight. */
+export const PARTY_PICK_MIN = 2;
+export const PARTY_PICK_MAX = 8;
 export const PARTY_MAX = 8;
 export const PARTY_MIN = 2;
 
