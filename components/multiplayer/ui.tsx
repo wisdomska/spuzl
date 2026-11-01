@@ -16,7 +16,7 @@ export const EASE_IN_OUT = [0.77, 0, 0.175, 1] as const;
 export const SPRING_PARTY = { type: "spring", stiffness: 300, damping: 12 } as const;
 export const SPRING_PRESS = { type: "spring", stiffness: 600, damping: 30 } as const;
 /** Podium colours (gold, silver, bronze) and the rail position chips. Board materials, same in both themes. */
-export const PODIUM = ["#FFC93C", "#D7DAE8", "#E09A5C"] as const;
+export const PODIUM = ["var(--pos-1)", "var(--pos-2)", "var(--pos-3)"] as const;
 
 /** Player tile: the initial on their Spuz colour, ink text (never colour alone: the name sits beside it). */
 export function Avatar({
