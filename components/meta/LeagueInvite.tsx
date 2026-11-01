@@ -1,5 +1,6 @@
 "use client";
 
+import { InviteShare } from "@/components/share/InviteShare";
 import { useState } from "react";
 import { useInvite } from "@/lib/client/social";
 import { useGameSettings } from "@/lib/game-settings/client";
@@ -8,7 +9,7 @@ import { Icon } from "@/components/ui/Icon";
 import { play } from "@/lib/audio";
 
 /**
- * League invite card (SPZ-21): the player's friends invite link (same link as Friends) with WhatsApp and
+ * League invite card (SPZ-21): the player's friends invite link (same link as Friends) with the Share sheet and
  * copy, shown when the player has no league group yet or is alone in it.
  */
 export function LeagueInvite() {
@@ -49,16 +50,13 @@ export function LeagueInvite() {
         {pretty || " "}
       </span>
       <div className="grid grid-cols-2 gap-2">
-        <a
-          href={url ? `https://wa.me/?text=${encodeURIComponent(T.inviteShare(url))}` : undefined}
-          aria-disabled={!url}
-          target="_blank"
-          rel="noopener noreferrer"
+        <InviteShare
+          url={url}
+          text={T.inviteShare(url)}
+          title="Invite friends"
+          iconSize={18}
           className="press bg-accent text-on-accent flex h-11 items-center justify-center gap-1.5 rounded-[12px] px-3 text-[15px] font-semibold"
-        >
-          <Icon name="whatsapp-logo" size={18} />
-          {T.whatsapp}
-        </a>
+        />
         <button
           type="button"
           onClick={copy}

@@ -9,7 +9,6 @@ export const leaguesCopy = {
   inviteWithFriends: "Friends who join from your link play in your league.",
   inviteGeneric: "Race your friends on the Grid and climb together.",
   inviteShare: (url: string) => `Join my SPUZL league. Tap to be friends: ${url}`,
-  whatsapp: "WhatsApp",
   copy: "Copy link",
   copied: "Copied",
   copiedStatus: "Invite link copied",
