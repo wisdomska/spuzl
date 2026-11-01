@@ -159,3 +159,25 @@ Fixed during this pass:
 
 Not covered: Safari, Firefox and real devices (only Chromium is installed here), and live play of the new games
 by real players while the switch is off in production.
+
+## 1.3.0 integration pass (1 November 2026)
+
+Run against a local production build (`pnpm build && pnpm start`, `SETTINGS_CACHE_MS=0`) on local Supabase with
+60 days of generated puzzles.
+
+| Suite                                      | Result                                                                      |
+| ------------------------------------------ | --------------------------------------------------------------------------- |
+| Typecheck, lint                            | Clean                                                                       |
+| Unit (`pnpm vitest run`)                   | 118 files, 1171 tests passed                                                |
+| pgTAP (`supabase test db`)                 | 13 files, 143 tests passed                                                  |
+| API integration (`vitest.api.config.mts`)  | 6 files, 96 tests passed                                                    |
+| E2E, realtime, visual (mobile and desktop) | All passed; skips are the existing ones                                     |
+| Google sign-in (production)                | Supabase hands off to Google's sign-in page; client and return URL accepted |
+| Public homepage (production)               | `/` without a session shows About; guests and players land on Home          |
+
+Found and fixed in this pass:
+
+- The offline Daily pack still started Daily attempts on Home while Dailies were off (404s in the console).
+- The homepage swap to About at first applied to in-app prefetches, which sent a brand-new guest to About after
+  onboarding. It now applies only to full page loads with no session cookie.
+- Two new migrations shared a version number; one was renumbered (`20261110200001`).
