@@ -43,9 +43,15 @@ function CelebrationView({ c, onNext }: { c: Celebration; onNext: () => void }) 
 
   useEffect(() => {
     duck(1400);
-    const sound = { level: "fanfare", rank: "fanfare", badge: "clink", streak: "whoosh", full: "cheer" }[c.kind];
+    const sound = { level: "levelUp", rank: "levelUp", badge: "unlock", streak: "streak", full: "celebrate" }[c.kind];
     const t = setTimeout(() => play(sound), c.kind === "badge" ? 550 : 0);
+    if (!instant) {
+      // Sound on the frames that move: the rank emblem's slam lands with a thump, Full Spuzl tiles pop up a scale.
+      if (c.kind === "rank") play("impact", { delay: 0.42, gain: 0.7 });
+      if (c.kind === "full") LAUNCH_IDS.forEach((_, i) => play("place", { step: i, delay: 0.12 + i * 0.05, silentHaptic: true }));
+    }
     return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per overlay; a skip tap must not replay it
   }, [c.kind]);
 
   const bg = c.kind === "streak" ? "#1E1208" : "#06070D";
