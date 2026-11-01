@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { fitCell, useViewportWidth } from "@/components/game/useBoardSize";
@@ -9,7 +9,7 @@ import { play } from "@/lib/audio";
 import { popClass, shakeClass, waveStyle } from "@/games/_shared/logiclab/fx";
 import { sudoku as t } from "@/lib/copy/sudoku";
 import { analyze, emptyState, geometry, type SudokuPuzzle, type SudokuState } from "./logic";
-import { boundaryTracks, boxIndex, digitCounts, gapTotal, trackList } from "./layout";
+import { boundaryTracks, boxIndex, cageSegments, cellOffsets, digitCounts, gapTotal, trackList } from "./layout";
 import { statusLine, type StatusLine } from "./status";
 
 /** Box borders (and the outer frame): 2 px in a lighter tone than the cell gaps. */
@@ -29,11 +29,19 @@ function useSudokuCell(size: number, boxW: number) {
   return fitCell(vw, size, overhead, size > 6 ? 40 : 44, 56);
 }
 
+/** Killer Sums cage outline: dotted, inset this many px inside the cells, in a muted ink. */
+const CAGE_INSET = 3;
+const CAGE_INK = "color-mix(in srgb, var(--text-muted) 85%, transparent)";
+/** Cage total font size for a cell size (10 px at the 34 px floor, 12 px from 48 px). */
+const cageFont = (cell: number) => Math.max(10, Math.min(12, Math.round(cell / 4)));
+
 /**
- * Sudoku board shared by Sixer and Nine (Game Boards: Sixer). Tap a cell, tap a number. Notes mode
- * toggles pencil marks. Givens are bolder and locked; your digits use the world colour. Boxes have 2 px
+ * Sudoku board shared by Sixer, Nine and Killer Sums (Game Boards: Sixer). Tap a cell, tap a number. Notes
+ * mode toggles pencil marks. Givens are bolder and locked; your digits use the world colour. Boxes have 2 px
  * borders in a lighter tone. The selected cell's row, column and box are tinted, and every cell holding
- * the selected number gets a stronger tint and a bolder digit so the eye can scan.
+ * the selected number gets a stronger tint and a bolder digit so the eye can scan. With `puzzle.cages`
+ * (Killer Sums) each cage gets a dotted inset outline with its total in the top-left corner, cage mates
+ * count as peers for tidying notes, and every cell's name says its cage.
  */
 export function SudokuBoard({
   puzzle,
@@ -86,7 +94,25 @@ export function SudokuBoard({
   /** One status line for a position: cleared, else the first broken rule, else the placed count. */
   const sayStatus = useCallback((values: number[]) => say(statusLine(analyze(puzzle, values), n * n)), [say, puzzle, n]);
 
-  const where = (i: number) => t.where(Math.floor(i / n) + 1, (i % n) + 1, boxIndex(i, n, puzzle.boxW, puzzle.boxH) + 1);
+  // Killer Sums: which cage each cell is in, and the peers for tidying notes (row, column, box and cage).
+  const cageOf = useMemo(() => {
+    if (!puzzle.cages) return null;
+    const out = new Array<number>(n * n).fill(-1);
+    puzzle.cages.forEach((c, k) => c.cells.forEach((i) => (out[i] = k)));
+    return out;
+  }, [puzzle.cages, n]);
+  const tidyPeers = useMemo(
+    () =>
+      g.peers.map((ps, i) =>
+        cageOf && puzzle.cages ? [...new Set([...ps, ...puzzle.cages[cageOf[i]].cells.filter((j) => j !== i)])] : ps,
+      ),
+    [g, cageOf, puzzle.cages],
+  );
+  const cageName = (i: number) => {
+    const c = cageOf && puzzle.cages ? puzzle.cages[cageOf[i]] : null;
+    return c ? `, ${t.cage(c.sum, c.cells.length)}` : "";
+  };
+  const where = (i: number) => t.where(Math.floor(i / n) + 1, (i % n) + 1, boxIndex(i, n, puzzle.boxW, puzzle.boxH) + 1) + cageName(i);
 
   /** Place (or clear with 0) a digit in a cell. */
   const place = useCallback(
@@ -104,7 +130,7 @@ export function SudokuBoard({
       const notes = prev.notes.slice();
       notes[i] = 0;
       // Placing a digit tidies that digit out of the notes of every peer.
-      if (d) for (const j of g.peers[i]) notes[j] &= ~(1 << (d - 1));
+      if (d) for (const j of tidyPeers[i]) notes[j] &= ~(1 << (d - 1));
       const next = { values, notes };
       push(next);
       const before = analyze(puzzle, prev.values);
@@ -274,6 +300,13 @@ export function SudokuBoard({
   const rows = trackList(n, puzzle.boxH, cell, gap, LINE);
   // Sixer: one row of 6. Nine: a 3 × 3 pad on phones, one row of 9 from 640 px up.
   const padGrid = n <= 6 ? "" : "grid-cols-3 sm:grid-cols-9";
+  // Killer Sums cages: outline pieces and the total in each cage's first cell.
+  const labelFont = cageFont(cell);
+  const xs = cellOffsets(n, puzzle.boxW, cell, gap, LINE, PAD);
+  const ys = cellOffsets(n, puzzle.boxH, cell, gap, LINE, PAD);
+  const cageLines = cageOf
+    ? cageSegments(cageOf, n, xs, ys, cell, CAGE_INSET, { w: Math.round(labelFont * 1.6) + 2, h: labelFont + 4 })
+    : [];
 
   return (
     <div className={`flex flex-col items-center gap-3 ${done ? "board-pulse" : ""}`}>
@@ -283,7 +316,7 @@ export function SudokuBoard({
         aria-rowcount={n}
         aria-colcount={n}
         onKeyDown={onKeyDown}
-        className="grid rounded-[12px]"
+        className="relative grid rounded-[12px]"
         style={{
           gridTemplateColumns: cols,
           gridTemplateRows: rows,
@@ -346,7 +379,8 @@ export function SudokuBoard({
                     background: shade ? "var(--surface-raised)" : "color-mix(in srgb, var(--surface-raised) 45%, var(--surface))",
                     color: bad ? "var(--danger)" : fixed ? "var(--text)" : undefined,
                     boxShadow: ring,
-                    fontSize: Math.round(cell * 0.5),
+                    // Killer cages: a touch smaller and lower so the digit clears the cage total.
+                    fontSize: Math.round(cell * (cageOf ? 0.44 : 0.5)),
                   }}
                 >
                   {tint && (
@@ -359,7 +393,10 @@ export function SudokuBoard({
                   {done && <span aria-hidden className="absolute inset-0" style={waveStyle(dist, "var(--world)", 8)} />}
                   {bad && <span aria-hidden className="hatch absolute inset-0 rounded-[8px]" />}
                   {v ? (
-                    <span className="relative" style={done ? { color: "#0E0F1A" } : undefined}>
+                    <span
+                      className="relative"
+                      style={{ ...(done ? { color: "#0E0F1A" } : {}), marginTop: cageOf ? Math.round(labelFont * 0.6) : undefined }}
+                    >
                       {v}
                     </span>
                   ) : noteList.length && !done ? (
@@ -367,6 +404,8 @@ export function SudokuBoard({
                       aria-hidden
                       className="relative grid h-full w-full p-[3px] text-[var(--text-muted)]"
                       style={{
+                        // keep the top-left corner clear for a cage total
+                        paddingTop: cageOf ? labelFont + 3 : undefined,
                         gridTemplateColumns: `repeat(${noteCols}, 1fr)`,
                         gridTemplateRows: `repeat(${noteRows}, 1fr)`,
                         fontSize: Math.max(9, Math.round(cell / (n <= 6 ? 4.2 : 3.8))),
@@ -385,6 +424,38 @@ export function SudokuBoard({
             })}
           </div>
         ))}
+        {cageOf && puzzle.cages && (
+          <svg aria-hidden className="pointer-events-none absolute inset-0 z-[1]" width="100%" height="100%">
+            {cageLines.map((l, k) => (
+              <line
+                key={k}
+                x1={l.x1}
+                y1={l.y1}
+                x2={l.x2}
+                y2={l.y2}
+                stroke={CAGE_INK}
+                strokeWidth={1.25}
+                strokeDasharray="3 2.5"
+                strokeLinecap="butt"
+              />
+            ))}
+            {puzzle.cages.map((c) => {
+              const i = c.cells[0];
+              return (
+                <text
+                  key={i}
+                  x={xs[i % n] + CAGE_INSET}
+                  y={ys[Math.floor(i / n)] + CAGE_INSET + labelFont - 2}
+                  fill={done ? "var(--square-ink)" : "var(--text)"}
+                  className="num"
+                  style={{ fontSize: labelFont, fontWeight: 700 }}
+                >
+                  {c.sum}
+                </text>
+              );
+            })}
+          </svg>
+        )}
       </div>
 
       {/* Number pad */}

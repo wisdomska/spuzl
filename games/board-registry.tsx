@@ -70,4 +70,5 @@ export const BOARDS: Record<string, AnyBoard> = {
   emojihits: dynamic(() => import("./emojihits/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   trotro: dynamic(() => import("./trotro/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   lightup: dynamic(() => import("./lightup/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  killer: dynamic(() => import("./killer/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
 };

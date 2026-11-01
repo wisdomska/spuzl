@@ -2,9 +2,17 @@
  * Shared sudoku engine for Sixer (6 × 6, 2 × 3 boxes) and Nine (9 × 9, 3 × 3 boxes).
  * Bitmask solver with uniqueness counting, a human-technique solver (singles, locked candidates,
  * naked pairs) that drives both the difficulty curve and safe hints, a generator and a verifier.
+ * Killer Sums adds cages (`SudokuPuzzle.cages`): `analyze` then also checks cage repeats and sums.
  */
 import type { Difficulty, GameLogic, Generated, Hint, VerifyResult } from "@/games/types";
 import type { Rng } from "@/lib/rng";
+import { sudoku as copy } from "@/lib/copy/sudoku";
+
+/** Killer cage: its cells (row-major indices, ascending) add up to `sum` with no digit repeated. */
+export interface Cage {
+  cells: number[];
+  sum: number;
+}
 
 export interface SudokuPuzzle {
   size: number;
@@ -13,6 +21,8 @@ export interface SudokuPuzzle {
   boxH: number;
   /** 0 open, 1..size given; row-major */
   givens: number[];
+  /** Killer Sums only: cages covering every cell */
+  cages?: Cage[];
 }
 export type SudokuSolution = number[];
 export interface SudokuState {
@@ -77,9 +87,16 @@ export const boxOf = (p: SudokuPuzzle, i: number) => {
 
 /* ---------------- Rules ---------------- */
 
-export type RuleBreak = "row" | "column" | "box";
+export type RuleBreak = "row" | "column" | "box" | "cage" | "sum";
+/** `d` is the repeated digit, or the cage total for "sum". */
 export const ruleCopy = (rule: RuleBreak, d: number, boxW: number, boxH: number) =>
-  rule === "box" ? `Two ${d}s in one ${boxW} × ${boxH} box.` : `Two ${d}s in one ${rule}.`;
+  rule === "sum"
+    ? copy.cageSum(d)
+    : rule === "cage"
+      ? copy.cageRepeat(d)
+      : rule === "box"
+        ? `Two ${d}s in one ${boxW} × ${boxH} box.`
+        : `Two ${d}s in one ${rule}.`;
 
 export interface Analysis {
   filled: number;
@@ -103,6 +120,33 @@ export function analyze(p: SudokuPuzzle, values: number[]): Analysis {
       if (!rule) {
         rule = u.kind;
         digit = d;
+      }
+    }
+  }
+  for (const cage of p.cages ?? []) {
+    const seen = new Map<number, number[]>();
+    let total = 0,
+      placed = 0;
+    for (const i of cage.cells) {
+      if (!values[i]) continue;
+      seen.set(values[i], [...(seen.get(values[i]) ?? []), i]);
+      total += values[i];
+      placed++;
+    }
+    for (const [d, cells] of seen) {
+      if (cells.length < 2) continue;
+      cells.forEach((i) => bad.add(i));
+      if (!rule) {
+        rule = "cage";
+        digit = d;
+      }
+    }
+    // Over the total already, or full and adding to something else.
+    if (total > cage.sum || (placed === cage.cells.length && total !== cage.sum)) {
+      for (const i of cage.cells) if (values[i]) bad.add(i);
+      if (!rule) {
+        rule = "sum";
+        digit = cage.sum;
       }
     }
   }
@@ -178,6 +222,14 @@ function search(p: SudokuPuzzle, values: number[], limit: number, out: number[][
   };
   rec();
   return count;
+}
+
+/** A random complete grid (every row, column and box holds 1..size once). */
+export function fullGrid(rng: Rng, size: number): number[] {
+  const [boxW, boxH] = BOX[size];
+  const out: number[][] = [];
+  search({ size, boxW, boxH, givens: new Array(size * size).fill(0) }, new Array(size * size).fill(0), 1, out, rng);
+  return out[0];
 }
 
 /* ---------------- Human techniques ---------------- */

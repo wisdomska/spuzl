@@ -88,6 +88,8 @@ insert into public.games (id, world_id, name, status, phase, engine, scoring, is
 on conflict (id) do nothing;
 insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
   ('lightup', 'logic', 'Light Up', 'coming_soon', 'M3+', 'grid', 'time', true, 8000, 58)
+insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
+  ('killer', 'number', 'Killer Sums', 'coming_soon', 'M3+', 'grid', 'time', true, 15000, 59)
 on conflict (id) do nothing;
 insert into public.badges (id, family, tier, name, description, secret, sparks, rule, sort) values
   ('first-clear', 'starter', 'bronze', 'First Clear', 'Clear your first puzzle.', false, 10, '{"kind":"clears","n":1,"icon":"seal-check"}'::jsonb, 0),

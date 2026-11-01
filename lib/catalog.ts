@@ -1,3 +1,5 @@
+import { killer } from "@/lib/copy/killer";
+
 /**
  * The Grid: 9 worlds, 51 games. Source: design Game Boards (icon set + phases) and SRS section 5.
  * The design wins on the list (adds Board Bay); the SRS supplies rules text.
@@ -681,6 +683,12 @@ export const LAB_GAMES: GameMeta[] = [
     "Light every white cell. Lamps never shine on each other; a number counts the lamps beside it.",
     { unique: true, minTimeMs: 8000, lab: true },
   ),
+  // Killer Sums (Number Den): killer sudoku on the shared sudoku board
+  g("killer", killer.title, "number", "circle-dashed", "M3+", "grid", killer.blurb, killer.rule, {
+    unique: true,
+    minTimeMs: 15000,
+    lab: true,
+  }),
 ];
 
 export const GAME_BY_ID: Record<string, GameMeta> = Object.fromEntries([...GAMES, ...LAB_GAMES].map((x) => [x.id, x]));

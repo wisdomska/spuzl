@@ -1,4 +1,4 @@
-/** Player-facing copy for the sudoku boards (Sixer, Nine): games/_shared/sudoku/SudokuBoard.tsx. */
+/** Player-facing copy for the sudoku boards (Sixer, Nine, Killer Sums): games/_shared/sudoku/SudokuBoard.tsx. */
 export const sudoku = {
   grid: (title: string, n: number) => `${title} board, ${n} by ${n}`,
   /** Keep the "Row r, column c" prefix: tests/e2e/harness.ts tapCell finds cells by it. */
@@ -28,4 +28,8 @@ export const sudoku = {
   notesTool: "Notes",
   notesOn: "Notes on",
   hint: "Hint",
+  /** Killer Sums cages: spoken after "Row r, column c, box b" */
+  cage: (sum: number, cells: number) => `cage ${sum} of ${cells} ${cells === 1 ? "cell" : "cells"}`,
+  cageRepeat: (d: number) => `Two ${d}s in one cage.`,
+  cageSum: (sum: number) => `This cage must add to ${sum}.`,
 } as const;

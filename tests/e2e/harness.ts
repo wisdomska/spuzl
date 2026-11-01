@@ -100,6 +100,18 @@ const SOLVERS: Record<string, (page: Page, seed: string, d: Difficulty) => Promi
     // one tap on an empty white cell places a lamp
     for (const i of g.solution.lamps) await tapCell(page, Math.floor(i / g.puzzle.size) + 1, (i % g.puzzle.size) + 1);
   },
+  async killer(page, seed, d) {
+    const { generate } = await import("@/games/killer/logic");
+    const g = generate(createRng(seed), d);
+    const n = g.puzzle.size;
+    const pad = page.getByRole("group", { name: "Number pad" });
+    // tap each open cell, then its digit on the pad (named "3, 2 left": the digit, then the count)
+    for (let i = 0; i < n * n; i++) {
+      if (g.puzzle.givens[i]) continue;
+      await tapCell(page, Math.floor(i / n) + 1, (i % n) + 1);
+      await pad.getByRole("button", { name: new RegExp(`^${g.solution[i]}\\b`) }).click();
+    }
+  },
 };
 
 export async function solveTestBoard(page: Page, slug: string, seed = "qa", d: Difficulty = "easy") {
