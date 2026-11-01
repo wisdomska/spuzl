@@ -68,6 +68,7 @@ export const TYPICAL_SEC: Record<string, number> = {
   market: 150,
   five: 150,
   emojihits: 120,
+  trotro: 120,
 };
 
 /** Games with a clock pushing you (reaction, action, countdowns) are never "calm". */

@@ -78,6 +78,22 @@ const SOLVERS: Record<string, (page: Page, seed: string, d: Difficulty) => Promi
       await tapCell(page, r + 1, g.solution[r] + 1);
     }
   },
+  async trotro(page, seed, d) {
+    const { generate, applyMove } = await import("@/games/trotro/logic");
+    const { puzzle: p, solution } = generate(createRng(seed), d);
+    // Tap a cell of the vehicle to select it, then the free cell in its lane where its leading end lands.
+    let pos = p.start;
+    for (const [v, delta] of solution.moves) {
+      const veh = p.vehicles[v];
+      const lead = delta > 0 ? pos[v] + veh.len - 1 + delta : pos[v] + delta;
+      const cell = (k: number) => (veh.axis === "h" ? [veh.line, k] : [k, veh.line]);
+      const [r0, c0] = cell(pos[v]);
+      const [r1, c1] = cell(lead);
+      await tapCell(page, r0 + 1, c0 + 1);
+      await tapCell(page, r1 + 1, c1 + 1);
+      pos = applyMove(p, pos, [v, delta])!;
+    }
+  },
 };
 
 export async function solveTestBoard(page: Page, slug: string, seed = "qa", d: Difficulty = "easy") {

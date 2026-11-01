@@ -82,6 +82,8 @@ insert into public.games (id, world_id, name, status, phase, engine, scoring, is
 on conflict (id) do nothing;
 insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
   ('emojihits', 'clue', 'Emoji Hits', 'coming_soon', 'M3+', 'custom', 'score', false, 4000, 56)
+insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
+  ('trotro', 'shape', 'Trotro Jam', 'coming_soon', 'M3+', 'grid', 'time', false, 5000, 57)
 on conflict (id) do nothing;
 insert into public.badges (id, family, tier, name, description, secret, sparks, rule, sort) values
   ('first-clear', 'starter', 'bronze', 'First Clear', 'Clear your first puzzle.', false, 10, '{"kind":"clears","n":1,"icon":"seal-check"}'::jsonb, 0),

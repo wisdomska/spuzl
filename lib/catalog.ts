@@ -658,6 +658,15 @@ export const LAB_GAMES: GameMeta[] = [
     "Name the hit from its emoji",
     "Name the song, film or TV show from the emoji. 5 rounds, 3 tries each.",
     { content: "curated", scoring: "score", minTimeMs: 4000, lab: true },
+    "trotro",
+    "Trotro Jam",
+    "shape",
+    "bus",
+    "M3+",
+    "grid",
+    "Free the trotro from the station",
+    "Slide cars and trucks along their lanes until the trotro can drive out of the exit.",
+    { minTimeMs: 5000, lab: true },
   ),
 ];
 
