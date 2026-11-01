@@ -181,7 +181,6 @@ function PlayCard({ href, title, sub, done, total }: { href: string; title: stri
       href={href as never}
       className="toy bg-accent text-on-accent flex h-[72px] min-w-0 items-center gap-3 rounded-[22px] pr-4 pl-3"
       style={{ ["--btn-depth" as string]: "var(--accent-depth)" }}
-      aria-label={`${title}. ${sub}. ${T.todayAria(done, total)}`}
     >
       <span className="relative flex size-12 shrink-0 items-center justify-center" aria-hidden>
         <svg viewBox="0 0 48 48" className="absolute inset-0 -rotate-90">
@@ -206,6 +205,7 @@ function PlayCard({ href, title, sub, done, total }: { href: string; title: stri
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="font-display truncate text-[18px] leading-tight font-black">{title}</span>
         <span className="truncate text-[13px] font-semibold opacity-80">{sub}</span>
+        <span className="sr-only">. {T.todayAria(done, total)}</span>
       </span>
       <Icon name="play" size={22} className="shrink-0" />
     </Link>

@@ -265,12 +265,14 @@ export default function ShopPage() {
               pick(freeze);
             }}
             className="bg-surface flex items-center gap-2.5 rounded-[14px] px-3.5 py-2.5"
-            aria-label={`Streak Freeze, you hold ${d!.freezesHeld} of 2, ${freeze.price} Sparks`}
           >
             <Icon name="snowflake" size={22} className="text-freeze" />
             <span className="flex-1 text-left text-[15px] font-semibold">Streak Freeze</span>
             <span className="text-muted text-[13px] font-medium">own {d!.freezesHeld} · max 2</span>
-            <span className="num text-gold text-[14px] font-semibold">{freeze.price}</span>
+            <span className="num text-gold text-[14px] font-semibold">
+              {freeze.price}
+              <span className="sr-only"> Sparks</span>
+            </span>
           </button>
         )}
         {item?.starter && !item.owned && !note && (
