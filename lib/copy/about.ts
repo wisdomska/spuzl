@@ -1,20 +1,47 @@
-/** Public About / landing page (also what signed-out visitors and Google's reviewers see at "/"). */
+/** Public landing page (what signed-out visitors and Google's reviewers see at "/"). */
 export const aboutCopy = {
   metaTitle: "SPUZL: 51 puzzle games, duels and leagues",
   metaDescription:
     "SPUZL is a free web app with 51 short puzzle, word, number and board games. Play any time as a guest, duel friends and climb weekly leagues.",
   name: "SPUZL",
-  lede: "SPUZL is a free puzzle games app with 51 short games across 9 worlds. Play any time, as often as you like, right in your browser.",
+  nav: { how: "How it works", worlds: "Games", friends: "Friends", signIn: "Sign in", play: "Play" },
+  eyebrow: "51 free games · 9 worlds",
+  headline: ["Tiny puzzles.", "Big brain"],
+  headlineAccent: "energy.",
+  lede: "SPUZL is a free puzzle games app. Logic grids, word games, quick reflex runs and classic board games like oware and draughts. Right in your browser, no download.",
   play: "Play now",
   signIn: "Sign in",
-  whatTitle: "What you can do",
-  what: [
-    ["Play 51 games", "Logic puzzles, word games, number games, reflex games and classic board games like oware, draughts and chess."],
-    ["Learn as you go", "Each game starts with a short practice round with free hints. You can skip it."],
-    ["Keep a streak", "Clear one game a day to grow your streak and earn XP and Sparks."],
-    ["Play with friends", "Duel a friend, host a party room, or join a weekly league of 30 players."],
+  trust: "Play as a guest. Sign in later to keep your streak on any phone.",
+  tryIt: {
+    label: "Try it",
+    game: "Crownfall",
+    rules: ["One crown per row and column", "One crown per colour", "Crowns never touch, even corners"],
+    hint: "Tap a square twice to place a crown.",
+    solved: "Cleared! That's one of 51.",
+    more: "Play the rest",
+  },
+  stats: [
+    ["51", "games"],
+    ["9", "worlds"],
+    ["Free", "to play"],
   ] as const,
-  worldsTitle: "The worlds",
+  howEyebrow: "How it works",
+  howTitle: "Three taps to your first win.",
+  steps: [
+    ["Pick.", "Choose any game, any time. New to it? A short practice round with free hints shows you how."],
+    ["Play.", "Puzzles never run out. Clear one for XP and Sparks, and spend Sparks on hats for Spuz."],
+    ["Keep it going.", "Clear one game a day to grow your streak, earn badges and climb your weekly league."],
+  ] as const,
+  worldsEyebrow: "The games",
+  worldsTitle: "Nine worlds to wander.",
+  gamesCount: (n: number) => `${n} games`,
+  friendsEyebrow: "With friends",
+  friendsTitle: "Better with your people.",
+  friends: [
+    ["sword", "Duel", "Race a friend on the same puzzle, best of three, live."],
+    ["users-three", "Party", "Open a room, share the code, and race up to eight phones at once."],
+    ["trophy", "Leagues", "Join a league of 30 every Monday. The top 7 move up."],
+  ] as const,
   accountTitle: "Accounts and your data",
   account: [
     "You can play as a guest with no account. To keep your progress on any phone, sign in with a 6-digit email code or with Google.",
@@ -23,6 +50,15 @@ export const aboutCopy = {
   ] as const,
   privacy: "Privacy policy",
   terms: "Terms of use",
-  contact: "Contact",
+  ctaTitle: "Your first puzzle takes 30 seconds.",
+  ctaBody: "No sign-up, no download. Just tap and play.",
+  credit: "Designed & Developed by Senya",
   made: "Made in Ghana for puzzle lovers everywhere.",
+  footer: [
+    ["/how-to-play", "How to play"],
+    ["/fair-play", "Fair play"],
+    ["/privacy", "Privacy"],
+    ["/terms", "Terms"],
+    ["/contact", "Contact"],
+  ] as const,
 } as const;
