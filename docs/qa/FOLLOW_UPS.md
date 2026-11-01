@@ -6,21 +6,16 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 
 - **Dusk:**
   - Swipe up and down is not done; it would block page scroll when a finger starts on the board.
-- **Ranked Duel mix games:** a mix uses games both players have cleared. Two brand-new players can still get a
-  game neither has seen, with no rules card.
 - **Guided first play:**
   - Before the first move, Dusk, Nine and Merge have no deduction, so the first hint coaches with the rule.
-  - Learned games are remembered per device. Cleared games are remembered per account.
 - **Party:** "Choose games" means one game or a random mix. Hand-picking several needs a column for the chosen
   list, since `matches.games` is overwritten at race start.
 
 ## Layout and motion
 
-- Nine on a 375 × 667 phone: the board and the 3 × 3 pad fit (cells step down to 35 px), but the shell's tool bar
-  (Undo, Erase, Notes, Hint) is still below the fold. Fitting it too needs a smaller shell header or a 1 × 9 pad.
-- Five and Nine still scroll a little at 320 × 568.
+- Five still scrolls about 75 px at 320 × 568 (tiles at their 30 px floor, title row hidden). Six tile rows, the
+  44 px keyboard and the tool bar need more than 568 px; fitting it needs a tool-bar-free layout or smaller keys.
 - Light Up 10 × 10 cells are 36 px at 375 wide (30 px at 320). 44 px would need a smaller hard board or zoom.
-- Party (`components/multiplayer/party.tsx`) still has raw hex colours (QR, podium, confetti, Open label).
 
 ## Accounts and email
 

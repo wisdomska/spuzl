@@ -28,9 +28,9 @@ const LEGEND: [Mark, string][] = [
   [MISS, t.legendMiss],
 ];
 const CHECKING_AFTER_MS = 250;
-/** Tiles fit the width (up to 56 px), then step down (to 32 px) until the page fits the screen's height. */
+/** Tiles fit the width (up to 56 px), then step down (to 30 px) until the page fits the screen's height. */
 const MAX_CELL = 56;
-const MIN_CELL = 32;
+const MIN_CELL = 30;
 
 function hintTarget(hint: Hint | null | undefined): { pos: number; letter: string } | null {
   const t = hint?.target as { pos?: unknown; letter?: unknown } | undefined;
@@ -243,8 +243,8 @@ export default function FiveBoard({ puzzle, initialState, hint, disabled, mode, 
   const current = rows.length;
 
   return (
-    <div className={`flex w-full max-w-[400px] flex-col items-center gap-2 ${won ? "board-pulse" : ""}`}>
-      <div className="flex flex-col gap-1.5 rounded-[20px] p-2.5" style={{ background: "var(--board-bg)" }}>
+    <div className={`short:gap-1.5 flex w-full max-w-[400px] flex-col items-center gap-2 ${won ? "board-pulse" : ""}`}>
+      <div className="short:gap-1 short:p-2 flex flex-col gap-1.5 rounded-[20px] p-2.5" style={{ background: "var(--board-bg)" }}>
         <div role="grid" aria-label={t.grid} aria-readonly aria-busy={busy} className="flex flex-col gap-1">
           {Array.from({ length: tries }, (_, r) => {
             const row = rows[r];
@@ -298,7 +298,7 @@ export default function FiveBoard({ puzzle, initialState, hint, disabled, mode, 
             );
           })}
         </div>
-        <ul aria-label={t.legend} className="m-0 flex list-none justify-center gap-3 p-0 pt-1">
+        <ul aria-label={t.legend} className="short:pt-0 m-0 flex list-none justify-center gap-3 p-0 pt-1">
           {LEGEND.map(([m, label]) => (
             <li key={m} className="text-muted flex items-center gap-1 text-[12px] font-medium">
               <span

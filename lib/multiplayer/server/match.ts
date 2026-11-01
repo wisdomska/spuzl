@@ -3,13 +3,14 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { ApiError } from "@/lib/api/server";
 import { serverBroadcast } from "@/lib/realtime/server";
 import { TIMING } from "../constants";
-import { BOT_ID, matchState, nextRoundStart, resolveRound, type Finisher } from "../duel";
+import { BOT_ID, matchState, newToGame, nextRoundStart, resolveRound, rulesBreakMs, type Finisher } from "../duel";
 import { placeRace, raceOver, nextHost, type Racer } from "../race";
 import { validateProgress } from "../progress";
 import type { MatchPlayerView, MatchRoundView, MatchView } from "../types";
 import { roundPuzzle } from "./puzzles";
 import { getGameSettings } from "@/lib/game-settings/server";
 import { finalizeDuel, finalizeRace } from "./rewards";
+import { knownGames } from "./known";
 
 export const matchTopic = (id: string) => `match:${id}`;
 
@@ -159,6 +160,9 @@ async function ratingsOf(admin: SupabaseClient, ids: string[]): Promise<Record<s
   return Object.fromEntries((data ?? []).map((r) => [r.player_id, Math.round(Number(r.rating))]));
 }
 
+/** Rounds that can have a rules break: ranked Duels between people. */
+const rulesRound = (m: MatchRow) => m.kind === "duel" && m.rated && !m.is_bot;
+
 /** The client view. The puzzle unlocks when its countdown begins; solutions never leave the server. */
 export async function viewOf(admin: SupabaseClient, l: Loaded, me: string, reward: MatchView["reward"] = null): Promise<MatchView> {
   const { m, now } = l;
@@ -173,6 +177,12 @@ export async function viewOf(admin: SupabaseClient, l: Loaded, me: string, rewar
   const start = ms(m.round_started_at);
   let puzzle: MatchView["puzzle"] = null;
   const game = m.games[m.round - 1];
+  // Before a ranked round's countdown: who is new to its game (their rules card shows; the rival waits).
+  let rulesFor: string[] | null = null;
+  if (rulesRound(m) && game && m.status === "playing" && start !== null && now < start - TIMING.countdownMs) {
+    const ids = l.players.filter((p) => !p.spectator).map((p) => p.player_id);
+    rulesFor = newToGame(game, ids, await knownGames(admin, ids, [game]));
+  }
   if (m.status === "playing" && start !== null && game && now >= start - TIMING.countdownMs) {
     const r = await roundPuzzle(m.id, m.set_no, m.round, game, m.difficulty);
     puzzle = { round: m.round, game, data: r.puzzle };
@@ -244,6 +254,7 @@ export async function viewOf(admin: SupabaseClient, l: Loaded, me: string, rewar
     rounds,
     bot: m.is_bot ? { name: "Practice bot", roundsWon: m.bot_rounds_won, finishMs: m.bot_ms[m.round - 1] ?? null, times: m.bot_ms } : null,
     puzzle,
+    rulesFor,
     myState: mine && puzzle ? mine.state : null,
     reward,
   };
@@ -389,6 +400,10 @@ async function resolveDuel(admin: SupabaseClient, l: Loaded): Promise<boolean> {
   if (m.is_bot) score[BOT_ID] = m.bot_rounds_won;
   if (outcome.winner) score[outcome.winner] = (score[outcome.winner] ?? 0) + 1;
   const state = matchState(score, m.round);
+  // A ranked next round of a game new to either player starts after a rules break.
+  const ids = humans.map((p) => p.player_id);
+  const rulesMs =
+    !state.over && rulesRound(m) ? rulesBreakMs(newToGame(m.games[m.round], ids, await knownGames(admin, ids, [m.games[m.round]]))) : 0;
   const rounds = humans.map((p) => {
     const f = finishers.find((x) => x.id === p.player_id);
     return {
@@ -405,7 +420,7 @@ async function resolveDuel(admin: SupabaseClient, l: Loaded): Promise<boolean> {
   const applied = await commit(admin, l, {
     status: state.over ? "finished" : "playing",
     round: state.over ? m.round : m.round + 1,
-    startAt: state.over ? null : nextRoundStart(now, (await getGameSettings())["duel.roundResultMs"]),
+    startAt: state.over ? null : nextRoundStart(now, (await getGameSettings())["duel.roundResultMs"]) + rulesMs,
     winner: state.over && state.winner && state.winner !== BOT_ID ? state.winner : null,
     result: state.over ? (state.draw ? "draw" : state.winner === BOT_ID ? "bot" : "win") : null,
     botRoundsWon: m.is_bot ? score[BOT_ID] : null,

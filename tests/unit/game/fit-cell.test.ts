@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { fitCell, fitStep } from "@/components/game/useBoardSize";
+import { describe, expect, it, vi } from "vitest";
+import { fitCell, fitStep, shellContentBottom } from "@/components/game/useBoardSize";
 import { columnWidth } from "@/games/fourup/Board";
 import { MIN_STAGE_HEIGHT, stageHeight } from "@/phaser/layout";
 
@@ -60,6 +60,28 @@ describe("phone fit", () => {
     expect(fitStep(35, 40, 30, 9, -400, false)).toBe(35); // whole-page mode only shrinks
     expect(fitStep(341, 341, 200, 1, 129, false)).toBe(212); // Rage at 320 x 568
     expect(fitStep(20, 20, 30, 1, 10, false)).toBe(20); // an ideal under the floor stays
+  });
+
+  it("shellContentBottom ends at the last shell zone, without the tool bar's auto margin", () => {
+    const zone = (bottom: number, marginTop: string) => ({ getBoundingClientRect: () => ({ bottom }), marginTop });
+    const feedback = zone(500, "0px");
+    const tools = zone(667, "40px"); // a roomy screen: the tool bar is pinned 40 px below the feedback line
+    const shell = { querySelectorAll: () => [feedback, tools] };
+    const board = { closest: (s: string) => (s === "[data-shell]" ? shell : null) } as unknown as HTMLElement;
+    vi.stubGlobal("getComputedStyle", (el: { marginTop: string }) => ({ marginTop: el.marginTop }));
+    try {
+      expect(shellContentBottom(board)).toBe(627);
+      // Outside a shell (or a shell with no zones) there is nothing to measure.
+      expect(shellContentBottom({ closest: () => null } as unknown as HTMLElement)).toBeNull();
+      const empty = { closest: () => ({ querySelectorAll: () => [] }) } as unknown as HTMLElement;
+      expect(shellContentBottom(empty)).toBeNull();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("Nine's 28 px floor fits a 320 x 568 phone's grid inside the screen width", () => {
+    expect(9 * 28 + NINE).toBeLessThanOrEqual(320 - 36);
   });
 
   it("Rage Ridge keeps a playable canvas when it gives height back", () => {

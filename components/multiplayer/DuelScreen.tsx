@@ -10,10 +10,11 @@ import { useSettings } from "@/lib/settings/store";
 import { useBackOrHome } from "@/lib/client/nav";
 import { useGameSettings } from "@/lib/game-settings/client";
 import { duelCopy } from "@/lib/copy/duel";
-import { botProgress, duelPhase, roundOutcomes, BOT_ID } from "@/lib/multiplayer/duel";
+import { botProgress, duelPhase, inRulesBreak, roundOutcomes, BOT_ID } from "@/lib/multiplayer/duel";
 import { DUEL_DEFAULT_GAME, gameName, raceGameParam } from "@/lib/multiplayer/games";
 import { TIMING, type EmoteId } from "@/lib/multiplayer/constants";
 import type { MatchView } from "@/lib/multiplayer/types";
+import { GAME_BY_ID } from "@/lib/catalog";
 import { MatchBoard } from "./MatchBoard";
 import { DuelEntrySheet, EdgeCard, MatchEnd, Matchmaking, OppDisconnected, OpponentStrip, RematchWipe, RoundEnd, Versus } from "./duel";
 import { CountdownNumber, Cta, EmoteBar, LoadingScreen, MpToast, NeedProfile, Screen, TopButton, useToast } from "./ui";
@@ -222,7 +223,7 @@ function DuelLobby({
         </div>
       )}
       {mode === "sheet" && rulesFor && (
-        <RulesCard game={rulesFor.game} rule={rulesFor.rule} onReady={() => quick(true)} onBack={() => setRulesFor(null)} />
+        <QueueRulesCard game={rulesFor.game} rule={rulesFor.rule} onReady={() => quick(true)} onBack={() => setRulesFor(null)} />
       )}
       {mode === "sheet" && !rulesFor && (
         <DuelEntrySheet
@@ -256,6 +257,8 @@ function DuelMatch({ id }: { id: string }) {
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [rematchWaiting, setRematchWaiting] = useState(false);
   const [wipe, setWipe] = useState(0);
+  // The round whose in-match rules card the player closed with "Got it".
+  const [rulesClosed, setRulesClosed] = useState(0);
   const toasted = useRef<string>("");
   const roundResultMs = useGameSettings()["duel.roundResultMs"];
 
@@ -372,6 +375,12 @@ function DuelMatch({ id }: { id: string }) {
   };
 
   const stale = !view.isBot && !!themP?.stale && phase !== "match_end";
+  // A ranked round of a game new to someone: the last stretch before its countdown is a rules break.
+  const rulesFor = view.rulesFor ?? [];
+  const rulesBreak = rulesFor.length > 0 && (phase === "versus" || phase === "round_end");
+  const upcoming = view.games[view.round - 1];
+  const myRules = rulesBreak && inRulesBreak(start - now) && rulesFor.includes(me.id) && rulesClosed !== view.round && !!upcoming;
+  const rivalReading = rulesBreak && rulesFor.some((p) => p !== me.id) ? duelCopy.rivalReading(them.nickname) : null;
   const pausedFor = view.pausedAt ? now - view.pausedAt : 0;
 
   let body: React.ReactNode;
@@ -388,8 +397,20 @@ function DuelMatch({ id }: { id: string }) {
         theyWantRematch={!!themP?.rematch && !me.rematch}
       />
     );
+  else if (myRules)
+    body = (
+      <RulesCard
+        game={upcoming}
+        rule={GAME_BY_ID[upcoming]?.rule ?? ""}
+        body={duelCopy.rulesMatchBody}
+        auto={duelCopy.rulesMatchAuto}
+        ready={duelCopy.rulesMatchReady}
+        progress={1 - (start - TIMING.countdownMs - now) / TIMING.rulesMs}
+        onReady={() => setRulesClosed(view.round)}
+      />
+    );
   else if (phase === "versus" || (phase === "countdown" && view.round === 1))
-    body = <Versus me={me} them={them} msToStart={start - now} round={view.round} />;
+    body = <Versus me={me} them={them} msToStart={start - now} round={view.round} note={rivalReading} />;
   else if (phase === "round_end") {
     const prev = view.round - 1;
     const mine = view.rounds.find((r) => r.round === prev && r.playerId === me.id);
@@ -407,7 +428,8 @@ function DuelMatch({ id }: { id: string }) {
         rounds={rounds}
         oppColor={them.color}
         msToNext={start - TIMING.countdownMs - now}
-        totalMs={roundResultMs}
+        totalMs={roundResultMs + (rulesBreak ? TIMING.rulesMs : 0)}
+        note={rivalReading}
         onEmote={sendEmote}
         emote={theirEmote ?? myEmote}
       />
@@ -536,7 +558,7 @@ function CountdownOverlay({ ms, round }: { ms: number; round: number }) {
 }
 
 /** SPZ-12: a ranked game the player has never cleared gets its rule first; search starts by itself after 20 s. */
-function RulesCard({ game, rule, onReady, onBack }: { game: string; rule: string; onReady: () => void; onBack: () => void }) {
+function QueueRulesCard({ game, rule, onReady, onBack }: { game: string; rule: string; onReady: () => void; onBack: () => void }) {
   const [left, setLeft] = useState(20_000);
   useEffect(() => {
     const t0 = Date.now();
@@ -547,26 +569,59 @@ function RulesCard({ game, rule, onReady, onBack }: { game: string; rule: string
     if (left === 0) onReady();
   }, [left]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
-    <div className="flex flex-1 flex-col gap-4 px-4 pt-[max(56px,env(safe-area-inset-top))] pb-[max(28px,env(safe-area-inset-bottom))]">
+    <RulesCard
+      game={game}
+      rule={rule}
+      body={duelCopy.rulesBody}
+      auto={duelCopy.rulesAuto}
+      ready={duelCopy.rulesReady}
+      progress={1 - left / 20_000}
+      onReady={onReady}
+      onBack={onBack}
+    />
+  );
+}
+
+/**
+ * The rules card for a game that is new to the player: before a ranked Quick Match search, and before a ranked
+ * round of a game they have never cleared (the round waits for it). `progress` (0 to 1) fills towards the moment
+ * it moves on by itself.
+ */
+function RulesCard(p: {
+  game: string;
+  rule: string;
+  body: string;
+  auto: string;
+  ready: string;
+  progress: number;
+  onReady: () => void;
+  onBack?: () => void;
+}) {
+  const progress = Math.max(0, Math.min(1, p.progress));
+  return (
+    <div
+      className="flex flex-1 flex-col gap-4 px-4 pt-[max(56px,env(safe-area-inset-top))] pb-[max(28px,env(safe-area-inset-bottom))]"
+      data-screen-label="Rules card"
+    >
       <div className="flex items-center gap-3">
-        <TopButton icon="arrow-left" label="Back" onClick={onBack} />
-        <h1 className="font-display min-w-0 text-[22px] leading-tight font-black">{duelCopy.rulesTitle(gameName(game))}</h1>
+        {p.onBack && <TopButton icon="arrow-left" label="Back" onClick={p.onBack} />}
+        <h1 className="font-display min-w-0 text-[22px] leading-tight font-black">{duelCopy.rulesTitle(gameName(p.game))}</h1>
       </div>
-      <p className="text-muted text-[15px]">{duelCopy.rulesBody}</p>
-      <div className="bg-surface rounded-[20px] p-4 text-[18px] leading-[1.45] font-semibold">{rule}</div>
+      <p className="text-muted text-[15px]">{p.body}</p>
+      <div className="bg-surface rounded-[20px] p-4 text-[18px] leading-[1.45] font-semibold">{p.rule}</div>
       <div
         className="bg-line h-2 overflow-hidden rounded-full"
         role="progressbar"
-        aria-label={duelCopy.rulesAuto}
+        aria-label={p.auto}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-valuenow={Math.round(100 * (1 - left / 20_000))}
+        aria-valuenow={Math.round(100 * progress)}
       >
-        <div className="bg-accent h-full origin-left rounded-full" style={{ transform: `scaleX(${1 - left / 20_000})` }} />
+        <div className="bg-accent h-full origin-left rounded-full" style={{ transform: `scaleX(${progress})` }} />
       </div>
       <div className="mt-auto">
-        <Cta className="w-full" onClick={onReady}>
-          {duelCopy.rulesReady}
+        <Cta className="w-full" onClick={p.onReady}>
+          {p.ready}
         </Cta>
       </div>
     </div>

@@ -66,6 +66,22 @@
   --pos-1: #ffc93c;
   --pos-2: #d7dae8;
   --pos-3: #e09a5c;
+  /* Ink on bright fills that look the same in both themes: podium places, world-colour game tiles */
+  --ink-on-bright: #0e0f1a;
+  /* Party: rivals' progress bars (same in both themes) and the Open seat label (redefined for light) */
+  --rival-bar: #5a5e78;
+  --text-faint: #5a5e78;
+  /* Party QR code: always dark modules on white, so any camera reads it in either theme */
+  --qr-dark: #0e0f1a;
+  --qr-light: #ffffff;
+  /* Party podium confetti */
+  --confetti-1: #b8f23a;
+  --confetti-2: #ffc93c;
+  --confetti-3: #ff6b6b;
+  --confetti-4: #2fd3e0;
+  --confetti-5: #8b7cff;
+  --confetti-6: #ff8a3d;
+  --confetti-7: #f4f5fb;
   --tier-bronze: #c08a4a;
   --tier-silver: #c9ccdd;
   --tier-gold: #ffc93c;
@@ -170,6 +186,7 @@
   --success-tint: #e7f2d8;
   --danger-tint: #fbe6e6;
   --warn-tint: #fbf1da;
+  --text-faint: #8a8ea8;
   /* Sign in with Google button (Google's light theme) */
   --google-bg: #ffffff;
   --google-line: #747775;

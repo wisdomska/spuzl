@@ -10,6 +10,8 @@ export const TIMING = {
   beatMs: 800,
   /** M2 round end card before the next countdown; the live value is the admin setting duel.roundResultMs */
   roundEndMs: 2000,
+  /** a ranked round of a game one of the players has never cleared: the rules card's time before the countdown */
+  rulesMs: 12_000,
   /** tie window: finishes in the same tenth of a second */
   tieMs: 100,
   /** the server waits this long after the first finish before deciding, so near ties are seen */

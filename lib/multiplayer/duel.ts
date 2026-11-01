@@ -64,6 +64,39 @@ export function nextRoundStart(now: number, roundEndMs: number = TIMING.roundEnd
   return now + roundEndMs + TIMING.countdownMs;
 }
 
+/**
+ * Ranked Quick Match games (SPZ-12): a random mix only uses games both players know (cleared or learned), or failing
+ * that either of them, so nobody meets a game for the first time with rating on the line when it can be
+ * helped. When it can't (two brand-new players), that round starts with a rules break.
+ */
+export function rankedPool(known: Map<string, Set<string>>): string[] | undefined {
+  const sets = [...known.values()];
+  const both = [...(sets[0] ?? [])].filter((g) => sets.every((s) => s.has(g)));
+  if (both.length) return both;
+  const either = [...new Set(sets.flatMap((s) => [...s]))];
+  return either.length ? either : undefined;
+}
+
+/**
+ * The players for whom a round's game is new: never cleared or learned by them. A ranked round of a game
+ * that is new to anyone starts after a rules break (`rulesBreakMs`), the same for both players.
+ */
+export function newToGame(game: string | null | undefined, players: readonly string[], known: Map<string, Set<string>>): string[] {
+  if (!game) return [];
+  return players.filter((p) => !known.get(p)?.has(game));
+}
+
+export const rulesBreakMs = (newTo: readonly string[]): number => (newTo.length ? TIMING.rulesMs : 0);
+
+/**
+ * Before a round with a rules break: the round's rules card takes the last `rulesMs` before the countdown,
+ * after the versus intro or the round end card. `msToStart` is the time to the round's start.
+ */
+export function inRulesBreak(msToStart: number): boolean {
+  const toCountdown = msToStart - TIMING.countdownMs;
+  return toCountdown > 0 && toCountdown <= TIMING.rulesMs;
+}
+
 export type RoundSide = "me" | "them" | "draw";
 
 /**

@@ -17,6 +17,11 @@ export const duelCopy = {
   rulesBody: "Ranked duels count. Take a moment with the rule before you race.",
   rulesReady: "I'm ready, find a rival",
   rulesAuto: "Search starts on its own",
+  // A ranked round of a game new to someone starts with a rules break (same card, inside the match).
+  rulesMatchBody: "New game this round. Read the rule; the countdown starts on its own.",
+  rulesMatchAuto: "Countdown starts on its own",
+  rulesMatchReady: "Got it",
+  rivalReading: (name: string) => `${name} is reading the rule for this game`,
   leaveTitleBot: "Leave the practice?",
   leaveBodyBot: "It's only practice. Nothing is lost.",
   leaveConfirmBot: "Leave",

@@ -27,7 +27,10 @@ export function ShareCode({ code, url, text, count }: { code: string; url: strin
   const showQr = async () => {
     if (qr) return setQr(null);
     const QR = (await import("qrcode")).default;
-    setQr(await QR.toDataURL(full, { margin: 1, width: 240, color: { dark: "#0E0F1A", light: "#FFFFFF" } }));
+    // The QR colours are tokens; the canvas needs their resolved values.
+    const css = getComputedStyle(document.documentElement);
+    const color = { dark: css.getPropertyValue("--qr-dark").trim(), light: css.getPropertyValue("--qr-light").trim() };
+    setQr(await QR.toDataURL(full, { margin: 1, width: 240, color }));
   };
   const copy = async () => {
     try {
@@ -165,7 +168,7 @@ export function GamePicker({ value, onChange }: { value: string | null; onChange
               style={tile(on)}
             >
               <span
-                className="flex size-10 items-center justify-center rounded-[12px] text-[#0E0F1A]"
+                className="flex size-10 items-center justify-center rounded-[12px] text-[var(--ink-on-bright)]"
                 style={{ background: WORLD_BY_ID[g.world].color }}
               >
                 <Icon name={g.icon} size={20} />
@@ -441,7 +444,7 @@ export function Lobby({
                 <Avatar name={p.nickname} color={p.color} size={44} radius={14} dim={present.size > 0 && !present.has(p.id)} />
                 <span className="max-w-full truncate px-1 text-[14px] font-semibold">{p.id === view.me ? "You" : p.nickname}</span>
                 {p.ready && (
-                  <span className="bg-accent absolute top-1.5 right-1.5 flex size-[22px] items-center justify-center rounded-[8px] text-[#0E0F1A]">
+                  <span className="bg-accent absolute top-1.5 right-1.5 flex size-[22px] items-center justify-center rounded-[8px] text-[var(--on-accent)]">
                     <Icon name="check" size={13} />
                   </span>
                 )}
@@ -454,7 +457,7 @@ export function Lobby({
                 className="flex h-[104px] flex-col items-center justify-center gap-1.5 rounded-[18px] shadow-[inset_0_0_0_2px_var(--line)]"
               >
                 <span className="size-11" />
-                <span className="text-[14px] font-semibold text-[#5A5E78] [[data-theme=light]_&]:text-[#8A8EA8]">Open</span>
+                <span className="text-[14px] font-semibold text-[var(--text-faint)]">Open</span>
               </li>
             ),
           )}
@@ -589,7 +592,7 @@ export function RaceRail({
       <ol className="relative" style={{ height: n * ROW }} aria-label="Race standings">
         {rows.map((r, i) => {
           const me = r.id === view.me;
-          const [pbg, pfg] = i < 3 ? [PODIUM[i], "#0E0F1A"] : ["var(--surface-raised)", "var(--text-muted)"];
+          const [pbg, pfg] = i < 3 ? [PODIUM[i], "var(--ink-on-bright)"] : ["var(--surface-raised)", "var(--text-muted)"];
           return (
             <motion.li
               key={r.id}
@@ -616,7 +619,7 @@ export function RaceRail({
               <div className="bg-line relative h-2 flex-1 overflow-hidden rounded-[4px]">
                 <motion.div
                   className="absolute inset-0 origin-left rounded-[4px]"
-                  style={{ background: me ? "var(--accent)" : "#5A5E78" }}
+                  style={{ background: me ? "var(--accent)" : "var(--rival-bar)" }}
                   initial={false}
                   animate={{ transform: `scaleX(${r.progress})` }}
                   transition={{ duration: reduce ? 0 : 0.5, ease: EASE_IN_OUT }}
@@ -664,7 +667,7 @@ export function Podium({
     [standing[2], 2],
   ];
   const confetti = useMemo(() => {
-    const cs = ["#B8F23A", "#FFC93C", "#FF6B6B", "#2FD3E0", "#8B7CFF", "#FF8A3D", "#F4F5FB"];
+    const cs = [1, 2, 3, 4, 5, 6, 7].map((k) => `var(--confetti-${k})`);
     return Array.from({ length: lowData ? 12 : 24 }, (_, i) => ({
       x: (i * 37) % 380,
       c: cs[i % cs.length],
@@ -715,8 +718,8 @@ export function Podium({
                 className="flex w-full flex-col items-center gap-1 rounded-t-[18px] pt-3 shadow-[inset_0_-8px_0_rgba(0,0,0,.2)]"
                 style={{ height: [150, 110, 80][rank], background: PODIUM[rank] }}
               >
-                <span className="font-display text-[34px] font-black text-[#0E0F1A]">{rank + 1}</span>
-                <span className="num text-[14px] font-semibold text-[#0E0F1A]">{formatNumber(p.points)}</span>
+                <span className="font-display text-[34px] font-black text-[var(--ink-on-bright)]">{rank + 1}</span>
+                <span className="num text-[14px] font-semibold text-[var(--ink-on-bright)]">{formatNumber(p.points)}</span>
               </div>
             </motion.div>
           ) : (
@@ -863,7 +866,7 @@ export function TvMode({
                 className="font-display flex size-14 items-center justify-center rounded-[16px] text-[24px] font-black"
                 style={{
                   background: i < 3 && phase !== "lobby" ? PODIUM[i] : "var(--surface-raised)",
-                  color: i < 3 && phase !== "lobby" ? "#0E0F1A" : "var(--text-muted)",
+                  color: i < 3 && phase !== "lobby" ? "var(--ink-on-bright)" : "var(--text-muted)",
                 }}
               >
                 {i + 1}
@@ -876,7 +879,7 @@ export function TvMode({
                 <div className="bg-line relative h-3.5 overflow-hidden rounded-[7px]">
                   <motion.div
                     className="absolute inset-0 origin-left rounded-[7px]"
-                    style={{ background: i === 0 ? "var(--accent)" : "#5A5E78" }}
+                    style={{ background: i === 0 ? "var(--accent)" : "var(--rival-bar)" }}
                     initial={false}
                     animate={{ transform: `scaleX(${r.p})` }}
                     transition={{ duration: reduce ? 0 : 0.5, ease: EASE_IN_OUT }}

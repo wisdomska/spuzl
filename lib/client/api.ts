@@ -75,6 +75,8 @@ export interface Me {
   /** equipped Shop board theme (backdrop and frame around boards) */
   boardTheme?: string | null;
   played?: string[];
+  /** games learned in a guided first play, on any device (the practice round is skipped for these) */
+  learned?: string[];
   /** lifetime clears, sent for guests only (the "Save your streak" prompt counts from this) */
   clears?: number;
   today: { date: string; cleared: Record<string, number>; featured: number; featuredCleared: number; counted: number };

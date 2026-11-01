@@ -5,12 +5,13 @@ import { ApiError } from "@/lib/api/server";
 import { serverBroadcast } from "@/lib/realtime/server";
 import { createRng } from "@/lib/rng";
 import { DUEL_ROUNDS, PARTY_GAMES, PARTY_MIN, TIMING } from "../constants";
-import { botTimes, firstRoundStart } from "../duel";
+import { botTimes, firstRoundStart, newToGame, rankedPool, rulesBreakMs } from "../duel";
 import { isRaceGame, pickGames } from "../games";
 import { pickOpponent, type QueueEntry } from "../matchmaking";
 import { CODE_ALPHABET, makeRoomCode, roomExpired } from "../roomCode";
 import { loadMatch, matchTopic, member, touch, viewOf } from "./match";
 import { readRating } from "./rewards";
+import { knownGames } from "./known";
 import { GAME_BY_ID } from "@/lib/catalog";
 
 const iso = (n: number) => new Date(n).toISOString();
@@ -39,31 +40,11 @@ async function addPlayer(admin: SupabaseClient, matchId: string, playerId: strin
 
 /* ---------------- Duel: matchmaking ---------------- */
 
-/** Race games each player has cleared at least once (any mode). */
-async function clearedGames(admin: SupabaseClient, playerIds: string[]): Promise<Map<string, Set<string>>> {
-  const out = new Map(playerIds.map((p) => [p, new Set<string>()]));
-  const { data } = await admin.from("attempts").select("player_id, game_id").in("player_id", playerIds).eq("status", "cleared").limit(2000);
-  for (const r of data ?? []) if (isRaceGame(r.game_id)) out.get(r.player_id)?.add(r.game_id);
-  return out;
-}
-
-/**
- * Ranked Quick Match games (SPZ-12): a random mix only uses games both players have cleared (or, failing
- * that, either of them), so nobody meets a game for the first time with rating on the line.
- */
-export async function rankedPool(admin: SupabaseClient, playerIds: string[]): Promise<string[] | undefined> {
-  const sets = [...(await clearedGames(admin, playerIds)).values()];
-  const both = [...(sets[0] ?? [])].filter((g) => sets.every((s) => s.has(g)));
-  if (both.length) return both;
-  const either = [...new Set(sets.flatMap((s) => [...s]))];
-  return either.length ? either : undefined;
-}
-
 export async function enqueue(admin: SupabaseClient, player: { id: string; age_band: string }, game: string | null, rulesSeen = false) {
   if (player.age_band === "13-15") throw new ApiError(403, "age_restricted", "Quick Match opens at 16. Challenge a friend instead.");
   if (game && !isRaceGame(game)) throw new ApiError(400, "game_not_duelable");
-  // A ranked game the player has never cleared: read the rules first (the client shows a 20 s rules card).
-  if (game && !rulesSeen && !(await clearedGames(admin, [player.id])).get(player.id)?.has(game))
+  // A ranked game the player has never cleared or learned: read the rules first (the client shows a 20 s rules card).
+  if (game && !rulesSeen && !(await knownGames(admin, [player.id], [game])).get(player.id)?.has(game))
     throw new ApiError(409, "needs_rules", GAME_BY_ID[game]?.rule ?? "");
   const [{ rating }, { data: me }] = await Promise.all([
     readRating(admin, player.id, "duel"),
@@ -130,7 +111,11 @@ async function createDuel(
 ): Promise<string | null> {
   const id = randomUUID();
   const rng = createRng(`duel:${id}`);
-  const games = pickGames(rng, game, DUEL_ROUNDS, !game && o.rated ? await rankedPool(admin, players) : undefined);
+  // Ranked games between people: what each player knows picks the mix and the rules breaks.
+  const known = o.rated && !o.bot ? await knownGames(admin, players) : null;
+  const games = pickGames(rng, game, DUEL_ROUNDS, !game && known ? rankedPool(known) : undefined);
+  // A first round that is new to either player starts after a rules break (both wait the same).
+  const rulesMs = known ? rulesBreakMs(newToGame(games[0], players, known)) : 0;
   const now = Date.now();
   const { error } = await admin.from("matches").insert({
     id,
@@ -144,7 +129,7 @@ async function createDuel(
     is_bot: !!o.bot,
     best_of: DUEL_ROUNDS,
     round: 1,
-    round_started_at: iso(firstRoundStart(now)),
+    round_started_at: iso(firstRoundStart(now) + rulesMs),
     bot_ms: o.bot ? botTimes(70_000, [rng.next(), rng.next(), rng.next()]) : [],
   });
   if (error) throw error;
@@ -160,7 +145,7 @@ async function createDuel(
   if (o.claim)
     await admin
       .from("matches")
-      .update({ status: "playing", round_started_at: iso(firstRoundStart(Date.now())) })
+      .update({ status: "playing", round_started_at: iso(firstRoundStart(Date.now()) + rulesMs) })
       .eq("id", id);
   return id;
 }

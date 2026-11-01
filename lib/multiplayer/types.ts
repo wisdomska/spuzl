@@ -70,6 +70,8 @@ export interface MatchView {
   bot: { name: string; roundsWon: number; finishMs: number | null; times: number[] } | null;
   /** the current round's puzzle, only once its countdown has begun */
   puzzle: { round: number; game: string; data: unknown } | null;
+  /** before a ranked round's countdown: the players its game is new to (a rules break), else null */
+  rulesFor?: string[] | null;
   /** your saved board for this round (reconnect) */
   myState: unknown;
   /** rewards for you once the match is over */

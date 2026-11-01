@@ -22,15 +22,14 @@ const gapFor = (size: number) => (size > 6 ? 1 : 2);
 /**
  * Cell size: Sixer keeps 44 px or more everywhere. Nine keeps 40 px from 375 px wide up (using the
  * shell's board padding when it has to) and only goes smaller on narrower phones (34 px at 320). On a
- * short screen the cells also step down (to 30 px on Nine) until the number pad (`pad`) sits above the
- * fold: 35 px on a 375 × 667 phone.
+ * short screen the cells also step down (to 28 px on Nine) until the whole shell, down to its tool bar, sits
+ * above the fold (measured from the number pad, `pad`).
  */
 function useSudokuCell(size: number, boxW: number, pad: RefObject<HTMLElement | null>) {
   const vw = useViewportWidth();
   const overhead = gapTotal(size, boxW, gapFor(size), LINE) + PAD * 2;
   const wide = fitCell(vw, size, overhead, size > 6 ? 40 : 44, 56);
-  // The pad's bottom plus the board slot's own padding has to fit.
-  return useFitHeight(wide, size > 6 ? 30 : 44, size, pad, 18);
+  return useFitHeight(wide, size > 6 ? 28 : 44, size, pad, "shell");
 }
 
 /** Killer Sums cage outline: dotted, inset this many px inside the cells, in a muted ink. */
@@ -303,8 +302,11 @@ export function SudokuBoard({
   const width = n * cell + gapTotal(n, puzzle.boxW, gap, LINE) + PAD * 2;
   const cols = trackList(n, puzzle.boxW, cell, gap, LINE);
   const rows = trackList(n, puzzle.boxH, cell, gap, LINE);
-  // Sixer: one row of 6. Nine: a 3 × 3 pad on phones, one row of 9 from 640 px up.
-  const padGrid = n <= 6 ? "" : "grid-cols-3 sm:grid-cols-9";
+  // Sixer: one row of 6. Nine: a 3 × 3 pad on phones, one row of 9 from 640 px up. On a short phone the pad
+  // takes two rows (5 then 4, centred on a 10-column grid) so the shell's tool bar fits; keys stay 44 px tall
+  // and 50 px or wider.
+  const padGrid = n <= 6 ? "" : "grid-cols-3 sm:grid-cols-9 max-sm:short:grid-cols-10";
+  const padKey = (d: number) => (n <= 6 ? "" : `max-sm:short:col-span-2 ${d === 6 ? "max-sm:short:col-start-2" : ""}`);
   // Killer Sums cages: outline pieces and the total in each cage's first cell.
   const labelFont = cageFont(cell);
   const xs = cellOffsets(n, puzzle.boxW, cell, gap, LINE, PAD);
@@ -314,7 +316,7 @@ export function SudokuBoard({
     : [];
 
   return (
-    <div className={`flex flex-col items-center ${n > 6 ? "gap-2" : "gap-3"} ${done ? "board-pulse" : ""}`}>
+    <div className={`flex flex-col items-center ${n > 6 ? "short:gap-1.5 gap-2" : "short:gap-2 gap-3"} ${done ? "board-pulse" : ""}`}>
       <div
         role="grid"
         aria-label={t.grid(title, n)}
@@ -466,7 +468,7 @@ export function SudokuBoard({
       {/* Number pad */}
       <div
         ref={padRef}
-        className={`grid gap-2 ${padGrid}`}
+        className={`short:gap-1.5 grid gap-2 ${padGrid}`}
         style={{ width, gridTemplateColumns: padGrid ? undefined : `repeat(${n}, minmax(0, 1fr))` }}
         role="group"
         aria-label={notesMode ? t.padNotes : t.pad}
@@ -482,7 +484,7 @@ export function SudokuBoard({
               type="button"
               disabled={locked || full}
               onClick={() => enter(d)}
-              className={`toy num relative flex ${n > 6 ? "h-11" : "h-12"} items-center justify-center rounded-[14px] text-[22px] font-semibold ${notesMode ? "text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]" : ""}`}
+              className={`toy num relative flex ${padKey(d)} ${n > 6 ? "h-11" : "h-12"} items-center justify-center rounded-[14px] text-[22px] font-semibold ${notesMode ? "text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]" : ""}`}
               style={{
                 background: "var(--surface-raised)",
                 ["--btn-depth" as string]: "var(--depth)",

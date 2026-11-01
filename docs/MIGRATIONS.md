@@ -65,3 +65,10 @@ fails soft (each clear counts as an average one), and lab games stay behind thei
 
 pgTAP: `096_free_seed_private`. No app code reads `attempts` with a player's token, so the order with the code
 deploy doesn't matter.
+
+| Migration                          | What it adds                                                                                                                      | Rollback                    |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| `20261111100001_learned_games.sql` | `learned_games` (forced RLS, players read their own rows, the API writes): games learned in a guided first play, kept per account | Drop the table (see header) |
+
+pgTAP: `100_learned_games`. If the code ships first, reads of the missing table fail soft (only this device's
+learned games count) and saving a learned game fails quietly (the device keeps it and syncs it later).

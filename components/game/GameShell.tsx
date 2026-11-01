@@ -271,9 +271,9 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   } as CSSProperties;
 
   return (
-    <div className="bg-bg relative mx-auto flex min-h-dvh w-full max-w-[560px] flex-col" style={style} data-world={meta.world}>
+    <div className="bg-bg relative mx-auto flex min-h-dvh w-full max-w-[560px] flex-col" style={style} data-world={meta.world} data-shell>
       {/* 1 Top bar */}
-      <header className="safe-top relative z-10 flex items-center gap-3 px-3 pb-2 lg:pt-6">
+      <header className="safe-top short:pb-1 relative z-10 flex items-center gap-3 px-3 pb-2 lg:pt-6">
         <IconButton icon="arrow-left" label="Back" onClick={onExit} />
         <div className="flex min-w-0 flex-1 justify-center">
           {!relaxed && (
@@ -307,18 +307,19 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
       {/* 2 Strip */}
       {strip && !relaxed && <div className="relative z-20 px-3">{strip}</div>}
 
-      {/* 3 Title + rule */}
-      <div className="flex items-baseline justify-between gap-3 px-5 pt-1.5 pb-3.5">
-        <h1 className="font-display text-[24px] font-black text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]">
+      {/* 3 Title + rule: smaller and tighter on short screens; on very short ones the title row is for screen
+          readers only, so the board and tool bar keep the room. */}
+      <div className="short:pt-0 short:pb-1 tiny:sr-only flex items-baseline justify-between gap-3 px-5 pt-1.5 pb-3.5">
+        <h1 className="font-display short:text-[20px] short:leading-7 text-[24px] font-black text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]">
           {meta.name}
         </h1>
         <span className="num text-muted text-[14px] font-medium whitespace-nowrap">{label}</span>
       </div>
-      <p className="text-muted px-[18px] text-[15px] leading-[1.4]">{meta.rule}</p>
+      <p className="text-muted short:text-[13px] short:leading-[18px] px-[18px] text-[15px] leading-[1.4]">{meta.rule}</p>
 
       {/* 4 Board slot */}
       <main
-        className={`relative z-0 flex justify-center p-[18px] ${theme ? "rounded-[26px]" : ""} ${celebrate || solved ? "shell-solved" : ""}`}
+        className={`short:py-2 tiny:pt-1.5 relative z-0 flex justify-center p-[18px] ${theme ? "rounded-[26px]" : ""} ${celebrate || solved ? "shell-solved" : ""}`}
         style={theme ? { background: theme.bg, boxShadow: `inset 0 0 0 2px ${theme.mark}` } : undefined}
         data-board-theme={theme ? boardTheme! : undefined}
         aria-label={`${meta.name} board`}
@@ -338,7 +339,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
 
       {/* 5 Feedback line: never overlays the board */}
       {/* One status at a time: the old line leaves (120 ms) before the new one enters. */}
-      <div className="relative mx-4 min-h-12">
+      <div className="short:min-h-10 relative mx-4 min-h-12" data-shell-tail>
         <AnimatePresence mode="wait" initial={false}>
           {feedback.text && <FeedbackLine key={feedback.n} {...feedback} />}
         </AnimatePresence>
@@ -346,11 +347,14 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
 
       {/* 6 Controls (or the end bar after a clear) */}
       {endBar ? (
-        <div className="safe-bottom mt-auto px-4 pt-3.5 pb-7">{endBar}</div>
+        <div className="safe-bottom short:pt-2 mt-auto px-4 pt-3.5 pb-7" data-shell-tail>
+          {endBar}
+        </div>
       ) : (
         shownControls.length > 0 && (
           <div
-            className="safe-bottom mt-auto grid gap-2.5 px-4 pt-3.5 pb-7"
+            className="safe-bottom short:pt-2 mt-auto grid gap-2.5 px-4 pt-3.5 pb-7"
+            data-shell-tail
             style={{ gridTemplateColumns: `repeat(${shownControls.length}, minmax(0, 1fr))` }}
           >
             {shownControls.map((c) => (
@@ -414,7 +418,7 @@ export function FeedbackLine({ text, tone, icon }: Omit<FeedbackState, "n">) {
       animate={{ opacity: 1, transform: "translateY(0px) scale(1)" }}
       exit={{ opacity: 0, transition: { duration: 0.12 } }}
       transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
-      className="flex min-h-12 items-center gap-2.5 rounded-[16px] px-3.5 py-3"
+      className="short:min-h-10 short:py-2 flex min-h-12 items-center gap-2.5 rounded-[16px] px-3.5 py-3"
       style={{ background: look.bg, boxShadow: look.ring }}
     >
       <Icon name={look.i} size={22} style={{ color: look.ic, flex: "none" }} />
@@ -438,7 +442,7 @@ function ToolButton({ c }: { c: ControlSpec }) {
       onClick={c.onPress}
       disabled={c.disabled}
       aria-pressed={c.active ?? undefined}
-      className="toy flex h-16 flex-col items-center justify-center gap-[3px] rounded-[18px]"
+      className="toy short:h-12 short:gap-0.5 flex h-16 flex-col items-center justify-center gap-[3px] rounded-[18px]"
       style={
         c.disabled
           ? undefined

@@ -56,14 +56,33 @@ export function fitStep(cur: number, ideal: number, min: number, unit: number, o
 }
 
 /**
+ * Where the game shell's content ends: the bottom of its last zone marked `data-shell-tail` (the feedback line,
+ * then the tool bar or end bar), less the auto margin that pins the tool bar to the bottom of a roomy screen.
+ * Null outside a shell.
+ */
+export function shellContentBottom(el: HTMLElement): number | null {
+  const tails = el.closest("[data-shell]")?.querySelectorAll<HTMLElement>("[data-shell-tail]");
+  const last = tails?.[tails.length - 1];
+  if (!last) return null;
+  return last.getBoundingClientRect().bottom - (parseFloat(getComputedStyle(last).marginTop) || 0);
+}
+
+/**
  * Fits a board to the viewport height as well as its width. `ideal` is the size the width allows (a cell or a
  * canvas height); while the page is taller than the viewport the size steps down (to `min` at most), so the
  * board, its own controls and the shell's tool bar fit without a vertical scroll. `unit` is how many px of
  * height one step adds (the row count for a cell size, 1 for a canvas). With `target`, only that element's
- * bottom (plus `margin`) has to fit, and the size grows back when there is room. A viewport resize starts
- * again from `ideal`.
+ * bottom (plus `margin`) has to fit, and the size grows back when there is room. With `margin` "shell" the
+ * whole game shell has to fit, down to its tool bar (`shellContentBottom`), still measured from `target`. A
+ * viewport resize starts again from `ideal`.
  */
-export function useFitHeight(ideal: number, min: number, unit: number, target?: RefObject<HTMLElement | null>, margin = 0): number {
+export function useFitHeight(
+  ideal: number,
+  min: number,
+  unit: number,
+  target?: RefObject<HTMLElement | null>,
+  margin: number | "shell" = 0,
+): number {
   const [fit, setFit] = useState({ ideal, size: ideal });
   const size = fit.ideal === ideal ? fit.size : ideal;
   useLayoutEffect(() => {
@@ -73,7 +92,9 @@ export function useFitHeight(ideal: number, min: number, unit: number, target?: 
       if (target) {
         const el = target.current;
         if (!el) return;
-        over = el.getBoundingClientRect().bottom + window.scrollY + margin - vh;
+        const shellBottom = margin === "shell" ? shellContentBottom(el) : null;
+        const bottom = shellBottom ?? el.getBoundingClientRect().bottom + (margin === "shell" ? 0 : margin);
+        over = bottom + window.scrollY - vh;
       } else over = document.documentElement.scrollHeight - vh;
       const next = fitStep(size, ideal, min, unit, over, !!target);
       if (next !== size) setFit({ ideal, size: next });
@@ -82,6 +103,12 @@ export function useFitHeight(ideal: number, min: number, unit: number, target?: 
     measure();
     const ro = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
     ro?.observe(document.body);
+    // The feedback line and tool bar can change height while the page fits, which doesn't resize the body.
+    if (margin === "shell")
+      target?.current
+        ?.closest("[data-shell]")
+        ?.querySelectorAll("[data-shell-tail]")
+        .forEach((t) => ro?.observe(t));
     window.addEventListener("resize", restart);
     return () => {
       ro?.disconnect();

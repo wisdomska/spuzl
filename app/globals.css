@@ -163,6 +163,11 @@ select {
   animation: none !important;
 }
 
+/* Short screens (a 375 × 667 phone and smaller): the game shell tightens its spacing so the tool bar fits. */
+@custom-variant short (@media (max-height: 740px));
+/* Very short screens (a 320 × 568 phone): the shell's title row is left to screen readers. */
+@custom-variant tiny (@media (max-height: 600px));
+
 /* ---------- Toy depth (Components file) ---------- */
 @custom-variant hover-fine {
   @media (hover: hover) and (pointer: fine) {

@@ -267,11 +267,14 @@ export function Versus({
   them,
   msToStart,
   round,
+  note,
 }: {
   me: MatchPlayerView;
   them: { nickname: string; color: string; rating: number; country: string | null; city: string | null; bot?: boolean };
   msToStart: number;
   round: number;
+  /** a line under the round, e.g. the rival is reading a new game's rule */
+  note?: string | null;
 }) {
   const reduce = useReduce();
   useEffect(() => {
@@ -327,7 +330,14 @@ export function Versus({
           <span className="font-display text-muted flex h-[100px] items-center text-[40px] font-black">vs</span>
         )}
       </div>
-      <div className="text-muted absolute inset-x-0 top-[500px] text-center text-[15px] font-semibold">Round {round} of 3</div>
+      <div className="text-muted absolute inset-x-0 top-[500px] text-center text-[15px] font-semibold">
+        Round {round} of 3
+        {note && (
+          <p className="mt-1 px-6 font-medium" aria-live="polite">
+            {note}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
@@ -471,6 +481,7 @@ export function RoundEnd({
   totalMs,
   onEmote,
   emote,
+  note,
 }: {
   round: number;
   meWon: boolean;
@@ -483,6 +494,8 @@ export function RoundEnd({
   oppColor: string;
   msToNext: number;
   totalMs: number;
+  /** a line under the next-round label, e.g. the rival is reading a new game's rule */
+  note?: string | null;
   onEmote: (e: EmoteId) => void;
   emote: { e: EmoteId; n: number } | null;
 }) {
@@ -541,6 +554,11 @@ export function RoundEnd({
         </span>
         . {duelCopy.nextRoundLabel(decider)}
       </div>
+      {note && (
+        <p className="text-muted -mt-2 text-center text-[15px] font-medium" aria-live="polite">
+          {note}
+        </p>
+      )}
       <div
         className="bg-line h-2 w-full max-w-[280px] overflow-hidden rounded-full"
         role="progressbar"
