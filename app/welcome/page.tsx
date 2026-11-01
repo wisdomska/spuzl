@@ -75,8 +75,10 @@ export default function Welcome() {
   const [age, setAge] = useState<Age | null>(null);
   const [color, setColor] = useState(SKINS[1].c);
   // Back from Google (or an email link) without a session: say so on the first screen.
-  const [authFailed] = useState(
-    () => typeof window !== "undefined" && new URLSearchParams(window.location.search).get("auth") === "failed",
+  const authFailed = useSyncExternalStore(
+    noSubscribe,
+    () => new URLSearchParams(window.location.search).get("auth") === "failed",
+    () => false,
   );
   const [nick, setNick] = useState("");
   const [ideas, setIdeas] = useState(() => IDEAS.slice(0, 3));
