@@ -7,6 +7,7 @@ import { age, todayIso } from "@/lib/admin/dates";
 import { ROLES, ROLE_LABEL, type Role } from "@/lib/admin/roles";
 import { errorText, useAdminAction, useAdminQuery, type AdminPage } from "@/lib/client/admin";
 import { Pagination, usePager } from "./Pagination";
+import { useDebouncedFilter, useUrlFilters } from "./useUrlFilters";
 import { Btn, Empty, Field, Notice, PageTitle, Pill, RowsSkeleton, Tabs, inputCls } from "./ui";
 
 function Table({ head, children, min = 640 }: { head: string[]; children: ReactNode; min?: number }) {
@@ -125,6 +126,8 @@ export function SchoolsPage({ canWrite }: { canWrite: boolean }) {
 /* ---------------- Shop and events ---------------- */
 
 type Kind = "cosmetics" | "badges" | "quests";
+const SHOP_FILTERS = { kind: "cosmetics" } as const;
+const SHOP_ALLOWED = { kind: ["cosmetics", "badges", "quests"] };
 interface CatalogRow {
   id: string;
   name?: string;
@@ -143,7 +146,8 @@ interface CatalogRow {
 }
 
 export function ShopPage({ canWrite, canPrice }: { canWrite: boolean; canPrice: boolean }) {
-  const [kind, setKind] = useState<Kind>("cosmetics");
+  const [filters, setFilters] = useUrlFilters(SHOP_FILTERS, SHOP_ALLOWED);
+  const kind = filters.kind as Kind;
   const pager = usePager();
   const q = useAdminQuery<AdminPage<CatalogRow>>(["catalog", kind, pager.query], `/api/admin/catalog/${kind}?${pager.query}`, {
     keepPrevious: true,
@@ -174,7 +178,7 @@ export function ShopPage({ canWrite, canPrice }: { canWrite: boolean; canPrice: 
           <Tabs<Kind>
             label="Catalogue"
             value={kind}
-            onChange={(k) => (setKind(k), pager.reset())}
+            onChange={(k) => setFilters({ kind: k })}
             items={[
               { id: "cosmetics", label: "Cosmetics and prices" },
               { id: "badges", label: "Badges" },
@@ -383,12 +387,12 @@ interface AuditRow {
   created_at: string;
 }
 
+const AUDIT_FILTERS = { actor: "", action: "", target: "", from: "", to: "" } as const;
+
 export function AuditPage() {
-  const [actor, setActor] = useState("");
-  const [action, setAction] = useState("");
-  const [target, setTarget] = useState("");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const [{ actor, action, target, from, to }, setFilters] = useUrlFilters(AUDIT_FILTERS);
+  const [actionText, setActionText] = useDebouncedFilter(action, (v) => setFilters({ action: v }, { replace: true }));
+  const [targetText, setTargetText] = useDebouncedFilter(target, (v) => setFilters({ target: v }, { replace: true }));
   const pager = usePager();
   const qs = new URLSearchParams({
     ...(actor && { actor }),
@@ -410,7 +414,7 @@ export function AuditPage() {
       </PageTitle>
       <div className="flex flex-wrap items-end gap-2">
         <Field label="Who" htmlFor="a-actor">
-          <select id="a-actor" value={actor} onChange={(e) => (setActor(e.target.value), pager.reset())} className={`${inputCls} w-56`}>
+          <select id="a-actor" value={actor} onChange={(e) => setFilters({ actor: e.target.value })} className={`${inputCls} w-56`}>
             <option value="">Anyone</option>
             <option value="system">System (cron)</option>
             {q.data?.actors.map((a) => (
@@ -423,18 +427,18 @@ export function AuditPage() {
         <Field label="Action starts with" htmlFor="a-action">
           <input
             id="a-action"
-            value={action}
+            value={actionText}
             placeholder="daily."
-            onChange={(e) => (setAction(e.target.value.toLowerCase()), pager.reset())}
+            onChange={(e) => setActionText(e.target.value.toLowerCase())}
             className={`${inputCls} w-40`}
           />
         </Field>
         <Field label="Target contains" htmlFor="a-target">
           <input
             id="a-target"
-            value={target}
+            value={targetText}
             placeholder="crownfall"
-            onChange={(e) => (setTarget(e.target.value), pager.reset())}
+            onChange={(e) => setTargetText(e.target.value)}
             className={`${inputCls} w-40`}
           />
         </Field>
@@ -444,7 +448,7 @@ export function AuditPage() {
             type="date"
             max={todayIso()}
             value={from}
-            onChange={(e) => (setFrom(e.target.value), pager.reset())}
+            onChange={(e) => setFilters({ from: e.target.value }, { replace: true })}
             className={`${inputCls} w-40`}
           />
         </Field>
@@ -454,7 +458,7 @@ export function AuditPage() {
             type="date"
             max={todayIso()}
             value={to}
-            onChange={(e) => (setTo(e.target.value), pager.reset())}
+            onChange={(e) => setFilters({ to: e.target.value }, { replace: true })}
             className={`${inputCls} w-40`}
           />
         </Field>

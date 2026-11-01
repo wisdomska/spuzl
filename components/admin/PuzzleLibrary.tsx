@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { GAMES, GAME_BY_ID } from "@/lib/catalog";
 import { dayMonth } from "@/lib/admin/dates";
 import { errorText, useAdminQuery, type AdminPage } from "@/lib/client/admin";
 import { Pagination, usePager } from "./Pagination";
+import { useUrlFilters } from "./useUrlFilters";
 import { Empty, Notice, PageTitle, Pill, RowsSkeleton, Swatch, inputCls } from "./ui";
 
 interface Row {
@@ -21,6 +22,10 @@ interface Row {
   dailies: { date: string }[];
 }
 
+const STATUSES = ["in_review", "scheduled", "approved", "draft", "retired"];
+const FILTERS = { game: "", status: "" } as const;
+const ALLOWED = { game: GAMES.map((g) => g.id), status: STATUSES };
+
 const STATUS_TONE: Record<string, "ok" | "warn" | "neutral"> = {
   scheduled: "ok",
   approved: "ok",
@@ -31,9 +36,11 @@ const STATUS_TONE: Record<string, "ok" | "warn" | "neutral"> = {
 
 /** The puzzle library: every stored puzzle with its status and Daily dates. */
 export function PuzzleLibrary() {
-  const [game, setGame] = useState("");
-  const [status, setStatus] = useState("");
+  const [{ game, status }, setFilters] = useUrlFilters(FILTERS, ALLOWED);
   const pager = usePager();
+  // The detail page's Back link returns to this filtered page.
+  const here = useSearchParams().toString();
+  const detail = (id: string) => `/admin/puzzles/${id}${here ? `?${new URLSearchParams({ list: here })}` : ""}`;
   const qs = new URLSearchParams({ ...(game && { game }), ...(status && { status }) });
   const q = useAdminQuery<AdminPage<Row>>(
     ["puzzles", game, status, pager.query],
@@ -46,12 +53,7 @@ export function PuzzleLibrary() {
         title="Puzzles"
         aside={
           <>
-            <select
-              aria-label="Game"
-              value={game}
-              onChange={(e) => (setGame(e.target.value), pager.reset())}
-              className={`${inputCls} w-44`}
-            >
+            <select aria-label="Game" value={game} onChange={(e) => setFilters({ game: e.target.value })} className={`${inputCls} w-44`}>
               <option value="">All games</option>
               {GAMES.map((g) => (
                 <option key={g.id} value={g.id}>
@@ -62,11 +64,11 @@ export function PuzzleLibrary() {
             <select
               aria-label="Status"
               value={status}
-              onChange={(e) => (setStatus(e.target.value), pager.reset())}
+              onChange={(e) => setFilters({ status: e.target.value })}
               className={`${inputCls} w-40`}
             >
               <option value="">Any status</option>
-              {["in_review", "scheduled", "approved", "draft", "retired"].map((s) => (
+              {STATUSES.map((s) => (
                 <option key={s} value={s}>
                   {s.replace("_", " ")}
                 </option>
@@ -103,7 +105,7 @@ export function PuzzleLibrary() {
               {q.data.rows.map((r) => (
                 <tr key={r.id} className="border-line hover:bg-surface-raised/50 border-t">
                   <td className="px-3 py-2">
-                    <Link href={`/admin/puzzles/${r.id}`} className="text-text flex items-center gap-2 font-semibold hover:underline">
+                    <Link href={detail(r.id)} className="text-text flex items-center gap-2 font-semibold hover:underline">
                       <Swatch world={GAME_BY_ID[r.game_id]?.world ?? "logic"} />
                       {GAME_BY_ID[r.game_id]?.name ?? r.game_id}
                     </Link>

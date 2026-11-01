@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { age, clock } from "@/lib/admin/dates";
 import { errorText, useAdminAction, useAdminQuery, type AdminPage } from "@/lib/client/admin";
 import { Pagination, usePager } from "./Pagination";
+import { useUrlFilters } from "./useUrlFilters";
 import { Btn, Empty, Notice, PageTitle, Pill, RowsSkeleton, Tabs, type PillTone } from "./ui";
 
 type Tab = "reports" | "nicknames" | "flagged";
@@ -31,12 +32,17 @@ interface Player {
   flagged: number;
 }
 
+const TABS: Tab[] = ["reports", "nicknames", "flagged"];
+const FILTERS = { tab: "reports", status: "open" } as const;
+const ALLOWED = { tab: TABS, status: ["open", "actioned", "dismissed", "all"] };
+
 const STATUS_TONE: Record<string, PillTone> = { open: "danger", flagged: "danger", actioned: "ok", dismissed: "neutral" };
 
 /** Moderation queue (design: Admin moderation): reports, nickname reports and flagged scores, with a case panel. */
 export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
-  const [tab, setTab] = useState<Tab>("reports");
-  const [status, setStatus] = useState("open");
+  const [filters, setFilters] = useUrlFilters(FILTERS, ALLOWED);
+  const tab = filters.tab as Tab;
+  const status = filters.status;
   const [sel, setSel] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
   const pager = usePager();
@@ -56,7 +62,7 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
             <Tabs<Tab>
               label="Queue"
               value={tab}
-              onChange={(t) => (setTab(t), setSel(null), setDone(null), pager.reset())}
+              onChange={(t) => (setFilters({ tab: t }), setSel(null), setDone(null))}
               items={[
                 { id: "reports", label: "Reports" },
                 { id: "nicknames", label: "Nicknames" },
@@ -72,7 +78,7 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
             Showing
             <select
               value={status}
-              onChange={(e) => (setStatus(e.target.value), setSel(null), pager.reset())}
+              onChange={(e) => (setFilters({ status: e.target.value }), setSel(null))}
               style={{ fontSize: 13 }}
               className="bg-surface text-text h-9 rounded-[10px] px-2 font-semibold"
             >

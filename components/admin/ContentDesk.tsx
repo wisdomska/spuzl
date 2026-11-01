@@ -7,6 +7,7 @@ import { CONTENT_GAMES, SCHEDULABLE, TEMPLATES, validatePayload, type ContentGam
 import { addDays, age, dayMonth, todayIso } from "@/lib/admin/dates";
 import { errorText, useAdminAction, useAdminQuery, type AdminPage } from "@/lib/client/admin";
 import { Pagination, usePager, type Pager } from "./Pagination";
+import { useUrlFilters } from "./useUrlFilters";
 import { Btn, Empty, Field, Notice, PageTitle, Pill, RowsSkeleton, Swatch, Tabs, inputCls, textareaCls, type PillTone } from "./ui";
 
 interface Item {
@@ -39,9 +40,18 @@ function summary(p: unknown): string {
   return JSON.stringify(p).slice(0, 80);
 }
 
+const FILTERS = { tab: "items", status: "", game: "", show: "todo" } as const;
+const ALLOWED = {
+  tab: ["items", "files"],
+  status: ["draft", "in_review", "approved", "rejected", "scheduled"],
+  game: CONTENT_GAMES,
+  show: ["todo", "all"],
+};
+
 /** Content editor (FR-AD-03): drafts, two-person review, scheduling, and the owner's review of content.ts entries. */
 export function ContentDesk(props: { canWrite: boolean; canApprove: boolean; canSchedule: boolean; isOwner: boolean }) {
-  const [tab, setTab] = useState<"items" | "files">("items");
+  const [filters, setFilters] = useUrlFilters(FILTERS, ALLOWED);
+  const tab = filters.tab as "items" | "files";
   const pager = usePager();
   return (
     <div className="flex flex-col gap-3.5 px-6 py-5">
@@ -51,7 +61,7 @@ export function ContentDesk(props: { canWrite: boolean; canApprove: boolean; can
           <Tabs
             label="Content views"
             value={tab}
-            onChange={(t) => (setTab(t), pager.reset())}
+            onChange={(t) => setFilters({ tab: t })}
             items={[
               { id: "items", label: "Written items" },
               { id: "files", label: "content.ts review" },
@@ -75,7 +85,7 @@ function Items({
   canSchedule: boolean;
   pager: Pager;
 }) {
-  const [status, setStatus] = useState("");
+  const [{ status }, setFilters] = useUrlFilters(FILTERS, ALLOWED);
   const [open, setOpen] = useState<string | "new" | null>(null);
   const q = useAdminQuery<AdminPage<Item> & { me: string }>(
     ["content", status, pager.query],
@@ -94,7 +104,7 @@ function Items({
           <select
             aria-label="Status"
             value={status}
-            onChange={(e) => (setStatus(e.target.value), pager.reset())}
+            onChange={(e) => setFilters({ status: e.target.value })}
             className={`${inputCls} w-44`}
           >
             <option value="">Any status</option>
@@ -398,9 +408,10 @@ interface FileGame {
 const FILE_TONE: Record<string, PillTone> = { pending: "warn", changed: "warn", approved: "ok", rejected: "danger" };
 
 function FileReview({ isOwner, pager }: { isOwner: boolean; pager: Pager }) {
-  const [game, setGame] = useState<ContentGame | null>(null);
+  const [filters, setFilters] = useUrlFilters(FILTERS, ALLOWED);
+  const game = (filters.game || null) as ContentGame | null;
+  const only = filters.show as "todo" | "all";
   const [picked, setPicked] = useState<Set<number>>(new Set());
-  const [only, setOnly] = useState<"todo" | "all">("todo");
   const sum = useAdminQuery<{ games: FileGame[] }>(["files"], "/api/admin/content/files");
   const one = useAdminQuery<{ games: FileGame[]; total?: number }>(
     ["files", game, only, pager.query],
@@ -422,7 +433,7 @@ function FileReview({ isOwner, pager }: { isOwner: boolean; pager: Pager }) {
               key={g.game}
               type="button"
               aria-pressed={game === g.game}
-              onClick={() => (setGame(g.game), setPicked(new Set()), pager.reset())}
+              onClick={() => (setFilters({ game: g.game }), setPicked(new Set()))}
               className={`flex h-11 items-center gap-2 rounded-[10px] px-2.5 text-left text-[14px] font-semibold ${game === g.game ? "bg-surface-raised" : "hover:bg-surface-raised/60"}`}
             >
               <Swatch world={GAME_BY_ID[g.game]?.world ?? "word"} />
@@ -446,7 +457,7 @@ function FileReview({ isOwner, pager }: { isOwner: boolean; pager: Pager }) {
               <Tabs
                 label="Show"
                 value={only}
-                onChange={(v) => (setOnly(v), pager.reset())}
+                onChange={(v) => setFilters({ show: v })}
                 items={[
                   { id: "todo", label: "To review" },
                   { id: "all", label: "All" },
