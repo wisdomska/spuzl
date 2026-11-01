@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
-import { useCellSize } from "@/components/game/useBoardSize";
+import { fitCell, useViewportWidth } from "@/components/game/useBoardSize";
 import { play } from "@/lib/audio";
 import { BayStyles } from "@/games/_shared/BayStyles";
 import { logicGames } from "@/lib/copy/logic-games";
@@ -12,6 +12,14 @@ import { COPY, replay, type FourUpPuzzle, type FourUpState } from "./logic";
 
 const t = logicGames.fourup;
 const GAP = 4;
+/** Board padding either side of the columns. */
+const SIDE = 8 - GAP / 2;
+
+/**
+ * Column width (a column is its disc plus GAP each side). Up to 60 px; 50 px where the board can grow into the
+ * shell's board padding, and on the narrowest phones the widest that fits edge to edge: 44 px at 320 wide.
+ */
+export const columnWidth = (vw: number) => fitCell(vw, COLS, SIDE * 2, 50, 60);
 /* Disc materials (Board Games B8), the same in both themes. */
 const STAR_BG = "#F4F5FB";
 const INK = "#0E0F1A";
@@ -38,7 +46,7 @@ export default function FourUpBoard({ puzzle, initialState, hint, disabled, api 
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const streak = useRef(0);
   const colsEl = useRef<(HTMLButtonElement | null)[]>([]);
-  const cell = useCellSize(COLS, GAP, 16, 52);
+  const cell = columnWidth(useViewportWidth()) - GAP * 2;
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
   const later = (fn: () => void, ms: number) => timers.current.push(setTimeout(fn, ms));
   const done = r.won;
@@ -166,7 +174,7 @@ export default function FourUpBoard({ puzzle, initialState, hint, disabled, api 
         onKeyDown={onKeyDown}
         className={`flex rounded-[18px] ${done ? "board-pulse" : ""}`}
         style={{
-          padding: `8px ${8 - GAP / 2}px`,
+          padding: `8px ${SIDE}px`,
           background: "var(--world)",
           boxShadow: "inset 0 -6px 0 rgba(0,0,0,.2)",
         }}

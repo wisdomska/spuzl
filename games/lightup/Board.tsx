@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
-import { useCellSize } from "@/components/game/useBoardSize";
+import { fitCell, useViewportWidth } from "@/components/game/useBoardSize";
 import { useGridKeys } from "@/components/game/useGridKeys";
 import { play } from "@/lib/audio";
 import { popClass, shakeClass, waveStyle } from "@/games/_shared/logiclab/fx";
@@ -11,8 +11,9 @@ import { LIGHTUP_COPY as T } from "@/lib/copy/lightup";
 import { analyze, BLACK, EMPTY, geometry, LAMP, MARK, WHITE, type LightUpPuzzle, type LightUpState } from "./logic";
 
 type Tool = "lamp" | "x";
-const GAP = 2;
-const PAD = 6;
+/** Cell gap and board padding: 2 and 6 px, tightened to 1 and 3 px on 10 × 10 so its cells stay large on phones. */
+const gapFor = (n: number) => (n >= 10 ? 1 : 2);
+const padFor = (n: number) => (n >= 10 ? 3 : 6);
 /** White cells sit clearly lighter than the board and the black cells in both themes; lit ones take a gold wash. */
 const WHITE_FILL = "color-mix(in srgb, var(--text) 16%, var(--surface))";
 const LIT_FILL = "color-mix(in srgb, var(--gold) 34%, var(--surface))";
@@ -36,7 +37,10 @@ export default function LightUpBoard({ puzzle, initialState, hint, disabled, mod
   const [done, setDone] = useState(false);
   const cellsRef = useRef(cells);
   const streak = useRef(0);
-  const cell = useCellSize(n, GAP, PAD * 2, 56);
+  const gap = gapFor(n);
+  const pad = padFor(n);
+  // 44 px cells where they fit; a 10 × 10 board may use the shell's board padding (36 px at 375 wide, 30 at 320).
+  const cell = fitCell(useViewportWidth(), n, gap * (n - 1) + pad * 2, 44, 56);
   const a = analyze(puzzle, cells);
 
   const commit = useCallback(
@@ -145,8 +149,8 @@ export default function LightUpBoard({ puzzle, initialState, hint, disabled, mod
         className="grid rounded-[16px]"
         style={{
           gridTemplateColumns: `repeat(${n}, ${cell}px)`,
-          gap: GAP,
-          padding: PAD,
+          gap,
+          padding: pad,
           background: "var(--board-bg)",
           boxShadow: "0 0 0 2px var(--line)",
           perspective: 600,

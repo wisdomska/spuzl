@@ -28,12 +28,14 @@ export interface LetterKeyboardProps {
   listen?: boolean;
   /** per-letter colour, corner badge and spoken name */
   decorate?: (letter: string) => KeyDecor | undefined;
+  /** short screens: ENTER takes the left key of the third row (no undo key, no fourth row) and keys are 44 px */
+  compact?: boolean;
 }
 
 /**
  * The SPUZL letter keyboard (Components: Letter keyboard). Three QWERTY rows with undo and backspace on
  * the third, then a world-colour ENTER. A pressed key pops a 1.3× preview above the finger. 48 px tall
- * keys; physical keys work too.
+ * keys; physical keys work too. `compact` saves a row: ENTER sits left on the third row, keys are 44 px.
  */
 export function LetterKeyboard({
   onLetter,
@@ -45,6 +47,7 @@ export function LetterKeyboard({
   disabled,
   listen = true,
   decorate,
+  compact = false,
 }: LetterKeyboardProps) {
   const [pressed, setPressed] = useState<string | null>(null);
 
@@ -79,7 +82,7 @@ export function LetterKeyboard({
       onPointerUp={() => setPressed(null)}
       onPointerLeave={() => setPressed((p) => (p === id ? null : p))}
       onClick={act}
-      className="press relative flex h-12 items-center justify-center rounded-[10px] text-[17px] font-bold disabled:opacity-50"
+      className={`press relative flex ${compact ? "h-11" : "h-12"} items-center justify-center rounded-[10px] text-[17px] font-bold disabled:opacity-50`}
       style={{
         flex: opts.wide ? "1.45 1 0" : "1 1 0",
         maxWidth: opts.wide ? 46 : 34,
@@ -123,7 +126,26 @@ export function LetterKeyboard({
       {ROWS.map((row, ri) => (
         <div key={row} className="flex justify-center gap-1">
           {ri === 2 &&
-            (onUndo ? (
+            (compact && onEnter ? (
+              <button
+                key="enter"
+                type="button"
+                disabled={disabled}
+                onClick={onEnter}
+                className="toy flex h-11 items-center justify-center rounded-[10px] text-[12px] font-bold"
+                style={{
+                  flex: "1.75 1 0",
+                  maxWidth: 64,
+                  minWidth: 0,
+                  background: "var(--world)",
+                  color: "#0E0F1A",
+                  ["--btn-depth" as string]: "var(--world-depth)",
+                  boxShadow: "0 3px 0 var(--world-depth)",
+                }}
+              >
+                {enterLabel}
+              </button>
+            ) : onUndo ? (
               key("undo", <Icon name="arrow-u-up-left" size={20} />, onUndo, { wide: true, aria: undoLabel })
             ) : (
               <span style={{ flex: "1.45 1 0", maxWidth: 46 }} />
@@ -132,7 +154,7 @@ export function LetterKeyboard({
           {ri === 2 && key("backspace", <Icon name="backspace" size={20} />, onBackspace, { wide: true, aria: "Backspace" })}
         </div>
       ))}
-      {onEnter && (
+      {onEnter && !compact && (
         <div className="flex justify-center">
           <button
             type="button"

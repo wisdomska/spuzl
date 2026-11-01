@@ -31,7 +31,8 @@ import { framesToMs } from "./sim/fixed";
 import { cssColor, type Painter } from "./render/types";
 import type { Stage } from "./scene";
 import { HeldInput } from "./held";
-import { stageHeight } from "./layout";
+import { MIN_STAGE_HEIGHT, SHORT_VIEWPORT, stageHeight } from "./layout";
+import { useFitHeight } from "@/components/game/useBoardSize";
 import { posterStyle } from "./RagePoster";
 
 export type ControlsKind = "dpad" | "tap" | "hold" | "lr" | "drag";
@@ -123,8 +124,10 @@ export function RageBoard<S extends SimCore>({
   const [size, setSize] = useState(() => {
     const w = typeof window === "undefined" ? 354 : Math.max(0, Math.min(window.innerWidth, 560) - 36);
     const vp = typeof window === "undefined" ? { w: 1280, h: 800 } : { w: window.innerWidth, h: window.innerHeight };
-    return { w, h: stageHeight(w, vp, spec.tall) };
+    return { w, h: stageHeight(w, vp, spec.tall), short: vp.h < SHORT_VIEWPORT };
   });
+  // The canvas gives up height (to MIN_STAGE_HEIGHT) until the controls under it and the shell fit the screen.
+  const stageH = useFitHeight(size.h, Math.min(size.h, MIN_STAGE_HEIGHT), 1);
   const [bump, setBump] = useState(0);
   const [message, setMessage] = useState("");
   const [notice, setNotice] = useState(() => {
@@ -279,7 +282,8 @@ export function RageBoard<S extends SimCore>({
     const on = () => {
       const w = Math.floor(el.clientWidth);
       const h = stageHeight(w, { w: window.innerWidth, h: window.innerHeight }, spec.tall);
-      setSize((s) => (s.w === w && s.h === h ? s : { w, h }));
+      const short = window.innerHeight < SHORT_VIEWPORT;
+      setSize((s) => (s.w === w && s.h === h && s.short === short ? s : { w, h, short }));
     };
     on();
     const ro = new ResizeObserver(on);
@@ -293,10 +297,10 @@ export function RageBoard<S extends SimCore>({
 
   // Lazy Phaser.
   const stageRef = useRef<Stage | null>(null);
-  const sizeRef = useRef(size);
+  const sizeRef = useRef({ w: size.w, h: stageH });
   useEffect(() => {
-    sizeRef.current = size;
-  }, [size]);
+    sizeRef.current = { w: size.w, h: stageH };
+  }, [size.w, stageH]);
   useEffect(() => {
     let dead = false;
     void (async () => {
@@ -330,8 +334,8 @@ export function RageBoard<S extends SimCore>({
     };
   }, [ctl, painter]);
   useEffect(() => {
-    stageRef.current?.resize(size.w, size.h);
-  }, [size]);
+    stageRef.current?.resize(size.w, stageH);
+  }, [size.w, stageH]);
 
   const dismissNotice = useCallback(() => {
     setNotice(false);
@@ -444,7 +448,7 @@ export function RageBoard<S extends SimCore>({
     <div ref={wrapRef} className="flex w-full flex-col gap-3.5" style={{ maxWidth: "100%" }}>
       <div
         className="relative overflow-hidden rounded-[20px] select-none"
-        style={{ ...posterStyle, height: size.h, touchAction: "none", WebkitTouchCallout: "none" }}
+        style={{ ...posterStyle, height: stageH, touchAction: "none", WebkitTouchCallout: "none" }}
         onPointerDown={onCanvasDown}
         onPointerMove={onCanvasMove}
         onPointerUp={onCanvasUp}
@@ -555,8 +559,8 @@ export function RageBoard<S extends SimCore>({
       <div className="flex items-center justify-between gap-2 select-none" style={{ WebkitTouchCallout: "none" }}>
         {spec.controls === "dpad" || spec.controls === "lr" || spec.controls === "drag" ? (
           <div className="flex flex-none gap-2">
-            <PadButton label="Move left" icon="caret-left" {...holdProps("pl", BTN.LEFT)} />
-            <PadButton label="Move right" icon="caret-right" {...holdProps("pr", BTN.RIGHT)} />
+            <PadButton label="Move left" icon="caret-left" small={size.short} {...holdProps("pl", BTN.LEFT)} />
+            <PadButton label="Move right" icon="caret-right" small={size.short} {...holdProps("pr", BTN.RIGHT)} />
           </div>
         ) : (
           <span className="text-muted text-[14px] font-medium">or tap anywhere</span>
@@ -573,8 +577,9 @@ export function RageBoard<S extends SimCore>({
             aria-label={spec.action ?? "Jump"}
             className="toy flex flex-none items-center justify-center rounded-full"
             style={{
-              width: 96,
-              height: 96,
+              // 80 px on short screens (still well over 44), so the canvas keeps more of its height.
+              width: size.short ? 80 : 96,
+              height: size.short ? 80 : 96,
               background: "var(--w-rage)",
               color: "#0E0F1A",
               ["--btn-depth" as string]: "#8A1E1E",
@@ -611,15 +616,15 @@ function RaceBar({ progress, ghost }: { progress: number; ghost: number | null }
   );
 }
 
-function PadButton({ label, icon, ...rest }: { label: string; icon: string } & Record<string, unknown>) {
+function PadButton({ label, icon, small, ...rest }: { label: string; icon: string; small?: boolean } & Record<string, unknown>) {
   return (
     <button
       type="button"
       aria-label={label}
       className="toy flex items-center justify-center"
       style={{
-        width: 64,
-        height: 64,
+        width: small ? 56 : 64,
+        height: small ? 56 : 64,
         borderRadius: 20,
         background: "var(--surface-raised)",
         color: "var(--text)",

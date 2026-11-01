@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BoardProps, Hint } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
+import { useFitHeight, useViewportWidth } from "@/components/game/useBoardSize";
 import { play } from "@/lib/audio";
 import { sendGuess } from "@/games/_shared/guess";
 import { reducedMotion } from "@/games/_shared/fly";
@@ -27,8 +28,9 @@ const LEGEND: [Mark, string][] = [
   [MISS, t.legendMiss],
 ];
 const CHECKING_AFTER_MS = 250;
-/** Cells fit 320 px phones (44 px or more), stop growing at 56 px, and shrink to 44 px on short screens. */
-const CELL = "min(56px, calc((100vw - 84px) / 5), max(44px, calc((100dvh - 540px) / 6)))";
+/** Tiles fit the width (up to 56 px), then step down (to 32 px) until the page fits the screen's height. */
+const MAX_CELL = 56;
+const MIN_CELL = 32;
 
 function hintTarget(hint: Hint | null | undefined): { pos: number; letter: string } | null {
   const t = hint?.target as { pos?: unknown; letter?: unknown } | undefined;
@@ -56,6 +58,9 @@ export default function FiveBoard({ puzzle, initialState, hint, disabled, mode, 
   const rowsRef = useRef<Row[]>([]);
   const hintedRef = useRef<number[]>(initialState?.hinted?.slice() ?? []);
   const locked = disabled || over || busy;
+  // Tiles only show letters (the keyboard takes the taps), so they may shrink to keep the page on one screen.
+  const vw = useViewportWidth();
+  const cell = useFitHeight(Math.min(MAX_CELL, Math.floor((vw - 84) / 5)), MIN_CELL, tries);
 
   const stateOf = useCallback(
     (list: Row[]): FiveState =>
@@ -238,15 +243,15 @@ export default function FiveBoard({ puzzle, initialState, hint, disabled, mode, 
   const current = rows.length;
 
   return (
-    <div className={`flex w-full max-w-[400px] flex-col items-center gap-3 ${won ? "board-pulse" : ""}`}>
-      <div className="flex flex-col gap-1.5 rounded-[20px] p-3" style={{ background: "var(--board-bg)" }}>
-        <div role="grid" aria-label={t.grid} aria-readonly aria-busy={busy} className="flex flex-col gap-1.5">
+    <div className={`flex w-full max-w-[400px] flex-col items-center gap-2 ${won ? "board-pulse" : ""}`}>
+      <div className="flex flex-col gap-1.5 rounded-[20px] p-2.5" style={{ background: "var(--board-bg)" }}>
+        <div role="grid" aria-label={t.grid} aria-readonly aria-busy={busy} className="flex flex-col gap-1">
           {Array.from({ length: tries }, (_, r) => {
             const row = rows[r];
             const isCurrent = r === current && !over;
             const shaking = isCurrent && shakeN > 0;
             return (
-              <div key={r} role="row" className={`flex gap-1.5 ${shaking ? (shakeN % 2 ? "cell-shake-a" : "cell-shake-b") : ""}`}>
+              <div key={r} role="row" className={`flex gap-1 ${shaking ? (shakeN % 2 ? "cell-shake-a" : "cell-shake-b") : ""}`}>
                 {Array.from({ length: len }, (_, c) => {
                   const mark = row ? row.marks[c] : undefined;
                   const look = mark === undefined ? null : LOOK[mark];
@@ -260,9 +265,9 @@ export default function FiveBoard({ puzzle, initialState, hint, disabled, mode, 
                       aria-label={t.cellSay(r + 1, c + 1, letter || ghost?.letter || "", look ? MARK_SAY[mark!] : null, !!ghost)}
                       className={`relative flex items-center justify-center rounded-[10px] font-bold ${isCurrent && typed[c] && c === typed.length - 1 ? "cell-pop-a" : ""}`}
                       style={{
-                        width: CELL,
-                        height: CELL,
-                        fontSize: `calc(${CELL} * 0.5)`,
+                        width: cell,
+                        height: cell,
+                        fontSize: Math.round(cell * 0.5),
                         background: look ? look.bg : "var(--surface-raised)",
                         color: look ? look.fg : ghost ? "var(--text-muted)" : "var(--text)",
                         boxShadow: look
@@ -314,9 +319,8 @@ export default function FiveBoard({ puzzle, initialState, hint, disabled, mode, 
           onLetter={onLetter}
           onBackspace={onBackspace}
           onEnter={() => void submit()}
-          onUndo={clearRow}
-          undoLabel={t.undo}
           enterLabel={t.enter}
+          compact
           disabled={locked}
           decorate={decorate}
         />

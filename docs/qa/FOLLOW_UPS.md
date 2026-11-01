@@ -13,8 +13,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 - **Dusk:**
   - The 320 ms double-tap window is a constant and could become an admin setting.
   - Swipe up and down is not done; it would block page scroll when a finger starts on the board.
-- **Four Up:** at 320 px each column is about 39 px wide. The columns are full height, so the target area is
-  still large.
 - **Crownfall:**
   - The X mark is a fixed grey; its contrast on the new palette wasn't checked.
   - White pattern textures are faint on the light-theme colours.
@@ -32,8 +30,9 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 
 ## Layout and motion
 
-- Rage Ridge at 320 × 568: the 60% canvas pushes the on-screen controls below the fold.
-- Nine on a 375 × 667 phone with the 3 × 3 pad needs a little vertical scroll.
+- Nine on a 375 × 667 phone: the board and the 3 × 3 pad fit (cells step down to 35 px), but the shell's tool bar
+  (Undo, Erase, Notes, Hint) is still below the fold. Fitting it too needs a smaller shell header or a 1 × 9 pad.
+- Light Up 10 × 10 cells are 36 px at 375 wide (30 px at 320). 44 px would need a smaller hard board or zoom.
 - The shared `components/meta/Sheet` slides in even with reduced motion on (used by the Challenge sheet).
 - Board Bay pink surfaces in `components/multiplayer/bay/boards.tsx` still use raw hex colours.
 - `BackButton` in `components/meta/ui.tsx` still uses `history.length > 1`; `useBackOrHome` is safer for deep
@@ -80,8 +79,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 - **Emoji Hits:** the artist and year hints need a fact-check before the switch goes on. Both content files are
   marked `needsReview`.
 - **Admin content tools:** the new content games aren't in the admin content review or solve-check tools yet.
-- **Small cells on phones:** Light Up 10 × 10 cells are about 30 px.
-- **Five:** needs a little vertical scroll at 375 × 812.
 - **Penalty King:** keeper dives ship in the puzzle data, so a modified client could read them; there is also no
   timing-spread bot check.
 - **Seasonal event quests** live outside the admin quest catalogue.
