@@ -59,8 +59,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   - Ghost Race still uses the day's puzzle for Rage Ridge.
 - **Party games:** Draw It and Two Truths were not built. They need free text or drawings between players,
   which conflicts with the no-free-text rule for young players. They need a decision and moderation design first.
-- **Trotro Jam** lots grow from a bank of 96 deep starting lots, so their shapes can repeat; about 7% of medium
-  boards have one vehicle more than the level's range.
 - **API coverage:** `tests/api/flow.test.ts` has no attempt-level cases yet for Five and Emoji Hits reveals or
   Penalty King shots (unit tests cover the checks).
 - **Free-play seed:** now that free play moves world ranks (at half weight), a server-only seed would stop a

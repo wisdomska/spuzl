@@ -5,10 +5,11 @@
  *
  * Generation: a lot's position space is every position reachable from it (breadth-first); a second,
  * multi-source BFS from the solved positions gives the true minimum moves for each one. Every level starts
- * from one of a bank of deep lots (found offline by a long hill climb, see `climb`) and takes a short random
- * walk from it, swapping one vehicle at a time (thinning the lot to the level's vehicle count) and keeping
- * only lots that stay deep enough, so every seed gets its own lot in a bounded number of searches (well
- * under half a second). Hard and up take the walked lot's hardest position; easy and medium take a position
+ * from one of two banks of lots found offline by a long hill climb (see `climb`): 192 deep, crowded lots for
+ * hard and up, 128 lighter ones for easy and medium. It takes a short random walk from it, swapping one
+ * vehicle at a time (thinning the lot to the level's vehicle count) and keeping only lots that stay deep
+ * enough, then drops vehicles one at a time if the walk ran out of tries still over the count, so every seed
+ * gets its own lot with the level's vehicle count in a bounded number of searches (well under half a second). Hard and up take the walked lot's hardest position; easy and medium take a position
  * exactly the par they drew from their range. The server verifies by replaying the move log, slide by slide.
  */
 import type { Difficulty, GameLogic, Generated, Hint, VerifyResult } from "@/games/types";
@@ -61,17 +62,21 @@ interface Spec {
   cap: number;
   /** how far the walk from a deep lot may let the hardest position's minimum drop per step */
   drift: number;
+  /** the bank the walk starts from: crowded deep lots, or lighter mid lots that thin to a small count */
+  bank: "deep" | "mid";
 }
 export const SPEC: Record<Difficulty, Spec> = {
-  easy: { others: [6, 8], trucks: 0.25, range: [6, 10], hardest: false, cap: 8000, drift: 60 },
-  medium: { others: [8, 10], trucks: 0.3, range: [11, 16], hardest: false, cap: 8000, drift: 60 },
-  hard: { others: [9, 12], trucks: 0.3, range: [20, 60], hardest: true, cap: 6000, drift: 4 },
-  expert: { others: [10, 12], trucks: 0.3, range: [21, 60], hardest: true, cap: 6000, drift: 2 },
-  mega: { others: [10, 12], trucks: 0.35, range: [22, 60], hardest: true, cap: 6000, drift: 1 },
+  easy: { others: [6, 8], trucks: 0.25, range: [6, 10], hardest: false, cap: 8000, drift: 60, bank: "mid" },
+  medium: { others: [8, 10], trucks: 0.3, range: [11, 16], hardest: false, cap: 8000, drift: 60, bank: "mid" },
+  hard: { others: [9, 12], trucks: 0.3, range: [20, 60], hardest: true, cap: 6000, drift: 4, bank: "deep" },
+  expert: { others: [10, 12], trucks: 0.3, range: [21, 60], hardest: true, cap: 6000, drift: 2, bank: "deep" },
+  mega: { others: [10, 12], trucks: 0.35, range: [22, 60], hardest: true, cap: 6000, drift: 1, bank: "deep" },
 };
 /** Vehicle swaps the walk from a deep lot keeps, and the most it tries (each try is one search). */
 const WALK_SWAPS = 10;
 const WALK_STEPS = 64;
+/** Walks (each from a fresh bank lot) before settling for the last one; a second walk is already rare. */
+const WALK_TRIES = 4;
 /** Positions searched per layout before giving up on it (keeps generation and hints fast). */
 const SPACE_CAP = 40000;
 const MAX_MOVES = 1000;
@@ -370,8 +375,9 @@ function mutate(rng: Rng, spec: Spec, cur: Found): { vehicles: Vehicle[]; pos: n
   return { vehicles, pos };
 }
 
-/* Deep lots (22 to 46 moves at their hardest position), 4 characters a vehicle: length, axis, line,
- * offset. The trotro comes first. Found offline with `climb`; every seed walks away from one of them. */
+/* Deep lots (22 to 46 moves at their hardest position, 9 to 13 other vehicles), 4 characters a vehicle:
+ * length, axis, line, offset. The trotro comes first. Found offline with `climb`; every hard, expert and mega
+ * seed walks away from one of them. */
 // prettier-ignore
 const DEEP_LOTS: readonly string[] = [
   "2h202h332v033v202v342h042v413h502h412v303v512h31", "2h213h312h032v312v202v012h442v502v522v412v342v03",
@@ -422,6 +428,124 @@ const DEEP_LOTS: readonly string[] = [
   "2h223v002v033v102h503v413v512v342h122h442h042h022h31", "2h233h123h002v332v502v522h542h102h032v222v022h442h52",
   "2h222v332h112h512h013h533v502v122v412v043v012h342h41", "2h203v522h033v212v502v412h102v312h512h543h002h422v04",
   "2h212h332h312v102h442v413v512v032h022v002v342h042h51", "2h233v332h303v522v502v232v212h542v402h402v103v002h02",
+  "2h213h332v022v543h523v402v232h402h102v503h00", "2h202v442h022v512h042v342v532v222h302v002h333h40",
+  "2h203v223h502v342v002h333v512h112v302h042h012v41", "2h213h112h502v322v513h003h432v032h342v012v243v40",
+  "2h222v333v512h042h302v043h512h442h022v003v103v41", "2h202h332v223h502v342v003v513h012v032h413h113v40",
+  "2h202h342v402v332v233h512h012v542v302v212v002h40", "2h223h122h442h103h002v522v342v502v232v042h512h33",
+  "2h213h302h122h432v533v412v242v512v323v002h032v10", "2h203v532v132h532v312v002h012v042h143h032h322h51",
+  "2h202v032v243h022h102h342h313h432h002v503v312h50", "2h222v423v522v023h002v232h432v122v402h542v503h51",
+  "2h202h433v522v223h512v412v312h542v002h113h402h02", "2h232v502v522v213h002h312h513v022h532h032v332h44",
+  "2h202v323v222h433v503h022v002h512h132h532h342h11", "2h222h532v333h003v032h343h112h512v233v402v542v12",
+  "2h233v512v022h402h333h502v343h022h312v212h542h10", "2h203v423h013v332v512v042h302v212h542v312h412v40",
+  "2h203h022h522v212v142h432v232v003v312h302h342v54", "2h203v233v532v213v322v002v512h012v422h532v402v30",
+  "2h202v513h122h342v442h103h502h033h002v222h422v03", "2h213h422h532v422h322h513h033v532v202h142v132v31",
+  "2h202h103h023v522v212v232v502v412h432h542v042v31", "2h223v102v013h512v422h132h312v333h033v513v032h44",
+  "2h223h033v513v033v102h442v012v202h313h512h132v33", "2h202v402h542h012v343h302h402v002v212v303v512h33",
+  "2h232h302v302v112v332h012h512h443v212h142h532v52", "2h232v303h003h532h322h512v122h412v433v033v512v01",
+  "2h232h543v502v212h322v042v112v012v433h023v132v34", "2h222v503h002h523v522v012h302v232v142h543v412v30",
+  "2h202h422v423h302v442h402h022v003h122v322h503v52", "2h202h013h102v302v512v412v032v322h522v222h432h41",
+  "2h212v142v422h542h522v402h432h303h012v502v522v23", "2h212h332h003v232v013v302h142v032h542v522v132h44",
+  "2h202v002v423h012v342v402v502h543v032v213v132h32", "2h203v523v212v432v103h523v032v312h142h423h022v00",
+  "2h212h543v012v502v523h412v102v042h032h522v323v42", "2h203h132v002h113h402h303h522v532v222v432v332h01",
+  "2h203v422v212v303h002v402v042v323v522h532h422h30", "2h202h132h312v033v332h412h542h033h002h103v512v21",
+  "2h212h032h502v342h542h443v022h003v412h103h312v522v20", "2h223h332v042h123h003v502v122h513v012v342h442h032v23",
+  "2h232v212h512v532v232v512h042v302h012h102h432h543v03", "2h223v412h502h532h022h043v002v522v032v332h442h313v10",
+  "2h223v333h013v412v522v002h122h502v502v242v022h312h44", "2h212h102h432h343h512v322v042h042v542v232v022h002v30",
+  "2h232v012v223h113v502v042v332h442h522h002h542h302h02", "2h232v212v302h533v002h513v532v232h042v512v332v432h30",
+  "2h202v223h422h112v533h532v513v302h332h042h302v412v00", "2h213h033v023v532v132v322v002v433h522h502v203h132h42",
+  "2h212v442v502v542h013h332v312h522h032h112h503v012v23", "2h212h333v522h142v232h532h003h023v012h432v312h512v04",
+  "2h203v512v342v422h042h302h542h323h012v212h512h442v00", "2h213v402h402h002h443h323v012v202v502h542h502v522v34",
+  "2h202h032h132h303h103h002v532v512v042h542v432h422v22", "2h232h342v512h112v543v012v042v302v222h002h043h522h42",
+  "2h202h302h142h043v312v522v422v542v002v212v233h522v14", "2h203h132v032h312h032v522h502v212v343h002v542h332h41",
+  "2h223v413v102v512h022h042h122v012h512v232h302h532h44", "2h212v322v032v012h433v522h312h502v503v412v242h123h02",
+  "2h213h002v402v422v012v142h302v232h542h522v502h433v52", "2h202v532v432v042h542h423h123h512v512h032h103h002v22",
+  "2h232h133v502h342h502v013h022h312v212h412h532v032v33", "2h213h312h002v312h522h103h032h542h142v533v022h412v20",
+  "2h203h422v532h512v512v222v003h012v042v133v402h532h11", "2h233v003h312v112h542v402h412h443v502h012v342h502v03",
+  "2h202h432v002v313h312v213v532h522h142h502h042v032h02", "2h222h102v232v042h542v502v022v302v523h002h513v413h43",
+  "2h212v013v522h543h512h022v232v042h432v102h332h042v31", "2h223h512v542v233v403v012h022v122v042h122h002h342v33",
+  "2h202v313h412v432v542h522h302v202v522h042h142v222v00", "2h203h502h142v342h412v222v202v002v102h043v522v032h33",
+  "2h202h142v003h402h012h303h033h522h122v332v223v522v43", "2h203h402h322h512h012v002v302v212h433h532h302v423v52",
+  "2h202v032h442h103h312v502v342h503h002h542v212v522h03", "2h212h012h423v513h032h442h322h542h522h303v002v142v42",
+  "2h203v512h332h422h442h012h512v002v212v303h303h532v40", "2h213h502v232v502v543h022v412h403h332h002v312v022h10",
+  "2h222v423h033v102h443v002v032h132h502h533v512v332h31", "2h203h103h002h422h443h512v522v412v222v502h542v042v31",
+  "2h232v212h302v232v042h012v502v332h032h132v523h522h44", "2h212v532h322v013h533v032h002h112v422v312v503h023v13",
+  "2h223h312v342v242h443h022h122v522h502v502v022h002h54", "2h222h443h122v013v512h503v103h022v422h312h532v032v33",
+  "2h232h522h012v212h142v302h412v522v543h313v022h502v11", "2h213v002h302h532h433h502h142v312v232h043v522h022v10",
+  "2h232v213h302v112h532v302v042h512h012v522v432v542h14", "2h202v512v423h023h122h002h502v242h313h432v322h102v03",
+  "2h223v412v022h122h312v513h023v102h442h532v042h512v33", "2h223v032v012h312v522v332h002h142v302v112h443h512v20",
+  "2h212v422h302h513h432h003h022v322v502v522h532v012v23", "2h212v003v503v022v322h532h343h112h502v132h432h012v24",
+  "2h213h102v022h132h042v512v142v532v042h023v422h543v23", "2h203v322h302h012h042h132h112v002v512v433h403h522v22",
+  "2h222v023v422h542h402v503v233h102v523v332h002h133h02", "2h222h313v102h532h122h442h512v042v023v413h022v332v51",
+];
+
+/* Mid lots for easy and medium (8 or 9 other vehicles, 17 to 31 moves at their hardest position), found the
+ * same way with the vehicle count held to 6 to 9, so the walk thins them to the level's count in a few swaps. */
+// prettier-ignore
+const MID_LOTS: readonly string[] = [
+  "2h202v342h442v313v512v233h012h302v00", "2h202v002v212v402h013h313v423h533v30",
+  "2h223v412v243h102h323v122h532h502v30", "2h223v512v402v112v232v423h012h302h43",
+  "2h202v402v422v222v002h442v513v323h11", "2h222v333v513v233v103h532h042h442h30",
+  "2h202h433v523h402v002h012v302v402v21", "2h222v412h032v202v523h402v012v432v11",
+  "2h212v243v412h502h323h022v102h302h43", "2h222h502v233v413h433v003v102h303h03",
+  "2h213h423v013v522h402h142h542v202v42", "2h202v333h022v313v032h312h412v213h51",
+  "2h203v322h313v202h532h032v433v032h13", "2h203v403h012v222h533v323h402h342v00",
+  "2h212v233h022v502v522h443v412h303v00", "2h222h313v103h532v332h443v513h032v24",
+  "2h213v022h543v412v342v203h313v512h10", "2h222h442h002v402v332v113v502h312v30",
+  "2h202h533v413v312v142h302v233v512v21", "2h202v222h343h002v442v032v332h412h03",
+  "2h202v132v433v312v512v532h423h033v20", "2h203v422h022v213v523h412h042v102h31",
+  "2h202h322v433h523v203h032h302h143v53", "2h202h313h032v322v432h133v203h523v03",
+  "2h212h002v202v322v303v402v502h432v13", "2h202h412v042v433v213h022h003v503h51",
+  "2h213v012h542h433v523h402v202h142v42", "2h203h402v223v323h013v502h542v002h34",
+  "2h212v322v132v302h432v023v402h002v20", "2h213v303v522v432h042h422v142v412h52",
+  "2h213v402h432v302v202v323v022v132h00", "2h212v412v202h102v432h533h032h402v02",
+  "2h202v102h132v533v422h022v213h412h04", "2h213v423h313h022v243h532v312v522h14",
+  "2h232v532v002v212v512h433h402v302h04", "2h202v542h142v222v522v202v003h412v43",
+  "2h223v012v233v512h333v403h502v343h11", "2h223v102h312h522h442h123v412h542v33",
+  "2h203v212v142h032h013v422h422v502v32", "2h222h122v233v413v002h513h432h542h30",
+  "2h212h113v413h432v232h303v002h502h52", "2h203v413h303v322v243v512h443h012v00",
+  "2h223v423h312v242v302v112h142h53", "2h202h143h412v432v103h033v202v542v52",
+  "2h223v512h442h132h523v102v332h542h31", "2h203h302h332h502v212v402h012v003v51",
+  "2h202h532h113v302v003v512h332v222v24", "2h212v202h432h402v413v313h032v022h10",
+  "2h202v502v522v333h022v242h442v222v04", "2h203h412h022v212h042v103v522h143v43",
+  "2h202v303h002h442v502v522v212h422v03", "2h202v002v542v523h402v332h142v222h12",
+  "2h223v413v002h442v233h502v342h303h03", "2h212v532v322h432v043v232h302v302v51",
+  "2h213v412v513v002h302v233h432h522h50", "2h202h543v202h142v342v432v033h313v52",
+  "2h202v222h032v312h013h412v442v002h33", "2h203h112v502v522v222v243h022v412h44",
+  "2h202h343v502v133v212v332v443h512v31", "2h223v232h303v102v333v512h532h442h12",
+  "2h232v332h443v512h042h022h313v102h52", "2h202h022v402h322v102v312v343v422h54",
+  "2h222h522h302h443v413v102v513h022v23", "2h212h122v512h103h432v323v232h532h34",
+  "2h202v443v533v222h042h512h333v302h012v00", "2h202v212h142h302v322v302v422v042v443h41",
+  "2h203v503h532h442v222v332v312h302v003h02", "2h203h112v342v322v002v222h022v422h442v40",
+  "2h202h312v033h012v212h342h423v312h042v44", "2h203v322h412v103v032h132v202v222v433h51",
+  "2h202h343h313v302v212v502v003h502v402h01", "2h203v422v103v032v403v322h022v223h532v24",
+  "2h202v323v402v002v343h013v512h442v22", "2h213v322v043h512h343v502v202v022h002h13",
+  "2h213h433h022v502v322v522h302v233v413v00", "2h202v203v513h402v102v222v412h332v342h04",
+  "2h203h332h012h442h422v133v402v302v002v22", "2h222v422v403h012v232v112h432v522h30",
+  "2h213h032v322v343v012h132v202v432h403h50", "2h233v512v402v432h313v333v202v142h54",
+  "2h213v313h302v422h032v242h002h402v013h53", "2h222h042v303h432h503v413v513v112h322v24",
+  "2h212h323h523v512h302v142v013v412h032v20", "2h223v512h332v412v203h302v302h042h543v00",
+  "2h202v232h302v142h142v003h523v302v432v21", "2h223h002v012h333v402v302v232v032h432v11",
+  "2h212v012v312h302h323v412v203h032h532v14", "2h212h402v313h032v202v532v022h513h422h10",
+  "2h202v502v523h022h442h003v222v032v412h12", "2h202v002v242v322h013h302v302h043v522h43",
+  "2h212h002h033v312h532v143v423v502v202h42", "2h203h412h142v212v003v312h522h033v422h01",
+  "2h212v342h443v512v102h332h512h312h042h02", "2h203v403v312v242h112v223h012h342v033h53",
+  "2h202v213h302h022v002v513h402v532v402h43", "2h203v212v523h022v032h002v502v433h522h42",
+  "2h203h022h342v212h432v543h402v322h523h13", "2h213v002v243v413h023h432v522v323h30",
+  "2h202v343v512h442h322v212h303h032h012v00", "2h203v533h522v402v002v212h302h022v422v23",
+  "2h233v502v002h543h302h522v332v212v143h02", "2h232v442v002h023h402v212v022h343v333v50",
+  "2h202h042v003h522v143v323h012h312v212v43", "2h202h533h432h312h002v242v402v422v032h50",
+  "2h203v222h533v402h002v502h023v312v142h43", "2h202h442h022v312v502v033h102v222h422v52",
+  "2h222h442v332v512h033h513v413v102h122h31", "2h213h432h342v243h022v412h322h502v132h00",
+  "2h232h132h443v202h512v333v512h102h043h30", "2h202v322h123h432h102v242h502v412v032h31",
+  "2h232v502v522h442v222v242v332h122h102v04", "2h222v443h412v112v522v422h522v202h13",
+  "2h212v022h342v312v333v402h102v233h522h40", "2h222h332v112h042h512v343h012h312h443v51",
+  "2h203h423v513h322h302h042h022v212v312v00", "2h202v202v533h422v422h302v512h042v222v10",
+  "2h202h332h312h032v312v102v502v342v533v20", "2h222h503v413v022h532v002v522v242h322h03",
+  "2h212v102h442v342h042h322h022v523v412h30", "2h212h033h313v412h542v042v142v012h522v20",
+  "2h202h302h412v432v042v222h133h523v533h10", "2h202h103v403h432v032v242h502h342v322h31",
+  "2h202h522v303v212h012v143v402h422v32", "2h202v442h523h413v503h023v033v212v322h34",
+  "2h203h102h302v313v512h423v402v222h332v04", "2h202v212h033v422h423h523v133h132v002h01",
+  "2h223v023v332h343h502h033v502v002v412v20", "2h202v432v223h402v532h022v002h122h143v32",
 ];
 
 export const encodeLot = (vehicles: Vehicle[], pos: number[]) => vehicles.map((v, i) => `${v.len}${v.axis}${v.line}${pos[i]}`).join("");
@@ -437,6 +561,9 @@ export function decodeLot(s: string): { vehicles: Vehicle[]; pos: number[] } {
 }
 
 export const deepLots = () => DEEP_LOTS.map(decodeLot);
+export const midLots = () => MID_LOTS.map(decodeLot);
+
+const fits = (spec: Spec, f: Found) => f.vehicles.length - 1 >= spec.others[0] && f.vehicles.length - 1 <= spec.others[1];
 
 /**
  * A random walk from a deep lot: each step swaps one vehicle (see `mutate`) and keeps the new lot when its
@@ -445,10 +572,9 @@ export const deepLots = () => DEEP_LOTS.map(decodeLot);
  * `WALK_STEPS` tries, so the time stays bounded.
  */
 function walk(rng: Rng, spec: Spec, need: number, hi: number): Found {
-  const start = decodeLot(rng.pick(DEEP_LOTS));
+  const start = decodeLot(rng.pick(spec.bank === "mid" ? MID_LOTS : DEEP_LOTS));
   let cur = hardestOf(start.vehicles, start.pos, SPACE_CAP)!;
-  const fits = (f: Found) => f.vehicles.length - 1 >= spec.others[0] && f.vehicles.length - 1 <= spec.others[1];
-  for (let step = 0, swaps = 0; step < WALK_STEPS && (swaps < WALK_SWAPS || !fits(cur)); step++) {
+  for (let step = 0, swaps = 0; step < WALK_STEPS && (swaps < WALK_SWAPS || !fits(spec, cur)); step++) {
     const { vehicles, pos } = mutate(rng, spec, cur);
     const h = hardestOf(vehicles, pos, spec.cap);
     if (h && h.d >= need && h.d <= hi && h.d >= cur.d - spec.drift) {
@@ -456,7 +582,36 @@ function walk(rng: Rng, spec: Spec, need: number, hi: number): Found {
       swaps++;
     }
   }
+  return fits(spec, cur) ? cur : (thinOut(spec, cur, need, hi) ?? cur);
+}
+
+/**
+ * Drops vehicles from a lot still over the level's count, each time the one whose removal keeps the hardest
+ * position deepest (still `need` to `hi` moves). Null when no single drop keeps it deep enough.
+ */
+function thinOut(spec: Spec, start: Found, need: number, hi: number): Found | null {
+  let cur = start;
+  while (cur.vehicles.length - 1 > spec.others[1]) {
+    let best: Found | null = null;
+    for (let i = 1; i < cur.vehicles.length; i++) {
+      const h = hardestOf(
+        cur.vehicles.filter((_, k) => k !== i),
+        cur.pos.filter((_, k) => k !== i),
+        spec.cap,
+      );
+      if (h && h.d >= need && h.d <= hi && (!best || h.d > best.d)) best = h;
+    }
+    if (!best) return null;
+    cur = best;
+  }
   return cur;
+}
+
+/** A walked lot with the level's vehicle count: a new walk (from another bank lot) when one can't thin out. */
+function lotFor(rng: Rng, spec: Spec, need: number, hi: number): Found {
+  let c = walk(rng, spec, need, hi);
+  for (let k = 1; k < WALK_TRIES && !fits(spec, c); k++) c = walk(rng, spec, need, hi);
+  return c;
 }
 
 /** The hardest solvable position in a layout's space, or null. */
@@ -474,9 +629,10 @@ function hardestOf(vehicles: Vehicle[], pos: number[], cap: number): Found | nul
  * Hill climb for deep lots: take the hardest position of a random layout, then keep swapping one vehicle
  * for a random new one (starting from that hardest position) while the depth does not drop, restarting
  * when it stalls. Random layouts alone rarely reach 20+ moves; this gets there in a few hundred searches,
- * but the count has a long tail (seconds), so it only runs offline to fill `DEEP_LOTS`:
- * `climb(createRng("trotro-bank:" + i), SPEC.mega)` (and expert), keeping lots of 22 moves or more, encoded
- * with `encodeLot`.
+ * but the count has a long tail (seconds), so it only runs offline to fill the banks, encoded with `encodeLot`:
+ *   DEEP_LOTS  `climb(createRng("trotro-bank:" + i), SPEC.mega)` (and expert), lots of 22 moves or more;
+ *   MID_LOTS   `climb(rng, { ...SPEC.medium, others: [6, 8] or [6, 9], range: [17, 60] })`, lots of 17 or more.
+ * Each bank is deduplicated against the other lots.
  */
 export function climb(rng: Rng, spec: Spec): Found | null {
   const [lo, hi] = spec.range;
@@ -512,14 +668,14 @@ export function generate(rng: Rng, difficulty: Difficulty): Generated<TrotroPuzz
   const spec = SPEC[difficulty];
   const [lo, hi] = spec.range;
   if (spec.hardest) {
-    const c = walk(rng, spec, lo, hi);
+    const c = lotFor(rng, spec, lo, hi);
     return finish(c.vehicles, c.space, c.index);
   }
   // Easy and medium aim for a par drawn evenly from the range (most spaces are full of short positions).
   const want = rng.int(lo, hi);
   // Any lot whose hardest position is `want` or more has a position exactly `want` from the exit (one step
   // along a shortest route at a time), so walk until the lot is thin enough and take one of those.
-  const c = walk(rng, spec, want, Infinity);
+  const c = lotFor(rng, spec, want, Infinity);
   const exact: number[] = [];
   c.space.dist.forEach((d, i) => d === want && exact.push(i));
   return finish(c.vehicles, c.space, rng.pick(exact));
