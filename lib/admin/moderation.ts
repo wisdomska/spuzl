@@ -2,6 +2,8 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { GAME_BY_ID } from "@/lib/catalog";
 import { clock } from "./dates";
+import type { PageParams } from "./pagination";
+import { fetchPage } from "./paging";
 
 /** Short display id, e.g. R-3F2A for reports, F-91BC for flagged scores. */
 export const shortRef = (prefix: string, id: string) => `${prefix}-${id.replace(/-/g, "").slice(0, 4).toUpperCase()}`;
@@ -62,22 +64,29 @@ export async function playerSummaries(db: SupabaseClient, ids: string[]): Promis
 
 const UUID = /^[0-9a-f-]{36}$/i;
 
-export async function reportRows(db: SupabaseClient, tab: "reports" | "nicknames", status: string): Promise<ModRow[]> {
-  let q = db
-    .from("reports")
-    .select("id, reporter_id, target_type, target_id, reason, status, created_at")
-    .order("created_at", { ascending: false })
-    .limit(200);
-  q = tab === "nicknames" ? q.or("target_type.eq.nickname,reason.eq.nickname") : q.neq("target_type", "nickname").neq("reason", "nickname");
-  if (status !== "all") q = q.eq("status", status);
-  const { data, error } = await q;
-  if (error) throw error;
-  const rows = data ?? [];
+/** One page of reports (or nickname reports), newest first; id breaks ties so pages never overlap. */
+export async function reportRows(
+  db: SupabaseClient,
+  tab: "reports" | "nicknames",
+  status: string,
+  page: PageParams,
+): Promise<{ rows: ModRow[]; total: number }> {
+  const { rows, total } = await fetchPage(() => {
+    let q = db
+      .from("reports")
+      .select("id, reporter_id, target_type, target_id, reason, status, created_at", { count: "exact" })
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false });
+    q =
+      tab === "nicknames" ? q.or("target_type.eq.nickname,reason.eq.nickname") : q.neq("target_type", "nickname").neq("reason", "nickname");
+    if (status !== "all") q = q.eq("status", status);
+    return q;
+  }, page);
   const players = await playerSummaries(
     db,
     rows.filter((r) => ["player", "nickname"].includes(r.target_type) && UUID.test(r.target_id)).map((r) => r.target_id),
   );
-  return rows.map((r) => {
+  const out = rows.map((r) => {
     const p = players[r.target_id];
     const who = p?.nickname ?? r.target_id.slice(0, 8);
     const title =
@@ -96,21 +105,26 @@ export async function reportRows(db: SupabaseClient, tab: "reports" | "nicknames
       player_id: p ? r.target_id : null,
     };
   });
+  return { rows: out, total };
 }
 
-export async function flaggedRows(db: SupabaseClient): Promise<ModRow[]> {
-  const { data, error } = await db
-    .from("attempts")
-    .select("id, player_id, game_id, mode, time_ms, started_at, finished_at")
-    .eq("status", "flagged")
-    .order("finished_at", { ascending: false, nullsFirst: false })
-    .limit(200);
-  if (error) throw error;
+/** One page of flagged scores, latest finish first; id breaks ties. */
+export async function flaggedRows(db: SupabaseClient, page: PageParams): Promise<{ rows: ModRow[]; total: number }> {
+  const { rows: data, total } = await fetchPage(
+    () =>
+      db
+        .from("attempts")
+        .select("id, player_id, game_id, mode, time_ms, started_at, finished_at", { count: "exact" })
+        .eq("status", "flagged")
+        .order("finished_at", { ascending: false, nullsFirst: false })
+        .order("id", { ascending: false }),
+    page,
+  );
   const players = await playerSummaries(
     db,
-    (data ?? []).map((a) => a.player_id),
+    data.map((a) => a.player_id),
   );
-  return (data ?? []).map((a) => ({
+  const rows = data.map((a) => ({
     id: a.id,
     ref: shortRef("F", a.id),
     title: `${players[a.player_id]?.nickname ?? "player"} · ${GAME_BY_ID[a.game_id]?.name ?? a.game_id} ${clock(a.time_ms)}`,
@@ -119,6 +133,7 @@ export async function flaggedRows(db: SupabaseClient): Promise<ModRow[]> {
     created_at: a.finished_at ?? a.started_at,
     player_id: a.player_id,
   }));
+  return { rows, total };
 }
 
 /**

@@ -2,7 +2,8 @@
 
 import { useState, type ReactNode } from "react";
 import { age, clock } from "@/lib/admin/dates";
-import { errorText, useAdminAction, useAdminQuery } from "@/lib/client/admin";
+import { errorText, useAdminAction, useAdminQuery, type AdminPage } from "@/lib/client/admin";
+import { Pagination, usePager } from "./Pagination";
 import { Btn, Empty, Notice, PageTitle, Pill, RowsSkeleton, Tabs, type PillTone } from "./ui";
 
 type Tab = "reports" | "nicknames" | "flagged";
@@ -15,8 +16,7 @@ interface Row {
   created_at: string;
   player_id: string | null;
 }
-interface Queue {
-  rows: Row[];
+interface Queue extends AdminPage<Row> {
   counts: Record<Tab, number>;
   open: number;
 }
@@ -39,9 +39,11 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
   const [status, setStatus] = useState("open");
   const [sel, setSel] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
+  const pager = usePager();
   const q = useAdminQuery<Queue>(
-    ["moderation", tab, status],
-    `/api/admin/moderation?tab=${tab}&status=${tab === "flagged" ? "open" : status}`,
+    ["moderation", tab, status, pager.query],
+    `/api/admin/moderation?tab=${tab}&status=${tab === "flagged" ? "open" : status}&${pager.query}`,
+    { keepPrevious: true },
   );
   const selected = q.data?.rows.find((r) => r.id === sel) ?? q.data?.rows[0] ?? null;
 
@@ -54,7 +56,7 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
             <Tabs<Tab>
               label="Queue"
               value={tab}
-              onChange={(t) => (setTab(t), setSel(null), setDone(null))}
+              onChange={(t) => (setTab(t), setSel(null), setDone(null), pager.reset())}
               items={[
                 { id: "reports", label: "Reports" },
                 { id: "nicknames", label: "Nicknames" },
@@ -70,7 +72,7 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
             Showing
             <select
               value={status}
-              onChange={(e) => (setStatus(e.target.value), setSel(null))}
+              onChange={(e) => (setStatus(e.target.value), setSel(null), pager.reset())}
               style={{ fontSize: 13 }}
               className="bg-surface text-text h-9 rounded-[10px] px-2 font-semibold"
             >
@@ -144,6 +146,7 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
             </table>
           )}
         </div>
+        {q.data && <Pagination pager={pager} total={q.data.total} />}
       </div>
       <aside aria-label="Case" className="bg-surface border-line flex min-h-[400px] flex-col gap-3 border-t p-5 xl:border-t-0 xl:border-l">
         {!selected ? (
