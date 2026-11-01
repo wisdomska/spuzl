@@ -262,11 +262,11 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
       </AnimatePresence>
 
       <div
-        role="grid"
+        role="listbox"
+        aria-multiselectable
+        aria-orientation="horizontal"
         aria-label={t.grid}
         aria-busy={checking.length > 0}
-        aria-rowcount={Math.ceil(remaining.length / 4)}
-        aria-colcount={4}
         onKeyDown={keys.onKeyDown}
         className="grid grid-cols-4 gap-1.5"
       >
@@ -281,7 +281,7 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
                 layout
                 exit={{ opacity: 0, transform: "scale(0.96)" }}
                 transition={{ duration: dur, ease: EASE }}
-                role="gridcell"
+                role="option"
                 data-i={i}
                 tabIndex={keys.focus === i ? 0 : -1}
                 aria-selected={sel}

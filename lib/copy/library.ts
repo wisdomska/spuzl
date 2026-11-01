@@ -20,7 +20,6 @@ export const libraryCopy = {
   duelFriend: "Duel a friend",
   hostParty: "Host a party",
   vsBot: "Full game vs bot",
-  open: (name: string, time: string, done: boolean) => `${name}, about ${time}${done ? ", done today" : ""}. Open game card`,
   count: (n: number) => (n === 1 ? "1 game" : `${n} games`),
   empty: "No games match. Try another word or filter.",
   showAll: "Show all games",

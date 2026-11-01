@@ -17,7 +17,7 @@ test("library: search, filters and the game card", async ({ page }, info) => {
   await page.getByRole("searchbox").fill("crownf");
   await expect(page.getByText("1 game")).toBeVisible();
   await page.screenshot({ path: `docs/qa/screens/after/library-search-${info.project.name}.png` });
-  await page.getByRole("button", { name: /^Crownfall, about/ }).click();
+  await page.getByRole("button", { name: /^Crownfall Logic Lab/ }).click();
   const card = page.getByRole("dialog");
   await expect(card.getByRole("heading", { name: "Crownfall" })).toBeVisible();
   await expect(card.getByRole("button", { name: "Today's Daily" })).toBeVisible();

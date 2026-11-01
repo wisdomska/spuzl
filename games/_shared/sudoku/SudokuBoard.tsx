@@ -405,7 +405,6 @@ export function SudokuBoard({
               type="button"
               disabled={locked || full}
               onClick={() => enter(d)}
-              aria-label={`${notesMode ? t.note(d) : t.number(d)}, ${full ? t.allPlaced : t.left(left)}`}
               className={`toy num relative flex h-12 items-center justify-center rounded-[14px] text-[22px] font-semibold ${notesMode ? "text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]" : ""}`}
               style={{
                 background: "var(--surface-raised)",
@@ -414,7 +413,10 @@ export function SudokuBoard({
                 opacity: full ? 0.4 : 1,
               }}
             >
+              {/* The name is the visible digit plus a spoken count (label in name, WCAG 2.5.3). */}
+              {notesMode && <span className="sr-only">{t.note(d).replace(String(d), "")}</span>}
               {d}
+              <span className="sr-only">, {full ? t.allPlaced : t.left(left)}</span>
               {notesMode ? (
                 <Icon name="pencil-simple" size={11} className="absolute top-1.5 right-1.5" />
               ) : full ? (

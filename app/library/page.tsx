@@ -152,7 +152,7 @@ export default function Library() {
                 <button
                   type="button"
                   onClick={() => setOpen(g)}
-                  aria-label={T.open(g.name, time, done)}
+                  aria-haspopup="dialog"
                   className="press bg-surface flex w-full items-center gap-3 rounded-[20px] py-2.5 pr-3 pl-3 text-left"
                 >
                   <GameIcon3D meta={g} size={48} />
@@ -173,6 +173,7 @@ export default function Library() {
                       title={T.doneToday}
                     >
                       <Icon name="check" size={16} />
+                      <span className="sr-only">{T.doneToday}</span>
                     </span>
                   ) : (
                     <Icon name="caret-right" size={18} className="text-muted shrink-0" />

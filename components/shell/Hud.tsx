@@ -27,6 +27,7 @@ export function LevelRing({
       style={{ width: size, height: size, background: `conic-gradient(var(--accent) 0 ${p}%, var(--line) ${p}% 100%)` }}
     >
       <span
+        aria-hidden
         className="font-display flex items-center justify-center rounded-[12px] text-[18px] font-black text-[#0E0F1A]"
         style={{ width: size - 8, height: size - 8, background: color }}
       >

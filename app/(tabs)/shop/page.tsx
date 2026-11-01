@@ -222,7 +222,7 @@ export default function ShopPage() {
                 role="option"
                 aria-selected={on}
                 onClick={() => pick(i)}
-                aria-label={`${i.name}, ${price.text}${i.starter ? `, ${shopCopy.starterAria}` : ""}${i.type === "freeze" ? `, you hold ${d!.freezesHeld} of 2` : ""}`}
+                aria-label={`${i.name} ${price.text}${i.starter ? `, ${shopCopy.starterAria}` : ""}${i.type === "freeze" ? `, you hold ${d!.freezesHeld} of 2` : ""}`}
                 className="press relative flex flex-col items-center gap-1.5 rounded-[18px] p-2.5"
                 style={{
                   background: on ? "var(--success-tint)" : "var(--surface)",

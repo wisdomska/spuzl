@@ -26,7 +26,7 @@ function record(page: Page) {
   return { api, stop: () => page.off("request", on) };
 }
 
-const BOARD = '[role="grid"], main[aria-label$=" board"] canvas, main[aria-label$=" board"] button';
+const BOARD = '[role="grid"], [role="listbox"], main[aria-label$=" board"] canvas, main[aria-label$=" board"] button';
 const HOME = 'a[href^="/play/"]';
 
 /**
@@ -146,8 +146,8 @@ for (const profile of ["desktop", "4g-phone"] as const) {
         // SPZ-14: a row opens the game card; the timed tap is the card's primary action.
         // (Before SPZ-14 rows were plain links; the same journey works on both builds.)
         await page.goto("/library");
-        const card = page.getByRole("button", { name: /Open game card$/ });
-        await page.locator(`${HOME}, button[aria-label$="Open game card"]`).first().waitFor();
+        const card = page.locator('main li button[aria-haspopup="dialog"]');
+        await page.locator(`${HOME}, main li button[aria-haspopup="dialog"]`).first().waitFor();
         let primary = page.locator(HOME).first();
         if (await card.count()) {
           await card.nth(1).click();

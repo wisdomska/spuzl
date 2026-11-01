@@ -92,7 +92,7 @@ export function HomeMap({
             type="button"
             onClick={() => travel(w.id)}
             data-world={w.id}
-            aria-label={`${w.name}, ${p.cleared} of ${p.total} Dailies cleared today`}
+            aria-label={`${w.name} ${p.cleared}/${p.total}, Dailies cleared today`}
             className="absolute flex w-[136px] flex-col items-center gap-1.5 rounded-[24px] outline-none focus-visible:shadow-[var(--focus-ring)]"
             style={{ left: s.x, top: s.y }}
           >

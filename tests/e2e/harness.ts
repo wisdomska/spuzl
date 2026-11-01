@@ -41,7 +41,9 @@ export async function onboardGuest(page: Page, age: Age = "18+", nickname = `Qa$
 
 /** The board is interactive when its grid (or main board region) is visible and not aria-disabled. */
 export async function waitForBoard(page: Page, timeout = 30_000) {
-  const board = page.locator('[role="grid"], main[aria-label$=" board"] canvas, main[aria-label$=" board"] button').first();
+  const board = page
+    .locator('[role="grid"], [role="listbox"], main[aria-label$=" board"] canvas, main[aria-label$=" board"] button')
+    .first();
   await board.waitFor({ state: "visible", timeout });
   return board;
 }
