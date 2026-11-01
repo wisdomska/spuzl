@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useBackOrHome } from "@/lib/client/nav";
+import { useBackOr } from "@/lib/client/nav";
 import type { CSSProperties, ReactNode } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -255,9 +255,9 @@ export function PageTitle({ children, right }: { children: ReactNode; right?: Re
   );
 }
 
-export function BackButton({ href, label = "Back" }: { href?: string; label?: string }) {
-  // In-app history only: a deep link or fresh tab goes to the Grid, never out of the app.
-  const back = useBackOrHome();
+export function BackButton({ href, label = "Back", fallback = "/" }: { href?: string; label?: string; fallback?: string }) {
+  // In-app history only: a deep link or fresh tab goes to `fallback` (the Grid by default), never out of the app.
+  const back = useBackOr(fallback);
   const cls = "press bg-surface-raised flex size-11 shrink-0 items-center justify-center rounded-[14px]";
   if (href)
     return (

@@ -15,7 +15,8 @@ import { supabaseBrowser } from "@/lib/supabase/browser";
 import { hasSupabase } from "@/lib/supabase/env";
 import { clearOfflineUserData } from "@/lib/offline/register";
 import { TabPage } from "@/components/meta/TabPage";
-import { AvatarChip, PageTitle, Switch } from "@/components/meta/ui";
+import { AvatarChip, BackButton, PageTitle, Switch } from "@/components/meta/ui";
+import { nicknameProblem } from "@/lib/validation/nickname";
 import { Sheet } from "@/components/meta/Sheet";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
@@ -36,7 +37,7 @@ const SYNCED: (keyof Settings)[] = [
   "lowData",
 ];
 
-type SheetId = "theme" | "cb" | "text" | "privacy" | "account" | "delete" | null;
+type SheetId = "theme" | "cb" | "text" | "privacy" | "account" | "delete" | "nickname" | null;
 
 /** K1 Settings. Saved on this device right away (localStorage) and to your account (PATCH /api/v1/profile). */
 export default function SettingsPage() {
@@ -59,7 +60,7 @@ function SettingsScreen() {
     return h === "account" || h === "privacy" ? h : h === "place" ? "privacy" : null;
   });
   const auth = params.get("auth");
-  const [status] = useState<string | null>(
+  const [status, setStatus] = useState<string | null>(
     auth === "linked"
       ? "Signed in. Your progress is saved to your account."
       : auth === "failed"
@@ -83,11 +84,20 @@ function SettingsScreen() {
   const d = me.data;
   return (
     <TabPage label="Settings">
-      <PageTitle>Settings</PageTitle>
+      {/* Settings opens from Me (or the side nav on desktop): Back returns there, or to Me on a fresh tab. */}
+      <div className="flex items-center gap-3">
+        <BackButton label={settingsCopy.back} fallback="/me" />
+        <PageTitle>Settings</PageTitle>
+      </div>
       {status && (
         <p role="status" className="bg-surface rounded-[14px] px-3.5 py-2.5 text-[14px] font-medium">
           {status}
         </p>
+      )}
+      {d && (
+        <Group title={settingsCopy.profile}>
+          <Row icon="pencil-simple" label={settingsCopy.nickname.row} value={d.nickname} onClick={() => setOpen("nickname")} />
+        </Group>
       )}
       <Group title="Look and feel">
         <Row icon="moon" label="Theme" value={THEME[s.theme]} onClick={() => setOpen("theme")} />
@@ -164,6 +174,17 @@ function SettingsScreen() {
       <PrivacySheet open={open === "privacy"} onClose={() => setOpen(null)} />
       <AccountSheet open={open === "account"} onClose={() => setOpen(null)} onDelete={() => setOpen("delete")} />
       <DeleteSheet open={open === "delete"} onClose={() => setOpen(null)} />
+      {d && (
+        <NicknameSheet
+          open={open === "nickname"}
+          current={d.nickname}
+          onClose={() => setOpen(null)}
+          onSaved={(name) => {
+            setOpen(null);
+            setStatus(settingsCopy.nickname.saved(name));
+          }}
+        />
+      )}
     </TabPage>
   );
 }
@@ -591,5 +612,93 @@ function PlaceForm({ initialCountry, initialCity, minor }: { initialCountry: str
         {saved ? "Saved" : "Save place"}
       </Button>
     </form>
+  );
+}
+
+/** Change the nickname: checked here as you type (same rules as the server), then saved with PATCH /profile. */
+function NicknameSheet({
+  open,
+  current,
+  onClose,
+  onSaved,
+}: {
+  open: boolean;
+  current: string;
+  onClose: () => void;
+  onSaved: (name: string) => void;
+}) {
+  const T = settingsCopy.nickname;
+  const qc = useQueryClient();
+  const [name, setName] = useState(current);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setName(current);
+      setError(null);
+    }
+  }
+  const trimmed = name.trim();
+  const problem = trimmed && trimmed !== current ? nicknameProblem(trimmed) : null;
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!trimmed || problem) return;
+    if (trimmed === current) return setError(T.same);
+    setSaving(true);
+    setError(null);
+    try {
+      await api("/api/v1/profile", { method: "PATCH", json: { nickname: trimmed } });
+      await qc.invalidateQueries({ queryKey: ["me"] });
+      onSaved(trimmed);
+    } catch (err) {
+      setError(
+        err instanceof HttpError && err.code === "nickname_taken"
+          ? T.taken
+          : err instanceof HttpError && err.status === 422
+            ? err.message
+            : T.failed,
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+  const shown = error ?? problem;
+  return (
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()} title={T.title} description={T.description}>
+      <form onSubmit={submit} className="flex flex-col gap-3">
+        <label htmlFor="nick-edit" className="text-[15px] font-semibold">
+          {T.label}
+        </label>
+        <input
+          id="nick-edit"
+          value={name}
+          onChange={(e) => {
+            setName(e.target.value.replace(/\s/g, "").slice(0, 16));
+            setError(null);
+          }}
+          autoComplete="off"
+          autoCapitalize="off"
+          spellCheck={false}
+          maxLength={16}
+          aria-invalid={!!shown}
+          aria-describedby="nick-edit-help"
+          className="bg-surface-raised h-14 rounded-[16px] px-4 text-[18px] font-semibold outline-none"
+          style={{ boxShadow: `inset 0 0 0 2px ${shown ? "var(--danger)" : "var(--line)"}` }}
+        />
+        <p
+          id="nick-edit-help"
+          role={shown ? "alert" : undefined}
+          className="text-[14px]"
+          style={{ color: shown ? "var(--danger)" : "var(--text-muted)" }}
+        >
+          {shown ?? T.help}
+        </p>
+        <Button size="lg" type="submit" disabled={!trimmed || !!problem || saving} loading={saving}>
+          {saving ? T.saving : T.save}
+        </Button>
+      </form>
+    </Sheet>
   );
 }

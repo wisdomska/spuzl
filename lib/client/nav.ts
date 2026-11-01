@@ -29,10 +29,15 @@ export function useNavTracker() {
 
 /** Back that goes to the previous in-app screen, or to the Grid when the page was opened directly. */
 export function useBackOrHome() {
+  return useBackOr("/");
+}
+
+/** Back within the app; on a deep link or fresh tab, go to `fallback` (never out of the app). */
+export function useBackOr(fallback: string) {
   const router = useRouter();
   return useCallback(() => {
     const action = backAction({ entry, navigated, current: window.location.pathname });
     if (action === "back") router.back();
-    else router.push("/");
-  }, [router]);
+    else router.push(fallback as never);
+  }, [router, fallback]);
 }
