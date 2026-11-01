@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { GAMES } from "@/lib/catalog";
+import { GAMES, LAB_GAMES } from "@/lib/catalog";
 
 /**
  * Phase 1 acceptance: every one of the 51 games renders inside GameShell, with the shell header contract
@@ -9,7 +9,7 @@ const CLOCK = /\b\d{1,2}:\d{2}\b/;
 
 test.describe.configure({ mode: "parallel" });
 
-for (const g of GAMES) {
+for (const g of [...GAMES, ...LAB_GAMES]) {
   test(`shell contract: ${g.id}`, async ({ page }) => {
     await page.goto(`/dev/board/${g.id}?seed=contract&d=easy`);
     // Photosensitive games show a one-time notice first.

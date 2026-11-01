@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ApiError, body, handle, ok, rateLimit, requirePlayer } from "@/lib/api/server";
-import { gameOr404, loadFree } from "@/lib/game/service";
+import { assertGameOpen, gameOr404, loadFree } from "@/lib/game/service";
 import { hasLogic, loadLogic } from "@/games/logic-registry";
 import { guidedCopy } from "@/lib/copy/guided";
 
@@ -14,6 +14,7 @@ const SEED = (id: string) => `tutorial:${id}`;
 export const GET = handle(async (_req: Request, ctx: RouteContext<"/api/v1/guided/[game]">) => {
   const { game } = await ctx.params;
   const meta = gameOr404(game);
+  await assertGameOpen(meta);
   if (!hasLogic(meta.id)) throw new ApiError(404, "no_guided_round");
   await requirePlayer();
   const g = await loadFree(meta.id, SEED(meta.id), "easy");
@@ -26,6 +27,7 @@ const HintReq = z.object({ state: z.unknown().default(null) });
 export const POST = handle(async (req: Request, ctx: RouteContext<"/api/v1/guided/[game]">) => {
   const { game } = await ctx.params;
   const meta = gameOr404(game);
+  await assertGameOpen(meta);
   const { admin, player } = await requirePlayer();
   await rateLimit(admin, `guided-hint:${player.id}`, 120, 3600);
   const { state } = await body(req, HintReq);

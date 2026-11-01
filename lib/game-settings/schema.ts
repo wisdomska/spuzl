@@ -16,6 +16,13 @@ export const SETTINGS = {
     help: "The shared Daily puzzles, their leaderboards and the archive. Off: free play is the only solo mode and every Daily screen and mention is hidden. The server refuses Daily play while off.",
     default: false,
   },
+  "features.newGames": {
+    kind: "bool",
+    group: "Features",
+    label: "New games (Phase 5)",
+    help: "Shows the new games in All games and on their world, and lets players open them. Off: they are hidden and the server refuses them.",
+    default: false,
+  },
   "hints.dailyXpKeptPct": {
     kind: "int",
     group: "Hints",

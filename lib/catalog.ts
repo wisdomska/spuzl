@@ -45,6 +45,8 @@ export interface GameMeta {
   photosensitive?: boolean;
   /** Offers "Play a full game vs bot" (casual, on the device, no XP): /play/<id>/bot */
   botPlay?: boolean;
+  /** Phase 5 game behind the admin setting "features.newGames": hidden and refused by the server while off */
+  lab?: boolean;
 }
 
 export const WORLDS: World[] = [
@@ -82,7 +84,7 @@ const g = (
   engine: Engine,
   blurb: string,
   rule: string,
-  opts: Partial<Pick<GameMeta, "unique" | "scoring" | "minTimeMs" | "content" | "photosensitive" | "botPlay">> = {},
+  opts: Partial<Pick<GameMeta, "unique" | "scoring" | "minTimeMs" | "content" | "photosensitive" | "botPlay" | "lab">> = {},
 ): GameMeta => ({ id, name, world, icon, phase, engine, blurb, rule, unique: false, scoring: "time", minTimeMs: 4000, ...opts });
 
 export const GAMES: GameMeta[] = [
@@ -585,7 +587,16 @@ export const GAMES: GameMeta[] = [
   ),
 ];
 
-export const GAME_BY_ID: Record<string, GameMeta> = Object.fromEntries(GAMES.map((x) => [x.id, x]));
+/**
+ * Phase 5 games (lab: true). They are NOT in GAMES, so counts, paths, Duel/Party pickers and Dailies stay the 51
+ * live games; screens add them with `labGamesInWorld` / `LAB_GAMES` only when "features.newGames" is on, and the
+ * server refuses them while it is off. Add new games at the END of this list (one block per game).
+ */
+export const LAB_GAMES: GameMeta[] = [];
+
+export const GAME_BY_ID: Record<string, GameMeta> = Object.fromEntries([...GAMES, ...LAB_GAMES].map((x) => [x.id, x]));
+export const labGamesInWorld = (w: WorldId) => LAB_GAMES.filter((x) => x.world === w);
+export const isLabGame = (id: string) => GAME_BY_ID[id]?.lab === true;
 export const WORLD_BY_ID: Record<WorldId, World> = Object.fromEntries(WORLDS.map((w) => [w.id, w])) as Record<WorldId, World>;
 export const gamesInWorld = (w: WorldId) => GAMES.filter((x) => x.world === w);
 

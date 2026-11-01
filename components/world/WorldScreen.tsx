@@ -6,7 +6,7 @@ import { isRaceGame } from "@/lib/multiplayer/games";
 import { worldCopy } from "@/lib/copy/world";
 import Link from "next/link";
 import { motion } from "motion/react";
-import { WORLD_BY_ID, gamesInWorld, type WorldId } from "@/lib/catalog";
+import { WORLD_BY_ID, gamesInWorld, labGamesInWorld, type WorldId } from "@/lib/catalog";
 import { useMe, useToday } from "@/lib/client/api";
 import { Island } from "@/components/home/Island";
 import { Icon } from "@/components/ui/Icon";
@@ -20,7 +20,8 @@ const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 /** Solo Screens 03 World view: island header in world colour, then each game with today's status. */
 export function WorldScreen({ id }: { id: WorldId }) {
   const world = WORLD_BY_ID[id];
-  const games = gamesInWorld(id);
+  const labOn = useGameSettings()["features.newGames"];
+  const games = [...gamesInWorld(id), ...(labOn ? labGamesInWorld(id) : [])];
   const me = useMe();
   const today = useToday();
   const status = (gid: string) => today.data?.games.find((g) => g.id === gid);

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getGameSettings } from "@/lib/game-settings/server";
 import { notFound } from "next/navigation";
 import { GAME_BY_ID } from "@/lib/catalog";
 import { isBotGame, isBotLevel } from "@/lib/bot";
@@ -21,6 +22,7 @@ export default async function BotPlay({ params, searchParams }: PageProps<"/play
   const { level } = await searchParams;
   const meta = GAME_BY_ID[game];
   if (!meta?.botPlay || !isBotGame(game)) notFound();
+  if (meta.lab && !(await getGameSettings())["features.newGames"]) notFound();
   // Same first-run gate as every Play page (intro, then onboarding).
   await requirePlayerPage();
   return <BotScreen meta={meta} game={game} initialLevel={isBotLevel(level) ? level : "medium"} />;

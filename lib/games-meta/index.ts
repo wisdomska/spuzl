@@ -3,7 +3,7 @@
  * These are the defaults; the admin console can override them per game (games.typical_sec and games.tags),
  * read at runtime through useGamesMeta().
  */
-import { GAMES } from "@/lib/catalog";
+import { GAMES, LAB_GAMES } from "@/lib/catalog";
 import { isRaceGame } from "@/lib/multiplayer/games";
 
 export const TAGS = ["quick", "calm", "competitive"] as const;
@@ -68,7 +68,7 @@ export const TYPICAL_SEC: Record<string, number> = {
 const PRESSURE = new Set(["merge", "quickfire", "flagged", "deadon", "seven"]);
 
 export function defaultTags(id: string): Tag[] {
-  const g = GAMES.find((x) => x.id === id);
+  const g = [...GAMES, ...LAB_GAMES].find((x) => x.id === id);
   if (!g) return [];
   const tags: Tag[] = [];
   if ((TYPICAL_SEC[id] ?? 180) < 120) tags.push("quick");
@@ -80,7 +80,7 @@ export function defaultTags(id: string): Tag[] {
 export type GameMetaRow = { typicalSec: number; tags: Tag[] };
 
 export const DEFAULT_META: Record<string, GameMetaRow> = Object.fromEntries(
-  GAMES.map((g) => [g.id, { typicalSec: TYPICAL_SEC[g.id] ?? 180, tags: defaultTags(g.id) }]),
+  [...GAMES, ...LAB_GAMES].map((g) => [g.id, { typicalSec: TYPICAL_SEC[g.id] ?? 180, tags: defaultTags(g.id) }]),
 );
 
 /** "About 2 min" style label; under a minute shows "Under 1 min". */

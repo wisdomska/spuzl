@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_META, durationLabel, matchesQuery, validateMeta } from "./index";
-import { GAMES } from "@/lib/catalog";
+import { GAMES, LAB_GAMES } from "@/lib/catalog";
 
 describe("Library metadata (SPZ-14)", () => {
   it("has a duration and valid tags for all 51 games", () => {
-    expect(Object.keys(DEFAULT_META)).toHaveLength(GAMES.length);
+    expect(Object.keys(DEFAULT_META)).toHaveLength(GAMES.length + LAB_GAMES.length);
     for (const [id, m] of Object.entries(DEFAULT_META)) expect(validateMeta(m), id).toBeNull();
   });
   it("labels durations", () => {

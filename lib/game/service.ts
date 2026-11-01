@@ -23,6 +23,11 @@ import { evaluateAfterClear, type Unlock } from "@/lib/gamification/progress";
 
 export type Mode = "tutorial" | "daily" | "free" | "archive" | "challenge";
 
+/** Phase 5 (lab) games are refused while the admin setting "features.newGames" is off. */
+export async function assertGameOpen(meta: GameMeta): Promise<void> {
+  if (meta.lab && !(await getGameSettings())["features.newGames"]) throw new ApiError(404, "unknown_game");
+}
+
 export function gameOr404(id: string): GameMeta {
   const g = GAME_BY_ID[id];
   if (!g) throw new ApiError(404, "unknown_game");
@@ -101,6 +106,7 @@ export async function loadFree(gameId: string, seed: string, difficulty: Difficu
 
 export async function startAttempt(admin: SupabaseClient, playerId: string, ref: PuzzleRef) {
   const meta = gameOr404(ref.gameId);
+  await assertGameOpen(meta);
   let loaded: Loaded;
   let seed: string | null = null;
   if (ref.mode === "daily" || ref.mode === "archive") {

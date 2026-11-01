@@ -18,6 +18,7 @@ export default async function Play({ params, searchParams }: PageProps<"/play/[g
   const sp = await searchParams;
   const meta = GAME_BY_ID[game];
   if (!meta || !hasLogic(game)) notFound();
+  if (meta.lab && !(await getGameSettings())["features.newGames"]) notFound();
   // SPZ-01: only the session is checked here (a local JWT check). The player profile is already in the client
   // cache from the previous screen, and PlayScreen sends players without a profile to onboarding itself.
   await requireSessionPage();

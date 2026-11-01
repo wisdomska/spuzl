@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { GAMES, WORLDS, WORLD_BY_ID, type GameMeta, type WorldId } from "@/lib/catalog";
+import { GAMES, LAB_GAMES, WORLDS, WORLD_BY_ID, type GameMeta, type WorldId } from "@/lib/catalog";
 import { Icon } from "@/components/ui/Icon";
 import { GameIcon3D } from "@/components/world/GameIcon3D";
 import { GameCard } from "@/components/library/GameCard";
@@ -33,9 +33,10 @@ export default function Library() {
     ? (me.data?.today.cleared ?? {})
     : Object.fromEntries((me.data?.played ?? []).map((id) => [id, 1]));
 
+  const labOn = useGameSettings()["features.newGames"];
   const list = useMemo(
     () =>
-      GAMES.filter((g) => {
+      [...GAMES, ...(labOn ? LAB_GAMES : [])].filter((g) => {
         if (filter !== "all") {
           if ((TAGS as readonly string[]).includes(filter)) {
             if (!meta[g.id]?.tags.includes(filter as Tag)) return false;
@@ -43,7 +44,7 @@ export default function Library() {
         }
         return !q || matchesQuery(`${g.name} ${WORLD_BY_ID[g.world].name} ${g.blurb}`, q);
       }),
-    [filter, q, meta],
+    [filter, q, meta, labOn],
   );
 
   // SPZ-01: warm the first rows' play routes while the list is idle.

@@ -1,8 +1,9 @@
 import { z } from "zod";
+import { GAME_BY_ID } from "@/lib/catalog";
 import { body, handle, ok, rateLimit, requirePlayer, ApiError } from "@/lib/api/server";
 import { LOGIC } from "@/games/logic-registry";
 import type { GuessLogic } from "@/games/_shared/guess";
-import { attemptPuzzle } from "@/lib/game/service";
+import { assertGameOpen, attemptPuzzle } from "@/lib/game/service";
 
 const Guess = z.object({
   ref: z.object({ game: z.string(), i: z.number().int().min(0).max(100_000), d: z.enum(["easy", "medium", "hard", "expert", "mega"]) }),
@@ -27,6 +28,7 @@ export const POST = handle(async (req: Request, ctx: RouteContext<"/api/games/[g
   attempt?.catch(() => {}); // a failure is rethrown below, after the rate limit
   await limited;
   if (ref.game !== game || !LOGIC[game]) throw new ApiError(404, "unknown_game");
+  if (GAME_BY_ID[game]) await assertGameOpen(GAME_BY_ID[game]);
   const logic = (await LOGIC[game]()).default as unknown as Partial<GuessLogic>;
   if (typeof logic.checkGuess !== "function" || typeof logic.generateAt !== "function") throw new ApiError(400, "no_guess_check");
   if (attempt) {
