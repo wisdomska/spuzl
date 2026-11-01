@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion, useReducedMotion } from "motion/react";
 import { GAMES, WORLDS, WORLD_BY_ID, type GameMeta, type WorldId } from "@/lib/catalog";
 import { Icon } from "@/components/ui/Icon";
 import { GameIcon3D } from "@/components/world/GameIcon3D";
@@ -25,7 +24,6 @@ export default function Library() {
   const me = useMe();
   const meta = useGamesMeta();
   const prefetch = useGameSettings()["perf.prefetch"];
-  const reduce = useReducedMotion();
   const [filter, setFilter] = useState<Filter>("all");
   const [q, setQ] = useState("");
   const [open, setOpen] = useState<GameMeta | null>(null);
@@ -150,12 +148,7 @@ export default function Library() {
             const done = cleared[g.id] !== undefined;
             const time = durationLabel(meta[g.id]?.typicalSec ?? 180);
             return (
-              <motion.li
-                key={g.id}
-                initial={reduce ? false : { opacity: 0, transform: "translateY(6px)" }}
-                animate={{ opacity: 1, transform: "translateY(0px)" }}
-                transition={{ duration: 0.22, delay: Math.min(i, 8) * 0.025, ease: [0.23, 1, 0.32, 1] }}
-              >
+              <li key={g.id} className="list-in" style={{ animationDelay: `${Math.min(i, 8) * 25}ms` }}>
                 <button
                   type="button"
                   onClick={() => setOpen(g)}
@@ -185,7 +178,7 @@ export default function Library() {
                     <Icon name="caret-right" size={18} className="text-muted shrink-0" />
                   )}
                 </button>
-              </motion.li>
+              </li>
             );
           })}
         </ul>
