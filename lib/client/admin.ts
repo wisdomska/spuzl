@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient, type QueryKey } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryKey } from "@tanstack/react-query";
 import { api, HttpError } from "@/lib/client/api";
 import type { Permission, Role } from "@/lib/admin/roles";
 
@@ -15,14 +15,27 @@ export interface AdminMe {
 }
 export const useAdminMe = () => useQuery({ queryKey: ["admin", "me"], queryFn: () => api<AdminMe>("/api/admin/me"), staleTime: 60_000 });
 
-export function useAdminQuery<T>(key: QueryKey, path: string | null, opts: { refetchInterval?: number } = {}) {
+/**
+ * `keepPrevious` keeps the last page on screen while the next one loads (paginated lists), instead of
+ * flashing the skeleton on every page change.
+ */
+export function useAdminQuery<T>(key: QueryKey, path: string | null, opts: { refetchInterval?: number; keepPrevious?: boolean } = {}) {
   return useQuery({
     queryKey: ["admin", ...key],
     queryFn: () => api<T>(path!),
     enabled: !!path,
     retry: (n, e) => !(e instanceof HttpError && e.status < 500) && n < 1,
     refetchInterval: opts.refetchInterval,
+    placeholderData: opts.keepPrevious ? keepPreviousData : undefined,
   });
+}
+
+/** Shape of every paginated admin list response. */
+export interface AdminPage<T> {
+  rows: T[];
+  page: number;
+  pageSize: number;
+  total: number;
 }
 
 /** POST/PATCH/PUT to an admin route, then refresh every admin query (lists, counts and the audit log). */
