@@ -4,14 +4,21 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { useCellSize } from "@/components/game/useBoardSize";
-import { useGridKeys } from "@/components/game/useGridKeys";
+import { isKeyedInput, useGridKeys } from "@/components/game/useGridKeys";
 import { play } from "@/lib/audio";
+import { sfx } from "@/games/_shared/sfx";
+import { spreadOf } from "./fx";
 import { popClass, shakeClass, waveStyle } from "@/games/_shared/logiclab/fx";
 import { field, FLAG, flood, HIDDEN, neighbours, OPEN, TRIPPED, type TripwirePuzzle, type TripwireState } from "./logic";
 
 const GAP = 3;
 const PAD = 6;
 const LONG_PRESS_MS = 420;
+/** A flood opens outward from the tapped tile: this much later per step away, capped so big floods stay quick. */
+const SPREAD_MS = 22;
+const SPREAD_CAP_MS = 220;
+/** Floods at least this big get an airy sweep under the pop. */
+const SWEEP_FROM = 8;
 
 /**
  * Tripwire board (minesweeper). Tap reveals, long-press or the Flag tool flags, tapping a number whose
@@ -47,7 +54,8 @@ export default function TripwireBoard({ puzzle, initialState, hint, disabled, mo
       cellsRef.current = next;
       setCells(next);
       setHist((hh) => [...hh, prev]);
-      setPopped(changed);
+      // Keyboard entry changes tiles without the pop (fast, repeated entry).
+      setPopped(isKeyedInput() ? [] : changed);
       setLast(focus);
       setTapN((t) => t + 1);
       const open = next.filter((v, i) => v === OPEN && f[i] >= 0).length;
@@ -58,11 +66,16 @@ export default function TripwireBoard({ puzzle, initialState, hint, disabled, mo
         api.ruleBreak("That was a wire. It counts as a mistake. Keep going.");
         api.announce(`${where(focus)}, wire tripped.`);
       } else if (info.flag) {
-        play("tick");
+        if (next[focus] === FLAG) sfx.place(streak.current);
+        else sfx.remove();
         api.announce(`${where(focus)}, ${next[focus] === FLAG ? "flagged" : "flag removed"}`);
       } else {
         streak.current += 1;
-        play("pop", { step: streak.current });
+        sfx.place(streak.current);
+        if (changed.length >= SWEEP_FROM) {
+          const spread = Math.min(SPREAD_CAP_MS, spreadOf(changed, focus, w) * SPREAD_MS);
+          play("swoosh", { duration: Math.max(0.12, spread / 1000), gain: 0.45, silentHaptic: true });
+        }
         const n = f[focus];
         api.announce(changed.length > 1 ? `${changed.length} tiles opened` : `${where(focus)}, ${n === 0 ? "clear" : n}`);
       }
@@ -249,6 +262,7 @@ export default function TripwireBoard({ puzzle, initialState, hint, disabled, mo
                 const dist = Math.abs(r - lastR) + Math.abs(c - lastC);
                 let anim = "";
                 if (!done && popped.includes(i)) anim = trip ? shakeClass(shakeN) : popClass(tapN);
+                const delay = anim && !trip ? Math.min(SPREAD_CAP_MS, Math.max(Math.abs(r - lastR), Math.abs(c - lastC)) * SPREAD_MS) : 0;
                 const label = trip ? "wire tripped" : v === FLAG ? "flagged" : isOpen ? (n ? `${n} mines around` : "clear") : "hidden";
                 return (
                   <div
@@ -282,6 +296,7 @@ export default function TripwireBoard({ puzzle, initialState, hint, disabled, mo
                             ? "inset 0 -4px 0 rgb(0 0 0 / .22)"
                             : undefined,
                       color: trip ? "var(--danger)" : v === FLAG ? "var(--gold)" : undefined,
+                      animationDelay: delay ? `${delay}ms` : undefined,
                     }}
                   >
                     {done && (

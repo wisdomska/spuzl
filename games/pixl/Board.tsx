@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
-import { useGridKeys } from "@/components/game/useGridKeys";
-import { play } from "@/lib/audio";
+import { isKeyedInput, useGridKeys } from "@/components/game/useGridKeys";
+import { sfx } from "@/games/_shared/sfx";
 import { popClass, shakeClass, waveStyle } from "@/games/_shared/logiclab/fx";
 import { analyze, CROSS, EMPTY, FILL, type PixlPuzzle, type PixlState } from "./logic";
 
@@ -41,6 +41,7 @@ export default function PixlBoard({ puzzle, initialState, hint, disabled, mode, 
   const [tool, setTool] = useState<Tool>("fill");
   const [last, setLast] = useState(-1);
   const [tapN, setTapN] = useState(0);
+  const [quiet, setQuiet] = useState(false);
   const [shakeN, setShakeN] = useState(0);
   const [done, setDone] = useState(false);
   const cellsRef = useRef(cells);
@@ -52,6 +53,8 @@ export default function PixlBoard({ puzzle, initialState, hint, disabled, mode, 
     before: PixlState;
     timer: ReturnType<typeof setTimeout> | null;
     broke: boolean;
+    /** cells painted by dragging so far (the trace note climbs with it) */
+    painted: number;
   }>(null);
   const maxRow = Math.max(1, ...puzzle.rows.map((r) => Math.max(1, r.length)));
   const maxCol = Math.max(1, ...puzzle.cols.map((c) => Math.max(1, c.length)));
@@ -61,9 +64,9 @@ export default function PixlBoard({ puzzle, initialState, hint, disabled, mode, 
   const a = analyze(puzzle, cells);
   const locked = disabled || done;
 
-  /** Writes one cell inside the current stroke (no history entry). */
+  /** Writes one cell inside the current stroke (no history entry). `dragged`: painted by a drag, not tapped. */
   const write = useCallback(
-    (i: number, value: number) => {
+    (i: number, value: number, dragged = false) => {
       const prev = cellsRef.current;
       if (prev[i] === value) return;
       const next = prev.slice();
@@ -72,6 +75,7 @@ export default function PixlBoard({ puzzle, initialState, hint, disabled, mode, 
       setCells(next);
       setLast(i);
       setTapN((t) => t + 1);
+      setQuiet(isKeyedInput());
       const before = analyze(puzzle, prev);
       const after = analyze(puzzle, next);
       const where = `Row ${Math.floor(i / w) + 1}, column ${(i % w) + 1}, ${markName(value)}`;
@@ -86,7 +90,10 @@ export default function PixlBoard({ puzzle, initialState, hint, disabled, mode, 
         api.announce(`${where}. ${after.message}`);
       } else {
         if (value === FILL) streak.current++;
-        play(value === FILL ? "pop" : "tick", { step: streak.current });
+        // Dragged cells are texture under the finger; a tap places (fill or X) or softly takes off.
+        if (dragged && stroke.current) sfx.trace(++stroke.current.painted);
+        else if (value === EMPTY) sfx.remove();
+        else sfx.place(streak.current);
         api.announce(where);
       }
       if (after.clear) {
@@ -105,7 +112,7 @@ export default function PixlBoard({ puzzle, initialState, hint, disabled, mode, 
   const toggleValue = (cur: number, mark: Tool) => (mark === "fill" ? (cur === FILL ? EMPTY : FILL) : cur === CROSS ? EMPTY : CROSS);
 
   const beginStroke = (i: number) => {
-    stroke.current = { start: i, value: null, moved: false, before: cellsRef.current, timer: null, broke: false };
+    stroke.current = { start: i, value: null, moved: false, before: cellsRef.current, timer: null, broke: false, painted: 0 };
   };
   const endStroke = useCallback(() => {
     const s = stroke.current;
@@ -143,7 +150,7 @@ export default function PixlBoard({ puzzle, initialState, hint, disabled, mode, 
     // Painting never overwrites the other kind of mark; erasing only clears the same kind.
     const cur = cellsRef.current[i];
     const ok = s.value === EMPTY ? cur === cellsRef.current[s.start] || cur === s.before[s.start] : cur === EMPTY;
-    if (ok) write(i, s.value);
+    if (ok) write(i, s.value, true);
   };
   const onPointerUp = (i: number) => () => {
     const s = stroke.current;
@@ -291,7 +298,7 @@ export default function PixlBoard({ puzzle, initialState, hint, disabled, mode, 
                 const bad = a.bad.has(i);
                 const dist = Math.abs(r - lastR) + Math.abs(c - lastC);
                 let anim = "";
-                if (!done && i === last) anim = bad ? shakeClass(shakeN) : popClass(tapN);
+                if (!done && i === last) anim = bad ? shakeClass(shakeN) : quiet ? "" : popClass(tapN);
                 const glow = i === hintTarget && !done;
                 return (
                   <div

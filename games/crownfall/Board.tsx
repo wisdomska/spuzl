@@ -4,8 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { useCellSize } from "@/components/game/useBoardSize";
-import { useGridKeys } from "@/components/game/useGridKeys";
-import { play } from "@/lib/audio";
+import { isKeyedInput, useGridKeys } from "@/components/game/useGridKeys";
+import { sfx } from "@/games/_shared/sfx";
 import { CROWNFALL_COPY } from "@/lib/copy/crownfall";
 import { analyze, CROWN, EMPTY, MARK, type CrownfallPuzzle, type CrownfallState } from "./logic";
 import { PatternsOffer } from "./PatternsOffer";
@@ -32,16 +32,18 @@ export default function CrownfallBoard({ puzzle, initialState, hint, disabled, m
   const [tool, setTool] = useState<Tool | null>(null);
   const [last, setLast] = useState(-1);
   const [tapN, setTapN] = useState(0);
+  // Keyboard entry changes state without the pop (useGridKeys).
+  const [quiet, setQuiet] = useState(false);
   const [shakeN, setShakeN] = useState(0);
   const [done, setDone] = useState(false);
   const streak = useRef(0);
   const cellsRef = useRef(cells);
-  const painting = useRef<null | { value: number }>(null);
+  const painting = useRef<null | { value: number; n: number }>(null);
   const cell = useCellSize(n, 0, 6, n <= 4 ? 72 : 64);
   const a = analyze(puzzle, cells);
 
   const commit = useCallback(
-    (i: number, value: number) => {
+    (i: number, value: number, painted = false) => {
       if (disabled || done) return;
       const prev = cellsRef.current;
       if (prev[i] === value) return;
@@ -55,6 +57,7 @@ export default function CrownfallBoard({ puzzle, initialState, hint, disabled, m
       setHist((h) => [...h, prev]);
       setLast(i);
       setTapN((t) => t + 1);
+      setQuiet(isKeyedInput());
       const r = Math.floor(i / n) + 1,
         c = (i % n) + 1;
       const markName = value === CROWN ? "crown" : value === MARK ? "marked empty" : "empty";
@@ -65,11 +68,15 @@ export default function CrownfallBoard({ puzzle, initialState, hint, disabled, m
         api.announce(`Row ${r}, column ${c}, ${markName}. ${after.message}`);
       } else if (after.clear) {
         setDone(true);
+        sfx.place(streak.current + 1);
         api.feedback("Clean. Board cleared.", "success", "check-circle");
         api.announce("Board cleared.");
       } else {
         if (value === CROWN) streak.current++;
-        play("pop", { step: streak.current });
+        // A dragged X is texture under the finger; taking a mark off is soft; anything placed blips.
+        if (painted) sfx.trace(painting.current ? painting.current.n++ : 0);
+        else if (value === EMPTY) sfx.remove();
+        else sfx.place(streak.current);
         api.announce(CROWNFALL_COPY.cellLabel(r - 1, c - 1, CROWNFALL_COPY.regionName(puzzle.regions[i]), markName));
         if (after.bad.size === 0) {
           const tip = mode === "tutorial" && after.crowns === n - 1 ? "One spot left that breaks no rule. Find the glow." : null;
@@ -131,10 +138,10 @@ export default function CrownfallBoard({ puzzle, initialState, hint, disabled, m
     if (disabled || done) return;
     (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
     if (tool !== "crown" && (cells[i] === EMPTY || cells[i] === MARK) && tool === "x")
-      painting.current = { value: cells[i] === MARK ? EMPTY : MARK };
+      painting.current = { value: cells[i] === MARK ? EMPTY : MARK, n: 0 };
   };
   const onPointerEnter = (i: number) => () => {
-    if (painting.current && cells[i] !== CROWN) commit(i, painting.current.value);
+    if (painting.current && cells[i] !== CROWN) commit(i, painting.current.value, true);
   };
   useEffect(() => {
     const up = () => (painting.current = null);
@@ -187,7 +194,7 @@ export default function CrownfallBoard({ puzzle, initialState, hint, disabled, m
                 let anim = "";
                 if (done) anim = "";
                 else if (bad && i === last) anim = shakeN % 2 ? "cell-shake-a" : "cell-shake-b";
-                else if (i === last) anim = tapN % 2 ? "cell-pop-a" : "cell-pop-b";
+                else if (i === last && !quiet) anim = tapN % 2 ? "cell-pop-a" : "cell-pop-b";
                 const glow = (tutorialGlow && v !== CROWN && isSafeCrown(puzzle, cells, i)) || i === hintTarget;
                 const fg = bad ? "var(--danger)" : v === MARK ? "var(--mark-x)" : "var(--text)";
                 const radius = cornerRadius(r, c);

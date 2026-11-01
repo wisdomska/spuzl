@@ -4,8 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, 
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { fitCell, useFitHeight, useViewportWidth } from "@/components/game/useBoardSize";
-import { useGridKeys } from "@/components/game/useGridKeys";
-import { play } from "@/lib/audio";
+import { isKeyedInput, useGridKeys, viaKeys } from "@/components/game/useGridKeys";
+import { sfx } from "@/games/_shared/sfx";
 import { popClass, shakeClass, waveStyle } from "@/games/_shared/logiclab/fx";
 import { sudoku as t } from "@/lib/copy/sudoku";
 import { analyze, emptyState, geometry, type SudokuPuzzle, type SudokuState } from "./logic";
@@ -67,6 +67,8 @@ export function SudokuBoard({
   const [selected, setSelected] = useState(-1);
   const [last, setLast] = useState(-1);
   const [tapN, setTapN] = useState(0);
+  // Typed digits change the cell without the pop (fast, repeated entry).
+  const [quiet, setQuiet] = useState(false);
   const [shakeN, setShakeN] = useState(0);
   const [done, setDone] = useState(false);
   const streak = useRef(0);
@@ -118,9 +120,9 @@ export function SudokuBoard({
   };
   const where = (i: number) => t.where(Math.floor(i / n) + 1, (i % n) + 1, boxIndex(i, n, puzzle.boxW, puzzle.boxH) + 1) + cageName(i);
 
-  /** Place (or clear with 0) a digit in a cell. */
+  /** Place (or clear with 0) a digit in a cell. `fromTool`: the Erase button already made its press sound. */
   const place = useCallback(
-    (i: number, d: number) => {
+    (i: number, d: number, fromTool = false) => {
       if (locked || i < 0) return;
       if (given(i)) {
         say({ text: t.givenLocked, tone: "info", icon: "lock-simple" });
@@ -142,6 +144,7 @@ export function SudokuBoard({
       const broke = d !== 0 && after.bad.has(i) && after.bad.size > before.bad.size;
       setLast(i);
       setTapN((k) => k + 1);
+      setQuiet(isKeyedInput());
       if (broke) {
         streak.current = 0;
         setShakeN((k) => k + 1);
@@ -150,12 +153,13 @@ export function SudokuBoard({
         shown.current = `danger|${after.message}`;
         api.announce(`${where(i)}, ${d}. ${after.message}`);
       } else {
+        if (d) sfx.place(streak.current + 1);
+        else if (!fromTool) sfx.remove();
         if (after.clear) {
           setDone(true);
           api.announce(t.clearedShort);
         } else {
           if (d) streak.current++;
-          play("pop", { step: streak.current });
           api.announce(`${where(i)}, ${d || t.cellCleared}`);
         }
         say(statusLine(after, n * n));
@@ -177,7 +181,10 @@ export function SudokuBoard({
       push(next);
       setLast(i);
       setTapN((k) => k + 1);
-      play("tick");
+      setQuiet(isKeyedInput());
+      // Pencil marks are lighter than digits: a tap to add, the soft tap to take one off.
+      if (notes[i] & (1 << (d - 1))) sfx.select();
+      else sfx.remove();
       api.announce(`${where(i)}, ${t.noteToggled(d, (notes[i] & (1 << (d - 1))) !== 0)}`);
       api.onMove(next);
     },
@@ -188,6 +195,7 @@ export function SudokuBoard({
   const enter = useCallback(
     (d: number) => {
       if (selected < 0) {
+        sfx.select();
         say({ text: t.tapCellFirst, tone: "info", icon: "hand-pointing" });
         return;
       }
@@ -200,7 +208,7 @@ export function SudokuBoard({
   const erase = useCallback(() => {
     if (selected < 0 || locked || given(selected)) return;
     const prev = stRef.current;
-    if (prev.values[selected]) place(selected, 0);
+    if (prev.values[selected]) place(selected, 0, true);
     else if (prev.notes[selected]) {
       const notes = prev.notes.slice();
       notes[selected] = 0;
@@ -255,13 +263,12 @@ export function SudokuBoard({
     if (Number.isInteger(d) && d >= 1 && d <= n) {
       e.preventDefault();
       setSelected(keys.focus);
-      if (notesMode) toggleNote(keys.focus, d);
-      else place(keys.focus, d);
+      viaKeys(() => (notesMode ? toggleNote(keys.focus, d) : place(keys.focus, d)));
       return;
     }
     if (e.key === "Backspace" || e.key === "Delete" || e.key === "0") {
       e.preventDefault();
-      place(keys.focus, 0);
+      viaKeys(() => place(keys.focus, 0));
       return;
     }
     if (e.key === "n" || e.key === "N") {
@@ -353,7 +360,7 @@ export function SudokuBoard({
               const tint = !done && (same || peerSet.has(i));
               const dist = Math.abs(r - lastR) + Math.abs(c - lastC);
               let anim = "";
-              if (!done && i === last) anim = bad ? shakeClass(shakeN) : popClass(tapN);
+              if (!done && i === last) anim = bad ? shakeClass(shakeN) : quiet ? "" : popClass(tapN);
               const ring = glow
                 ? "inset 0 0 0 4px var(--accent)"
                 : bad
@@ -374,6 +381,7 @@ export function SudokuBoard({
                   aria-label={`${where(i)}, ${v ? v : t.empty}${fixed ? `, ${t.given}` : ""}${noteList.length ? `, ${t.notes(noteList)}` : ""}${bad ? `, ${t.breaksRule}` : ""}`}
                   onClick={() => {
                     keys.setFocus(i);
+                    if (i !== selected && !locked) sfx.select();
                     setSelected(i);
                   }}
                   className={`num relative flex cursor-pointer items-center justify-center rounded-[8px] outline-none select-none focus-visible:z-10 ${anim} ${glow ? "hint-ring" : ""} ${same ? "font-extrabold" : fixed ? "font-semibold" : "font-medium"} ${!fixed && !bad ? "text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]" : ""}`}
@@ -471,6 +479,8 @@ export function SudokuBoard({
         style={{ width, gridTemplateColumns: padGrid ? undefined : `repeat(${n}, minmax(0, 1fr))` }}
         role="group"
         aria-label={notesMode ? t.padNotes : t.pad}
+        // Each key makes its own sound (place, note, or the nudge to pick a cell first), not the generic tap.
+        data-no-tick
       >
         {Array.from({ length: n }, (_, k) => {
           const d = k + 1;
