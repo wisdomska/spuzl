@@ -4,8 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { useCellSize } from "@/components/game/useBoardSize";
-import { useGridKeys } from "@/components/game/useGridKeys";
-import { play } from "@/lib/audio";
+import { isKeyedInput, useGridKeys } from "@/components/game/useGridKeys";
+import { sfx } from "@/games/_shared/sfx";
 import { isPlayerCell, mirrorOf, mismatches, playerCells, type ReflectPuzzle, type ReflectState } from "./logic";
 
 const GAP = 3;
@@ -13,6 +13,8 @@ const INK = "#0E0F1A";
 const FILL = ["transparent", "var(--world)", "var(--text)"];
 const GLYPH = ["", "square", "circle"];
 const NAME = ["empty", "filled", "second colour"];
+/** A matching cell's mirror answers a beat later, so the pair reads as one reflection. */
+const ECHO_MS = 70;
 
 /**
  * Reflect board. The given half sits on the far side of a dashed axis; tap a cell on your side to cycle
@@ -24,6 +26,7 @@ export default function ReflectBoard({ puzzle, initialState, hint, disabled, mod
   const [hist, setHist] = useState<ReflectState[]>([]);
   const [last, setLast] = useState(-1);
   const [tapN, setTapN] = useState(0);
+  const [quiet, setQuiet] = useState(false);
   const [done, setDone] = useState(false);
   const ref = useRef(cells);
   const streak = useRef(0);
@@ -45,6 +48,7 @@ export default function ReflectBoard({ puzzle, initialState, hint, disabled, mod
       setHist((h) => [...h, prev]);
       setLast(i);
       setTapN((t) => t + 1);
+      setQuiet(isKeyedInput());
       const r = Math.floor(i / n) + 1,
         c = (i % n) + 1;
       const src = puzzle.given[mirrorOf(n, puzzle.axis, i)];
@@ -57,11 +61,13 @@ export default function ReflectBoard({ puzzle, initialState, hint, disabled, mod
         api.announce(`Row ${r}, column ${c}, ${NAME[v]}. ${msg}`);
       } else if (clear) {
         setDone(true);
+        sfx.place(streak.current + 1);
         api.feedback("Perfect mirror. Board cleared.", "success", "check-circle");
         api.announce("Board cleared.");
       } else {
         if (v) streak.current++;
-        play("pop", { step: streak.current });
+        if (v) sfx.place(streak.current);
+        else sfx.remove();
         api.announce(`Row ${r}, column ${c}, ${NAME[v]}`);
         const count = players.filter((j) => next[j] > 0).length;
         api.feedback(
@@ -93,7 +99,6 @@ export default function ReflectBoard({ puzzle, initialState, hint, disabled, mod
       const prev = h[h.length - 1];
       ref.current = prev;
       setCells(prev);
-      play("tick");
       api.onMove(prev);
       return h.slice(0, -1);
     });
@@ -106,7 +111,6 @@ export default function ReflectBoard({ puzzle, initialState, hint, disabled, mod
     ref.current = next;
     setCells(next);
     setHist((h) => [...h, prev]);
-    play("tick");
     api.onMove(next);
     api.feedback(`0 of ${target} cells`, "info", "flip-horizontal");
   }, [api, done, puzzle.given, target]);
@@ -132,6 +136,7 @@ export default function ReflectBoard({ puzzle, initialState, hint, disabled, mod
   const hintTarget = typeof hint?.target === "number" ? hint.target : -1;
   const lastR = Math.floor(last / n),
     lastC = last % n;
+  const echo = last >= 0 && cells[last] > 0 && !bad.has(last) ? mirrorOf(n, puzzle.axis, last) : -1;
   const pitch = cell + GAP;
   const side = n * pitch - GAP;
   const axisWord = puzzle.axis === "v" ? "vertical" : puzzle.axis === "h" ? "horizontal" : "diagonal";
@@ -158,7 +163,8 @@ export default function ReflectBoard({ puzzle, initialState, hint, disabled, mod
                 const dist = Math.abs(r - lastR) + Math.abs(c - lastC);
                 let anim = "";
                 if (!done && i === last)
-                  anim = isBad ? (tapN % 2 ? "cell-shake-a" : "cell-shake-b") : tapN % 2 ? "cell-pop-a" : "cell-pop-b";
+                  anim = isBad ? (tapN % 2 ? "cell-shake-a" : "cell-shake-b") : quiet ? "" : tapN % 2 ? "cell-pop-a" : "cell-pop-b";
+                else if (!done && !quiet && i === echo) anim = tapN % 2 ? "cell-pop-a" : "cell-pop-b";
                 const glow = i === hintTarget;
                 return (
                   <div
@@ -179,6 +185,8 @@ export default function ReflectBoard({ puzzle, initialState, hint, disabled, mod
                       height: cell,
                       background: v ? FILL[v] : mine ? "var(--surface-raised)" : "var(--surface)",
                       opacity: !mine && !done ? 0.82 : 1,
+                      animationDelay: i === echo && anim ? `${ECHO_MS}ms` : undefined,
+
                       color: INK,
                       boxShadow: glow
                         ? "inset 0 0 0 4px var(--accent)"

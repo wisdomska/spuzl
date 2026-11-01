@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } 
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { useGridKeys } from "@/components/game/useGridKeys";
-import { play } from "@/lib/audio";
+import { sfx } from "@/games/_shared/sfx";
 import { differences, H, regionOf, W, type Box, type Obj, type Scene, type SquintPuzzle, type SquintState } from "./logic";
 
 const COLS = 6;
@@ -135,6 +135,7 @@ export default function SquintBoard({ puzzle, initialState, hint, disabled, mode
           return cur.found.includes(id) && x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
         });
       if (already) {
+        sfx.select();
         api.feedback("Already found that one.", "info", "eye");
         return;
       }
@@ -152,12 +153,12 @@ export default function SquintBoard({ puzzle, initialState, hint, disabled, mode
       setFound(next.found);
       setLast((l) => ({ id: hitId, n: (l?.n ?? 0) + 1 }));
       const clear = next.found.length === total;
+      sfx.place(next.found.length);
       if (clear) {
         setDone(true);
         api.feedback("Sharp eyes. Every difference found.", "success", "check-circle");
         api.announce("All differences found.");
       } else {
-        play("pop", { step: next.found.length });
         api.feedback(
           mode === "tutorial" && next.found.length === 1
             ? "Found one. Rings show in both pictures."
@@ -344,7 +345,9 @@ export default function SquintBoard({ puzzle, initialState, hint, disabled, mode
         {diffs.map((id, k) => (
           <span
             key={id}
-            className="flex h-6 w-6 items-center justify-center rounded-full"
+            // The tally dot that just filled pops with the ring.
+            className={`flex h-6 w-6 items-center justify-center rounded-full ${last && k === found.length - 1 ? (last.n % 2 ? "cell-pop-a" : "cell-pop-b") : ""}`}
+
             style={{ background: k < found.length ? "var(--world)" : "var(--surface-raised)", color: INK }}
           >
             {k < found.length && <Icon name="check" size={14} />}

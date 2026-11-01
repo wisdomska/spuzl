@@ -4,8 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, 
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { useCellSize } from "@/components/game/useBoardSize";
-import { useGridKeys } from "@/components/game/useGridKeys";
-import { play } from "@/lib/audio";
+import { isKeyedInput, useGridKeys } from "@/components/game/useGridKeys";
+import { sfx } from "@/games/_shared/sfx";
 import { analyze, area, inRect, rectBreak, sameRect, spanRect, type QuiltPuzzle, type QuiltState, type Rect } from "./logic";
 
 const PAD = 6;
@@ -47,11 +47,12 @@ export default function QuiltBoard({ puzzle, initialState, hint, disabled, mode,
   const [hist, setHist] = useState<QuiltState[]>([]);
   const [drag, setDrag] = useState<null | { a: number; b: number; x: number; y: number; moved: boolean }>(null);
   const [anchor, setAnchor] = useState<number | null>(null);
-  const [last, setLast] = useState<{ rect: Rect; n: number; bad: boolean } | null>(null);
+  const [last, setLast] = useState<{ rect: Rect; n: number; bad: boolean; quiet: boolean } | null>(null);
   const [done, setDone] = useState(false);
   const streak = useRef(0);
   const rectsRef = useRef(rects);
   const gridRef = useRef<HTMLDivElement>(null);
+  const counterRef = useRef<HTMLDivElement>(null);
   const cell = useCellSize(cols, 0, PAD * 2, 56);
   const a = analyze(puzzle, rects);
   const shades = useMemo(() => shadeOf(rects), [rects]);
@@ -65,7 +66,7 @@ export default function QuiltBoard({ puzzle, initialState, hint, disabled, mode,
       setHist((h) => [...h, prev]);
       const after = analyze(puzzle, next);
       if (!placed) {
-        play("tick");
+        sfx.remove();
         api.announce(`Rectangle removed. ${next.length} of ${total} rectangles.`);
         api.feedback(`${next.length} of ${total} rectangles`, "info", "layout");
         api.onMove(next, { correctStreak: streak.current });
@@ -73,7 +74,9 @@ export default function QuiltBoard({ puzzle, initialState, hint, disabled, mode,
       }
       const why = rectBreak(puzzle, placed);
       const where = `Rows ${placed[0] + 1} to ${placed[0] + placed[2]}, columns ${placed[1] + 1} to ${placed[1] + placed[3]}, area ${area(placed)}`;
-      setLast((l) => ({ rect: placed, n: (l?.n ?? 0) + 1, bad: !!why }));
+      // Keyboard placement changes the board without the pop (fast, repeated entry).
+      const quiet = isKeyedInput();
+      setLast((l) => ({ rect: placed, n: (l?.n ?? 0) + 1, bad: !!why, quiet }));
       if (why) {
         streak.current = 0;
         const msg = after.message;
@@ -81,11 +84,12 @@ export default function QuiltBoard({ puzzle, initialState, hint, disabled, mode,
         api.announce(`${where}. ${msg}`);
       } else if (after.clear) {
         setDone(true);
+        sfx.place(streak.current + 1);
         api.feedback("Stitched. Board cleared.", "success", "check-circle");
         api.announce("Board cleared.");
       } else {
         streak.current++;
-        play("pop", { step: streak.current });
+        sfx.place(streak.current);
         api.announce(`${where}, rectangle placed.`);
         const tip = mode === "tutorial" && next.length === 1 ? "Nice. Each number gets its own rectangle." : null;
         api.feedback(tip ?? `${next.length} of ${total} rectangles`, "info", tip ? "hand-pointing" : "layout");
@@ -132,7 +136,6 @@ export default function QuiltBoard({ puzzle, initialState, hint, disabled, mode,
       rectsRef.current = prev;
       setRects(prev);
       api.onMove(prev);
-      play("tick");
       return h.slice(0, -1);
     });
   }, [api]);
@@ -143,7 +146,6 @@ export default function QuiltBoard({ puzzle, initialState, hint, disabled, mode,
     rectsRef.current = [];
     setRects([]);
     setHist((h) => [...h, prev]);
-    play("tick");
     api.onMove([]);
     api.feedback(`0 of ${total} rectangles`, "info", "layout");
     api.announce("Board cleared of rectangles.");
@@ -169,7 +171,7 @@ export default function QuiltBoard({ puzzle, initialState, hint, disabled, mode,
       if (disabled || done) return;
       if (anchor === null) {
         setAnchor(i);
-        play("tick");
+        sfx.select();
         api.announce(`Corner set at row ${Math.floor(i / cols) + 1}, column ${(i % cols) + 1}. Move, then press Space to draw.`);
       } else {
         place(spanRect(cols, anchor, i));
@@ -211,7 +213,15 @@ export default function QuiltBoard({ puzzle, initialState, hint, disabled, mode,
   const onPointerMove = (e: PointerEvent) => {
     if (!drag) return;
     const { i, px, py } = cellAt(e);
-    if (i !== drag.b || px !== drag.x || py !== drag.y) setDrag({ ...drag, b: i, x: px, y: py, moved: drag.moved || i !== drag.a });
+    if (i !== drag.b) {
+      // A new corner cell: redraw the preview, and a quiet note climbs with the area under the finger.
+      const moved = drag.moved || i !== drag.a;
+      if (moved) sfx.trace(area(spanRect(cols, drag.a, i)));
+      setDrag({ ...drag, b: i, x: px, y: py, moved });
+    } else if (counterRef.current) {
+      // Same cell: only the counter follows the finger, written straight to its transform (no re-render per move).
+      counterRef.current.style.transform = counterAt(px, py);
+    }
   };
   const onPointerUp = () => {
     if (!drag) return;
@@ -233,6 +243,7 @@ export default function QuiltBoard({ puzzle, initialState, hint, disabled, mode,
   const lastCentre = last ? [last.rect[0] + last.rect[2] / 2, last.rect[1] + last.rect[3] / 2] : [0, 0];
   const box = (r: Rect): CSSProperties => ({ left: PAD + r[1] * cell, top: PAD + r[0] * cell, width: r[3] * cell, height: r[2] * cell });
   const boardPx = cols * cell + PAD * 2;
+  const counterAt = (x: number, y: number) => `translate(${Math.min(boardPx - 60, Math.max(0, x - 22))}px, ${Math.max(-50, y - 66)}px)`;
 
   return (
     <div className={`overflow-x-auto ${done ? "board-pulse" : ""}`} style={{ maxWidth: "min(100%, calc(100vw - 36px))" }}>
@@ -286,17 +297,18 @@ export default function QuiltBoard({ puzzle, initialState, hint, disabled, mode,
           const bad = a.bad.has(k);
           const isLast = last && sameRect(last.rect, r);
           const dist = Math.abs(r[0] + r[2] / 2 - lastCentre[0]) + Math.abs(r[1] + r[3] / 2 - lastCentre[1]);
-          const anim = done
-            ? ""
-            : isLast
-              ? last!.bad
-                ? last!.n % 2
-                  ? "cell-shake-a"
-                  : "cell-shake-b"
-                : last!.n % 2
-                  ? "cell-pop-a"
-                  : "cell-pop-b"
-              : "";
+          const anim =
+            done || (isLast && last!.quiet && !last!.bad)
+              ? ""
+              : isLast
+                ? last!.bad
+                  ? last!.n % 2
+                    ? "cell-shake-a"
+                    : "cell-shake-b"
+                  : last!.n % 2
+                    ? "cell-pop-a"
+                    : "cell-pop-b"
+                : "";
           return (
             <div
               key={`${r.join(",")}`}
@@ -372,12 +384,14 @@ export default function QuiltBoard({ puzzle, initialState, hint, disabled, mode,
         {/* area counter rides the finger */}
         {drag?.moved && preview && (
           <div
+            ref={counterRef}
             aria-hidden
             className="num pointer-events-none absolute z-40 flex h-11 min-w-11 items-center justify-center gap-1 rounded-[14px] px-2.5 text-[20px] font-semibold"
             style={{
               left: 0,
               top: 0,
-              transform: `translate(${Math.min(boardPx - 60, Math.max(0, drag.x - 22))}px, ${Math.max(-50, drag.y - 66)}px)`,
+              transform: counterAt(drag.x, drag.y),
+
               background: previewBreak ? "var(--surface)" : "var(--world)",
               color: previewBreak ? (previewBreak === "area" ? "var(--text)" : "var(--danger)") : INK,
               boxShadow: "var(--shadow-float)",

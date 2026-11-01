@@ -7,6 +7,8 @@ import { Icon } from "@/components/ui/Icon";
 import { useCellSize } from "@/components/game/useBoardSize";
 import { useGridKeys } from "@/components/game/useGridKeys";
 import { play } from "@/lib/audio";
+import { sfx } from "@/games/_shared/sfx";
+import { nudge } from "@/games/_shared/nudge";
 import { reducedMotion } from "@/games/_shared/logiclab/fx";
 import { TROTRO_COPY as T } from "@/lib/copy/trotro";
 import {
@@ -27,6 +29,10 @@ const PAD = 8;
 /** Extra room on the right for the exit mark. */
 const EXIT_PAD = 12;
 const DRAG_START = 6;
+/** The bus drives out over this long once the lot is clear. */
+const EXIT_MS = 600;
+/** Grid direction (0 N, 1 E, 2 S, 3 W) for a slide along an axis. */
+const dirOf = (axis: "h" | "v", delta: number) => (axis === "h" ? (delta > 0 ? 1 : 3) : delta > 0 ? 2 : 0);
 
 type Dir = "up" | "down" | "left" | "right";
 const DIRS: { dir: Dir; icon: string; axis: "h" | "v"; step: number }[] = [
@@ -60,7 +66,20 @@ export default function TrotroBoard({ puzzle, initialState, hint, disabled, mode
   const [drag, setDrag] = useState<{ v: number; px: number } | null>(null);
   const [done, setDone] = useState(() => isSolved(replay(puzzle, moves) ?? puzzle.start));
   const movesRef = useRef(moves);
-  const dragRef = useRef<{ v: number; x0: number; y0: number; lo: number; hi: number; moved: boolean; id: number } | null>(null);
+  /** The drag lives here, not in state: the vehicle follows the finger by writing its transform (no re-render per move). */
+  const dragRef = useRef<{
+    v: number;
+    x0: number;
+    y0: number;
+    lo: number;
+    hi: number;
+    moved: boolean;
+    id: number;
+    px: number;
+    el: HTMLElement | null;
+    base: [number, number];
+  } | null>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
   const suppressClick = useRef(false);
   const reduce = useReducedMotion() || reducedMotion();
   const cell = useCellSize(n, GAP, PAD * 2 + EXIT_PAD, 60);
@@ -77,6 +96,9 @@ export default function TrotroBoard({ puzzle, initialState, hint, disabled, mode
       const v = puzzle.vehicles[m[0]];
       const name = vehicleName(puzzle, m[0]);
       if (m[1] < lo || m[1] > hi || !m[1]) {
+        // Blocked: the vehicle leans toward what is in the way and settles back.
+        if (m[1]) nudge(gridRef.current?.querySelector<HTMLElement>(`[data-vehicle="${m[0]}"]`) ?? null, dirOf(v.axis, m[1]));
+        sfx.select();
         api.feedback(T.blocked(name, directionOf(v, m[1] || 1)), "info", "prohibit");
         return;
       }
@@ -89,10 +111,13 @@ export default function TrotroBoard({ puzzle, initialState, hint, disabled, mode
       if (isSolved(after)) {
         setDone(true);
         setSel(-1);
+        sfx.move();
+        // The bus pulls out to the right: an engine sweep that pans with it, as long as the drive.
+        play("swoosh", { duration: EXIT_MS / 1000, pan: 0.2, panTo: 1, delay: 0.05, silentHaptic: true });
         api.feedback(T.out(count, puzzle.par), "success", "check-circle");
         api.announce(T.cleared(count, puzzle.par));
       } else {
-        play("pop", { step: Math.min(count, 12) });
+        sfx.move();
         api.feedback(T.tally(count, puzzle.par), "info", "steering-wheel");
         api.announce(`${T.moved(name, directionOf(v, m[1]), Math.abs(m[1]))} ${T.tally(count, puzzle.par)}`);
       }
@@ -107,6 +132,8 @@ export default function TrotroBoard({ puzzle, initialState, hint, disabled, mode
       if (locked) return;
       const next = v === sel ? -1 : v;
       setSel(next);
+      if (next >= 0) sfx.select();
+      else sfx.remove();
       if (next >= 0) api.announce(T.selected(vehicleName(puzzle, next)));
     },
     [api, locked, puzzle, sel],
@@ -218,7 +245,13 @@ export default function TrotroBoard({ puzzle, initialState, hint, disabled, mode
     const v = i >= 0 ? occ[i] : -1;
     if (v < 0) return;
     const [lo, hi] = room(puzzle, pos, v, occ);
-    dragRef.current = { v, x0: e.clientX, y0: e.clientY, lo, hi, moved: false, id: e.pointerId };
+    const veh = puzzle.vehicles[v];
+    const base: [number, number] = [
+      PAD + (veh.axis === "h" ? pos[v] : veh.line) * pitch,
+      PAD + (veh.axis === "h" ? veh.line : pos[v]) * pitch,
+    ];
+    const el = e.currentTarget.querySelector<HTMLElement>(`[data-vehicle="${v}"]`);
+    dragRef.current = { v, x0: e.clientX, y0: e.clientY, lo, hi, moved: false, id: e.pointerId, px: 0, el, base };
   };
   const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
     const d = dragRef.current;
@@ -229,20 +262,29 @@ export default function TrotroBoard({ puzzle, initialState, hint, disabled, mode
       d.moved = true;
       // Capture only once it is a drag, so a plain tap still clicks the cell under it.
       e.currentTarget.setPointerCapture?.(e.pointerId);
+      if (sel !== d.v) sfx.select();
       setSel(d.v);
+      setDrag({ v: d.v, px: 0 });
     }
-    setDrag({ v: d.v, px: Math.max(d.lo * pitch, Math.min(d.hi * pitch, along)) });
+    d.px = Math.max(d.lo * pitch, Math.min(d.hi * pitch, along));
+    const h = puzzle.vehicles[d.v].axis === "h";
+    if (d.el) {
+      d.el.style.transition = "none";
+      d.el.style.transform = `translate(${d.base[0] + (h ? d.px : 0)}px, ${d.base[1] + (h ? 0 : d.px)}px)`;
+    }
   };
   const endDrag = (e: PointerEvent<HTMLDivElement>, cancel = false) => {
     const d = dragRef.current;
     dragRef.current = null;
     if (!d || !d.moved) return;
     suppressClick.current = true;
-    const px = drag?.v === d.v ? drag.px : 0;
     setDrag(null);
     e.currentTarget.releasePointerCapture?.(e.pointerId);
-    const steps = Math.round(px / pitch);
-    if (!cancel && steps) commit([d.v, steps]);
+    const steps = cancel ? 0 : Math.round(d.px / pitch);
+    // Settle from wherever the finger left it: into the next slot, or back home if it did not move a cell.
+    if (d.el && !reduce) d.el.style.transition = "transform 140ms var(--ease-out)";
+    if (steps) commit([d.v, steps]);
+    else if (d.el) d.el.style.transform = `translate(${d.base[0]}px, ${d.base[1]}px)`;
   };
 
   const hintTarget = hint?.target as { vehicle?: number; delta?: number } | undefined;
@@ -256,6 +298,7 @@ export default function TrotroBoard({ puzzle, initialState, hint, disabled, mode
     <div className={`flex w-full flex-col items-center gap-3 ${done ? "board-pulse" : ""}`}>
       <div className="relative" style={{ paddingRight: EXIT_PAD }}>
         <div
+          ref={gridRef}
           role="grid"
           aria-label={T.board(puzzle.par)}
           aria-rowcount={n}
@@ -320,10 +363,9 @@ export default function TrotroBoard({ puzzle, initialState, hint, disabled, mode
               const at = pos[i];
               const isTrotro = i === 0;
               const dragging = drag?.v === i;
-              const shift = dragging ? drag.px : 0;
               const out = isTrotro && done && at === EXIT_COL;
-              const x = PAD + (v.axis === "h" ? at : v.line) * pitch + (v.axis === "h" ? shift : 0);
-              const y = PAD + (v.axis === "h" ? v.line : at) * pitch + (v.axis === "v" ? shift : 0);
+              const x = PAD + (v.axis === "h" ? at : v.line) * pitch;
+              const y = PAD + (v.axis === "h" ? v.line : at) * pitch;
               const w = v.axis === "h" ? v.len * cell + (v.len - 1) * GAP : cell;
               const h = v.axis === "v" ? v.len * cell + (v.len - 1) * GAP : cell;
               const chosen = i === sel;
@@ -348,7 +390,7 @@ export default function TrotroBoard({ puzzle, initialState, hint, disabled, mode
                       : hinted
                         ? "0 0 0 3px var(--gold)"
                         : "inset 0 -4px 0 color-mix(in srgb, var(--square-ink) 30%, transparent)",
-                    transition: dragging || reduce ? "none" : `transform ${out ? 600 : 140}ms var(--ease-out)`,
+                    transition: dragging || reduce ? "none" : `transform ${out ? EXIT_MS : 140}ms var(--ease-out)`,
                     zIndex: chosen || dragging ? 2 : 1,
                   }}
                 >
@@ -377,7 +419,14 @@ export default function TrotroBoard({ puzzle, initialState, hint, disabled, mode
           <Icon name="caret-right" size={EXIT_PAD + 4} />
         </div>
       </div>
-      <div className="flex items-center gap-2" style={{ width: Math.min(boardW + PAD * 2, 360) }} role="group" aria-label={T.moveGroup}>
+      <div
+        className="flex items-center gap-2"
+        style={{ width: Math.min(boardW + PAD * 2, 360) }}
+        role="group"
+        aria-label={T.moveGroup}
+        // The slide (or the blocked lean) is these buttons' sound.
+        data-no-tick
+      >
         {DIRS.map(({ dir, icon, axis, step: s }) => {
           const can = !!selV && selV.axis === axis && (s < 0 ? selRoom[0] < 0 : selRoom[1] > 0) && !locked;
           return (

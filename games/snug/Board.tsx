@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import type { BoardProps } from "@/games/types";
-import { useGridKeys } from "@/components/game/useGridKeys";
-import { play } from "@/lib/audio";
+import { isKeyedInput, useGridKeys } from "@/components/game/useGridKeys";
+import { sfx } from "@/games/_shared/sfx";
 import {
   cellsOf,
   FIT_COPY,
@@ -40,7 +40,11 @@ interface Drag {
   moved: boolean;
   /** bounding-box origin under the finger, null when off the outline */
   at: Cell | null;
+  /** picked from the tray (its button already tapped on press) rather than lifted off the outline */
+  fromTray: boolean;
 }
+
+const sameCell = (a: Cell | null, b: Cell | null) => a === b || (!!a && !!b && a[0] === b[0] && a[1] === b[1]);
 
 /**
  * Snug board. Drag a block from the tray onto the outline; tap a block to rotate it a quarter turn.
@@ -57,12 +61,13 @@ export default function SnugBoard({ puzzle, initialState, hint, disabled, mode, 
   const [hist, setHist] = useState<{ rot: number[]; pos: (Cell | null)[] }[]>([]);
   const [drag, setDrag] = useState<Drag | null>(null);
   const [held, setHeld] = useState<number | null>(null);
-  const [last, setLast] = useState<{ k: number; n: number; bad: boolean; at: Cell } | null>(null);
+  const [last, setLast] = useState<{ k: number; n: number; bad: boolean; at: Cell; quiet?: boolean } | null>(null);
   const [done, setDone] = useState(false);
   const streak = useRef(0);
   const ref = useRef({ rot, pos });
   const wrapRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
+  const floatRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(358);
   useEffect(() => {
     const on = () => setWidth(Math.min(358, window.innerWidth - 36));
@@ -89,14 +94,16 @@ export default function SnugBoard({ puzzle, initialState, hint, disabled, mode, 
       const st = toState(nextRot, nextPos);
       const name = `Block ${info.k + 1}`;
       const solved = nextPos.every(Boolean) && verify(puzzle, [], st).ok;
-      if (info.kind === "place") setLast((l) => ({ k: info.k, n: (l?.n ?? 0) + 1, bad: false, at: info.at ?? [0, 0] }));
+      if (info.kind === "place")
+        setLast((l) => ({ k: info.k, n: (l?.n ?? 0) + 1, bad: false, at: info.at ?? [0, 0], quiet: isKeyedInput() }));
       if (solved) {
         setDone(true);
+        sfx.place(streak.current + 1);
         api.feedback("Snug fit. Board cleared.", "success", "check-circle");
         api.announce("Every block fits. Board cleared.");
       } else if (info.kind === "place") {
         streak.current++;
-        play("pop", { step: streak.current });
+        sfx.place(streak.current);
         const n = nextPos.filter(Boolean).length;
         api.announce(`${name} placed at row ${info.at![0] + 1}, column ${info.at![1] + 1}. ${n} of ${K} blocks in.`);
         api.feedback(
@@ -105,10 +112,10 @@ export default function SnugBoard({ puzzle, initialState, hint, disabled, mode, 
           "puzzle-piece",
         );
       } else if (info.kind === "rotate") {
-        play("tick");
+        sfx.select();
         api.announce(`${name} rotated.`);
       } else {
-        play("tick");
+        sfx.remove();
         api.announce(`${name} back in the tray.`);
         api.feedback(`${nextPos.filter(Boolean).length} of ${K} blocks in`, "info", "puzzle-piece");
       }
@@ -184,7 +191,6 @@ export default function SnugBoard({ puzzle, initialState, hint, disabled, mode, 
       ref.current = prev;
       setRot(prev.rot);
       setPos(prev.pos);
-      play("tick");
       api.onMove(toState(prev.rot, prev.pos));
       return h.slice(0, -1);
     });
@@ -197,7 +203,6 @@ export default function SnugBoard({ puzzle, initialState, hint, disabled, mode, 
     const nextPos = cur.pos.map(() => null);
     ref.current = { rot: cur.rot, pos: nextPos };
     setPos(nextPos);
-    play("tick");
     api.onMove(toState(cur.rot, nextPos));
     api.feedback(`0 of ${K} blocks in`, "info", "puzzle-piece");
   }, [api, K, done]);
@@ -258,13 +263,13 @@ export default function SnugBoard({ puzzle, initialState, hint, disabled, mode, 
     const b = wrapRef.current!.getBoundingClientRect();
     return { x: e.clientX - b.left, y: e.clientY - b.top };
   };
-  const startDrag = (k: number, grab: Cell, e: PointerEvent) => {
+  const startDrag = (k: number, grab: Cell, e: PointerEvent, fromTray = false) => {
     if (disabled || done || e.button > 0) return;
     e.preventDefault();
     wrapRef.current?.setPointerCapture(e.pointerId);
     const { x, y } = rel(e);
     setHeld(null);
-    setDrag({ k, grab, x, y, sx: x, sy: y, moved: false, at: null });
+    setDrag({ k, grab, x, y, sx: x, sy: y, moved: false, at: null, fromTray });
   };
   const onGridDown = (e: PointerEvent) => {
     const g = gridRef.current!.getBoundingClientRect();
@@ -288,7 +293,17 @@ export default function SnugBoard({ puzzle, initialState, hint, disabled, mode, 
   const onMove = (e: PointerEvent) => {
     if (!drag) return;
     const { x, y } = rel(e);
-    setDrag({ ...drag, x, y, moved: drag.moved || Math.hypot(x - drag.sx, y - drag.sy) > 6, at: originAt(e, drag.grab) });
+    const moved = drag.moved || Math.hypot(x - drag.sx, y - drag.sy) > 6;
+    const at = originAt(e, drag.grab);
+    if (moved === drag.moved && sameCell(at, drag.at)) {
+      // Same snap cell: only the floating block follows the finger, written to its transform (no re-render per move).
+      if (floatRef.current) floatRef.current.style.transform = floatAt(drag, x, y);
+      return;
+    }
+    // Lifting a block off the outline taps (the tray already did on press); each new snap cell ticks quietly.
+    if (moved && !drag.moved && !drag.fromTray) sfx.select();
+    else if (moved && at) sfx.trace(placedCount * 3);
+    setDrag({ ...drag, x, y, moved, at });
   };
   const onUp = (e: PointerEvent) => {
     if (!drag) return;
@@ -312,6 +327,8 @@ export default function SnugBoard({ puzzle, initialState, hint, disabled, mode, 
   const cellBox = (r: number, c: number): CSSProperties => ({ left: PAD + c * pitch, top: PAD + r * pitch, width: cell, height: cell });
   const lastAt = last?.at ?? [0, 0];
   const dragging = drag?.moved ? drag.k : -1;
+  const floatAt = (d: Drag, x: number, y: number) =>
+    `translate(${x - d.grab[1] * pitch - cell / 2}px, ${y - d.grab[0] * pitch - cell / 2}px) scale(1.04)`;
 
   return (
     <div
@@ -370,7 +387,7 @@ export default function SnugBoard({ puzzle, initialState, hint, disabled, mode, 
           if (!at || k === dragging) return null;
           const shape = rotate(puzzle.pieces[k], rot[k]);
           const isLast = last?.k === k;
-          const anim = done ? "" : isLast ? (last!.n % 2 ? "cell-pop-a" : "cell-pop-b") : "";
+          const anim = done || (isLast && last!.quiet) ? "" : isLast ? (last!.n % 2 ? "cell-pop-a" : "cell-pop-b") : "";
           const held_ = held === k;
           return shape.map(([y, x], j) => {
             const r = at[0] + y,
@@ -490,7 +507,7 @@ export default function SnugBoard({ puzzle, initialState, hint, disabled, mode, 
               onPointerDown={(e) => {
                 const t = (e.target as HTMLElement).closest<HTMLElement>("[data-cell]");
                 const j = t ? Number(t.dataset.cell) : 0;
-                startDrag(k, shape[j], e);
+                startDrag(k, shape[j], e, true);
               }}
               className={`relative flex items-center justify-center rounded-[14px] p-2 ${hinted ? "hint-ring" : ""}`}
               style={{
@@ -533,10 +550,12 @@ export default function SnugBoard({ puzzle, initialState, hint, disabled, mode, 
       {/* the block riding the finger */}
       {drag?.moved && (
         <div
+          ref={floatRef}
           aria-hidden
           className="pointer-events-none absolute top-0 left-0 z-40"
           style={{
-            transform: `translate(${drag.x - drag.grab[1] * pitch - cell / 2}px, ${drag.y - drag.grab[0] * pitch - cell / 2}px) scale(1.04)`,
+            transform: floatAt(drag, drag.x, drag.y),
+
             filter: "drop-shadow(0 10px 18px rgb(0 0 0 / .45))",
           }}
         >

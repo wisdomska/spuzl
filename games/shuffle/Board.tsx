@@ -3,11 +3,13 @@
 import { useCallback, useEffect, useId, useRef, useState, type PointerEvent } from "react";
 import type { BoardProps } from "@/games/types";
 import { useGridKeys } from "@/components/game/useGridKeys";
-import { play } from "@/lib/audio";
+import { sfx } from "@/games/_shared/sfx";
 import { gapOf, lineToGap, slide, solved, type Art, type ShufflePuzzle, type ShuffleState } from "./logic";
 
 const GAP = 3;
 const PAD = 6;
+
+const homesOf = (t: number[], gap: number) => t.filter((x, i) => x === i && x !== gap).length;
 
 function ArtShapes({ art }: { art: Art }) {
   return (
@@ -55,6 +57,8 @@ export default function ShuffleBoard({ puzzle, initialState, hint, disabled, mod
   const [done, setDone] = useState(false);
   const ref = useRef({ moves, tiles });
   const swipe = useRef<{ x: number; y: number; i: number } | null>(null);
+  const prevTiles = useRef(tiles);
+
   const [width, setWidth] = useState(358);
   useEffect(() => {
     const on = () => setWidth(Math.min(358, window.innerWidth - 36));
@@ -73,12 +77,16 @@ export default function ShuffleBoard({ puzzle, initialState, hint, disabled, mod
       setLast(slid[slid.length - 1]);
       const win = solved(nextTiles);
       const homes = nextTiles.filter((t, i) => t === i && t !== gap).length;
+      const prevHomes = homesOf(prevTiles.current, gap);
+      prevTiles.current = nextTiles;
+      // Tiles slide with a wooden clack; one arriving home blips instead, climbing with the count home.
+      if (homes > prevHomes || win) sfx.place(Math.min(7, homes));
+      else sfx.move();
       if (win) {
         setDone(true);
         api.feedback(`Picture whole in ${nextMoves.length} moves. Par ${puzzle.par}.`, "success", "check-circle");
         api.announce(`Picture complete in ${nextMoves.length} moves.`);
       } else {
-        play("pop", { step: Math.min(7, homes) });
         api.feedback(
           mode === "tutorial" && nextMoves.length === 1
             ? "Tiles slide into the gap. Rebuild the picture."
@@ -106,7 +114,7 @@ export default function ShuffleBoard({ puzzle, initialState, hint, disabled, mod
       if (!line.length) {
         if (cur.tiles[i] !== gap) {
           setBump((b) => ({ i, n: (b?.n ?? 0) + 1 }));
-          play("tick");
+          sfx.select();
           api.announce("That tile is not in line with the gap.");
         }
         return;
@@ -128,7 +136,7 @@ export default function ShuffleBoard({ puzzle, initialState, hint, disabled, mod
     setTiles(t);
     setMoves(m);
     setLast(id);
-    play("tick");
+    prevTiles.current = t;
     api.announce(`Tile ${id + 1} moved back.`);
     api.onMove({ moves: m });
   }, [api, disabled, done, n]);
