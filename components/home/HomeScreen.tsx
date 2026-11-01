@@ -10,7 +10,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
 import { useMe, useToday } from "@/lib/client/api";
-import { readOnboarding } from "@/lib/client/onboarding";
+import { readOnboarding, writeOnboarding } from "@/lib/client/onboarding";
+import { track } from "@/lib/analytics/track";
 import { GAMES, GAME_BY_ID, LAUNCH_IDS, WORLD_BY_ID, gamesInWorld, type WorldId } from "@/lib/catalog";
 import { HomeMap, nextDaily, worldProgress } from "./HomeMap";
 import { LevelRing, SparksChip, StreakChip } from "@/components/shell/Hud";
@@ -23,6 +24,7 @@ import { EventBanner } from "./EventBanner";
 import { OfflineBanner } from "@/components/pwa/OfflineBanner";
 import { BannerStack } from "@/components/notify/Banner";
 import { useNotices } from "@/lib/notify/notices";
+import { PLAY_NAV } from "@/lib/analytics/play-nav";
 
 export function HomeScreen() {
   const router = useRouter();
@@ -43,6 +45,13 @@ export function HomeScreen() {
   useEffect(() => {
     if (me.isSuccess && me.data === null) router.replace(readOnboarding().introSeen ? "/welcome" : "/intro");
   }, [me.isSuccess, me.data, router]);
+
+  // Onboarding funnel (admin Metrics): a profile made on /welcome has now reached Home. Once per new profile.
+  useEffect(() => {
+    if (!me.data || !readOnboarding().homePending) return;
+    writeOnboarding({ homePending: false });
+    track("onboarding_step", { kind: "home" });
+  }, [me.data]);
 
   // Dailies off: progress is the games a player has ever cleared (free play), not today's Dailies.
   const dailiesOn = useGameSettings()["features.dailies"];
@@ -140,6 +149,7 @@ export function HomeScreen() {
           )}
           <PlayCard
             href={nextMeta ? (dailiesOn ? `/play/${nextMeta.id}` : `/play/${nextMeta.id}?mode=free`) : "/library"}
+            playNav={!!nextMeta}
             title={
               nextMeta
                 ? posInWorld > 1 || counted > 0
@@ -199,6 +209,7 @@ function HomeSkeleton() {
 /** SPZ-16: the one Play card. The ring is "Today x of 15"; the label names exactly what opens. */
 function PlayCard({
   href,
+  playNav,
   title,
   sub,
   done,
@@ -206,6 +217,8 @@ function PlayCard({
   aria,
 }: {
   href: string;
+  /** The card opens a game (not All games): marks it for the tap-to-board metric. */
+  playNav: boolean;
   title: string;
   sub: string;
   done: number;
@@ -218,6 +231,7 @@ function PlayCard({
   return (
     <Link
       href={href as never}
+      {...(playNav ? PLAY_NAV : {})}
       className="toy bg-accent text-on-accent flex h-[72px] min-w-0 items-center gap-3 rounded-[22px] pr-4 pl-3"
       style={{ ["--btn-depth" as string]: "var(--accent-depth)" }}
     >

@@ -4,6 +4,7 @@ import { WORLDS, gamesInWorld, type GameMeta } from "@/lib/catalog";
 import { Icon } from "@/components/ui/Icon";
 import { FreePlayRewards } from "@/components/info/FreePlayRewards";
 import { freePlayCopy } from "@/lib/copy/free-play";
+import { PLAY_NAV } from "@/lib/analytics/play-nav";
 
 export const metadata: Metadata = {
   title: "How to play",
@@ -83,7 +84,7 @@ export default function HowToPlay() {
                   Has fast flashing visuals, kept under 3 flashes a second. You&apos;ll see a notice before you start.
                 </p>
               )}
-              <Link href={`/play/${g.id}`} className="self-start text-[15px]">
+              <Link href={`/play/${g.id}`} className="self-start text-[15px]" {...PLAY_NAV}>
                 Play {g.name}
               </Link>
             </article>

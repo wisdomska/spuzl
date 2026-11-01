@@ -18,6 +18,8 @@ import type { BoardApi } from "@/games/types";
 import { nicknameProblem } from "@/lib/validation/nickname";
 import { api, ensureSession, finishAttempt, startAttempt } from "@/lib/client/api";
 import { writeOnboarding } from "@/lib/client/onboarding";
+import { onboardingStepOf } from "@/lib/analytics/onboarding";
+import { track } from "@/lib/analytics/track";
 import { formatClock } from "@/lib/format";
 import { play, duck } from "@/lib/audio";
 import { PATTERNS, haptic } from "@/lib/haptics";
@@ -106,6 +108,15 @@ export default function Welcome() {
     };
   }, [router]);
 
+  // Onboarding funnel (admin Metrics): each step once per visit, however often the player goes back to it.
+  const seenSteps = useRef(new Set<Step>());
+  useEffect(() => {
+    if (seenSteps.current.has(step)) return;
+    seenSteps.current.add(step);
+    const kind = onboardingStepOf(step);
+    if (kind) track("onboarding_step", { kind });
+  }, [step]);
+
   // Fetch the destination's shell ahead of time, so the hand-off after "Enter The Grid" is quick.
   useEffect(() => {
     if (step === "nickname") router.prefetch(dest);
@@ -160,7 +171,8 @@ export default function Welcome() {
         const s = await startAttempt({ game: "crownfall", mode: "tutorial" });
         await finishAttempt(s.attemptId, { state: clear.current.state, activeMs: clear.current.ms, mistakes: 0 });
       }
-      writeOnboarding({ tutorialDone: !!clear.current });
+      // Home sends the funnel's last step ("home") the first time it shows this new profile.
+      writeOnboarding({ tutorialDone: !!clear.current, homePending: true });
       qc.removeQueries({ queryKey: ["me"] });
       qc.removeQueries({ queryKey: ["today"] });
       setLeaving(true);

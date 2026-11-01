@@ -6,11 +6,16 @@ import { EVENT_COLS } from "@/lib/events/server";
 
 const eventId = async (rc: RouteContext<"/api/admin/events/[id]">) => z.uuid().parse((await rc.params).id);
 
-/** PATCH /api/admin/events/:id: edits an event (any subset of fields). The merged dates must still be valid. */
+/**
+ * PATCH /api/admin/events/:id: edits an event (any subset of fields). The merged dates must still be valid.
+ * The body may repeat the event's own `id` (the console's action hook sends it); any other id is refused.
+ */
 export const PATCH = handle(async (req: Request, rc: RouteContext<"/api/admin/events/[id]">) => {
   const ctx = await requireAdmin("events.write");
   const id = await eventId(rc);
-  const input = await body(req, EventPatch);
+  const { id: bodyId, ...rest } = await body(req, z.record(z.string(), z.unknown()));
+  if (bodyId !== undefined && bodyId !== id) throw new ApiError(400, "id_mismatch");
+  const input = EventPatch.parse(rest);
   const { data: before } = await ctx.db.from("events").select(EVENT_COLS).eq("id", id).maybeSingle();
   if (!before) throw new ApiError(404, "event_not_found");
   const startsAt = input.startsAt ?? before.starts_at;

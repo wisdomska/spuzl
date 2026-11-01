@@ -231,11 +231,17 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
     play("twinkle");
   }, [hints, requestHint, solved, guided]);
   // Only the Hint button spends a hint, and the first one per game asks first (XP cost on Dailies).
+  // Metrics: every tap is a "hint_request" and every go-ahead a "hint_use", so cancelled confirms are
+  // requests minus uses (kind says whether the confirm was shown).
   const askHint = useCallback(() => {
     if (hints <= 0 || !requestHint || solved) return;
-    if (guided || hintConfirmed(meta.id)) void spendHint();
-    else setConfirmHint(true);
-  }, [hints, requestHint, solved, meta.id, spendHint, guided]);
+    const direct = guided || hintConfirmed(meta.id);
+    track("hint_request", { game: meta.id, mode, kind: direct ? "direct" : "confirm" });
+    if (direct) {
+      track("hint_use", { game: meta.id, mode, kind: "direct" });
+      void spendHint();
+    } else setConfirmHint(true);
+  }, [hints, requestHint, solved, meta.id, mode, spendHint, guided]);
 
   // Guided first play: a hint every few seconds of stillness, so nobody stays stuck.
   useEffect(() => {
@@ -377,11 +383,9 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
       <HintConfirm
         open={confirmHint}
         daily={mode === "daily"}
-        onCancel={() => {
-          setConfirmHint(false);
-          track("hint_cancel", { game: meta.id, mode });
-        }}
+        onCancel={() => setConfirmHint(false)}
         onConfirm={() => {
+          track("hint_use", { game: meta.id, mode, kind: "confirm" });
           rememberHintConfirmed(meta.id);
           setConfirmHint(false);
           void spendHint();

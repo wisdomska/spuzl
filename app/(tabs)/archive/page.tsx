@@ -15,6 +15,7 @@ import { monthGrid, shortDate } from "@/lib/meta";
 import { difficultyForDate } from "@/games/types";
 import { useGameSettings } from "@/lib/game-settings/client";
 import { freePlayCopy } from "@/lib/copy/free-play";
+import { PLAY_NAV } from "@/lib/analytics/play-nav";
 
 type Day = ArchiveRes["days"][number];
 const DOW = ["M", "T", "W", "T", "F", "S", "S"];
@@ -93,6 +94,7 @@ function Archive() {
             <Link
               key={d}
               href={`/play/${game}?mode=free&difficulty=${d}`}
+              {...PLAY_NAV}
               className="press bg-surface flex h-14 items-center justify-between rounded-[16px] px-4 text-[16px] font-semibold"
             >
               {cap(d)}
@@ -244,6 +246,7 @@ function DayCard({ d, game }: { d: Day; game: string }) {
         </div>
         <Link
           href={`/play/${game}`}
+          {...PLAY_NAV}
           className="toy bg-accent text-on-accent font-display flex h-[52px] items-center justify-center rounded-[16px] text-[15px] font-extrabold"
           style={{ ["--btn-depth" as string]: "var(--accent-depth)" }}
         >
@@ -274,6 +277,7 @@ function DayCard({ d, game }: { d: Day; game: string }) {
           </p>
           <Link
             href={`/play/${game}?mode=archive&date=${d.date}`}
+            {...PLAY_NAV}
             className="toy bg-accent text-on-accent font-display flex h-[52px] items-center justify-center rounded-[16px] text-[15px] font-extrabold"
             style={{ ["--btn-depth" as string]: "var(--accent-depth)" }}
           >

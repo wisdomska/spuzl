@@ -11,6 +11,7 @@ import { GAME_BY_ID, LAUNCH_IDS, WORLDS, gamesInWorld } from "@/lib/catalog";
 import { SCOPES, SCOPE_LABEL, addDays, shortDate, type Scope } from "@/lib/meta";
 import { formatNumber, formatClock, gmtDate } from "@/lib/format";
 import { ordinal } from "@/lib/leagues";
+import { PLAY_NAV } from "@/lib/analytics/play-nav";
 
 const NEEDS: Record<NonNullable<BoardRes["needs"]>, { title: string; body: string; href: string; cta: string }> = {
   crew: { title: "No crew yet", body: "Start one or join with a code, then race your crew every day.", href: "/crews", cta: "Find a crew" },
@@ -138,6 +139,7 @@ export default function LeaderboardsPage() {
             date === today && meta ? (
               <Link
                 href={`/play/${meta.id}`}
+                {...PLAY_NAV}
                 className="toy bg-accent text-on-accent font-display flex h-[60px] items-center justify-center rounded-[20px] text-[16px] font-black"
                 style={{ ["--btn-depth" as string]: "var(--accent-depth)" }}
               >
@@ -182,6 +184,7 @@ export default function LeaderboardsPage() {
           ) : rows.length > 0 && date === today && meta ? (
             <Link
               href={`/play/${meta.id}`}
+              {...PLAY_NAV}
               className="bg-surface flex h-14 items-center gap-2.5 rounded-[16px] px-3 text-[15px] font-semibold"
               style={{ boxShadow: "inset 0 0 0 2px var(--line), 0 -10px 24px var(--bg)" }}
             >

@@ -15,7 +15,10 @@ import {
   type PageParams,
   type PageSize,
 } from "@/lib/admin/pagination";
+import { adminCopy } from "@/lib/copy/admin";
 import { Btn, inputCls } from "./ui";
+
+const C = adminCopy.pagination;
 
 export interface Pager extends PageParams {
   /** `page=&pageSize=` for the API call. */
@@ -59,7 +62,7 @@ export function usePager(): Pager {
  * buttons, a page jump for long lists and a rows-per-page select. 44 px targets, real buttons, disabled ends.
  * Steps back to the last page by itself when the current one no longer exists (rows resolved or deleted).
  */
-export function Pagination({ pager, total, label = "Pagination" }: { pager: Pager; total: number; label?: string }) {
+export function Pagination({ pager, total, label = C.label }: { pager: Pager; total: number; label?: string }) {
   const { page, pageSize, setPage, setPageSize } = pager;
   const pages = pageCount(total, pageSize);
   const { first, last } = shownRange(page, pageSize, total);
@@ -74,11 +77,11 @@ export function Pagination({ pager, total, label = "Pagination" }: { pager: Page
   return (
     <nav aria-label={label} className="flex flex-wrap items-center gap-x-3 gap-y-2">
       <p className="num text-muted text-[13px] font-medium" aria-live="polite" aria-atomic="true">
-        Showing {first.toLocaleString("en-US")}–{last.toLocaleString("en-US")} of {total.toLocaleString("en-US")}
+        {C.showing(first.toLocaleString("en-US"), last.toLocaleString("en-US"), total.toLocaleString("en-US"))}
       </p>
       <div className="ml-auto flex flex-wrap items-center gap-2">
         <label htmlFor={`${id}-size`} className="text-muted flex items-center gap-2 text-[13px] font-semibold">
-          Rows
+          {C.rows}
           <select
             id={`${id}-size`}
             value={pageSize}
@@ -95,15 +98,15 @@ export function Pagination({ pager, total, label = "Pagination" }: { pager: Page
             ))}
           </select>
         </label>
-        <Btn size="lg" icon="caret-left" disabled={page <= 1} onClick={() => setPage(page - 1)} aria-label="Previous page">
-          <span className="max-sm:sr-only">Previous</span>
+        <Btn size="lg" icon="caret-left" disabled={page <= 1} onClick={() => setPage(page - 1)} aria-label={C.previousAria}>
+          <span className="max-sm:sr-only">{C.previous}</span>
         </Btn>
         <ul className="flex items-center gap-1">
           {nums.map((n) => (
             <li key={n}>
               <button
                 type="button"
-                aria-label={`Page ${n}`}
+                aria-label={C.pageAria(n)}
                 aria-current={n === page ? "page" : undefined}
                 onClick={() => setPage(n)}
                 className={`num inline-flex h-11 min-w-11 items-center justify-center rounded-[12px] px-2 text-[14px] font-semibold ${
@@ -115,8 +118,8 @@ export function Pagination({ pager, total, label = "Pagination" }: { pager: Page
             </li>
           ))}
         </ul>
-        <Btn size="lg" disabled={page >= pages} onClick={() => setPage(page + 1)} aria-label="Next page">
-          <span className="max-sm:sr-only">Next</span>
+        <Btn size="lg" disabled={page >= pages} onClick={() => setPage(page + 1)} aria-label={C.nextAria}>
+          <span className="max-sm:sr-only">{C.next}</span>
           <Icon name="caret-right" size={16} />
         </Btn>
         {pages > 5 && <PageJump key={page} page={page} pages={pages} onGo={setPage} id={`${id}-jump`} />}
@@ -138,7 +141,7 @@ function PageJump({ page, pages, onGo, id }: { page: number; pages: number; onGo
       }}
     >
       <label htmlFor={id} className="text-muted text-[13px] font-semibold">
-        Page
+        {C.page}
       </label>
       <input
         id={id}
@@ -153,10 +156,10 @@ function PageJump({ page, pages, onGo, id }: { page: number; pages: number; onGo
         className={`${inputCls} num h-11 w-20`}
       />
       <span id={`${id}-of`} className="num text-muted text-[13px]">
-        of {pages.toLocaleString("en-US")}
+        {C.of(pages.toLocaleString("en-US"))}
       </span>
       <Btn type="submit" size="lg" disabled={!valid || n === page}>
-        Go
+        {C.go}
       </Btn>
     </form>
   );

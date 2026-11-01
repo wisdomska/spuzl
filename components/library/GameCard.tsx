@@ -13,6 +13,7 @@ import { isRaceGame } from "@/lib/multiplayer/games";
 import { durationLabel } from "@/lib/games-meta";
 import { formatClock } from "@/lib/format";
 import { libraryCopy as T } from "@/lib/copy/library";
+import { PLAY_NAV } from "@/lib/analytics/play-nav";
 
 /**
  * One game's card (SPZ-14): the rule, then one primary action (Play; with Dailies on, today's Daily then Free play
@@ -83,7 +84,7 @@ export function GameCard({
 
               <div className="flex flex-col gap-2.5">
                 {!dailies ? (
-                  <Button size="lg" icon="play" onClick={() => go(`/play/${meta.id}?mode=free`)} autoFocus>
+                  <Button size="lg" icon="play" onClick={() => go(`/play/${meta.id}?mode=free`)} autoFocus {...PLAY_NAV}>
                     {T.play}
                   </Button>
                 ) : done ? (
@@ -92,7 +93,7 @@ export function GameCard({
                     {T.dailyDone(formatClock(doneMs!))}
                   </p>
                 ) : (
-                  <Button size="lg" icon="calendar-blank" onClick={() => go(`/play/${meta.id}`)} autoFocus>
+                  <Button size="lg" icon="calendar-blank" onClick={() => go(`/play/${meta.id}`)} autoFocus {...PLAY_NAV}>
                     {T.daily}
                   </Button>
                 )}
@@ -103,6 +104,7 @@ export function GameCard({
                     icon="infinity"
                     onClick={() => go(`/play/${meta.id}?mode=free`)}
                     autoFocus={done}
+                    {...PLAY_NAV}
                   >
                     {T.freePlay}
                   </Button>

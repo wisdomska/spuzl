@@ -13,6 +13,7 @@ import { SpuzWear } from "@/components/meta/SpuzWear";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { GAME_BY_ID } from "@/lib/catalog";
+import { PLAY_NAV } from "@/lib/analytics/play-nav";
 
 /** S3 Friend profile: public subset only. Under-16s show nickname and avatar only. */
 export default function PlayerPage({ params }: PageProps<"/u/[nickname]">) {
@@ -153,6 +154,7 @@ export default function PlayerPage({ params }: PageProps<"/u/[nickname]">) {
                 </Link>
                 <Link
                   href={`/play/${p.versus?.theirBest ?? "crownfall"}`}
+                  {...PLAY_NAV}
                   className="toy bg-surface-raised font-display flex h-[60px] items-center justify-center gap-2 rounded-[20px] text-[16px] font-extrabold"
                 >
                   <Icon name="timer" size={18} />

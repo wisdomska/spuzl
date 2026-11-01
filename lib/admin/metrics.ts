@@ -39,6 +39,18 @@ export interface MetricRow {
   daily_cleared: number;
   shares: number;
   finished_games: number;
+  /** First-party onboarding_step counts (20261110000001); 0 on days before the client sent them. */
+  onboarding_hello: number;
+  onboarding_signin: number;
+  onboarding_age: number;
+  onboarding_too_young: number;
+  onboarding_start: number;
+  onboarding_tutorial: number;
+  onboarding_nickname: number;
+  onboarding_home: number;
+  /** Taps on Hint, and go-aheads (direct, or Confirm on the first-hint sheet). */
+  hint_requests: number;
+  hint_uses: number;
 }
 
 export interface MetricsData {
@@ -88,7 +100,14 @@ export interface MetricDef {
 const ms = (v: number | null) => (v === null ? "n/a" : v >= 10_000 ? `${(v / 1000).toFixed(1)} s` : `${Math.round(v)} ms`);
 const pct = (v: number | null) => (v === null ? "n/a" : `${v}%`);
 const n = (v: number) => v.toLocaleString("en-US");
-const accidental = (r: MetricRow) => rate(r.hinted_abandoned + r.hint_cancels, r.hinted + r.hint_cancels);
+/**
+ * Hint requests that were not used: Cancel on the confirm (requests minus uses), plus `hint_cancel` rows from
+ * clients on the older build that sent cancels only. Missing fields (older API rows) count as 0.
+ */
+export const hintCancels = (r: MetricRow) => Math.max(0, (r.hint_requests ?? 0) - (r.hint_uses ?? 0)) + (r.hint_cancels ?? 0);
+const accidental = (r: MetricRow) => rate(r.hinted_abandoned + hintCancels(r), r.hinted + hintCancels(r));
+/** Onboarding completion: of new players who reached the age step, the share that reached Home. */
+const onboarded = (r: MetricRow) => rate(r.onboarding_home ?? 0, r.onboarding_age ?? 0);
 
 export const METRICS: readonly MetricDef[] = [
   {
@@ -109,15 +128,21 @@ export const METRICS: readonly MetricDef[] = [
   {
     id: "onboarding",
     title: "Onboarding completion",
-    note: "Of the profiles created each day, the share that went on to start a real game (Daily, free, archive, challenge or match). Tutorial columns count the Crownfall tutorial attempt.",
-    headline: (t) => pct(rate(t.played, t.created)),
-    sub: (t) => `${n(t.played)} of ${n(t.created)} new players played · ${n(t.tutorial_cleared)} cleared the tutorial`,
+    note: "Of new players who reached the age step of Welcome, the share that reached Home (first-party onboarding_step, client recorded). Step columns count each Welcome step once per visit; Created, Tutorial cleared and Played come from profiles and attempts.",
+    headline: (t) => pct(onboarded(t)),
+    sub: (t) =>
+      `${n(t.onboarding_home ?? 0)} of ${n(t.onboarding_age ?? 0)} reached Home · ${n(t.played)} of ${n(t.created)} new profiles played`,
     cols: [
+      { key: "welcome", label: "Welcome", value: (r) => r.onboarding_hello ?? 0 },
+      { key: "age_step", label: "Age", value: (r) => r.onboarding_age ?? 0 },
+      { key: "start_step", label: "How to start", value: (r) => r.onboarding_start ?? 0 },
+      { key: "tutorial_step", label: "Tutorial", value: (r) => r.onboarding_tutorial ?? 0 },
+      { key: "nickname_step", label: "Nickname", value: (r) => r.onboarding_nickname ?? 0 },
+      { key: "reached_home", label: "Home", value: (r) => r.onboarding_home ?? 0 },
+      { key: "completion_pct", label: "Completion %", value: onboarded },
       { key: "players_created", label: "Created", value: (r) => r.created },
-      { key: "tutorial_started", label: "Tutorial started", value: (r) => r.tutorial_started },
       { key: "tutorial_cleared", label: "Tutorial cleared", value: (r) => r.tutorial_cleared },
       { key: "played_a_game", label: "Played", value: (r) => r.played },
-      { key: "completion_pct", label: "Completion %", value: (r) => rate(r.played, r.created) },
     ],
   },
   {
@@ -135,16 +160,19 @@ export const METRICS: readonly MetricDef[] = [
   {
     id: "hints",
     title: "Hint use",
-    note: "Finished solo attempts that used a hint. Accidental = hinted attempts later abandoned plus first-hint confirms cancelled, over hinted attempts plus cancels.",
+    note: "Finished solo attempts that used a hint. Requested = taps on Hint; went ahead = hints the player confirmed or that needed no confirm (client recorded). Cancelled = requested minus went ahead. Accidental = hinted attempts later abandoned plus cancels, over hinted attempts plus cancels.",
     headline: (t) => pct(rate(t.hinted, t.attempts)),
-    sub: (t) => `${n(t.hints_used)} hints · accidental ${pct(accidental(t))} (${n(t.hint_cancels)} cancels)`,
+    sub: (t) =>
+      `${n(t.hints_used)} hints · ${n(t.hint_requests ?? 0)} requested, ${n(t.hint_uses ?? 0)} went ahead · accidental ${pct(accidental(t))} (${n(hintCancels(t))} cancels)`,
     cols: [
       { key: "finished_attempts", label: "Finished", value: (r) => r.attempts },
       { key: "attempts_with_hint", label: "With hint", value: (r) => r.hinted },
       { key: "hints_used", label: "Hints", value: (r) => r.hints_used },
       { key: "hint_use_pct", label: "Use %", value: (r) => rate(r.hinted, r.attempts) },
       { key: "hinted_then_abandoned", label: "Hinted, abandoned", value: (r) => r.hinted_abandoned },
-      { key: "confirm_cancels", label: "Confirm cancels", value: (r) => r.hint_cancels },
+      { key: "hint_requests", label: "Requested", value: (r) => r.hint_requests ?? 0 },
+      { key: "hint_went_ahead", label: "Went ahead", value: (r) => r.hint_uses ?? 0 },
+      { key: "confirm_cancels", label: "Cancelled", value: hintCancels },
       { key: "accidental_pct", label: "Accidental %", value: accidental },
     ],
   },

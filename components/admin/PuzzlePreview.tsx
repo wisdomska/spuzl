@@ -69,6 +69,7 @@ export function PuzzlePreview({
   slot,
   canWrite,
   canSwap,
+  backHref,
 }: {
   puzzleId: string;
   game: string;
@@ -76,6 +77,8 @@ export function PuzzlePreview({
   slot?: Slot;
   canWrite: boolean;
   canSwap: boolean;
+  /** Where Back goes: the puzzle list with the filters and page it was opened from. */
+  backHref?: string;
 }) {
   const q = useAdminQuery<Detail>(["puzzle", puzzleId], `/api/admin/puzzles/${puzzleId}`);
   const check = useAdminAction<void, Report>("POST", `/api/admin/puzzles/${puzzleId}/check${date ? `?date=${date}` : ""}`);
@@ -129,7 +132,7 @@ export function PuzzlePreview({
       <div className="flex min-w-0 flex-col gap-3.5 px-6 py-5">
         <div className="flex flex-wrap items-center gap-3">
           <Link
-            href={date ? "/admin/calendar" : "/admin/puzzles"}
+            href={date ? "/admin/calendar" : (backHref ?? "/admin/puzzles")}
             aria-label="Back"
             className="hover:bg-surface-raised -ml-2 flex size-11 items-center justify-center rounded-[10px]"
           >

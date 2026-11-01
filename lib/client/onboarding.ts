@@ -6,6 +6,8 @@ export interface Onboarding {
   ageBand?: "13-15" | "16-17" | "18+";
   tutorialDone?: boolean;
   introSeen?: boolean;
+  /** Set when a new profile is made on /welcome; Home clears it and records "reached Home" (admin Metrics). */
+  homePending?: boolean;
 }
 export function readOnboarding(): Onboarding {
   try {

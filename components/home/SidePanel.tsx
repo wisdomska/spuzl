@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { AvatarChip } from "@/components/meta/ui";
 import { formatNumber } from "@/lib/format";
 import { nextDaily } from "./HomeMap";
+import { PLAY_NAV } from "@/lib/analytics/play-nav";
 
 /**
  * Desktop right panel, 360 px (States, Share, Light and Desktop file, "Desktop home"):
@@ -121,6 +122,7 @@ export function SidePanel() {
           </div>
           <Link
             href={nextMeta ? (dailiesOn ? `/play/${nextMeta.id}` : `/play/${nextMeta.id}?mode=free`) : "/library"}
+            {...(nextMeta ? PLAY_NAV : {})}
             className="toy bg-accent text-on-accent flex h-16 items-center justify-center gap-2.5 rounded-[20px]"
             style={{ ["--btn-depth" as string]: "var(--accent-depth)" }}
           >

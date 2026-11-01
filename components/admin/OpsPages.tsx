@@ -1,13 +1,18 @@
 "use client";
 
 /** Smaller admin tools: schools, shop and events (FR-AD-04), feature flags (FR-AD-07), audit log (FR-AD-08), team. */
+import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { age, todayIso } from "@/lib/admin/dates";
 import { ROLES, ROLE_LABEL, type Role } from "@/lib/admin/roles";
+import { WORLD_BY_ID } from "@/lib/catalog";
 import { errorText, useAdminAction, useAdminQuery, type AdminPage } from "@/lib/client/admin";
+import { adminCopy } from "@/lib/copy/admin";
+import type { EventQuest, EventStatus } from "@/lib/events";
 import { Pagination, usePager } from "./Pagination";
-import { Btn, Empty, Field, Notice, PageTitle, Pill, RowsSkeleton, Tabs, inputCls } from "./ui";
+import { useDebouncedFilter, useUrlFilters } from "./useUrlFilters";
+import { Btn, Empty, Field, Notice, PageTitle, Pill, RowsSkeleton, Tabs, inputCls, type PillTone } from "./ui";
 
 function Table({ head, children, min = 640 }: { head: string[]; children: ReactNode; min?: number }) {
   return (
@@ -57,7 +62,7 @@ function Toggle({ on, label, disabled, onChange }: { on: boolean; label: string;
       className={`flex h-11 items-center gap-1.5 rounded-[10px] px-2 text-[13px] font-semibold disabled:opacity-50 ${on ? "text-accent" : "text-muted"}`}
     >
       <Icon name={on ? "toggle-right" : "toggle-left"} size={26} />
-      {on ? "On" : "Off"}
+      {on ? adminCopy.common.on : adminCopy.common.off}
     </button>
   );
 }
@@ -125,6 +130,9 @@ export function SchoolsPage({ canWrite }: { canWrite: boolean }) {
 /* ---------------- Shop and events ---------------- */
 
 type Kind = "cosmetics" | "badges" | "quests";
+const SHOP = adminCopy.shop;
+const SHOP_FILTERS = { kind: "cosmetics" } as const;
+const SHOP_ALLOWED = { kind: ["cosmetics", "badges", "quests"] };
 interface CatalogRow {
   id: string;
   name?: string;
@@ -142,8 +150,18 @@ interface CatalogRow {
   xp?: number;
 }
 
-export function ShopPage({ canWrite, canPrice }: { canWrite: boolean; canPrice: boolean }) {
-  const [kind, setKind] = useState<Kind>("cosmetics");
+export function ShopPage({
+  canWrite,
+  canPrice,
+  canWriteEvents = false,
+}: {
+  canWrite: boolean;
+  canPrice: boolean;
+  /** events.write: edit seasonal event quests listed under Quests. */
+  canWriteEvents?: boolean;
+}) {
+  const [filters, setFilters] = useUrlFilters(SHOP_FILTERS, SHOP_ALLOWED);
+  const kind = filters.kind as Kind;
   const pager = usePager();
   const q = useAdminQuery<AdminPage<CatalogRow>>(["catalog", kind, pager.query], `/api/admin/catalog/${kind}?${pager.query}`, {
     keepPrevious: true,
@@ -155,7 +173,7 @@ export function ShopPage({ canWrite, canPrice }: { canWrite: boolean; canPrice: 
     <input
       type="number"
       min={0}
-      aria-label={`${r.name ?? r.title} ${field.replace("_", " ")}`}
+      aria-label={SHOP.fieldAria(r.name ?? r.title ?? r.id, field)}
       readOnly={!allowed}
       value={num(r.id, field, r[field] ?? 0)}
       onChange={(e) => setEdit({ ...edit, [`${r.id}.${field}`]: Number(e.target.value) })}
@@ -169,31 +187,27 @@ export function ShopPage({ canWrite, canPrice }: { canWrite: boolean; canPrice: 
   return (
     <div className="flex flex-col gap-3.5 px-6 py-5">
       <PageTitle
-        title="Shop and events"
+        title={SHOP.title}
         aside={
           <Tabs<Kind>
-            label="Catalogue"
+            label={SHOP.catalogue}
             value={kind}
-            onChange={(k) => (setKind(k), pager.reset())}
-            items={[
-              { id: "cosmetics", label: "Cosmetics and prices" },
-              { id: "badges", label: "Badges" },
-              { id: "quests", label: "Quests" },
-            ]}
+            onChange={(k) => setFilters({ kind: k })}
+            items={SHOP_ALLOWED.kind.map((id) => ({ id: id as Kind, label: SHOP.tabs[id as Kind] }))}
           />
         }
       />
-      {kind === "cosmetics" && !canPrice && <Notice icon="info">Only the owner changes Sparks prices.</Notice>}
+      {kind === "cosmetics" && !canPrice && <Notice icon="info">{SHOP.ownerPrices}</Notice>}
       {patch.error && <Notice tone="danger">{errorText(patch.error)}</Notice>}
       {patch.isSuccess && (
         <Notice tone="ok" icon="check-circle">
-          Saved and logged.
+          {adminCopy.common.savedAndLogged}
         </Notice>
       )}
       <Frame q={q}>
         {() =>
           kind === "cosmetics" ? (
-            <Table head={["Item", "Type", "Rarity", "Price (Sparks)", "In shop"]}>
+            <Table head={[...SHOP.cosmeticsHead]}>
               {q.data!.rows.map((r) => (
                 <tr key={r.id}>
                   <td className={`${td} font-semibold`}>{r.name}</td>
@@ -203,7 +217,7 @@ export function ShopPage({ canWrite, canPrice }: { canWrite: boolean; canPrice: 
                   <td className={td}>
                     <Toggle
                       on={!!r.active}
-                      label={`${r.name} in shop`}
+                      label={SHOP.inShopAria(r.name ?? r.id)}
                       disabled={!canWrite || patch.isPending}
                       onChange={(v) => patch.mutate({ id: r.id, patch: { active: v } })}
                     />
@@ -212,7 +226,7 @@ export function ShopPage({ canWrite, canPrice }: { canWrite: boolean; canPrice: 
               ))}
             </Table>
           ) : kind === "badges" ? (
-            <Table head={["Badge", "Family", "Tier", "Sparks", "Secret"]}>
+            <Table head={[...SHOP.badgesHead]}>
               {q.data!.rows.map((r) => (
                 <tr key={r.id}>
                   <td className={td}>
@@ -225,7 +239,7 @@ export function ShopPage({ canWrite, canPrice }: { canWrite: boolean; canPrice: 
                   <td className={td}>
                     <Toggle
                       on={!!r.secret}
-                      label={`${r.name} secret`}
+                      label={SHOP.secretAria(r.name ?? r.id)}
                       disabled={!canWrite || patch.isPending}
                       onChange={(v) => patch.mutate({ id: r.id, patch: { secret: v } })}
                     />
@@ -234,7 +248,7 @@ export function ShopPage({ canWrite, canPrice }: { canWrite: boolean; canPrice: 
               ))}
             </Table>
           ) : (
-            <Table head={["Quest", "Kind", "XP", "Sparks", "Active"]}>
+            <Table head={[...SHOP.questsHead]}>
               {q.data!.rows.map((r) => (
                 <tr key={r.id}>
                   <td className={`${td} font-semibold`}>{r.title}</td>
@@ -244,7 +258,7 @@ export function ShopPage({ canWrite, canPrice }: { canWrite: boolean; canPrice: 
                   <td className={td}>
                     <Toggle
                       on={!!r.active}
-                      label={`${r.title} active`}
+                      label={SHOP.activeAria(r.title ?? r.id)}
                       disabled={!canWrite || patch.isPending}
                       onChange={(v) => patch.mutate({ id: r.id, patch: { active: v } })}
                     />
@@ -256,7 +270,109 @@ export function ShopPage({ canWrite, canPrice }: { canWrite: boolean; canPrice: 
         }
       </Frame>
       {q.data && <Pagination pager={pager} total={q.data.total} />}
+      {kind === "quests" && <EventQuests canWrite={canWriteEvents} />}
     </div>
+  );
+}
+
+/** How many events the quest catalogue lists: seasonal events are few, so the latest page is all of them in practice. */
+const EVENT_QUEST_LIMIT = 100;
+const EVENT_TONE: Record<EventStatus, PillTone> = { live: "ok", upcoming: "warn", ended: "neutral" };
+const shortWhen = (iso: string) =>
+  new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+
+interface EventQuestRow {
+  id: string;
+  name: string;
+  starts_at: string;
+  ends_at: string;
+  quest: EventQuest;
+  status: EventStatus;
+}
+
+/**
+ * Seasonal events' bonus quests (stored on `events.quest`, not in `quests`), listed under the quest catalogue so
+ * every quest players can see is in one place. XP and Sparks are edited inline like catalogue quests and saved
+ * through the events API (validated and audited there); the rest of an event is edited on Seasonal events.
+ */
+function EventQuests({ canWrite }: { canWrite: boolean }) {
+  const c = adminCopy.eventQuests;
+  const q = useAdminQuery<AdminPage<EventQuestRow>>(["events", "quests"], `/api/admin/events?page=1&pageSize=${EVENT_QUEST_LIMIT}`);
+  const save = useAdminAction<{ id: string; quest: EventQuest }>("PATCH", (i) => `/api/admin/events/${i.id}`);
+  const [edit, setEdit] = useState<Record<string, number>>({});
+  const cell = (e: EventQuestRow, field: "xp" | "sparks", label: "XP" | "Sparks", max: number) => {
+    const key = `${e.id}.${field}`;
+    return (
+      <input
+        type="number"
+        min={0}
+        max={max}
+        aria-label={c.fieldLabel(e.quest.title, label)}
+        readOnly={!canWrite}
+        value={edit[key] ?? e.quest[field]}
+        onChange={(ev) => setEdit({ ...edit, [key]: Number(ev.target.value) })}
+        onBlur={() => {
+          const v = edit[key];
+          if (canWrite && v !== undefined && v !== e.quest[field]) save.mutate({ id: e.id, quest: { ...e.quest, [field]: v } });
+        }}
+        className={`${inputCls} num w-24`}
+      />
+    );
+  };
+  return (
+    <section aria-labelledby="event-quests" className="mt-2 flex flex-col gap-2">
+      <div className="flex flex-wrap items-end gap-x-3 gap-y-1">
+        <div className="flex flex-col">
+          <h2 id="event-quests" className="font-display text-[17px] font-extrabold">
+            {c.heading}
+          </h2>
+          <p className="text-muted text-[13px]">
+            {c.intro} {canWrite ? c.editHere : c.readOnly}
+          </p>
+        </div>
+        <Link href="/admin/events" className="text-accent ml-auto flex h-11 items-center text-[13px] font-semibold hover:underline">
+          {c.manage}
+        </Link>
+      </div>
+      {save.error && <Notice tone="danger">{errorText(save.error)}</Notice>}
+      {save.isSuccess && (
+        <Notice tone="ok" icon="check-circle">
+          {adminCopy.common.savedAndLogged}
+        </Notice>
+      )}
+      <Frame q={q}>
+        {() =>
+          !q.data!.rows.length ? (
+            <Empty icon="calendar-blank">{c.empty}</Empty>
+          ) : (
+            <Table head={[...c.head]} min={860}>
+              {q.data!.rows.map((e) => (
+                <tr key={e.id}>
+                  <td className={`${td} font-semibold`}>{e.quest.title}</td>
+                  <td className={td}>
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="text-[13px] font-semibold">{e.name}</span>
+                      <Pill tone={EVENT_TONE[e.status]}>{e.status}</Pill>
+                    </span>
+                  </td>
+                  <td className={`${td} num text-muted text-[13px] whitespace-nowrap`}>
+                    {c.runs(shortWhen(e.starts_at), shortWhen(e.ends_at))}
+                  </td>
+                  <td className={`${td} text-muted text-[13px]`}>
+                    {c.goal[e.quest.kind](e.quest.n, e.quest.world ? (WORLD_BY_ID[e.quest.world]?.name ?? e.quest.world) : "")}
+                  </td>
+                  <td className={td}>{cell(e, "xp", "XP", 1000)}</td>
+                  <td className={td}>{cell(e, "sparks", "Sparks", 500)}</td>
+                </tr>
+              ))}
+            </Table>
+          )
+        }
+      </Frame>
+      {q.data && q.data.total > q.data.rows.length && (
+        <p className="num text-muted text-[13px]">{c.latestOnly(q.data.rows.length, q.data.total)}</p>
+      )}
+    </section>
   );
 }
 
@@ -383,12 +499,13 @@ interface AuditRow {
   created_at: string;
 }
 
+const AUDIT = adminCopy.audit;
+const AUDIT_FILTERS = { actor: "", action: "", target: "", from: "", to: "" } as const;
+
 export function AuditPage() {
-  const [actor, setActor] = useState("");
-  const [action, setAction] = useState("");
-  const [target, setTarget] = useState("");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const [{ actor, action, target, from, to }, setFilters] = useUrlFilters(AUDIT_FILTERS);
+  const [actionText, setActionText] = useDebouncedFilter(action, (v) => setFilters({ action: v }, { replace: true }));
+  const [targetText, setTargetText] = useDebouncedFilter(target, (v) => setFilters({ target: v }, { replace: true }));
   const pager = usePager();
   const qs = new URLSearchParams({
     ...(actor && { actor }),
@@ -402,17 +519,17 @@ export function AuditPage() {
     `/api/admin/audit?${qs}${qs.size ? "&" : ""}${pager.query}`,
     { keepPrevious: true },
   );
-  const who = (id: string | null) => (id ? (q.data?.actors.find((a) => a.id === id)?.email ?? id.slice(0, 8)) : "system");
+  const who = (id: string | null) => (id ? (q.data?.actors.find((a) => a.id === id)?.email ?? id.slice(0, 8)) : AUDIT.systemShort);
   return (
     <div className="flex flex-col gap-3.5 px-6 py-5">
-      <PageTitle title="Audit log">
-        <span className="text-muted text-[14px]">Every admin action, newest first. Append-only.</span>
+      <PageTitle title={AUDIT.title}>
+        <span className="text-muted text-[14px]">{AUDIT.intro}</span>
       </PageTitle>
       <div className="flex flex-wrap items-end gap-2">
-        <Field label="Who" htmlFor="a-actor">
-          <select id="a-actor" value={actor} onChange={(e) => (setActor(e.target.value), pager.reset())} className={`${inputCls} w-56`}>
-            <option value="">Anyone</option>
-            <option value="system">System (cron)</option>
+        <Field label={AUDIT.who} htmlFor="a-actor">
+          <select id="a-actor" value={actor} onChange={(e) => setFilters({ actor: e.target.value })} className={`${inputCls} w-56`}>
+            <option value="">{AUDIT.anyone}</option>
+            <option value="system">{AUDIT.system}</option>
             {q.data?.actors.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.email ?? a.id.slice(0, 8)} ({ROLE_LABEL[a.role]})
@@ -420,41 +537,41 @@ export function AuditPage() {
             ))}
           </select>
         </Field>
-        <Field label="Action starts with" htmlFor="a-action">
+        <Field label={AUDIT.actionStarts} htmlFor="a-action">
           <input
             id="a-action"
-            value={action}
-            placeholder="daily."
-            onChange={(e) => (setAction(e.target.value.toLowerCase()), pager.reset())}
+            value={actionText}
+            placeholder={AUDIT.actionPlaceholder}
+            onChange={(e) => setActionText(e.target.value.toLowerCase())}
             className={`${inputCls} w-40`}
           />
         </Field>
-        <Field label="Target contains" htmlFor="a-target">
+        <Field label={AUDIT.targetContains} htmlFor="a-target">
           <input
             id="a-target"
-            value={target}
-            placeholder="crownfall"
-            onChange={(e) => (setTarget(e.target.value), pager.reset())}
+            value={targetText}
+            placeholder={AUDIT.targetPlaceholder}
+            onChange={(e) => setTargetText(e.target.value)}
             className={`${inputCls} w-40`}
           />
         </Field>
-        <Field label="From" htmlFor="a-from">
+        <Field label={AUDIT.from} htmlFor="a-from">
           <input
             id="a-from"
             type="date"
             max={todayIso()}
             value={from}
-            onChange={(e) => (setFrom(e.target.value), pager.reset())}
+            onChange={(e) => setFilters({ from: e.target.value }, { replace: true })}
             className={`${inputCls} w-40`}
           />
         </Field>
-        <Field label="To" htmlFor="a-to">
+        <Field label={AUDIT.to} htmlFor="a-to">
           <input
             id="a-to"
             type="date"
             max={todayIso()}
             value={to}
-            onChange={(e) => (setTo(e.target.value), pager.reset())}
+            onChange={(e) => setFilters({ to: e.target.value }, { replace: true })}
             className={`${inputCls} w-40`}
           />
         </Field>
@@ -462,9 +579,9 @@ export function AuditPage() {
       <Frame q={q}>
         {() =>
           !q.data!.rows.length ? (
-            <Empty icon="clock-counter-clockwise">No actions match.</Empty>
+            <Empty icon="clock-counter-clockwise">{AUDIT.empty}</Empty>
           ) : (
-            <Table head={["When (GMT)", "Who", "Action", "Target", "Detail"]} min={860}>
+            <Table head={[...AUDIT.head]} min={860}>
               {q.data!.rows.map((r) => (
                 <tr key={r.id}>
                   <td className={`${td} num text-muted text-[13px] whitespace-nowrap`}>{r.created_at.slice(0, 16).replace("T", " ")}</td>

@@ -3,13 +3,14 @@
 /**
  * Tap-to-board latency for the admin Metrics page.
  *
- * - `installTapStamp()` (instrumentation-client.ts) keeps the time of the latest tap on a link to /play/ or on
- *   any button (buttons such as Library cards navigate in code) in sessionStorage, as epoch ms.
+ * - `installTapStamp()` (instrumentation-client.ts) keeps the time of the latest tap on an element marked
+ *   `data-play-nav` (Play links and buttons, see PLAY_NAV) in sessionStorage, as epoch ms.
  * - `useTapToBoard(ready, game, mode)` (PlayScreen) reports once per mount, on the frame after the board first
  *   becomes interactive: "tap" = from a tap made before this screen mounted (at most 15 s earlier), else
  *   "load" = from navigation start when the page itself was opened on the Play screen.
  */
 import { useEffect, useRef } from "react";
+import { isPlayNav } from "./play-nav";
 import { track } from "./track";
 
 const KEY = "spuzl.tap";
@@ -25,9 +26,7 @@ export function installTapStamp() {
   document.addEventListener(
     "click",
     (e) => {
-      const el = (e.target as Element | null)?.closest?.("a[href], button");
-      if (!el) return;
-      if (el instanceof HTMLAnchorElement && !new URL(el.href, location.href).pathname.startsWith("/play/")) return;
+      if (!isPlayNav(e.target as Element | null)) return;
       try {
         sessionStorage.setItem(KEY, JSON.stringify({ at: now(), origin: performance.timeOrigin } satisfies Stamp));
       } catch {
