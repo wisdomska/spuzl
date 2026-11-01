@@ -22,7 +22,10 @@ export async function proxy(request: NextRequest) {
   // Visitors with no session cookie at all (first visit, Google's OAuth branding review) get the public About page
   // at "/", not a redirect into the intro: the homepage must name the app and say what it does without a login.
   // Keyed on the cookie, not on getUser(), so a slow or failed token refresh never hides Home from a player.
-  if (!hasSession && request.nextUrl.pathname === "/") return NextResponse.rewrite(new URL("/about", request.url));
+  // Full page loads only: in-app navigations and prefetches (RSC requests) keep the old flow, so a Home prefetched
+  // just before a guest account is created is never cached as About.
+  const pageLoad = !request.headers.has("rsc") && !request.headers.has("next-router-prefetch");
+  if (!hasSession && pageLoad && request.nextUrl.pathname === "/") return NextResponse.rewrite(new URL("/about", request.url));
   return response;
 }
 
