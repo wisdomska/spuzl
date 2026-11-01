@@ -2,7 +2,8 @@
  * Nickname rules (FR-AC-03): 3 to 16 chars, letters, digits and underscore, filtered.
  * The filter normalises leetspeak and checks substrings against a blocklist. Moderators review reports.
  */
-const BLOCK = [
+/** Abuse, slurs and sexual terms (shared with the 18+ party text filter in lib/party-adult/filter.ts). */
+export const OFFENSIVE = [
   "fuck",
   "shit",
   "bitch",
@@ -20,17 +21,15 @@ const BLOCK = [
   "sex",
   "kill",
   "suicide",
-  "admin",
-  "spuzl",
-  "moderator",
-  "support",
-  "official",
   "kwasia",
   "ashawo",
   "mumu",
   "olodo",
   "ode",
-];
+] as const;
+/** Names that pretend to be staff or the app. */
+const IMPERSONATION = ["admin", "spuzl", "moderator", "support", "official"];
+const BLOCK: string[] = [...OFFENSIVE, ...IMPERSONATION];
 const ALLOW = ["code", "model", "mode", "node", "episode", "spuzler"]; // contain a blocked substring innocently ("Spuzler" is what players are called)
 
 export function normalise(s: string): string {
