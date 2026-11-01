@@ -61,7 +61,7 @@ function Grid8({ flipped, cell, render, label }: { flipped: boolean; cell: numbe
     <div
       role="grid"
       aria-label={label}
-      className="grid overflow-hidden rounded-[14px] shadow-[0_8px_0_#6A3C5E,0_14px_24px_rgba(0,0,0,.45)]"
+      className="grid overflow-hidden rounded-[14px] shadow-[0_8px_0_var(--bay-depth),0_14px_24px_rgba(0,0,0,.45)]"
       style={{ gridTemplateColumns: `repeat(8, ${cell}px)`, gridTemplateRows: `repeat(8, ${cell}px)` }}
     >
       {order.map((sq) => render(sq))}
@@ -149,7 +149,7 @@ function ChessLive({ state, seat, legal, disabled, lastMove, onMove, announce, c
             sel === name
               ? "var(--w-board)"
               : checkSq === name
-                ? "#FF5A5F"
+                ? "var(--bay-check)"
                 : isLast
                   ? light
                     ? SQUARE.lastLight
@@ -182,8 +182,8 @@ function ChessLive({ state, seat, legal, disabled, lastMove, onMove, announce, c
                 <span
                   className={
                     ch === "."
-                      ? "bay-dot absolute z-[2] size-3 rounded-full bg-[rgba(14,15,26,.45)]"
-                      : "absolute inset-[6%] z-[2] rounded-full shadow-[inset_0_0_0_3px_rgba(14,15,26,.55)]"
+                      ? "bay-dot absolute z-[2] size-3 rounded-full bg-[color-mix(in_srgb,var(--square-ink)_45%,transparent)]"
+                      : "absolute inset-[6%] z-[2] rounded-full shadow-[inset_0_0_0_3px_color-mix(in_srgb,var(--square-ink)_55%,transparent)]"
                   }
                 />
               )}
@@ -259,17 +259,21 @@ function DraughtsLive({ state, seat, legal, disabled, onMove }: LiveBoardProps) 
                   width: cell * 0.76,
                   height: cell * 0.76,
                   background: mine
-                    ? "radial-gradient(circle at 40% 35%,#FFFFFF,#DCDDEA 60%,#BFC1D4)"
-                    : "radial-gradient(circle at 40% 35%,#3A3550,#16131F 65%,#0E0F1A)",
-                  boxShadow: mine ? "inset 0 -4px 0 #A2A6C2, 0 4px 0 #7E8199" : "inset 0 -4px 0 #000, 0 0 0 2px #F27ADB, 0 4px 0 #6A3C5E",
-                  color: mine ? "#0E0F1A" : "#F27ADB",
+                    ? "radial-gradient(circle at 40% 35%,var(--bay-man-light-hi),var(--bay-man-light-mid) 60%,var(--bay-man-light-lo))"
+                    : "radial-gradient(circle at 40% 35%,var(--bay-man-dark-hi),var(--bay-man-dark-mid) 65%,var(--bay-disc-dark))",
+                  boxShadow: mine
+                    ? "inset 0 -4px 0 var(--bay-disc-light-rim), 0 4px 0 var(--bay-man-light-depth)"
+                    : "inset 0 -4px 0 var(--bay-man-dark-rim), 0 0 0 2px var(--w-board), 0 4px 0 var(--bay-depth)",
+                  color: mine ? "var(--square-ink)" : "var(--w-board)",
                   outline: movable && !disabled ? "2px solid var(--w-board)" : undefined,
                 }}
               >
                 {king ? <Icon name="crown-simple" size={18} /> : !mine ? <Icon name="circle" size={12} /> : null}
               </span>
             ) : null}
-            {ends.includes(sq) && <span className="bay-dot absolute size-3 rounded-full bg-[rgba(244,245,251,.6)]" />}
+            {ends.includes(sq) && (
+              <span className="bay-dot absolute size-3 rounded-full bg-[color-mix(in_srgb,var(--bay-disc-light)_60%,transparent)]" />
+            )}
           </button>
         );
       }}
@@ -288,7 +292,7 @@ function OwareLive({ state, seat, legal, disabled, onMove }: LiveBoardProps) {
     <div className="flex flex-col items-center gap-3">
       <ScorePill label="Them" n={s.scores[1 - me]} />
       <div
-        className="flex flex-col gap-2.5 rounded-[28px] bg-[#3A2232] p-3 shadow-[inset_0_-6px_0_rgba(0,0,0,.25)]"
+        className="flex flex-col gap-2.5 rounded-[28px] bg-[var(--bay-wood)] p-3 shadow-[inset_0_-6px_0_rgba(0,0,0,.25)]"
         role="grid"
         aria-label="Oware board"
       >
@@ -306,8 +310,8 @@ function OwareLive({ state, seat, legal, disabled, onMove }: LiveBoardProps) {
                   aria-label={`Pit ${pit + 1}, ${s.pits[pit]} seeds${can ? ", sow" : ""}`}
                   className="num flex size-[48px] flex-col items-center justify-center rounded-full text-[18px] font-semibold"
                   style={{
-                    background: "#2A1630",
-                    color: "#F7C4EE",
+                    background: "var(--bay-well)",
+                    color: "var(--bay-pit-ink)",
                     boxShadow: can ? "inset 0 0 0 3px var(--w-board)" : "inset 0 4px 0 rgba(0,0,0,.35)",
                   }}
                 >
@@ -362,13 +366,13 @@ function FourUpLive({ state, legal, disabled, onMove }: LiveBoardProps) {
                 key={r}
                 role="gridcell"
                 aria-label={v ? (v === 1 ? "star disc" : "ring disc") : "empty"}
-                className="flex items-center justify-center rounded-full text-[#0E0F1A]"
+                className="flex items-center justify-center rounded-full text-[var(--square-ink)]"
                 style={{
                   width: cell,
                   height: cell,
-                  background: v === 1 ? "#F4F5FB" : v === 2 ? "#0E0F1A" : "#2A1630",
-                  boxShadow: v === 2 ? "inset 0 0 0 3px #F27ADB" : "inset 0 3px 0 rgba(0,0,0,.3)",
-                  color: v === 2 ? "#F27ADB" : "#0E0F1A",
+                  background: v === 1 ? "var(--bay-disc-light)" : v === 2 ? "var(--bay-disc-dark)" : "var(--bay-well)",
+                  boxShadow: v === 2 ? "inset 0 0 0 3px var(--w-board)" : "inset 0 3px 0 rgba(0,0,0,.3)",
+                  color: v === 2 ? "var(--w-board)" : "var(--square-ink)",
                   animation:
                     !reduce && v && s.moves[s.moves.length - 1] === c && r === firstFilled(s, c)
                       ? "bay-pop 180ms var(--ease-out)"
@@ -397,7 +401,7 @@ function FlipLive({ state, seat, legal, disabled, onMove }: LiveBoardProps) {
   const cell = useCellSize(8, 2, 12, 40);
   return (
     <div
-      className="grid gap-[2px] rounded-[16px] bg-[#2A1630] p-1.5"
+      className="grid gap-[2px] rounded-[16px] bg-[var(--bay-well)] p-1.5"
       style={{ gridTemplateColumns: `repeat(8, ${cell}px)` }}
       role="grid"
       aria-label="Flip board"
@@ -413,7 +417,7 @@ function FlipLive({ state, seat, legal, disabled, onMove }: LiveBoardProps) {
             disabled={!can}
             onClick={() => onMove(sq)}
             aria-label={`${sqName(sq)}${v ? (v === 1 ? ", light" : ", dark") : can ? `, flips ${flips}` : ""}`}
-            className="flex items-center justify-center rounded-[7px] bg-[#3A2232]"
+            className="flex items-center justify-center rounded-[7px] bg-[var(--bay-wood)]"
             style={{ width: cell, height: cell }}
           >
             {v ? (
@@ -422,12 +426,12 @@ function FlipLive({ state, seat, legal, disabled, onMove }: LiveBoardProps) {
                 style={{
                   width: cell * 0.76,
                   height: cell * 0.76,
-                  background: v === 1 ? "#F4F5FB" : "#0E0F1A",
-                  boxShadow: v === 2 ? "inset 0 0 0 3px #F27ADB" : "inset 0 -3px 0 #A2A6C2",
+                  background: v === 1 ? "var(--bay-disc-light)" : "var(--bay-disc-dark)",
+                  boxShadow: v === 2 ? "inset 0 0 0 3px var(--w-board)" : "inset 0 -3px 0 var(--bay-disc-light-rim)",
                 }}
               />
             ) : can ? (
-              <span className="num flex size-[60%] items-center justify-center rounded-full text-[12px] font-bold text-[#F27ADB] shadow-[inset_0_0_0_2px_#F27ADB]">
+              <span className="num flex size-[60%] items-center justify-center rounded-full text-[12px] font-bold text-[var(--w-board)] shadow-[inset_0_0_0_2px_var(--w-board)]">
                 {flips}
               </span>
             ) : null}
@@ -459,7 +463,7 @@ function LudoLive({ state, seat, legal, disabled, onMove }: LiveBoardProps) {
   return (
     <div className="flex flex-col items-center gap-3">
       <div
-        className="grid rounded-[16px] bg-[#2A1630] p-1"
+        className="grid rounded-[16px] bg-[var(--bay-well)] p-1"
         style={{ gridTemplateColumns: `repeat(15, ${cell}px)` }}
         role="grid"
         aria-label="Ludo board"
@@ -475,13 +479,13 @@ function LudoLive({ state, seat, legal, disabled, onMove }: LiveBoardProps) {
           const tIdx = TRACK.findIndex(([a, b]) => a === r && b === c);
           const bg =
             base >= 0
-              ? `color-mix(in srgb, ${LUDO_LOOK[base].c} 28%, #2A1630)`
+              ? `color-mix(in srgb, ${LUDO_LOOK[base].c} 28%, var(--bay-well))`
               : homeCol >= 0
                 ? LUDO_LOOK[homeCol].c
                 : onTrack
                   ? SAFE.has(tIdx)
-                    ? "#5A3A52"
-                    : "#3A2232"
+                    ? "var(--bay-safe)"
+                    : "var(--bay-wood)"
                   : r === 7 && c === 7
                     ? "var(--w-board)"
                     : "transparent";
@@ -532,7 +536,12 @@ function LudoLive({ state, seat, legal, disabled, onMove }: LiveBoardProps) {
           disabled={!canRoll}
           onClick={() => onMove({ kind: "roll" })}
           className="toy font-display h-14 rounded-[18px] px-6 text-[17px] font-black disabled:opacity-50"
-          style={{ background: "var(--w-board)", color: "#0E0F1A", ["--btn-depth" as string]: "#A3348F", boxShadow: "0 5px 0 #A3348F" }}
+          style={{
+            background: "var(--w-board)",
+            color: "var(--square-ink)",
+            ["--btn-depth" as string]: "var(--w-board-ink)",
+            boxShadow: "0 5px 0 var(--w-board-ink)",
+          }}
         >
           Roll
         </button>
