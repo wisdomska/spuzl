@@ -32,16 +32,20 @@ export function samePuzzleRef(puzzle: unknown, b: { game: string; i: number; d: 
   return !!r && r.game === b.game && r.i === b.i && r.d === b.d;
 }
 
-/** Finish: the game's verify, then its audit of the attempt's move log. An audit reason fails the clear. */
+/**
+ * Finish: the game's verify, then its audit of the attempt's move log (a reason fails the clear), then its
+ * bot check on a clear that stands (`suspect`: a reason flags it, like the speed checks).
+ */
 export function finalVerdict(
   logic: GameLogic,
   puzzle: unknown,
   solution: unknown,
   state: unknown,
   log: unknown[],
-): { verdict: VerifyResult } {
+): { verdict: VerifyResult; suspect: string | null } {
   const verdict = logic.verify(puzzle, solution, state);
-  if (!verdict.ok || !logic.audit) return { verdict };
-  const reason = logic.audit(puzzle, solution, state, log);
-  return { verdict: reason ? { ok: false, progress: verdict.progress, reason } : verdict };
+  if (!verdict.ok) return { verdict, suspect: null };
+  const reason = logic.audit?.(puzzle, solution, state, log) ?? null;
+  if (reason) return { verdict: { ok: false, progress: verdict.progress, reason }, suspect: null };
+  return { verdict, suspect: logic.suspect?.(puzzle, solution, state) ?? null };
 }

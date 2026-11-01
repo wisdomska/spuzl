@@ -7,23 +7,41 @@ import { play } from "@/lib/audio";
 import { prefersReducedMotion, useSettings } from "@/lib/settings/store";
 import { PENALTY_COPY as t } from "@/lib/copy/penalty";
 import { HUMAN_FLOOR_MS } from "@/games/_shared/reflex";
+import { sendGuess } from "@/games/_shared/guess";
 import {
   LEFT_EDGE,
   METER_MAX,
   meterAt,
   OVER_BAR,
   POWER_SWEET,
-  replayKick,
+  readKick,
   RIGHT_EDGE,
-  tally,
+  timeoutOutcome,
   WIDE_EDGE,
+  type Dive,
   type KickInput,
   type KickOutcome,
+  type PenaltyCheck,
   type PenaltyPuzzle,
   type PenaltyState,
 } from "./logic";
 
-type Phase = "ready" | "aim" | "power" | "result" | "over";
+/** checking: a shot is with the server; retry: it could not be reached, the shot waits to be sent again */
+type Phase = "ready" | "aim" | "power" | "checking" | "retry" | "result" | "over";
+/** A kick as shown: its outcome and where the keeper went (null when no shot was taken). */
+type Shown = KickOutcome & { dive: Dive | null };
+
+/**
+ * The outcome of one kick. A timeout needs no keeper; a shot goes to the server, which keeps it on the
+ * attempt and only then says where the keeper went. Null when the server could not be reached.
+ */
+async function resolveKick(puzzle: PenaltyPuzzle, i: number, k: KickInput): Promise<Shown | null> {
+  const r = readKick(puzzle, i, k);
+  if (typeof r === "string") return null; // cannot happen: the board only records taps the logic accepts
+  if (r.aim === null || r.power === null) return { ...timeoutOutcome(r.aim), dive: null };
+  const res = await sendGuess<PenaltyCheck>(puzzle.ref, { kick: i, input: k }).catch(() => null);
+  return res && res.ok ? { ...res.outcome, dive: res.dive } : null;
+}
 /** A second tap this soon after a kick lands does not start the next kick by accident. */
 const NEXT_GUARD_MS = 500;
 
@@ -50,12 +68,18 @@ const CSS = `
 export default function PenaltyBoard({ puzzle, initialState, disabled, mode, api }: BoardProps<PenaltyPuzzle, PenaltyState>) {
   const total = puzzle.kicks.length;
   const reduce = prefersReducedMotion({ reducedMotion: useSettings((s) => s.reducedMotion) });
-  const [kicks, setKicks] = useState<KickInput[]>(() => initialState?.kicks ?? []);
-  const [phase, setPhase] = useState<Phase>(() => ((initialState?.kicks.length ?? 0) >= total ? "over" : "ready"));
+  const resumed = initialState?.kicks ?? [];
+  const [kicks, setKicks] = useState<KickInput[]>(resumed);
+  const [results, setResults] = useState<Shown[]>([]);
+  // A resume asks the server for the kicks already taken (same taps, so nothing new is recorded).
+  const [phase, setPhase] = useState<Phase>(() => (resumed.length ? "checking" : "ready"));
   const [aimVal, setAimVal] = useState(0);
   const [powerVal, setPowerVal] = useState(0);
   const [timeLeft, setTimeLeft] = useState(1);
   const kicksRef = useRef(kicks);
+  const resultsRef = useRef<Shown[]>([]);
+  /** what Try again re-sends: from which kick, and whether it is a new kick (feedback, scoring) or a resume */
+  const retry = useRef({ from: 0, fresh: false });
   const kickStart = useRef(0);
   const aimTap = useRef(0);
   const aimAt = useRef(0);
@@ -64,49 +88,90 @@ export default function PenaltyBoard({ puzzle, initialState, disabled, mode, api
   const finishTimer = useRef<number | null>(null);
   useEffect(() => () => void (finishTimer.current && window.clearTimeout(finishTimer.current)), []);
 
-  const outcomes = tally(puzzle, { kicks }).outcomes;
-  const index = phase === "result" || phase === "over" ? kicks.length - 1 : kicks.length;
-  const last: KickOutcome | undefined = phase === "result" || phase === "over" ? outcomes[kicks.length - 1] : undefined;
+  const outcomes = results;
+  const shown = phase === "result" || phase === "over";
+  const last: Shown | undefined = shown ? results[kicks.length - 1] : undefined;
+
+  /** Resolves kicks from `from` on, then shows the latest (with feedback when it is a new kick). */
+  const settle = useCallback(
+    async (from: number, fresh: boolean) => {
+      const list = kicksRef.current;
+      setPhase("checking");
+      const got = resultsRef.current.slice(0, from);
+      for (let i = from; i < list.length; i++) {
+        const r = await resolveKick(puzzle, i, list[i]);
+        if (!r) {
+          resultsRef.current = got;
+          setResults(got);
+          retry.current = { from: i, fresh };
+          setPhase("retry");
+          api.feedback(t.offline, "danger", "wifi-slash");
+          api.announce(t.offline);
+          return;
+        }
+        got.push(r);
+      }
+      resultsRef.current = got;
+      setResults(got);
+      doneAt.current = performance.now();
+      const state = { kicks: list };
+      const i = list.length - 1;
+      const o = got[i];
+      if (fresh && o) {
+        if (o.aim !== null) setAimVal(o.aim);
+        if (o.power !== null) setPowerVal(o.power);
+        if (o.result === "goal") {
+          api.onMove(state, { correctStreak: list.length });
+          play("cheer");
+          api.feedback(t.feedback.goal(o.accuracy), "success", "soccer-ball");
+        } else {
+          api.onMove(state, { mistake: true });
+          play(o.result === "timeout" ? "fizzle" : "buzz");
+          const text =
+            o.result === "saved"
+              ? o.power! < puzzle.soft
+                ? t.feedback.softSaved
+                : t.feedback.saved(o.dive ?? 1)
+              : t.feedback[o.result as "wide" | "over" | "timeout"];
+          api.feedback(text, "danger", o.result === "timeout" ? "timer" : "x");
+        }
+        api.announce(`${t.result[o.result]}. ${t.keeper(o.dive)}`);
+      }
+      if (list.length >= total) {
+        setPhase("over");
+        if (!fresh) return;
+        const goals = got.filter((x) => x.result === "goal").length;
+        const score = got.reduce((a, x) => a + x.points, 0);
+        finishTimer.current = window.setTimeout(() => {
+          play("jingle");
+          api.feedback(t.finished(goals, total, score), "success", "check-circle");
+          api.onSolved(state);
+        }, 900);
+      } else setPhase(list.length ? "result" : "ready");
+    },
+    [api, puzzle, total],
+  );
+
+  // Resume: get the outcomes of the kicks already taken.
+  useEffect(() => {
+    if (resumed.length) queueMicrotask(() => void settle(0, false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const record = useCallback(
     (k: KickInput) => {
-      doneAt.current = performance.now();
       const next = [...kicksRef.current, k];
       kicksRef.current = next;
       setKicks(next);
-      const i = next.length - 1;
-      const state = { kicks: next };
-      const o = replayKick(puzzle, i, k);
-      if (typeof o === "string") return; // cannot happen: the board only records taps the logic accepts
-      if (o.aim !== null) setAimVal(o.aim);
-      if (o.power !== null) setPowerVal(o.power);
-      if (o.result === "goal") {
-        api.onMove(state, { correctStreak: next.length });
-        play("cheer");
-        api.feedback(t.feedback.goal(o.accuracy), "success", "soccer-ball");
-      } else {
-        api.onMove(state, { mistake: true });
-        play(o.result === "timeout" ? "fizzle" : "buzz");
-        const text =
-          o.result === "saved"
-            ? o.power! < puzzle.soft
-              ? t.feedback.softSaved
-              : t.feedback.saved(puzzle.kicks[i].dive)
-            : t.feedback[o.result as "wide" | "over" | "timeout"];
-        api.feedback(text, "danger", o.result === "timeout" ? "timer" : "x");
+      const r = readKick(puzzle, next.length - 1, k);
+      if (typeof r !== "string") {
+        if (r.aim !== null) setAimVal(r.aim);
+        if (r.power !== null) setPowerVal(r.power);
+        if (r.power !== null) api.announce(t.checkingSay);
       }
-      api.announce(`${t.result[o.result]}. ${t.keeper(puzzle.kicks[i].dive)}`);
-      if (next.length >= total) {
-        setPhase("over");
-        const tl = tally(puzzle, state);
-        finishTimer.current = window.setTimeout(() => {
-          play("jingle");
-          api.feedback(t.finished(tl.goals, total, tl.score), "success", "check-circle");
-          api.onSolved(state);
-        }, 900);
-      } else setPhase("result");
+      void settle(next.length - 1, true);
     },
-    [api, puzzle, total],
+    [api, puzzle, settle],
   );
 
   const arm = useCallback(() => {
@@ -147,7 +212,8 @@ export default function PenaltyBoard({ puzzle, initialState, disabled, mode, api
 
   const press = useCallback(
     (at: number) => {
-      if (disabled) return;
+      if (disabled || phase === "checking") return;
+      if (phase === "retry") return void settle(retry.current.from, retry.current.fresh);
       if (phase === "ready" || (phase === "result" && at - doneAt.current > NEXT_GUARD_MS)) return arm();
       if (phase === "aim") {
         const a = Math.round(at - kickStart.current);
@@ -168,7 +234,7 @@ export default function PenaltyBoard({ puzzle, initialState, disabled, mode, api
         record({ aimAt: aimAt.current, powerAt: p, stepped: stepped.current });
       }
     },
-    [api, arm, disabled, phase, puzzle, record],
+    [api, arm, disabled, phase, puzzle, record, settle],
   );
 
   // Pause or lock mid kick: the kick is void and starts again from the top.
@@ -203,12 +269,25 @@ export default function PenaltyBoard({ puzzle, initialState, disabled, mode, api
   }, []);
 
   const live = phase === "aim" || phase === "power";
-  const label = phase === "aim" ? t.setAim : phase === "power" ? t.setPower : phase === "over" ? t.done : kicks.length ? t.next : t.start;
-  const dive = last ? puzzle.kicks[index].dive : null;
+  const label =
+    phase === "aim"
+      ? t.setAim
+      : phase === "power"
+        ? t.setPower
+        : phase === "checking"
+          ? t.checking
+          : phase === "retry"
+            ? t.retry
+            : phase === "over"
+              ? t.done
+              : kicks.length
+                ? t.next
+                : t.start;
+  const dive = last ? last.dive : null;
   const keeperX = dive === null ? ZONE_X[1] : ZONE_X[dive];
   const keeperTilt = dive === null || dive === 1 ? 0 : dive === 0 ? -24 : 24;
   const ball = last && last.aim !== null && last.power !== null ? { x: GX(last.aim), y: GY(last.power) } : SPOT;
-  const score = tally(puzzle, { kicks }).score;
+  const score = results.reduce((a, o) => a + o.points, 0);
 
   return (
     <div className="flex w-[min(358px,calc(100vw-36px))] flex-col gap-3 rounded-[20px] p-3" style={{ background: "var(--board-bg)" }}>
@@ -334,6 +413,7 @@ export default function PenaltyBoard({ puzzle, initialState, disabled, mode, api
         type="button"
         aria-label={`${label}. ${phase === "ready" ? t.readySmall(kicks.length + 1, total) : ""}`}
         data-phase={phase}
+        aria-busy={phase === "checking"}
         disabled={disabled || phase === "over"}
         onPointerDown={(e) => {
           e.preventDefault();
@@ -353,7 +433,20 @@ export default function PenaltyBoard({ puzzle, initialState, disabled, mode, api
           touchAction: "manipulation",
         }}
       >
-        <Icon name={phase === "over" ? "flag-checkered" : live ? "hand-tap" : "soccer-ball"} size={26} />
+        <Icon
+          name={
+            phase === "over"
+              ? "flag-checkered"
+              : live
+                ? "hand-tap"
+                : phase === "checking"
+                  ? "hourglass"
+                  : phase === "retry"
+                    ? "arrow-clockwise"
+                    : "soccer-ball"
+          }
+          size={26}
+        />
         {phase === "over" ? `${t.score} ${score}` : label}
       </button>
 

@@ -322,8 +322,8 @@ export async function finishAttempt(
   const meta = gameOr404(a.game_id);
   const logic = await loadLogic(a.game_id);
   const l = await loadForAttempt(admin, a);
-  // verify, then check against the attempt's server record (shown answers, committed shots)
-  const { verdict } = finalVerdict(logic, l.puzzle, l.solution, input.state, logOf(a.moves));
+  // verify, then check against the attempt's server record (shown answers, committed shots) and the bot check
+  const { verdict, suspect } = finalVerdict(logic, l.puzzle, l.solution, input.state, logOf(a.moves));
 
   const finishedAt = input.offline && input.finishedAt ? new Date(input.finishedAt) : new Date();
   const wallMs = finishedAt.getTime() - new Date(a.started_at).getTime();
@@ -358,6 +358,7 @@ export async function finishAttempt(
   else if (timeMs > wallMs + WALL_SLACK_MS) flag = `client time ${timeMs} exceeds server wall time ${wallMs}`;
   else if (input.offline && a.mode === "daily" && a.daily_date && finishedAt.toISOString().slice(0, 10) !== a.daily_date)
     flag = "offline clear outside its day";
+  else if (suspect) flag = suspect; // the game's own timing check (Penalty King's tap spread)
 
   await admin
     .from("attempts")

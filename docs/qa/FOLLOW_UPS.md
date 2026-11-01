@@ -85,8 +85,11 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 - **Trotro Jam:** hard boards can take 3 to 7 s to generate on the server.
 - **Small cells on phones:** Light Up 10 × 10 cells are about 30 px.
 - **Five:** needs a little vertical scroll at 375 × 812.
-- **Penalty King:** keeper dives ship in the puzzle data, so a modified client could read them; there is also no
-  timing-spread bot check.
+- ~~**Penalty King:** keeper dives ship in the puzzle data; no timing-spread bot check.~~ Done: dives live in the
+  solution; each shot goes through the guess transport, is kept on the attempt, and only then gets its dive
+  (finish audits the state against those shots). Taps that hit the sweet spots with a spread under 4 ms are
+  flagged (`GameLogic.suspect`). The puzzle shape changed (`ref`, no `dive`), so penalty puzzles stored before
+  this would need regenerating (none are scheduled: lab games have no Dailies).
 - **Seasonal event quests** live outside the admin quest catalogue.
 - **Status card links** are signed with the service-role key unless `SHARE_CARD_SECRET` is set.
 - **Admin list filters** are kept in the page, not the URL; links keep the page number but not the filters.

@@ -67,6 +67,11 @@ export interface GameLogic<P = unknown, S = unknown, St = unknown> {
    * attempt while it was played (shown answers, committed shots). A reason fails the clear.
    */
   audit?(puzzle: P, solution: S, state: St, log: unknown[]): string | null;
+  /**
+   * Optional bot check on a verified clear (input timing too regular for a person). A reason flags the clear
+   * for moderation instead of ranking it, like the speed checks in lib/game/service.ts finishAttempt.
+   */
+  suspect?(puzzle: P, solution: S, state: St): string | null;
 }
 
 /** Props the GameShell passes to every Board. */
