@@ -78,6 +78,7 @@ export const en = {
     playAsGuest: "Play as guest",
     signInWithEmail: "Sign in with email",
     signInLater: "You can sign in later from Settings. Your progress comes with you.",
+    signInFailed: "Sign-in didn't finish. Try again, or play as a guest.",
     signInTitle: "Sign in",
     signedInNote: "Signed in. Your Spuz is saved to your account.",
     startTitle: "How do you want to start?",

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Spuz } from "@/components/brand/Spuz";
@@ -64,6 +64,8 @@ const STARTS = [
   { id: "jump", icon: "map-trifold", ...W.starts.jump },
 ] as const;
 
+const noSubscribe = () => () => {};
+
 export default function Welcome() {
   const router = useRouter();
   const qc = useQueryClient();
@@ -72,6 +74,10 @@ export default function Welcome() {
   const [signedIn, setSignedIn] = useState(false);
   const [age, setAge] = useState<Age | null>(null);
   const [color, setColor] = useState(SKINS[1].c);
+  // Back from Google (or an email link) without a session: say so on the first screen.
+  const [authFailed] = useState(
+    () => typeof window !== "undefined" && new URLSearchParams(window.location.search).get("auth") === "failed",
+  );
   const [nick, setNick] = useState("");
   const [ideas, setIdeas] = useState(() => IDEAS.slice(0, 3));
   const [coach, setCoach] = useState("Tap once for X, twice for a crown.");
@@ -212,6 +218,11 @@ export default function Welcome() {
               <Button size="lg" variant="secondary" className="w-full text-[17px]" icon="envelope-simple" onClick={() => setStep("signin")}>
                 {copy.welcome.signInWithEmail}
               </Button>
+              {authFailed && (
+                <p role="alert" className="text-danger text-center text-[14px]">
+                  {copy.welcome.signInFailed}
+                </p>
+              )}
               <p className="text-muted text-center text-[13px]">{copy.welcome.signInLater}</p>
             </div>
           </Screen>
