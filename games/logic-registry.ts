@@ -60,6 +60,7 @@ export const LOGIC: Record<string, Loader> = {
   remix: () => import("./remix/logic"),
   penalty: () => import("./penalty/logic"),
   beattap: () => import("./beattap/logic"),
+  hilo: () => import("./hilo/logic"),
 };
 
 export function hasLogic(id: string) {
