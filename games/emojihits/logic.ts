@@ -4,7 +4,7 @@
  * try through the guess transport. Score: 100 per title found, up to 50 more for speed, 20 off per wrong try.
  */
 import type { Difficulty, Generated, Hint, VerifyResult } from "@/games/types";
-import type { GuessLogic } from "@/games/_shared/guess";
+import type { GuessContext, GuessLogic } from "@/games/_shared/guess";
 import { rotation } from "@/games/_shared/cluecave";
 import { EMOJI_COPY } from "@/lib/copy/emojihits";
 import { createRng, type Rng } from "@/lib/rng";
@@ -91,13 +91,39 @@ export function tryMatches(p: EmojiPuzzle, s: EmojiSolution, round: number, t: H
 const validRound = (p: EmojiPuzzle, r: unknown): r is number =>
   Number.isInteger(r) && (r as number) >= 0 && (r as number) < p.rounds.length;
 
-/** Pure check of one try, for the server guess API. A reveal shows the title once a round is over. */
-export function checkGuess(p: EmojiPuzzle, s: EmojiSolution, g: EmojiGuess): EmojiCheck {
+/** Rounds whose title the server has shown on this attempt (its move log). */
+function revealedRounds(log: unknown[]): Set<number> {
+  const out = new Set<number>();
+  for (const e of log) {
+    const r = e && typeof e === "object" ? (e as { reveal?: unknown }).reveal : undefined;
+    if (typeof r === "number") out.add(r);
+  }
+  return out;
+}
+
+/**
+ * Pure check of one try, for the server guess API. A reveal shows the title once a round is over: on an
+ * attempt it is kept in the move log, so that round can't then count as found; with no context (a bare
+ * puzzle reference) it is refused.
+ */
+export function checkGuess(p: EmojiPuzzle, s: EmojiSolution, g: EmojiGuess, ctx: GuessContext = null): EmojiCheck {
   if (!g || typeof g !== "object" || !validRound(p, g.round)) return { ok: false, invalid: true };
-  if ("reveal" in g && g.reveal === true) return { reveal: s.answers[g.round][0] };
+  if ("reveal" in g && g.reveal === true) return ctx ? { reveal: s.answers[g.round][0] } : { ok: false, invalid: true };
   if (!("answer" in g) || !isTry(g.answer)) return { ok: false, invalid: true };
   if (typeof g.answer === "number" && !p.rounds[g.round].options) return { ok: false, invalid: true };
   return tryMatches(p, s, g.round, g.answer) ? { ok: true, title: s.answers[g.round][0] } : { ok: false };
+}
+
+/** Kept on the attempt: each round whose title was shown, once. */
+export function record(_p: EmojiPuzzle, _s: EmojiSolution, g: EmojiGuess, res: EmojiCheck, log: unknown[]): { reveal: number } | null {
+  if (!("reveal" in res)) return null;
+  return revealedRounds(log).has(g.round) ? null : { reveal: g.round };
+}
+
+/** A round whose title was shown can't also be found. */
+export function audit(p: EmojiPuzzle, s: EmojiSolution, state: EmojiState, log: unknown[]): string | null {
+  const shown = revealedRounds(log);
+  return (replay(p, s, state) ?? []).some((r, i) => r.right && shown.has(i)) ? "title shown before it was found" : null;
 }
 
 interface RoundResult {
@@ -164,6 +190,8 @@ const logic: GuessLogic<EmojiPuzzle, EmojiSolution, EmojiState, EmojiGuess, Emoj
   generate,
   generateAt,
   checkGuess,
+  record,
+  audit,
   verify,
   progress,
   hint,

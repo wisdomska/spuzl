@@ -75,8 +75,9 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
     it's the only solo mode.
 - **Party games:** Draw It and Two Truths were not built. They need free text or drawings between players,
   which conflicts with the no-free-text rule for young players. They need a decision and moderation design first.
-- **Five and Emoji Hits:** the "show the answer" request is stateless. It can reveal an answer but can't change a
-  score. It should read the attempt's saved state before answering.
+- ~~**Five and Emoji Hits:** the "show the answer" request is stateless.~~ Done: it answers only for the player's
+  own open attempt (or the public practice board), reads the attempt's server move log (`attempts.moves`), and
+  records the shown answer there; finish fails a clear whose answer was shown (`GameLogic.audit`).
 - **Emoji Hits:** the artist and year hints need a fact-check before the switch goes on. Both content files are
   marked `needsReview`.
 - **Admin content tools:** the new content games aren't in the admin content review or solve-check tools yet.

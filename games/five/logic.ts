@@ -4,7 +4,7 @@
  * transport and gets the marks back. Words the dictionary does not know are refused without spending a try.
  */
 import type { Difficulty, Generated, Hint, VerifyResult } from "@/games/types";
-import type { GuessLogic } from "@/games/_shared/guess";
+import type { GuessContext, GuessLogic } from "@/games/_shared/guess";
 import { isWord } from "@/games/_shared/words";
 import { FIVE_COPY } from "@/lib/copy/five";
 import { createRng, type Rng } from "@/lib/rng";
@@ -62,18 +62,44 @@ export function generate(rng: Rng, difficulty: Difficulty): Generated<FivePuzzle
 /** A counted guess: five letters and a dictionary word. */
 export const validWord = (w: unknown): w is string => isFiveWord(w) && isWord(w);
 
-/** Pure check of one guess, for the server guess API. */
-export function checkGuess(_p: FivePuzzle, s: FiveSolution, guess: FiveGuess): FiveCheck {
+/** Move log entries Five keeps on an attempt: each counted word the server checked, and a shown answer. */
+type FiveEntry = { w: string } | { reveal: true };
+const entries = (log: unknown[]) => log.filter((e): e is FiveEntry => !!e && typeof e === "object");
+const checkedWords = (log: unknown[]) => new Set(entries(log).flatMap((e) => ("w" in e && typeof e.w === "string" ? [e.w] : [])));
+const revealed = (log: unknown[]) => entries(log).some((e) => "reveal" in e && e.reveal === true);
+
+/**
+ * Pure check of one guess, for the server guess API. The answer is shown only after six counted misses, sent
+ * as proof: on an attempt every one of them must be a word the server checked for it (its move log); on the
+ * practice board the proof alone will do; with no context it is refused.
+ */
+export function checkGuess(_p: FivePuzzle, s: FiveSolution, guess: FiveGuess, ctx: GuessContext = null): FiveCheck {
   if (guess && typeof guess === "object" && Array.isArray(guess.reveal)) {
-    // The answer is shown only after six counted misses, sent as proof.
     const list = guess.reveal;
     const lost = list.length === TRIES && list.every((w) => validWord(w) && w !== s.answer);
-    return lost ? { reveal: s.answer } : { ok: false, refused: true };
+    if (!lost || !ctx) return { ok: false, refused: true };
+    if (ctx.kind === "attempt") {
+      const seen = checkedWords(ctx.log);
+      if (!list.every((w) => seen.has(w))) return { ok: false, refused: true };
+    }
+    return { reveal: s.answer };
   }
   const word = typeof guess === "string" ? guess.toUpperCase() : "";
   if (!isFiveWord(word)) return { ok: false, invalid: "length" };
   if (!isWord(word)) return { ok: false, invalid: "word" };
   return { ok: word === s.answer, word, marks: markGuess(word, s.answer) };
+}
+
+/** Kept on the attempt: a counted word the first time it is checked, and the answer once it is shown. */
+export function record(_p: FivePuzzle, _s: FiveSolution, _g: FiveGuess, res: FiveCheck, log: unknown[]): FiveEntry | null {
+  if ("reveal" in res) return revealed(log) ? null : { reveal: true };
+  if ("marks" in res) return checkedWords(log).has(res.word) ? null : { w: res.word };
+  return null;
+}
+
+/** A clear after the answer was shown is not a clear. */
+export function audit(_p: FivePuzzle, _s: FiveSolution, _state: FiveState, log: unknown[]): string | null {
+  return revealed(log) ? "answer shown before the clear" : null;
 }
 
 interface Replay {
@@ -131,6 +157,8 @@ const logic: GuessLogic<FivePuzzle, FiveSolution, FiveState, FiveGuess, FiveChec
   generate,
   generateAt,
   checkGuess,
+  record,
+  audit,
   verify,
   progress,
   hint,

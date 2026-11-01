@@ -62,6 +62,11 @@ export interface GameLogic<P = unknown, S = unknown, St = unknown> {
   progress(puzzle: P, solution: S, state: St): number;
   /** One safe deduction for the current state, computed server-side. */
   hint?(puzzle: P, solution: S, state: St): Hint | null;
+  /**
+   * Optional, guess-transport games: checks a verified final state against what the server recorded on the
+   * attempt while it was played (shown answers, committed shots). A reason fails the clear.
+   */
+  audit?(puzzle: P, solution: S, state: St, log: unknown[]): string | null;
 }
 
 /** Props the GameShell passes to every Board. */

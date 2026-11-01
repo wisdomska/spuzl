@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ApiError, body, handle, ok, rateLimit, requirePlayer } from "@/lib/api/server";
-import { assertGameOpen, gameOr404, loadFree } from "@/lib/game/service";
+import { assertGameOpen, gameOr404, guidedSeed, loadFree } from "@/lib/game/service";
 import { hasLogic, loadLogic } from "@/games/logic-registry";
 import { guidedCopy } from "@/lib/copy/guided";
 
@@ -8,7 +8,7 @@ import { guidedCopy } from "@/lib/copy/guided";
  * Guided first play (task: first try of each game is a short hinted round). The practice board comes from the
  * fixed seed `tutorial:<game>` on easy; the solution stays here. Nothing is recorded: no attempt, no XP, no rank.
  */
-const SEED = (id: string) => `tutorial:${id}`;
+const SEED = guidedSeed;
 
 /** GET /api/v1/guided/:game: the practice puzzle (no solution). */
 export const GET = handle(async (_req: Request, ctx: RouteContext<"/api/v1/guided/[game]">) => {

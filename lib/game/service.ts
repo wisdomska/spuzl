@@ -20,6 +20,7 @@ import {
 import { update as glicko, clampOneTier, dailyResult, DEFAULT_RATING } from "@/lib/rating/glicko2";
 import { decodeSolution, encodeSolution } from "./solution-codec";
 import { evaluateAfterClear, type Unlock } from "@/lib/gamification/progress";
+import { finalVerdict } from "./guess-check";
 
 export type Mode = "tutorial" | "daily" | "free" | "archive" | "challenge";
 
@@ -91,6 +92,9 @@ export async function loadDaily(admin: SupabaseClient, gameId: string, date: str
       .upsert({ date, game_id: gameId, puzzle_id: ins.id, published_at: new Date().toISOString() }, { onConflict: "date,game_id" });
   return { puzzleId: ins?.id ?? null, puzzle: g.puzzle, solution: g.solution, difficulty };
 }
+
+/** Guided first play: the practice board comes from this fixed seed on easy (its answers are effectively public). */
+export const guidedSeed = (gameId: string) => `tutorial:${gameId}`;
 
 export async function loadFree(gameId: string, seed: string, difficulty: Difficulty): Promise<Loaded> {
   if (seed === "tutorial:crownfall") {
@@ -192,12 +196,16 @@ interface AttemptRow {
   hints: number;
   mistakes: number;
   state: unknown;
+  /** server move log: entries the guess route recorded while the attempt was played (GuessLogic.record) */
+  moves: unknown;
 }
+
+const logOf = (moves: unknown): unknown[] => (Array.isArray(moves) ? moves : []);
 
 async function getAttempt(admin: SupabaseClient, playerId: string, id: string): Promise<AttemptRow> {
   const { data } = await admin
     .from("attempts")
-    .select("id, player_id, game_id, mode, daily_date, puzzle_id, free_seed, started_at, status, hints, mistakes, state")
+    .select("id, player_id, game_id, mode, daily_date, puzzle_id, free_seed, started_at, status, hints, mistakes, state, moves")
     .eq("id", id)
     .maybeSingle();
   if (!data || data.player_id !== playerId) throw new ApiError(404, "attempt_not_found");
@@ -215,17 +223,28 @@ async function loadForAttempt(admin: SupabaseClient, a: AttemptRow): Promise<Loa
 
 /**
  * The puzzle and solution behind one of the player's open attempts, for server-side guess checks. Content
- * games resolve guesses through this, so admin-scheduled custom items check against what was served.
+ * games resolve guesses through this, so admin-scheduled custom items check against what was served. The
+ * attempt's autosaved state and server move log come along, so a guess can depend on how the attempt went.
  */
 export async function attemptPuzzle(
   admin: SupabaseClient,
   playerId: string,
   id: string,
-): Promise<{ gameId: string; puzzle: unknown; solution: unknown }> {
+): Promise<{ gameId: string; puzzle: unknown; solution: unknown; state: unknown; log: unknown[] }> {
   const a = await getAttempt(admin, playerId, id);
   if (a.status !== "in_progress") throw new ApiError(409, "attempt_closed");
   const l = await loadForAttempt(admin, a);
-  return { gameId: a.game_id, puzzle: l.puzzle, solution: l.solution };
+  return { gameId: a.game_id, puzzle: l.puzzle, solution: l.solution, state: a.state, log: logOf(a.moves) };
+}
+
+/**
+ * Appends one entry to an open attempt's server move log, only while the log still has `expectLen` entries
+ * (so two guesses at once can't both act on the same log). False when it changed or the attempt closed.
+ */
+export async function logAttemptMove(admin: SupabaseClient, playerId: string, id: string, expectLen: number, entry: unknown) {
+  const { data, error } = await admin.rpc("svc_attempt_log", { p_attempt: id, p_player: playerId, p_len: expectLen, p_entry: entry });
+  if (error) throw error;
+  return data === true;
 }
 
 export async function saveAttempt(admin: SupabaseClient, playerId: string, id: string, state: unknown, activeMs: number) {
@@ -303,7 +322,8 @@ export async function finishAttempt(
   const meta = gameOr404(a.game_id);
   const logic = await loadLogic(a.game_id);
   const l = await loadForAttempt(admin, a);
-  const verdict = logic.verify(l.puzzle, l.solution, input.state);
+  // verify, then check against the attempt's server record (shown answers, committed shots)
+  const { verdict } = finalVerdict(logic, l.puzzle, l.solution, input.state, logOf(a.moves));
 
   const finishedAt = input.offline && input.finishedAt ? new Date(input.finishedAt) : new Date();
   const wallMs = finishedAt.getTime() - new Date(a.started_at).getTime();
