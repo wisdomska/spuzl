@@ -111,13 +111,22 @@ for (const profile of ["desktop", "4g-phone"] as const) {
           () => waitForBoard(page, 60_000),
         );
         // Library row (first game)
+        // SPZ-14: a row opens the game card; the timed tap is the card's primary action.
         await page.goto("/library");
-        await page.locator('a[href^="/play/"]').first().waitFor();
+        await page
+          .getByRole("button", { name: /Open game card$/ })
+          .nth(1)
+          .click();
+        const primary = page
+          .getByRole("dialog")
+          .getByRole("button", { name: /Today's Daily|Free play/ })
+          .first();
+        await primary.waitFor();
         await page.waitForTimeout(1500);
         await measure(
           `${profile}:library-row`,
           page,
-          () => page.locator('a[href^="/play/"]').first().click(),
+          () => primary.click(),
           () => waitForBoard(page, 60_000),
         );
         await ctx.close();

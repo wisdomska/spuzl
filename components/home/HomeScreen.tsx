@@ -1,5 +1,6 @@
 "use client";
 
+import { homeCopy as T } from "@/lib/copy/home";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -94,14 +95,14 @@ export function HomeScreen() {
               }))}
           />
         </div>
-        <section aria-label="The Grid" className="relative overflow-y-auto pb-[320px] lg:pb-[260px]">
+        <section aria-label="The Grid" className="relative overflow-y-auto pb-[250px] lg:pb-[200px]">
           <HomeMap progress={progress} current={currentWorld} mood={mood} color={d.avatar_color} />
         </section>
 
         <div
           aria-hidden
-          className="pointer-events-none fixed inset-x-0 bottom-0 z-10 h-[340px] lg:absolute lg:h-[280px]"
-          style={{ background: "linear-gradient(transparent, var(--bg) 22%)" }}
+          className="pointer-events-none fixed inset-x-0 bottom-0 z-10 h-[250px] lg:absolute lg:h-[200px]"
+          style={{ background: "linear-gradient(transparent, var(--bg) 40%)" }}
         />
         <div className="fixed inset-x-3 bottom-[92px] z-20 mx-auto flex max-w-[536px] flex-col gap-2.5 lg:absolute lg:bottom-6">
           {atRisk && (
@@ -114,75 +115,34 @@ export function HomeScreen() {
             >
               <Spuz mood="sleepy" size={60} still decorative />
               <div className="flex flex-1 flex-col gap-0.5">
-                <p className="text-[16px] leading-[1.3] font-semibold text-pretty">
-                  Your {streak}-day streak is sleepy. One clear wakes it up.
-                </p>
-                <p className="num text-gold text-[13px] font-medium">Resets in {formatCountdown(msToReset(new Date(now ?? 0)))}</p>
+                <p className="text-[16px] leading-[1.3] font-semibold text-pretty">{T.sleepy(streak)}</p>
+                <p className="num text-gold text-[13px] font-medium">{T.resetsIn(formatCountdown(msToReset(new Date(now ?? 0))))}</p>
               </div>
             </motion.div>
           )}
-          <div className="flex items-center justify-between px-1">
-            <p className="text-[15px] font-semibold">
-              Today <span className="num text-accent">{counted}</span>
-              <span className="text-muted"> of {LAUNCH_IDS.length} cleared</span>
-            </p>
-          </div>
-          <Link
-            href="/library"
-            className="toy bg-surface-raised flex h-[52px] items-center gap-2.5 rounded-[18px] px-4"
-            style={{ boxShadow: "0 5px 0 var(--depth)" }}
-          >
-            <Icon name="infinity" size={22} className="text-accent" />
-            <span className="font-display flex-1 text-left text-[15px] font-extrabold whitespace-nowrap">Play anytime</span>
-            <span className="text-muted text-[13px] font-medium max-[359px]:hidden">51 games, no limit</span>
-            <Icon name="caret-right" size={16} className="text-muted" />
-          </Link>
-          <div className="grid grid-cols-[1fr_64px_64px] gap-2.5 max-[359px]:grid-cols-[1fr_52px_52px] max-[359px]:gap-2">
-            {nextMeta ? (
+          <PlayCard
+            href={nextMeta ? `/play/${nextMeta.id}` : "/library"}
+            title={nextMeta ? (posInWorld > 1 || counted > 0 ? T.continueGame(nextMeta.name) : T.playGame(nextMeta.name)) : T.allDone}
+            sub={nextMeta ? T.where(WORLD_BY_ID[nextMeta.world].name, posInWorld, worldGames.length) : T.allDoneSub}
+            done={counted}
+            total={LAUNCH_IDS.length}
+          />
+          <nav aria-label="More ways to play" className="grid grid-cols-3 gap-2">
+            {[
+              { href: "/duel", icon: "sword", label: T.duel },
+              { href: "/party", icon: "users-three", label: T.party },
+              { href: "/library", icon: "squares-four", label: T.allGames },
+            ].map((c) => (
               <Link
-                href={`/play/${nextMeta.id}`}
-                className="toy bg-accent text-on-accent flex h-16 min-w-0 items-center justify-center gap-2.5 rounded-[20px] px-3"
-                style={{ ["--btn-depth" as string]: "var(--accent-depth)" }}
+                key={c.href}
+                href={c.href as never}
+                className="press bg-surface-raised flex h-11 items-center justify-center gap-1.5 rounded-[14px] text-[14px] font-semibold"
               >
-                <Icon name="play" size={20} className="max-[359px]:hidden" />
-                <span className="flex min-w-0 flex-col items-start">
-                  <span className="font-display max-w-full truncate text-[18px] font-black max-[359px]:text-[15px] max-[359px]:leading-[1.1] max-[359px]:whitespace-normal">
-                    Play {nextMeta.name}
-                  </span>
-                  <span className="max-w-full truncate text-[13px] font-medium max-[359px]:hidden">
-                    {WORLD_BY_ID[nextMeta.world].name}, {posInWorld} of {worldGames.length}
-                  </span>
-                </span>
+                <Icon name={c.icon} size={18} className="text-accent" />
+                {c.label}
               </Link>
-            ) : (
-              <Link
-                href="/library"
-                className="toy bg-accent text-on-accent flex h-16 min-w-0 items-center justify-center gap-2.5 rounded-[20px] px-3"
-                style={{ ["--btn-depth" as string]: "var(--accent-depth)" }}
-              >
-                <Icon name="crown" size={20} />
-                <span className="font-display min-w-0 text-[18px] leading-tight font-black max-[359px]:text-[15px]">
-                  Full Spuzl. Free play?
-                </span>
-              </Link>
-            )}
-            <Link
-              href="/duel"
-              aria-label="Duel"
-              className="toy bg-surface-raised flex h-16 flex-col items-center justify-center gap-0.5 rounded-[20px]"
-            >
-              <Icon name="sword" size={22} />
-              <span className="text-[12px] font-semibold">Duel</span>
-            </Link>
-            <Link
-              href="/party"
-              aria-label="Party"
-              className="toy bg-surface-raised flex h-16 flex-col items-center justify-center gap-0.5 rounded-[20px]"
-            >
-              <Icon name="users-three" size={22} />
-              <span className="text-[12px] font-semibold">Party</span>
-            </Link>
-          </div>
+            ))}
+          </nav>
         </div>
       </main>
       <SidePanel />
@@ -204,5 +164,46 @@ function HomeSkeleton() {
         <Spuz mood="thinking" size={96} decorative />
       </div>
     </main>
+  );
+}
+
+/** SPZ-16: the one Play card. The ring is "Today x of 15"; the label names exactly what opens. */
+function PlayCard({ href, title, sub, done, total }: { href: string; title: string; sub: string; done: number; total: number }) {
+  const r = 20;
+  const c = 2 * Math.PI * r;
+  const pct = Math.min(1, done / Math.max(1, total));
+  return (
+    <Link
+      href={href as never}
+      className="toy bg-accent text-on-accent flex h-[72px] min-w-0 items-center gap-3 rounded-[22px] pr-4 pl-3"
+      style={{ ["--btn-depth" as string]: "var(--accent-depth)" }}
+      aria-label={`${title}. ${sub}. ${T.todayAria(done, total)}`}
+    >
+      <span className="relative flex size-12 shrink-0 items-center justify-center" aria-hidden>
+        <svg viewBox="0 0 48 48" className="absolute inset-0 -rotate-90">
+          <circle cx="24" cy="24" r={r} fill="none" stroke="currentColor" strokeOpacity={0.22} strokeWidth="5" />
+          <circle
+            cx="24"
+            cy="24"
+            r={r}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="5"
+            strokeLinecap="round"
+            strokeDasharray={c}
+            strokeDashoffset={c * (1 - pct)}
+            style={{ transition: "stroke-dashoffset 600ms cubic-bezier(.23,1,.32,1)" }}
+          />
+        </svg>
+        <span className="num text-[13px] leading-none font-black">
+          {done}/{total}
+        </span>
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="font-display truncate text-[18px] leading-tight font-black">{title}</span>
+        <span className="truncate text-[13px] font-semibold opacity-80">{sub}</span>
+      </span>
+      <Icon name="play" size={22} className="shrink-0" />
+    </Link>
   );
 }
