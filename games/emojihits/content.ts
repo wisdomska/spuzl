@@ -1,0 +1,227 @@
+/**
+ * Emoji Hits clues. Curated SPUZL content, needs owner review. Titles only (never lyrics), all family
+ * friendly: well-known films, TV shows and songs, about half of them Ghanaian or from elsewhere in Africa.
+ * `by` and `year` (or a hand-written `clue`) feed the hint line, so keep them factual. `accept` lists other spellings or full titles
+ * that also count; matching already ignores case, punctuation, accents and a leading "the".
+ * Server only: the board never imports this file. Keep the count off a multiple of 5 (logic.test.ts checks):
+ * the Daily packs of five then never repeat until every start has been used.
+ */
+export type HitKind = "song" | "film" | "tv";
+
+export interface HitEntry {
+  title: string;
+  emoji: string;
+  kind: HitKind;
+  by?: string;
+  year?: number;
+  /** hint line used in place of "A <year> <kind> by <by>." when those facts are fuzzy */
+  clue?: string;
+  /** "ghana", "africa" (rest of the continent) or "world" */
+  from: "ghana" | "africa" | "world";
+  accept?: string[];
+}
+
+export const needsReview = true;
+
+export const CONTENT: HitEntry[] = [
+  // ---------- Films ----------
+  { title: "The Lion King", emoji: "🦁👑🌅", kind: "film", by: "Disney", year: 1994, from: "world" },
+  { title: "Frozen", emoji: "❄️👸⛄", kind: "film", by: "Disney", year: 2013, from: "world" },
+  { title: "Finding Nemo", emoji: "🔍🐠🌊", kind: "film", by: "Pixar", year: 2003, from: "world" },
+  { title: "Toy Story", emoji: "🧸🤠🚀", kind: "film", by: "Pixar", year: 1995, from: "world" },
+  { title: "Jurassic Park", emoji: "🦖🦕🏞️", kind: "film", by: "Steven Spielberg", year: 1993, from: "world" },
+  { title: "Titanic", emoji: "🚢🧊🌊", kind: "film", by: "James Cameron", year: 1997, from: "world" },
+  {
+    title: "Harry Potter",
+    emoji: "🧙‍♂️⚡👓",
+    kind: "film",
+    by: "Warner Bros.",
+    year: 2001,
+    from: "world",
+    accept: ["Harry Potter and the Philosopher's Stone", "Harry Potter and the Sorcerer's Stone"],
+  },
+  { title: "Spider-Man", emoji: "🕷️👨🕸️", kind: "film", by: "Marvel", year: 2002, from: "world", accept: ["Spiderman"] },
+  { title: "Cars", emoji: "🚗🏁⚡", kind: "film", by: "Pixar", year: 2006, from: "world" },
+  { title: "Up", emoji: "🎈🏠👴", kind: "film", by: "Pixar", year: 2009, from: "world" },
+  { title: "Shrek", emoji: "🟢👹🏰🫏", kind: "film", by: "DreamWorks", year: 2001, from: "world" },
+  { title: "Moana", emoji: "🌊🛶🐓", kind: "film", by: "Disney", year: 2016, from: "world" },
+  { title: "The Little Mermaid", emoji: "🧜‍♀️🐚🦀", kind: "film", by: "Disney", year: 1989, from: "world" },
+  { title: "Beauty and the Beast", emoji: "🌹🏰👸🕯️", kind: "film", by: "Disney", year: 1991, from: "world" },
+  { title: "Kung Fu Panda", emoji: "🥋🐼🥟", kind: "film", by: "DreamWorks", year: 2008, from: "world" },
+  { title: "Madagascar", emoji: "🦁🦓🦒🦛🏝️", kind: "film", by: "DreamWorks", year: 2005, from: "world" },
+  { title: "Star Wars", emoji: "⭐⚔️🌌", kind: "film", by: "George Lucas", year: 1977, from: "world" },
+  { title: "Home Alone", emoji: "🏠👦🎄", kind: "film", by: "Chris Columbus", year: 1990, from: "world" },
+  { title: "The Wizard of Oz", emoji: "🧙‍♂️🌪️👠🦁", kind: "film", by: "MGM", year: 1939, from: "world" },
+  { title: "Despicable Me", emoji: "😈🍌👓", kind: "film", by: "Illumination", year: 2010, from: "world" },
+  { title: "Encanto", emoji: "🏠🕯️🦋🎶", kind: "film", by: "Disney", year: 2021, from: "world" },
+  { title: "Inside Out", emoji: "😀😢😡😨🤢", kind: "film", by: "Pixar", year: 2015, from: "world" },
+  { title: "Zootopia", emoji: "🐰🦊🚓🏙️", kind: "film", by: "Disney", year: 2016, from: "world", accept: ["Zootropolis"] },
+  { title: "Ratatouille", emoji: "🐀👨‍🍳🍲", kind: "film", by: "Pixar", year: 2007, from: "world" },
+  { title: "Paddington", emoji: "🐻🧥🍊🥪", kind: "film", by: "Paul King", year: 2014, from: "world" },
+  { title: "The Jungle Book", emoji: "🐻🐯👦🌴📖", kind: "film", by: "Disney", year: 1967, from: "world" },
+  { title: "Aladdin", emoji: "🧞🪔🐒🕌", kind: "film", by: "Disney", year: 1992, from: "world" },
+  { title: "Black Panther", emoji: "⚫🐆👑", kind: "film", by: "Marvel", year: 2018, from: "world" },
+  { title: "Queen of Katwe", emoji: "👑♟️🇺🇬", kind: "film", by: "Mira Nair", year: 2016, from: "africa" },
+  {
+    title: "The Boy Who Harnessed the Wind",
+    emoji: "👦🌬️⚡🇲🇼",
+    kind: "film",
+    by: "Chiwetel Ejiofor",
+    year: 2019,
+    from: "africa",
+  },
+  {
+    title: "Kirikou and the Sorceress",
+    emoji: "👶🏾🧙‍♀️🌳",
+    kind: "film",
+    by: "Michel Ocelot",
+    year: 1998,
+    from: "africa",
+    accept: ["Kirikou"],
+  },
+  {
+    title: "Love Brewed in the African Pot",
+    emoji: "❤️🍲🌍",
+    kind: "film",
+    by: "Kwaw Ansah",
+    year: 1980,
+    from: "ghana",
+  },
+  { title: "The Wedding Party", emoji: "💒🎉🇳🇬", kind: "film", by: "Kemi Adetiba", year: 2016, from: "africa" },
+  { title: "Lionheart", emoji: "🦁❤️🚌", kind: "film", by: "Genevieve Nnaji", year: 2018, from: "africa" },
+  { title: "Chief Daddy", emoji: "👨🏾‍💼👑💰", kind: "film", by: "Niyi Akinmolayan", year: 2018, from: "africa" },
+  { title: "Battle on Buka Street", emoji: "⚔️🍲🛣️", kind: "film", by: "Funke Akindele", year: 2022, from: "africa" },
+  { title: "Osuofia in London", emoji: "👨🏾✈️🇬🇧", kind: "film", by: "Nkem Owoh", year: 2003, from: "africa" },
+  {
+    title: "Aki and Pawpaw",
+    emoji: "👦🏾👦🏾🥭",
+    kind: "film",
+    by: "Chinedu Ikedieze and Osita Iheme",
+    year: 2021,
+    from: "africa",
+    accept: ["Aki and Paw Paw", "Aki na Ukwa"],
+  },
+
+  // ---------- TV ----------
+  { title: "The Simpsons", emoji: "🟡👨‍👩‍👧‍👦🍩", kind: "tv", by: "Matt Groening", year: 1989, from: "world" },
+  {
+    title: "SpongeBob SquarePants",
+    emoji: "🧽🟨👖🍍",
+    kind: "tv",
+    by: "Nickelodeon",
+    year: 1999,
+    from: "world",
+    accept: ["SpongeBob", "Sponge Bob Square Pants"],
+  },
+  { title: "Peppa Pig", emoji: "🐷☔💦", kind: "tv", by: "Astley Baker Davies", year: 2004, from: "world" },
+  { title: "Bluey", emoji: "🐶💙🇦🇺", kind: "tv", by: "Ludo Studio", year: 2018, from: "world" },
+  { title: "Doctor Who", emoji: "👨‍⚕️❓🕰️📦", kind: "tv", by: "the BBC", year: 1963, from: "world", accept: ["Dr Who"] },
+  { title: "Sesame Street", emoji: "🔤🍪🛣️", kind: "tv", clue: "A children's TV show from 1969, with the Muppets.", from: "world" },
+  {
+    title: "Tom and Jerry",
+    emoji: "🐱🐭🧀",
+    kind: "tv",
+    clue: "A classic cartoon from 1940 by William Hanna and Joseph Barbera.",
+    from: "world",
+  },
+  { title: "Mr. Bean", emoji: "🤵🧸🚗", kind: "tv", by: "Rowan Atkinson", year: 1990, from: "world" },
+  { title: "PAW Patrol", emoji: "🐾🚒🚓", kind: "tv", by: "Spin Master", year: 2013, from: "world" },
+  { title: "Pokémon", emoji: "⚡🐭🔴⚪", kind: "tv", by: "Nintendo and Game Freak", year: 1997, from: "world" },
+  { title: "Efiewura", emoji: "🏠👴🏾🔑", kind: "tv", clue: "A Ghanaian TV comedy about a landlord and his tenants.", from: "ghana" },
+  {
+    title: "Things We Do for Love",
+    emoji: "❤️🎒🏫",
+    kind: "tv",
+    clue: "A Ghanaian TV drama about senior high school students, from the early 2000s.",
+    from: "ghana",
+  },
+  {
+    title: "Tinga Tinga Tales",
+    emoji: "🐘🎨🌍",
+    kind: "tv",
+    by: "Tiger Aspect and Homeboyz",
+    year: 2010,
+    from: "africa",
+    accept: ["Tinga Tinga"],
+  },
+  { title: "Supa Strikas", emoji: "⚽🦸🏾‍♂️💥", kind: "tv", by: "Strika Entertainment", year: 2008, from: "africa" },
+  { title: "Iwájú", emoji: "🏙️🤖🇳🇬", kind: "tv", by: "Kugali and Disney", year: 2024, from: "africa" },
+  { title: "Jenifa's Diary", emoji: "👩🏾📔😂", kind: "tv", by: "Funke Akindele", year: 2015, from: "africa", accept: ["Jenifas Diary"] },
+
+  // ---------- Songs ----------
+  { title: "Happy", emoji: "😀👏🎩", kind: "song", by: "Pharrell Williams", year: 2013, from: "world" },
+  { title: "Hello", emoji: "👋☎️", kind: "song", by: "Adele", year: 2015, from: "world" },
+  { title: "Let It Go", emoji: "🙌❄️🏰", kind: "song", by: "Idina Menzel, from Frozen", year: 2013, from: "world" },
+  { title: "Thriller", emoji: "🧟🕺🌕", kind: "song", by: "Michael Jackson", year: 1982, from: "world" },
+  { title: "Umbrella", emoji: "☂️🌧️", kind: "song", by: "Rihanna", year: 2007, from: "world" },
+  { title: "Firework", emoji: "🎆💥", kind: "song", by: "Katy Perry", year: 2010, from: "world" },
+  { title: "Yellow", emoji: "💛⭐", kind: "song", by: "Coldplay", year: 2000, from: "world" },
+  { title: "Halo", emoji: "😇⭕", kind: "song", by: "Beyoncé", year: 2008, from: "world" },
+  { title: "Imagine", emoji: "💭🌍☮️", kind: "song", by: "John Lennon", year: 1971, from: "world" },
+  { title: "Here Comes the Sun", emoji: "👉🌞", kind: "song", by: "The Beatles", year: 1969, from: "world" },
+  {
+    title: "Over the Rainbow",
+    emoji: "⬆️🌈",
+    kind: "song",
+    by: "Judy Garland",
+    year: 1939,
+    from: "world",
+    accept: ["Somewhere Over the Rainbow"],
+  },
+  { title: "Uptown Funk", emoji: "🏙️⬆️🕺", kind: "song", by: "Mark Ronson and Bruno Mars", year: 2014, from: "world" },
+  { title: "Baby Shark", emoji: "👶🦈🎶", kind: "song", by: "Pinkfong", year: 2016, from: "world" },
+  { title: "Dancing Queen", emoji: "💃👑", kind: "song", by: "ABBA", year: 1976, from: "world" },
+  { title: "Blinding Lights", emoji: "🙈💡🚗", kind: "song", by: "The Weeknd", year: 2019, from: "world" },
+  { title: "Roar", emoji: "🦁📢", kind: "song", by: "Katy Perry", year: 2013, from: "world" },
+  { title: "We Will Rock You", emoji: "👥🫵🪨", kind: "song", by: "Queen", year: 1977, from: "world" },
+  { title: "Africa", emoji: "🌍🌧️🥁", kind: "song", by: "Toto", year: 1982, from: "world" },
+  {
+    title: "Waka Waka",
+    emoji: "⚽🌍🎶",
+    kind: "song",
+    by: "Shakira",
+    year: 2010,
+    from: "world",
+    accept: ["Waka Waka (This Time for Africa)", "This Time for Africa"],
+  },
+  {
+    title: "Wavin' Flag",
+    emoji: "👋🏳️",
+    kind: "song",
+    by: "K'naan",
+    year: 2009,
+    from: "africa",
+    accept: ["Waving Flag", "Wavin Flag"],
+  },
+  { title: "Jerusalema", emoji: "🙏🏙️💃", kind: "song", by: "Master KG and Nomcebo Zikode", year: 2019, from: "africa" },
+  { title: "Pata Pata", emoji: "🖐️🖐️💃", kind: "song", by: "Miriam Makeba", year: 1967, from: "africa" },
+  {
+    title: "Malaika",
+    emoji: "👼🏾🎶",
+    kind: "song",
+    clue: "A Swahili love song from Kenya, sung by Fadhili William and later Miriam Makeba.",
+    from: "africa",
+  },
+  { title: "Sweet Mother", emoji: "🍬👩🏾‍🍼", kind: "song", by: "Prince Nico Mbarga", year: 1976, from: "africa" },
+  { title: "Water No Get Enemy", emoji: "💧🚫⚔️", kind: "song", by: "Fela Kuti", year: 1975, from: "africa" },
+  { title: "Sunshine Day", emoji: "☀️📅", kind: "song", by: "Osibisa", year: 1976, from: "ghana" },
+  {
+    title: "Kwaku the Traveller",
+    emoji: "🧳🚶🏾‍♂️🌍",
+    kind: "song",
+    by: "Black Sherif",
+    year: 2022,
+    from: "ghana",
+    accept: ["Kwaku the Traveler"],
+  },
+  { title: "Forever", emoji: "♾️⏳", kind: "song", by: "Gyakie", year: 2020, from: "ghana" },
+  { title: "Antenna", emoji: "📡🙌🏾", kind: "song", by: "Fuse ODG", year: 2013, from: "ghana" },
+  { title: "Adonai", emoji: "🙏🏾👑🎤", kind: "song", by: "Sarkodie and Castro", year: 2014, from: "ghana" },
+  { title: "Wish Me Well", emoji: "🙏🏾🍀👋🏾", kind: "song", clue: "A feel-good song by Kuami Eugene.", from: "ghana" },
+  { title: "Already", emoji: "✅⏰", kind: "song", by: "Beyoncé, Shatta Wale and Major Lazer", year: 2020, from: "ghana" },
+  { title: "Terminator", emoji: "🤖🦾⛔", kind: "song", by: "King Promise", year: 2023, from: "ghana" },
+  { title: "Calm Down", emoji: "😌⬇️", kind: "song", by: "Rema", year: 2022, from: "africa" },
+  { title: "Free Mind", emoji: "🆓🧠", kind: "song", by: "Tems", year: 2020, from: "africa" },
+  { title: "Lonely at the Top", emoji: "😔🔝", kind: "song", by: "Asake", year: 2023, from: "africa" },
+  { title: "Rush", emoji: "🏃🏾‍♀️💨", kind: "song", by: "Ayra Starr", year: 2022, from: "africa" },
+];

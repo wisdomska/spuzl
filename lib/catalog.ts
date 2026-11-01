@@ -648,6 +648,17 @@ export const LAB_GAMES: GameMeta[] = [
     "Guess the 5-letter word in 6 tries. Tiles show right spot, in the word, or not in it.",
     { content: "curated", minTimeMs: 4000, lab: true },
   ),
+  g(
+    "emojihits",
+    "Emoji Hits",
+    "clue",
+    "smiley",
+    "M3+",
+    "custom",
+    "Name the hit from its emoji",
+    "Name the song, film or TV show from the emoji. 5 rounds, 3 tries each.",
+    { content: "curated", scoring: "score", minTimeMs: 4000, lab: true },
+  ),
 ];
 
 export const GAME_BY_ID: Record<string, GameMeta> = Object.fromEntries([...GAMES, ...LAB_GAMES].map((x) => [x.id, x]));

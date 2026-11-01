@@ -80,6 +80,9 @@ on conflict (id) do nothing;
 insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
   ('five', 'word', 'Five', 'coming_soon', 'M3+', 'word', 'time', false, 4000, 55)
 on conflict (id) do nothing;
+insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
+  ('emojihits', 'clue', 'Emoji Hits', 'coming_soon', 'M3+', 'custom', 'score', false, 4000, 56)
+on conflict (id) do nothing;
 insert into public.badges (id, family, tier, name, description, secret, sparks, rule, sort) values
   ('first-clear', 'starter', 'bronze', 'First Clear', 'Clear your first puzzle.', false, 10, '{"kind":"clears","n":1,"icon":"seal-check"}'::jsonb, 0),
   ('explorer-logic', 'explorer', 'gold', 'Logic Lab Explorer', 'Clear every game in Logic Lab.', false, 50, '{"kind":"world_all","world":"logic","icon":"flask"}'::jsonb, 1),

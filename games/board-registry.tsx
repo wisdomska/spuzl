@@ -67,4 +67,5 @@ export const BOARDS: Record<string, AnyBoard> = {
   hilo: dynamic(() => import("./hilo/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   market: dynamic(() => import("./market/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   five: dynamic(() => import("./five/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  emojihits: dynamic(() => import("./emojihits/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
 };
