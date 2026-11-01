@@ -6,19 +6,8 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 
 - **Free play seed:** free play sends its seed to the client, so a determined player could work out the
   solution. Free play gives capped XP only, but a server-only seed (as Dailies have) would close it.
-- **Buried:** hint text uses unrotated cell positions after the board is rotated.
-- **Quickfire:**
-  - The header clock starts on the first answer, not on Start. This needs a board-to-shell "start" call.
-  - A run resumed from autosave forgets earlier wrong answers.
 - **Dusk:**
   - Swipe up and down is not done; it would block page scroll when a finger starts on the board.
-- **Crownfall:**
-  - The X mark is a fixed grey; its contrast on the new palette wasn't checked.
-  - White pattern textures are faint on the light-theme colours.
-- **Chess vs bot:**
-  - It uses the Board Bay board: pawns always promote to a queen and there are no coordinates.
-  - The bot search ignores threefold repetition.
-  - The help sheet for bot games still mentions Dailies and hints.
 - **Ranked Duel mix games:** a mix uses games both players have cleared. Two brand-new players can still get a
   game neither has seen, with no rules card.
 - **Guided first play:**
