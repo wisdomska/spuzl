@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useBackOrHome } from "@/lib/client/nav";
 import type { CSSProperties, ReactNode } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -256,7 +256,8 @@ export function PageTitle({ children, right }: { children: ReactNode; right?: Re
 }
 
 export function BackButton({ href, label = "Back" }: { href?: string; label?: string }) {
-  const router = useRouter();
+  // In-app history only: a deep link or fresh tab goes to the Grid, never out of the app.
+  const back = useBackOrHome();
   const cls = "press bg-surface-raised flex size-11 shrink-0 items-center justify-center rounded-[14px]";
   if (href)
     return (
@@ -265,7 +266,7 @@ export function BackButton({ href, label = "Back" }: { href?: string; label?: st
       </Link>
     );
   return (
-    <button aria-label={label} className={cls} onClick={() => (history.length > 1 ? router.back() : router.push("/"))}>
+    <button type="button" aria-label={label} className={cls} onClick={back}>
       <Icon name="arrow-left" size={20} />
     </button>
   );
