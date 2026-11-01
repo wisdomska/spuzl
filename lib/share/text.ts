@@ -1,6 +1,6 @@
 import { GAME_BY_ID, LAUNCH_IDS, type WorldId } from "@/lib/catalog";
 import { formatNumber, formatShort } from "@/lib/format";
-import { ordinal } from "./card-model";
+import { ordinal, type StatusCardModel, type StatusStat } from "./card-model";
 
 /**
  * Spoiler-free share text (FR-RS-03, design "Emoji-grid text format").
@@ -142,6 +142,31 @@ export function partyShareText(p: PartyShare): string {
   return [
     `SPUZL Party · ${p.players} Spuzlers`,
     `${medal} ${ordinal(p.place)} of ${p.players} · ${p.games} ${p.games === 1 ? "game" : "games"}${room}`,
+    SHARE_DOMAIN,
+  ].join("\n");
+}
+
+/**
+ * Status share text, built from the card model so it carries exactly what the image shows (same privacy rules):
+ *
+ *   SPUZL · Kofi · Solver II
+ *   Lv 15 · 🔥 12 days · 23 of 51 games tried
+ *   Favourite world: Logic Lab
+ *   spuzl.gg
+ */
+export function statusShareText(m: StatusCardModel): string {
+  const by = (id: StatusStat["id"]) => m.stats.find((s) => s.id === id)?.value;
+  const level = by("level");
+  const streak = by("streak");
+  const tried = by("tried");
+  const world = by("world");
+  const line2 = [level, streak && streak.startsWith("🔥") ? streak : null, tried ? `${tried} games tried` : null]
+    .filter(Boolean)
+    .join(" · ");
+  return [
+    ["SPUZL", m.nickname, m.rank?.label].filter(Boolean).join(" · "),
+    line2,
+    ...(world ? [`Favourite world: ${world}`] : []),
     SHARE_DOMAIN,
   ].join("\n");
 }

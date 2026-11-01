@@ -1,5 +1,5 @@
 import type { SpuzMood } from "@/components/brand/Spuz";
-import type { WorldId } from "@/lib/catalog";
+import { GAME_BY_ID, WORLDS, WORLD_BY_ID, type WorldId } from "@/lib/catalog";
 import { formatNumber, formatShort } from "@/lib/format";
 
 /**
@@ -248,3 +248,133 @@ export const SAMPLE_CARDS: Record<CardKind, CardModel> = {
   duel: duelCard({ gameName: "Sixer", winnerRounds: 2, loserRounds: 1, loser: "Tunde", ratingAfter: 1438, ratingBefore: 1420, bestOf: 3 }),
   party: partyCard({ players: 5, place: 1, winner: "Kofi", games: 3, code: "K7QX" }),
 };
+
+// ---------- Status card (Phase 5, admin setting "features.statusCards") ----------
+
+/** 1080 × 1350 (4:5 portrait): fits feeds and stories without cropping the stats. */
+export const STATUS_CARD_SIZE = { width: 1080, height: 1350 } as const;
+
+/** Rank emblem fills (lib/rating/glicko2 RANKS emblems). OG images cannot read CSS variables. */
+export const RANK_HEX: Record<string, string> = {
+  pebble: "#A2A6C2",
+  spark: "#FFC93C",
+  gear: "#2FD3E0",
+  compass: "#8B7CFF",
+  crown: "#FF8A3D",
+  prism: "#B8F23A",
+};
+
+/** Hats SpuzOG can draw (components/meta/SpuzWear.tsx); anything else is dropped. */
+export const STATUS_HATS = ["party", "crown", "kente", "shades", "headphones", "chef", "beanie"] as const;
+
+export interface StatusCardInput {
+  nickname: string;
+  /** avatar colour, #RRGGBB */
+  color: string;
+  hat: string | null;
+  level: number;
+  streak: number;
+  /** world with the most clears; null when the player has no clears yet */
+  favouriteWorld: WorldId | null;
+  gamesTried: number;
+  totalGames: number;
+  rank: { name: string; division: string; emblem: string } | null;
+  /** age band 13-15: public cards show nickname and avatar only, so no level or rank */
+  minor: boolean;
+  /** "Hide my activity": no streak and no favourite world */
+  hideActivity: boolean;
+}
+
+export interface StatusStat {
+  id: "level" | "streak" | "tried" | "world";
+  label: string;
+  value: string;
+}
+
+export interface StatusCardModel {
+  kind: "status";
+  bg: string;
+  dot: string;
+  fg: string;
+  z: string;
+  spuz: string;
+  hat: string | null;
+  mood: SpuzMood;
+  nickname: string;
+  kicker: string;
+  stats: StatusStat[];
+  /** world fill for the favourite-world chip, when shown */
+  worldHex: string | null;
+  rank: { label: string; color: string } | null;
+  alt: string;
+}
+
+const HEX = /^#[0-9A-Fa-f]{6}$/;
+
+/** Favourite world: the most clears, ties broken by world order. Null with no clears. */
+export function favouriteWorld(stats: { game: string; clears: number }[]): WorldId | null {
+  const by = new Map<WorldId, number>();
+  for (const s of stats) {
+    const w = GAME_BY_ID[s.game]?.world;
+    if (w && s.clears > 0) by.set(w, (by.get(w) ?? 0) + s.clears);
+  }
+  let best: WorldId | null = null;
+  for (const w of WORLDS) if ((by.get(w.id) ?? 0) > (best ? by.get(best)! : 0)) best = w.id;
+  return best;
+}
+
+/**
+ * The player's status card. Pure: the loader fills the input from database rows. Privacy rules live here so
+ * the image and the share text agree: nickname only (never city, school, email or age), no level or rank for
+ * under-16s, no streak or favourite world while activity is hidden.
+ */
+export function statusCard(i: StatusCardInput): StatusCardModel {
+  const world = !i.hideActivity && i.favouriteWorld && WORLD_BY_ID[i.favouriteWorld] ? i.favouriteWorld : null;
+  const { bg, dot } = world ? worldCardColours(world) : { bg: INK, dot: "#22253C" };
+  const streak = i.hideActivity ? null : Math.max(0, Math.floor(i.streak));
+  const stats: StatusStat[] = [];
+  if (!i.minor) stats.push({ id: "level", label: "Level", value: `Lv ${formatNumber(Math.max(1, Math.floor(i.level)))}` });
+  if (streak !== null) stats.push({ id: "streak", label: "Streak", value: streak > 0 ? `🔥 ${plural(streak, "day")}` : "Fresh start" });
+  const total = Math.max(1, i.totalGames);
+  const tried = Math.min(total, Math.max(0, Math.floor(i.gamesTried)));
+  stats.push({ id: "tried", label: "Games tried", value: `${formatNumber(tried)} of ${formatNumber(total)}` });
+  if (world) stats.push({ id: "world", label: "Favourite world", value: WORLD_BY_ID[world].name });
+  const rank =
+    !i.minor && i.rank
+      ? { label: `${i.rank.name}${i.rank.division ? ` ${i.rank.division}` : ""}`, color: RANK_HEX[i.rank.emblem] ?? RANK_HEX.pebble }
+      : null;
+  const hat = i.hat && (STATUS_HATS as readonly string[]).includes(i.hat) ? i.hat : null;
+  const spoken = stats.map((s) => `${s.label} ${s.value.replace("🔥 ", "")}`);
+  return {
+    kind: "status",
+    bg,
+    dot,
+    fg: PAPER,
+    z: LIME,
+    spuz: HEX.test(i.color) ? i.color.toUpperCase() : LIME,
+    hat,
+    // The fire pose draws a flame where a hat sits, and proud scales the body under it: with a hat, Spuz waves.
+    mood: hat ? "wave" : streak !== null && streak >= 7 ? "fire" : "proud",
+    nickname: i.nickname,
+    kicker: "My SPUZL status",
+    stats,
+    worldHex: world ? WORLD_HEX[world] : null,
+    rank,
+    alt: `${i.nickname}'s SPUZL status: ${[rank ? `Rank ${rank.label}` : null, ...spoken].filter(Boolean).join(", ")}`,
+  };
+}
+
+/** Design sample for the dev preview route and tests. */
+export const SAMPLE_STATUS: StatusCardModel = statusCard({
+  nickname: "Kofi",
+  color: "#2FD3E0",
+  hat: "kente",
+  level: 15,
+  streak: 12,
+  favouriteWorld: "logic",
+  gamesTried: 23,
+  totalGames: 51,
+  rank: { name: "Solver", division: "II", emblem: "gear" },
+  minor: false,
+  hideActivity: false,
+});

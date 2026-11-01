@@ -23,6 +23,13 @@ export const SETTINGS = {
     help: "Shows the new games in All games and on their world, and lets players open them. Off: they are hidden and the server refuses them.",
     default: false,
   },
+  "features.statusCards": {
+    kind: "bool",
+    group: "Features",
+    label: "Status share cards",
+    help: 'Shows "Share my status" on Me: a card with the player\'s Spuz, nickname, level, streak, favourite world, games tried and rank. Off: the button is hidden and the card links stop working.',
+    default: false,
+  },
   "hints.dailyXpKeptPct": {
     kind: "int",
     group: "Hints",

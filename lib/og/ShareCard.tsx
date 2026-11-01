@@ -8,7 +8,7 @@ import { SpuzOG } from "./SpuzOG";
  */
 
 /** 🔥 (Twemoji 1f525, CC-BY 4.0) as inline SVG, so cards render without fetching an emoji CDN. */
-function Flame({ size }: { size: number }) {
+export function Flame({ size }: { size: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 36 36">
       <path
@@ -37,7 +37,7 @@ function Foot({ text, size }: { text: string; size: number }) {
   );
 }
 
-function Wordmark({ c, fs }: { c: CardModel; fs: number }) {
+export function Wordmark({ c, fs }: { c: Pick<CardModel, "z">; fs: number }) {
   return (
     <div
       style={{
@@ -59,7 +59,7 @@ function Wordmark({ c, fs }: { c: CardModel; fs: number }) {
 }
 
 /** The design's dot grid (5 px dots every 64 px) as an SVG pattern: Satori drops px-stop radial gradients. */
-function Dots({ c, s, w, h }: { c: CardModel; s: number; w: number; h: number }) {
+export function Dots({ c, s, w, h }: { c: Pick<CardModel, "dot">; s: number; w: number; h: number }) {
   const step = 64 * s;
   return (
     <svg width={w} height={h} style={{ position: "absolute", left: 0, top: 0 }}>

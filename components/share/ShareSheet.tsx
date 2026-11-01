@@ -40,6 +40,8 @@ export interface ShareSheetProps {
   title?: string;
   fileName?: string;
   onShared?: (target: ShareTarget) => void;
+  /** preview thumbnail size and alt text; defaults to the 9:16 story card */
+  preview?: { width: number; height: number; alt?: string };
 }
 
 type Nav = Navigator & { canShare?: (data: ShareData) => boolean };
@@ -108,6 +110,7 @@ export function ShareSheet({
   title = "Share it",
   fileName = "spuzl.png",
   onShared,
+  preview = { width: 108, height: 192 },
 }: ShareSheetProps) {
   const reduce = useReducedMotion();
   const lowData = useSettings((s) => s.lowData);
@@ -249,10 +252,11 @@ export function ShareSheet({
                   {/* eslint-disable-next-line @next/next/no-img-element -- generated PNG, already sized */}
                   <img
                     src={image}
-                    alt="Your share card"
-                    width={108}
-                    height={192}
-                    className="bg-bg h-[192px] w-[108px] shrink-0 rounded-[12px] object-cover"
+                    alt={preview.alt ?? "Your share card"}
+                    width={preview.width}
+                    height={preview.height}
+                    style={{ width: preview.width, height: preview.height }}
+                    className="bg-bg shrink-0 rounded-[12px] object-cover"
                   />
                   <pre
                     aria-label="Share text"

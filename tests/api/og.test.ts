@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 import { admin, BASE, guest, uniq } from "./helpers";
+import { setSetting } from "./setup";
 
 /** Share card images (FR-RS-03): sizes, content type, and that only server data reaches the card. */
 
@@ -111,5 +112,55 @@ describe("api: share card images", () => {
     // Unfinished matches have no card.
     const { data: live } = await db.from("matches").insert({ kind: "duel", status: "playing" }).select("id").single();
     expect((await png(`/api/og/match/${live!.id}`)).status).toBe(404);
+  });
+});
+
+describe("api: status share cards (features.statusCards)", () => {
+  afterAll(() => setSetting("features.statusCards", false));
+
+  it("renders the design sample at 1080 × 1350", async () => {
+    expect(await png("/api/og/sample/status")).toMatchObject({ status: 200, type: "image/png", width: 1080, height: 1350 });
+  });
+
+  it("is refused while the setting is off, card and link alike", async () => {
+    await setSetting("features.statusCards", true);
+    const g = await guest(uniq("st_"));
+    const on = await g.api("/api/v1/me/status-card");
+    expect(on.status).toBe(200);
+    await setSetting("features.statusCards", false);
+    expect((await g.api("/api/v1/me/status-card")).status).toBe(404);
+    expect((await png(on.data.image)).status).toBe(404);
+  });
+
+  it("renders 1080 × 1350 from live rows, behind a signed link", async () => {
+    await setSetting("features.statusCards", true);
+    const g = await guest(uniq("st_"));
+    await admin().from("players").update({ hat: "crown", level: 7 }).eq("id", g.userId);
+    const r = await g.api("/api/v1/me/status-card");
+    expect(r.status).toBe(200);
+    expect(r.data).toMatchObject({ width: 1080, height: 1350 });
+    expect(r.data.image).toMatch(new RegExp(`^/api/og/status/${g.userId}\\.[A-Za-z0-9_-]+$`));
+    expect(r.data.text).toContain("Lv 7");
+    expect(r.data.text).toContain("spuzl.gg");
+    expect(await png(r.data.image)).toMatchObject({ status: 200, type: "image/png", width: 1080, height: 1350 });
+    expect(await png(`${r.data.image}?size=small`)).toMatchObject({ width: 540, height: 675 });
+    // A bare player id, or someone else's id under this signature, is not a card.
+    expect((await png(`/api/og/status/${g.userId}`)).status).toBe(404);
+    const other = await guest(uniq("st_"));
+    expect((await png(r.data.image.replace(g.userId, other.userId))).status).toBe(404);
+    expect((await fetch(`${BASE}/api/v1/me/status-card`)).status).toBe(401);
+  });
+
+  it("follows the privacy rules: no level under 16, no streak or world while activity is hidden, never the city", async () => {
+    await setSetting("features.statusCards", true);
+    const g = await guest();
+    await g.api("/api/v1/profile", { json: { nickname: uniq("sty_"), ageBand: "13-15", color: "#FF8A3D" } });
+    await admin().from("players").update({ city: "Kumasi", hide_activity: true }).eq("id", g.userId);
+    await admin().from("streaks").update({ current: 9 }).eq("player_id", g.userId);
+    const r = await g.api("/api/v1/me/status-card");
+    expect(r.status).toBe(200);
+    expect(r.data.text).not.toMatch(/Lv |🔥|Kumasi|Favourite/);
+    expect(r.data.alt).not.toMatch(/Level|Streak|Kumasi|Rank/);
+    expect((await png(r.data.image)).status).toBe(200);
   });
 });

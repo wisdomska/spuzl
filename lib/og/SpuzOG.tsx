@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import type { SpuzMood } from "@/components/brand/Spuz";
+import { HatOG } from "./HatOG";
 
 /**
  * Spuz for `next/og` (Satori): the static pose of components/brand/Spuz.tsx, drawn with plain
@@ -54,10 +55,13 @@ export interface SpuzOGProps {
   color?: string;
   /** colour of the floor shadow ellipse (on light cards a darker tint reads better) */
   shadow?: string;
+  /** Shop hat id (components/meta/SpuzWear.tsx); drawn over the head and hides the tuft */
+  hat?: string | null;
 }
 
-export function SpuzOG({ mood = "idle", size = 120, color = "#B8F23A", shadow = "rgba(0,0,0,.28)" }: SpuzOGProps) {
-  const m = POSES[mood] ?? POSES.idle;
+export function SpuzOG({ mood = "idle", size = 120, color = "#B8F23A", shadow = "rgba(0,0,0,.28)", hat = null }: SpuzOGProps) {
+  // Party mood brings its own party hat; swap to cheer so hats never stack (as SpuzWear does).
+  const m = POSES[hat && mood === "party" ? "cheer" : mood] ?? POSES.idle;
   const u = size / 12;
   const e = (n: number) => n * u;
   // Satori rejects `undefined` CSS values, so they are dropped before rendering.
@@ -144,6 +148,7 @@ export function SpuzOG({ mood = "idle", size = 120, color = "#B8F23A", shadow = 
         <>
           {!m.flame &&
             !m.hat &&
+            !hat &&
             box(
               3.9,
               -2.9,
@@ -334,6 +339,7 @@ export function SpuzOG({ mood = "idle", size = 120, color = "#B8F23A", shadow = 
           {box(4.5, 0.8, 0.8, 0.8, { borderRadius: "50%", background: "#C9CCDD" })}
         </>
       )}
+      {hat && <HatOG id={hat} size={size} />}
       {m.bubble && (
         <>
           {box(9.2, 2.6, 0.5, 0.5, { borderRadius: "50%", background: "#A2A6C2" })}

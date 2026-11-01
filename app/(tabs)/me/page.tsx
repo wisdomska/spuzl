@@ -8,6 +8,7 @@ import { TabPage } from "@/components/meta/TabPage";
 import { Bar, ErrorState, Hex, ListSkeleton, StatCard } from "@/components/meta/ui";
 import { BadgeGrid, Medallion } from "@/components/meta/Badges";
 import { SpuzWear } from "@/components/meta/SpuzWear";
+import { StatusShare } from "@/components/share/StatusShare";
 import { Icon } from "@/components/ui/Icon";
 import { GAME_BY_ID, WORLDS, WORLD_BY_ID, type WorldId } from "@/lib/catalog";
 import { formatNumber, formatClock, gmtDate } from "@/lib/format";
@@ -89,6 +90,8 @@ export default function MePage() {
               <Icon name="caret-right" size={16} className="text-muted" />
             </Link>
           )}
+
+          <StatusShare />
 
           <div className="grid grid-cols-3 gap-2">
             <StatCard value={d.streak.current} label="day streak" color="var(--gold)" />
