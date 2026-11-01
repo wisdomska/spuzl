@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
+import { adminCopy } from "@/lib/copy/admin";
 
 /** /admin is never indexed and has no player chrome (no bottom nav, no Spuz, no button ticks). */
 export const metadata: Metadata = {
-  title: { default: "Admin", template: "%s · SPUZL admin" },
+  title: { default: adminCopy.shell.navAria, template: adminCopy.common.titleTemplate },
   robots: { index: false, follow: false, nocache: true, googleBot: { index: false, follow: false } },
 };
 

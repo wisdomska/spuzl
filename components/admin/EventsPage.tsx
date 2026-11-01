@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { WORLDS } from "@/lib/catalog";
 import { EVENT_ACCENTS, EVENT_GOALS, windowProblem, type EventGoal, type EventQuest, type EventStatus } from "@/lib/events";
 import { errorText, useAdminAction, useAdminQuery, type AdminPage } from "@/lib/client/admin";
+import { adminCopy } from "@/lib/copy/admin";
 import { Pagination, usePager } from "./Pagination";
 import { Btn, Empty, Field, Notice, PageTitle, Pill, RowsSkeleton, inputCls, textareaCls } from "./ui";
 
@@ -35,11 +36,8 @@ interface Draft {
   sparks: number;
 }
 
-const GOAL_LABEL: Record<EventGoal, string> = {
-  free_clears: "Clear free-play puzzles",
-  world_clears: "Clear free-play puzzles in one world",
-  no_hint_clears: "Clear free-play puzzles without hints",
-};
+const C = adminCopy.events;
+const GOAL_LABEL: Record<EventGoal, string> = C.goals;
 const STATUS_TONE: Record<EventStatus, "ok" | "warn" | "neutral"> = { live: "ok", upcoming: "warn", ended: "neutral" };
 
 /** ISO time to the value of a datetime-local input (the admin's local time). */
@@ -122,22 +120,20 @@ export function EventsPage({ canWrite }: { canWrite: boolean }) {
   return (
     <div className="flex flex-col gap-3.5 px-6 py-5">
       <PageTitle
-        title="Seasonal events"
+        title={C.title}
         aside={
           canWrite && !editing ? (
             <Btn tone="primary" icon="plus" size="lg" onClick={() => (setDone(null), setEditing({ id: null, draft: blank() }))}>
-              New event
+              {C.newEvent}
             </Btn>
           ) : undefined
         }
       >
-        <span className="text-muted text-[14px]">
-          A Home banner and one bonus quest, counted from free-play clears, while the event runs.
-        </span>
+        <span className="text-muted text-[14px]">{C.intro}</span>
       </PageTitle>
       {seasonalOn === false && (
         <Notice tone="warn" icon="toggle-left">
-          Seasonal events are off (Game settings, Features). Players see nothing until an owner turns them on.
+          {C.off}
         </Notice>
       )}
       {error && <Notice tone="danger">{errorText(error)}</Notice>}
@@ -155,7 +151,7 @@ export function EventsPage({ canWrite }: { canWrite: boolean }) {
           onCancel={() => setEditing(null)}
           onSave={(d) => {
             const body = payload(d);
-            const after = () => (setEditing(null), setDone(`Saved ${d.name}.`));
+            const after = () => (setEditing(null), setDone(C.saved(d.name)));
             if (editing.id) edit.mutate({ ...body, id: editing.id }, { onSuccess: after });
             else create.mutate(body, { onSuccess: after });
           }}
@@ -171,14 +167,14 @@ export function EventsPage({ canWrite }: { canWrite: boolean }) {
             </Notice>
           </div>
         ) : q.data!.rows.length === 0 ? (
-          <Empty icon="calendar-blank">No events yet.</Empty>
+          <Empty icon="calendar-blank">{C.empty}</Empty>
         ) : (
           <table className="w-full min-w-[760px] border-collapse text-[14px]">
             <thead>
               <tr className="bg-surface-raised num text-muted text-left text-[12px]">
-                {["Event", "Runs", "Status", "Bonus quest", "Completed", ""].map((h, i) => (
+                {C.head.map((h, i) => (
                   <th key={i} scope="col" className="px-3 py-2.5 font-semibold">
-                    {h || <span className="sr-only">Actions</span>}
+                    {h || <span className="sr-only">{C.actions}</span>}
                   </th>
                 ))}
               </tr>
@@ -196,16 +192,14 @@ export function EventsPage({ canWrite }: { canWrite: boolean }) {
                     </span>
                   </td>
                   <td className="border-line num text-muted border-t px-3 py-2 text-[13px] whitespace-nowrap">
-                    {when(e.starts_at)} to {when(e.ends_at)}
+                    {C.runs(when(e.starts_at), when(e.ends_at))}
                   </td>
                   <td className="border-line border-t px-3 py-2">
                     <Pill tone={STATUS_TONE[e.status]}>{e.status}</Pill>
                   </td>
                   <td className="border-line border-t px-3 py-2 text-[13px]">
                     {e.quest.title}
-                    <span className="num text-muted block text-[12px]">
-                      {e.quest.n} · {e.quest.xp} XP · {e.quest.sparks} Sparks
-                    </span>
+                    <span className="num text-muted block text-[12px]">{C.questLine(e.quest.n, e.quest.xp, e.quest.sparks)}</span>
                   </td>
                   <td className="border-line num border-t px-3 py-2">{e.completed}</td>
                   <td className="border-line border-t px-3 py-2">
@@ -215,18 +209,18 @@ export function EventsPage({ canWrite }: { canWrite: boolean }) {
                           size="lg"
                           tone="ghost"
                           icon="pencil-simple"
-                          aria-label={`Edit ${e.name}`}
+                          aria-label={C.editAria(e.name)}
                           onClick={() => (setDone(null), setEditing({ id: e.id, draft: draftOf(e) }))}
                         />
                         <Btn
                           size="lg"
                           tone="ghost"
                           icon="trash"
-                          aria-label={`Delete ${e.name}`}
+                          aria-label={C.deleteAria(e.name)}
                           disabled={remove.isPending}
                           onClick={() => {
-                            if (window.confirm(`Delete ${e.name}? Its quest progress goes too; claimed rewards stay paid.`))
-                              remove.mutate({ id: e.id }, { onSuccess: () => setDone(`Deleted ${e.name}.`) });
+                            if (window.confirm(C.confirmDelete(e.name)))
+                              remove.mutate({ id: e.id }, { onSuccess: () => setDone(C.deleted(e.name)) });
                           }}
                         />
                       </span>
@@ -258,7 +252,7 @@ function EventForm({
 }) {
   const [d, setD] = useState(initial);
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setD((x) => ({ ...x, [k]: v }));
-  const problem = d.startsAt && d.endsAt ? windowProblem(fromLocal(d.startsAt), fromLocal(d.endsAt)) : "Pick both dates.";
+  const problem = d.startsAt && d.endsAt ? windowProblem(fromLocal(d.startsAt), fromLocal(d.endsAt)) : C.pickDates;
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (!problem) onSave(d);
@@ -279,9 +273,9 @@ function EventForm({
     </Field>
   );
   return (
-    <form onSubmit={submit} className="bg-surface flex flex-col gap-3 rounded-[12px] p-4" aria-label={isNew ? "New event" : "Edit event"}>
+    <form onSubmit={submit} className="bg-surface flex flex-col gap-3 rounded-[12px] p-4" aria-label={isNew ? C.newEvent : C.editEvent}>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="Name" htmlFor="ev-name">
+        <Field label={C.name} htmlFor="ev-name">
           <input
             id="ev-name"
             required
@@ -289,11 +283,11 @@ function EventForm({
             maxLength={60}
             value={d.name}
             onChange={(e) => set("name", e.target.value)}
-            placeholder="Harmattan Week"
+            placeholder={C.namePlaceholder}
             className={inputCls}
           />
         </Field>
-        <Field label="Accent" htmlFor="ev-accent" hint={<span style={{ color: `var(--${d.accent})` }}>■ preview</span>}>
+        <Field label={C.accent} htmlFor="ev-accent" hint={<span style={{ color: `var(--${d.accent})` }}>{C.preview}</span>}>
           <select id="ev-accent" value={d.accent} onChange={(e) => set("accent", e.target.value)} className={inputCls}>
             {EVENT_ACCENTS.map((a) => (
               <option key={a} value={a}>
@@ -302,7 +296,7 @@ function EventForm({
             ))}
           </select>
         </Field>
-        <Field label="Starts (your time)" htmlFor="ev-start">
+        <Field label={C.starts} htmlFor="ev-start">
           <input
             id="ev-start"
             type="datetime-local"
@@ -312,7 +306,7 @@ function EventForm({
             className={inputCls}
           />
         </Field>
-        <Field label="Ends (your time)" htmlFor="ev-end" hint={problem ?? undefined}>
+        <Field label={C.ends} htmlFor="ev-end" hint={problem ?? undefined}>
           <input
             id="ev-end"
             type="datetime-local"
@@ -324,7 +318,7 @@ function EventForm({
           />
         </Field>
       </div>
-      <Field label="Home banner" htmlFor="ev-banner" hint={`${d.banner.length} of 140`}>
+      <Field label={C.banner} htmlFor="ev-banner" hint={C.bannerCount(d.banner.length)}>
         <textarea
           id="ev-banner"
           required
@@ -333,14 +327,14 @@ function EventForm({
           rows={2}
           value={d.banner}
           onChange={(e) => set("banner", e.target.value)}
-          placeholder="Harmattan Week is here. Clear 5 puzzles for a bonus."
+          placeholder={C.bannerPlaceholder}
           className={textareaCls}
         />
       </Field>
       <fieldset className="flex flex-col gap-3">
-        <legend className="mb-1 text-[14px] font-bold">Bonus quest</legend>
+        <legend className="mb-1 text-[14px] font-bold">{C.bonusQuest}</legend>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Quest title" htmlFor="ev-title">
+          <Field label={C.questTitle} htmlFor="ev-title">
             <input
               id="ev-title"
               required
@@ -348,11 +342,11 @@ function EventForm({
               maxLength={60}
               value={d.title}
               onChange={(e) => set("title", e.target.value)}
-              placeholder="Clear 5 puzzles this week"
+              placeholder={C.questPlaceholder}
               className={inputCls}
             />
           </Field>
-          <Field label="Goal" htmlFor="ev-kind">
+          <Field label={C.goal} htmlFor="ev-kind">
             <select id="ev-kind" value={d.kind} onChange={(e) => set("kind", e.target.value as EventGoal)} className={inputCls}>
               {EVENT_GOALS.map((g) => (
                 <option key={g} value={g}>
@@ -363,9 +357,9 @@ function EventForm({
           </Field>
         </div>
         <div className="flex flex-wrap gap-3">
-          {num("n", "How many", 1, 100)}
+          {num("n", C.howMany, 1, 100)}
           {d.kind === "world_clears" && (
-            <Field label="World" htmlFor="ev-world">
+            <Field label={C.world} htmlFor="ev-world">
               <select id="ev-world" value={d.world} onChange={(e) => set("world", e.target.value)} className={inputCls}>
                 {WORLDS.map((w) => (
                   <option key={w.id} value={w.id}>
@@ -375,16 +369,16 @@ function EventForm({
               </select>
             </Field>
           )}
-          {num("xp", "XP", 0, 1000)}
-          {num("sparks", "Sparks", 0, 500)}
+          {num("xp", C.xp, 0, 1000)}
+          {num("sparks", C.sparks, 0, 500)}
         </div>
       </fieldset>
       <div className="flex gap-2">
         <Btn type="submit" tone="primary" size="lg" icon="check" disabled={busy || !!problem}>
-          {isNew ? "Create event" : "Save changes"}
+          {isNew ? C.create : C.save}
         </Btn>
         <Btn size="lg" onClick={onCancel}>
-          Cancel
+          {C.cancel}
         </Btn>
       </div>
     </form>

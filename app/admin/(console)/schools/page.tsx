@@ -1,13 +1,16 @@
 import type { Metadata } from "next";
+import { adminCopy } from "@/lib/copy/admin";
 import { pageGate } from "@/lib/admin/page-gate";
 import { can } from "@/lib/admin/roles";
 import { Forbidden } from "@/components/admin/ui";
 import { SchoolsPage } from "@/components/admin/OpsPages";
 
-export const metadata: Metadata = { title: "Schools" };
+const P = adminCopy.pages;
+
+export const metadata: Metadata = { title: P.schools.title };
 
 export default async function Page() {
   const { role, allowed } = await pageGate("schools.read");
-  if (!allowed) return <Forbidden what="schools" />;
+  if (!allowed) return <Forbidden what={P.schools.what} />;
   return <SchoolsPage canWrite={can(role, "schools.write")} />;
 }

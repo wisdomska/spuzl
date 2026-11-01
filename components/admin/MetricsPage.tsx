@@ -10,7 +10,10 @@ import { dayMonth, shortDay } from "@/lib/admin/dates";
 import { api } from "@/lib/client/api";
 import { errorText, useAdminQuery } from "@/lib/client/admin";
 import { METRICS, RANGE_DAYS, type MetricDef, type MetricsData, type RangeDays } from "@/lib/admin/metrics";
+import { adminCopy } from "@/lib/copy/admin";
 import { Btn, Notice, PageTitle, RowsSkeleton, Tabs } from "./ui";
+
+const C = adminCopy.metrics;
 
 function save(filename: string, csv: string) {
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
@@ -48,8 +51,8 @@ function MetricCard({ def, data }: { def: MetricDef; data: MetricsData }) {
         <h2 id={headId} className="flex-1 text-[14px] font-bold">
           {def.title}
         </h2>
-        <Btn size="sm" tone="ghost" icon="download-simple" onClick={exportCsv} disabled={busy} aria-label={`Export ${def.title} as CSV`}>
-          CSV
+        <Btn size="sm" tone="ghost" icon="download-simple" onClick={exportCsv} disabled={busy} aria-label={C.exportAria(def.title)}>
+          {C.csv}
         </Btn>
       </div>
       <span className="num text-[22px] leading-tight font-semibold sm:text-[28px]">{def.headline(data.total)}</span>
@@ -61,13 +64,13 @@ function MetricCard({ def, data }: { def: MetricDef; data: MetricsData }) {
         </Notice>
       )}
       <details>
-        <summary className="text-muted hover:text-text flex h-11 cursor-pointer items-center text-[13px] font-semibold">By day</summary>
+        <summary className="text-muted hover:text-text flex h-11 cursor-pointer items-center text-[13px] font-semibold">{C.byDay}</summary>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-[13px]">
             <thead>
               <tr className="bg-surface-raised num text-muted text-left text-[12px]">
                 <th scope="col" className="px-2 py-2 font-semibold">
-                  Day
+                  {C.day}
                 </th>
                 {def.cols.map((c) => (
                   <th key={c.key} scope="col" className="px-2 py-2 text-right font-semibold whitespace-nowrap">
@@ -84,7 +87,7 @@ function MetricCard({ def, data }: { def: MetricDef; data: MetricsData }) {
                   </th>
                   {def.cols.map((c) => (
                     <td key={c.key} className="num border-line border-t px-2 py-1.5 text-right">
-                      {c.value(r) ?? "n/a"}
+                      {c.value(r) ?? C.notApplicable}
                     </td>
                   ))}
                 </tr>
@@ -103,21 +106,17 @@ export function MetricsPage() {
   return (
     <div className="flex min-h-dvh flex-col gap-3.5 px-4 py-5 md:px-6">
       <PageTitle
-        title="Metrics"
+        title={C.title}
         aside={
           <Tabs
-            label="Range"
+            label={C.range}
             value={String(days)}
             onChange={(v) => setDays(Number(v) as RangeDays)}
-            items={RANGE_DAYS.map((d) => ({ id: String(d), label: `${d} days` }))}
+            items={RANGE_DAYS.map((d) => ({ id: String(d), label: C.days(d) }))}
           />
         }
       >
-        {q.data && (
-          <span className="num text-muted text-[13px] font-semibold">
-            {dayMonth(q.data.from)} to {dayMonth(q.data.to)} GMT
-          </span>
-        )}
+        {q.data && <span className="num text-muted text-[13px] font-semibold">{C.span(dayMonth(q.data.from), dayMonth(q.data.to))}</span>}
       </PageTitle>
       {q.isPending ? (
         <RowsSkeleton rows={6} height={120} />

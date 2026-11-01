@@ -4,7 +4,10 @@ import { useState } from "react";
 import { errorText, useAdminAction, useAdminQuery } from "@/lib/client/admin";
 import { GAME_BY_ID } from "@/lib/catalog";
 import { TAGS, durationLabel, type GameMetaRow, type Tag } from "@/lib/games-meta";
+import { adminCopy } from "@/lib/copy/admin";
 import { Btn, Notice, PageTitle, RowsSkeleton, inputCls } from "./ui";
+
+const C = adminCopy.library;
 
 type Row = GameMetaRow & { id: string; default: GameMetaRow; overridden: boolean };
 
@@ -17,10 +20,8 @@ export function LibraryMetaPage({ canWrite }: { canWrite: boolean }) {
   const [parseErr, setParseErr] = useState<string | null>(null);
   return (
     <div className="flex flex-col gap-3.5 px-6 py-5">
-      <PageTitle title="Library">
-        <span className="text-muted text-[14px]">
-          Typical play time (the duration chip) and filter tags per game. Players see changes within 5 minutes.
-        </span>
+      <PageTitle title={C.title}>
+        <span className="text-muted text-[14px]">{C.intro}</span>
       </PageTitle>
       {(patch.error || imp.error) && <Notice tone="danger">{errorText((patch.error ?? imp.error)!)}</Notice>}
       {q.isPending && <RowsSkeleton />}
@@ -32,11 +33,11 @@ export function LibraryMetaPage({ canWrite }: { canWrite: boolean }) {
         </section>
       )}
       <section className="bg-surface flex flex-col gap-2.5 rounded-[16px] p-4">
-        <h2 className="text-[15px] font-semibold">Export and import</h2>
-        <p className="text-muted text-[13px]">Only overrides are exported. Import validates every row before saving any.</p>
+        <h2 className="text-[15px] font-semibold">{C.exportImport}</h2>
+        <p className="text-muted text-[13px]">{C.exportIntro}</p>
         <div className="flex gap-2">
           <Btn tone="secondary" onClick={() => setJson(JSON.stringify({ rows: q.data?.export ?? {} }, null, 2))}>
-            Export
+            {C.export}
           </Btn>
           <Btn
             disabled={!canWrite || imp.isPending || !json}
@@ -46,16 +47,16 @@ export function LibraryMetaPage({ canWrite }: { canWrite: boolean }) {
                 setParseErr(null);
                 imp.mutate(parsed);
               } catch {
-                setParseErr("That isn't valid JSON.");
+                setParseErr(C.badJson);
               }
             }}
           >
-            Import
+            {C.import}
           </Btn>
         </div>
         {parseErr && <Notice tone="danger">{parseErr}</Notice>}
         <textarea
-          aria-label="Library metadata JSON"
+          aria-label={C.jsonAria}
           className={`${inputCls} num min-h-40 font-mono text-[13px]`}
           value={json}
           onChange={(e) => setJson(e.target.value)}
@@ -84,10 +85,7 @@ function MetaRow({
     <div className="flex flex-wrap items-center gap-3 border-t border-[var(--line)] py-2.5 first-of-type:border-0">
       <div className="min-w-[160px] flex-1">
         <p className="text-[14px] font-semibold">{GAME_BY_ID[row.id]?.name ?? row.id}</p>
-        <p className="text-muted text-[12px]">
-          {row.overridden ? "Changed" : "Default"} · default {durationLabel(row.default.typicalSec)},{" "}
-          {row.default.tags.join(", ") || "no tags"}
-        </p>
+        <p className="text-muted text-[12px]">{C.rowNote(row.overridden, durationLabel(row.default.typicalSec), row.default.tags)}</p>
       </div>
       <form
         className="flex items-center gap-2"
@@ -97,7 +95,7 @@ function MetaRow({
         }}
       >
         <label className="sr-only" htmlFor={`sec-${row.id}`}>
-          Typical seconds for {row.id}
+          {C.secondsAria(row.id)}
         </label>
         <input
           id={`sec-${row.id}`}
@@ -108,9 +106,9 @@ function MetaRow({
           aria-invalid={bad}
           disabled={!canWrite}
         />
-        <span className="text-muted text-[12px]">s</span>
+        <span className="text-muted text-[12px]">{C.secondsUnit}</span>
         <Btn tone="secondary" disabled={!canWrite || busy || bad || n === row.typicalSec}>
-          Save
+          {C.save}
         </Btn>
       </form>
       <div className="flex gap-1.5">
@@ -128,7 +126,7 @@ function MetaRow({
       </div>
       {row.overridden && (
         <Btn tone="secondary" disabled={!canWrite || busy} onClick={() => onSave({ typicalSec: null, tags: null })}>
-          Reset
+          {C.reset}
         </Btn>
       )}
     </div>

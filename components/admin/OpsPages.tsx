@@ -69,6 +69,8 @@ function Toggle({ on, label, disabled, onChange }: { on: boolean; label: string;
 
 /* ---------------- Schools ---------------- */
 
+const SCH = adminCopy.schools;
+
 export function SchoolsPage({ canWrite }: { canWrite: boolean }) {
   const pager = usePager();
   const q = useAdminQuery<
@@ -86,16 +88,16 @@ export function SchoolsPage({ canWrite }: { canWrite: boolean }) {
   const act = useAdminAction<{ id: string; decision: "verify" | "unverify" }>("POST", (i) => `/api/admin/schools/${i.id}`);
   return (
     <div className="flex flex-col gap-3.5 px-6 py-5">
-      <PageTitle title="Schools">
-        <span className="text-muted text-[14px]">Verified school names show on boards and School Cup.</span>
+      <PageTitle title={SCH.title}>
+        <span className="text-muted text-[14px]">{SCH.intro}</span>
       </PageTitle>
       {act.error && <Notice tone="danger">{errorText(act.error)}</Notice>}
       <Frame q={q}>
         {() =>
           !q.data!.rows.length ? (
-            <Empty icon="graduation-cap">No schools yet.</Empty>
+            <Empty icon="graduation-cap">{SCH.empty}</Empty>
           ) : (
-            <Table head={["School", "Place", "Code", "Players", "Added", "Status", ""]}>
+            <Table head={[...SCH.head]}>
               {q.data!.rows.map((s) => (
                 <tr key={s.id}>
                   <td className={`${td} font-semibold`}>{s.name}</td>
@@ -103,7 +105,7 @@ export function SchoolsPage({ canWrite }: { canWrite: boolean }) {
                   <td className={`${td} num text-muted text-[13px]`}>{s.code}</td>
                   <td className={`${td} num text-[13px]`}>{s.players}</td>
                   <td className={`${td} num text-muted text-[13px]`}>{age(s.created_at)}</td>
-                  <td className={td}>{s.verified ? <Pill tone="ok">verified</Pill> : <Pill tone="warn">pending</Pill>}</td>
+                  <td className={td}>{s.verified ? <Pill tone="ok">{SCH.verified}</Pill> : <Pill tone="warn">{SCH.pending}</Pill>}</td>
                   <td className={`${td} text-right`}>
                     {canWrite && (
                       <Btn
@@ -112,7 +114,7 @@ export function SchoolsPage({ canWrite }: { canWrite: boolean }) {
                         disabled={act.isPending}
                         onClick={() => act.mutate({ id: s.id, decision: s.verified ? "unverify" : "verify" })}
                       >
-                        {s.verified ? "Withdraw" : "Verify"}
+                        {s.verified ? SCH.withdraw : SCH.verify}
                       </Btn>
                     )}
                   </td>
@@ -378,6 +380,8 @@ function EventQuests({ canWrite }: { canWrite: boolean }) {
 
 /* ---------------- Feature flags ---------------- */
 
+const FLAGS = adminCopy.flags;
+
 export function FlagsPage({ canWrite }: { canWrite: boolean }) {
   const pager = usePager();
   const q = useAdminQuery<AdminPage<{ key: string; enabled: boolean; payload: Record<string, unknown>; updated_at: string }>>(
@@ -390,13 +394,13 @@ export function FlagsPage({ canWrite }: { canWrite: boolean }) {
   const [added, setAdded] = useState<string | null>(null);
   return (
     <div className="flex flex-col gap-3.5 px-6 py-5">
-      <PageTitle title="Feature flags">
-        <span className="text-muted text-[14px]">Every new game and event ships behind a flag. Changes are live at once.</span>
+      <PageTitle title={FLAGS.title}>
+        <span className="text-muted text-[14px]">{FLAGS.intro}</span>
       </PageTitle>
       {put.error && <Notice tone="danger">{errorText(put.error)}</Notice>}
       {added && (
         <Notice tone="ok" icon="check-circle">
-          Added {added} (off). Flags are listed by key.
+          {FLAGS.added(added)}
         </Notice>
       )}
       {canWrite && (
@@ -407,25 +411,25 @@ export function FlagsPage({ canWrite }: { canWrite: boolean }) {
             put.mutate({ key, enabled: false }, { onSuccess: () => (setAdded(key), setKey("")) });
           }}
         >
-          <Field label="New flag key" htmlFor="flagkey">
+          <Field label={FLAGS.newKey} htmlFor="flagkey">
             <input
               id="flagkey"
               value={key}
               onChange={(e) => setKey(e.target.value.toLowerCase())}
-              placeholder="event.exam_season"
+              placeholder={FLAGS.keyPlaceholder}
               pattern="[a-z0-9_.:\-]{2,60}"
               required
               className={`${inputCls} w-72`}
             />
           </Field>
           <Btn type="submit" icon="plus" disabled={put.isPending}>
-            Add (off)
+            {FLAGS.add}
           </Btn>
         </form>
       )}
       <Frame q={q}>
         {() => (
-          <Table head={["Flag", "State", "Payload", "Changed"]}>
+          <Table head={[...FLAGS.head]}>
             {q.data!.rows.map((f) => (
               <tr key={f.key}>
                 <td className={`${td} num font-semibold`}>{f.key}</td>
@@ -472,7 +476,7 @@ function PayloadCell({
   return (
     <div className="flex items-center gap-2">
       <input
-        aria-label={`${flag.key} payload`}
+        aria-label={FLAGS.payloadAria(flag.key)}
         value={text}
         readOnly={!canWrite}
         onChange={(e) => setText(e.target.value)}
@@ -481,7 +485,7 @@ function PayloadCell({
       />
       {canWrite && text !== initial && (
         <Btn size="sm" disabled={!valid} onClick={() => onSave(JSON.parse(text))}>
-          Save
+          {FLAGS.save}
         </Btn>
       )}
     </div>
@@ -604,6 +608,8 @@ export function AuditPage() {
 
 /* ---------------- Team ---------------- */
 
+const TEAM = adminCopy.team;
+
 export function TeamPage() {
   const pager = usePager();
   const q = useAdminQuery<
@@ -622,10 +628,8 @@ export function TeamPage() {
   const [role, setRole] = useState<Role>("content_editor");
   return (
     <div className="flex flex-col gap-3.5 px-6 py-5">
-      <PageTitle title="Team">
-        <span className="text-muted text-[14px]">
-          New admins get a password-reset email, then set up their authenticator on first sign-in.
-        </span>
+      <PageTitle title={TEAM.title}>
+        <span className="text-muted text-[14px]">{TEAM.intro}</span>
       </PageTitle>
       <form
         className="flex flex-wrap items-end gap-2"
@@ -634,7 +638,7 @@ export function TeamPage() {
           add.mutate({ email, role }, { onSuccess: () => (setEmail(""), pager.reset()) });
         }}
       >
-        <Field label="Email" htmlFor="t-email">
+        <Field label={TEAM.email} htmlFor="t-email">
           <input
             id="t-email"
             type="email"
@@ -644,7 +648,7 @@ export function TeamPage() {
             className={`${inputCls} w-72`}
           />
         </Field>
-        <Field label="Role" htmlFor="t-role">
+        <Field label={TEAM.role} htmlFor="t-role">
           <select id="t-role" value={role} onChange={(e) => setRole(e.target.value as Role)} className={`${inputCls} w-48`}>
             {ROLES.map((r) => (
               <option key={r} value={r}>
@@ -654,29 +658,29 @@ export function TeamPage() {
           </select>
         </Field>
         <Btn type="submit" tone="primary" icon="user-plus" disabled={add.isPending}>
-          Add admin
+          {TEAM.add}
         </Btn>
       </form>
       {(add.error || patch.error) && <Notice tone="danger">{errorText(add.error ?? patch.error)}</Notice>}
       {add.data && (
         <Notice tone="ok" icon="check-circle">
-          Added. {add.data.resetSent ? "A password-reset email is on its way." : "They already have a password."}
+          {TEAM.added(add.data.resetSent)}
         </Notice>
       )}
       <Frame q={q}>
         {() => (
-          <Table head={["Admin", "Role", "Authenticator", "Last sign-in", "Access"]}>
+          <Table head={[...TEAM.head]}>
             {q.data!.rows.map((a) => {
               const self = a.user_id === q.data!.me;
               return (
                 <tr key={a.user_id}>
                   <td className={`${td} font-semibold`}>
                     {a.email ?? a.user_id.slice(0, 8)}
-                    {self && <span className="text-muted text-[13px] font-medium"> (you)</span>}
+                    {self && <span className="text-muted text-[13px] font-medium"> {TEAM.you}</span>}
                   </td>
                   <td className={td}>
                     <select
-                      aria-label={`Role for ${a.email}`}
+                      aria-label={TEAM.roleAria(a.email ?? a.user_id.slice(0, 8))}
                       value={a.role}
                       disabled={self || patch.isPending}
                       onChange={(e) => patch.mutate({ id: a.user_id, role: e.target.value as Role })}
@@ -689,11 +693,15 @@ export function TeamPage() {
                       ))}
                     </select>
                   </td>
-                  <td className={td}>{a.totp_enrolled ? <Pill tone="ok">on</Pill> : <Pill tone="warn">not yet</Pill>}</td>
-                  <td className={`${td} num text-muted text-[13px]`}>{a.last_sign_in_at ? age(a.last_sign_in_at) + " ago" : "never"}</td>
+                  <td className={td}>
+                    {a.totp_enrolled ? <Pill tone="ok">{TEAM.totpOn}</Pill> : <Pill tone="warn">{TEAM.totpNotYet}</Pill>}
+                  </td>
+                  <td className={`${td} num text-muted text-[13px]`}>
+                    {a.last_sign_in_at ? TEAM.ago(age(a.last_sign_in_at)) : TEAM.never}
+                  </td>
                   <td className={td}>
                     {self ? (
-                      <span className="text-muted text-[13px]">Active</span>
+                      <span className="text-muted text-[13px]">{TEAM.active}</span>
                     ) : (
                       <Btn
                         size="sm"
@@ -702,7 +710,7 @@ export function TeamPage() {
                         disabled={patch.isPending}
                         onClick={() => patch.mutate({ id: a.user_id, disabled: !a.disabled_at })}
                       >
-                        {a.disabled_at ? "Enable" : "Disable"}
+                        {a.disabled_at ? TEAM.enable : TEAM.disable}
                       </Btn>
                     )}
                   </td>

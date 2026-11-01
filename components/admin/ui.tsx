@@ -7,6 +7,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { adminCopy } from "@/lib/copy/admin";
 
 type Tone = "primary" | "secondary" | "danger" | "ghost";
 const TONE: Record<Tone, string> = {
@@ -186,7 +187,7 @@ export function Forbidden({ what }: { what: string }) {
   return (
     <div className="p-6">
       <Notice tone="warn" icon="lock-simple">
-        Your role cannot open {what}.
+        {adminCopy.common.forbidden(what)}
       </Notice>
     </div>
   );

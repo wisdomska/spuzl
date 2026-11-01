@@ -26,7 +26,7 @@ interface Item {
 }
 
 const TONE: Record<Item["status"], PillTone> = { draft: "neutral", in_review: "warn", approved: "ok", rejected: "danger", scheduled: "ok" };
-const label = (s: string) => s.replace("_", " ");
+const label = adminCopy.common.statusLabel;
 
 /** A one-line summary of a payload: its first text field. */
 function summary(p: unknown): string {
@@ -39,11 +39,12 @@ function summary(p: unknown): string {
   if (Array.isArray(o.words)) return (o.words as string[]).filter(Boolean).join(" ");
   if (Array.isArray(o.groups)) return (o.groups as { label: string }[]).map((g) => g.label).join(" / ");
   if (Array.isArray(o.rows)) return (o.rows as string[]).join(" ");
-  if (Array.isArray(o.items)) return `${(o.items as unknown[]).length} questions`;
+  if (Array.isArray(o.items)) return C.questions((o.items as unknown[]).length);
   return JSON.stringify(p).slice(0, 80);
 }
 
 const C = adminCopy.content;
+const E = C.editorPanel;
 const { common } = adminCopy;
 const FILTERS = { tab: "items", status: "", game: "", show: "todo" } as const;
 const ALLOWED = {
@@ -237,14 +238,16 @@ function Editor({
   const err = create.error ?? save.error ?? review.error ?? schedule.error;
 
   return (
-    <aside aria-label="Item editor" className="bg-surface flex flex-col gap-3 rounded-[12px] p-4 xl:sticky xl:top-5 xl:self-start">
+    <aside aria-label={E.aria} className="bg-surface flex flex-col gap-3 rounded-[12px] p-4 xl:sticky xl:top-5 xl:self-start">
       <div className="flex items-center gap-2">
-        <h2 className="font-display text-[16px] font-extrabold">{item ? `${GAME_BY_ID[item.game_id]?.name} item` : "New item"}</h2>
+        <h2 className="font-display text-[16px] font-extrabold">
+          {item ? E.itemTitle(GAME_BY_ID[item.game_id]?.name ?? item.game_id) : C.newItem}
+        </h2>
         {item && <Pill tone={TONE[item.status]}>{label(item.status)}</Pill>}
-        <Btn size="sm" tone="ghost" icon="x" aria-label="Close editor" className="ml-auto" onClick={onClose} />
+        <Btn size="sm" tone="ghost" icon="x" aria-label={E.close} className="ml-auto" onClick={onClose} />
       </div>
       {!item && (
-        <Field label="Game" htmlFor="game">
+        <Field label={common.game} htmlFor="game">
           <select
             id="game"
             value={game}
@@ -264,13 +267,9 @@ function Editor({
         </Field>
       )}
       <Field
-        label="Payload (JSON)"
+        label={E.payload}
         htmlFor="payload"
-        hint={
-          item
-            ? `By ${item.author_id === me ? "you" : (item.author_email ?? "an editor")}${item.reviewer_email ? `, reviewed by ${item.reviewer_email}` : ""}`
-            : undefined
-        }
+        hint={item ? E.byline(item.author_id === me ? C.you : (item.author_email ?? E.anEditor), item.reviewer_email) : undefined}
       >
         <textarea
           id="payload"
@@ -287,21 +286,21 @@ function Editor({
       <div id="payload-issues" aria-live="polite">
         {!parsed.ok ? (
           <Notice tone="danger" icon="warning">
-            Not valid JSON yet.
+            {E.badJson}
           </Notice>
         ) : check && !check.success ? (
           <ul className="text-danger flex flex-col gap-0.5 text-[13px] font-medium">
             {check.issues.slice(0, 8).map((i, k) => (
               <li key={k}>
-                <span className="num">{i.path.join(".") || "payload"}</span>: {i.message}
+                <span className="num">{i.path.join(".") || E.payloadPath}</span>: {i.message}
               </li>
             ))}
           </ul>
         ) : (
-          <span className="text-accent text-[13px] font-semibold">Matches the {GAME_BY_ID[game]?.name} format.</span>
+          <span className="text-accent text-[13px] font-semibold">{E.matches(GAME_BY_ID[game]?.name ?? game)}</span>
         )}
       </div>
-      <Field label="Notes" htmlFor="notes">
+      <Field label={E.notes} htmlFor="notes">
         <textarea
           id="notes"
           value={notes}
@@ -314,9 +313,9 @@ function Editor({
       {err && <Notice tone="danger">{errorText(err)}</Notice>}
       {schedule.data && (
         <Notice tone="ok" icon="check-circle">
-          Scheduled for {dayMonth(date)}.{" "}
+          {E.scheduledFor(dayMonth(date))}{" "}
           <Link className="text-accent underline" href={`/admin/calendar/${game}/${date}`}>
-            Open the Daily
+            {E.openDaily}
           </Link>
         </Notice>
       )}
@@ -332,7 +331,7 @@ function Editor({
                 : create.mutate({ game, payload: parsed.ok ? parsed.value : undefined, notes }, { onSuccess: (r) => onCreated(r.id) })
             }
           >
-            Save draft
+            {E.saveDraft}
           </Btn>
           <Btn
             size="lg"
@@ -340,32 +339,27 @@ function Editor({
             disabled={!item || !check?.success || save.isPending || item.status === "in_review"}
             onClick={() => save.mutate({ payload: parsed.ok ? parsed.value : undefined, notes, submit: true })}
           >
-            {item?.status === "in_review" ? "In review" : "Submit for review"}
+            {item?.status === "in_review" ? E.inReview : E.submit}
           </Btn>
         </div>
       )}
       {item?.status === "in_review" && !mine && canApprove && (
         <div className="grid grid-cols-2 gap-2">
           <Btn size="lg" disabled={review.isPending} onClick={() => review.mutate({ decision: "reject", notes })}>
-            Reject
+            {E.reject}
           </Btn>
           <Btn size="lg" tone="primary" disabled={review.isPending} onClick={() => review.mutate({ decision: "approve", notes })}>
-            Approve
+            {E.approve}
           </Btn>
         </div>
       )}
-      {item?.status === "in_review" && mine && <span className="text-muted text-[13px]">Waiting for a second person to review.</span>}
+      {item?.status === "in_review" && mine && <span className="text-muted text-[13px]">{E.waiting}</span>}
       {item?.status === "approved" && canSchedule && (
         <div className="bg-bg flex flex-col gap-2 rounded-[12px] p-3 shadow-[inset_0_0_0_1px_var(--line)]">
           {!plan ? (
-            <span className="text-muted text-[13px]">
-              Approved. {GAME_BY_ID[game]?.name} items join the content pool rather than a single Daily.
-            </span>
+            <span className="text-muted text-[13px]">{E.joinsPool(GAME_BY_ID[game]?.name ?? game)}</span>
           ) : plan.guessRoute ? (
-            <span className="text-muted text-[13px]">
-              Approved. {GAME_BY_ID[game]?.name} checks guesses against content.ts, so scheduling a custom item waits for the guess route to
-              resolve by puzzle.
-            </span>
+            <span className="text-muted text-[13px]">{E.guessRoute(GAME_BY_ID[game]?.name ?? game)}</span>
           ) : (
             <form
               className="flex items-end gap-2"
@@ -374,7 +368,7 @@ function Editor({
                 schedule.mutate({ itemId: item.id, date });
               }}
             >
-              <Field label="Schedule on" htmlFor="sched">
+              <Field label={E.scheduleOn} htmlFor="sched">
                 <input
                   id="sched"
                   type="date"
@@ -385,7 +379,7 @@ function Editor({
                 />
               </Field>
               <Btn type="submit" tone="primary" size="lg" disabled={schedule.isPending}>
-                Schedule
+                {E.schedule}
               </Btn>
             </form>
           )}
@@ -396,7 +390,7 @@ function Editor({
           href={`/admin/calendar/${item.game_id}/${item.scheduled_for}`}
           className="text-accent text-[14px] font-semibold hover:underline"
         >
-          Scheduled for {dayMonth(item.scheduled_for)}
+          {E.scheduledLink(dayMonth(item.scheduled_for))}
         </Link>
       )}
     </aside>
@@ -559,7 +553,7 @@ function FileReview({ isOwner, pager }: { isOwner: boolean; pager: Pager }) {
                           </pre>
                         </td>
                         <td className="px-3 py-2">
-                          <Pill tone={FILE_TONE[e.state]}>{e.state === "changed" ? C.changedSince : e.state}</Pill>
+                          <Pill tone={FILE_TONE[e.state]}>{C.entryStates[e.state]}</Pill>
                         </td>
                       </tr>
                     ))}

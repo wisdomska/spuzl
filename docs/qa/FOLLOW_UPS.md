@@ -66,6 +66,4 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   Penalty King shots (unit tests cover the checks).
 - **Free-play seed:** now that free play moves world ranks (at half weight), a server-only seed would stop a
   modified client from solving boards faster.
-- **Admin copy:** the content editor, moderation case panels and the remaining admin pages still have inline
-  strings (`lib/copy/admin.ts` covers the lists).
 - **Five content** is still marked `needsReview` for the owner.
