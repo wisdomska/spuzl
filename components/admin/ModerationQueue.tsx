@@ -2,10 +2,12 @@
 
 import { useState, type ReactNode } from "react";
 import { age, clock } from "@/lib/admin/dates";
+import { MODERATION_SORT } from "@/lib/admin/sorting";
 import { errorText, useAdminAction, useAdminQuery, type AdminPage } from "@/lib/client/admin";
 import { adminCopy } from "@/lib/copy/admin";
 import { Pagination, usePager } from "./Pagination";
-import { useUrlFilters } from "./useUrlFilters";
+import { SortHead, type HeadCol } from "./SortHeader";
+import { useUrlFilters, useUrlSort } from "./useUrlFilters";
 import { Btn, Empty, Notice, PageTitle, Pill, RowsSkeleton, Tabs, type PillTone } from "./ui";
 
 type Tab = "reports" | "nicknames" | "flagged";
@@ -35,8 +37,18 @@ interface Player {
 
 const C = adminCopy.moderation;
 const TABS: Tab[] = ["reports", "nicknames", "flagged"];
-const FILTERS = { tab: "reports", status: "open" } as const;
-const ALLOWED = { tab: TABS, status: ["open", "actioned", "dismissed", "all"] };
+const KINDS = ["player", "crew", "score", "content"] as const;
+const FILTERS = { tab: "reports", status: "open", kind: "" } as const;
+const ALLOWED = { tab: TABS, status: ["open", "actioned", "dismissed", "all"], kind: [...KINDS] };
+type SortKey = (typeof MODERATION_SORT.keys)[number];
+/** Flagged scores all share a kind and status, so only their age sorts. */
+const cols = (flagged: boolean): HeadCol<SortKey>[] => [
+  { label: C.head[0] },
+  { label: C.head[1] },
+  { label: C.head[2], sort: flagged ? undefined : "kind" },
+  { label: C.head[3], sort: flagged ? undefined : "status" },
+  { label: C.head[4], sort: "created_at" },
+];
 
 const STATUS_TONE: Record<string, PillTone> = { open: "danger", flagged: "danger", actioned: "ok", dismissed: "neutral" };
 
@@ -45,12 +57,14 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
   const [filters, setFilters] = useUrlFilters(FILTERS, ALLOWED);
   const tab = filters.tab as Tab;
   const status = filters.status;
+  const kind = tab === "reports" ? filters.kind : "";
   const [sel, setSel] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
   const pager = usePager();
+  const sort = useUrlSort(MODERATION_SORT);
   const q = useAdminQuery<Queue>(
-    ["moderation", tab, status, pager.query],
-    `/api/admin/moderation?tab=${tab}&status=${tab === "flagged" ? "open" : status}&${pager.query}`,
+    ["moderation", tab, status, kind, sort.query, pager.query],
+    `/api/admin/moderation?tab=${tab}&status=${tab === "flagged" ? "open" : status}${kind ? `&kind=${kind}` : ""}&${sort.query}&${pager.query}`,
     { keepPrevious: true },
   );
   const selected = q.data?.rows.find((r) => r.id === sel) ?? q.data?.rows[0] ?? null;
@@ -84,21 +98,41 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
           {q.data && <Pill tone={q.data.open ? "danger" : "ok"}>{C.open(q.data.open)}</Pill>}
         </PageTitle>
         {tab !== "flagged" && (
-          <label className="text-muted flex items-center gap-2 self-start text-[13px] font-semibold">
-            {C.showing}
-            <select
-              value={status}
-              onChange={(e) => (setFilters({ status: e.target.value }), setSel(null))}
-              style={{ fontSize: 13 }}
-              className="bg-surface text-text h-9 rounded-[10px] px-2 font-semibold"
-            >
-              {(["open", "actioned", "dismissed", "all"] as const).map((s) => (
-                <option key={s} value={s}>
-                  {C.statuses[s]}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="text-muted flex items-center gap-2 text-[13px] font-semibold">
+              {C.showing}
+              <select
+                value={status}
+                onChange={(e) => (setFilters({ status: e.target.value }), setSel(null))}
+                style={{ fontSize: 13 }}
+                className="bg-surface text-text h-11 rounded-[10px] px-2 font-semibold"
+              >
+                {(["open", "actioned", "dismissed", "all"] as const).map((s) => (
+                  <option key={s} value={s}>
+                    {C.statuses[s]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {tab === "reports" && (
+              <label className="text-muted flex items-center gap-2 text-[13px] font-semibold">
+                {C.kind}
+                <select
+                  value={kind}
+                  onChange={(e) => (setFilters({ kind: e.target.value }), setSel(null))}
+                  style={{ fontSize: 13 }}
+                  className="bg-surface text-text h-11 rounded-[10px] px-2 font-semibold"
+                >
+                  <option value="">{C.anyKind}</option>
+                  {KINDS.map((k) => (
+                    <option key={k} value={k}>
+                      {C.kinds[k]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+          </div>
         )}
         <div aria-live="polite" className="empty:hidden">
           {done && (
@@ -124,18 +158,10 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
                 <col className="w-[90px]" />
                 <col />
                 <col className="w-[140px]" />
-                <col className="w-[110px]" />
-                <col className="w-[90px]" />
+                <col className="w-[120px]" />
+                <col className="w-[100px]" />
               </colgroup>
-              <thead>
-                <tr className="bg-surface-raised">
-                  {C.head.map((h) => (
-                    <th key={h} scope="col" className="num text-muted px-3 py-2.5 text-left text-[12px] font-semibold">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
+              <SortHead cols={cols(tab === "flagged")} sort={sort} />
               <tbody>
                 {q.data.rows.map((r) => {
                   const on = selected?.id === r.id;

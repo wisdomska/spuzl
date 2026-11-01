@@ -4,7 +4,11 @@ import { useState, type FormEvent } from "react";
 import { WORLDS } from "@/lib/catalog";
 import { EVENT_ACCENTS, EVENT_GOALS, windowProblem, type EventGoal, type EventQuest, type EventStatus } from "@/lib/events";
 import { errorText, useAdminAction, useAdminQuery, type AdminPage } from "@/lib/client/admin";
+import { EVENT_SORT } from "@/lib/admin/sorting";
+import { adminCopy } from "@/lib/copy/admin";
 import { Pagination, usePager } from "./Pagination";
+import { SortHead, type HeadCol } from "./SortHeader";
+import { useUrlFilters, useUrlSort } from "./useUrlFilters";
 import { Btn, Empty, Field, Notice, PageTitle, Pill, RowsSkeleton, inputCls, textareaCls } from "./ui";
 
 /** Seasonal events (Phase 5, "features.seasonal"): list, create, edit and delete. The server validates and audits. */
@@ -41,6 +45,17 @@ const GOAL_LABEL: Record<EventGoal, string> = {
   no_hint_clears: "Clear free-play puzzles without hints",
 };
 const STATUS_TONE: Record<EventStatus, "ok" | "warn" | "neutral"> = { live: "ok", upcoming: "warn", ended: "neutral" };
+const E = adminCopy.events;
+const FILTERS = { status: "" } as const;
+const ALLOWED = { status: ["upcoming", "live", "ended"] };
+const COLS: HeadCol<(typeof EVENT_SORT.keys)[number]>[] = [
+  { label: E.head[0], sort: "name" },
+  { label: E.head[1], sort: "starts_at" },
+  { label: E.head[2] },
+  { label: E.head[3] },
+  { label: E.head[4] },
+  { label: E.head[5], hidden: true },
+];
 
 /** ISO time to the value of a datetime-local input (the admin's local time). */
 function toLocal(iso: string): string {
@@ -111,7 +126,13 @@ export function EventsPage({ canWrite }: { canWrite: boolean }) {
   // so the "off" notice never flashes.
   const settings = useAdminQuery<{ rows: { key: string; value: unknown }[] }>(["game-settings"], "/api/admin/settings");
   const seasonalOn = settings.data ? settings.data.rows.find((r) => r.key === "features.seasonal")?.value === true : undefined;
-  const q = useAdminQuery<AdminPage<EventItem>>(["events", pager.query], `/api/admin/events?${pager.query}`, { keepPrevious: true });
+  const sort = useUrlSort(EVENT_SORT);
+  const [{ status }, setFilters] = useUrlFilters(FILTERS, ALLOWED);
+  const q = useAdminQuery<AdminPage<EventItem>>(
+    ["events", status, sort.query, pager.query],
+    `/api/admin/events?${status ? `status=${status}&` : ""}${sort.query}&${pager.query}`,
+    { keepPrevious: true },
+  );
   const create = useAdminAction<ReturnType<typeof payload>>("POST", "/api/admin/events");
   const edit = useAdminAction<ReturnType<typeof payload> & { id: string }>("PATCH", (i) => `/api/admin/events/${i.id}`);
   const remove = useAdminAction<{ id: string }>("DELETE", (i) => `/api/admin/events/${i.id}`);
@@ -161,6 +182,17 @@ export function EventsPage({ canWrite }: { canWrite: boolean }) {
           }}
         />
       )}
+      <label className="text-muted flex items-center gap-2 self-start text-[13px] font-semibold">
+        {E.statusFilter}
+        <select value={status} onChange={(e) => setFilters({ status: e.target.value })} className={`${inputCls} h-11 w-44`}>
+          <option value="">{E.anyStatus}</option>
+          {ALLOWED.status.map((s) => (
+            <option key={s} value={s}>
+              {E.statuses[s as EventStatus]}
+            </option>
+          ))}
+        </select>
+      </label>
       <div className="bg-surface overflow-x-auto rounded-[12px]">
         {q.isPending ? (
           <RowsSkeleton />
@@ -174,15 +206,7 @@ export function EventsPage({ canWrite }: { canWrite: boolean }) {
           <Empty icon="calendar-blank">No events yet.</Empty>
         ) : (
           <table className="w-full min-w-[760px] border-collapse text-[14px]">
-            <thead>
-              <tr className="bg-surface-raised num text-muted text-left text-[12px]">
-                {["Event", "Runs", "Status", "Bonus quest", "Completed", ""].map((h, i) => (
-                  <th key={i} scope="col" className="px-3 py-2.5 font-semibold">
-                    {h || <span className="sr-only">Actions</span>}
-                  </th>
-                ))}
-              </tr>
-            </thead>
+            <SortHead cols={COLS} sort={sort} />
             <tbody>
               {q.data!.rows.map((e) => (
                 <tr key={e.id}>

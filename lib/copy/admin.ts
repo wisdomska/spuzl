@@ -49,7 +49,9 @@ export const adminCopy = {
     title: "Puzzles",
     total: (n: string) => `${n} total`,
     empty: "No puzzles match.",
-    head: ["Game", "Difficulty", "Grade", "Status", "Source", "Daily", "Checked"],
+    head: ["Game", "Difficulty", "Grade", "Status", "Source", "Daily", "Checked", "Added"],
+    source: "Source",
+    anySource: "Any source",
     noDaily: "none",
     neverChecked: "never",
   },
@@ -64,6 +66,9 @@ export const adminCopy = {
     empty: "Nothing waiting here.",
     emptyOthers: (n: number) => `Nothing in this tab. ${n} waiting in the other tabs.`,
     head: ["ID", "Report", "Kind", "Status", "Age"],
+    kind: "Kind",
+    anyKind: "Any kind",
+    kinds: { player: "Player", crew: "Crew", score: "Anti-cheat", content: "Content" },
     caseLabel: "Case",
     pickCase: "Pick a case to review.",
   },
@@ -97,6 +102,8 @@ export const adminCopy = {
     catalogue: "Catalogue",
     tabs: { cosmetics: "Cosmetics and prices", badges: "Badges", quests: "Quests" },
     ownerPrices: "Only the owner changes Sparks prices.",
+    search: "Search by name",
+    searchPlaceholder: "Name or title",
     cosmeticsHead: ["Item", "Type", "Rarity", "Price (Sparks)", "In shop"],
     badgesHead: ["Badge", "Family", "Tier", "Sparks", "Secret"],
     questsHead: ["Quest", "Kind", "XP", "Sparks", "Active"],
@@ -121,6 +128,18 @@ export const adminCopy = {
     to: "To",
     empty: "No actions match.",
     head: ["When (GMT)", "Who", "Action", "Target", "Detail"],
+  },
+
+  team: {
+    roleFilter: "Show role",
+    anyRole: "Every role",
+  },
+
+  events: {
+    statusFilter: "Show",
+    anyStatus: "Every event",
+    statuses: { upcoming: "Upcoming", live: "Live", ended: "Ended" },
+    head: ["Event", "Runs", "Status", "Bonus quest", "Completed", "Actions"],
   },
 
   /** Seasonal event bonus quests, listed in the Shop and events quest catalogue. */
