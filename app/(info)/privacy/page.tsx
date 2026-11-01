@@ -28,6 +28,12 @@ export default function Privacy() {
           <strong>Email</strong>, only if you choose to sign in with email or Google. We use it to sign you in and recover your account.
         </li>
         <li>
+          <strong>Google sign-in.</strong> If you continue with Google, Google shares your name, email address and profile picture with
+          SPUZL. We use them only to create and sign in to your account. Your public nickname is the one you choose, not your Google name.
+          We never post for you, read your contacts or sell or share Google data. You can remove SPUZL from your Google account any time at
+          myaccount.google.com, and delete your SPUZL data in Settings.
+        </li>
+        <li>
           <strong>City and country</strong>, only if you add them in Settings, for local boards. If you are under 16, your city never shows
           publicly.
         </li>

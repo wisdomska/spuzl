@@ -21,6 +21,8 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "SPUZL" },
   openGraph: { type: "website", siteName: "SPUZL", url: siteUrl },
   twitter: { card: "summary_large_image" },
+  // Google Search Console ownership tag (HTML tag method); the value is public, set in the deploy env.
+  ...(process.env.GOOGLE_SITE_VERIFICATION ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } } : {}),
 };
 
 export const viewport: Viewport = {
