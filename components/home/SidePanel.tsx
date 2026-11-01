@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useMe, useToday } from "@/lib/client/api";
 import { useAcceptInvite, useFriends } from "@/lib/client/social";
 import { takePendingInvite } from "@/lib/client/invite";
@@ -19,7 +19,9 @@ import { nextDaily } from "./HomeMap";
 export function SidePanel() {
   const me = useMe();
   const today = useToday();
-  const friends = useFriends(!!me.data);
+  // The side panel only shows on wide screens; phones skip the friends request entirely (SPZ-01).
+  const wide = useWide();
+  const friends = useFriends(!!me.data && wide);
   // Mounted on Home and every tabbed screen (hidden below 1024 px): an invite opened before onboarding
   // is accepted as soon as the new player has a profile.
   const accept = useAcceptInvite();
@@ -178,4 +180,16 @@ export function SidePanel() {
       )}
     </aside>
   );
+}
+
+function useWide() {
+  const [wide, setWide] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const on = () => setWide(mq.matches);
+    on();
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+  return wide;
 }

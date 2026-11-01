@@ -1,6 +1,6 @@
-import { PageLoader } from "@/components/ui/PageLoader";
+import { ShellSkeleton } from "@/components/game/ShellSkeleton";
 
-/** Shown instantly while this route loads on the server. */
+/** Shown the instant a game is tapped (SPZ-01): the shell's layout with a board placeholder. */
 export default function Loading() {
-  return <PageLoader message="Getting your puzzle" />;
+  return <ShellSkeleton />;
 }
