@@ -1,5 +1,31 @@
 # Changelog
 
+## Unreleased
+
+### For players
+
+- **18+ party games (behind the switch):** Party adds **Draw It** (one player draws a secret word, the others guess)
+  and **Two Truths** (write three statements about yourself, one false; the others pick the lie). Only signed-in
+  players whose age band is 18+ see or can join them; guests and under-18s never see them, and the server refuses
+  them (403) on every call. A room in one of these modes only ever holds signed-in 18+ players.
+  - The host confirms a one-time notice: "Adults only: players may type and draw freely. Report anything abusive."
+  - Every statement and guess passes a server filter (rude words, phone numbers, emails, links, handles, "add me
+    on ...") and a length limit (statements 80 characters, guesses 30), with a friendly message when refused.
+  - Drawings are vector strokes only (preset pens, capped size), no images and no text tool.
+  - Every drawing, statement set and guess has a Report button; the host can remove a player, who can't rejoin.
+  - Text and drawings are wiped when their round closes; only reports keep a copy.
+  - Scoring: Draw It guessers score 200 to 50 by speed and the drawer 50 per correct guesser; Two Truths pays 100
+    for spotting the lie and the writer 50 per player fooled.
+  - The Draw It word list is family-safe, with Ghanaian everyday items (banku, kente, trotro, jollof and more).
+
+### For admins
+
+- **`features.adultParty`** (Features, off by default) turns the two games on. Their timings and the block length
+  are in the new "18+ party games" group (`adultParty.drawSec`, `writeSec`, `voteSec`, `revealSec`, `blockDays`).
+- **Moderation:** a **Party content** tab lists reported drawings, statements and guesses with exactly what was
+  shown. Mark actioned also keeps the player out of 18+ rooms for `adultParty.blockDays` days (7 by default) and
+  removes them from any 18+ room they are in.
+
 ## 1.3.0 (1 November 2026)
 
 Google sign-in, a public homepage, a lemon green icon, fairer lab games and many admin and phone-fit fixes.

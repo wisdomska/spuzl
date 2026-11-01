@@ -58,8 +58,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 
 - **Dailies off:**
   - Ghost Race still uses the day's puzzle for Rage Ridge.
-- **Party games:** Draw It and Two Truths were not built. They need free text or drawings between players,
-  which conflicts with the no-free-text rule for young players. They need a decision and moderation design first.
 - **Solve-check gaps:** Penalty King, Beat Tap, Higher or Lower, Light Up, Killer Sums and Dara have no
   solved-state shape, so the admin solve-check asks for a Play test.
 - **Trotro Jam** lots grow from a bank of 96 deep starting lots, so their shapes can repeat; about 7% of medium
@@ -71,3 +69,21 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 - **Admin copy:** the content editor, moderation case panels and the remaining admin pages still have inline
   strings (`lib/copy/admin.ts` covers the lists).
 - **Five content** is still marked `needsReview` for the owner.
+
+## 18+ party games (Draw It, Two Truths)
+
+- **Age band is self-declared:** the 18+ gate trusts `players.age_band`, which the player picks at sign-up and can
+  set again by posting the profile once more. Locking the band after sign-up (or an age check) would make the gate
+  stronger.
+- **API tests not run yet:** `tests/api/adult-party.test.ts` needs a dev server on this branch with
+  `20261112000001_adult_party.sql` applied.
+- **Live drawing:** strokes reach other players when each line is finished (pen up), through a refetch on the
+  realtime "changed" event, not point by point. Streaming points would feel smoother.
+- **Round state in the database:** strokes, statements and guesses live in server-only tables for the round
+  (needed on serverless hosts and for trustworthy report snapshots) and are wiped when it closes; nothing is kept
+  in memory only.
+- **Filter limits:** spelled-out phone numbers ("zero two four ...") and look-alike Unicode letters get past the
+  contact and word checks; reports are the backstop.
+- **Reopening** an actioned party report does not lift the player's 18+ block; an admin would clear
+  `players.adult_party_blocked_until` by hand.
+- **No rewards:** the 18+ party games pay no XP or Sparks (only room points).
