@@ -66,6 +66,7 @@ export const TYPICAL_SEC: Record<string, number> = {
   beattap: 45,
   hilo: 75,
   market: 150,
+  five: 150,
 };
 
 /** Games with a clock pushing you (reaction, action, countdowns) are never "calm". */

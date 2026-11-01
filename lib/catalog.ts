@@ -637,6 +637,17 @@ export const LAB_GAMES: GameMeta[] = [
     "Buy 1 to 9 of each item so you bring back the exact change and every rule on the list holds.",
     { unique: true, minTimeMs: 8000, lab: true },
   ),
+  g(
+    "five",
+    "Five",
+    "word",
+    "text-aa",
+    "M3+",
+    "word",
+    "Find the hidden 5-letter word",
+    "Guess the 5-letter word in 6 tries. Tiles show right spot, in the word, or not in it.",
+    { content: "curated", minTimeMs: 4000, lab: true },
+  ),
 ];
 
 export const GAME_BY_ID: Record<string, GameMeta> = Object.fromEntries([...GAMES, ...LAB_GAMES].map((x) => [x.id, x]));

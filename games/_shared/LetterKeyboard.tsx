@@ -5,6 +5,16 @@ import { Icon } from "@/components/ui/Icon";
 
 const ROWS = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
 
+/** Optional per-letter look (Five marks keys it has seen). Never colour alone: pass a badge and a spoken name. */
+export interface KeyDecor {
+  background: string;
+  color: string;
+  /** small corner mark, e.g. a check or a dot */
+  badge?: React.ReactNode;
+  /** spoken name, e.g. "A, right spot" */
+  say?: string;
+}
+
 export interface LetterKeyboardProps {
   onLetter(letter: string): void;
   onBackspace(): void;
@@ -16,6 +26,8 @@ export interface LetterKeyboardProps {
   disabled?: boolean;
   /** also listen to the physical keyboard (letters, Backspace, Enter) */
   listen?: boolean;
+  /** per-letter colour, corner badge and spoken name */
+  decorate?: (letter: string) => KeyDecor | undefined;
 }
 
 /**
@@ -32,6 +44,7 @@ export function LetterKeyboard({
   enterLabel = "ENTER",
   disabled,
   listen = true,
+  decorate,
 }: LetterKeyboardProps) {
   const [pressed, setPressed] = useState<string | null>(null);
 
@@ -56,12 +69,12 @@ export function LetterKeyboard({
     return () => window.removeEventListener("keydown", on);
   }, [listen, disabled, onLetter, onBackspace, onEnter]);
 
-  const key = (id: string, label: React.ReactNode, act: () => void, opts: { wide?: boolean; aria?: string } = {}) => (
+  const key = (id: string, label: React.ReactNode, act: () => void, opts: { wide?: boolean; aria?: string; decor?: KeyDecor } = {}) => (
     <button
       key={id}
       type="button"
       disabled={disabled}
-      aria-label={opts.aria ?? id}
+      aria-label={opts.aria ?? opts.decor?.say ?? id}
       onPointerDown={() => setPressed(id)}
       onPointerUp={() => setPressed(null)}
       onPointerLeave={() => setPressed((p) => (p === id ? null : p))}
@@ -71,12 +84,17 @@ export function LetterKeyboard({
         flex: opts.wide ? "1.45 1 0" : "1 1 0",
         maxWidth: opts.wide ? 46 : 34,
         minWidth: 0,
-        background: opts.wide ? "var(--line)" : pressed === id ? "var(--text)" : "var(--surface-raised)",
-        color: pressed === id && !opts.wide ? "var(--bg)" : "var(--text)",
+        background: opts.wide ? "var(--line)" : pressed === id ? "var(--text)" : (opts.decor?.background ?? "var(--surface-raised)"),
+        color: pressed === id && !opts.wide ? "var(--bg)" : (opts.decor?.color ?? "var(--text)"),
         boxShadow: "0 3px 0 var(--depth)",
       }}
     >
       {label}
+      {opts.decor?.badge && (
+        <span aria-hidden className="pointer-events-none absolute top-0.5 right-0.5 flex leading-none">
+          {opts.decor.badge}
+        </span>
+      )}
       {pressed === id && !opts.wide && (
         <span
           aria-hidden
@@ -110,7 +128,7 @@ export function LetterKeyboard({
             ) : (
               <span style={{ flex: "1.45 1 0", maxWidth: 46 }} />
             ))}
-          {[...row].map((ch) => key(ch, ch, () => onLetter(ch)))}
+          {[...row].map((ch) => key(ch, ch, () => onLetter(ch), { decor: decorate?.(ch) }))}
           {ri === 2 && key("backspace", <Icon name="backspace" size={20} />, onBackspace, { wide: true, aria: "Backspace" })}
         </div>
       ))}

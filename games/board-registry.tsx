@@ -66,4 +66,5 @@ export const BOARDS: Record<string, AnyBoard> = {
   beattap: dynamic(() => import("./beattap/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   hilo: dynamic(() => import("./hilo/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   market: dynamic(() => import("./market/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  five: dynamic(() => import("./five/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
 };
