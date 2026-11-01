@@ -134,7 +134,7 @@ function SettingsScreen() {
         <Row
           icon="user-circle"
           label="Account"
-          value={d ? (d.guest ? "Guest" : (d.email ?? "Signed in")) : ""}
+          value={d ? (d.guest ? "Guest" : (d.email ?? "Signed in")) : me.isPending ? "" : settingsCopy.account.notStartedShort}
           onClick={() => setOpen("account")}
         />
       </Group>
@@ -393,13 +393,28 @@ function AccountSheet({ open, onClose, onDelete }: { open: boolean; onClose: () 
       onOpenChange={(o) => !o && onClose()}
       title="Account"
       description={
-        d?.guest
-          ? "You're playing as a guest. Sign in to keep your streak, Sparks and friends on any phone."
-          : d
-            ? `Signed in as ${d.nickname}${d.email ? ` (${d.email})` : ""}.`
-            : "Signed in."
+        me.isPending
+          ? settingsCopy.account.checking
+          : !d
+            ? settingsCopy.account.notStarted
+            : d.guest
+              ? "You're playing as a guest. Sign in to keep your streak, Sparks and friends on any phone."
+              : `Signed in as ${d.nickname}${d.email ? ` (${d.email})` : ""}.`
       }
     >
+      {/* No profile yet (a fresh visitor): nothing to sign out of or delete, so offer a start instead. */}
+      {!me.isPending && !d && (
+        <div className="flex flex-col gap-2">
+          <GoogleButton next="/welcome" />
+          <Link
+            href="/welcome"
+            className="press bg-surface-raised flex h-[52px] items-center justify-center gap-2 rounded-[14px] text-[15px] font-semibold"
+          >
+            <Icon name="play" size={20} />
+            {settingsCopy.account.start}
+          </Link>
+        </div>
+      )}
       {sent?.applied && (
         <p role="status" className="bg-surface-raised rounded-[14px] px-3.5 py-3 text-[15px]">
           {settingsCopy.account.linkApplied(sent.to)}
@@ -460,33 +475,35 @@ function AccountSheet({ open, onClose, onDelete }: { open: boolean; onClose: () 
           )}
         </>
       )}
-      <div className="flex flex-col gap-2 pt-1">
-        <a
-          href="/api/v1/account/export"
-          download
-          className="press bg-surface-raised flex h-[52px] items-center gap-3 rounded-[14px] px-3.5 text-[15px] font-semibold"
-        >
-          <Icon name="download-simple" size={20} />
-          Download my data
-        </a>
-        {!d?.guest && (
-          <button
-            onClick={signOut}
+      {d && (
+        <div className="flex flex-col gap-2 pt-1">
+          <a
+            href="/api/v1/account/export"
+            download
             className="press bg-surface-raised flex h-[52px] items-center gap-3 rounded-[14px] px-3.5 text-[15px] font-semibold"
           >
-            <Icon name="sign-out" size={20} />
-            Sign out
+            <Icon name="download-simple" size={20} />
+            Download my data
+          </a>
+          {!d?.guest && (
+            <button
+              onClick={signOut}
+              className="press bg-surface-raised flex h-[52px] items-center gap-3 rounded-[14px] px-3.5 text-[15px] font-semibold"
+            >
+              <Icon name="sign-out" size={20} />
+              Sign out
+            </button>
+          )}
+          <button
+            onClick={onDelete}
+            className="press flex h-[52px] items-center gap-3 rounded-[14px] px-3.5 text-[15px] font-semibold"
+            style={{ background: "var(--danger-tint)", color: "var(--danger)" }}
+          >
+            <Icon name="trash" size={20} />
+            Delete account
           </button>
-        )}
-        <button
-          onClick={onDelete}
-          className="press flex h-[52px] items-center gap-3 rounded-[14px] px-3.5 text-[15px] font-semibold"
-          style={{ background: "var(--danger-tint)", color: "var(--danger)" }}
-        >
-          <Icon name="trash" size={20} />
-          Delete account
-        </button>
-      </div>
+        </div>
+      )}
     </Sheet>
   );
 }

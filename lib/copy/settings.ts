@@ -16,6 +16,11 @@ export const settingsCopy = {
     saved: (name: string) => `You're now ${name}.`,
   },
   account: {
+    checking: "Checking your account…",
+    /** A visitor with no profile yet (they haven't started playing). */
+    notStarted: "You haven't started yet. Play as a guest, or sign in to keep your progress on any phone.",
+    start: "Play as a guest or sign in with email",
+    notStartedShort: "Not started",
     /** The confirmation email is on its way: the email joins this account once the link is tapped. */
     linkSent: (email: string) => `Check ${email}. Tap the link in the email to finish. Your progress stays put.`,
     /** The project applied the email change at once (no confirmation step), so no email was sent. */
