@@ -40,6 +40,9 @@ export const SOLVED_STATE: Record<string, Adapter> = {
   remix: (_p, s: any) => ({ answers: s.words }),
   hunch: (_p, s: any) => ({ opened: 1, guesses: [s.accept[0]] }),
   quickfire: (_p, s: any) => ({ answers: (s.correct as number[]).map((pick) => ({ pick, ms: 4000 })) }),
+  five: (_p, s: any) => ({ guesses: [s.answer] }),
+  // every title found on the first try, a few seconds in
+  emojihits: (_p, s: any) => ({ rounds: (s.answers as string[][]).map((a) => ({ tries: [a[0]], ms: 4000 })) }),
 };
 /* eslint-enable @typescript-eslint/no-explicit-any */
 

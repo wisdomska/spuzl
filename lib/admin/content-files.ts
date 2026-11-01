@@ -56,6 +56,15 @@ const FILES: Record<ContentGame, () => Promise<{ needsReview: boolean; entries: 
     const m = await import("@/games/pixl/art");
     return { needsReview: m.needsReview, entries: m.ART };
   },
+  // Lab content games: the owner reviews them here before "features.newGames" goes on.
+  five: async () => {
+    const m = await import("@/games/five/content");
+    return { needsReview: m.needsReview, entries: m.ANSWERS as unknown[] };
+  },
+  emojihits: async () => {
+    const m = await import("@/games/emojihits/content");
+    return { needsReview: m.needsReview, entries: m.CONTENT };
+  },
 };
 
 export const ITEM_COLS =

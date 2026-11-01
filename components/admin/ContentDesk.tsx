@@ -28,8 +28,10 @@ const label = (s: string) => s.replace("_", " ");
 
 /** A one-line summary of a payload: its first text field. */
 function summary(p: unknown): string {
+  if (typeof p === "string") return p; // Five: a bare word
   if (!p || typeof p !== "object") return "";
   const o = p as Record<string, unknown>;
+  if (typeof o.title === "string" && typeof o.emoji === "string") return `${o.emoji} ${o.title}`; // Emoji Hits
   for (const k of ["theme", "category", "q", "name", "label", "phrase", "pangram"])
     if (typeof o[k] === "string" && o[k]) return o[k] as string;
   if (Array.isArray(o.words)) return (o.words as string[]).filter(Boolean).join(" ");

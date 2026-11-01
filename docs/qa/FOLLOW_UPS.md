@@ -80,7 +80,12 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   records the shown answer there; finish fails a clear whose answer was shown (`GameLogic.audit`).
 - **Emoji Hits:** the artist and year hints need a fact-check before the switch goes on. Both content files are
   marked `needsReview`.
-- **Admin content tools:** the new content games aren't in the admin content review or solve-check tools yet.
+- ~~**Admin content tools:** the new content games aren't in the admin content review or solve-check tools yet.~~
+  Done: Five and Emoji Hits (the only lab games with content files) are in the content review (needsReview
+  entries, editor schemas and templates, as pool games, not schedulable one by one) and the solve-check
+  (solved states). The admin preview now checks guesses against the stored puzzle
+  (`/api/admin/puzzles/:id/guess`). Still open: Penalty King, Beat Tap, Higher or Lower, Light Up, Killer Sums
+  and Dara have no solved-state shape, so their solve-check asks for a Play test.
 - **Expert and mega Killer Sums** can need a guess; the hint engine would need the "45 rule".
 - **Trotro Jam:** hard boards can take 3 to 7 s to generate on the server.
 - **Small cells on phones:** Light Up 10 × 10 cells are about 30 px.
