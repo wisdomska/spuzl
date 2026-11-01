@@ -2,11 +2,13 @@ import "server-only";
 import { randomInt } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ApiError, todayGmt } from "@/lib/api/server";
-import { loadDaily, loadFree } from "@/lib/game/service";
-import { decodeSolution } from "@/lib/game/solution-codec";
+import { loadDaily, loadFree, solutionHash } from "@/lib/game/service";
+import { decodeSolution, encodeSolution } from "@/lib/game/solution-codec";
+import { getGameSettings } from "@/lib/game-settings/server";
 import { loadLogic } from "@/games/logic-registry";
 import { GAME_BY_ID } from "@/lib/catalog";
-import type { Difficulty } from "@/games/types";
+import { createRng } from "@/lib/rng";
+import { difficultyForDate, type Difficulty } from "@/games/types";
 import { dailyNumber } from "@/lib/format";
 import { CODE_ALPHABET } from "../roomCode";
 
@@ -214,6 +216,53 @@ export async function challengeResult(admin: SupabaseClient, me: string, code: s
 export const GHOST_GAMES = ["dash", "flipside", "ghosted"] as const;
 export const isGhostGame = (g: string) => (GHOST_GAMES as readonly string[]).includes(g);
 
+/** Seed of the day's Ghost Race track while Dailies are off. */
+export const ghostTrackSeed = (game: string, date: string) => `ghost:${game}:${date}`;
+const GHOST_SEED = /^ghost:[a-z]+:(\d{4}-\d{2}-\d{2})$/;
+
+/**
+ * Today's Ghost Race track, the same for everyone so friends race each other's ghosts. While Dailies are on it
+ * is the day's Daily. With Dailies off (admin "features.dailies") it is a track of the day kept as its own
+ * puzzle row (seed ghost:<game>:<date>, same difficulty curve), so a race never publishes or plays a Daily.
+ */
+export async function ghostTrack(admin: SupabaseClient, game: string, date: string): Promise<{ puzzleId: string | null; puzzle: unknown }> {
+  if ((await getGameSettings())["features.dailies"]) {
+    const daily = await loadDaily(admin, game, date);
+    return { puzzleId: daily.puzzleId, puzzle: daily.puzzle };
+  }
+  const seed = ghostTrackSeed(game, date);
+  const difficulty = difficultyForDate(date);
+  const { data: have } = await admin
+    .from("puzzles")
+    .select("id, data")
+    .eq("game_id", game)
+    .eq("seed", seed)
+    .eq("difficulty", difficulty)
+    .maybeSingle();
+  if (have) return { puzzleId: have.id as string, puzzle: have.data };
+  const g = (await loadLogic(game)).generate(createRng(seed), difficulty);
+  // Two first races at once both generate the same track; the upsert keeps one row.
+  const { data: ins, error } = await admin
+    .from("puzzles")
+    .upsert(
+      {
+        game_id: game,
+        seed,
+        difficulty,
+        grade: g.grade,
+        data: g.puzzle,
+        solution: encodeSolution(g.solution),
+        solution_hash: solutionHash(g.solution),
+        status: "approved",
+      },
+      { onConflict: "game_id,seed,difficulty" },
+    )
+    .select("id")
+    .single();
+  if (error) throw error;
+  return { puzzleId: ins.id as string, puzzle: g.puzzle };
+}
+
 export async function startGhostRace(admin: SupabaseClient, me: string, game: string, runId?: string) {
   if (!isGhostGame(game) || !GAME_BY_ID[game]) throw new ApiError(404, "unknown_game");
   let puzzleId: string | null = null;
@@ -245,9 +294,9 @@ export async function startGhostRace(admin: SupabaseClient, me: string, game: st
         .maybeSingle(),
     );
   if (!puzzleId) {
-    const daily = await loadDaily(admin, game, todayGmt());
-    puzzleId = daily.puzzleId;
-    puzzle = daily.puzzle;
+    const track = await ghostTrack(admin, game, todayGmt());
+    puzzleId = track.puzzleId;
+    puzzle = track.puzzle;
     if (!ghost && puzzleId) {
       const { data: fr } = await admin
         .from("friendships")
@@ -292,6 +341,11 @@ export async function saveGhostRun(admin: SupabaseClient, me: string, attemptId:
   if (!date) {
     const { data: d } = await admin.from("dailies").select("date").eq("puzzle_id", a.puzzle_id).maybeSingle();
     date = d?.date ?? null;
+  }
+  if (!date) {
+    // A track of the day (Dailies off) carries its date in its seed.
+    const { data: p } = await admin.from("puzzles").select("seed").eq("id", a.puzzle_id).maybeSingle();
+    date = GHOST_SEED.exec(p?.seed ?? "")?.[1] ?? null;
   }
   const { data: existing } = await admin.from("ghost_runs").select("id").eq("attempt_id", a.id).maybeSingle();
   if (existing) return { runId: existing.id as string };
