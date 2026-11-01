@@ -190,13 +190,11 @@ export function ResultsScreen({
         >
           <Icon name="share-fat" size={22} />
         </button>
-        {/* One row of secondary actions: another round, or every way to play with others (SPZ-13). */}
-        <div className="col-span-2 flex gap-2.5">
-          <Button size="md" variant="secondary" onClick={another.onClick} className="min-w-0 flex-1">
-            <span className="truncate">{another.label}</span>
-          </Button>
-          <RaceLiveButton meta={meta} size="md" className="flex-1" onBeatMyTime={onChallenge} />
-        </div>
+        {/* Secondary: another round, then one Challenge sheet for every way to play with others (SPZ-13). */}
+        <Button size="md" variant="secondary" onClick={another.onClick} className="col-span-2">
+          {another.label}
+        </Button>
+        <RaceLiveButton meta={meta} size="md" className="col-span-2 w-full" onBeatMyTime={onChallenge} />
         <Link href="/" className="text-muted col-span-2 py-2 text-center text-[15px] font-medium">
           Back to the Grid
         </Link>
