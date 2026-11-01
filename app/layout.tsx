@@ -21,8 +21,9 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "SPUZL" },
   openGraph: { type: "website", siteName: "SPUZL", url: siteUrl },
   twitter: { card: "summary_large_image" },
-  // Google Search Console ownership tag (HTML tag method); the value is public, set in the deploy env.
-  ...(process.env.GOOGLE_SITE_VERIFICATION ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } } : {}),
+  // Google Search Console ownership tag (HTML tag method, property https://spuzl.vercel.app). The value is public;
+  // GOOGLE_SITE_VERIFICATION overrides it.
+  verification: { google: process.env.GOOGLE_SITE_VERIFICATION || "Eow3-ie9l2JvR0oiP6C0Zzov7YY0EzdcInunXCYJYRc" },
 };
 
 export const viewport: Viewport = {
