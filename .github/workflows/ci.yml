@@ -91,7 +91,18 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor
+      # The default image registry (public.ecr.aws) rate-limits anonymous pulls ("toomanyrequests"). Try it,
+      # then the Docker Hub mirror of the same images, with a pause between attempts.
+      - name: Start Supabase
+        run: |
+          for i in 1 2 3 4; do
+            if [ "$i" -gt 2 ]; then export SUPABASE_INTERNAL_IMAGE_REGISTRY=docker.io; fi
+            pnpm supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor && exit 0
+            pnpm supabase stop --no-backup || true
+            echo "supabase start failed (attempt $i), retrying in $((i * 30)) s"
+            sleep $((i * 30))
+          done
+          exit 1
       - run: pnpm supabase test db
       - name: API integration
         run: |
