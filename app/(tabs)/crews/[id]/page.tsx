@@ -1,5 +1,6 @@
 "use client";
 
+import { InviteShare } from "@/components/share/InviteShare";
 import Link from "next/link";
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -152,16 +153,14 @@ export default function CrewPage({ params }: PageProps<"/crews/[id]">) {
                   <Qr value={link} size={168} label={`QR code to join ${c.name}`} />
                 </div>
               )}
-              <a
-                href={`https://wa.me/?text=${encodeURIComponent(`Join my SPUZL crew ${c.name}. Code ${c.code}: ${link}`)}`}
-                target="_blank"
-                rel="noopener noreferrer"
+              <InviteShare
+                url={link}
+                text={`Join my SPUZL crew ${c.name}. Code ${c.code}: ${link}`}
+                title="Invite to your crew"
+                iconSize={18}
                 className="toy bg-accent text-on-accent font-display flex h-14 w-full items-center justify-center gap-2 rounded-[18px] text-[15px] font-extrabold"
                 style={{ ["--btn-depth" as string]: "var(--accent-depth)" }}
-              >
-                <Icon name="whatsapp-logo" size={18} />
-                WhatsApp
-              </a>
+              />
             </div>
           </Sheet>
         </>

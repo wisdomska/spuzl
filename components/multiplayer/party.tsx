@@ -1,5 +1,6 @@
 "use client";
 
+import { InviteShare } from "@/components/share/InviteShare";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Icon } from "@/components/ui/Icon";
@@ -17,7 +18,7 @@ import type { MatchPlayerView, MatchView } from "@/lib/multiplayer/types";
 import { useReduce } from "@/lib/client/multiplayer";
 import { Avatar, Cta, EASE_IN_OUT, EASE_OUT, EmoteBar, EmoteBubble, PODIUM, SPRING_PARTY, TopButton, placeLabel } from "./ui";
 
-/* ---------------- Share: code tiles, WhatsApp, QR, link ---------------- */
+/* ---------------- Share: code tiles, share sheet, QR, link ---------------- */
 
 export function ShareCode({ code, url, text, count }: { code: string; url: string; text: string; count?: string }) {
   const [qr, setQr] = useState<string | null>(null);
@@ -37,7 +38,6 @@ export function ShareCode({ code, url, text, count }: { code: string; url: strin
       /* clipboard blocked */
     }
   };
-  const wa = `https://wa.me/?text=${encodeURIComponent(`${text} Code ${code} 🎉 ${full}`)}`;
   return (
     <div className="bg-surface flex flex-col gap-3 rounded-[22px] p-4">
       <div className="text-muted flex items-center justify-between text-[14px] font-medium">
@@ -55,10 +55,11 @@ export function ShareCode({ code, url, text, count }: { code: string; url: strin
         ))}
       </div>
       <div className="grid grid-cols-[1.4fr_1fr_1fr] gap-2">
-        <a
-          href={wa}
-          target="_blank"
-          rel="noreferrer"
+        <InviteShare
+          url={full}
+          text={`${text} Code ${code} 🎉 ${full}`}
+          title="Invite to the room"
+          iconSize={18}
           className="toy flex h-12 items-center justify-center gap-1.5 rounded-[14px] text-[15px] font-semibold"
           style={{
             background: "var(--accent)",
@@ -66,10 +67,7 @@ export function ShareCode({ code, url, text, count }: { code: string; url: strin
             ["--btn-depth" as string]: "var(--accent-depth)",
             boxShadow: "0 4px 0 var(--accent-depth)",
           }}
-        >
-          <Icon name="whatsapp-logo" size={18} />
-          WhatsApp
-        </a>
+        />
         <button
           type="button"
           onClick={showQr}

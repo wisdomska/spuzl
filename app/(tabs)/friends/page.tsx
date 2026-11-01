@@ -1,5 +1,6 @@
 "use client";
 
+import { InviteShare } from "@/components/share/InviteShare";
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { useAccept, useAddFriend, useFeed, useFriends, useInvite, useReact, useRemoveFriend, type FeedItem } from "@/lib/client/social";
@@ -17,7 +18,7 @@ import { play } from "@/lib/audio";
 
 const badgeName = (id: string) => BADGES.find((b) => b.id === id)?.name;
 
-/** F1 Friends + F2 Activity: invite (link, QR, WhatsApp), add by username, requests, presence, feed, report. */
+/** F1 Friends + F2 Activity: invite (link, QR, share sheet), add by username, requests, presence, feed, report. */
 export default function FriendsPage() {
   const [tab, setTab] = useState<"friends" | "activity">("friends");
   const me = useMe();
@@ -82,15 +83,12 @@ function InviteCard() {
         <span className="text-[15px] font-semibold">Your invite</span>
         <span className="num text-accent truncate text-[14px] font-medium select-all">{pretty || " "}</span>
         <div className="flex gap-1.5">
-          <a
-            href={url ? `https://wa.me/?text=${encodeURIComponent(share)}` : undefined}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="press bg-accent text-on-accent flex h-11 items-center gap-1.5 rounded-[10px] px-2.5 text-[14px] font-semibold"
-          >
-            <Icon name="whatsapp-logo" size={16} />
-            WhatsApp
-          </a>
+          <InviteShare
+            url={url}
+            text={share}
+            title="Invite friends"
+            className="press bg-accent text-on-accent flex h-11 items-center gap-1.5 rounded-[10px] px-3 text-[14px] font-semibold"
+          />
           <button
             onClick={copy}
             disabled={!url}
