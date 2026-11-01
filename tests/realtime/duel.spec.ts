@@ -10,16 +10,22 @@ test("duel: two devices play a best of 3 in real time", async ({ browser }) => {
   const a = await player(browser, "duA_");
   const b = await player(browser, "duB_");
 
-  // Entry sheet (M1): pick Crownfall, Quick Match.
+  // Game-first entry (SPZ-13): Crownfall preselected; the Duel page (SPZ-25); new players read the rules card
+  // first (SPZ-12), then Quick Match.
+  const quick = async (p: typeof a) => {
+    await p.page.getByRole("button", { name: /Quick Match/ }).click();
+    const ready = p.page.getByRole("button", { name: /I'm ready/ });
+    const searching = p.page.getByRole("heading", { name: "Finding a rival" });
+    await expect(ready.or(searching).first()).toBeVisible();
+    if (await ready.isVisible()) await ready.click();
+  };
   for (const p of [a, b]) {
-    await p.page.goto("/duel");
-    await expect(p.page.getByRole("dialog", { name: "Duel" })).toBeVisible();
-    await p.page.getByRole("radio", { name: /Sixer|Crownfall/ }).click();
-    await p.page.getByRole("option", { name: "Crownfall" }).click();
+    await p.page.goto("/duel?game=crownfall");
+    await expect(p.page.getByRole("heading", { name: "Duel" })).toBeVisible();
   }
-  await a.page.getByRole("button", { name: /Quick Match/ }).click();
+  await quick(a);
   await expect(a.page.getByRole("heading", { name: "Finding a rival" })).toBeVisible();
-  await b.page.getByRole("button", { name: /Quick Match/ }).click();
+  await quick(b);
 
   // Paired: both land on the same match and see the versus intro with each other's names.
   await a.page.waitForURL(/\/duel\?m=/, { timeout: 30_000 });
@@ -43,8 +49,8 @@ test("duel: two devices play a best of 3 in real time", async ({ browser }) => {
   await expect(b.page.locator('[role="gridcell"]')).toHaveCount(r1.n * r1.n); // B has their own board only
   // A finishes the round through the board.
   for (const i of r1.crowns.slice(1)) await a.page.locator('[role="gridcell"]').nth(i).click();
-  await expect(a.page.getByRole("heading", { name: "Round to you" })).toBeVisible({ timeout: 15_000 });
-  await expect(b.page.getByRole("heading", { name: `${a.nickname} took it` })).toBeVisible({ timeout: 15_000 });
+  await expect(a.page.getByRole("heading", { name: "Round 1: you win" })).toBeVisible({ timeout: 15_000 });
+  await expect(b.page.getByRole("heading", { name: `Round 1: ${a.nickname} wins` })).toBeVisible({ timeout: 15_000 });
 
   // Round 2: B drops out mid-round. A's clock pauses and A sees the reconnect window; B comes back.
   await expect(a.page.getByText("Their board stays hidden")).toBeVisible({ timeout: 20_000 });

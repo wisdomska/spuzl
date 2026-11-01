@@ -14,7 +14,7 @@
  * today's Daily. The /dev routes exist only when ENABLE_DEV_ROUTES=1 or outside production.
  */
 import { expect, type Page } from "@playwright/test";
-import { GAMES } from "@/lib/catalog";
+import { GAMES, LAB_GAMES } from "@/lib/catalog";
 import { createRng } from "@/lib/rng";
 import type { Difficulty } from "@/games/types";
 
