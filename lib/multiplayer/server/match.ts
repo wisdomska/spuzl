@@ -10,6 +10,8 @@ import type { MatchPlayerView, MatchRoundView, MatchView } from "../types";
 import { roundPuzzle } from "./puzzles";
 import { getGameSettings } from "@/lib/game-settings/server";
 import { finalizeDuel, finalizeRace } from "./rewards";
+import { adultRoundView, isAdultRoom, modeOf, resolveAdult } from "./adult";
+import type { PartyMode } from "@/lib/party-adult/modes";
 
 export const matchTopic = (id: string) => `match:${id}`;
 
@@ -44,6 +46,9 @@ export interface MatchRow {
   bot_rounds_won: number;
   result: string | null;
   rematch_id: string | null;
+  /** 18+ party games (20261112000001); absent before that migration, which reads as "race" */
+  party_mode?: PartyMode;
+  party_leads: string[];
 }
 
 export interface PlayerRow {
@@ -65,6 +70,7 @@ export interface PlayerRow {
   spectator: boolean;
   rematch: boolean;
   joined_at: string;
+  kicked_at?: string | null;
   players: { nickname: string; avatar_color: string; level: number; country: string | null; city: string | null; age_band: string } | null;
 }
 
@@ -109,7 +115,7 @@ export async function loadMatch(admin: SupabaseClient, id: string): Promise<Load
     .eq("set_no", m.set_no)
     .order("round");
   return {
-    m: m as MatchRow,
+    m: { ...m, party_leads: m.party_leads ?? [] } as MatchRow,
     players: (players ?? []).map((p) => ({ ...p, progress: Number(p.progress) })) as PlayerRow[],
     rounds: (rounds ?? []).map((r) => ({ ...r, progress: Number(r.progress) })) as RoundRow[],
     now: Date.now(),
@@ -173,7 +179,8 @@ export async function viewOf(admin: SupabaseClient, l: Loaded, me: string, rewar
   const start = ms(m.round_started_at);
   let puzzle: MatchView["puzzle"] = null;
   const game = m.games[m.round - 1];
-  if (m.status === "playing" && start !== null && game && now >= start - TIMING.countdownMs) {
+  const adult = isAdultRoom(m);
+  if (!adult && m.status === "playing" && start !== null && game && now >= start - TIMING.countdownMs) {
     const r = await roundPuzzle(m.id, m.set_no, m.round, game, m.difficulty);
     puzzle = { round: m.round, game, data: r.puzzle };
   }
@@ -246,10 +253,13 @@ export async function viewOf(admin: SupabaseClient, l: Loaded, me: string, rewar
     puzzle,
     myState: mine && puzzle ? mine.state : null,
     reward,
+    mode: modeOf(m),
+    party: adult ? await adultRoundView(admin, l, me) : null,
   };
 }
 
 function requirePlaying(l: Loaded, p: PlayerRow, round: number) {
+  if (isAdultRoom(l.m)) throw new ApiError(409, "not_a_race");
   if (p.left_at) throw new ApiError(409, "left_match");
   if (p.spectator) throw new ApiError(403, "spectator");
   if (l.m.status !== "playing") throw new ApiError(409, "not_playing");
@@ -334,10 +344,11 @@ export async function resolve(admin: SupabaseClient, id: string, loaded?: Loaded
   const l = loaded ?? (await loadMatch(admin, id));
   if (l.m.status !== "playing") return false;
   if (l.m.kind === "duel") return resolveDuel(admin, l);
+  if (isAdultRoom(l.m)) return resolveAdult(admin, l);
   return resolveRace(admin, l);
 }
 
-async function commit(
+export async function commit(
   admin: SupabaseClient,
   l: Loaded,
   next: {
@@ -470,9 +481,11 @@ async function resolveRace(admin: SupabaseClient, l: Loaded): Promise<boolean> {
 
 /* ---------------- Tick: time-based transitions any participant can trigger ---------------- */
 
-export async function tick(admin: SupabaseClient, id: string, playerId: string) {
+/** `gate` runs for 18+ party rooms (the age gate), before anything else. */
+export async function tick(admin: SupabaseClient, id: string, playerId: string, gate?: () => Promise<unknown>) {
   let l = await loadMatch(admin, id);
   member(l, playerId);
+  if (gate && isAdultRoom(l.m)) await gate();
   await touch(admin, l, playerId);
   const { m, now } = l;
   const before = { ...m };

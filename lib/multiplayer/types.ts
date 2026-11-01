@@ -1,4 +1,6 @@
 /** Wire types shared by the multiplayer API and its screens. Times are epoch ms on the server clock. */
+import type { PartyMode } from "@/lib/party-adult/modes";
+import type { Stroke } from "@/lib/party-adult/strokes";
 
 export interface MatchPlayerView {
   id: string;
@@ -74,6 +76,44 @@ export interface MatchView {
   myState: unknown;
   /** rewards for you once the match is over */
   reward: { xp: number; sparks: number } | null;
+  /** Party mode: "race" (puzzles) or an 18+ party game ("draw", "truths") */
+  mode: PartyMode;
+  /** the current 18+ party round as you may see it; null in races and outside a round */
+  party: AdultRoundView | null;
+}
+
+/**
+ * One Draw It or Two Truths round as one player sees it. The server leaves out what they mustn't see: the
+ * word is only sent to the drawer until the reveal, the lie only to its writer, and picks only at the reveal.
+ */
+export interface AdultRoundView {
+  mode: "draw" | "truths";
+  round: number;
+  rounds: number;
+  phase: "write" | "play" | "reveal" | "done";
+  leadId: string | null;
+  startedAt: number;
+  endsAt: number;
+  /** Draw It: the secret word (drawer while drawing, everyone at the reveal) */
+  word: string | null;
+  /** Draw It: letters per word, for the blanks */
+  shape: number[] | null;
+  strokes: Stroke[];
+  /** Draw It guesses, oldest first. text is null for correct guesses and once the round closes. */
+  guesses: { id: number; playerId: string; text: string | null; correct: boolean }[];
+  /** Two Truths statements (writer always; everyone once voting opens) */
+  statements: string[] | null;
+  /** the lie's index (writer always; everyone at the reveal) */
+  lie: number | null;
+  myPick: number | null;
+  /** who has voted; picks only at the reveal */
+  voters: string[];
+  votes: { playerId: string; pick: number }[] | null;
+  /** points this round, at the reveal */
+  awards: Record<string, number> | null;
+  /** Two Truths: the writer ran out of time or left */
+  skipped: boolean;
+  iCorrect: boolean;
 }
 
 /** Realtime events the server sends on match:<id> */
