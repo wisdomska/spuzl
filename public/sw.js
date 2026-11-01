@@ -12,7 +12,7 @@
  *   mode is on. Only ever today's: the server does not serve a Daily before its day (docs/qa/LOW_DATA.md).
  * - Never cached: other API writes, share images, Supabase and anything cross-origin.
  */
-const VERSION = "2026-11-01.1";
+const VERSION = "2026-11-01.2";
 const SHELL = `spuzl-shell-${VERSION}`;
 const STATIC = `spuzl-static-${VERSION}`;
 const DATA = `spuzl-data-${VERSION}`;
