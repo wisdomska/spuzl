@@ -108,7 +108,6 @@ export default function MergeBoard({ puzzle, initialState, hint, disabled, mode,
           : why === "stuck"
             ? `No moves left. Best tile ${best(b)}.`
             : `Run banked. Best tile ${best(b)}.`;
-      play("jingle");
       api.feedback(msg, "success", "trophy");
       api.announce(msg);
       api.onSolved({ moves: e.moves.slice() });

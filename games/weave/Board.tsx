@@ -68,7 +68,6 @@ export default function WeaveBoard({ puzzle, initialState, hint, disabled, mode,
       const chk = checkPath(puzzle, next);
       if (chk.complete) {
         setDone(true);
-        play("jingle");
         api.feedback("Woven. Every cell filled.", "success", "check-circle");
         api.announce("Board cleared.");
         api.onMove(next, { correctStreak: next.length });

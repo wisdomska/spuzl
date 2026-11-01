@@ -92,7 +92,6 @@ export default function SnugBoard({ puzzle, initialState, hint, disabled, mode, 
       if (info.kind === "place") setLast((l) => ({ k: info.k, n: (l?.n ?? 0) + 1, bad: false, at: info.at ?? [0, 0] }));
       if (solved) {
         setDone(true);
-        play("jingle");
         api.feedback("Snug fit. Board cleared.", "success", "check-circle");
         api.announce("Every block fits. Board cleared.");
       } else if (info.kind === "place") {

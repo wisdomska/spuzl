@@ -71,7 +71,6 @@ export default function RemixBoard({ puzzle, initialState, hint, disabled, mode,
         setAnswers(next);
         setPicks([]);
         if (next.length >= ROUNDS) {
-          play("jingle");
           api.feedback("Three for three. Remixed.", "success", "check-circle");
           api.onSolved({ answers: next });
         } else {

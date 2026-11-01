@@ -56,7 +56,6 @@ export default function FlowlineBoard({ puzzle, initialState, hint, disabled, mo
       }
       if (after.solved) {
         setDone(true);
-        play("jingle");
         api.feedback("Every plant has water.", "success", "check-circle");
         api.announce("Board cleared.");
         api.onMove(next, { correctStreak: streak.current });

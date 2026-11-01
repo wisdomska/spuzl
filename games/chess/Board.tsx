@@ -111,12 +111,11 @@ export default function ChessBoard({ puzzle, initialState, hint, disabled, api }
           setShown(res.pos);
           setBusy(false);
           later(() => play("check"), 150);
-          later(() => play("jingle"), 650);
           const line = res.plies.map((p) => p.san).join(" ");
           api.feedback(`${COPY.mate} ${line}`, "success", "check-circle");
           api.announce(`${COPY.mate} ${line}`);
           api.onMove(state, { correctStreak: streak.current });
-          api.onSolved(state);
+          api.onSolved(state, { clearDelayMs: 650 });
           return;
         }
         api.onMove(state, { correctStreak: streak.current });

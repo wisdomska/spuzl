@@ -69,7 +69,6 @@ export default function HiloBoard({ puzzle, initialState, hint, disabled, mode, 
         api.feedback(t.out(res.right), "danger", "x-circle");
         api.onFailed?.({ calls: nextCalls }, "out of slips");
       } else if (res.over) {
-        play("jingle");
         const msg = t.cleared(res.right, CALLS);
         api.feedback(msg, "success", "trophy");
         api.announce(msg);

@@ -91,7 +91,6 @@ export default function PixlBoard({ puzzle, initialState, hint, disabled, mode, 
       }
       if (after.clear) {
         setDone(true);
-        play("jingle");
         api.feedback("The picture is complete. Board cleared.", "success", "check-circle");
         api.announce("Board cleared.");
       } else if (!broke && after.bad.size === 0) {

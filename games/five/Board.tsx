@@ -199,8 +199,7 @@ export default function FiveBoard({ puzzle, initialState, hint, disabled, mode, 
       api.onMove(state, { correctStreak: 1 });
       api.feedback(t.solved(list.length), "success", "check-circle");
       api.announce(`${say} ${t.solved(list.length)}`);
-      setTimeout(() => play("jingle"), 200);
-      api.onSolved(state);
+      api.onSolved(state, { clearDelayMs: 200 });
       return;
     }
     play("pop", { step: list.length });

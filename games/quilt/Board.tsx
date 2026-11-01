@@ -81,7 +81,6 @@ export default function QuiltBoard({ puzzle, initialState, hint, disabled, mode,
         api.announce(`${where}. ${msg}`);
       } else if (after.clear) {
         setDone(true);
-        play("jingle");
         api.feedback("Stitched. Board cleared.", "success", "check-circle");
         api.announce("Board cleared.");
       } else {

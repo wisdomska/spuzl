@@ -58,7 +58,6 @@ export default function EchoBoard({ puzzle, initialState, disabled, mode, api }:
       const best = bestRef.current;
       if (tone === "danger") api.ruleBreak(`${why} You repeated ${best} ${best === 1 ? "step" : "steps"}.`);
       else {
-        play("jingle");
         api.feedback(`${why} ${best} steps.`, "success", "check-circle");
       }
       api.announce(`Run over. Longest sequence ${best}.`);

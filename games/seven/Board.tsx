@@ -100,7 +100,6 @@ export default function SevenBoard({ puzzle, initialState, hint, disabled, mode,
   const finish = useCallback(
     (list: string[]) => {
       setDone(true);
-      play("jingle");
       api.feedback(
         `Finished with ${list.reduce((s, w) => s + wordScore(w, isPangram(w, centre, puzzle.letters)), 0)} points.`,
         "success",

@@ -71,7 +71,6 @@ export default function TripwireBoard({ puzzle, initialState, hint, disabled, mo
         cellsRef.current = final;
         setCells(final);
         setDone(true);
-        play("jingle");
         api.feedback("Every safe tile found. Board cleared.", "success", "check-circle");
         api.announce("Board cleared.");
         api.onMove(final, { correctStreak: streak.current, mistake: !!info.trip });

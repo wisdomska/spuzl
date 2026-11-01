@@ -131,7 +131,6 @@ export default function CoilBoard({ puzzle, initialState, hint, disabled, mode, 
       setBusy(false);
       if (all) {
         setDone(true);
-        play("jingle");
         api.feedback("Every letter used. Board cleared.", "success", "check-circle");
         api.announce("Board cleared.");
         api.onSolved(stateOf(next));

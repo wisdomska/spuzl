@@ -88,7 +88,6 @@ export default function TwinsBoard({ puzzle, initialState, hint, disabled, mode,
         setUp([]);
         api.onMove(next, { correctStreak: streak.current });
         if (after.matched === pairs) {
-          play("jingle");
           api.feedback(`All ${pairs} pairs in ${next.flips.length} flips.`, "success", "check-circle");
           api.announce(`Row ${row}, column ${col}, ${face}. Pair. Board cleared in ${next.flips.length} flips.`);
           api.onSolved(next);

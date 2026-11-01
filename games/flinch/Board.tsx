@@ -77,7 +77,6 @@ export default function FlinchBoard({ puzzle, initialState, disabled, mode, api 
         const tl = tally(puzzle, state);
         timers.current.push(
           window.setTimeout(() => {
-            play("jingle");
             api.feedback(t.done(tl.best, tl.score), "success", "check-circle");
             api.onSolved(state);
           }, 700),

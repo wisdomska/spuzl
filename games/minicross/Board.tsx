@@ -104,7 +104,6 @@ export default function MinicrossBoard({ puzzle, initialState, hint, disabled, m
       if (res.ok) {
         setDone(true);
         setCur(at);
-        play("jingle");
         api.feedback("Every square right. Grid cleared.", "success", "check-circle");
         api.announce("Grid cleared.");
         api.onSolved({ cells: next });

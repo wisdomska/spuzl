@@ -78,7 +78,6 @@ export default function DuskBoard({ puzzle, initialState, hint, disabled, api }:
       } else if (after.clear) {
         doneRef.current = true;
         setDone(true);
-        play("jingle");
         api.feedback(t.cleared, "success", "check-circle");
         api.announce(t.clearedAnnounce);
       } else {

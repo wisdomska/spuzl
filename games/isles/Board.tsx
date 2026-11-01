@@ -70,7 +70,6 @@ export default function IslesBoard({ puzzle, initialState, hint, disabled, mode,
       api.announce(`${words} between ${where(x)} and ${where(y)}.`);
       if (after.complete) {
         setDone(true);
-        play("jingle");
         api.feedback("Every island joined.", "success", "check-circle");
         api.announce("Board cleared.");
         api.onMove(next, { correctStreak: next.reduce((s, b) => s + b, 0) });

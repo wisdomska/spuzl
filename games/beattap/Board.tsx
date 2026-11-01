@@ -50,7 +50,6 @@ export default function BeatTapBoard({ puzzle, initialState, disabled, mode, api
     const fj = judge(puzzle.beats, state.taps, puzzle.perfectMs, puzzle.goodMs);
     api.onMove(state);
     finishTimer.current = window.setTimeout(() => {
-      play("jingle");
       api.feedback(t.finished(fj.score, fj.perfect, total), "success", "check-circle");
       api.onSolved(state);
     }, 600);

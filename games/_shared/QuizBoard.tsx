@@ -128,7 +128,6 @@ export function QuizBoard({ rounds, correct, limitMs, noun, initial, hint, disab
     if (next.length >= total) {
       setPhase("done");
       const { score, right } = timedScore(next, correct, limitMs);
-      play("jingle");
       api.feedback(t.summary(right, total, score), "info", "flag-checkered");
       api.announce(t.summarySay(right, total, score));
       api.onSolved({ answers: next });

@@ -71,7 +71,6 @@ export default function LightUpBoard({ puzzle, initialState, hint, disabled, mod
         api.announce(`${T.cellLabel(r, c, what)}. ${msg}`);
       } else if (after.clear) {
         setDone(true);
-        play("jingle");
         api.feedback(T.cleared, "success", "check-circle");
         api.announce(T.cleared);
       } else {

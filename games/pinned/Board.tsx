@@ -112,7 +112,6 @@ export default function PinnedBoard({ puzzle, initialState, hint, disabled, mode
     if (done) {
       setPhase("done");
       const totalPts = pinsRef.current.reduce((s, p, j) => s + (p ? pointsFor(distanceKm(p, spots[j]), puzzle.rounds[j].map) : 0), 0);
-      play("jingle");
       api.feedback(`All ${total} pinned. Score ${totalPts}.`, "success", "check-circle");
       api.onSolved({ pins: pinsRef.current });
       return;

@@ -133,7 +133,6 @@ export default function RungsBoard({ puzzle, initialState, hint, disabled, mode,
       if (c[0] && c[1]) {
         setDone(true);
         setActive(null);
-        play("jingle");
         api.feedback("Top to bottom. Ladder cleared.", "success", "check-circle");
         api.announce("Ladder cleared.");
         api.onMove(st, { correctStreak: ++streak.current });

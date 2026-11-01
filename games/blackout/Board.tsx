@@ -52,7 +52,6 @@ export default function BlackoutBoard({ puzzle, initialState, hint, disabled, mo
       const state = { presses: next };
       if (!left) {
         setDone(true);
-        play("jingle");
         const par = next.length <= puzzle.par ? "On par." : `${next.length - puzzle.par} over par.`;
         api.feedback(`Lights out in ${next.length} moves. ${par}`, "success", "check-circle");
         api.announce(`Board cleared in ${next.length} moves. Par ${puzzle.par}.`);

@@ -57,7 +57,6 @@ export default function ReflectBoard({ puzzle, initialState, hint, disabled, mod
         api.announce(`Row ${r}, column ${c}, ${NAME[v]}. ${msg}`);
       } else if (clear) {
         setDone(true);
-        play("jingle");
         api.feedback("Perfect mirror. Board cleared.", "success", "check-circle");
         api.announce("Board cleared.");
       } else {

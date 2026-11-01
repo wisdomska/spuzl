@@ -65,7 +65,6 @@ export default function CrownfallBoard({ puzzle, initialState, hint, disabled, m
         api.announce(`Row ${r}, column ${c}, ${markName}. ${after.message}`);
       } else if (after.clear) {
         setDone(true);
-        play("jingle");
         api.feedback("Clean. Board cleared.", "success", "check-circle");
         api.announce("Board cleared.");
       } else {

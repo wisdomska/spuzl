@@ -36,7 +36,7 @@ export function Providers({ children }: { children: ReactNode }) {
       unlock();
       if (e.button > 0) return;
       const fx = pressSound(e.target as Element | null);
-      if (fx) play(fx.event, { step: fx.step });
+      if (fx) play(fx.event, { step: fx.step, gain: fx.gain });
     };
     const onKey = () => unlock();
     document.addEventListener("pointerdown", onDown, true);

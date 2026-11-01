@@ -75,7 +75,6 @@ export default function ShuffleBoard({ puzzle, initialState, hint, disabled, mod
       const homes = nextTiles.filter((t, i) => t === i && t !== gap).length;
       if (win) {
         setDone(true);
-        play("jingle");
         api.feedback(`Picture whole in ${nextMoves.length} moves. Par ${puzzle.par}.`, "success", "check-circle");
         api.announce(`Picture complete in ${nextMoves.length} moves.`);
       } else {

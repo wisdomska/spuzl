@@ -75,7 +75,6 @@ export default function MarketBoard({ puzzle, initialState, hint, disabled, mode
         if (broken < 0) {
           setDone(true);
           setBad(null);
-          play("jingle");
           api.feedback(t.cleared(puzzle.change), "success", "check-circle");
           api.announce(t.cleared(puzzle.change));
           api.onMove({ qty: next }, { correctStreak: ++streak.current });

@@ -156,8 +156,7 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
       const done = found === 4;
       if (done) {
         setOver(true);
-        setTimeout(() => play("jingle"), 200);
-        api.onSolved(state);
+        api.onSolved(state, { clearDelayMs: 200 });
       }
       return;
     }

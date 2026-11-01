@@ -63,7 +63,6 @@ export default function HunchBoard({ puzzle, initialState, disabled, mode, api }
       setWarm(false);
       commit(next);
       const n = next.opened;
-      play("jingle");
       api.feedback(`${secret.category}. Got it in ${n} ${n === 1 ? "clue" : "clues"}.`, "success", "check-circle");
       api.announce(`Correct. ${secret.category}. Score ${scoreFor(n, misses)}.`);
       api.onSolved(next);

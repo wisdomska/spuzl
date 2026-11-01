@@ -94,7 +94,6 @@ export default function DeadOnBoard({ puzzle, initialState, hint, disabled, mode
       const said = `${expr} = ${res.value}`;
       if (hit) {
         setDone(true);
-        play("jingle");
         api.feedback(`${puzzle.target}. Dead on.`, "success", "target");
         api.announce(`${said}. Dead on.`);
       } else {

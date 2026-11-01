@@ -143,7 +143,6 @@ export default function PenaltyBoard({ puzzle, initialState, disabled, mode, api
         const goals = got.filter((x) => x.result === "goal").length;
         const score = got.reduce((a, x) => a + x.points, 0);
         finishTimer.current = window.setTimeout(() => {
-          play("jingle");
           api.feedback(t.finished(goals, total, score), "success", "check-circle");
           api.onSolved(state);
         }, 900);

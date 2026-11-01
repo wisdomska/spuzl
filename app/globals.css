@@ -733,7 +733,7 @@ select {
 
 /* ---------- solved board hold (GameShell) ---------- */
 .shell-solved {
-  animation: shell-solved-glow 1s ease-out both;
+  animation: shell-solved-glow 1s var(--ease-out) both;
 }
 @keyframes shell-solved-glow {
   0% {

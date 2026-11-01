@@ -89,7 +89,6 @@ export default function TrotroBoard({ puzzle, initialState, hint, disabled, mode
       if (isSolved(after)) {
         setDone(true);
         setSel(-1);
-        play("jingle");
         api.feedback(T.out(count, puzzle.par), "success", "check-circle");
         api.announce(T.cleared(count, puzzle.par));
       } else {

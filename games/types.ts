@@ -96,8 +96,12 @@ export type FeedbackTone = "info" | "danger" | "success";
 export interface BoardApi<St> {
   /** Report every move: state for autosave, local progress for the UI, feedback line content */
   onMove(state: St, info?: { correctStreak?: number; mistake?: boolean }): void;
-  /** Board believes it is solved. The shell submits to the server, which decides. */
-  onSolved(state: St): void;
+  /**
+   * Board believes it is solved. The shell submits to the server, which decides, and plays the clear sound
+   * (boards never play it themselves). `clearDelayMs` holds the clear back while the board's own closing
+   * phrase finishes (a found word's chimes, a check sting); default 100 ms.
+   */
+  onSolved(state: St, opts?: { clearDelayMs?: number }): void;
   /** Hard fail (out of lives, Hunch out of guesses...) */
   onFailed?(state: St, reason: string): void;
   /** Feedback line under the board. Never overlays the board. */

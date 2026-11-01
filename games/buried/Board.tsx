@@ -140,10 +140,9 @@ export default function BuriedBoard({ puzzle, initialState, hint, disabled, mode
       if (next.length === puzzle.words.length) {
         setDone(true);
         const secret = splitPhrase(leftovers(puzzle, next), puzzle.phraseShape).join(" ");
-        setTimeout(() => play("jingle"), 300);
         api.feedback(`Secret phrase: ${secret}.`, "success", "check-circle");
         api.announce(`All words found. The secret phrase is ${secret}.`);
-        api.onSolved(stateOf(next));
+        api.onSolved(stateOf(next), { clearDelayMs: 300 });
       } else api.feedback(`${w}. ${next.length} of ${puzzle.words.length} found.`, "info", "check-circle");
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps

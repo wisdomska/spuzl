@@ -154,7 +154,6 @@ export default function SquintBoard({ puzzle, initialState, hint, disabled, mode
       const clear = next.found.length === total;
       if (clear) {
         setDone(true);
-        play("jingle");
         api.feedback("Sharp eyes. Every difference found.", "success", "check-circle");
         api.announce("All differences found.");
       } else {

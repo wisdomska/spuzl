@@ -71,7 +71,6 @@ export default function BotBoard({ puzzle, disabled, api, extra }: BoardProps<Bo
     reported.current = true;
     const s = { plies: plies.current };
     if (status.winner === ME) {
-      play("jingle");
       api.feedback(t.won, "success", "trophy");
       api.announce(t.won);
       api.onSolved(s);

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { pressSound } from "@/lib/audio/press";
+import { pressSound, SOFT_PRESS_GAIN } from "@/lib/audio/press";
 
 function dom(html: string) {
   document.body.innerHTML = html;
@@ -30,6 +30,19 @@ describe("pressSound", () => {
     );
     expect(pressSound($("#off"))).toEqual({ event: "toggle", step: 1 });
     expect(pressSound($("#on"))).toEqual({ event: "toggle", step: 0 });
+  });
+
+  it("toggles on board tool modes and taps softly on take-back controls", () => {
+    const $ = dom(
+      `<button id="m0" data-press="toggle" aria-pressed="false">Fill</button><button id="m1" data-press="toggle" aria-pressed="true">Notes</button>
+       <button id="u" data-press="soft">Undo</button><button id="chip" aria-pressed="true">All</button>
+       <div role="gridcell"><button id="cell" data-press="soft">1</button></div>`,
+    );
+    expect(pressSound($("#m0"))).toEqual({ event: "toggle", step: 1 });
+    expect(pressSound($("#m1"))).toEqual({ event: "toggle", step: 0 });
+    expect(pressSound($("#u"))).toEqual({ event: "tap", gain: SOFT_PRESS_GAIN });
+    expect(pressSound($("#chip"))).toEqual({ event: "tap" });
+    expect(pressSound($("#cell"))).toBeNull();
   });
 
   it("plays the nav sound for a new tab or nav item, nothing for the current one", () => {

@@ -53,7 +53,6 @@ export default function SumsBoard({ puzzle, initialState, hint, disabled, mode, 
         api.announce(`Row ${r}, column ${c}, ${v}. ${after.message}`);
       } else if (after.clear) {
         setDone(true);
-        play("jingle");
         api.feedback("Every run adds up. Board cleared.", "success", "check-circle");
         api.announce("Board cleared.");
       } else {

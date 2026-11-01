@@ -85,7 +85,6 @@ export default function LostBoard({ puzzle, initialState, hint, disabled, mode, 
       const { r, c } = rc(next);
       if (next === puzzle.exit) {
         setDone(true);
-        play("jingle");
         api.feedback("Out of the fog. You found the exit.", "success", "check-circle");
         api.announce("Exit reached. Board cleared.");
         api.onMove({ moves: log }, { correctStreak: log.length });

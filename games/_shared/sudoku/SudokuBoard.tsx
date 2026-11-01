@@ -152,7 +152,6 @@ export function SudokuBoard({
       } else {
         if (after.clear) {
           setDone(true);
-          play("jingle");
           api.announce(t.clearedShort);
         } else {
           if (d) streak.current++;

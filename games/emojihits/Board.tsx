@@ -108,7 +108,6 @@ export default function EmojiHitsBoard({ puzzle, initialState, hint, disabled, m
       phaseRef.current = "done";
       setPhase("done");
       anim.current?.cancel();
-      play("jingle");
       const found = outcomesRef.current.filter((o) => o?.right).length;
       const pts = finalScore(puzzle, done, outcomesRef.current);
       api.feedback(t.summary(found, total, pts), "info", "flag-checkered");

@@ -80,7 +80,6 @@ export default function PairupBoard({ puzzle, initialState, hint, disabled, mode
         setDone(true);
         setActive(null);
         drag.current = null;
-        play("jingle");
         api.feedback("Every pair joined, every cell filled.", "success", "check-circle");
         api.announce("Board cleared.");
         api.onMove(next, { correctStreak: after.connected.size });
