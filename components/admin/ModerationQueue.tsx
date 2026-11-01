@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { age, clock } from "@/lib/admin/dates";
 import { errorText, useAdminAction, useAdminQuery, type AdminPage } from "@/lib/client/admin";
+import { adminCopy } from "@/lib/copy/admin";
 import { Pagination, usePager } from "./Pagination";
 import { useUrlFilters } from "./useUrlFilters";
 import { Btn, Empty, Notice, PageTitle, Pill, RowsSkeleton, Tabs, type PillTone } from "./ui";
@@ -32,6 +33,7 @@ interface Player {
   flagged: number;
 }
 
+const C = adminCopy.moderation;
 const TABS: Tab[] = ["reports", "nicknames", "flagged"];
 const FILTERS = { tab: "reports", status: "open" } as const;
 const ALLOWED = { tab: TABS, status: ["open", "actioned", "dismissed", "all"] };
@@ -57,35 +59,32 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
     <div className="grid min-h-dvh grid-cols-1 xl:grid-cols-[1fr_440px]">
       <div className="flex min-w-0 flex-col gap-3 px-6 py-5">
         <PageTitle
-          title="Moderation queue"
+          title={C.title}
           aside={
             <Tabs<Tab>
-              label="Queue"
+              label={C.queue}
               value={tab}
               onChange={(t) => (setFilters({ tab: t }), setSel(null), setDone(null))}
-              items={[
-                { id: "reports", label: "Reports" },
-                { id: "nicknames", label: "Nicknames" },
-                { id: "flagged", label: "Anti-cheat" },
-              ]}
+              items={TABS.map((id) => ({ id, label: C.tabs[id] }))}
             />
           }
         >
-          {q.data && <Pill tone={q.data.open ? "danger" : "ok"}>{q.data.open} open</Pill>}
+          {q.data && <Pill tone={q.data.open ? "danger" : "ok"}>{C.open(q.data.open)}</Pill>}
         </PageTitle>
         {tab !== "flagged" && (
           <label className="text-muted flex items-center gap-2 self-start text-[13px] font-semibold">
-            Showing
+            {C.showing}
             <select
               value={status}
               onChange={(e) => (setFilters({ status: e.target.value }), setSel(null))}
               style={{ fontSize: 13 }}
               className="bg-surface text-text h-9 rounded-[10px] px-2 font-semibold"
             >
-              <option value="open">Open</option>
-              <option value="actioned">Actioned</option>
-              <option value="dismissed">Dismissed</option>
-              <option value="all">All</option>
+              {(["open", "actioned", "dismissed", "all"] as const).map((s) => (
+                <option key={s} value={s}>
+                  {C.statuses[s]}
+                </option>
+              ))}
             </select>
           </label>
         )}
@@ -106,7 +105,7 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
               </Notice>
             </div>
           ) : !q.data.rows.length ? (
-            <Empty>Nothing waiting here.</Empty>
+            <Empty>{C.empty}</Empty>
           ) : (
             <table className="w-full min-w-[620px] table-fixed border-collapse">
               <colgroup>
@@ -118,7 +117,7 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
               </colgroup>
               <thead>
                 <tr className="bg-surface-raised">
-                  {["ID", "Report", "Kind", "Status", "Age"].map((h) => (
+                  {C.head.map((h) => (
                     <th key={h} scope="col" className="num text-muted px-3 py-2.5 text-left text-[12px] font-semibold">
                       {h}
                     </th>
@@ -154,9 +153,12 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
         </div>
         {q.data && <Pagination pager={pager} total={q.data.total} />}
       </div>
-      <aside aria-label="Case" className="bg-surface border-line flex min-h-[400px] flex-col gap-3 border-t p-5 xl:border-t-0 xl:border-l">
+      <aside
+        aria-label={C.caseLabel}
+        className="bg-surface border-line flex min-h-[400px] flex-col gap-3 border-t p-5 xl:border-t-0 xl:border-l"
+      >
         {!selected ? (
-          <Empty icon="shield-check">Pick a case to review.</Empty>
+          <Empty icon="shield-check">{C.pickCase}</Empty>
         ) : tab === "flagged" ? (
           <FlaggedCase key={selected.id} id={selected.id} canWrite={canWrite} onDone={setDone} />
         ) : (

@@ -62,7 +62,7 @@ function Toggle({ on, label, disabled, onChange }: { on: boolean; label: string;
       className={`flex h-11 items-center gap-1.5 rounded-[10px] px-2 text-[13px] font-semibold disabled:opacity-50 ${on ? "text-accent" : "text-muted"}`}
     >
       <Icon name={on ? "toggle-right" : "toggle-left"} size={26} />
-      {on ? "On" : "Off"}
+      {on ? adminCopy.common.on : adminCopy.common.off}
     </button>
   );
 }
@@ -130,6 +130,7 @@ export function SchoolsPage({ canWrite }: { canWrite: boolean }) {
 /* ---------------- Shop and events ---------------- */
 
 type Kind = "cosmetics" | "badges" | "quests";
+const SHOP = adminCopy.shop;
 const SHOP_FILTERS = { kind: "cosmetics" } as const;
 const SHOP_ALLOWED = { kind: ["cosmetics", "badges", "quests"] };
 interface CatalogRow {
@@ -172,7 +173,7 @@ export function ShopPage({
     <input
       type="number"
       min={0}
-      aria-label={`${r.name ?? r.title} ${field.replace("_", " ")}`}
+      aria-label={SHOP.fieldAria(r.name ?? r.title ?? r.id, field)}
       readOnly={!allowed}
       value={num(r.id, field, r[field] ?? 0)}
       onChange={(e) => setEdit({ ...edit, [`${r.id}.${field}`]: Number(e.target.value) })}
@@ -186,31 +187,27 @@ export function ShopPage({
   return (
     <div className="flex flex-col gap-3.5 px-6 py-5">
       <PageTitle
-        title="Shop and events"
+        title={SHOP.title}
         aside={
           <Tabs<Kind>
-            label="Catalogue"
+            label={SHOP.catalogue}
             value={kind}
             onChange={(k) => setFilters({ kind: k })}
-            items={[
-              { id: "cosmetics", label: "Cosmetics and prices" },
-              { id: "badges", label: "Badges" },
-              { id: "quests", label: "Quests" },
-            ]}
+            items={SHOP_ALLOWED.kind.map((id) => ({ id: id as Kind, label: SHOP.tabs[id as Kind] }))}
           />
         }
       />
-      {kind === "cosmetics" && !canPrice && <Notice icon="info">Only the owner changes Sparks prices.</Notice>}
+      {kind === "cosmetics" && !canPrice && <Notice icon="info">{SHOP.ownerPrices}</Notice>}
       {patch.error && <Notice tone="danger">{errorText(patch.error)}</Notice>}
       {patch.isSuccess && (
         <Notice tone="ok" icon="check-circle">
-          Saved and logged.
+          {adminCopy.common.savedAndLogged}
         </Notice>
       )}
       <Frame q={q}>
         {() =>
           kind === "cosmetics" ? (
-            <Table head={["Item", "Type", "Rarity", "Price (Sparks)", "In shop"]}>
+            <Table head={[...SHOP.cosmeticsHead]}>
               {q.data!.rows.map((r) => (
                 <tr key={r.id}>
                   <td className={`${td} font-semibold`}>{r.name}</td>
@@ -220,7 +217,7 @@ export function ShopPage({
                   <td className={td}>
                     <Toggle
                       on={!!r.active}
-                      label={`${r.name} in shop`}
+                      label={SHOP.inShopAria(r.name ?? r.id)}
                       disabled={!canWrite || patch.isPending}
                       onChange={(v) => patch.mutate({ id: r.id, patch: { active: v } })}
                     />
@@ -229,7 +226,7 @@ export function ShopPage({
               ))}
             </Table>
           ) : kind === "badges" ? (
-            <Table head={["Badge", "Family", "Tier", "Sparks", "Secret"]}>
+            <Table head={[...SHOP.badgesHead]}>
               {q.data!.rows.map((r) => (
                 <tr key={r.id}>
                   <td className={td}>
@@ -242,7 +239,7 @@ export function ShopPage({
                   <td className={td}>
                     <Toggle
                       on={!!r.secret}
-                      label={`${r.name} secret`}
+                      label={SHOP.secretAria(r.name ?? r.id)}
                       disabled={!canWrite || patch.isPending}
                       onChange={(v) => patch.mutate({ id: r.id, patch: { secret: v } })}
                     />
@@ -251,7 +248,7 @@ export function ShopPage({
               ))}
             </Table>
           ) : (
-            <Table head={["Quest", "Kind", "XP", "Sparks", "Active"]}>
+            <Table head={[...SHOP.questsHead]}>
               {q.data!.rows.map((r) => (
                 <tr key={r.id}>
                   <td className={`${td} font-semibold`}>{r.title}</td>
@@ -261,7 +258,7 @@ export function ShopPage({
                   <td className={td}>
                     <Toggle
                       on={!!r.active}
-                      label={`${r.title} active`}
+                      label={SHOP.activeAria(r.title ?? r.id)}
                       disabled={!canWrite || patch.isPending}
                       onChange={(v) => patch.mutate({ id: r.id, patch: { active: v } })}
                     />
@@ -340,7 +337,7 @@ function EventQuests({ canWrite }: { canWrite: boolean }) {
       {save.error && <Notice tone="danger">{errorText(save.error)}</Notice>}
       {save.isSuccess && (
         <Notice tone="ok" icon="check-circle">
-          {c.saved}
+          {adminCopy.common.savedAndLogged}
         </Notice>
       )}
       <Frame q={q}>
@@ -502,6 +499,7 @@ interface AuditRow {
   created_at: string;
 }
 
+const AUDIT = adminCopy.audit;
 const AUDIT_FILTERS = { actor: "", action: "", target: "", from: "", to: "" } as const;
 
 export function AuditPage() {
@@ -521,17 +519,17 @@ export function AuditPage() {
     `/api/admin/audit?${qs}${qs.size ? "&" : ""}${pager.query}`,
     { keepPrevious: true },
   );
-  const who = (id: string | null) => (id ? (q.data?.actors.find((a) => a.id === id)?.email ?? id.slice(0, 8)) : "system");
+  const who = (id: string | null) => (id ? (q.data?.actors.find((a) => a.id === id)?.email ?? id.slice(0, 8)) : AUDIT.systemShort);
   return (
     <div className="flex flex-col gap-3.5 px-6 py-5">
-      <PageTitle title="Audit log">
-        <span className="text-muted text-[14px]">Every admin action, newest first. Append-only.</span>
+      <PageTitle title={AUDIT.title}>
+        <span className="text-muted text-[14px]">{AUDIT.intro}</span>
       </PageTitle>
       <div className="flex flex-wrap items-end gap-2">
-        <Field label="Who" htmlFor="a-actor">
+        <Field label={AUDIT.who} htmlFor="a-actor">
           <select id="a-actor" value={actor} onChange={(e) => setFilters({ actor: e.target.value })} className={`${inputCls} w-56`}>
-            <option value="">Anyone</option>
-            <option value="system">System (cron)</option>
+            <option value="">{AUDIT.anyone}</option>
+            <option value="system">{AUDIT.system}</option>
             {q.data?.actors.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.email ?? a.id.slice(0, 8)} ({ROLE_LABEL[a.role]})
@@ -539,25 +537,25 @@ export function AuditPage() {
             ))}
           </select>
         </Field>
-        <Field label="Action starts with" htmlFor="a-action">
+        <Field label={AUDIT.actionStarts} htmlFor="a-action">
           <input
             id="a-action"
             value={actionText}
-            placeholder="daily."
+            placeholder={AUDIT.actionPlaceholder}
             onChange={(e) => setActionText(e.target.value.toLowerCase())}
             className={`${inputCls} w-40`}
           />
         </Field>
-        <Field label="Target contains" htmlFor="a-target">
+        <Field label={AUDIT.targetContains} htmlFor="a-target">
           <input
             id="a-target"
             value={targetText}
-            placeholder="crownfall"
+            placeholder={AUDIT.targetPlaceholder}
             onChange={(e) => setTargetText(e.target.value)}
             className={`${inputCls} w-40`}
           />
         </Field>
-        <Field label="From" htmlFor="a-from">
+        <Field label={AUDIT.from} htmlFor="a-from">
           <input
             id="a-from"
             type="date"
@@ -567,7 +565,7 @@ export function AuditPage() {
             className={`${inputCls} w-40`}
           />
         </Field>
-        <Field label="To" htmlFor="a-to">
+        <Field label={AUDIT.to} htmlFor="a-to">
           <input
             id="a-to"
             type="date"
@@ -581,9 +579,9 @@ export function AuditPage() {
       <Frame q={q}>
         {() =>
           !q.data!.rows.length ? (
-            <Empty icon="clock-counter-clockwise">No actions match.</Empty>
+            <Empty icon="clock-counter-clockwise">{AUDIT.empty}</Empty>
           ) : (
-            <Table head={["When (GMT)", "Who", "Action", "Target", "Detail"]} min={860}>
+            <Table head={[...AUDIT.head]} min={860}>
               {q.data!.rows.map((r) => (
                 <tr key={r.id}>
                   <td className={`${td} num text-muted text-[13px] whitespace-nowrap`}>{r.created_at.slice(0, 16).replace("T", " ")}</td>

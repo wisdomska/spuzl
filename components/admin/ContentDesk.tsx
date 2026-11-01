@@ -6,6 +6,7 @@ import { GAME_BY_ID } from "@/lib/catalog";
 import { CONTENT_GAMES, SCHEDULABLE, TEMPLATES, validatePayload, type ContentGame } from "@/lib/admin/content-schemas";
 import { addDays, age, dayMonth, todayIso } from "@/lib/admin/dates";
 import { errorText, useAdminAction, useAdminQuery, type AdminPage } from "@/lib/client/admin";
+import { adminCopy } from "@/lib/copy/admin";
 import { Pagination, usePager, type Pager } from "./Pagination";
 import { useUrlFilters } from "./useUrlFilters";
 import { Btn, Empty, Field, Notice, PageTitle, Pill, RowsSkeleton, Swatch, Tabs, inputCls, textareaCls, type PillTone } from "./ui";
@@ -40,6 +41,8 @@ function summary(p: unknown): string {
   return JSON.stringify(p).slice(0, 80);
 }
 
+const C = adminCopy.content;
+const { common } = adminCopy;
 const FILTERS = { tab: "items", status: "", game: "", show: "todo" } as const;
 const ALLOWED = {
   tab: ["items", "files"],
@@ -56,15 +59,15 @@ export function ContentDesk(props: { canWrite: boolean; canApprove: boolean; can
   return (
     <div className="flex flex-col gap-3.5 px-6 py-5">
       <PageTitle
-        title="Content"
+        title={C.title}
         aside={
           <Tabs
-            label="Content views"
+            label={C.views}
             value={tab}
             onChange={(t) => setFilters({ tab: t })}
             items={[
-              { id: "items", label: "Written items" },
-              { id: "files", label: "content.ts review" },
+              { id: "items", label: C.tabs.items },
+              { id: "files", label: C.tabs.files },
             ]}
           />
         }
@@ -102,13 +105,13 @@ function Items({
       <div className="flex min-w-0 flex-col gap-3">
         <div className="flex items-center gap-2">
           <select
-            aria-label="Status"
+            aria-label={common.status}
             value={status}
             onChange={(e) => setFilters({ status: e.target.value })}
             className={`${inputCls} w-44`}
           >
-            <option value="">Any status</option>
-            {["draft", "in_review", "approved", "rejected", "scheduled"].map((s) => (
+            <option value="">{common.anyStatus}</option>
+            {ALLOWED.status.map((s) => (
               <option key={s} value={s}>
                 {label(s)}
               </option>
@@ -116,7 +119,7 @@ function Items({
           </select>
           {canWrite && (
             <Btn tone="primary" icon="plus" className="ml-auto" onClick={() => setOpen("new")}>
-              New item
+              {C.newItem}
             </Btn>
           )}
         </div>
@@ -128,12 +131,12 @@ function Items({
               <Notice tone="danger">{errorText(q.error)}</Notice>
             </div>
           ) : !q.data.rows.length ? (
-            <Empty icon="note-pencil">No written items yet.</Empty>
+            <Empty icon="note-pencil">{C.emptyItems}</Empty>
           ) : (
             <table className="w-full min-w-[640px] border-collapse text-[14px]">
               <thead>
                 <tr className="bg-surface-raised num text-muted text-left text-[12px]">
-                  {["Game", "Item", "Status", "Author", "Updated"].map((h) => (
+                  {C.itemsHead.map((h) => (
                     <th key={h} scope="col" className="px-3 py-2.5 font-semibold">
                       {h}
                     </th>
@@ -158,14 +161,14 @@ function Items({
                         onClick={() => setOpen(r.id)}
                         className="block w-full truncate text-left font-medium hover:underline"
                       >
-                        {summary(r.payload) || "Untitled"}
+                        {summary(r.payload) || C.untitled}
                       </button>
                     </td>
                     <td className="px-3 py-2">
                       <Pill tone={TONE[r.status]}>{label(r.status)}</Pill>
                     </td>
                     <td className="text-muted max-w-[160px] truncate px-3 py-2 text-[13px]">
-                      {r.author_id === q.data.me ? "you" : (r.author_email ?? "editor")}
+                      {r.author_id === q.data.me ? C.you : (r.author_email ?? C.editor)}
                     </td>
                     <td className="num text-muted px-3 py-2 text-[13px]">{age(r.updated_at)}</td>
                   </tr>
@@ -448,19 +451,18 @@ function FileReview({ isOwner, pager }: { isOwner: boolean; pager: Pager }) {
       <div className="flex min-w-0 flex-col gap-3">
         {!game ? (
           <Notice icon="info">
-            Every content.ts below is marked needsReview.{" "}
-            {isOwner ? "Approve entries to record your review." : "Only the owner can approve these."}
+            {C.filesIntro} {isOwner ? C.filesOwner : C.filesNotOwner}
           </Notice>
         ) : (
           <>
             <div className="flex flex-wrap items-center gap-2">
               <Tabs
-                label="Show"
+                label={C.show}
                 value={only}
                 onChange={(v) => setFilters({ show: v })}
                 items={[
-                  { id: "todo", label: "To review" },
-                  { id: "all", label: "All" },
+                  { id: "todo", label: C.showTabs.todo },
+                  { id: "all", label: C.showTabs.all },
                 ]}
               />
               {isOwner && (
@@ -471,7 +473,7 @@ function FileReview({ isOwner, pager }: { isOwner: boolean; pager: Pager }) {
                       act.mutate({ game, indexes: [...picked], decision: "reject" }, { onSuccess: () => setPicked(new Set()) })
                     }
                   >
-                    Reject {picked.size || ""}
+                    {C.reject(picked.size)}
                   </Btn>
                   <Btn
                     tone="primary"
@@ -480,7 +482,7 @@ function FileReview({ isOwner, pager }: { isOwner: boolean; pager: Pager }) {
                       act.mutate({ game, indexes: [...picked], decision: "approve" }, { onSuccess: () => setPicked(new Set()) })
                     }
                   >
-                    Approve {picked.size || ""}
+                    {C.approve(picked.size)}
                   </Btn>
                 </div>
               )}
@@ -494,7 +496,7 @@ function FileReview({ isOwner, pager }: { isOwner: boolean; pager: Pager }) {
               ) : !shown ? (
                 <RowsSkeleton />
               ) : !entries.length ? (
-                <Empty>Nothing left to review for {GAME_BY_ID[game]?.name}.</Empty>
+                <Empty>{C.nothingLeft(GAME_BY_ID[game]?.name ?? game)}</Empty>
               ) : (
                 <table className="w-full border-collapse text-[14px]">
                   <thead>
@@ -503,7 +505,7 @@ function FileReview({ isOwner, pager }: { isOwner: boolean; pager: Pager }) {
                         <th scope="col" className="w-11 px-3 py-2.5">
                           <input
                             type="checkbox"
-                            aria-label="Select all on this page"
+                            aria-label={C.selectAll}
                             checked={entries.every((e) => picked.has(e.index))}
                             onChange={(e) => {
                               const n = new Set(picked);
@@ -518,13 +520,13 @@ function FileReview({ isOwner, pager }: { isOwner: boolean; pager: Pager }) {
                         </th>
                       )}
                       <th scope="col" className="w-14 px-3 py-2.5 font-semibold">
-                        #
+                        {C.entryHead.index}
                       </th>
                       <th scope="col" className="px-3 py-2.5 font-semibold">
-                        Entry
+                        {C.entryHead.entry}
                       </th>
                       <th scope="col" className="w-28 px-3 py-2.5 font-semibold">
-                        State
+                        {C.entryHead.state}
                       </th>
                     </tr>
                   </thead>
@@ -535,7 +537,7 @@ function FileReview({ isOwner, pager }: { isOwner: boolean; pager: Pager }) {
                           <td className="px-3 py-2">
                             <input
                               type="checkbox"
-                              aria-label={`Select entry ${e.index}`}
+                              aria-label={C.selectEntry(e.index)}
                               checked={picked.has(e.index)}
                               onChange={(ev) => {
                                 const n = new Set(picked);
@@ -555,7 +557,7 @@ function FileReview({ isOwner, pager }: { isOwner: boolean; pager: Pager }) {
                           </pre>
                         </td>
                         <td className="px-3 py-2">
-                          <Pill tone={FILE_TONE[e.state]}>{e.state === "changed" ? "changed since" : e.state}</Pill>
+                          <Pill tone={FILE_TONE[e.state]}>{e.state === "changed" ? C.changedSince : e.state}</Pill>
                         </td>
                       </tr>
                     ))}
