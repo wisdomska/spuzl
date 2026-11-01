@@ -107,6 +107,11 @@ export interface BoardApi<St> {
   start?(): void;
   /** Optional: slips already made before a resume (restored from the board's saved state), so results stay honest. */
   restoreMistakes?(count: number): void;
+  /**
+   * Optional: rewrite a server hint's text before the shell shows it (a board whose view differs from the
+   * puzzle's own layout, e.g. after Rotate). Pass null to show hint text as sent.
+   */
+  setHintText?(format: ((hint: Hint) => string) | null): void;
 }
 
 export interface ControlSpec {

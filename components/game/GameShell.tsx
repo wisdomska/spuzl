@@ -123,6 +123,8 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   const clock = useRef({ base: 0, since: 0 });
   // A board with its own clock (fixed-step simulation) replaces the wall clock for display and scoring.
   const boardClock = useRef<(() => number) | null>(null);
+  // A board whose view differs from the puzzle layout (Buried after Rotate) words the hint for that view.
+  const hintText = useRef<((hint: Hint) => string) | null>(null);
 
   // Timer: starts on first interaction, stops while paused or hidden (FR-GP-02).
   const running = started && !paused && !solved && !pausedExternally && !confirmHint;
@@ -204,6 +206,9 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
       start() {
         if (!started) setStarted(true);
       },
+      setHintText(fn) {
+        hintText.current = fn;
+      },
       restoreMistakes(count) {
         mistakes.current = Math.max(mistakes.current, count);
       },
@@ -220,8 +225,9 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
     if (!guided) setHints((n) => n - 1);
     // A coaching hint has no target on the board; only the feedback line shows it.
     setHint(h.target == null ? null : h);
-    setFeedback((f) => ({ text: h.text, tone: "info", icon: "lightbulb", n: f.n + 1 }));
-    setLive(h.text);
+    const text = hintText.current?.(h) ?? h.text;
+    setFeedback((f) => ({ text, tone: "info", icon: "lightbulb", n: f.n + 1 }));
+    setLive(text);
     play("twinkle");
   }, [hints, requestHint, solved, guided]);
   // Only the Hint button spends a hint, and the first one per game asks first (XP cost on Dailies).

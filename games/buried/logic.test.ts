@@ -18,7 +18,17 @@ import logic, {
   verify,
 } from "./logic";
 import { CONTENT, needsReview } from "./content";
-import { isStraight, leftovers, lineBetween, snapLine, splitPhrase, wordOn, type BuriedPuzzle, type BuriedSolution } from "./rules";
+import {
+  isStraight,
+  leftovers,
+  lineBetween,
+  snapLine,
+  splitPhrase,
+  viewHintText,
+  wordOn,
+  type BuriedPuzzle,
+  type BuriedSolution,
+} from "./rules";
 
 const DIFFS: Difficulty[] = ["easy", "medium", "hard", "expert", "mega"];
 
@@ -183,5 +193,19 @@ describe("buried lines and verification", () => {
     expect(hint(puzzle, solution, { found: all })).toBeNull();
     expect(hint(puzzle, solution, { found: [[0, 1]] })).not.toBeNull();
     expect(logic.id).toBe("buried");
+  });
+
+  it("hint text follows the board after Rotate", () => {
+    const h = hint(puzzle, solution, { found: [] })!;
+    const cell = h.target as number;
+    const { rows, cols } = puzzle;
+    expect(viewHintText(h.text, cell, rows, cols, 0)).toBe(h.text);
+    for (const turns of [1, 2, 3, 5]) {
+      const [r, c] = toView(cell, rows, cols, turns);
+      const word = h.text.split(" ")[0];
+      expect(viewHintText(h.text, cell, rows, cols, turns)).toBe(`${word} starts at row ${r + 1}, column ${c + 1}.`);
+    }
+    // A cell in the top left corner sits in the top right after one quarter turn clockwise.
+    expect(viewHintText("CAT starts at row 1, column 1.", 0, 6, 7, 1)).toBe("CAT starts at row 1, column 6.");
   });
 });

@@ -9,6 +9,7 @@ import type { GuessLogic } from "@/games/_shared/guess";
 import { isWord } from "@/games/_shared/words";
 import { createRng, type Rng } from "@/lib/rng";
 import { CONTENT } from "./content";
+import { BURIED_COPY } from "@/lib/copy/buried";
 import {
   BONUS_MIN,
   COLS,
@@ -221,7 +222,7 @@ export function hint(p: BuriedPuzzle, s: BuriedSolution, state: BuriedState): Hi
   const pl = left[0];
   const r = Math.floor(pl.cells[0] / p.cols) + 1,
     c = (pl.cells[0] % p.cols) + 1;
-  return { target: pl.cells[0], text: `${pl.word} starts at row ${r}, column ${c}.` };
+  return { target: pl.cells[0], text: BURIED_COPY.hintStart(pl.word, r, c) };
 }
 
 const logic: GuessLogic<BuriedPuzzle, BuriedSolution, BuriedState, BuriedGuess, BuriedCheck> = {

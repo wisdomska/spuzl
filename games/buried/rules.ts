@@ -1,5 +1,7 @@
 /** Buried rules shared by the board and the logic. Safe for the client bundle. */
 import type { PuzzleRef } from "@/games/_shared/guess";
+import { toView } from "@/games/_shared/rotate";
+import { BURIED_COPY } from "@/lib/copy/buried";
 
 export const COLS = 7;
 
@@ -102,4 +104,14 @@ export function splitPhrase(letters: string, shape: number[]): string[] {
     k += n;
   }
   return out;
+}
+
+/**
+ * A server hint names cells in the puzzle's own rows and columns; after Rotate the player sees them
+ * elsewhere. Rewrites the hint's position for the view after `turns` quarter turns.
+ */
+export function viewHintText(text: string, cell: number, rows: number, cols: number, turns: number): string {
+  const from = BURIED_COPY.cellAt(Math.floor(cell / cols) + 1, (cell % cols) + 1);
+  const [r, c] = toView(cell, rows, cols, turns);
+  return text.replace(from, BURIED_COPY.cellAt(r + 1, c + 1));
 }

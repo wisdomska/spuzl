@@ -9,7 +9,17 @@ import { useGridKeys } from "@/components/game/useGridKeys";
 import { play } from "@/lib/audio";
 import { sendGuess } from "@/games/_shared/guess";
 import { fromView, toView, viewDims } from "@/games/_shared/rotate";
-import { BONUS_MIN, leftovers, snapLine, splitPhrase, wordOn, type BuriedCheck, type BuriedPuzzle, type BuriedState } from "./rules";
+import {
+  BONUS_MIN,
+  leftovers,
+  snapLine,
+  splitPhrase,
+  viewHintText,
+  wordOn,
+  type BuriedCheck,
+  type BuriedPuzzle,
+  type BuriedState,
+} from "./rules";
 
 const GAP = 2;
 const PAD = 6;
@@ -211,6 +221,24 @@ export default function BuriedBoard({ puzzle, initialState, hint, disabled, mode
     play("swoosh");
     api.announce("Board rotated a quarter turn.");
   }, [api]);
+
+  // Hints name cells as the player sees them, so after Rotate the shell gets the view's row and column.
+  const quarter = turns % 4;
+  useEffect(() => {
+    api.setHintText?.((h) => (typeof h.target === "number" ? viewHintText(h.text, h.target, rows, cols, quarter) : h.text));
+    return () => api.setHintText?.(null);
+  }, [api, rows, cols, quarter]);
+  // Rotating while a hint is showing rewords it for the new view.
+  const shownView = useRef(0);
+  useEffect(() => {
+    if (shownView.current === quarter) return;
+    shownView.current = quarter;
+    if (!hint || typeof hint.target !== "number" || done) return;
+    const text = viewHintText(hint.text, hint.target, rows, cols, quarter);
+    api.feedback(text, "info", "lightbulb");
+    api.announce(text);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quarter]);
 
   useEffect(() => {
     api.setControls([
