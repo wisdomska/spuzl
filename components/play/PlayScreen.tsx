@@ -535,10 +535,12 @@ function FreeResultBar({
       <Button size="lg" icon="play" className="w-full" onClick={next.onClick} autoFocus>
         {next.label}
       </Button>
-      <Button size="lg" variant="secondary" className="w-full" onClick={another.onClick}>
-        {another.label}
-      </Button>
-      <RaceLiveButton meta={meta} size="md" className="w-full" />
+      <div className="flex gap-2.5">
+        <Button size="md" variant="secondary" className="min-w-0 flex-1" onClick={another.onClick}>
+          <span className="truncate">{another.label}</span>
+        </Button>
+        <RaceLiveButton meta={meta} size="md" className="flex-1" />
+      </div>
     </div>
   );
 }

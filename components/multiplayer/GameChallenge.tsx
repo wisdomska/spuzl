@@ -22,12 +22,24 @@ export function useCanChallenge(meta: GameMeta) {
   return isRaceGame(meta.id) && !relaxed;
 }
 
-export function GameChallengeSheet({ meta, open, onClose }: { meta: GameMeta; open: boolean; onClose: () => void }) {
+export function GameChallengeSheet({
+  meta,
+  open,
+  onClose,
+  onBeatMyTime,
+}: {
+  meta: GameMeta;
+  open: boolean;
+  onClose: () => void;
+  /** Results: "Beat my time" sends this exact puzzle as an async challenge. */
+  onBeatMyTime?: () => void;
+}) {
   const me = useMe();
   const youngster = me.data?.age_band === "13-15";
+  const live = useCanChallenge(meta);
   const links = challengeLinks(meta.id);
   const c = partyCopy.challenge;
-  const rows = [
+  const liveRows = [
     { key: "friend", href: links.friend, icon: "user-plus", title: c.friend, hint: c.friendHint, locked: false },
     {
       key: "quick",
@@ -39,9 +51,31 @@ export function GameChallengeSheet({ meta, open, onClose }: { meta: GameMeta; op
     },
     { key: "party", href: links.party, icon: "confetti", title: c.party, hint: c.partyHint, locked: false },
   ];
+  const rows = live ? liveRows : [];
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()} title={c.title(meta.name)} description={c.body}>
       <ul className="flex flex-col gap-2.5 pt-1">
+        {onBeatMyTime && (
+          <li>
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onBeatMyTime();
+              }}
+              className="press bg-surface-raised flex min-h-16 w-full items-center gap-3 rounded-[20px] p-3 text-left"
+            >
+              <span className="bg-surface flex size-11 flex-none items-center justify-center rounded-[14px]">
+                <Icon name="timer" size={22} className="text-accent" />
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="font-display text-[17px] font-black">{c.beat}</span>
+                <span className="text-muted text-[14px] font-medium">{c.beatHint}</span>
+              </span>
+              <Icon name="caret-right" size={18} className="text-muted" />
+            </button>
+          </li>
+        )}
         {rows.map((r) => {
           const inner = (
             <>
@@ -100,16 +134,30 @@ export function ChallengeEntry({ meta }: { meta: GameMeta }) {
   );
 }
 
-/** Play screen (results and the free-play end bar): "Race live" opens the same sheet. */
-export function RaceLiveButton({ meta, size = "lg", className = "" }: { meta: GameMeta; size?: "md" | "lg"; className?: string }) {
+/**
+ * Play screen (results and the free-play end bar): one "Challenge" button for every way to play with others:
+ * beat my time (when offered) plus live Duel and Party for race games.
+ */
+export function RaceLiveButton({
+  meta,
+  size = "lg",
+  className = "",
+  onBeatMyTime,
+}: {
+  meta: GameMeta;
+  size?: "md" | "lg";
+  className?: string;
+  onBeatMyTime?: () => void;
+}) {
   const [open, setOpen] = useState(false);
-  if (!useCanChallenge(meta)) return null;
+  const live = useCanChallenge(meta);
+  if (!live && !onBeatMyTime) return null;
   return (
     <>
-      <Button variant="secondary" size={size} icon="users-three" className={className} onClick={() => setOpen(true)} aria-haspopup="dialog">
-        {partyCopy.challenge.live}
+      <Button variant="secondary" size={size} icon="sword" className={className} onClick={() => setOpen(true)} aria-haspopup="dialog">
+        {partyCopy.challenge.cta}
       </Button>
-      <GameChallengeSheet meta={meta} open={open} onClose={() => setOpen(false)} />
+      <GameChallengeSheet meta={meta} open={open} onClose={() => setOpen(false)} onBeatMyTime={onBeatMyTime} />
     </>
   );
 }

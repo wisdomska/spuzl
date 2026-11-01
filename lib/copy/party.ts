@@ -41,5 +41,7 @@ export const partyCopy = {
     party: "Host a party",
     partyHint: "2 to 8 players race with a room code.",
     close: "Close",
+    beat: "Beat my time",
+    beatHint: "Send this exact puzzle. They race your time.",
   },
 } as const;
