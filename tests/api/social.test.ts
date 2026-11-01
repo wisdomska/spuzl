@@ -191,6 +191,18 @@ describe("api: shop", () => {
     expect(freeze.data.status).toBe("bought");
     expect((await a.api("/api/v1/shop")).data.freezesHeld).toBe(1);
   });
+
+  it("lists the starter hat first and charges the shop.starterPrice setting", async () => {
+    const a = await guest(uniq("st_"));
+    await admin().from("players").update({ sparks: 1000 }).eq("id", a.userId);
+    const settings = await (await fetch(BASE + "/api/v1/settings/game")).json();
+    const price = settings["shop.starterPrice"] as number;
+    const shop = await a.api("/api/v1/shop");
+    const hats = shop.data.items.filter((i: { type: string }) => i.type === "hat");
+    expect(hats[0]).toMatchObject({ id: "hat-starter", starter: true, price });
+    const buy = await a.api("/api/v1/shop/buy", { json: { itemId: "hat-starter", requestId: randomUUID() } });
+    expect(buy.data).toMatchObject({ status: "bought", balance: 1000 - price });
+  });
 });
 
 describe("api: quests", () => {

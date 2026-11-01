@@ -14,6 +14,8 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { SHOP_TABS, purchaseState, tabOf, type ShopTab } from "@/lib/meta";
 import { formatNumber } from "@/lib/format";
 import { play } from "@/lib/audio";
+import { useGameSettings } from "@/lib/game-settings/client";
+import { shopCopy } from "@/lib/copy/shop";
 
 const THEMES = BOARD_THEMES;
 /** Shop tile icon and colour per hat. */
@@ -24,6 +26,7 @@ const HAT_ICON: Record<string, [string, string]> = {
   shades: ["sunglasses", "#2FD3E0"],
   headphones: ["headphones", "#8B7CFF"],
   chef: ["chef-hat", "#F4F5FB"],
+  beanie: ["plant", "#B8F23A"],
 };
 
 function itemIcon(i: ShopItem): { icon: string; color: string } {
@@ -45,6 +48,9 @@ export default function ShopPage() {
   const me = useMe();
   const buy = useBuy();
   const equip = useEquip();
+  const settings = useGameSettings();
+  // Starter items are priced by the shop.starterPrice game setting; the server charges the same value.
+  const priceOf = (i: ShopItem) => (i.starter ? settings["shop.starterPrice"] : i.price);
   const [tab, setTab] = useState<ShopTab>("hat");
   const [sel, setSel] = useState<string | null>(null);
   const [preview, setPreview] = useState<{ color?: string; hat?: string | null; theme?: string; title?: string } | null>(null);
@@ -74,7 +80,7 @@ export default function ShopPage() {
     item && d
       ? purchaseState(
           {
-            price: item.price,
+            price: priceOf(item),
             owned: item.owned,
             unlockLevel: item.unlockLevel,
             consumable: item.type === "freeze" || item.type === "hint_pack",
@@ -207,22 +213,31 @@ export default function ShopPage() {
                 ? { icon: "check", text: "Owned", color: "var(--accent)" }
                 : locked
                   ? { icon: "lock-simple", text: `Level ${i.unlockLevel}`, color: "var(--text-muted)" }
-                  : i.price === 0
+                  : priceOf(i) === 0
                     ? { icon: "gift", text: "Free", color: "var(--accent)" }
-                    : { icon: "lightning", text: formatNumber(i.price), color: "var(--gold)" };
+                    : { icon: "lightning", text: formatNumber(priceOf(i)), color: "var(--gold)" };
             return (
               <button
                 key={i.id}
                 role="option"
                 aria-selected={on}
                 onClick={() => pick(i)}
-                aria-label={`${i.name}, ${price.text}${i.type === "freeze" ? `, you hold ${d!.freezesHeld} of 2` : ""}`}
-                className="press flex flex-col items-center gap-1.5 rounded-[18px] p-2.5"
+                aria-label={`${i.name}, ${price.text}${i.starter ? `, ${shopCopy.starterAria}` : ""}${i.type === "freeze" ? `, you hold ${d!.freezesHeld} of 2` : ""}`}
+                className="press relative flex flex-col items-center gap-1.5 rounded-[18px] p-2.5"
                 style={{
                   background: on ? "var(--success-tint)" : "var(--surface)",
                   boxShadow: on ? "inset 0 0 0 2px var(--accent)" : undefined,
                 }}
               >
+                {i.starter && (
+                  <span
+                    aria-hidden
+                    className="bg-accent text-on-accent absolute -top-2 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-[8px] px-1.5 py-0.5 text-[12px] font-bold whitespace-nowrap"
+                  >
+                    <Icon name="star" size={12} />
+                    {shopCopy.starter}
+                  </span>
+                )}
                 <span className="bg-surface-raised flex size-14 items-center justify-center rounded-[16px]" style={{ color: ic.color }}>
                   <Icon name={ic.icon} size={28} />
                 </span>
@@ -254,6 +269,9 @@ export default function ShopPage() {
             <span className="text-muted text-[13px] font-medium">own {d!.freezesHeld} · max 2</span>
             <span className="num text-gold text-[14px] font-semibold">{freeze.price}</span>
           </button>
+        )}
+        {item?.starter && !item.owned && !note && (
+          <p className="text-muted bg-surface rounded-[12px] px-3 py-2 text-center text-[13px] font-medium">{shopCopy.starterHint}</p>
         )}
         {note && (
           <p role="status" className="bg-surface rounded-[12px] px-3 py-2 text-center text-[14px] font-medium">
@@ -294,7 +312,7 @@ export default function ShopPage() {
               {state.kind === "buy" && (
                 <span className="num ml-1 inline-flex items-center gap-1">
                   <Icon name="lightning" size={16} />
-                  {formatNumber(item.price)}
+                  {formatNumber(priceOf(item))}
                 </span>
               )}
             </Button>

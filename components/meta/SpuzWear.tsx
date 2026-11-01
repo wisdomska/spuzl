@@ -7,7 +7,7 @@ import { Spuz, type SpuzMood } from "@/components/brand/Spuz";
  * Spuz wearing Shop cosmetics: skin colour plus a hat drawn over the head (Spuz itself only draws the
  * party hat in its party mood). Units are Spuz em (size / 12) so hats scale with any avatar size.
  */
-export type HatId = "party" | "crown" | "kente" | "shades" | "headphones" | "chef" | string;
+export type HatId = "party" | "crown" | "kente" | "shades" | "headphones" | "chef" | "beanie" | string;
 
 export function SpuzWear({
   size,
@@ -92,6 +92,69 @@ function Hat({ id, size }: { id: HatId; size: number }) {
             height: 0.6 * em,
             borderRadius: 0.3 * em,
             background: "#FFC93C",
+          }}
+        />
+      </div>
+    );
+  // Starter hat: a lime beanie with a ribbed band and a two-leaf sprout on top.
+  if (id === "beanie")
+    return (
+      <div aria-hidden style={{ ...box, left: 3.1 * em, top: 0.5 * em, width: 5.8 * em, height: 3.3 * em, transform: "rotate(-6deg)" }}>
+        <div
+          style={{
+            position: "absolute",
+            left: 2.55 * em,
+            top: 0,
+            width: 0.3 * em,
+            height: 0.9 * em,
+            borderRadius: 0.15 * em,
+            background: "#167A45",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            left: 1.75 * em,
+            top: 0.05 * em,
+            width: 0.95 * em,
+            height: 0.55 * em,
+            borderRadius: "100% 0",
+            background: "#167A45",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            left: 2.75 * em,
+            top: -0.1 * em,
+            width: 1.05 * em,
+            height: 0.6 * em,
+            borderRadius: "0 100%",
+            background: "#167A45",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            left: 0.2 * em,
+            right: 0.2 * em,
+            top: 0.75 * em,
+            bottom: 0.6 * em,
+            borderRadius: `${2.7 * em}px ${2.7 * em}px 0 0`,
+            background: "#B8F23A",
+            boxShadow: `inset ${-0.35 * em}px ${-0.2 * em}px 0 rgba(0,0,0,.14)`,
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: 0.95 * em,
+            borderRadius: 0.4 * em,
+            background: "repeating-linear-gradient(90deg,#B8F23A 0 .35em,#167A45 .35em .5em)",
+            fontSize: em,
           }}
         />
       </div>

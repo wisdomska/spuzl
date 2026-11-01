@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ApiError, body, handle, ok, rateLimit, requirePlayer } from "@/lib/api/server";
+import { getGameSettings } from "@/lib/game-settings/server";
 
 const Buy = z.object({ itemId: z.string().min(1).max(40), requestId: z.uuid() });
 
@@ -14,12 +15,19 @@ const ERRORS: [string, number, string, string][] = [
 /**
  * POST /api/v1/shop/buy: spends Sparks through svc_spend_sparks inside svc_buy_cosmetic (one transaction).
  * `requestId` makes a retried purchase free: the second call returns "duplicate" and charges nothing.
+ * Starter items are charged the `shop.starterPrice` game setting, read here at purchase time.
  */
 export const POST = handle(async (req: Request) => {
   const { admin, player } = await requirePlayer();
   await rateLimit(admin, `shop:${player.id}`, 60, 3600);
   const { itemId, requestId } = await body(req, Buy);
-  const { data, error } = await admin.rpc("svc_buy_cosmetic", { p_player: player.id, p_item: itemId, p_request: requestId });
+  const settings = await getGameSettings();
+  const { data, error } = await admin.rpc("svc_buy_cosmetic", {
+    p_player: player.id,
+    p_item: itemId,
+    p_request: requestId,
+    p_starter_price: settings["shop.starterPrice"],
+  });
   if (error) {
     const hit = ERRORS.find(([needle]) => error.message?.includes(needle));
     if (hit) throw new ApiError(hit[1], hit[2], hit[3]);

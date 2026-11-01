@@ -9,6 +9,9 @@ export interface CosmeticDef {
   unlockLevel?: number;
 }
 
+/** A starter cosmetic: the shop lists it first and the server charges the `shop.starterPrice` game setting for it. */
+export const isStarter = (c: { payload: Record<string, unknown> }) => "starter" in c.payload;
+
 /** Board themes: the backdrop and frame around a game board. Cells keep their game colours (they carry meaning). */
 export const BOARD_THEMES: Record<string, { bg: string; cell: string; mark: string }> = {
   midnight: { bg: "#0A0B1E", cell: "#1B1E3A", mark: "#8B7CFF" },
@@ -38,4 +41,6 @@ export const COSMETICS: CosmeticDef[] = [
   { id: "title-thinker", type: "title", name: "The Thinker", price: 0, rarity: "common", payload: {}, unlockLevel: 5 },
   { id: "title-sparkplug", type: "title", name: "Spark Plug", price: 0, rarity: "rare", payload: {}, unlockLevel: 10 },
   { id: "title-gridlord", type: "title", name: "Grid Lord", price: 0, rarity: "epic", payload: {}, unlockLevel: 25 },
+  // Live price comes from the shop.starterPrice game setting; 100 is the fallback only.
+  { id: "hat-starter", type: "hat", name: "Sprout Beanie", price: 100, rarity: "common", payload: { hat: "beanie", starter: 1 } },
 ];

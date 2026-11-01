@@ -153,6 +153,8 @@ export interface ShopItem {
   unlockLevel: number | null;
   owned: boolean;
   equipped: boolean;
+  /** Starter item: listed first, priced by the shop.starterPrice game setting. */
+  starter?: boolean;
 }
 export interface ShopRes {
   sparks: number;

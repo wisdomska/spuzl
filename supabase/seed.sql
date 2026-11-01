@@ -145,7 +145,8 @@ insert into public.cosmetics (id, type, name, price_sparks, rarity, payload, unl
   ('theme-neon', 'board_theme', 'Neon board', 1000, 'epic', '{"theme":"neon"}'::jsonb, null, 14),
   ('title-thinker', 'title', 'The Thinker', 0, 'common', '{}'::jsonb, 5, 15),
   ('title-sparkplug', 'title', 'Spark Plug', 0, 'rare', '{}'::jsonb, 10, 16),
-  ('title-gridlord', 'title', 'Grid Lord', 0, 'epic', '{}'::jsonb, 25, 17)
+  ('title-gridlord', 'title', 'Grid Lord', 0, 'epic', '{}'::jsonb, 25, 17),
+  ('hat-starter', 'hat', 'Sprout Beanie', 100, 'common', '{"hat":"beanie","starter":1}'::jsonb, null, 21)
 on conflict (id) do update set name = excluded.name, price_sparks = excluded.price_sparks, rarity = excluded.rarity, payload = excluded.payload, unlock_level = excluded.unlock_level, sort = excluded.sort;
 insert into public.feature_flags (key, enabled) values
   ('duels', true),
