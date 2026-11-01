@@ -9,6 +9,7 @@ import { Icon } from "@/components/ui/Icon";
 import { formatClock } from "@/lib/format";
 import { GameIcon3D } from "./GameIcon3D";
 import { BotEntry } from "./BotEntry";
+import { ChallengeEntry } from "@/components/multiplayer/GameChallenge";
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
@@ -107,6 +108,7 @@ export function WorldScreen({ id }: { id: WorldId }) {
                 )}
               </Link>
               <BotEntry meta={g} />
+              <ChallengeEntry meta={g} />
             </motion.li>
           );
         })}

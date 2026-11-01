@@ -29,6 +29,18 @@ export function raceGameParam(raw: string | null | undefined): string | null {
   return raw && isRaceGame(raw) ? raw : null;
 }
 
+/**
+ * Game-first entry points (SPZ-13). Each opens the mode-first flow with the game preselected:
+ *   friend  /duel?game=<id>&invite=1  the challenge-a-friend link is made at once
+ *   quick   /duel?game=<id>           Duel entry sheet with the game picked (Quick Match)
+ *   party   /party?host=1&game=<id>   Party Host tab with the game picked
+ */
+export const challengeLinks = (id: string) => ({
+  friend: `/duel?game=${encodeURIComponent(id)}&invite=1`,
+  quick: `/duel?game=${encodeURIComponent(id)}`,
+  party: `/party?host=1&game=${encodeURIComponent(id)}`,
+});
+
 /** Games for a match: the chosen game every round, or a seeded mix of different games. */
 export function pickGames(rng: Rng, chosen: string | null, rounds: number, allowed?: string[]): string[] {
   if (chosen && isRaceGame(chosen)) return Array.from({ length: rounds }, () => chosen);

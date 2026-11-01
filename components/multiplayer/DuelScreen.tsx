@@ -11,7 +11,7 @@ import { useBackOrHome } from "@/lib/client/nav";
 import { useGameSettings } from "@/lib/game-settings/client";
 import { duelCopy } from "@/lib/copy/duel";
 import { botProgress, duelPhase, roundOutcomes, BOT_ID } from "@/lib/multiplayer/duel";
-import { DUEL_DEFAULT_GAME, gameName } from "@/lib/multiplayer/games";
+import { DUEL_DEFAULT_GAME, gameName, raceGameParam } from "@/lib/multiplayer/games";
 import { TIMING, type EmoteId } from "@/lib/multiplayer/constants";
 import type { MatchView } from "@/lib/multiplayer/types";
 import { MatchBoard } from "./MatchBoard";
@@ -24,6 +24,8 @@ type Outcome = "me" | "them" | "draw";
 /**
  * /duel: entry sheet, matchmaking and friend invites; /duel?m=<id>: the match; /duel?code=<code>: join a friend;
  * /duel?friend=<nickname>: from a friend's card, opens straight on a challenge link to send them.
+ * Game-first (SPZ-13): /duel?game=<id> preselects a race game on the entry sheet, and
+ * /duel?game=<id>&invite=1 makes the challenge-a-friend link for that game at once.
  */
 export function DuelScreen() {
   const gate = useProfileGate();
@@ -31,20 +33,32 @@ export function DuelScreen() {
   const m = sp.get("m");
   const code = sp.get("code");
   const friendName = sp.get("friend")?.slice(0, 16) || null;
+  const game = raceGameParam(sp.get("game"));
+  const invite = sp.get("invite") === "1";
   if (gate === "loading") return <LoadingScreen />;
   if (gate === "no_profile") return <NeedProfile />;
   if (m) return <DuelMatch id={m} />;
-  return <DuelLobby joinCode={code} friendName={friendName} />;
+  return <DuelLobby joinCode={code} friendName={friendName} initialGame={game} invite={invite} />;
 }
 
 /* ---------------- Entry, matchmaking, friend invite ---------------- */
 
-function DuelLobby({ joinCode, friendName }: { joinCode: string | null; friendName: string | null }) {
+function DuelLobby({
+  joinCode,
+  friendName,
+  initialGame,
+  invite,
+}: {
+  joinCode: string | null;
+  friendName: string | null;
+  initialGame: string | null;
+  invite: boolean;
+}) {
   const router = useRouter();
   const back = useBackOrHome();
   const me = useMe();
   const relaxed = useSettings((s) => s.relaxed);
-  const [game, setGame] = useState<string | null>(DUEL_DEFAULT_GAME ?? null);
+  const [game, setGame] = useState<string | null>(initialGame ?? DUEL_DEFAULT_GAME ?? null);
   const [mode, setMode] = useState<"sheet" | "search" | "friend">("sheet");
   const [waited, setWaited] = useState(0);
   const [searching, setSearching] = useState<number | null>(null);
@@ -145,13 +159,13 @@ function DuelLobby({ joinCode, friendName }: { joinCode: string | null; friendNa
     }
   };
 
-  // From a friend's card (/duel?friend=<nickname>): make the challenge link at once.
+  // From a friend's card (/duel?friend=<nickname>) or a game card (/duel?game=<id>&invite=1): make the challenge link at once.
   const autoChallenged = useRef(false);
   useEffect(() => {
-    if (!friendName || joinCode || autoChallenged.current) return;
+    if ((!friendName && !invite) || joinCode || relaxed || autoChallenged.current) return;
     autoChallenged.current = true;
     void challengeFriend();
-  }, [friendName, joinCode]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [friendName, invite, joinCode, relaxed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (relaxed)
     return (

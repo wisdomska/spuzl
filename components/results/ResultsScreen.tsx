@@ -11,6 +11,7 @@ import { play } from "@/lib/audio";
 import type { GameMeta } from "@/lib/catalog";
 import { WORLD_BY_ID } from "@/lib/catalog";
 import type { FinishRes } from "@/lib/client/api";
+import { RaceLiveButton } from "@/components/multiplayer/GameChallenge";
 
 /**
  * Solo Screens 05 Results: confetti header with Spuz, the time counting up, percentile, XP bar sweep
@@ -192,6 +193,8 @@ export function ResultsScreen({
             Challenge a friend
           </Button>
         )}
+        {/* Game-first Duel and Party (SPZ-13): race this game live; hidden for games that can't be raced */}
+        <RaceLiveButton meta={meta} size="md" className="col-span-2 w-full" />
         <Button size="lg" variant="secondary" onClick={another.onClick} className="col-span-2">
           {another.label}
         </Button>

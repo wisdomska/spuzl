@@ -39,6 +39,7 @@ import { createChallengeLink, GHOST_GAMES, saveGhostRun } from "@/lib/client/cha
 import { HowToSheet } from "./HowToSheet";
 import { Spuz } from "@/components/brand/Spuz";
 import { Button } from "@/components/ui/Button";
+import { RaceLiveButton } from "@/components/multiplayer/GameChallenge";
 
 type Mode = "daily" | "free" | "archive";
 type Phase = "loading" | "playing" | "results" | "failed" | "error";
@@ -364,6 +365,7 @@ export function PlayScreen({
                 timeMs={freeResult.timeMs}
                 xp={freeResult.xp}
                 accuracy={freeResult.accuracy}
+                meta={meta}
                 relaxed={relaxed}
                 next={nextAction}
                 another={anotherAction}
@@ -466,6 +468,7 @@ function PlayLoading({ meta }: { meta: GameMeta }) {
 
 /** Free play's compact result bar: time, XP and accuracy, then the two named Next actions. The header stays. */
 function FreeResultBar({
+  meta,
   timeMs,
   xp,
   accuracy,
@@ -473,6 +476,7 @@ function FreeResultBar({
   next,
   another,
 }: {
+  meta: GameMeta;
   timeMs: number;
   xp: number;
   accuracy: number;
@@ -494,6 +498,7 @@ function FreeResultBar({
       <Button size="lg" variant="secondary" className="w-full" onClick={another.onClick}>
         {another.label}
       </Button>
+      <RaceLiveButton meta={meta} size="md" className="w-full" />
     </div>
   );
 }
