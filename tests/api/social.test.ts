@@ -273,6 +273,24 @@ describe("api: leagues", () => {
     expect(c2.data.sparks).toBe(0);
     expect((await a.api("/api/v1/leagues/current")).data.ceremony).toBeNull();
   });
+
+  it("puts a new player in a friend's league first (SPZ-21)", async () => {
+    const f = await guest(uniq("lf_"));
+    const n = await guest(uniq("ln_"));
+    const week = daysAgo((new Date().getUTCDay() + 6) % 7);
+    const { data: l } = await admin().from("leagues").insert({ tier: 2, week_start: week }).select("id").single();
+    await admin().from("league_members").insert({ league_id: l!.id, player_id: f.userId });
+    await admin().from("friendships").insert({ player_id: n.userId, friend_id: f.userId, status: "accepted" });
+    await admin()
+      .from("daily_results")
+      .insert({ date: today(), game_id: "crownfall", player_id: n.userId, time_ms: 60_000, finished_at: new Date().toISOString() });
+    const settings = await (await fetch(BASE + "/api/v1/settings/game")).json();
+    const cur = await n.api("/api/v1/leagues/current");
+    if (settings["leagues.fillWithFriends"]) {
+      expect(cur.data.league).toMatchObject({ id: l!.id, tier: 2 });
+      expect(cur.data.league.members.map((m: { id: string }) => m.id).sort()).toEqual([f.userId, n.userId].sort());
+    } else expect(cur.data.league.id).not.toBe(l!.id);
+  });
 });
 
 describe("api: crews", () => {

@@ -1,6 +1,18 @@
 import { handle, ok, requirePlayer } from "@/lib/api/server";
 import { cards } from "@/lib/social/server";
-import { TOP_TIER, isoWeek, leagueReward, msToLeagueReset, nextTier, tierMeta, zoneFor, type LeagueResult } from "@/lib/leagues";
+import {
+  LEAGUE_SIZE,
+  TOP_TIER,
+  isoWeek,
+  leagueReward,
+  msToLeagueReset,
+  nextTier,
+  tierMeta,
+  zoneFor,
+  type LeagueResult,
+} from "@/lib/leagues";
+import { chooseLeague, type LeagueCandidate } from "@/lib/leagues/grouping";
+import { getGameSettings } from "@/lib/game-settings/server";
 
 export const dynamic = "force-dynamic";
 
@@ -43,13 +55,40 @@ async function table(admin: Parameters<typeof cards>[0], leagueId: string, me: s
   });
 }
 
+interface Candidates {
+  eligible: boolean;
+  tier?: number;
+  level?: number;
+  isNew?: boolean;
+  candidates?: (Omit<LeagueCandidate, "avgLevel"> & { avgLevel: number | string })[];
+}
+
+/**
+ * Where a player joining this week's league should go (SPZ-21): friends first for new players, then a
+ * level-matched group at their tier, topping up small groups (game settings leagues.fillWithFriends and
+ * leagues.minGroup). The database re-checks the pick under its join lock.
+ */
+async function preferredLeague(admin: Parameters<typeof cards>[0], playerId: string): Promise<string | null> {
+  const { data, error } = await admin.rpc("svc_league_candidates", { p_player: playerId });
+  if (error) throw error;
+  const c = data as Candidates;
+  if (!c?.eligible) return null;
+  const settings = await getGameSettings();
+  return chooseLeague(
+    { tier: c.tier ?? 0, level: c.level ?? 1, isNew: !!c.isNew },
+    (c.candidates ?? []).map((x) => ({ ...x, avgLevel: Number(x.avgLevel) })),
+    { size: LEAGUE_SIZE, minGroup: settings["leagues.minGroup"], fillWithFriends: settings["leagues.fillWithFriends"] },
+  );
+}
+
 /**
  * GET /api/v1/leagues/current: this week's table (30 players, top 7 up, bottom 5 down), time left, and the
  * week-end ceremony if last week's result hasn't been seen yet. Clearing a Daily midweek joins a league.
  */
 export const GET = handle(async () => {
   const { admin, player } = await requirePlayer();
-  const { data: lid, error } = await admin.rpc("svc_join_current_league", { p_player: player.id });
+  const pick = await preferredLeague(admin, player.id);
+  const { data: lid, error } = await admin.rpc("svc_join_current_league", { p_player: player.id, p_league: pick });
   if (error) throw error;
 
   let league = null;

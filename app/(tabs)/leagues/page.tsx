@@ -10,6 +10,8 @@ import { LeagueRow } from "@/components/meta/LeagueRow";
 import { LeagueCeremony } from "@/components/meta/LeagueCeremony";
 import { Icon } from "@/components/ui/Icon";
 import { formatLeft } from "@/lib/leagues";
+import { LeagueInvite } from "@/components/meta/LeagueInvite";
+import { leaguesCopy } from "@/lib/copy/leagues";
 
 /** L1 Weekly league: 30 players, top 7 promote, bottom 5 demote, arrows on the zones, countdown to reset. */
 export default function LeaguesPage() {
@@ -37,20 +39,23 @@ export default function LeaguesPage() {
       ) : q.isError ? (
         <ErrorState onRetry={() => q.refetch()} />
       ) : !l ? (
-        <EmptyState
-          mood="thinking"
-          title="Clear 1 Daily to join this week's league"
-          body="Leagues are 30 Spuzlers. Earn XP all week, the top 7 go up on Monday."
-          action={
-            <Link
-              href="/"
-              className="toy bg-accent text-on-accent font-display flex h-[60px] items-center justify-center rounded-[20px] text-[16px] font-black"
-              style={{ ["--btn-depth" as string]: "var(--accent-depth)" }}
-            >
-              Play today&apos;s Daily
-            </Link>
-          }
-        />
+        <>
+          <EmptyState
+            mood="thinking"
+            title={leaguesCopy.noGroupTitle}
+            body={leaguesCopy.noGroupBody}
+            action={
+              <Link
+                href="/"
+                className="toy bg-accent text-on-accent font-display flex h-[60px] items-center justify-center rounded-[20px] text-[16px] font-black"
+                style={{ ["--btn-depth" as string]: "var(--accent-depth)" }}
+              >
+                {leaguesCopy.playDaily}
+              </Link>
+            }
+          />
+          <LeagueInvite />
+        </>
       ) : (
         <>
           <header className="flex items-center gap-3.5 pt-1 pb-1">
@@ -89,7 +94,16 @@ export default function LeaguesPage() {
               ),
             )}
           </ol>
-          {members.length < 13 && <p className="text-muted px-1 text-[14px]">Fewer than 13 players this week, so nobody drops a league.</p>}
+          {members.length <= 1 && (
+            <div className="flex flex-col items-center gap-1 px-4 pt-3 text-center">
+              <h2 className="font-display text-[18px] font-black">{leaguesCopy.aloneTitle}</h2>
+              <p className="text-muted max-w-[300px] text-[15px] leading-snug text-pretty">{leaguesCopy.aloneBody}</p>
+            </div>
+          )}
+          {members.length <= 1 && <LeagueInvite />}
+          {members.length > 1 && members.length < 13 && (
+            <p className="text-muted px-1 text-[14px]">Fewer than 13 players this week, so nobody drops a league.</p>
+          )}
         </>
       )}
       <nav aria-label="Compete" className="flex gap-2 pt-2">
