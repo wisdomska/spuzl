@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { admin, guest, uniq } from "./helpers";
+import { setSetting } from "./setup";
 import { TUTORIAL_PUZZLE, TUTORIAL_SOLUTION } from "@/games/crownfall/tutorial";
 
 /** Full solo loop through the real API: guest → profile → Daily → finish → rewards, streak, results. */
@@ -153,5 +154,34 @@ describe("api: daily clear flow", () => {
     expect(me.data.streak.current).toBe(1);
     expect(me.data.today.counted).toBe(1);
     expect(me.data.today.cleared).toEqual({}); // no Daily is marked done by the lesson
+  });
+
+  it("with Dailies off: refuses Daily play, and a free-play clear lights the streak and counts as played", async () => {
+    await setSetting("features.dailies", false);
+    try {
+      const g = await guest(uniq("fo_"));
+      const daily = await g.api("/api/v1/attempts", { json: { game: "crownfall", mode: "daily" } });
+      expect([daily.status, daily.data.error]).toEqual([404, "dailies_off"]);
+      expect((await g.api("/api/v1/leaderboards/crownfall")).status).toBe(404);
+      expect((await g.api("/api/v1/archive?game=crownfall")).status).toBe(404);
+      const start = await g.api("/api/v1/attempts", { json: { game: "crownfall", mode: "free" } });
+      expect(start.status).toBe(200);
+      const { data: att } = await admin().from("attempts").select("free_seed").eq("id", start.data.attemptId).single();
+      expect(att!.free_seed).toBeTruthy();
+      const { solve } = await import("@/games/crownfall/logic");
+      const sol = solve(start.data.puzzle)!;
+      const n = start.data.puzzle.size;
+      const state = new Array(n * n).fill(0);
+      sol.forEach((c: number, r: number) => (state[r * n + c] = 2));
+      await new Promise((r) => setTimeout(r, 6500)); // above the human floor
+      const fin = await g.api(`/api/v1/attempts/${start.data.attemptId}/finish`, { json: { state, activeMs: 6200, mistakes: 0 } });
+      expect(fin.data).toMatchObject({ ok: true, status: "cleared" });
+      expect(fin.data.streak.current).toBe(1);
+      const me = await g.api("/api/v1/me");
+      expect(me.data.streak.current).toBe(1);
+      expect(me.data.played).toContain("crownfall");
+    } finally {
+      await setSetting("features.dailies", true);
+    }
   });
 });
