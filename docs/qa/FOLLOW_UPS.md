@@ -29,8 +29,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 
 ## Layout and motion
 
-- Nine on a 375 × 667 phone: the board and the 3 × 3 pad fit (cells step down to 35 px), but the shell's tool bar
-  (Undo, Erase, Notes, Hint) is still below the fold. Fitting it too needs a smaller shell header or a 1 × 9 pad.
 - Five and Nine still scroll a little at 320 × 568.
 - Light Up 10 × 10 cells are 36 px at 375 wide (30 px at 320). 44 px would need a smaller hard board or zoom.
 - Party (`components/multiplayer/party.tsx`) still has raw hex colours (QR, podium, confetti, Open label).
