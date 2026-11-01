@@ -4,15 +4,20 @@ import { play } from "@/lib/audio";
 
 /**
  * "Sparks earned" (Handoff motion spec): sparks arc on a curve from the source into the wallet,
- * 600 ms ease-in-out with a 30 ms stagger, then the wallet pops 1.08 on a spring. Sound: coin_ticks.
+ * 600 ms ease-in-out with a 30 ms stagger, then the wallet pops 1.08 on a spring. Sound: a success lift on
+ * the claim, then coin ticks timed to the sparks landing in the wallet.
  * Reduced motion: no flight, the wallet number just swaps. Transform and opacity only (WAAPI).
  */
 export function flySparks(from: Element | null, amount: number): Promise<void> {
   const wallet = [...document.querySelectorAll<HTMLElement>("[data-wallet]")].find((el) => el.getClientRects().length > 0);
   if (!from || !wallet || amount <= 0) return Promise.resolve();
   const reduce = document.documentElement.dataset.motion === "reduce" || matchMedia("(prefers-reduced-motion: reduce)").matches;
-  play("coin_ticks");
-  if (reduce) return Promise.resolve();
+  if (reduce) {
+    play("reward");
+    return Promise.resolve();
+  }
+  play("success");
+  play("reward", { delay: 0.5 });
 
   const a = from.getBoundingClientRect();
   const b = wallet.getBoundingClientRect();

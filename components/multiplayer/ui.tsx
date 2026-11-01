@@ -161,8 +161,13 @@ export function MpToast({ toast }: { toast: { text: string; kind: "info" | "bad"
             key={toast.n}
             initial={reduce ? { opacity: 0 } : { opacity: 0, transform: "translateY(-20px)" }}
             animate={{ opacity: 1, transform: "translateY(0px)" }}
-            exit={{ opacity: 0, transition: { duration: 0.15 } }}
-            transition={{ duration: 0.32, ease: EASE_OUT }}
+            // Leaves the way it came, faster.
+            exit={
+              reduce
+                ? { opacity: 0, transition: { duration: 0.15 } }
+                : { opacity: 0, transform: "translateY(-12px)", transition: { duration: 0.15, ease: EASE_OUT } }
+            }
+            transition={{ duration: 0.28, ease: EASE_OUT }}
             role="status"
             className="bg-surface-raised flex w-full max-w-[400px] items-center gap-2 rounded-[14px] px-3.5 py-2.5 text-[15px] font-medium shadow-[0_10px_30px_rgba(0,0,0,.4)]"
             style={{ boxShadow: toast.kind === "bad" ? "inset 0 0 0 2px var(--danger), 0 10px 30px rgba(0,0,0,.4)" : undefined }}
