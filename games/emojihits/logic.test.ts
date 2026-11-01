@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createRng } from "@/lib/rng";
 import type { Difficulty } from "@/games/types";
 import logic, { checkGuess, contentCount, generate, generateAt, grade, hint, progress, replay, scoreOf, verify } from "./logic";
-import { CONTENT, needsReview } from "./content";
+import { CONTENT } from "./content";
 import { LIMIT_MS, OPTIONS, READ_FLOOR_MS, ROUNDS, titleKey, titleMatches, TRIES, type EmojiState, type RoundLog } from "./rules";
 
 const DIFFS: Difficulty[] = ["easy", "medium", "hard", "expert", "mega"];
@@ -13,7 +13,6 @@ const clean = (titles: string[], ms = 5000): EmojiState => ({ rounds: titles.map
 
 describe("emoji hits content", () => {
   it("has ~80+ distinct, family-safe title entries with a mix of global and Ghanaian or African hits", () => {
-    expect(needsReview).toBe(true);
     expect(CONTENT.length).toBeGreaterThanOrEqual(80);
     // packs of five never repeat a start before the pool wraps
     expect(gcd(CONTENT.length, ROUNDS)).toBe(1);

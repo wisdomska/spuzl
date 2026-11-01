@@ -1,5 +1,5 @@
 /**
- * Emoji Hits clues. Curated SPUZL content, needs owner review. Titles only (never lyrics), all family
+ * Emoji Hits clues. Curated SPUZL content, fact-checked (see docs/qa/EMOJI_HITS_FACTCHECK.md). Titles only (never lyrics), all family
  * friendly: well-known films, TV shows and songs, about half of them Ghanaian or from elsewhere in Africa.
  * `by` and `year` (or a hand-written `clue`) feed the hint line, so keep them factual. `accept` lists other spellings or full titles
  * that also count; matching already ignores case, punctuation, accents and a leading "the".
@@ -20,8 +20,6 @@ export interface HitEntry {
   from: "ghana" | "africa" | "world";
   accept?: string[];
 }
-
-export const needsReview = true;
 
 export const CONTENT: HitEntry[] = [
   // ---------- Films ----------
@@ -91,12 +89,12 @@ export const CONTENT: HitEntry[] = [
   { title: "Lionheart", emoji: "🦁❤️🚌", kind: "film", by: "Genevieve Nnaji", year: 2018, from: "africa" },
   { title: "Chief Daddy", emoji: "👨🏾‍💼👑💰", kind: "film", by: "Niyi Akinmolayan", year: 2018, from: "africa" },
   { title: "Battle on Buka Street", emoji: "⚔️🍲🛣️", kind: "film", by: "Funke Akindele", year: 2022, from: "africa" },
-  { title: "Osuofia in London", emoji: "👨🏾✈️🇬🇧", kind: "film", by: "Nkem Owoh", year: 2003, from: "africa" },
+  { title: "Osuofia in London", emoji: "👨🏾✈️🇬🇧", kind: "film", by: "Kingsley Ogoro", year: 2003, from: "africa" },
   {
     title: "Aki and Pawpaw",
     emoji: "👦🏾👦🏾🥭",
     kind: "film",
-    by: "Chinedu Ikedieze and Osita Iheme",
+    by: "Biodun Stephen",
     year: 2021,
     from: "africa",
     accept: ["Aki and Paw Paw", "Aki na Ukwa"],
@@ -127,12 +125,18 @@ export const CONTENT: HitEntry[] = [
   { title: "Mr. Bean", emoji: "🤵🧸🚗", kind: "tv", by: "Rowan Atkinson", year: 1990, from: "world" },
   { title: "PAW Patrol", emoji: "🐾🚒🚓", kind: "tv", by: "Spin Master", year: 2013, from: "world" },
   { title: "Pokémon", emoji: "⚡🐭🔴⚪", kind: "tv", by: "Nintendo and Game Freak", year: 1997, from: "world" },
-  { title: "Efiewura", emoji: "🏠👴🏾🔑", kind: "tv", clue: "A Ghanaian TV comedy about a landlord and his tenants.", from: "ghana" },
+  {
+    title: "Efiewura",
+    emoji: "🏠👴🏾🔑",
+    kind: "tv",
+    clue: "A Ghanaian TV comedy from 2001 about a landlord and his tenants.",
+    from: "ghana",
+  },
   {
     title: "Things We Do for Love",
     emoji: "❤️🎒🏫",
     kind: "tv",
-    clue: "A Ghanaian TV drama about senior high school students, from the early 2000s.",
+    clue: "A Ghanaian TV drama from 2003 about teenagers at school and at home.",
     from: "ghana",
   },
   {
@@ -204,21 +208,25 @@ export const CONTENT: HitEntry[] = [
   },
   { title: "Sweet Mother", emoji: "🍬👩🏾‍🍼", kind: "song", by: "Prince Nico Mbarga", year: 1976, from: "africa" },
   { title: "Water No Get Enemy", emoji: "💧🚫⚔️", kind: "song", by: "Fela Kuti", year: 1975, from: "africa" },
-  { title: "Sunshine Day", emoji: "☀️📅", kind: "song", by: "Osibisa", year: 1976, from: "ghana" },
   {
-    title: "Kwaku the Traveller",
-    emoji: "🧳🚶🏾‍♂️🌍",
+    title: "Sunshine Day",
+    emoji: "☀️📅",
     kind: "song",
-    by: "Black Sherif",
-    year: 2022,
+    clue: "A 1976 UK hit for Osibisa, a band founded by Ghanaian musicians.",
     from: "ghana",
-    accept: ["Kwaku the Traveler"],
   },
   { title: "Forever", emoji: "♾️⏳", kind: "song", by: "Gyakie", year: 2020, from: "ghana" },
-  { title: "Antenna", emoji: "📡🙌🏾", kind: "song", by: "Fuse ODG", year: 2013, from: "ghana" },
+  { title: "Antenna", emoji: "📡🙌🏾", kind: "song", by: "Fuse ODG", year: 2012, from: "ghana" },
+  {
+    title: "Azonto",
+    emoji: "🕺🏾💃🏾🇬🇭",
+    kind: "song",
+    clue: "A Fuse ODG song named after a Ghanaian dance craze.",
+    from: "ghana",
+  },
   { title: "Adonai", emoji: "🙏🏾👑🎤", kind: "song", by: "Sarkodie and Castro", year: 2014, from: "ghana" },
-  { title: "Wish Me Well", emoji: "🙏🏾🍀👋🏾", kind: "song", clue: "A feel-good song by Kuami Eugene.", from: "ghana" },
-  { title: "Already", emoji: "✅⏰", kind: "song", by: "Beyoncé, Shatta Wale and Major Lazer", year: 2020, from: "ghana" },
+  { title: "Wish Me Well", emoji: "🙏🏾🍀👋🏾", kind: "song", by: "Kuami Eugene", year: 2018, from: "ghana" },
+  { title: "Already", emoji: "✅⏰", kind: "song", by: "Beyoncé, Shatta Wale and Major Lazer", year: 2019, from: "ghana" },
   { title: "Terminator", emoji: "🤖🦾⛔", kind: "song", by: "King Promise", year: 2023, from: "ghana" },
   { title: "Calm Down", emoji: "😌⬇️", kind: "song", by: "Rema", year: 2022, from: "africa" },
   { title: "Free Mind", emoji: "🆓🧠", kind: "song", by: "Tems", year: 2020, from: "africa" },
