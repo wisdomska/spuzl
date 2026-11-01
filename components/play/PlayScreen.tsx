@@ -37,6 +37,9 @@ import { dailyShareText } from "@/lib/share/text";
 import { cardUrl } from "@/lib/share/urls";
 import { createChallengeLink, GHOST_GAMES, saveGhostRun } from "@/lib/client/challenge";
 import { HowToSheet } from "./HowToSheet";
+import { GuidedPlay } from "./GuidedPlay";
+import { learnedGames, markLearned, needsGuided } from "@/lib/guided";
+import { hasLogic } from "@/games/logic-registry";
 import { Spuz } from "@/components/brand/Spuz";
 import { Button } from "@/components/ui/Button";
 import { RaceLiveButton } from "@/components/multiplayer/GameChallenge";
@@ -135,11 +138,27 @@ export function PlayScreen({
   // Start (or resume) once the player is known. Runs from a timer callback so a StrictMode double effect
   // cancels the first start instead of creating two attempts.
   const playerId = me.data?.id;
+  const played = me.data?.played;
+  const todaySettled = today.isSuccess || today.isError;
+  const startedToday = today.data?.games.find((g) => g.id === meta.id)?.state === "in_progress";
+  // First try of a game: a short guided practice round before the real one (skippable).
+  const [guided, setGuided] = useState(false);
   useEffect(() => {
-    if (!playerId) return;
-    const id = setTimeout(() => void beginRef.current(initialMode), 0);
+    if (!playerId || !todaySettled) return;
+    const id = setTimeout(() => {
+      const first = needsGuided({
+        id: meta.id,
+        mode: initialMode,
+        played,
+        learned: learnedGames(),
+        started: startedToday,
+        available: hasLogic(meta.id),
+      });
+      if (first) setGuided(true);
+      else void beginRef.current(initialMode);
+    }, 0);
     return () => clearTimeout(id);
-  }, [playerId, meta.id, initialMode]);
+  }, [playerId, todaySettled, meta.id, initialMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onMove = useCallback(
     (state: unknown, elapsedMs: number) => {
@@ -310,6 +329,23 @@ export function PlayScreen({
       </>
     );
   }
+
+  if (guided)
+    return (
+      <>
+        {meta.photosensitive && <PhotosensitivityNotice />}
+        <GuidedPlay
+          meta={meta}
+          daily={initialMode === "daily"}
+          onExit={() => router.push(`/world/${meta.world}`)}
+          onDone={() => {
+            markLearned(meta.id);
+            setGuided(false);
+            void beginRef.current(initialMode);
+          }}
+        />
+      </>
+    );
 
   if (phase === "failed" || phase === "error") {
     return (

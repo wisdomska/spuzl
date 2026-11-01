@@ -14,14 +14,21 @@
  * today's Daily. The /dev routes exist only when ENABLE_DEV_ROUTES=1 or outside production.
  */
 import { expect, type Page } from "@playwright/test";
+import { GAMES } from "@/lib/catalog";
 import { createRng } from "@/lib/rng";
 import type { Difficulty } from "@/games/types";
 
 export type Age = "13-15" | "16-17" | "18+";
 const AGE_LABEL: Record<Age, RegExp> = { "13-15": /13 to 15/, "16-17": /16 to 17/, "18+": /18 or older/ };
 
-export async function onboardGuest(page: Page, age: Age = "18+", nickname = `Qa${Date.now() % 1e7}`) {
+export async function onboardGuest(page: Page, age: Age = "18+", nickname = `Qa${Date.now() % 1e7}`, o: { guided?: boolean } = {}) {
   await page.goto("/welcome");
+  // Most tests go straight to the real game; the guided first play has its own test.
+  if (!o.guided)
+    await page.evaluate(
+      (ids) => localStorage.setItem("spuzl.learned", JSON.stringify(ids)),
+      GAMES.map((g) => g.id),
+    );
   await page.getByRole("button", { name: "Play as guest" }).click();
   await page.getByRole("radio", { name: AGE_LABEL[age] }).click();
   await page.getByRole("button", { name: "Continue" }).click();

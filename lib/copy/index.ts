@@ -30,6 +30,7 @@ export const en = {
   },
   shell: {
     hintsLeft: (n: number) => (n === 1 ? "1 hint left" : `${n} hints left`),
+    hintsFree: "Hints are free in this guided round",
     hintConfirmTitle: "Use a hint?",
     hintConfirmDaily: (keptPct: number) =>
       keptPct >= 100

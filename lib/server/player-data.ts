@@ -24,21 +24,24 @@ export interface PlayerRow {
  */
 export async function loadMe(user: User, player: PlayerRow, admin: SupabaseClient = supabaseAdmin()): Promise<Me> {
   const today = todayGmt();
-  const [{ data: profile }, { data: streak }, { data: ratings }, { data: cleared }, { data: equipped }] = await Promise.all([
-    admin
-      .from("players")
-      .select("nickname, avatar_color, skin, hat, title, age_band, country, city, settings, hide_activity, created_at")
-      .eq("id", player.id)
-      .single(),
-    admin
-      .from("streaks")
-      .select("current, best, last_clear_date, freezes_held, lost_value, lost_on")
-      .eq("player_id", player.id)
-      .maybeSingle(),
-    admin.from("ratings").select("track, rating").eq("player_id", player.id),
-    admin.from("daily_results").select("game_id, time_ms").eq("player_id", player.id).eq("date", today),
-    admin.from("inventory").select("cosmetic_id").eq("player_id", player.id).eq("equipped", true),
-  ]);
+  const [{ data: profile }, { data: streak }, { data: ratings }, { data: cleared }, { data: equipped }, { data: played }] =
+    await Promise.all([
+      admin
+        .from("players")
+        .select("nickname, avatar_color, skin, hat, title, age_band, country, city, settings, hide_activity, created_at")
+        .eq("id", player.id)
+        .single(),
+      admin
+        .from("streaks")
+        .select("current, best, last_clear_date, freezes_held, lost_value, lost_on")
+        .eq("player_id", player.id)
+        .maybeSingle(),
+      admin.from("ratings").select("track, rating").eq("player_id", player.id),
+      admin.from("daily_results").select("game_id, time_ms").eq("player_id", player.id).eq("date", today),
+      admin.from("inventory").select("cosmetic_id").eq("player_id", player.id).eq("equipped", true),
+      // Games this player has ever cleared (any mode): the guided first play is skipped for these.
+      admin.from("attempts").select("game_id").eq("player_id", player.id).eq("status", "cleared").limit(2000),
+    ]);
   // The request identity comes from JWT claims, which can lack the email (e.g. a token minted before an
   // email was linked). Signed-in players see who they are, so read it from the auth record when missing.
   let email = user.email ?? null;
@@ -63,6 +66,7 @@ export async function loadMe(user: User, player: PlayerRow, admin: SupabaseClien
     streak: { current: 0, best: 0, freezes_held: 0, last_clear_date: null, ...streak, flame: flameTier(streak?.current ?? 0) },
     rank: { rating: overall, ...rankFor(overall) },
     boardTheme: theme ? String(theme.payload.theme) : null,
+    played: [...new Set((played ?? []).map((r) => r.game_id as string))],
     ratings: Object.fromEntries((ratings ?? []).map((r) => [r.track, Number(r.rating)])),
     today: {
       date: today,

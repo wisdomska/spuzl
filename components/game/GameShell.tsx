@@ -33,6 +33,8 @@ export interface GameShellProps<P, St> {
   label: string;
   initialState?: St;
   hintsLeft?: number;
+  /** Guided first play: free, unlimited hints with no confirm, and a hint offered on its own after a pause. */
+  guided?: boolean;
   /** server hint for the current state */
   requestHint?: (state: St | undefined) => Promise<Hint | null>;
   /** board reports solved; resolves when the server has decided */
@@ -64,6 +66,8 @@ interface FeedbackState {
   n: number;
 }
 
+const GUIDED_IDLE_MS = 6000;
+
 export function GameShell<P, St>(props: GameShellProps<P, St>) {
   const {
     meta,
@@ -73,6 +77,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
     label,
     initialState,
     hintsLeft = 3,
+    guided = false,
     requestHint,
     onSolved,
     onFailed,
@@ -105,6 +110,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   const [confirmHint, setConfirmHint] = useState(false);
   const stateRef = useRef<St | undefined>(initialState);
   const mistakes = useRef(0);
+  const lastActive = useRef(0);
   // Boards may report one slip twice (onMove {mistake} and ruleBreak in the same tick): count it once.
   const lastMistakeAt = useRef(-Infinity);
   const countMistake = () => {
@@ -155,6 +161,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
         stateRef.current = state;
         if (!started) setStarted(true);
         if (info?.mistake) countMistake();
+        lastActive.current = performance.now();
         setHint(null);
         onMove?.(state, now(), info);
       },
@@ -203,18 +210,34 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
     const h = await requestHint(stateRef.current);
     if (!h) return;
     hintsUsed.current++;
-    setHints((n) => n - 1);
-    setHint(h);
+    if (!guided) setHints((n) => n - 1);
+    // A coaching hint has no target on the board; only the feedback line shows it.
+    setHint(h.target == null ? null : h);
     setFeedback((f) => ({ text: h.text, tone: "info", icon: "lightbulb", n: f.n + 1 }));
     setLive(h.text);
     play("twinkle");
-  }, [hints, requestHint, solved]);
+  }, [hints, requestHint, solved, guided]);
   // Only the Hint button spends a hint, and the first one per game asks first (XP cost on Dailies).
   const askHint = useCallback(() => {
     if (hints <= 0 || !requestHint || solved) return;
-    if (hintConfirmed(meta.id)) void spendHint();
+    if (guided || hintConfirmed(meta.id)) void spendHint();
     else setConfirmHint(true);
-  }, [hints, requestHint, solved, meta.id, spendHint]);
+  }, [hints, requestHint, solved, meta.id, spendHint, guided]);
+
+  // Guided first play: a hint every few seconds of stillness, so nobody stays stuck.
+  useEffect(() => {
+    lastActive.current = performance.now();
+  }, [feedback.n]);
+  useEffect(() => {
+    if (!guided || !requestHint || solved || paused || pausedExternally) return;
+    const t = setInterval(() => {
+      if (performance.now() - lastActive.current > GUIDED_IDLE_MS) {
+        lastActive.current = performance.now();
+        void spendHint();
+      }
+    }, 1000);
+    return () => clearInterval(t);
+  }, [guided, requestHint, solved, paused, pausedExternally, spendHint]);
 
   // Hint controls registered by the board call into the shell.
   // No hint source (Duels, Party Races): the Hint control is hidden rather than dead.
@@ -249,12 +272,12 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
           // A counter only: hints are spent from the Hint button in the tool bar, never from here.
           <div
             role="status"
-            aria-label={copy.shell.hintsLeft(hints)}
+            aria-label={guided ? copy.shell.hintsFree : copy.shell.hintsLeft(hints)}
             className="text-gold bg-surface relative flex size-11 shrink-0 items-center justify-center rounded-[14px]"
           >
             <Icon name="lightbulb" size={20} />
             <span className="num bg-gold text-on-accent absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[12px] font-bold">
-              {hints}
+              {guided ? "∞" : hints}
             </span>
           </div>
         )}

@@ -74,6 +74,7 @@ export interface Me {
   ratings: Record<string, number>;
   /** equipped Shop board theme (backdrop and frame around boards) */
   boardTheme?: string | null;
+  played?: string[];
   today: { date: string; cleared: Record<string, number>; featured: number; featuredCleared: number; counted: number };
 }
 
