@@ -16,6 +16,8 @@ import { overtakes, raceOrder } from "@/lib/multiplayer/race";
 import { PARTY_MAX, PARTY_MIN, type EmoteId } from "@/lib/multiplayer/constants";
 import type { MatchPlayerView, MatchView } from "@/lib/multiplayer/types";
 import { useReduce } from "@/lib/client/multiplayer";
+import type { PartyMode } from "@/lib/party-adult/modes";
+import { ModePicker } from "./adult-party";
 import { Avatar, Cta, EASE_IN_OUT, EASE_OUT, EmoteBar, EmoteBubble, PODIUM, SPRING_PARTY, TopButton, placeLabel } from "./ui";
 
 /* ---------------- Share: code tiles, share sheet, QR, link ---------------- */
@@ -100,7 +102,14 @@ export function ShareCode({ code, url, text, count }: { code: string; url: strin
 
 const DIFFS = ["easy", "medium", "hard", "expert"] as const;
 export type Diff = (typeof DIFFS)[number];
-export type RoomRequest = { game: string | null; difficulty: Diff; maxPlayers: number; classroom: boolean };
+export type RoomRequest = {
+  game: string | null;
+  difficulty: Diff;
+  maxPlayers: number;
+  classroom: boolean;
+  mode: PartyMode;
+  adultNotice?: boolean;
+};
 
 /** Worlds that have at least one race game, in catalog order: the picker's filter chips. */
 const PARTY_WORLDS = WORLDS.filter((w) => RACE_GAMES.some((g) => g.world === w.id));
@@ -263,26 +272,39 @@ export function PartyStart({
   );
 }
 
-/** Host tab: game (or Random mix), difficulty, players and Classroom mode. */
+/**
+ * Host tab: game (or Random mix), difficulty, players and Classroom mode. Signed-in 18+ players (with the
+ * admin setting "features.adultParty" on) also pick a mode: Puzzle race, Draw It or Two Truths.
+ */
 export function HostRoom({
   initialGame = null,
   onOpen,
   busy,
+  adult = false,
 }: {
   initialGame?: string | null;
   onOpen: (r: RoomRequest) => void;
   busy: boolean;
+  adult?: boolean;
 }) {
+  const [picked, setMode] = useState<PartyMode>("race");
+  const mode: PartyMode = adult ? picked : "race";
   const [game, setGame] = useState<string | null>(initialGame);
   const [difficulty, setDifficulty] = useState<Diff>("medium");
   const [size, setSize] = useState(PARTY_MAX);
   const [classroom, setClassroom] = useState(false);
+  const race = mode === "race";
   return (
     <>
-      <span className="text-[15px] font-semibold">{partyCopy.host.game}</span>
-      <GamePicker value={game} onChange={setGame} />
-      <span className="mt-1 text-[15px] font-semibold">{partyCopy.host.difficulty}</span>
-      <DifficultyPicker value={difficulty} onChange={setDifficulty} />
+      {adult && <ModePicker value={mode} onChange={setMode} />}
+      {race && (
+        <>
+          <span className="text-[15px] font-semibold">{partyCopy.host.game}</span>
+          <GamePicker value={game} onChange={setGame} />
+          <span className="mt-1 text-[15px] font-semibold">{partyCopy.host.difficulty}</span>
+          <DifficultyPicker value={difficulty} onChange={setDifficulty} />
+        </>
+      )}
       <label htmlFor="room-size" className="mt-1 flex items-baseline justify-between text-[15px] font-semibold">
         {partyCopy.host.players}
         <span className="text-muted text-[14px] font-medium">{partyCopy.host.playersValue(size)}</span>
@@ -300,23 +322,35 @@ export function HostRoom({
         />
         <span className="num w-10 text-right text-[20px] font-semibold">{size}</span>
       </div>
-      <label className="bg-surface flex min-h-14 cursor-pointer items-center justify-between gap-3 rounded-[16px] px-4 py-3.5">
-        <span className="flex flex-col">
-          <span className="text-[16px] font-semibold">{partyCopy.host.classroom}</span>
-          <span className="text-muted text-[14px]" id="classroom-hint">
-            {partyCopy.host.classroomHint}
+      {race && (
+        <label className="bg-surface flex min-h-14 cursor-pointer items-center justify-between gap-3 rounded-[16px] px-4 py-3.5">
+          <span className="flex flex-col">
+            <span className="text-[16px] font-semibold">{partyCopy.host.classroom}</span>
+            <span className="text-muted text-[14px]" id="classroom-hint">
+              {partyCopy.host.classroomHint}
+            </span>
           </span>
-        </span>
-        <input
-          type="checkbox"
-          role="switch"
-          checked={classroom}
-          aria-describedby="classroom-hint"
-          onChange={(e) => setClassroom(e.target.checked)}
-          className="mp-switch flex-none"
-        />
-      </label>
-      <Cta className="mt-auto" disabled={busy} onClick={() => onOpen({ game, difficulty, maxPlayers: size, classroom })}>
+          <input
+            type="checkbox"
+            role="switch"
+            checked={classroom}
+            aria-describedby="classroom-hint"
+            onChange={(e) => setClassroom(e.target.checked)}
+            className="mp-switch flex-none"
+          />
+        </label>
+      )}
+      <Cta
+        className="mt-auto"
+        disabled={busy}
+        onClick={() =>
+          onOpen(
+            race
+              ? { game, difficulty, maxPlayers: size, classroom, mode }
+              : { game: null, difficulty, maxPlayers: size, classroom: false, mode },
+          )
+        }
+      >
         {partyCopy.host.open}
       </Cta>
     </>
@@ -387,7 +421,10 @@ export function Lobby({
   onLeave,
   onSettings,
   onTv,
+  adult,
 }: {
+  /** 18+ party room: its mode line instead of the game card, and a players button for the host instead of settings */
+  adult?: { icon: string; title: string; sub: string; onPlayers: () => void };
   view: MatchView;
   present: Set<string>;
   emote: { from: string; e: EmoteId; n: number } | null;
@@ -411,7 +448,9 @@ export function Lobby({
       <div className="flex items-center justify-between px-4 pt-[max(52px,env(safe-area-inset-top))]">
         <TopButton icon="x" label="Leave room" onClick={onLeave} />
         <h1 className="font-display text-[18px] font-extrabold">{view.classroom ? "Classroom" : "Party room"}</h1>
-        {host ? (
+        {adult ? (
+          <TopButton icon="users" label="Players" onClick={adult.onPlayers} />
+        ) : host ? (
           <TopButton icon="sliders-horizontal" label="Room settings" onClick={onSettings} />
         ) : (
           <TopButton icon="television" label="TV mode" onClick={onTv} />
@@ -460,21 +499,33 @@ export function Lobby({
           )}
         </AnimatePresence>
       </ul>
-      <button
-        type="button"
-        onClick={host ? onSettings : undefined}
-        disabled={!host}
-        className="bg-surface mx-4 mt-3.5 flex items-center gap-3 rounded-[18px] px-3.5 py-3 text-left"
-      >
-        <span className="bg-surface-raised text-accent flex size-11 items-center justify-center rounded-[14px]">
-          <Icon name={view.mix ? "shuffle" : (GAME_BY_ID[view.gameId ?? ""]?.icon ?? "shuffle")} size={22} />
-        </span>
-        <span className="flex flex-1 flex-col">
-          <span className="text-[16px] font-semibold">{gameLine}</span>
-          <span className="text-muted text-[14px]">{view.difficulty[0].toUpperCase() + view.difficulty.slice(1)}. Host can change.</span>
-        </span>
-        {host && <Icon name="caret-right" size={18} className="text-muted" />}
-      </button>
+      {adult ? (
+        <div className="bg-surface mx-4 mt-3.5 flex items-center gap-3 rounded-[18px] px-3.5 py-3">
+          <span className="bg-surface-raised text-accent flex size-11 items-center justify-center rounded-[14px]">
+            <Icon name={adult.icon} size={22} />
+          </span>
+          <span className="flex flex-1 flex-col">
+            <span className="text-[16px] font-semibold">{adult.title}</span>
+            <span className="text-muted text-[14px]">{adult.sub}</span>
+          </span>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={host ? onSettings : undefined}
+          disabled={!host}
+          className="bg-surface mx-4 mt-3.5 flex items-center gap-3 rounded-[18px] px-3.5 py-3 text-left"
+        >
+          <span className="bg-surface-raised text-accent flex size-11 items-center justify-center rounded-[14px]">
+            <Icon name={view.mix ? "shuffle" : (GAME_BY_ID[view.gameId ?? ""]?.icon ?? "shuffle")} size={22} />
+          </span>
+          <span className="flex flex-1 flex-col">
+            <span className="text-[16px] font-semibold">{gameLine}</span>
+            <span className="text-muted text-[14px]">{view.difficulty[0].toUpperCase() + view.difficulty.slice(1)}. Host can change.</span>
+          </span>
+          {host && <Icon name="caret-right" size={18} className="text-muted" />}
+        </button>
+      )}
       <div className="mx-4 mt-3">
         <EmoteBar onSend={onEmote} />
       </div>
@@ -640,7 +691,10 @@ export function Podium({
   onRunItBack,
   onNext,
   onLeave,
+  subtitle,
 }: {
+  /** replaces the game line (18+ party games) */
+  subtitle?: string;
   view: MatchView;
   host: boolean;
   final: boolean;
@@ -657,7 +711,9 @@ export function Podium({
     play("cheer");
   }, []);
   const title = top?.id === view.me ? "You take it!" : `${top?.nickname ?? "Someone"} takes it`;
-  const sub = `${view.mix ? "Random mix" : gameName(view.gameId)}, ${final ? `${view.games.length} games` : `game ${view.round} of ${view.games.length}`}, ${standing.length} Spuzlers`;
+  const sub =
+    subtitle ??
+    `${view.mix ? "Random mix" : gameName(view.gameId)}, ${final ? `${view.games.length} games` : `game ${view.round} of ${view.games.length}`}, ${standing.length} Spuzlers`;
   const podium: [MatchPlayerView | undefined, number][] = [
     [standing[1], 1],
     [standing[0], 0],

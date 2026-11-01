@@ -14,8 +14,13 @@ import { normalizeRoomCode } from "@/lib/multiplayer/roomCode";
 import { partyPhase } from "@/lib/multiplayer/race";
 import { gameName, raceGameParam } from "@/lib/multiplayer/games";
 import { partyCopy } from "@/lib/copy/party";
-import type { MatchView } from "@/lib/multiplayer/types";
+import type { MatchPlayerView, MatchView } from "@/lib/multiplayer/types";
+import { useGameSettings } from "@/lib/game-settings/client";
+import { canSeeAdultParty } from "@/lib/party-adult/gate";
+import { isAdultMode, type PartyMode } from "@/lib/party-adult/modes";
+import { adultPartyCopy } from "@/lib/copy/adult-party";
 import { MatchBoard } from "./MatchBoard";
+import { AdultNotice, AdultRound, KickConfirm, PlayersSheet, adultErrorText, adultLobbyLine, modeName } from "./adult-party";
 import {
   DifficultyPicker,
   GamePicker,
@@ -49,6 +54,11 @@ export function PartyHome() {
   const relaxed = useSettings((s) => s.relaxed);
   const [busy, setBusy] = useState(false);
   const { toast, show } = useToast();
+  // Draw It and Two Truths: only for signed-in 18+ players while the admin switch is on (the server checks again).
+  const me = useMe(gate === "ready");
+  const adultOn = useGameSettings()["features.adultParty"];
+  const adult = canSeeAdultParty(me.data, adultOn);
+  const [notice, setNotice] = useState<RoomRequest | null>(null);
   if (gate === "loading") return <LoadingScreen />;
   if (gate === "no_profile") return <NeedProfile />;
   const open = async (r: RoomRequest) => {
@@ -56,9 +66,11 @@ export function PartyHome() {
     try {
       const res = await api<{ code: string }>("/api/v1/rooms", { json: r });
       router.push(`/party/${res.code}${r.classroom ? "?view=tv" : ""}`);
-    } catch {
+    } catch (e) {
       setBusy(false);
-      show(partyCopy.host.failed, "bad");
+      // The one-time "Adults only" notice: confirm, then open the room.
+      if (e instanceof HttpError && e.code === "needs_adult_notice") return setNotice(r);
+      show(isAdultMode(r.mode) ? adultErrorText(e) : partyCopy.host.failed, "bad");
     }
   };
   const join = (raw: string) => {
@@ -84,8 +96,19 @@ export function PartyHome() {
           </>
         }
       >
-        {tab === "host" ? <HostRoom initialGame={initialGame} busy={busy} onOpen={open} /> : <JoinRoom onJoin={join} />}
+        {tab === "host" ? <HostRoom initialGame={initialGame} busy={busy} onOpen={open} adult={adult} /> : <JoinRoom onJoin={join} />}
       </PartyStart>
+      {notice && (
+        <AdultNotice
+          busy={busy}
+          onCancel={() => setNotice(null)}
+          onConfirm={() => {
+            const r = notice;
+            setNotice(null);
+            void open({ ...r, adultNotice: true });
+          }}
+        />
+      )}
     </Screen>
   );
 }
@@ -109,7 +132,16 @@ type Preview =
   | { member: true; view: MatchView }
   | {
       member: false;
-      room: { code: string; status: string; game: string | null; mix: boolean; count: number; max: number; host: string | null };
+      room: {
+        code: string;
+        status: string;
+        game: string | null;
+        mix: boolean;
+        count: number;
+        max: number;
+        host: string | null;
+        mode?: PartyMode;
+      };
     };
 
 export function PartyRoom({ code: raw }: { code: string }) {
@@ -130,6 +162,19 @@ export function PartyRoom({ code: raw }: { code: string }) {
   const matchId = joined ?? (preview.data?.member ? preview.data.view.id : null);
   if (matchId) return <Room id={matchId} code={code} />;
   if (preview.isLoading) return <LoadingScreen />;
+  // An 18+ room this player may not enter: the server said why (403); say it plainly.
+  if (preview.error instanceof HttpError && preview.error.status === 403)
+    return (
+      <Screen label="Room closed to you">
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
+          <Spuz mood="shocked" size={110} />
+          <h1 className="font-display text-[24px] font-black">{adultErrorText(preview.error)}</h1>
+          <Cta onClick={() => router.push("/party")} className="w-full max-w-[358px]">
+            New party
+          </Cta>
+        </div>
+      </Screen>
+    );
   if (preview.error || !preview.data)
     return (
       <Screen label="Room missing">
@@ -153,9 +198,11 @@ export function PartyRoom({ code: raw }: { code: string }) {
         e instanceof HttpError
           ? e.code === "room_full"
             ? "This room is full."
-            : e.message !== e.code
-              ? e.message
-              : "Couldn't join."
+            : adultPartyCopy.errors[e.code]
+              ? adultErrorText(e)
+              : e.message !== e.code
+                ? e.message
+                : "Couldn't join."
           : "Couldn't join.",
       );
     }
@@ -169,8 +216,10 @@ export function PartyRoom({ code: raw }: { code: string }) {
         <Spuz mood="wave" size={130} />
         <h1 className="font-display text-[26px] font-black">{room.host ? `${room.host}'s party` : "Party room"}</h1>
         <p className="text-muted text-[16px]">
-          {room.mix ? "Random mix" : gameName(room.game)}, 3 games. <span className="num">{room.count}</span> of{" "}
-          <span className="num">{room.max}</span> in.
+          {room.mode && isAdultMode(room.mode)
+            ? `${modeName(room.mode)}, ${adultPartyCopy.modes.badge}.`
+            : `${room.mix ? "Random mix" : gameName(room.game)}, 3 games.`}{" "}
+          <span className="num">{room.count}</span> of <span className="num">{room.max}</span> in.
         </p>
         <div className="flex gap-2" aria-label={`Room code ${code}`}>
           {code.split("").map((c, i) => (
@@ -253,6 +302,27 @@ function Room({ id, code }: { id: string; code: string }) {
     await matchAction(id, "leave").catch(() => {});
     router.push("/party");
   };
+
+  // Draw It and Two Truths (18+): their own lobby card, rounds and podium; no TV mode or classroom.
+  if (isAdultMode(view.mode))
+    return (
+      <Screen label={`Party ${view.mode} ${phase}`}>
+        <MpToast toast={toast} />
+        <AdultRoom
+          view={view}
+          code={code}
+          now={now}
+          phase={phase}
+          present={present}
+          emote={emotes.last}
+          onEmote={(e) => emotes.send(e)}
+          act={act}
+          err={err}
+          show={show}
+          onLeave={leave}
+        />
+      </Screen>
+    );
 
   if (tvParam || me.spectator)
     return (
@@ -409,5 +479,103 @@ function TvFrame({ children }: { children: React.ReactNode }) {
     <div className="bg-bg fixed inset-0 flex items-center justify-center overflow-hidden">
       <div style={{ width: 1280, height: 720, transform: `scale(${scale})`, transformOrigin: "center" }}>{children}</div>
     </div>
+  );
+}
+
+function AdultRoom({
+  view,
+  code,
+  now,
+  phase,
+  present,
+  emote,
+  onEmote,
+  act,
+  err,
+  show,
+  onLeave,
+}: {
+  view: MatchView;
+  code: string;
+  now: number;
+  phase: ReturnType<typeof partyPhase>;
+  present: Set<string>;
+  emote: Parameters<typeof Lobby>[0]["emote"];
+  onEmote: Parameters<typeof Lobby>[0]["onEmote"];
+  act: (path: string, json?: unknown) => Promise<unknown>;
+  err: (e: unknown, fallback: string) => void;
+  show: (t: string, k?: "info" | "bad" | "pass") => void;
+  onLeave: () => void;
+}) {
+  const qc = useQueryClient();
+  const [players, setPlayers] = useState(false);
+  const [kick, setKick] = useState<MatchPlayerView | null>(null);
+  const host = view.hostId === view.me;
+  const mode = isAdultMode(view.mode) ? view.mode : "draw";
+  const doKick = async () => {
+    const p = kick;
+    setKick(null);
+    if (!p) return;
+    try {
+      await api(`/api/v1/rooms/${code}/kick`, { json: { playerId: p.id } });
+      show(adultPartyCopy.kick.done(p.nickname), "info");
+      void qc.invalidateQueries({ queryKey: matchKey(view.id) });
+    } catch (e) {
+      show(adultErrorText(e), "bad");
+    }
+  };
+  let body: React.ReactNode;
+  if (phase === "lobby")
+    body = (
+      <Lobby
+        view={view}
+        present={present}
+        emote={emote}
+        onEmote={onEmote}
+        onReady={(r) => act("ready", { ready: r }).catch((e) => err(e, "Couldn't update."))}
+        onStart={() => act("start").catch((e) => err(e, "Can't start yet."))}
+        onLeave={onLeave}
+        onSettings={() => setPlayers(true)}
+        onTv={() => setPlayers(true)}
+        adult={{ ...adultLobbyLine(mode), onPlayers: () => setPlayers(true) }}
+      />
+    );
+  else if (phase === "final")
+    body = (
+      <Podium
+        view={view}
+        host={host}
+        final
+        subtitle={adultPartyCopy.podiumSub(modeName(mode), view.games.length, view.players.filter((p) => !p.spectator && !p.left).length)}
+        onRunItBack={() => act("reset").catch((e) => err(e, "Couldn't reset."))}
+        onNext={() => undefined}
+        onLeave={onLeave}
+      />
+    );
+  else if (phase === "countdown")
+    body = (
+      <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4">
+        <h1 className="font-display text-[26px] font-black">{modeName(mode)}</h1>
+        <CountdownNumber msToStart={(view.roundStartedAt ?? now) - now} />
+      </div>
+    );
+  else if (view.party) body = <AdultRound view={view} code={code} now={now} host={host} onToast={show} onLeave={onLeave} />;
+  else body = <LoadingScreen />;
+  return (
+    <>
+      {body}
+      {players && (
+        <PlayersSheet
+          view={view}
+          host={host}
+          onClose={() => setPlayers(false)}
+          onKick={(p) => {
+            setPlayers(false);
+            setKick(p);
+          }}
+        />
+      )}
+      {kick && <KickConfirm player={kick} onConfirm={doKick} onClose={() => setKick(null)} />}
+    </>
   );
 }
