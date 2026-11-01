@@ -1,5 +1,40 @@
 # Changelog
 
+## 1.2.0 (1 November 2026)
+
+Free play is the only game mode for now, the admin console pages its tables, and ten new games are ready behind a switch.
+
+### For players
+
+- **No Dailies for now.**
+  - Every game opens straight into free play, with endless puzzles.
+  - All Daily screens, links and wording are gone, including the leaderboards and the archive.
+  - Streaks, quests, badges and leagues now count regular clears. Clear one game a day to keep your streak; clear any game in a week to join that week's league.
+- **World pages:** each game is one card, with its Challenge and Play vs bot actions inside it.
+- **Invites:** Leagues uses the same Share sheet as Friends, Party and Crews.
+- **Fixes:**
+  - The Quickfire clock starts when you press Start.
+  - A resumed Quickfire remembers earlier wrong answers.
+  - Buried hints name cells as you see them after Rotate.
+  - Chess vs bot lets you choose the promotion piece, shows coordinates and avoids repetition draws.
+  - Bot games have their own help.
+  - Sheets fade with reduced motion on.
+  - Back buttons stay in the app.
+  - Crownfall X marks and light-theme patterns are readable.
+  - The hint counter only shows in games that have hints.
+
+### For admins
+
+- **Pagination:** every growing admin list pages on the server (10, 25, 50 or 100 rows). The page and page size
+  stay in the URL.
+- **New switches**, all off by default, all checked on the server:
+  - **Dailies** (`features.dailies`)
+  - **New games** (`features.newGames`): Five, Emoji Hits, Higher or Lower, Market Run, Penalty King, Beat Tap,
+    Trotro Jam, Light Up, Killer Sums and Dara (with a full game vs bot)
+  - **Status share cards** (`features.statusCards`)
+  - **Seasonal events** (`features.seasonal`), with an Events page in the console, a Home banner and a bonus quest
+- The Dailies switch is ready if Dailies come back; the calendar and puzzle tools are unchanged.
+
 ## 1.1.0 (1 November 2026)
 
 The frictionless-play pass: faster taps, one consistent game screen, clearer boards and fewer steps.

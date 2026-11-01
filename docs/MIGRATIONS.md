@@ -30,3 +30,15 @@ comment.
 - API: `tests/api/admin.test.ts` covers settings, Library metadata, metrics, role gates and the audit log.
   `tests/api/social.test.ts` covers the starter hat and league placement.
 - Each rollback was run inside a transaction that was then rolled back.
+
+## 1.2.0
+
+All migrations are additive and reversible (rollback SQL in each header). None touches existing player data.
+
+| Migration                                       | What it adds                                                                                                                 | Rollback                                                                                     |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `20261108000001_play_day_streak.sql`            | `record_play_day` (a free-play clear extends the streak, once per GMT day) and `played_this_week` (leagues accept any clear) | Re-run the two league functions from `20261106100002`, then drop the new functions           |
+| `20261109100001` to `20261109500002` (`_lab_*`) | One `games` row per new game, status `coming_soon`                                                                           | `delete from public.games where id = '<id>'` (no attempts can exist while the switch is off) |
+| `20261109600001_seasonal_events.sql`            | `events` and `event_progress` (forced RLS), plus the progress function                                                       | Drop the function and both tables (see header)                                               |
+
+The seed also rewords the badges and quests that mentioned Dailies, and adds the lab game rows. `scripts/gen-seed.ts` now writes them as well.

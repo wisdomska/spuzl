@@ -65,3 +65,27 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 - **Worktrees:** Turbopack doesn't follow a `node_modules` symlink outside the project; use
   `pnpm install --offline`.
 - **Periodic Background Sync:** the Daily pack's background sync only runs in installed Chrome-based apps.
+
+## From 1.2.0
+
+- **Dailies off:**
+  - World ranks (ratings) only move on Daily clears, so they stay put while Dailies are off.
+  - Ghost Race still uses the day's puzzle for Rage Ridge.
+  - Free play keeps its 300 XP-a-day cap; the admin may want new settings for free-play XP and Sparks now that
+    it's the only solo mode.
+- **Party games:** Draw It and Two Truths were not built. They need free text or drawings between players,
+  which conflicts with the no-free-text rule for young players. They need a decision and moderation design first.
+- **Five and Emoji Hits:** the "show the answer" request is stateless. It can reveal an answer but can't change a
+  score. It should read the attempt's saved state before answering.
+- **Emoji Hits:** the artist and year hints need a fact-check before the switch goes on. Both content files are
+  marked `needsReview`.
+- **Admin content tools:** the new content games aren't in the admin content review or solve-check tools yet.
+- **Expert and mega Killer Sums** can need a guess; the hint engine would need the "45 rule".
+- **Trotro Jam:** hard boards can take 3 to 7 s to generate on the server.
+- **Small cells on phones:** Light Up 10 × 10 cells are about 30 px.
+- **Five:** needs a little vertical scroll at 375 × 812.
+- **Penalty King:** keeper dives ship in the puzzle data, so a modified client could read them; there is also no
+  timing-spread bot check.
+- **Seasonal event quests** live outside the admin quest catalogue.
+- **Status card links** are signed with the service-role key unless `SHARE_CARD_SECRET` is set.
+- **Admin list filters** are kept in the page, not the URL; links keep the page number but not the filters.

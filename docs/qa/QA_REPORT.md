@@ -123,3 +123,39 @@ Settings. Flow shots (`library-*`, `home-*`, `onboarding-*`, `guided-*`, `free-r
   realtime specs, not with 8 live browser contexts.
 - **Production numbers** will be higher than these local ones: real DNS and TLS, Vercel cold starts, and
   Supabase in eu-west-2.
+
+## 1.2.0 integration pass (Dailies off, admin pagination, Phase 5 behind switches)
+
+Run on 1 November 2026 against a production build (`pnpm build`, then `pnpm start` with
+`SETTINGS_CACHE_MS=0` so tests can flip settings) and the local Supabase stack. Dailies were off unless a test
+switched them on and back.
+
+| Suite                                                                                                                                                                                            | Result      |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- |
+| Typecheck, lint (0 warnings), Prettier                                                                                                                                                           | Pass        |
+| Unit (`pnpm test`)                                                                                                                                                                               | 1,128 pass  |
+| API integration (`vitest.api.config.mts`): daily loop, Dailies off, Duel, Party, social, admin role gates for every route, pagination, settings, Library metadata, metrics, events, status cards | 95 pass     |
+| Database (pgTAP, `supabase test db`)                                                                                                                                                             | 128 pass    |
+| E2E on the production build, 375 and 1280 (`tests/e2e`)                                                                                                                                          | All pass    |
+| Shell contract (61 games: the 51 live and the 10 lab games)                                                                                                                                      | 122 pass    |
+| Realtime with several browser contexts: two-device Duel best of 3 and leave-mid-match, 8-player Party race with the host leaving, live Board Bay chess                                           | 4 pass      |
+| Lab games, switch on then off, repeated 3 times at both viewports                                                                                                                                | 6 of 6 pass |
+
+The E2E suite includes:
+
+- **The full player journey (`journey.spec.ts`).** It goes through first run, the lesson, Home, tips, the guided
+  first play, the Library, a real clear, World, Quests, Leagues, Shop, Me, the Friends share sheet, Daily-only
+  pages redirecting, Settings, Duel vs the Practice bot and a Party room. It checks every screen for any
+  "Daily" wording.
+- **The axe scan:** zero serious or critical issues on 14 screens.
+
+Fixed during this pass:
+
+- The API test setup left Dailies switched on; it now restores the previous value.
+- The league pgTAP check depended on other test data.
+- The Duel realtime spec used the old entry sheet and round copy.
+- The admin and flow tests hard-coded port 3000.
+- Lab game rows were set to `coming_soon` so nightly jobs ignore them.
+
+Not covered: Safari, Firefox and real devices (only Chromium is installed here), and live play of the new games
+by real players while the switch is off in production.
