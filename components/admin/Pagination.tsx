@@ -4,11 +4,11 @@ import { useCallback, useEffect, useId, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Icon } from "@/components/ui/Icon";
 import {
-  PAGE_SIZES,
+  PAGE_SIZE_CHOICES,
   isPageSize,
   pageCount,
+  pageItems,
   pageQueryString,
-  pageWindow,
   readPageParams,
   shownRange,
   withPageParams,
@@ -58,9 +58,10 @@ export function usePager(): Pager {
 }
 
 /**
- * Accessible pagination bar for admin tables: "Showing 26–50 of 312", Previous and Next, up to five page
- * buttons, a page jump for long lists and a rows-per-page select. 44 px targets, real buttons, disabled ends.
- * Steps back to the last page by itself when the current one no longer exists (rows resolved or deleted).
+ * Accessible pagination bar for admin tables: "Showing 26–50 of 312", rows per page (25, 50 or 100), First,
+ * Previous, numbered pages with gaps (always the first and last), Next, Last and a jump-to-page field. 44 px
+ * targets, real buttons, disabled ends. Steps back to the last page by itself when the current one no longer
+ * exists (rows resolved or deleted).
  */
 export function Pagination({ pager, total, label = C.label }: { pager: Pager; total: number; label?: string }) {
   const { page, pageSize, setPage, setPageSize } = pager;
@@ -73,56 +74,79 @@ export function Pagination({ pager, total, label = C.label }: { pager: Pager; to
   }, [total, page, pages, setPage]);
 
   if (total <= 0) return null;
-  const nums = pageWindow(Math.min(page, pages), pages, 5);
+  const current = Math.min(page, pages);
+  const items = pageItems(current, pages);
+  const sizes: number[] = (PAGE_SIZE_CHOICES as readonly number[]).includes(pageSize)
+    ? [...PAGE_SIZE_CHOICES]
+    : [pageSize, ...PAGE_SIZE_CHOICES];
+  const fmt = (n: number) => n.toLocaleString("en-US");
   return (
     <nav aria-label={label} className="flex flex-wrap items-center gap-x-3 gap-y-2">
       <p className="num text-muted text-[13px] font-medium" aria-live="polite" aria-atomic="true">
-        {C.showing(first.toLocaleString("en-US"), last.toLocaleString("en-US"), total.toLocaleString("en-US"))}
+        {C.showing(fmt(first), fmt(last), fmt(total))}
       </p>
-      <div className="ml-auto flex flex-wrap items-center gap-2">
-        <label htmlFor={`${id}-size`} className="text-muted flex items-center gap-2 text-[13px] font-semibold">
-          {C.rows}
-          <select
-            id={`${id}-size`}
-            value={pageSize}
-            onChange={(e) => {
-              const n = Number(e.target.value);
-              if (isPageSize(n)) setPageSize(n);
-            }}
-            className={`${inputCls} num h-11 w-20`}
-          >
-            {PAGE_SIZES.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </label>
+      <label htmlFor={`${id}-size`} className="text-muted flex items-center gap-2 text-[13px] font-semibold">
+        {C.rows}
+        <select
+          id={`${id}-size`}
+          value={pageSize}
+          onChange={(e) => {
+            const n = Number(e.target.value);
+            if (isPageSize(n)) setPageSize(n);
+          }}
+          className={`${inputCls} num h-11 w-20`}
+        >
+          {sizes.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </select>
+      </label>
+      <div className="ml-auto flex flex-wrap items-center gap-1.5">
+        <Btn size="lg" disabled={page <= 1} onClick={() => setPage(1)} aria-label={C.firstAria} className="max-md:hidden">
+          {C.first}
+        </Btn>
         <Btn size="lg" icon="caret-left" disabled={page <= 1} onClick={() => setPage(page - 1)} aria-label={C.previousAria}>
           <span className="max-sm:sr-only">{C.previous}</span>
         </Btn>
         <ul className="flex items-center gap-1">
-          {nums.map((n) => (
-            <li key={n}>
-              <button
-                type="button"
-                aria-label={C.pageAria(n)}
-                aria-current={n === page ? "page" : undefined}
-                onClick={() => setPage(n)}
-                className={`num inline-flex h-11 min-w-11 items-center justify-center rounded-[12px] px-2 text-[14px] font-semibold ${
-                  n === page ? "bg-accent text-on-accent" : "text-muted hover:bg-surface-raised hover:text-text"
-                }`}
-              >
-                {n}
-              </button>
-            </li>
-          ))}
+          {items.map((n, i) =>
+            n === "gap" ? (
+              <li key={`gap-${i}`} aria-hidden className="num text-muted flex h-11 w-6 items-center justify-center text-[14px]">
+                …
+              </li>
+            ) : (
+              <li key={n}>
+                <button
+                  type="button"
+                  aria-label={C.pageAria(n)}
+                  aria-current={n === current ? "page" : undefined}
+                  onClick={() => setPage(n)}
+                  className={`num inline-flex h-11 min-w-11 items-center justify-center rounded-[12px] px-2 text-[14px] font-semibold ${
+                    n === current ? "bg-accent text-on-accent" : "text-muted hover:bg-surface-raised hover:text-text"
+                  }`}
+                >
+                  {fmt(n)}
+                </button>
+              </li>
+            ),
+          )}
         </ul>
         <Btn size="lg" disabled={page >= pages} onClick={() => setPage(page + 1)} aria-label={C.nextAria}>
           <span className="max-sm:sr-only">{C.next}</span>
           <Icon name="caret-right" size={16} />
         </Btn>
-        {pages > 5 && <PageJump key={page} page={page} pages={pages} onGo={setPage} id={`${id}-jump`} />}
+        <Btn
+          size="lg"
+          disabled={page >= pages}
+          onClick={() => setPage(pages)}
+          aria-label={C.lastAria(fmt(pages))}
+          className="max-md:hidden"
+        >
+          {C.last}
+        </Btn>
+        {pages > 1 && <PageJump key={current} page={current} pages={pages} onGo={setPage} id={`${id}-jump`} />}
       </div>
     </nav>
   );
@@ -134,6 +158,7 @@ function PageJump({ page, pages, onGo, id }: { page: number; pages: number; onGo
   const valid = Number.isInteger(n) && n >= 1 && n <= pages;
   return (
     <form
+      aria-label={C.jumpAria}
       className="flex items-center gap-2"
       onSubmit={(e) => {
         e.preventDefault();

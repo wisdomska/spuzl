@@ -27,9 +27,22 @@ export const adminCopy = {
     next: "Next",
     nextAria: "Next page",
     pageAria: (n: number) => `Page ${n}`,
+    first: "First",
+    firstAria: "First page",
+    last: "Last",
+    lastAria: (n: string) => `Last page, ${n}`,
+    gap: "More pages",
     page: "Page",
+    jumpAria: "Jump to page",
     of: (pages: string) => `of ${pages}`,
     go: "Go",
+    noRows: "No rows",
+  },
+
+  /** Sortable column headers. */
+  sort: {
+    /** Screen-reader hint on a header button: what pressing it does next. */
+    by: (column: string, next: "ascending" | "descending") => `Sort by ${column}, ${next}`,
   },
 
   puzzles: {

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { readFilters, withFilterParams, type FilterAllowed, type FilterDefaults } from "@/lib/admin/url-filters";
+import { readSortParams, sortQueryString, toggleSort, withSortParams, type SortSpec, type SortState } from "@/lib/admin/sorting";
 
 export type SetFilters<K extends string> = (patch: Partial<Record<K, string | null>>, opts?: { replace?: boolean }) => void;
 
@@ -55,4 +56,31 @@ export function useDebouncedFilter(value: string, write: (v: string) => void, de
     [write, delay],
   );
   return [draft, change];
+}
+
+export interface UrlSort<K extends string> extends SortState<K> {
+  /** `sort=&dir=` for the API call. */
+  query: string;
+  /** A header was pressed: same column flips, a new column starts in its first direction. Back undoes it. */
+  toggle: (key: K) => void;
+}
+
+/**
+ * The sort of an admin list, kept in the address bar (`?sort=&dir=`) next to the filters and page. The default
+ * sort keeps a clean URL; any change goes back to page 1. Pass `spec` as a module-level constant.
+ */
+export function useUrlSort<K extends string>(spec: SortSpec<K>): UrlSort<K> {
+  const sp = useSearchParams();
+  const state = readSortParams(sp, spec);
+  const specRef = useRef(spec);
+  useEffect(() => {
+    specRef.current = spec;
+  });
+  // Reads the address bar at press time, so the callback never goes stale and needs no dependencies.
+  const toggle = useCallback((key: K) => {
+    const s = specRef.current;
+    const next = toggleSort(readSortParams(new URLSearchParams(window.location.search), s), key, s);
+    window.history.pushState(null, "", `${window.location.pathname}${withSortParams(window.location.search, next, s)}`);
+  }, []);
+  return { ...state, query: sortQueryString(state), toggle };
 }
