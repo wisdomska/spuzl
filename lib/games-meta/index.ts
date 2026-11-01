@@ -62,6 +62,7 @@ export const TYPICAL_SEC: Record<string, number> = {
   remix: 90,
   rungs: 180,
   seven: 180,
+  penalty: 60,
 };
 
 /** Games with a clock pushing you (reaction, action, countdowns) are never "calm". */

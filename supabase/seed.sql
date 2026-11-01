@@ -64,6 +64,10 @@ insert into public.games (id, world_id, name, phase, engine, scoring, is_unique,
   ('fourup', 'board', 'Four Up', 'M2', 'board', 'time', true, 1500, 49),
   ('flip', 'board', 'Flip', 'M3+', 'board', 'time', false, 1500, 50)
 on conflict (id) do update set world_id = excluded.world_id, name = excluded.name, phase = excluded.phase, engine = excluded.engine, scoring = excluded.scoring, is_unique = excluded.is_unique, min_time_ms = excluded.min_time_ms, sort = excluded.sort;
+-- Phase 5 lab game (lib/catalog.ts LAB_GAMES; hidden while features.newGames is off): migration 20261109300001
+insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
+  ('penalty', 'reflex', 'Penalty King', 'live', 'M3+', 'custom', 'score', false, 0, 51)
+on conflict (id) do nothing;
 insert into public.badges (id, family, tier, name, description, secret, sparks, rule, sort) values
   ('first-clear', 'starter', 'bronze', 'First Clear', 'Clear your first puzzle.', false, 10, '{"kind":"clears","n":1,"icon":"seal-check"}'::jsonb, 0),
   ('explorer-logic', 'explorer', 'gold', 'Logic Lab Explorer', 'Clear every game in Logic Lab.', false, 50, '{"kind":"world_all","world":"logic","icon":"flask"}'::jsonb, 1),

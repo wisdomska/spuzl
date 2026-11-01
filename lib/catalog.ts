@@ -592,7 +592,19 @@ export const GAMES: GameMeta[] = [
  * live games; screens add them with `labGamesInWorld` / `LAB_GAMES` only when "features.newGames" is on, and the
  * server refuses them while it is off. Add new games at the END of this list (one block per game).
  */
-export const LAB_GAMES: GameMeta[] = [];
+export const LAB_GAMES: GameMeta[] = [
+  g(
+    "penalty",
+    "Penalty King",
+    "reflex",
+    "soccer-ball",
+    "M3+",
+    "custom",
+    "Five kicks to beat the keeper",
+    "Tap to set your aim, tap again to set your power. Five kicks: most goals wins, then accuracy.",
+    { scoring: "score", minTimeMs: 0, lab: true },
+  ),
+];
 
 export const GAME_BY_ID: Record<string, GameMeta> = Object.fromEntries([...GAMES, ...LAB_GAMES].map((x) => [x.id, x]));
 export const labGamesInWorld = (w: WorldId) => LAB_GAMES.filter((x) => x.world === w);
