@@ -9,8 +9,10 @@ import logic, {
   hint,
   nextDeduction,
   progress,
+  rule45,
   SIZE_FOR,
   solve,
+  solvesByLogic,
   verify,
   type KillerPuzzle,
 } from "./logic";
@@ -51,6 +53,8 @@ describe("killer sums", () => {
         expect(seen.size).toBe(n);
         expect(countSolutions(p, 2)).toBe(1);
         expect(solve(p)).toEqual(g.solution);
+        // Every level falls to the hint engine (the 45 rule included) with no guessing.
+        expect(solvesByLogic(p)).toBe(true);
         // Givens are part of the answer and few.
         p.givens.forEach((v, x) => v && expect(v).toBe(g.solution[x]));
         expect(p.givens.filter(Boolean).length).toBeLessThanOrEqual(p.size === 9 ? 8 : 4);
@@ -85,6 +89,41 @@ describe("killer sums", () => {
         expect(g.puzzle.givens[h.target as number]).toBe(0);
       }
   }, 60000);
+
+  it("expert and mega: 20 seeds each fill to the answer step by step, every step safe, some by the 45 rule", () => {
+    const reasons = new Set<string>();
+    for (const d of ["expert", "mega"] as Difficulty[])
+      for (let i = 0; i < 20; i++) {
+        const g = generate(createRng(`hint45:${d}:${i}`), d);
+        const values = g.puzzle.givens.slice();
+        for (;;) {
+          const s = nextDeduction(g.puzzle, values);
+          if (!s) break;
+          expect(values[s.cell]).toBe(0);
+          expect(s.value).toBe(g.solution[s.cell]);
+          if (s.why.startsWith("The digits in ")) reasons.add(s.why);
+          values[s.cell] = s.value;
+        }
+        expect(values).toEqual(g.solution);
+      }
+    expect(reasons.size).toBeGreaterThan(0);
+  }, 120000);
+
+  it("the 45 rule finds innies and outies", () => {
+    // 6 x 6: row 1 is 1 2 4 3 5 6 (adds to 21). Cages 0-1 (3) and 2-3-4 (12) sit inside it; cage 5-11 (6 + 4)
+    // crosses into row 2, so cell 5 is an innie of 21 - 15 = 6 and cell 11 an outie of 10 - 6 = 4.
+    const cages = [
+      { cells: [0, 1], sum: 3 },
+      { cells: [2, 3, 4], sum: 12 },
+      { cells: [5, 11], sum: 10 },
+    ];
+    for (let x = 6; x < 36; x++) if (x !== 11) cages.push({ cells: [x], sum: 1 });
+    const p: KillerPuzzle = { size: 6, boxW: 3, boxH: 2, givens: new Array(36).fill(0), cages };
+    expect(rule45(p).filter((r) => r.where === "row 1")).toEqual([
+      { cells: [5], sum: 6, where: "row 1", total: 21, side: "in" },
+      { cells: [11], sum: 4, where: "row 1", total: 21, side: "out" },
+    ]);
+  });
 
   it("a hint flags a wrong digit first and is null when solved", () => {
     const g = generate(createRng("wrong"), "easy");

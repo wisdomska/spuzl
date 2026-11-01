@@ -12,8 +12,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   - A run resumed from autosave forgets earlier wrong answers.
 - **Dusk:**
   - Swipe up and down is not done; it would block page scroll when a finger starts on the board.
-- **Four Up:** at 320 px each column is about 39 px wide. The columns are full height, so the target area is
-  still large.
 - **Crownfall:**
   - The X mark is a fixed grey; its contrast on the new palette wasn't checked.
   - White pattern textures are faint on the light-theme colours.
@@ -31,28 +29,24 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 
 ## Layout and motion
 
-- Rage Ridge at 320 × 568: the 60% canvas pushes the on-screen controls below the fold.
-- Nine on a 375 × 667 phone with the 3 × 3 pad needs a little vertical scroll.
+- Nine on a 375 × 667 phone: the board and the 3 × 3 pad fit (cells step down to 35 px), but the shell's tool bar
+  (Undo, Erase, Notes, Hint) is still below the fold. Fitting it too needs a smaller shell header or a 1 × 9 pad.
+- Five and Nine still scroll a little at 320 × 568.
+- Light Up 10 × 10 cells are 36 px at 375 wide (30 px at 320). 44 px would need a smaller hard board or zoom.
 - Party (`components/multiplayer/party.tsx`) still has raw hex colours (QR, podium, confetti, Open label).
 
 ## Accounts and email
 
-- **Custom SMTP:** hosted email codes need custom SMTP (for example Resend) set up in the Supabase dashboard.
-  - Until then the built-in mailer allows 2 emails an hour and sends the magic link, which also signs in.
-  - The hosted "Change email address" template also needs `{{ .Token }}` for the guest "Save your streak" code.
+- **Email:** production sends codes through Brevo SMTP with the SPUZL code templates. The preview project has
+  no custom SMTP, so it still uses the built-in mailer (2 emails an hour, magic-link templates).
+- **Google sign-in** is live on production. Google's brand verification needs the Search Console ownership tag
+  (`GOOGLE_SITE_VERIFICATION` in Vercel), then a re-request from the Google Auth Platform Branding page.
 - The work-email owner admin account still exists alongside wisdomska@gmail.com.
 
 ## Leagues and metrics
 
 - `leagues.minGroup` applies only when a player joins mid-week; the weekly rollover doesn't top up small tiers.
 - `/leagues/current` makes one extra database call for players already placed.
-- **Hint confirm cancels:** these feed the accidental-hint metric, but the confirm only shows on the first hint
-  per game per device, so they undercount.
-- **Onboarding completion:** this uses "started a real game" as a stand-in for "reached Home". A first-party
-  `onboarding_step` event would make it exact.
-- **Tap stamp:** any button press sets the tap stamp; a `data-play-nav` attribute on Play buttons would make
-  tap-to-board exact.
-- Admin page strings are inline, as in the other admin components, not in `lib/copy`.
 
 ## Tooling
 
@@ -66,25 +60,14 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   - Ghost Race still uses the day's puzzle for Rage Ridge.
 - **Party games:** Draw It and Two Truths were not built. They need free text or drawings between players,
   which conflicts with the no-free-text rule for young players. They need a decision and moderation design first.
-- ~~**Five and Emoji Hits:** the "show the answer" request is stateless.~~ Done: it answers only for the player's
-  own open attempt (or the public practice board), reads the attempt's server move log (`attempts.moves`), and
-  records the shown answer there; finish fails a clear whose answer was shown (`GameLogic.audit`).
-- **Emoji Hits:** the artist and year hints need a fact-check before the switch goes on. Both content files are
-  marked `needsReview`.
-- ~~**Admin content tools:** the new content games aren't in the admin content review or solve-check tools yet.~~
-  Done: Five and Emoji Hits (the only lab games with content files) are in the content review (needsReview
-  entries, editor schemas and templates, as pool games, not schedulable one by one) and the solve-check
-  (solved states). The admin preview now checks guesses against the stored puzzle
-  (`/api/admin/puzzles/:id/guess`). Still open: Penalty King, Beat Tap, Higher or Lower, Light Up, Killer Sums
-  and Dara have no solved-state shape, so their solve-check asks for a Play test.
-- **Expert and mega Killer Sums** can need a guess; the hint engine would need the "45 rule".
-- **Trotro Jam:** hard boards can take 3 to 7 s to generate on the server.
-- **Small cells on phones:** Light Up 10 × 10 cells are about 30 px.
-- **Five:** needs a little vertical scroll at 375 × 812.
-- ~~**Penalty King:** keeper dives ship in the puzzle data; no timing-spread bot check.~~ Done: dives live in the
-  solution; each shot goes through the guess transport, is kept on the attempt, and only then gets its dive
-  (finish audits the state against those shots). Taps that hit the sweet spots with a spread under 4 ms are
-  flagged (`GameLogic.suspect`). The puzzle shape changed (`ref`, no `dive`), so penalty puzzles stored before
-  this would need regenerating (none are scheduled: lab games have no Dailies).
-- **Seasonal event quests** live outside the admin quest catalogue.
-- **Admin list filters** are kept in the page, not the URL; links keep the page number but not the filters.
+- **Solve-check gaps:** Penalty King, Beat Tap, Higher or Lower, Light Up, Killer Sums and Dara have no
+  solved-state shape, so the admin solve-check asks for a Play test.
+- **Trotro Jam** lots grow from a bank of 96 deep starting lots, so their shapes can repeat; about 7% of medium
+  boards have one vehicle more than the level's range.
+- **API coverage:** `tests/api/flow.test.ts` has no attempt-level cases yet for Five and Emoji Hits reveals or
+  Penalty King shots (unit tests cover the checks).
+- **Free-play seed:** now that free play moves world ranks (at half weight), a server-only seed would stop a
+  modified client from solving boards faster.
+- **Admin copy:** the content editor, moderation case panels and the remaining admin pages still have inline
+  strings (`lib/copy/admin.ts` covers the lists).
+- **Five content** is still marked `needsReview` for the owner.

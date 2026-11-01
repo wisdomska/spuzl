@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from "react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
-import { fitCell, useViewportWidth } from "@/components/game/useBoardSize";
+import { fitCell, useFitHeight, useViewportWidth } from "@/components/game/useBoardSize";
 import { useGridKeys } from "@/components/game/useGridKeys";
 import { play } from "@/lib/audio";
 import { popClass, shakeClass, waveStyle } from "@/games/_shared/logiclab/fx";
@@ -21,12 +21,16 @@ const gapFor = (size: number) => (size > 6 ? 1 : 2);
 
 /**
  * Cell size: Sixer keeps 44 px or more everywhere. Nine keeps 40 px from 375 px wide up (using the
- * shell's board padding when it has to) and only goes smaller on narrower phones (34 px at 320).
+ * shell's board padding when it has to) and only goes smaller on narrower phones (34 px at 320). On a
+ * short screen the cells also step down (to 30 px on Nine) until the number pad (`pad`) sits above the
+ * fold: 35 px on a 375 × 667 phone.
  */
-function useSudokuCell(size: number, boxW: number) {
+function useSudokuCell(size: number, boxW: number, pad: RefObject<HTMLElement | null>) {
   const vw = useViewportWidth();
   const overhead = gapTotal(size, boxW, gapFor(size), LINE) + PAD * 2;
-  return fitCell(vw, size, overhead, size > 6 ? 40 : 44, 56);
+  const wide = fitCell(vw, size, overhead, size > 6 ? 40 : 44, 56);
+  // The pad's bottom plus the board slot's own padding has to fit.
+  return useFitHeight(wide, size > 6 ? 30 : 44, size, pad, 18);
 }
 
 /** Killer Sums cage outline: dotted, inset this many px inside the cells, in a muted ink. */
@@ -70,7 +74,8 @@ export function SudokuBoard({
   const stRef = useRef(st);
   // The shell shows one feedback line; only replace it when the text or tone actually changes.
   const shown = useRef("");
-  const cell = useSudokuCell(n, puzzle.boxW);
+  const padRef = useRef<HTMLDivElement>(null);
+  const cell = useSudokuCell(n, puzzle.boxW, padRef);
   const a = analyze(puzzle, st.values);
   const given = (i: number) => puzzle.givens[i] !== 0;
   const locked = disabled || done;
@@ -309,7 +314,7 @@ export function SudokuBoard({
     : [];
 
   return (
-    <div className={`flex flex-col items-center gap-3 ${done ? "board-pulse" : ""}`}>
+    <div className={`flex flex-col items-center ${n > 6 ? "gap-2" : "gap-3"} ${done ? "board-pulse" : ""}`}>
       <div
         role="grid"
         aria-label={t.grid(title, n)}
@@ -460,6 +465,7 @@ export function SudokuBoard({
 
       {/* Number pad */}
       <div
+        ref={padRef}
         className={`grid gap-2 ${padGrid}`}
         style={{ width, gridTemplateColumns: padGrid ? undefined : `repeat(${n}, minmax(0, 1fr))` }}
         role="group"
@@ -476,7 +482,7 @@ export function SudokuBoard({
               type="button"
               disabled={locked || full}
               onClick={() => enter(d)}
-              className={`toy num relative flex h-12 items-center justify-center rounded-[14px] text-[22px] font-semibold ${notesMode ? "text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]" : ""}`}
+              className={`toy num relative flex ${n > 6 ? "h-11" : "h-12"} items-center justify-center rounded-[14px] text-[22px] font-semibold ${notesMode ? "text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]" : ""}`}
               style={{
                 background: "var(--surface-raised)",
                 ["--btn-depth" as string]: "var(--depth)",
