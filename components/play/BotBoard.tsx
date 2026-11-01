@@ -210,6 +210,7 @@ export default function BotBoard({ puzzle, disabled, api, extra }: BoardProps<Bo
           lastMove={last}
           onMove={move}
           announce={api.announce}
+          coords
         />
       ) : (
         <p className="text-muted py-10 text-[15px]" role="status">

@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { Icon } from "@/components/ui/Icon";
+import { boardGames } from "@/lib/copy/board-games";
 import { useCellSize } from "@/components/game/useBoardSize";
 import { BayStyles, BEVEL, SQUARE } from "@/games/_shared/BayStyles";
 import { parseFen, toRows, inCheck, kingSquare } from "@/games/chess/engine";
@@ -33,6 +34,8 @@ export interface LiveBoardProps {
   lastMove: unknown;
   onMove: (m: unknown) => void;
   announce: (t: string) => void;
+  /** chess: show file and rank labels on the edge squares (vs bot) */
+  coords?: boolean;
 }
 
 export function LiveBoard(p: LiveBoardProps) {
@@ -68,11 +71,22 @@ function Grid8({ flipped, cell, render, label }: { flipped: boolean; cell: numbe
 
 /* ---------------- Chess (B3) ---------------- */
 
-function ChessLive({ state, seat, legal, disabled, lastMove, onMove, announce }: LiveBoardProps) {
+const PROMOS = ["q", "r", "b", "n"] as const;
+/** Board coordinates: 12 px in the square ink (6:1 or better on every square colour), above the pieces. */
+const COORD = "num pointer-events-none absolute z-[3] text-[12px] leading-[16px] font-bold text-[var(--square-ink)]";
+/** A soft ring in the square's own colour keeps a coordinate readable where a dark piece stands behind it. */
+const halo = (bg: string) => `0 0 2px ${bg}, 0 0 2px ${bg}`;
+const tc = boardGames.chess;
+
+function ChessLive({ state, seat, legal, disabled, lastMove, onMove, announce, coords }: LiveBoardProps) {
   const s = state as ChessMatch;
   const cell = useCellSize(8, 0, 10, 48);
   const sprites = useSprites();
   const [sel, setSel] = useState<string | null>(null);
+  /** a pawn move to the last rank waiting for the player's choice of piece (uci from+to), for this position only */
+  const [pending, setPromo] = useState<{ fen: string; move: string } | null>(null);
+  const promo = pending?.fen === s.fen ? pending.move : null;
+  const flipped = seat === 1;
   const pos = useMemo(() => parseFen(s.fen), [s.fen]);
   const rows = toRows(pos.b);
   const moves = legal as string[];
@@ -82,9 +96,21 @@ function ChessLive({ state, seat, legal, disabled, lastMove, onMove, announce }:
   const tap = (sq: number) => {
     if (disabled) return;
     const name = sqName(sq);
+    if (promo) {
+      // Tapping the board instead of a piece puts the pawn back.
+      setPromo(null);
+      setSel(null);
+      announce(tc.promotionCancelled);
+      return;
+    }
     if (sel && targets.includes(name)) {
       const options = moves.filter((m) => m.startsWith(sel + name));
-      onMove(options.find((m) => m.endsWith("q")) ?? options[0]);
+      if (options.length > 1) {
+        setPromo({ fen: s.fen, move: sel + name });
+        announce(tc.choosePromotion);
+        return;
+      }
+      onMove(options[0]);
       setSel(null);
       return;
     }
@@ -94,55 +120,96 @@ function ChessLive({ state, seat, legal, disabled, lastMove, onMove, announce }:
       announce(`${CH_N[ch.toUpperCase()]} ${name} picked up`);
     } else setSel(null);
   };
+  const promote = (p: (typeof PROMOS)[number]) => {
+    const m = promo && moves.find((x) => x === promo + p);
+    if (!m) return;
+    setPromo(null);
+    setSel(null);
+    announce(tc.promoted(CH_N[p.toUpperCase()]));
+    onMove(m);
+  };
   return (
-    <Grid8
-      flipped={seat === 1}
-      cell={cell}
-      label="Chess board, live"
-      render={(sq) => {
-        const r = sq >> 3,
-          c = sq & 7;
-        const ch = rows[r][c];
-        const name = sqName(sq);
-        const light = (r + c) % 2 === 0;
-        const isLast = last.includes(name);
-        const target = targets.includes(name);
-        const bg =
-          sel === name
-            ? "var(--w-board)"
-            : checkSq === name
-              ? "#FF5A5F"
-              : isLast
-                ? light
-                  ? SQUARE.lastLight
-                  : SQUARE.lastDark
-                : light
-                  ? SQUARE.light
-                  : SQUARE.dark;
-        return (
-          <button
-            key={sq}
-            type="button"
-            role="gridcell"
-            aria-label={`${name}${ch !== "." ? `, ${ch === ch.toUpperCase() ? "white" : "black"} ${CH_N[ch.toUpperCase()]}` : ""}${target ? ", legal move" : ""}`}
-            onClick={() => tap(sq)}
-            className="relative flex items-center justify-center"
-            style={{ background: bg, boxShadow: BEVEL }}
-          >
-            {ch !== "." && <Piece ch={ch} size={cell} sprites={sprites} lift={sel === name} />}
-            {target && (
-              <span
-                className={
-                  ch === "."
-                    ? "bay-dot absolute z-[2] size-3 rounded-full bg-[rgba(14,15,26,.45)]"
-                    : "absolute inset-[6%] z-[2] rounded-full shadow-[inset_0_0_0_3px_rgba(14,15,26,.55)]"
-                }
-              />
-            )}
-          </button>
-        );
-      }}
-    />
+    <div className="flex flex-col items-center gap-3">
+      <Grid8
+        flipped={flipped}
+        cell={cell}
+        label="Chess board, live"
+        render={(sq) => {
+          const r = sq >> 3,
+            c = sq & 7;
+          // where the square sits on screen (seat 1 sees the board turned round)
+          const vr = flipped ? 7 - r : r,
+            vc = flipped ? 7 - c : c;
+          const ch = rows[r][c];
+          const name = sqName(sq);
+          const light = (r + c) % 2 === 0;
+          const isLast = last.includes(name);
+          const target = targets.includes(name);
+          const bg =
+            sel === name
+              ? "var(--w-board)"
+              : checkSq === name
+                ? "#FF5A5F"
+                : isLast
+                  ? light
+                    ? SQUARE.lastLight
+                    : SQUARE.lastDark
+                  : light
+                    ? SQUARE.light
+                    : SQUARE.dark;
+          return (
+            <button
+              key={sq}
+              type="button"
+              role="gridcell"
+              aria-label={`${name}${ch !== "." ? `, ${ch === ch.toUpperCase() ? "white" : "black"} ${CH_N[ch.toUpperCase()]}` : ""}${target ? ", legal move" : ""}`}
+              onClick={() => tap(sq)}
+              className="relative flex items-center justify-center"
+              style={{ background: bg, boxShadow: BEVEL }}
+            >
+              {ch !== "." && <Piece ch={ch} size={cell} sprites={sprites} lift={sel === name} />}
+              {coords && vc === 0 && (
+                <span aria-hidden className={`${COORD} top-0 left-1`} style={{ textShadow: halo(bg) }}>
+                  {8 - r}
+                </span>
+              )}
+              {coords && vr === 7 && (
+                <span aria-hidden className={`${COORD} right-1 bottom-0`} style={{ textShadow: halo(bg) }}>
+                  {FILES[c]}
+                </span>
+              )}
+              {target && (
+                <span
+                  className={
+                    ch === "."
+                      ? "bay-dot absolute z-[2] size-3 rounded-full bg-[rgba(14,15,26,.45)]"
+                      : "absolute inset-[6%] z-[2] rounded-full shadow-[inset_0_0_0_3px_rgba(14,15,26,.55)]"
+                  }
+                />
+              )}
+            </button>
+          );
+        }}
+      />
+      {promo && (
+        <div className="flex gap-2" role="group" aria-label={tc.promoteGroup}>
+          {PROMOS.map((p) => (
+            <button
+              key={p}
+              type="button"
+              aria-label={tc.promoteTo(CH_N[p.toUpperCase()])}
+              onClick={() => promote(p)}
+              className="toy relative flex size-14 items-end justify-center overflow-visible rounded-[16px]"
+              style={{ background: SQUARE.light, boxShadow: "0 5px 0 var(--w-board-ink)" }}
+            >
+              <span className="relative block size-11">
+                <Piece ch={seat === 1 ? p : p.toUpperCase()} size={44} sprites={sprites} />
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 

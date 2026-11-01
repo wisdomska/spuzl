@@ -22,7 +22,15 @@ export interface SearchGame<P, M> {
   evaluate(p: P, seat: number): number;
   /** optional captures-only moves for a quiescence search at the horizon (chess, draughts) */
   tactical?(p: P): M[];
+  /**
+   * Optional position identity for a repetition draw (chess threefold): a position reached for the third
+   * time, counting the game so far (`SearchOptions.history`) and the line being searched, scores as a draw.
+   */
+  key?(p: P): string;
 }
+
+/** Times a position may occur before the game is drawn by repetition. */
+const REPEAT_DRAW = 3;
 
 export const WIN = 1_000_000;
 
@@ -37,6 +45,8 @@ export interface SearchOptions {
   rng: Rng;
   /** quiescence depth when the game has tactical moves */
   qDepth?: number;
+  /** `key`s of every position reached so far in the game, the root included (for repetition draws) */
+  history?: string[];
 }
 
 export interface SearchResult<M> {
@@ -58,6 +68,13 @@ export function searchBest<P, M>(g: SearchGame<P, M>, root: P, seat: number, o: 
   let best: SearchResult<M> = { move: ordered[0], score: 0, depth: 0 };
   if (ordered.length === 1) return best;
   let nodes = 0;
+
+  // Positions on the board so far plus the line being searched: a third occurrence is a draw.
+  let seen = new Map<string, number>();
+  const resetSeen = () => {
+    seen = new Map();
+    for (const k of o.history ?? []) seen.set(k, (seen.get(k) ?? 0) + 1);
+  };
 
   const tick = () => {
     if ((++nodes & 31) === 0 && now() > deadline) throw new Timeout();
@@ -98,6 +115,18 @@ export function searchBest<P, M>(g: SearchGame<P, M>, root: P, seat: number, o: 
     tick();
     const t = g.terminal(p);
     if (t) return t.winner === null ? 0 : t.winner === seat ? WIN - ply : -WIN + ply;
+    const key = g.key?.(p);
+    const times = key === undefined ? 0 : (seen.get(key) ?? 0) + 1;
+    if (times >= REPEAT_DRAW) return 0;
+    if (key !== undefined) seen.set(key, times);
+    try {
+      return expand(p, depth, alpha, beta, ply);
+    } finally {
+      if (key !== undefined) seen.set(key, times - 1);
+    }
+  };
+
+  const expand = (p: P, depth: number, alpha: number, beta: number, ply: number): number => {
     if (depth <= 0) return qDepth && g.tactical ? quiesce(p, alpha, beta, qDepth, ply) : g.evaluate(p, seat);
     const ms = g.moves(p);
     if (!ms.length) {
@@ -122,6 +151,7 @@ export function searchBest<P, M>(g: SearchGame<P, M>, root: P, seat: number, o: 
 
   for (let depth = 1; depth <= o.maxDepth; depth++) {
     try {
+      resetSeen();
       let alpha = -Infinity;
       let bestHere: M = ordered[0];
       const scores = new Map<M, number>();

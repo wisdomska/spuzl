@@ -13,6 +13,7 @@ import {
   legalMoves,
   make,
   parseFen,
+  positionKey,
   typeOf,
   uci,
   type Move,
@@ -84,6 +85,8 @@ export const chessSearch: SearchGame<Position, Move> = {
       p,
       legalMoves(p).filter((m) => isCapture(p, m) || m.promo === QUEEN),
     ),
+  // Same identity the match rules use, so a threefold repetition in the search is the draw it will be.
+  key: positionKey,
 };
 
 export const chessBot = makeBot<ChessMatch, ChessMove, Position, Move>(chessRules, chessSearch, {
@@ -91,4 +94,5 @@ export const chessBot = makeBot<ChessMatch, ChessMove, Position, Move>(chessRule
   toMove: (m) => uci(m),
   maxDepth: 6,
   qDepth: 4,
+  history: (s) => s.keys,
 });

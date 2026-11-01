@@ -5,6 +5,14 @@
 const LEVEL = { easy: "Easy", medium: "Medium", hard: "Hard" } as const;
 
 export const boardGames = {
+  /** Live chess board (Board Bay and vs bot) */
+  chess: {
+    promoteGroup: "Promote to",
+    choosePromotion: "Choose a promotion piece.",
+    promoteTo: (piece: string) => `Promote to ${piece}`,
+    promoted: (piece: string) => `Promoted to ${piece}.`,
+    promotionCancelled: "Promotion cancelled.",
+  },
   bot: {
     /** entry under the game card (World view, Play anytime) */
     entry: "Play a full game vs bot",

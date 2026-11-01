@@ -24,7 +24,14 @@ export interface Bot<S, M> {
 export function makeBot<S, M, P, N>(
   rules: BoardGameRules<S, M>,
   game: SearchGame<P, N>,
-  bridge: { toPos(s: S): P; toMove(n: N, s: S): M; maxDepth: number; qDepth?: number },
+  bridge: {
+    toPos(s: S): P;
+    toMove(n: N, s: S): M;
+    maxDepth: number;
+    qDepth?: number;
+    /** repetition keys of the positions reached so far (matching `game.key`), for repetition draws */
+    history?(s: S): string[];
+  },
 ): Bot<S, M> {
   return {
     rules,
@@ -37,7 +44,13 @@ export function makeBot<S, M, P, N>(
         if (rng.chance(0.5)) return rng.pick(legal);
         return bridge.toMove(greedy(game, pos, seat, rng, 2), state);
       }
-      const r = searchBest(game, pos, seat, { budgetMs, maxDepth: bridge.maxDepth, rng, qDepth: bridge.qDepth });
+      const r = searchBest(game, pos, seat, {
+        budgetMs,
+        maxDepth: bridge.maxDepth,
+        rng,
+        qDepth: bridge.qDepth,
+        history: bridge.history?.(state),
+      });
       return bridge.toMove(r.move, state);
     },
   };

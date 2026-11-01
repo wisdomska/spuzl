@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { createRng } from "@/lib/rng";
 import { BOT_GAMES, BOT_LEVELS, HARD_BUDGET_MS, loadBot, type AnyBot, type BotLevel } from "./index";
 import { fourupBot, evaluateFourUp } from "./games/fourup";
-import { chessBot } from "./games/chess";
+import { chessBot, chessSearch } from "./games/chess";
+import { legalMoves, make, parseFen, positionKey, uci } from "@/games/chess/engine";
 import { draughtsBot } from "./games/draughts";
 import { owareBot } from "./games/oware";
 import { flipBot, evaluateFlip } from "./games/flip";
@@ -94,6 +95,30 @@ describe("hard bot tactics", () => {
       expect(chessBot.rules.isLegal(s, 0, m)).toBe(true);
     }
     expect(chessBot.choose(initialMatch("8/P3k3/8/8/8/8/8/4K3 w - - 0 1"), 0, "hard", rng, 50)).toBe("a7a8q");
+  });
+
+  it("Chess: treats a threefold repetition as a draw", () => {
+    // Seen twice already: the position after `move` from `fen`.
+    const twice = (fen: string, move: string) => {
+      const p = parseFen(fen);
+      const k = positionKey(
+        make(
+          p,
+          legalMoves(p).find((m) => uci(m) === move)!,
+        ),
+      );
+      return { fen, keys: [k, k, positionKey(p)], sans: [] };
+    };
+    // A queen down, the bot heads for the repetition: a draw beats a lost game.
+    const losing = twice("4k3/8/8/8/8/8/8/K6Q b - - 0 1", "e8d8");
+    expect(chessBot.choose(losing, 1, "hard", createRng("rep"))).toBe("e8d8");
+    const pos = parseFen(losing.fen);
+    const opts = { budgetMs: 200, maxDepth: 3, rng: createRng("rep") };
+    expect(searchBest(chessSearch, pos, 1, { ...opts, history: losing.keys }).score).toBe(0);
+    expect(searchBest(chessSearch, pos, 1, opts).score).toBeLessThan(-500);
+    // A queen up, it never drifts into the same repetition.
+    const winning = twice("4k3/8/8/8/8/8/8/K6Q w - - 0 1", "h1h2");
+    for (const seed of ["a", "b", "c"]) expect(chessBot.choose(winning, 0, "hard", createRng(seed))).not.toBe("h1h2");
   });
 
   it("Draughts: takes the double jump", () => {
