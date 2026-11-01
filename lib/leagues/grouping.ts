@@ -59,7 +59,8 @@ export function chooseLeague(player: JoiningPlayer, candidates: LeagueCandidate[
 
 /**
  * Splits `n` players into the fewest groups of at most `size`, as evenly as possible (31 → 16 + 15, never
- * 30 + 1), so the weekly rollover doesn't leave someone alone. Mirrors private.league_rollover.
+ * 30 + 1), so the weekly rollover doesn't leave someone alone. Mirrors private.league_rollover, which first
+ * merges any tier smaller than `leagues.minGroup` into its nearest tier (the players keep their home tier).
  */
 export function evenGroupSizes(n: number, size: number): number[] {
   if (n <= 0) return [];

@@ -45,8 +45,9 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 
 ## Leagues and metrics
 
-- `leagues.minGroup` applies only when a player joins mid-week; the weekly rollover doesn't top up small tiers.
-- `/leagues/current` makes one extra database call for players already placed.
+- The weekly rollover merges a tier below `leagues.minGroup` into the nearest tier (players keep their own tier
+  through `league_members.home_tier`). With few active players most of the ladder can share one group; the
+  table shows each player's own zones, but the group name is the host tier's.
 
 ## Tooling
 
