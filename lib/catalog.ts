@@ -658,6 +658,8 @@ export const LAB_GAMES: GameMeta[] = [
     "Name the hit from its emoji",
     "Name the song, film or TV show from the emoji. 5 rounds, 3 tries each.",
     { content: "curated", scoring: "score", minTimeMs: 4000, lab: true },
+  ),
+  g(
     "trotro",
     "Trotro Jam",
     "shape",
