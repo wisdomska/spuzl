@@ -12,9 +12,21 @@ type CardTip = Exclude<TipId, "slips">;
 export function FirstTips({ order }: { order: readonly CardTip[] }) {
   const reduce = useReducedMotion();
   const [tip, setTip] = useState<CardTip | null>(null);
+  // Start after the player's first touch, scroll or key press: the screen itself paints first (and the tip never
+  // becomes the page's largest paint), and the tip answers a player who is now looking around.
   useEffect(() => {
-    const t = setTimeout(() => setTip(nextTip(order, seenTips()) as CardTip | null), 900);
-    return () => clearTimeout(t);
+    let t: ReturnType<typeof setTimeout> | undefined;
+    const start = () => {
+      off();
+      t = setTimeout(() => setTip(nextTip(order, seenTips()) as CardTip | null), 400);
+    };
+    const evs = ["pointerdown", "keydown", "wheel", "touchmove"] as const;
+    const off = () => evs.forEach((e) => window.removeEventListener(e, start));
+    evs.forEach((e) => window.addEventListener(e, start, { passive: true }));
+    return () => {
+      off();
+      if (t) clearTimeout(t);
+    };
   }, [order]);
   const done = () => {
     if (!tip) return;
