@@ -3,7 +3,8 @@
  * against the shared dictionary (games/_shared/words) in logic.test.ts. Any dictionary word is a valid guess;
  * only these can be the hidden word. Server only: the board never imports this file.
  */
-export const needsReview = true;
+/** Reviewed and approved by the owner (1 November 2026). */
+export const needsReview = false;
 
 const LIST = `
 about above actor acute adult after again agree ahead alarm album alert alike alive allow alone along amaze

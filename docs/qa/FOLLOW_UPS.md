@@ -50,4 +50,3 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   attempt, and Penalty King's keeper dives follow from the index. Closing it needs attempt-bound or opaque refs.
 - **Admin copy:** the content editor, moderation case panels and the remaining admin pages still have inline
   strings (`lib/copy/admin.ts` covers the lists).
-- **Five content** is still marked `needsReview` for the owner.
