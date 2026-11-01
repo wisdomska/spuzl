@@ -63,4 +63,5 @@ export const BOARDS: Record<string, AnyBoard> = {
   buried: dynamic(() => import("./buried/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   remix: dynamic(() => import("./remix/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   penalty: dynamic(() => import("./penalty/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  beattap: dynamic(() => import("./beattap/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
 };

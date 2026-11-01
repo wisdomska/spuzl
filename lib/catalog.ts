@@ -604,6 +604,17 @@ export const LAB_GAMES: GameMeta[] = [
     "Tap to set your aim, tap again to set your power. Five kicks: most goals wins, then accuracy.",
     { scoring: "score", minTimeMs: 0, lab: true },
   ),
+  g(
+    "beattap",
+    "Beat Tap",
+    "reflex",
+    "metronome",
+    "M3+",
+    "custom",
+    "Tap on the beat",
+    "Tap on every beat of the pattern. Perfect and Good score; extra taps cost points.",
+    { scoring: "score", minTimeMs: 0, lab: true },
+  ),
 ];
 
 export const GAME_BY_ID: Record<string, GameMeta> = Object.fromEntries([...GAMES, ...LAB_GAMES].map((x) => [x.id, x]));
