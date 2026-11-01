@@ -82,6 +82,8 @@ export interface Me {
 
 export interface Today {
   signedIn?: boolean;
+  /** the "features.dailies" switch: false means no Daily attempts (and no offline Daily pack) */
+  dailies?: boolean;
   date: string;
   number: number;
   resetsInMs: number;

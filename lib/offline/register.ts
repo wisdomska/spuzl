@@ -27,6 +27,7 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
 }
 
 interface TodayRes {
+  dailies?: boolean;
   date: string;
   games: TodayGame[];
 }
@@ -55,8 +56,8 @@ export async function prefetchDailies(): Promise<number> {
   } catch {
     /* storage blocked: prefetch anyway, the worker dedupes per day */
   }
-  // Nobody signed in yet (first run): nothing to prefetch, and no 401s in the console.
-  if ((today as { signedIn?: boolean }).signedIn === false) return 0;
+  // Nobody signed in yet (first run), or Dailies switched off: nothing to prefetch, and no 401/404s in the console.
+  if ((today as { signedIn?: boolean }).signedIn === false || today.dailies === false) return 0;
   const todo = packGames(today.games, LAUNCH_IDS);
   let saved = 0;
   for (const game of todo) {

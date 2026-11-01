@@ -1,4 +1,17 @@
 import { expect, test } from "@playwright/test";
+import { admin } from "../api/helpers";
+
+/** The offline Daily pack only runs while Dailies are on: switch them on for this file, then restore. */
+let dailiesBefore: unknown;
+const setDailies = (value: unknown) => admin().from("game_settings").upsert({ key: "features.dailies", value }, { onConflict: "key" });
+test.beforeAll(async () => {
+  dailiesBefore = (await admin().from("game_settings").select("value").eq("key", "features.dailies").maybeSingle()).data?.value;
+  await setDailies(true);
+});
+test.afterAll(async () => {
+  if (dailiesBefore === undefined) await admin().from("game_settings").delete().eq("key", "features.dailies");
+  else await setDailies(dailiesBefore);
+});
 
 /**
  * Installable PWA: manifest, service worker, offline app shell and today's Dailies prefetch.

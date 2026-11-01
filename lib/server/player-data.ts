@@ -8,6 +8,7 @@ import { COSMETICS } from "@/lib/gamification/cosmetics";
 import { hasLogic } from "@/games/logic-registry";
 import { dailyNumber, msToReset } from "@/lib/format";
 import { todayGmt } from "@/lib/api/server";
+import { getGameSettings } from "@/lib/game-settings/server";
 import type { Me, Today } from "@/lib/client/api";
 
 /** The columns `loadMe` needs from the player row (the API's requirePlayer selects a superset). */
@@ -110,6 +111,7 @@ export async function loadToday(user: User | null, admin: SupabaseClient = supab
   }
   return {
     signedIn: !!user,
+    dailies: (await getGameSettings())["features.dailies"],
     date,
     number: dailyNumber(date),
     resetsInMs: msToReset(),
