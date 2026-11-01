@@ -455,6 +455,7 @@ function ToolButton({ c }: { c: ControlSpec }) {
       disabled={c.disabled}
       aria-pressed={c.active ?? undefined}
       data-press={c.active !== undefined ? "toggle" : SOFT_TOOLS.has(c.id) ? "soft" : undefined}
+      data-no-tick={c.quiet || undefined}
       className="toy short:h-12 short:gap-0.5 flex h-16 flex-col items-center justify-center gap-[3px] rounded-[18px]"
       style={
         c.disabled

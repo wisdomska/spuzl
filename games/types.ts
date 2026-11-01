@@ -137,6 +137,8 @@ export interface ControlSpec {
   disabled?: boolean;
   /** primary uses the world colour fill with ink text */
   tone?: "default" | "world" | "gold";
+  /** The board plays this control's sound itself (a step, a move), so the generic press tap stays off. */
+  quiet?: boolean;
 }
 
 /* ---------- Content games (Word Woods, Clue Cave) ---------- */

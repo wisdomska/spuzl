@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
 import { useFitCell } from "@/games/_shared/useFitCell";
 import { useGridKeys } from "@/components/game/useGridKeys";
-import { play } from "@/lib/audio";
+import { sfx } from "@/games/_shared/sfx";
 import { adjacent, dirBetween, edgeKey, step } from "@/games/_shared/grid";
 import { LineStyles } from "@/games/_shared/LineStyles";
 import { checkPath, maxClue, nextClue, RULE_COPY, stepError, wallSet, type WeavePuzzle, type WeaveState } from "./logic";
@@ -36,6 +36,8 @@ export default function WeaveBoard({ puzzle, initialState, hint, disabled, mode,
   const [trail, setTrail] = useState<Trail[]>([]);
   const [done, setDone] = useState(() => checkPath(puzzle, path).complete);
   const trailId = useRef(0);
+  // Segments restored from a saved game are drawn, not grown: nothing animates while the board first appears.
+  const [seeded] = useState(() => new Set(path.slice(1).map((b, k) => `${k}:${path[k]}-${b}`)));
   const drag = useRef<{ last: number } | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const { cs, bleed } = useFitCell(n, GAP, PAD);
@@ -62,7 +64,12 @@ export default function WeaveBoard({ puzzle, initialState, hint, disabled, mode,
       setPath(next);
       setBad(-1);
       if (next.length < prev.length) fadeOut(prev.slice(next.length), next.length ? next[next.length - 1] : -1);
-      play("synth", { step: next.length, silentHaptic: true });
+      // The line hums higher as it grows (lower as it backs up); reaching a number knocks like a placement,
+      // and cutting back several cells at once is a take-back.
+      const clue = next.length > prev.length ? puzzle.clues[next[next.length - 1]] : 0;
+      if (clue) sfx.place(clue);
+      else if (prev.length - next.length > 1) sfx.remove();
+      else sfx.trace(next.length);
       const r = Math.floor(focusCell / n) + 1,
         c = (focusCell % n) + 1;
       const chk = checkPath(puzzle, next);
@@ -328,7 +335,11 @@ export default function WeaveBoard({ puzzle, initialState, hint, disabled, mode,
           className="pointer-events-none absolute inset-0"
           style={{ opacity: done ? 0 : 1, transition: "opacity 300ms var(--ease-out) 400ms" }}
         >
-          {path.slice(1).map((b, k) => bar(path[k], b, "ll-grow-@", `${k}:${path[k]}-${b}`))}
+          {path.slice(1).map((b, k) => {
+            const key = `${k}:${path[k]}-${b}`;
+            return bar(path[k], b, seeded.has(key) ? "" : "ll-grow-@", key);
+          })}
+
           {trail.map((t) => bar(t.a, t.b, "ll-trail", `t${t.id}`))}
           {head >= 0 && (
             <div
