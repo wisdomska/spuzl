@@ -1,17 +1,23 @@
 import { handle, ok, ApiError } from "@/lib/api/server";
 import { requireAdmin } from "@/lib/admin/auth";
 import { ISO_DATE, addDays } from "@/lib/admin/dates";
-import { fetchPage, pageParams } from "@/lib/admin/paging";
+import { fetchPage, pageParams, sortParams } from "@/lib/admin/paging";
+import { AUDIT_SORT } from "@/lib/admin/sorting";
+
+/** Ids follow insertion order, so "when" sorts by id (unique: pages never overlap). */
+const COLUMN = { created_at: "id", action: "action", target: "target" } as const;
 
 /**
- * GET /api/admin/audit?actor=&action=&target=&from=&to=&page=&pageSize=: the audit log viewer (FR-AD-08),
- * newest first by id (unique, so pages never overlap). `action` matches a prefix ("daily." finds every Daily
+ * GET /api/admin/audit?actor=&action=&target=&from=&to=&sort=&dir=&page=&pageSize=: the audit log viewer
+ * (FR-AD-08), newest first by id (unique, so pages never overlap) or sorted by action or target (newest first
+ * within each). `action` matches a prefix ("daily." finds every Daily
  * action). `before` (an id) is still accepted as an extra filter.
  */
 export const GET = handle(async (req: Request) => {
   const ctx = await requireAdmin("audit.read");
   const sp = new URL(req.url).searchParams;
   const p = pageParams(sp);
+  const { sort, dir } = sortParams(sp, AUDIT_SORT);
   const actor = sp.get("actor");
   const action = sp.get("action");
   const target = sp.get("target");
@@ -24,7 +30,8 @@ export const GET = handle(async (req: Request) => {
     let q = ctx.db
       .from("audit_log")
       .select("id, actor_id, action, target, detail, created_at", { count: "exact" })
-      .order("id", { ascending: false });
+      .order(COLUMN[sort], { ascending: dir === "asc", nullsFirst: false });
+    if (sort !== "created_at") q = q.order("id", { ascending: false });
     if (actor === "system") q = q.is("actor_id", null);
     else if (actor) q = q.eq("actor_id", actor);
     if (action) q = q.like("action", `${action}%`);

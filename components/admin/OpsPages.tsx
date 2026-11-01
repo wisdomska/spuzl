@@ -6,26 +6,31 @@ import { useState, type ReactNode } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { age, todayIso } from "@/lib/admin/dates";
 import { ROLES, ROLE_LABEL, type Role } from "@/lib/admin/roles";
+import { AUDIT_SORT, CATALOG_SORT, TEAM_SORT } from "@/lib/admin/sorting";
 import { WORLD_BY_ID } from "@/lib/catalog";
 import { errorText, useAdminAction, useAdminQuery, type AdminPage } from "@/lib/client/admin";
 import { adminCopy } from "@/lib/copy/admin";
 import type { EventQuest, EventStatus } from "@/lib/events";
 import { Pagination, usePager } from "./Pagination";
-import { useDebouncedFilter, useUrlFilters } from "./useUrlFilters";
+import { SortHead, type HeadCol } from "./SortHeader";
+import { useDebouncedFilter, useUrlFilters, useUrlSort, type UrlSort } from "./useUrlFilters";
 import { Btn, Empty, Field, Notice, PageTitle, Pill, RowsSkeleton, Tabs, inputCls, type PillTone } from "./ui";
 
-function Table({ head, children, min = 640 }: { head: string[]; children: ReactNode; min?: number }) {
+function Table<K extends string = string>({
+  head,
+  sort,
+  children,
+  min = 640,
+}: {
+  /** Plain labels, or columns with sort keys for a sortable header. */
+  head: (string | HeadCol<K>)[];
+  sort?: UrlSort<K>;
+  children: ReactNode;
+  min?: number;
+}) {
   return (
     <table className="w-full border-collapse text-[14px]" style={{ minWidth: min }}>
-      <thead>
-        <tr className="bg-surface-raised num text-muted text-left text-[12px]">
-          {head.map((h) => (
-            <th key={h} scope="col" className="px-3 py-2.5 font-semibold">
-              {h}
-            </th>
-          ))}
-        </tr>
-      </thead>
+      <SortHead cols={head.map((h) => (typeof h === "string" ? { label: h } : h))} sort={sort} />
       <tbody>{children}</tbody>
     </table>
   );
@@ -133,8 +138,30 @@ export function SchoolsPage({ canWrite }: { canWrite: boolean }) {
 
 type Kind = "cosmetics" | "badges" | "quests";
 const SHOP = adminCopy.shop;
-const SHOP_FILTERS = { kind: "cosmetics" } as const;
+/** `sort` and `dir` are listed so a tab change can clear them: each catalogue sorts by its own columns. */
+const SHOP_FILTERS = { kind: "cosmetics", q: "", sort: "", dir: "" } as const;
 const SHOP_ALLOWED = { kind: ["cosmetics", "badges", "quests"] };
+const COSMETIC_COLS: HeadCol<(typeof CATALOG_SORT.cosmetics.keys)[number]>[] = [
+  { label: SHOP.cosmeticsHead[0], sort: "name" },
+  { label: SHOP.cosmeticsHead[1], sort: "type" },
+  { label: SHOP.cosmeticsHead[2] },
+  { label: SHOP.cosmeticsHead[3], sort: "price" },
+  { label: SHOP.cosmeticsHead[4], sort: "active" },
+];
+const BADGE_COLS: HeadCol<(typeof CATALOG_SORT.badges.keys)[number]>[] = [
+  { label: SHOP.badgesHead[0], sort: "name" },
+  { label: SHOP.badgesHead[1], sort: "family" },
+  { label: SHOP.badgesHead[2] },
+  { label: SHOP.badgesHead[3], sort: "sparks" },
+  { label: SHOP.badgesHead[4], sort: "secret" },
+];
+const QUEST_COLS: HeadCol<(typeof CATALOG_SORT.quests.keys)[number]>[] = [
+  { label: SHOP.questsHead[0], sort: "title" },
+  { label: SHOP.questsHead[1], sort: "kind" },
+  { label: SHOP.questsHead[2], sort: "xp" },
+  { label: SHOP.questsHead[3], sort: "sparks" },
+  { label: SHOP.questsHead[4], sort: "active" },
+];
 interface CatalogRow {
   id: string;
   name?: string;
@@ -165,9 +192,17 @@ export function ShopPage({
   const [filters, setFilters] = useUrlFilters(SHOP_FILTERS, SHOP_ALLOWED);
   const kind = filters.kind as Kind;
   const pager = usePager();
-  const q = useAdminQuery<AdminPage<CatalogRow>>(["catalog", kind, pager.query], `/api/admin/catalog/${kind}?${pager.query}`, {
-    keepPrevious: true,
-  });
+  const cosmeticSort = useUrlSort(CATALOG_SORT.cosmetics);
+  const badgeSort = useUrlSort(CATALOG_SORT.badges);
+  const questSort = useUrlSort(CATALOG_SORT.quests);
+  const sortQuery = kind === "cosmetics" ? cosmeticSort.query : kind === "badges" ? badgeSort.query : questSort.query;
+  const [search, setSearch] = useDebouncedFilter(filters.q, (v) => setFilters({ q: v }, { replace: true }));
+  const qs = filters.q ? `q=${encodeURIComponent(filters.q)}&` : "";
+  const q = useAdminQuery<AdminPage<CatalogRow>>(
+    ["catalog", kind, filters.q, sortQuery, pager.query],
+    `/api/admin/catalog/${kind}?${qs}${sortQuery}&${pager.query}`,
+    { keepPrevious: true },
+  );
   const patch = useAdminAction<{ id: string; patch: Record<string, unknown> }>("PATCH", `/api/admin/catalog/${kind}`);
   const [edit, setEdit] = useState<Record<string, number>>({});
   const num = (id: string, field: string, fallback: number) => edit[`${id}.${field}`] ?? fallback;
@@ -194,11 +229,21 @@ export function ShopPage({
           <Tabs<Kind>
             label={SHOP.catalogue}
             value={kind}
-            onChange={(k) => setFilters({ kind: k })}
+            onChange={(k) => setFilters({ kind: k, q: null, sort: null, dir: null })}
             items={SHOP_ALLOWED.kind.map((id) => ({ id: id as Kind, label: SHOP.tabs[id as Kind] }))}
           />
         }
       />
+      <Field label={SHOP.search} htmlFor="shop-q">
+        <input
+          id="shop-q"
+          type="search"
+          value={search}
+          placeholder={SHOP.searchPlaceholder}
+          onChange={(e) => setSearch(e.target.value)}
+          className={`${inputCls} h-11 w-72 max-w-full`}
+        />
+      </Field>
       {kind === "cosmetics" && !canPrice && <Notice icon="info">{SHOP.ownerPrices}</Notice>}
       {patch.error && <Notice tone="danger">{errorText(patch.error)}</Notice>}
       {patch.isSuccess && (
@@ -209,7 +254,7 @@ export function ShopPage({
       <Frame q={q}>
         {() =>
           kind === "cosmetics" ? (
-            <Table head={[...SHOP.cosmeticsHead]}>
+            <Table head={COSMETIC_COLS} sort={cosmeticSort}>
               {q.data!.rows.map((r) => (
                 <tr key={r.id}>
                   <td className={`${td} font-semibold`}>{r.name}</td>
@@ -228,7 +273,7 @@ export function ShopPage({
               ))}
             </Table>
           ) : kind === "badges" ? (
-            <Table head={[...SHOP.badgesHead]}>
+            <Table head={BADGE_COLS} sort={badgeSort}>
               {q.data!.rows.map((r) => (
                 <tr key={r.id}>
                   <td className={td}>
@@ -250,7 +295,7 @@ export function ShopPage({
               ))}
             </Table>
           ) : (
-            <Table head={[...SHOP.questsHead]}>
+            <Table head={QUEST_COLS} sort={questSort}>
               {q.data!.rows.map((r) => (
                 <tr key={r.id}>
                   <td className={`${td} font-semibold`}>{r.title}</td>
@@ -505,12 +550,20 @@ interface AuditRow {
 
 const AUDIT = adminCopy.audit;
 const AUDIT_FILTERS = { actor: "", action: "", target: "", from: "", to: "" } as const;
+const AUDIT_COLS: HeadCol<(typeof AUDIT_SORT.keys)[number]>[] = [
+  { label: AUDIT.head[0], sort: "created_at" },
+  { label: AUDIT.head[1] },
+  { label: AUDIT.head[2], sort: "action" },
+  { label: AUDIT.head[3], sort: "target" },
+  { label: AUDIT.head[4] },
+];
 
 export function AuditPage() {
   const [{ actor, action, target, from, to }, setFilters] = useUrlFilters(AUDIT_FILTERS);
   const [actionText, setActionText] = useDebouncedFilter(action, (v) => setFilters({ action: v }, { replace: true }));
   const [targetText, setTargetText] = useDebouncedFilter(target, (v) => setFilters({ target: v }, { replace: true }));
   const pager = usePager();
+  const sort = useUrlSort(AUDIT_SORT);
   const qs = new URLSearchParams({
     ...(actor && { actor }),
     ...(action && { action }),
@@ -519,8 +572,8 @@ export function AuditPage() {
     ...(to && { to }),
   });
   const q = useAdminQuery<AdminPage<AuditRow> & { actors: { id: string; email: string | null; role: Role }[] }>(
-    ["audit", qs.toString(), pager.query],
-    `/api/admin/audit?${qs}${qs.size ? "&" : ""}${pager.query}`,
+    ["audit", qs.toString(), sort.query, pager.query],
+    `/api/admin/audit?${qs}${qs.size ? "&" : ""}${sort.query}&${pager.query}`,
     { keepPrevious: true },
   );
   const who = (id: string | null) => (id ? (q.data?.actors.find((a) => a.id === id)?.email ?? id.slice(0, 8)) : AUDIT.systemShort);
@@ -585,7 +638,7 @@ export function AuditPage() {
           !q.data!.rows.length ? (
             <Empty icon="clock-counter-clockwise">{AUDIT.empty}</Empty>
           ) : (
-            <Table head={[...AUDIT.head]} min={860}>
+            <Table head={AUDIT_COLS} sort={sort} min={860}>
               {q.data!.rows.map((r) => (
                 <tr key={r.id}>
                   <td className={`${td} num text-muted text-[13px] whitespace-nowrap`}>{r.created_at.slice(0, 16).replace("T", " ")}</td>
@@ -609,9 +662,20 @@ export function AuditPage() {
 /* ---------------- Team ---------------- */
 
 const TEAM = adminCopy.team;
+const TEAM_FILTERS = { role: "" } as const;
+const TEAM_ALLOWED = { role: [...ROLES] };
+const TEAM_COLS: HeadCol<(typeof TEAM_SORT.keys)[number]>[] = [
+  { label: "Admin", sort: "email" },
+  { label: "Role", sort: "role" },
+  { label: "Authenticator", sort: "totp" },
+  { label: "Last sign-in" },
+  { label: "Access" },
+];
 
 export function TeamPage() {
   const pager = usePager();
+  const sort = useUrlSort(TEAM_SORT);
+  const [{ role: roleFilter }, setFilters] = useUrlFilters(TEAM_FILTERS, TEAM_ALLOWED);
   const q = useAdminQuery<
     AdminPage<{
       user_id: string;
@@ -621,7 +685,13 @@ export function TeamPage() {
       disabled_at: string | null;
       last_sign_in_at: string | null;
     }> & { me: string }
-  >(["team", pager.query], `/api/admin/team?${pager.query}`, { keepPrevious: true });
+  >(
+    ["team", roleFilter, sort.query, pager.query],
+    `/api/admin/team?${roleFilter ? `role=${roleFilter}&` : ""}${sort.query}&${pager.query}`,
+    {
+      keepPrevious: true,
+    },
+  );
   const add = useAdminAction<{ email: string; role: Role }, { resetSent: boolean }>("POST", "/api/admin/team");
   const patch = useAdminAction<{ id: string; role?: Role; disabled?: boolean }>("PATCH", (i) => `/api/admin/team/${i.id}`);
   const [email, setEmail] = useState("");
@@ -667,9 +737,19 @@ export function TeamPage() {
           {TEAM.added(add.data.resetSent)}
         </Notice>
       )}
+      <Field label={adminCopy.team.roleFilter} htmlFor="t-filter">
+        <select id="t-filter" value={roleFilter} onChange={(e) => setFilters({ role: e.target.value })} className={`${inputCls} h-11 w-48`}>
+          <option value="">{adminCopy.team.anyRole}</option>
+          {ROLES.map((r) => (
+            <option key={r} value={r}>
+              {ROLE_LABEL[r]}
+            </option>
+          ))}
+        </select>
+      </Field>
       <Frame q={q}>
         {() => (
-          <Table head={[...TEAM.head]}>
+          <Table head={TEAM_COLS} sort={sort}>
             {q.data!.rows.map((a) => {
               const self = a.user_id === q.data!.me;
               return (

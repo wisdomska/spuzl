@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_PAGE_SIZE,
   MAX_PAGE,
+  PAGE_SIZE_CHOICES,
+  PAGE_SIZES,
   pageCount,
+  pageItems,
   pageQueryString,
   pageWindow,
   parsePageQuery,
@@ -85,6 +88,44 @@ describe("page math", () => {
     expect(pageWindow(7, 13)).toEqual([5, 6, 7, 8, 9]);
     expect(pageWindow(13, 13)).toEqual([9, 10, 11, 12, 13]);
     expect(pageWindow(2, 13)).toEqual([1, 2, 3, 4, 5]);
+  });
+
+  it("lists every page of a short list", () => {
+    expect(pageItems(1, 0)).toEqual([1]);
+    expect(pageItems(1, 1)).toEqual([1]);
+    expect(pageItems(3, 7)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+  });
+
+  it("adds gaps around the current page in a long list, always showing the first and last", () => {
+    expect(pageItems(1, 20)).toEqual([1, 2, 3, 4, 5, "gap", 20]);
+    expect(pageItems(4, 20)).toEqual([1, 2, 3, 4, 5, "gap", 20]);
+    expect(pageItems(5, 20)).toEqual([1, "gap", 4, 5, 6, "gap", 20]);
+    expect(pageItems(10, 20)).toEqual([1, "gap", 9, 10, 11, "gap", 20]);
+    expect(pageItems(17, 20)).toEqual([1, "gap", 16, 17, 18, 19, 20]);
+    expect(pageItems(20, 20)).toEqual([1, "gap", 16, 17, 18, 19, 20]);
+    expect(pageItems(50, 8)).toEqual([1, "gap", 4, 5, 6, 7, 8]);
+  });
+
+  it("keeps the bar the same width while paging and never repeats or skips the current page", () => {
+    for (const pages of [8, 13, 100, 4000])
+      for (const page of [1, 2, 3, 4, 5, Math.floor(pages / 2), pages - 3, pages - 1, pages]) {
+        const items = pageItems(page, pages);
+        expect(items, `${page}/${pages}`).toHaveLength(7);
+        expect(items).toContain(page);
+        const nums = items.filter((x): x is number => x !== "gap");
+        expect(nums).toEqual([...nums].sort((a, b) => a - b));
+        expect(new Set(nums).size).toBe(nums.length);
+        expect([nums[0], nums.at(-1)]).toEqual([1, pages]);
+      }
+  });
+
+  it("widens with more siblings", () => {
+    expect(pageItems(10, 20, 2)).toEqual([1, "gap", 8, 9, 10, 11, 12, "gap", 20]);
+  });
+
+  it("offers 25, 50 and 100 in the console, all valid in the API", () => {
+    expect([...PAGE_SIZE_CHOICES]).toEqual([25, 50, 100]);
+    for (const n of PAGE_SIZE_CHOICES) expect(PAGE_SIZES).toContain(n);
   });
 
   it("slices an in-memory list without repeating rows", () => {

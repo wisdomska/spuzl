@@ -2,7 +2,8 @@ import { z } from "zod";
 import { body, handle, ok, ApiError } from "@/lib/api/server";
 import { audit, requireAdmin } from "@/lib/admin/auth";
 import { can } from "@/lib/admin/roles";
-import { fetchPage, pageParams } from "@/lib/admin/paging";
+import { fetchPage, pageParams, sortParams } from "@/lib/admin/paging";
+import { CATALOG_SORT } from "@/lib/admin/sorting";
 
 const noDash = (s: string) => !/[–—]/.test(s);
 const label = z.string().trim().min(1).max(80).refine(noDash, "No em or en dashes");
@@ -11,7 +12,10 @@ const Id = z.string().regex(/^[a-z0-9_-]{2,40}$/);
 interface CatalogKind {
   table: string;
   cols: string;
-  order: string;
+  /** Sort key (CATALOG_SORT) to column. */
+  columns: Record<string, string>;
+  /** Column the `q` search matches. */
+  label: string;
   patch: z.ZodType<Record<string, unknown>>;
   create: z.ZodType<Record<string, unknown> & { id: string }>;
 }
@@ -21,7 +25,8 @@ const KINDS: Record<"badges" | "quests" | "cosmetics", CatalogKind> = {
   badges: {
     table: "badges",
     cols: "id, family, tier, name, description, secret, sparks, rule, sort",
-    order: "sort",
+    columns: { sort: "sort", name: "name", family: "family", sparks: "sparks", secret: "secret" },
+    label: "name",
     patch: z
       .object({
         name: label,
@@ -46,7 +51,8 @@ const KINDS: Record<"badges" | "quests" | "cosmetics", CatalogKind> = {
   quests: {
     table: "quests",
     cols: "id, kind, title, goal, xp, sparks, step, active",
-    order: "id",
+    columns: { id: "id", title: "title", kind: "kind", xp: "xp", sparks: "sparks", active: "active" },
+    label: "title",
     patch: z
       .object({
         title: label,
@@ -70,7 +76,8 @@ const KINDS: Record<"badges" | "quests" | "cosmetics", CatalogKind> = {
   cosmetics: {
     table: "cosmetics",
     cols: "id, type, name, price_sparks, rarity, payload, unlock_level, active, sort",
-    order: "sort",
+    columns: { sort: "sort", name: "name", type: "type", price: "price_sparks", active: "active" },
+    label: "name",
     patch: z
       .object({
         name: label,
@@ -100,14 +107,29 @@ const kindOf = (k: string): Kind => {
   return k as Kind;
 };
 
-/** GET /api/admin/catalog/:kind?page=&pageSize=: one page of badges, quests or cosmetics (active or not), id breaks ties. */
+/**
+ * GET /api/admin/catalog/:kind?q=&sort=&dir=&page=&pageSize=: one page of badges, quests or cosmetics (active or
+ * not), in catalogue order unless sorted by an allow-listed column; id breaks ties. `q` matches the name or title.
+ */
 export const GET = handle(async (req: Request, rc: RouteContext<"/api/admin/catalog/[kind]">) => {
   const ctx = await requireAdmin("catalog.read");
-  const k = KINDS[kindOf((await rc.params).kind)];
+  const kind = kindOf((await rc.params).kind);
+  const k = KINDS[kind];
   const p = pageParams(req);
+  const sp = new URL(req.url).searchParams;
+  const { sort, dir } = sortParams(sp, CATALOG_SORT[kind]);
+  const search = (sp.get("q") ?? "")
+    .trim()
+    .slice(0, 80)
+    .replace(/[%_\\,()]/g, "");
   const build = () => {
-    const q = ctx.db.from(k.table).select(k.cols, { count: "exact" }).order(k.order);
-    return k.order === "id" ? q : q.order("id");
+    let q = ctx.db
+      .from(k.table)
+      .select(k.cols, { count: "exact" })
+      .order(k.columns[sort], { ascending: dir === "asc" });
+    if (k.columns[sort] !== "id") q = q.order("id");
+    if (search) q = q.ilike(k.label, `%${search}%`);
+    return q;
   };
   const { rows, total } = await fetchPage(build, p);
   return ok({ rows, page: p.page, pageSize: p.pageSize, total });

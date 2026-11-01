@@ -5,6 +5,8 @@ import { z } from "zod";
  * (10, 25, 50 or 100; default 25). Pure, so the client, the server and the unit tests all use it.
  */
 export const PAGE_SIZES = [10, 25, 50, 100] as const;
+/** Sizes the console offers in its rows-per-page select; 10 stays valid in the API and in shared links. */
+export const PAGE_SIZE_CHOICES = [25, 50, 100] as const;
 export type PageSize = (typeof PAGE_SIZES)[number];
 export const DEFAULT_PAGE_SIZE: PageSize = 25;
 /** Far beyond any real list; stops absurd offsets reaching Postgres. */
@@ -70,6 +72,29 @@ export function pageWindow(page: number, pages: number, width = 5): number[] {
   const n = Math.min(width, pages);
   const start = Math.min(Math.max(1, page - Math.floor(n / 2)), pages - n + 1);
   return Array.from({ length: n }, (_, i) => start + i);
+}
+
+/** A page button or a gap ("…") in the pagination bar. */
+export type PageItem = number | "gap";
+
+/**
+ * Page buttons with gaps: the first and last page always, `siblings` pages either side of the current one, and a
+ * gap wherever pages are skipped. Short lists show every page. The list never changes length while paging (7 slots
+ * with one sibling), so the bar doesn't jump around.
+ */
+export function pageItems(page: number, pages: number, siblings = 1): PageItem[] {
+  const range = (a: number, b: number) => Array.from({ length: Math.max(0, b - a + 1) }, (_, i) => a + i);
+  const slots = siblings * 2 + 5;
+  if (pages <= slots) return range(1, Math.max(1, pages));
+  const p = Math.min(Math.max(1, page), pages);
+  const left = Math.max(p - siblings, 1);
+  const right = Math.min(p + siblings, pages);
+  const leftGap = left > 3;
+  const rightGap = right < pages - 2;
+  const edge = 3 + siblings * 2;
+  if (!leftGap) return [...range(1, edge), "gap", pages];
+  if (!rightGap) return [1, "gap", ...range(pages - edge + 1, pages)];
+  return [1, "gap", ...range(left, right), "gap", pages];
 }
 
 /** One page of an in-memory list (for lists that are not table-backed). */

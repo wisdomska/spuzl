@@ -22,6 +22,8 @@ const N = S.nav;
 
 /** Design order first (Calendar to Shop and events), then the console's other tools. */
 const NAV: NavItem[] = [
+  { href: "/admin", label: N.overview, icon: "house", perm: "players.read" },
+  { href: "/admin/players", label: N.players, icon: "users", perm: "players.read" },
   { href: "/admin/calendar", label: N.calendar, icon: "calendar-blank", perm: "calendar.read" },
   { href: "/admin/puzzles", label: N.puzzles, icon: "puzzle-piece", perm: "calendar.read", badge: "puzzles" },
   { href: "/admin/moderation", label: N.moderation, icon: "shield-check", perm: "moderation.read", badge: "moderation" },
@@ -70,7 +72,8 @@ export function AdminShell({ role, email, children }: { role: Role; email: strin
           </span>
         </Link>
         {items.map((n) => {
-          const active = path === n.href || path.startsWith(n.href + "/");
+          // The overview is /admin itself: every other page sits under it, so it is active only on an exact match.
+          const active = path === n.href || (n.href !== "/admin" && path.startsWith(n.href + "/"));
           const count = n.badge ? me?.counts?.[n.badge] : null;
           return (
             <Link

@@ -3,13 +3,16 @@ import { body, handle, ok, ApiError } from "@/lib/api/server";
 import { audit, requireAdmin } from "@/lib/admin/auth";
 import { CONTENT_GAMES, isContentGame, validatePayload } from "@/lib/admin/content-schemas";
 import { ITEM_COLS } from "@/lib/admin/content-files";
-import { fetchPage, pageParams } from "@/lib/admin/paging";
+import { fetchPage, pageParams, sortParams } from "@/lib/admin/paging";
+import { CONTENT_SORT } from "@/lib/admin/sorting";
 
 const STATUSES = ["draft", "in_review", "approved", "rejected", "scheduled"];
+const COLUMN = { updated_at: "updated_at", game: "game_id", status: "status" } as const;
 
 /**
- * GET /api/admin/content?status=&game=&page=&pageSize=: one page of editor items, last updated first (id
- * breaks ties), with author and reviewer emails.
+ * GET /api/admin/content?status=&game=&sort=&dir=&page=&pageSize=: one page of editor items, last updated first
+ * unless sorted by game or status (then last updated first within each; id breaks ties), with author and reviewer
+ * emails.
  */
 export const GET = handle(async (req: Request) => {
   const ctx = await requireAdmin("content.read");
@@ -17,6 +20,8 @@ export const GET = handle(async (req: Request) => {
   const p = pageParams(url.searchParams);
   const status = url.searchParams.get("status");
   const game = url.searchParams.get("game");
+  const { sort, dir } = sortParams(url.searchParams, CONTENT_SORT);
+  const asc = dir === "asc";
   if (status && !STATUSES.includes(status)) throw new ApiError(400, "bad_status");
   if (game && !isContentGame(game)) throw new ApiError(400, "bad_game");
   const { rows: data, total } = await fetchPage(() => {
@@ -24,8 +29,11 @@ export const GET = handle(async (req: Request) => {
       .from("content_items")
       .select(ITEM_COLS, { count: "exact" })
       .eq("source", "editor")
-      .order("updated_at", { ascending: false })
-      .order("id", { ascending: false });
+      .order(COLUMN[sort], { ascending: asc });
+    q =
+      sort === "updated_at"
+        ? q.order("id", { ascending: asc })
+        : q.order("updated_at", { ascending: false }).order("id", { ascending: false });
     if (status) q = q.eq("status", status);
     if (game) q = q.eq("game_id", game);
     return q;

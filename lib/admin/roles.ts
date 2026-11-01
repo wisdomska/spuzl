@@ -42,6 +42,18 @@ export const PERMISSIONS = {
   "metrics.read": ["owner", "analyst", "content_editor"],
   "audit.read": ["owner", "analyst"],
   "team.manage": ["owner"],
+  /** Players (owner request): list, detail and overview totals. */
+  "players.read": ["owner", "moderator", "analyst"],
+  /** Personal data: full email in the list, detail and export, and search by email. Everyone else sees it masked. */
+  "players.pii": ["owner"],
+  /** Reset nickname, ban (timed or not) and unban, revoke or restore ranking, grant a streak freeze, force sign-out. */
+  "players.moderate": MOD,
+  /** Grant or remove Sparks (bounded to ±10,000 per action). */
+  "players.economy": ["owner"],
+  /** Delete an account for good (the player's own deletion path). */
+  "players.delete": ["owner"],
+  /** CSV export of the player list. */
+  "players.export": ["owner"],
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Permission = keyof typeof PERMISSIONS;

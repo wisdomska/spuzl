@@ -5,10 +5,12 @@ import { useMemo, useState } from "react";
 import { GAME_BY_ID } from "@/lib/catalog";
 import { CONTENT_GAMES, SCHEDULABLE, TEMPLATES, validatePayload, type ContentGame } from "@/lib/admin/content-schemas";
 import { addDays, age, dayMonth, todayIso } from "@/lib/admin/dates";
+import { CONTENT_SORT } from "@/lib/admin/sorting";
 import { errorText, useAdminAction, useAdminQuery, type AdminPage } from "@/lib/client/admin";
 import { adminCopy } from "@/lib/copy/admin";
 import { Pagination, usePager, type Pager } from "./Pagination";
-import { useUrlFilters } from "./useUrlFilters";
+import { SortHead, type HeadCol } from "./SortHeader";
+import { useUrlFilters, useUrlSort } from "./useUrlFilters";
 import { Btn, Empty, Field, Notice, PageTitle, Pill, RowsSkeleton, Swatch, Tabs, inputCls, textareaCls, type PillTone } from "./ui";
 
 interface Item {
@@ -53,6 +55,13 @@ const ALLOWED = {
   game: CONTENT_GAMES,
   show: ["todo", "all"],
 };
+const ITEM_COLS: HeadCol<(typeof CONTENT_SORT.keys)[number]>[] = [
+  { label: C.itemsHead[0], sort: "game" },
+  { label: C.itemsHead[1] },
+  { label: C.itemsHead[2], sort: "status" },
+  { label: C.itemsHead[3] },
+  { label: C.itemsHead[4], sort: "updated_at" },
+];
 
 /** Content editor (FR-AD-03): drafts, two-person review, scheduling, and the owner's review of content.ts entries. */
 export function ContentDesk(props: { canWrite: boolean; canApprove: boolean; canSchedule: boolean; isOwner: boolean }) {
@@ -91,11 +100,12 @@ function Items({
   canSchedule: boolean;
   pager: Pager;
 }) {
-  const [{ status }, setFilters] = useUrlFilters(FILTERS, ALLOWED);
+  const [{ status, game }, setFilters] = useUrlFilters(FILTERS, ALLOWED);
+  const sort = useUrlSort(CONTENT_SORT);
   const [open, setOpen] = useState<string | "new" | null>(null);
   const q = useAdminQuery<AdminPage<Item> & { me: string }>(
-    ["content", status, pager.query],
-    `/api/admin/content?${status ? `status=${status}&` : ""}${pager.query}`,
+    ["content", status, game, sort.query, pager.query],
+    `/api/admin/content?${status ? `status=${status}&` : ""}${game ? `game=${game}&` : ""}${sort.query}&${pager.query}`,
     { keepPrevious: true },
   );
   // The open item stays in the editor when its row leaves the current page.
@@ -120,6 +130,19 @@ function Items({
               </option>
             ))}
           </select>
+          <select
+            aria-label={common.game}
+            value={game}
+            onChange={(e) => setFilters({ game: e.target.value })}
+            className={`${inputCls} w-44`}
+          >
+            <option value="">{common.allGames}</option>
+            {CONTENT_GAMES.map((g) => (
+              <option key={g} value={g}>
+                {GAME_BY_ID[g]?.name ?? g}
+              </option>
+            ))}
+          </select>
           {canWrite && (
             <Btn tone="primary" icon="plus" className="ml-auto" onClick={() => setOpen("new")}>
               {C.newItem}
@@ -137,15 +160,7 @@ function Items({
             <Empty icon="note-pencil">{C.emptyItems}</Empty>
           ) : (
             <table className="w-full min-w-[640px] border-collapse text-[14px]">
-              <thead>
-                <tr className="bg-surface-raised num text-muted text-left text-[12px]">
-                  {C.itemsHead.map((h) => (
-                    <th key={h} scope="col" className="px-3 py-2.5 font-semibold">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
+              <SortHead cols={ITEM_COLS} sort={sort} />
               <tbody>
                 {q.data.rows.map((r) => (
                   <tr
