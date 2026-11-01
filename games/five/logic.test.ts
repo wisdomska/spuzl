@@ -17,7 +17,7 @@ function misses(answer: string): string[] {
 
 describe("five content", () => {
   it("has 500+ distinct uppercase answers, all in the dictionary", () => {
-    expect(needsReview).toBe(true);
+    expect(needsReview).toBe(false); // owner-approved list
     expect(ANSWERS.length).toBeGreaterThanOrEqual(500);
     expect(new Set(ANSWERS).size).toBe(ANSWERS.length);
     for (const w of ANSWERS) {
