@@ -2,6 +2,7 @@ import { z } from "zod";
 import { body, handle, ok, ApiError } from "@/lib/api/server";
 import { audit, requireAdmin } from "@/lib/admin/auth";
 import { can } from "@/lib/admin/roles";
+import { fetchPage, pageParams } from "@/lib/admin/paging";
 
 const noDash = (s: string) => !/[–—]/.test(s);
 const label = z.string().trim().min(1).max(80).refine(noDash, "No em or en dashes");
@@ -99,13 +100,17 @@ const kindOf = (k: string): Kind => {
   return k as Kind;
 };
 
-/** GET /api/admin/catalog/:kind: badges, quests or cosmetics (all rows, active or not). */
-export const GET = handle(async (_req: Request, rc: RouteContext<"/api/admin/catalog/[kind]">) => {
+/** GET /api/admin/catalog/:kind?page=&pageSize=: one page of badges, quests or cosmetics (active or not), id breaks ties. */
+export const GET = handle(async (req: Request, rc: RouteContext<"/api/admin/catalog/[kind]">) => {
   const ctx = await requireAdmin("catalog.read");
   const k = KINDS[kindOf((await rc.params).kind)];
-  const { data, error } = await ctx.db.from(k.table).select(k.cols).order(k.order);
-  if (error) throw error;
-  return ok({ rows: data ?? [] });
+  const p = pageParams(req);
+  const build = () => {
+    const q = ctx.db.from(k.table).select(k.cols, { count: "exact" }).order(k.order);
+    return k.order === "id" ? q : q.order("id");
+  };
+  const { rows, total } = await fetchPage(build, p);
+  return ok({ rows, page: p.page, pageSize: p.pageSize, total });
 });
 
 /** PATCH /api/admin/catalog/:kind  { id, patch } */

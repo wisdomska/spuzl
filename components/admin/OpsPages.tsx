@@ -5,7 +5,8 @@ import { useState, type ReactNode } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { age, todayIso } from "@/lib/admin/dates";
 import { ROLES, ROLE_LABEL, type Role } from "@/lib/admin/roles";
-import { errorText, useAdminAction, useAdminQuery } from "@/lib/client/admin";
+import { errorText, useAdminAction, useAdminQuery, type AdminPage } from "@/lib/client/admin";
+import { Pagination, usePager } from "./Pagination";
 import { Btn, Empty, Field, Notice, PageTitle, Pill, RowsSkeleton, Tabs, inputCls } from "./ui";
 
 function Table({ head, children, min = 640 }: { head: string[]; children: ReactNode; min?: number }) {
@@ -64,8 +65,9 @@ function Toggle({ on, label, disabled, onChange }: { on: boolean; label: string;
 /* ---------------- Schools ---------------- */
 
 export function SchoolsPage({ canWrite }: { canWrite: boolean }) {
-  const q = useAdminQuery<{
-    rows: {
+  const pager = usePager();
+  const q = useAdminQuery<
+    AdminPage<{
       id: string;
       name: string;
       city: string | null;
@@ -74,8 +76,8 @@ export function SchoolsPage({ canWrite }: { canWrite: boolean }) {
       verified: boolean;
       players: number;
       created_at: string;
-    }[];
-  }>(["schools"], "/api/admin/schools");
+    }>
+  >(["schools", pager.query], `/api/admin/schools?${pager.query}`, { keepPrevious: true });
   const act = useAdminAction<{ id: string; decision: "verify" | "unverify" }>("POST", (i) => `/api/admin/schools/${i.id}`);
   return (
     <div className="flex flex-col gap-3.5 px-6 py-5">
@@ -115,6 +117,7 @@ export function SchoolsPage({ canWrite }: { canWrite: boolean }) {
           )
         }
       </Frame>
+      {q.data && <Pagination pager={pager} total={q.data.total} />}
     </div>
   );
 }
@@ -141,7 +144,10 @@ interface CatalogRow {
 
 export function ShopPage({ canWrite, canPrice }: { canWrite: boolean; canPrice: boolean }) {
   const [kind, setKind] = useState<Kind>("cosmetics");
-  const q = useAdminQuery<{ rows: CatalogRow[] }>(["catalog", kind], `/api/admin/catalog/${kind}`);
+  const pager = usePager();
+  const q = useAdminQuery<AdminPage<CatalogRow>>(["catalog", kind, pager.query], `/api/admin/catalog/${kind}?${pager.query}`, {
+    keepPrevious: true,
+  });
   const patch = useAdminAction<{ id: string; patch: Record<string, unknown> }>("PATCH", `/api/admin/catalog/${kind}`);
   const [edit, setEdit] = useState<Record<string, number>>({});
   const num = (id: string, field: string, fallback: number) => edit[`${id}.${field}`] ?? fallback;
@@ -168,7 +174,7 @@ export function ShopPage({ canWrite, canPrice }: { canWrite: boolean; canPrice: 
           <Tabs<Kind>
             label="Catalogue"
             value={kind}
-            onChange={setKind}
+            onChange={(k) => (setKind(k), pager.reset())}
             items={[
               { id: "cosmetics", label: "Cosmetics and prices" },
               { id: "badges", label: "Badges" },
@@ -249,6 +255,7 @@ export function ShopPage({ canWrite, canPrice }: { canWrite: boolean; canPrice: 
           )
         }
       </Frame>
+      {q.data && <Pagination pager={pager} total={q.data.total} />}
     </div>
   );
 }
@@ -256,24 +263,32 @@ export function ShopPage({ canWrite, canPrice }: { canWrite: boolean; canPrice: 
 /* ---------------- Feature flags ---------------- */
 
 export function FlagsPage({ canWrite }: { canWrite: boolean }) {
-  const q = useAdminQuery<{ rows: { key: string; enabled: boolean; payload: Record<string, unknown>; updated_at: string }[] }>(
-    ["flags"],
-    "/api/admin/flags",
+  const pager = usePager();
+  const q = useAdminQuery<AdminPage<{ key: string; enabled: boolean; payload: Record<string, unknown>; updated_at: string }>>(
+    ["flags", pager.query],
+    `/api/admin/flags?${pager.query}`,
+    { keepPrevious: true },
   );
   const put = useAdminAction<{ key: string; enabled: boolean; payload?: Record<string, unknown> }>("PUT", "/api/admin/flags");
   const [key, setKey] = useState("");
+  const [added, setAdded] = useState<string | null>(null);
   return (
     <div className="flex flex-col gap-3.5 px-6 py-5">
       <PageTitle title="Feature flags">
         <span className="text-muted text-[14px]">Every new game and event ships behind a flag. Changes are live at once.</span>
       </PageTitle>
       {put.error && <Notice tone="danger">{errorText(put.error)}</Notice>}
+      {added && (
+        <Notice tone="ok" icon="check-circle">
+          Added {added} (off). Flags are listed by key.
+        </Notice>
+      )}
       {canWrite && (
         <form
           className="flex items-end gap-2"
           onSubmit={(e) => {
             e.preventDefault();
-            put.mutate({ key, enabled: false }, { onSuccess: () => setKey("") });
+            put.mutate({ key, enabled: false }, { onSuccess: () => (setAdded(key), setKey("")) });
           }}
         >
           <Field label="New flag key" htmlFor="flagkey">
@@ -315,6 +330,7 @@ export function FlagsPage({ canWrite }: { canWrite: boolean }) {
           </Table>
         )}
       </Frame>
+      {q.data && <Pagination pager={pager} total={q.data.total} />}
     </div>
   );
 }
@@ -373,18 +389,18 @@ export function AuditPage() {
   const [target, setTarget] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-  const [before, setBefore] = useState<number | null>(null);
+  const pager = usePager();
   const qs = new URLSearchParams({
     ...(actor && { actor }),
     ...(action && { action }),
     ...(target && { target }),
     ...(from && { from }),
     ...(to && { to }),
-    ...(before && { before: String(before) }),
   });
-  const q = useAdminQuery<{ rows: AuditRow[]; actors: { id: string; email: string | null; role: Role }[] }>(
-    ["audit", qs.toString()],
-    `/api/admin/audit?${qs}`,
+  const q = useAdminQuery<AdminPage<AuditRow> & { actors: { id: string; email: string | null; role: Role }[] }>(
+    ["audit", qs.toString(), pager.query],
+    `/api/admin/audit?${qs}${qs.size ? "&" : ""}${pager.query}`,
+    { keepPrevious: true },
   );
   const who = (id: string | null) => (id ? (q.data?.actors.find((a) => a.id === id)?.email ?? id.slice(0, 8)) : "system");
   return (
@@ -394,7 +410,7 @@ export function AuditPage() {
       </PageTitle>
       <div className="flex flex-wrap items-end gap-2">
         <Field label="Who" htmlFor="a-actor">
-          <select id="a-actor" value={actor} onChange={(e) => (setActor(e.target.value), setBefore(null))} className={`${inputCls} w-56`}>
+          <select id="a-actor" value={actor} onChange={(e) => (setActor(e.target.value), pager.reset())} className={`${inputCls} w-56`}>
             <option value="">Anyone</option>
             <option value="system">System (cron)</option>
             {q.data?.actors.map((a) => (
@@ -409,7 +425,7 @@ export function AuditPage() {
             id="a-action"
             value={action}
             placeholder="daily."
-            onChange={(e) => (setAction(e.target.value.toLowerCase()), setBefore(null))}
+            onChange={(e) => (setAction(e.target.value.toLowerCase()), pager.reset())}
             className={`${inputCls} w-40`}
           />
         </Field>
@@ -418,7 +434,7 @@ export function AuditPage() {
             id="a-target"
             value={target}
             placeholder="crownfall"
-            onChange={(e) => (setTarget(e.target.value), setBefore(null))}
+            onChange={(e) => (setTarget(e.target.value), pager.reset())}
             className={`${inputCls} w-40`}
           />
         </Field>
@@ -428,7 +444,7 @@ export function AuditPage() {
             type="date"
             max={todayIso()}
             value={from}
-            onChange={(e) => (setFrom(e.target.value), setBefore(null))}
+            onChange={(e) => (setFrom(e.target.value), pager.reset())}
             className={`${inputCls} w-40`}
           />
         </Field>
@@ -438,7 +454,7 @@ export function AuditPage() {
             type="date"
             max={todayIso()}
             value={to}
-            onChange={(e) => (setTo(e.target.value), setBefore(null))}
+            onChange={(e) => (setTo(e.target.value), pager.reset())}
             className={`${inputCls} w-40`}
           />
         </Field>
@@ -464,11 +480,7 @@ export function AuditPage() {
           )
         }
       </Frame>
-      {q.data && q.data.rows.length === 100 && (
-        <Btn className="self-start" onClick={() => setBefore(q.data!.rows.at(-1)!.id)}>
-          Older
-        </Btn>
-      )}
+      {q.data && <Pagination pager={pager} total={q.data.total} />}
     </div>
   );
 }
@@ -476,17 +488,17 @@ export function AuditPage() {
 /* ---------------- Team ---------------- */
 
 export function TeamPage() {
-  const q = useAdminQuery<{
-    me: string;
-    rows: {
+  const pager = usePager();
+  const q = useAdminQuery<
+    AdminPage<{
       user_id: string;
       role: Role;
       email: string | null;
       totp_enrolled: boolean;
       disabled_at: string | null;
       last_sign_in_at: string | null;
-    }[];
-  }>(["team"], "/api/admin/team");
+    }> & { me: string }
+  >(["team", pager.query], `/api/admin/team?${pager.query}`, { keepPrevious: true });
   const add = useAdminAction<{ email: string; role: Role }, { resetSent: boolean }>("POST", "/api/admin/team");
   const patch = useAdminAction<{ id: string; role?: Role; disabled?: boolean }>("PATCH", (i) => `/api/admin/team/${i.id}`);
   const [email, setEmail] = useState("");
@@ -502,7 +514,7 @@ export function TeamPage() {
         className="flex flex-wrap items-end gap-2"
         onSubmit={(e) => {
           e.preventDefault();
-          add.mutate({ email, role }, { onSuccess: () => setEmail("") });
+          add.mutate({ email, role }, { onSuccess: () => (setEmail(""), pager.reset()) });
         }}
       >
         <Field label="Email" htmlFor="t-email">
@@ -583,6 +595,7 @@ export function TeamPage() {
           </Table>
         )}
       </Frame>
+      {q.data && <Pagination pager={pager} total={q.data.total} />}
     </div>
   );
 }

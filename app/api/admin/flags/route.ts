@@ -1,13 +1,17 @@
 import { z } from "zod";
 import { body, handle, ok } from "@/lib/api/server";
 import { audit, requireAdmin } from "@/lib/admin/auth";
+import { fetchPage, pageParams } from "@/lib/admin/paging";
 
-/** GET /api/admin/flags: every feature flag (FR-AD-07). */
-export const GET = handle(async () => {
+/** GET /api/admin/flags?page=&pageSize=: one page of feature flags by key (FR-AD-07). */
+export const GET = handle(async (req: Request) => {
   const ctx = await requireAdmin("flags.read");
-  const { data, error } = await ctx.db.from("feature_flags").select("key, enabled, payload, updated_by, updated_at").order("key");
-  if (error) throw error;
-  return ok({ rows: data ?? [] });
+  const p = pageParams(req);
+  const { rows, total } = await fetchPage(
+    () => ctx.db.from("feature_flags").select("key, enabled, payload, updated_by, updated_at", { count: "exact" }).order("key"),
+    p,
+  );
+  return ok({ rows, page: p.page, pageSize: p.pageSize, total });
 });
 
 const Put = z.object({
