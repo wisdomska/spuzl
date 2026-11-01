@@ -14,6 +14,7 @@ import type { FinishRes } from "@/lib/client/api";
 import { RaceLiveButton } from "@/components/multiplayer/GameChallenge";
 import { SaveStreakPrompt } from "@/components/meta/SaveStreakPrompt";
 import { PLAY_NAV } from "@/lib/analytics/play-nav";
+import { CountUp } from "./CountUp";
 
 /**
  * Solo Screens 05 Results: confetti header with Spuz, the time counting up, percentile, XP bar sweep
@@ -53,28 +54,20 @@ export function ResultsScreen({
   onChallenge?: () => void;
 }) {
   const reduce = useReducedMotion();
-  const [progress, setT] = useState(0);
   const [skipped, setSkipped] = useState(false);
   const instant = !!reduce || skipped;
-  const t = instant ? 1 : progress;
 
+  // Sound follows the count: coins while XP and Sparks roll in, then one accent for what the clear unlocked.
   useEffect(() => {
     if (instant) return;
-    play("coins");
-    const start = performance.now();
-    let raf = 0;
-    const tick = (now: number) => {
-      const p = Math.min(1, (now - start) / 900);
-      setT(1 - Math.pow(1 - p, 3));
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    play("reward");
+    const accent = result.streak?.extended ? "streak" : chips.length > 0 ? "unlock" : null;
+    const t = accent ? setTimeout(() => play(accent), accent === "streak" ? 700 : 620) : undefined;
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per results screen
   }, [instant]);
 
   const world = WORLD_BY_ID[meta.world];
-  const xp = Math.round(result.reward.xp * t);
-  const sparks = Math.round(result.reward.sparks * t);
   const flagged = result.status === "flagged";
   const scoreGame = meta.scoring === "score" && result.score !== undefined;
   const line = flagged
@@ -103,15 +96,28 @@ export function ResultsScreen({
         style={{ background: "color-mix(in srgb, var(--world) 16%, #0E0F1A)" }}
       >
         {!instant && <ConfettiBurst />}
-        <Spuz mood={flagged ? "thinking" : "cheer"} size={140} color={color} decorative />
+        <motion.div
+          initial={instant ? false : { opacity: 0, transform: "translateY(24px) scale(0.92)" }}
+          animate={{ opacity: 1, transform: "translateY(0px) scale(1)" }}
+          transition={instant ? { duration: 0 } : { type: "spring", duration: 0.5, bounce: 0.25 }}
+        >
+          <Spuz mood={flagged ? "thinking" : "cheer"} size={140} color={color} decorative />
+        </motion.div>
       </div>
       <section className="flex flex-col gap-3.5 px-5 pt-4">
         <div className="flex flex-col items-center gap-1 text-center" aria-live="polite">
           <p className="self-stretch text-[17px] leading-[1.35] font-semibold">{line}</p>
           {scoreGame ? (
-            <p className="num text-accent text-[56px] leading-none font-semibold">{formatNumber(Math.round((result.score ?? 0) * t))}</p>
+            <CountUp
+              className="num text-accent text-[56px] leading-none font-semibold"
+              value={result.score ?? 0}
+              format={(n) => formatNumber(Math.round(n))}
+              instant={instant}
+            />
           ) : (
-            <p className="num text-accent text-[56px] leading-none font-semibold">{relaxed ? "Relaxed" : formatClock(result.timeMs * t)}</p>
+            <p className="num text-accent text-[56px] leading-none font-semibold">
+              {relaxed ? "Relaxed" : <CountUp value={result.timeMs} format={formatClock} instant={instant} />}
+            </p>
           )}
           {result.percentile !== null && !relaxed && (
             <p className="text-muted text-[15px] font-medium">
@@ -123,7 +129,7 @@ export function ResultsScreen({
           <div className="bg-surface flex flex-col gap-2 rounded-[16px] px-3.5 py-3">
             <div className="flex justify-between text-[15px] font-semibold">
               <span>XP</span>
-              <span className="num text-accent">+{xp}</span>
+              <CountUp className="num text-accent" value={result.reward.xp} format={(n) => `+${Math.round(n)}`} instant={instant} />
             </div>
             <div className="bg-line h-3 overflow-hidden rounded-[6px]">
               <motion.div
@@ -142,7 +148,7 @@ export function ResultsScreen({
           <div className="bg-surface flex flex-col gap-1.5 rounded-[16px] px-3.5 py-3">
             <div className="flex justify-between text-[15px] font-semibold">
               <span>Sparks</span>
-              <span className="num text-gold">+{sparks}</span>
+              <CountUp className="num text-gold" value={result.reward.sparks} format={(n) => `+${Math.round(n)}`} instant={instant} />
             </div>
             <div className="text-muted flex gap-3 text-[14px] font-medium whitespace-nowrap">
               <span className="flex items-center gap-1">

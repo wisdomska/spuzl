@@ -6,6 +6,7 @@ import { MotionConfig } from "motion/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useSettings, hapticsEnabled, prefersReducedMotion } from "@/lib/settings/store";
 import { configure, unlock, play } from "@/lib/audio";
+import { pressSound } from "@/lib/audio/press";
 import { setHapticsEnabled } from "@/lib/haptics";
 import { useNavTracker } from "@/lib/client/nav";
 import { HapticFallback } from "./HapticFallback";
@@ -28,13 +29,14 @@ export function Providers({ children }: { children: ReactNode }) {
     setHapticsEnabled(hapticsEnabled(settings));
   }, [settings]);
 
-  // Audio unlocks on the first gesture; every toy button ticks (cells and custom controls play their own sound).
+  // Audio unlocks on the first gesture; every press makes its palette sound (lib/audio/press.ts):
+  // buttons tap, switches toggle, tabs and nav items tick lower. Cells and custom controls play their own.
   useEffect(() => {
     const onDown = (e: PointerEvent) => {
       unlock();
-      const el = e.target as HTMLElement | null;
-      const btn = el?.closest?.("button, [data-tick]");
-      if (btn && !btn.closest("[role=gridcell], [data-no-tick]") && !(btn as HTMLButtonElement).disabled) play("tick");
+      if (e.button > 0) return;
+      const fx = pressSound(e.target as Element | null);
+      if (fx) play(fx.event, { step: fx.step });
     };
     const onKey = () => unlock();
     document.addEventListener("pointerdown", onDown, true);

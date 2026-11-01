@@ -6,7 +6,6 @@ import { AnimatePresence, motion } from "motion/react";
 import { Icon } from "@/components/ui/Icon";
 import { Spuz, type SpuzMood } from "@/components/brand/Spuz";
 import { play } from "@/lib/audio";
-import { haptic } from "@/lib/haptics";
 import { formatClock, formatNumber } from "@/lib/format";
 import { gameName, RACE_GAMES } from "@/lib/multiplayer/games";
 import { TIMING, type EmoteId } from "@/lib/multiplayer/constants";
@@ -501,7 +500,7 @@ export function RoundEnd({
 }) {
   const reduce = useReduce();
   useEffect(() => {
-    play(meWon ? "chime" : "fizzle", { step: 4 });
+    play(meWon ? "success" : "fizzle");
   }, [meWon]);
   const won = rounds.filter((r) => r === "me").length;
   const lost = rounds.filter((r) => r === "them").length;
@@ -724,11 +723,8 @@ export function MatchEnd({
   const ratingDelta = me.ratingAfter !== null && me.ratingBefore !== null ? Math.round(me.ratingAfter - me.ratingBefore) : null;
   const [shownRating, setShownRating] = useState(me.ratingBefore ?? me.rating);
   useEffect(() => {
-    if (won) {
-      play("cheer", { silentHaptic: true });
-      haptic([30, 10, 30]);
-    } else play("fizzle");
-  }, [won]);
+    play(won ? "duelWin" : draw ? "notify" : "duelLose");
+  }, [won, draw]);
   // Rating count-up (You win, Handoff): 1,100 ms; reduced motion or a tap swaps the number.
   useEffect(() => {
     if (me.ratingAfter === null || me.ratingBefore === null) return;

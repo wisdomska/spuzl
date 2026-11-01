@@ -6,6 +6,7 @@ import { Icon } from "@/components/ui/Icon";
 import { INVITE_TARGETS, inviteHref, type InviteTarget } from "@/lib/share/targets";
 import { shareCopy as T } from "@/lib/copy/share";
 import { play } from "@/lib/audio";
+import { useSheetSound } from "@/lib/audio/useSheetSound";
 
 /**
  * A Share button that opens a sheet of apps (WhatsApp, Snapchat, Instagram, TikTok, Telegram, Facebook, X,
@@ -37,7 +38,7 @@ export function InviteShare({
   const copy = async (then?: string) => {
     try {
       await navigator.clipboard.writeText(message);
-      play("pop");
+      play("success");
       setNote(then ?? T.copied);
     } catch {
       setNote(null);
@@ -48,6 +49,7 @@ export function InviteShare({
     const href = inviteHref(id, url, message, subject);
     window.open(href, href.startsWith("http") ? "_blank" : "_self", "noopener,noreferrer");
   };
+  useSheetSound(open);
   return (
     <>
       <button

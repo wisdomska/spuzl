@@ -8,6 +8,7 @@ import { Icon } from "@/components/ui/Icon";
 import { track } from "@/lib/analytics/track";
 import { useSettings } from "@/lib/settings/store";
 import { smallCardSrc } from "@/lib/lowdata/images";
+import { useSheetSound } from "@/lib/audio/useSheetSound";
 
 /**
  * Share sheet (FR-RS-03, FR-RS-04). Styled after the Components "Invite sheet".
@@ -214,6 +215,7 @@ export function ShareSheet({
     [text, nativeShare, done, file, image, fileName, say, canFiles],
   );
 
+  useSheetSound(open);
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <AnimatePresence>

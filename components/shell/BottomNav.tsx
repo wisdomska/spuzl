@@ -34,7 +34,7 @@ export function BottomNav() {
             key={n.href}
             href={n.href}
             aria-current={active ? "page" : undefined}
-            className="flex flex-col items-center justify-center gap-[3px]"
+            className="press flex flex-col items-center justify-center gap-[3px]"
             style={{ color: active ? "var(--accent)" : "var(--text-muted)" }}
           >
             <Icon name={n.icon} size={24} />

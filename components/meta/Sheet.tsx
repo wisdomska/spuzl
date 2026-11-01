@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Dialog } from "radix-ui";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { prefersReducedMotion, useSettings } from "@/lib/settings/store";
+import { useSheetSound } from "@/lib/audio/useSheetSound";
 
 /**
  * Bottom sheet (r 32 top, handle, dimmed backdrop). Radix Dialog for focus trap, Escape and labelling.
@@ -25,6 +26,7 @@ export function Sheet({
   const osReduce = useReducedMotion();
   const appReduce = useSettings((s) => s.hydrated && prefersReducedMotion(s));
   const reduce = !!osReduce || appReduce;
+  useSheetSound(open);
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <AnimatePresence>

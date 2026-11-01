@@ -27,6 +27,12 @@ export interface WorldProgress {
   total: number;
 }
 
+/** easeOutQuad / easeInQuad (easings.net): the rise and fall of one hop. */
+const UP = [0.5, 1, 0.89, 1] as const;
+const DOWN = [0.11, 0, 0.5, 0] as const;
+/** take-off times (s) of the three hops in the 700 ms trip */
+const HOPS = [0, 0.233, 0.466];
+
 export function HomeMap({
   progress,
   current,
@@ -65,7 +71,9 @@ export function HomeMap({
     }
     const to = SLOTS[idx(w)];
     setHopTo({ x: to.x + 6, y: to.y - 8 });
-    [0, 233, 466].forEach((t) => setTimeout(() => play("hop"), t));
+    // A hop on each take-off and a soft landing at the end, scheduled on the audio clock with the arcs.
+    HOPS.forEach((t) => play("hop", { delay: t }));
+    play("land", { delay: 0.7, gain: 0.7 });
     setTimeout(() => {
       setSpuzAt(w);
       router.push(`/world/${w}`);
@@ -95,7 +103,7 @@ export function HomeMap({
             type="button"
             onClick={() => travel(w.id)}
             data-world={w.id}
-            className="absolute flex w-[136px] flex-col items-center gap-1.5 rounded-[24px] outline-none focus-visible:shadow-[var(--focus-ring)]"
+            className="press absolute flex w-[136px] flex-col items-center gap-1.5 rounded-[24px] outline-none focus-visible:shadow-[var(--focus-ring)]"
             style={{ left: s.x, top: s.y }}
           >
             <Island color={w.color} icon={w.icon} landmarkLeft={w.id === spuzAt ? 78 : 46} bob={BOB[i]} />
@@ -134,7 +142,8 @@ export function HomeMap({
                 }
               : undefined
           }
-          transition={{ duration: 0.7, ease: "easeOut" }}
+          // Gravity: each arc decelerates up and accelerates down, so the three hops read as jumps.
+          transition={{ duration: 0.7, ease: [UP, DOWN, UP, DOWN, UP, DOWN] }}
         >
           <Spuz mood={hopTo ? "cheer" : mood} size={64} color={color} decorative />
         </motion.div>

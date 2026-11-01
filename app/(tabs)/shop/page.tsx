@@ -99,7 +99,7 @@ export default function ShopPage() {
     try {
       await buy.mutateAsync({ itemId: item.id, requestId: request.current.id });
       request.current = null;
-      play("jingle");
+      play("success");
       setNote(
         item.type === "freeze"
           ? "Freeze ready. It covers one missed day."

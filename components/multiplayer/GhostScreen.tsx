@@ -10,7 +10,6 @@ import { api, finishAttempt, HttpError } from "@/lib/client/api";
 import { useProfileGate } from "@/lib/client/multiplayer";
 import type { InputLog } from "@/games/types";
 import { play } from "@/lib/audio";
-import { haptic } from "@/lib/haptics";
 import { Cta, LoadingScreen, MpToast, NeedProfile, Screen, formatTenths, useToast } from "./ui";
 
 interface Ghost {
@@ -159,9 +158,8 @@ function GhostResult({
 }) {
   useEffect(() => {
     if (beat) {
-      play("cheer", { silentHaptic: true });
-      haptic([30, 10, 30]);
-    } else play("fizzle");
+      play("duelWin");
+    } else play("duelLose");
   }, [beat]);
   const title = !ghost
     ? "Your ghost is set"

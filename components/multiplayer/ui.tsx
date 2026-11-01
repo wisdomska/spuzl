@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { Icon } from "@/components/ui/Icon";
 import { Spuz } from "@/components/brand/Spuz";
 import { play } from "@/lib/audio";
-import { haptic } from "@/lib/haptics";
+import { haptic, LEVELS } from "@/lib/haptics";
 import { EMOTES, type EmoteId } from "@/lib/multiplayer/constants";
 import { countdownBeat } from "@/lib/multiplayer/duel";
 import { useReduce } from "@/lib/client/multiplayer";
@@ -91,7 +91,12 @@ export function RoundDots({
   );
 }
 
-/** The 3-2-1-SPUZL! number (D2). Drum per beat, horn on SPUZL!; reduced motion fades, no shake. */
+/**
+ * The 3-2-1-SPUZL! number (D2). A tick per number, horn on SPUZL!; reduced motion fades, no shake.
+ * Each sound lands on the frame the number slams down (40% of its 500 ms entrance), not when it appears.
+ */
+const SLAM_S = 0.2;
+
 export function CountdownNumber({ msToStart }: { msToStart: number }) {
   const { label, beat } = countdownBeat(msToStart);
   const reduce = useReduce();
@@ -99,9 +104,12 @@ export function CountdownNumber({ msToStart }: { msToStart: number }) {
   useEffect(() => {
     if (played.current === beat || msToStart <= 0) return;
     played.current = beat;
-    play(beat >= 3 ? "horn" : "drum", { silentHaptic: true });
-    haptic([20]);
-  }, [beat, msToStart]);
+    const delay = reduce ? 0 : SLAM_S;
+    if (beat >= 3) {
+      play("horn", { delay, silentHaptic: true });
+      setTimeout(() => haptic(LEVELS.heavy), delay * 1000);
+    } else play("countdown", { step: 3 - beat, delay });
+  }, [beat, msToStart, reduce]);
   const go = beat >= 3;
   return (
     <div aria-live="assertive" className="flex justify-center">
@@ -153,8 +161,13 @@ export function MpToast({ toast }: { toast: { text: string; kind: "info" | "bad"
             key={toast.n}
             initial={reduce ? { opacity: 0 } : { opacity: 0, transform: "translateY(-20px)" }}
             animate={{ opacity: 1, transform: "translateY(0px)" }}
-            exit={{ opacity: 0, transition: { duration: 0.15 } }}
-            transition={{ duration: 0.32, ease: EASE_OUT }}
+            // Leaves the way it came, faster.
+            exit={
+              reduce
+                ? { opacity: 0, transition: { duration: 0.15 } }
+                : { opacity: 0, transform: "translateY(-12px)", transition: { duration: 0.15, ease: EASE_OUT } }
+            }
+            transition={{ duration: 0.28, ease: EASE_OUT }}
             role="status"
             className="bg-surface-raised flex w-full max-w-[400px] items-center gap-2 rounded-[14px] px-3.5 py-2.5 text-[15px] font-medium shadow-[0_10px_30px_rgba(0,0,0,.4)]"
             style={{ boxShadow: toast.kind === "bad" ? "inset 0 0 0 2px var(--danger), 0 10px 30px rgba(0,0,0,.4)" : undefined }}
