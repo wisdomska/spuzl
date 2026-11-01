@@ -7,11 +7,12 @@ import { Spuz, type SpuzMood } from "@/components/brand/Spuz";
 import { play } from "@/lib/audio";
 import { haptic } from "@/lib/haptics";
 import { formatClock, formatNumber } from "@/lib/format";
-import { GAME_BY_ID, WORLD_BY_ID } from "@/lib/catalog";
+import { GAME_BY_ID, WORLDS, WORLD_BY_ID, type WorldId } from "@/lib/catalog";
 import { useSettings } from "@/lib/settings/store";
-import { gameName, ROOM_PICKS } from "@/lib/multiplayer/games";
+import { gameName, RACE_GAMES } from "@/lib/multiplayer/games";
+import { partyCopy } from "@/lib/copy/party";
 import { overtakes, raceOrder } from "@/lib/multiplayer/race";
-import type { EmoteId } from "@/lib/multiplayer/constants";
+import { PARTY_MAX, PARTY_MIN, type EmoteId } from "@/lib/multiplayer/constants";
 import type { MatchPlayerView, MatchView } from "@/lib/multiplayer/types";
 import { useReduce } from "@/lib/client/multiplayer";
 import { Avatar, Cta, EASE_IN_OUT, EASE_OUT, EmoteBar, EmoteBubble, PODIUM, SPRING_PARTY, TopButton, placeLabel } from "./ui";
@@ -97,47 +98,92 @@ export function ShareCode({ code, url, text, count }: { code: string; url: strin
   );
 }
 
-/* ---------------- P0 Create room ---------------- */
+/* ---------------- P0 Host or join (SPZ-13) ---------------- */
 
 const DIFFS = ["easy", "medium", "hard", "expert"] as const;
 export type Diff = (typeof DIFFS)[number];
+export type RoomRequest = { game: string | null; difficulty: Diff; maxPlayers: number; classroom: boolean };
 
+/** Worlds that have at least one race game, in catalog order: the picker's filter chips. */
+const PARTY_WORLDS = WORLDS.filter((w) => RACE_GAMES.some((g) => g.world === w.id));
+
+/** Random mix, or any race game (filtered by world so 25 games fit a phone without a long scroll). */
 export function GamePicker({ value, onChange }: { value: string | null; onChange: (g: string | null) => void }) {
-  const tiles = [
-    { id: null as string | null, n: "Random mix", i: "shuffle", c: "var(--accent)" },
-    ...ROOM_PICKS.map((id) => ({ id, n: GAME_BY_ID[id].name, i: GAME_BY_ID[id].icon, c: WORLD_BY_ID[GAME_BY_ID[id].world].color })),
-  ];
+  const [world, setWorld] = useState<WorldId>(() => (value && GAME_BY_ID[value]?.world) || PARTY_WORLDS[0].id);
+  const games = RACE_GAMES.filter((g) => g.world === world);
+  const tile = (on: boolean) => ({
+    background: on ? "color-mix(in srgb, var(--accent) 14%, var(--bg))" : "var(--surface)",
+    boxShadow: on ? "inset 0 0 0 2px var(--accent)" : undefined,
+  });
   return (
-    <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Game">
-      {tiles.map((g) => {
-        const on = value === g.id;
-        return (
-          <button
-            key={g.n}
-            type="button"
-            role="radio"
-            aria-checked={on}
-            onClick={() => onChange(g.id)}
-            className="press flex h-[92px] flex-col items-center justify-center gap-1.5 rounded-[18px]"
-            style={{
-              background: on ? "color-mix(in srgb, var(--accent) 14%, var(--bg))" : "var(--surface)",
-              boxShadow: on ? "inset 0 0 0 2px var(--accent)" : undefined,
-            }}
-          >
-            <span className="flex size-10 items-center justify-center rounded-[12px] text-[#0E0F1A]" style={{ background: g.c }}>
-              <Icon name={g.i} size={20} />
-            </span>
-            <span className="text-[14px] font-semibold">{g.n}</span>
-          </button>
-        );
-      })}
+    <div className="flex flex-col gap-2.5">
+      <div className="-mx-5 flex gap-1.5 overflow-x-auto px-5 pb-0.5" role="group" aria-label={partyCopy.host.worlds}>
+        {PARTY_WORLDS.map((w) => {
+          const on = w.id === world;
+          const n = RACE_GAMES.filter((g) => g.world === w.id).length;
+          return (
+            <button
+              key={w.id}
+              type="button"
+              aria-pressed={on}
+              aria-label={`${w.name}, ${partyCopy.host.gameCount(n)}`}
+              onClick={() => setWorld(w.id)}
+              className="press flex h-11 shrink-0 items-center gap-2 rounded-[12px] px-3 text-[14px] font-semibold whitespace-nowrap"
+              style={on ? { background: "var(--surface-raised)" } : { background: "var(--surface)", color: "var(--text-muted)" }}
+            >
+              <span className="size-2.5 flex-none rounded-full" style={{ background: w.color }} aria-hidden />
+              {w.name}
+            </button>
+          );
+        })}
+      </div>
+      <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label={partyCopy.host.game}>
+        <button
+          type="button"
+          role="radio"
+          aria-checked={value === null}
+          onClick={() => onChange(null)}
+          className="press col-span-3 flex min-h-14 items-center gap-3 rounded-[18px] px-3 text-left"
+          style={tile(value === null)}
+        >
+          <span className="bg-accent text-on-accent flex size-10 flex-none items-center justify-center rounded-[12px]">
+            <Icon name="shuffle" size={20} />
+          </span>
+          <span className="flex min-w-0 flex-col">
+            <span className="text-[15px] font-semibold">{partyCopy.host.randomMix}</span>
+            <span className="text-muted text-[13px]">{partyCopy.host.randomMixHint}</span>
+          </span>
+        </button>
+        {games.map((g) => {
+          const on = value === g.id;
+          return (
+            <button
+              key={g.id}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              onClick={() => onChange(g.id)}
+              className="press flex h-[84px] min-w-0 flex-col items-center justify-center gap-1.5 rounded-[18px] px-1"
+              style={tile(on)}
+            >
+              <span
+                className="flex size-10 items-center justify-center rounded-[12px] text-[#0E0F1A]"
+                style={{ background: WORLD_BY_ID[g.world].color }}
+              >
+                <Icon name={g.icon} size={20} />
+              </span>
+              <span className="max-w-full truncate text-[14px] font-semibold">{g.name}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
 
 export function DifficultyPicker({ value, onChange }: { value: Diff; onChange: (d: Diff) => void }) {
   return (
-    <div className="bg-surface flex gap-1 rounded-[16px] p-1" role="radiogroup" aria-label="Difficulty">
+    <div className="bg-surface flex gap-1 rounded-[16px] p-1" role="radiogroup" aria-label={partyCopy.host.difficulty}>
       {DIFFS.map((d) => (
         <button
           key={d}
@@ -155,91 +201,179 @@ export function DifficultyPicker({ value, onChange }: { value: Diff; onChange: (
   );
 }
 
-export function CreateRoom({
-  onOpen,
-  busy,
+export type PartyTab = "host" | "join";
+
+/** P0: Host and Join as two tabs under one header. */
+export function PartyStart({
+  tab,
+  onTab,
   onBack,
-  onJoin,
+  note,
+  children,
 }: {
-  onOpen: (r: { game: string | null; difficulty: Diff; maxPlayers: number; classroom: boolean }) => void;
-  busy: boolean;
+  tab: PartyTab;
+  onTab: (t: PartyTab) => void;
   onBack: () => void;
-  onJoin: (code: string) => void;
+  note?: React.ReactNode;
+  children: React.ReactNode;
 }) {
-  const [game, setGame] = useState<string | null>(null);
-  const [difficulty, setDifficulty] = useState<Diff>("medium");
-  const [size, setSize] = useState(8);
-  const [classroom, setClassroom] = useState(false);
-  const [code, setCode] = useState("");
+  const tabs: PartyTab[] = ["host", "join"];
+  const refs = useRef<Record<PartyTab, HTMLButtonElement | null>>({ host: null, join: null });
+  const onKey = (e: React.KeyboardEvent) => {
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    e.preventDefault();
+    const next = tab === "host" ? "join" : "host";
+    onTab(next);
+    refs.current[next]?.focus();
+  };
   return (
     <div
       className="flex flex-1 flex-col gap-3.5 px-5 pt-[max(56px,env(safe-area-inset-top))] pb-[max(28px,env(safe-area-inset-bottom))]"
-      data-screen-label="P0 Create room"
+      data-screen-label={tab === "host" ? "P0 Host" : "P0 Join"}
     >
       <div className="flex items-center gap-3">
-        <TopButton icon="arrow-left" label="Back" onClick={onBack} />
-        <h1 className="font-display text-[22px] font-black">New party</h1>
+        <TopButton icon="arrow-left" label={partyCopy.back} onClick={onBack} />
+        <h1 className="font-display text-[22px] font-black">{partyCopy.title}</h1>
       </div>
-      <span className="text-[15px] font-semibold" id="game-label">
-        Game
-      </span>
+      <div className="bg-surface flex gap-1 rounded-[16px] p-1" role="tablist" aria-label={partyCopy.tabs.label} onKeyDown={onKey}>
+        {tabs.map((t) => (
+          <button
+            key={t}
+            ref={(el) => {
+              refs.current[t] = el;
+            }}
+            type="button"
+            role="tab"
+            id={`party-tab-${t}`}
+            aria-selected={tab === t}
+            aria-controls={`party-panel-${t}`}
+            tabIndex={tab === t ? 0 : -1}
+            onClick={() => onTab(t)}
+            className="flex h-11 flex-1 items-center justify-center gap-2 rounded-[12px] text-[16px] font-semibold"
+            style={tab === t ? { background: "var(--surface-raised)" } : { color: "var(--text-muted)" }}
+          >
+            <Icon name={t === "host" ? "crown-simple" : "sign-in"} size={18} />
+            {partyCopy.tabs[t]}
+          </button>
+        ))}
+      </div>
+      {note}
+      <div role="tabpanel" id={`party-panel-${tab}`} aria-labelledby={`party-tab-${tab}`} className="flex flex-1 flex-col gap-3.5">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/** Host tab: game (or Random mix), difficulty, players and Classroom mode. */
+export function HostRoom({
+  initialGame = null,
+  onOpen,
+  busy,
+}: {
+  initialGame?: string | null;
+  onOpen: (r: RoomRequest) => void;
+  busy: boolean;
+}) {
+  const [game, setGame] = useState<string | null>(initialGame);
+  const [difficulty, setDifficulty] = useState<Diff>("medium");
+  const [size, setSize] = useState(PARTY_MAX);
+  const [classroom, setClassroom] = useState(false);
+  return (
+    <>
+      <span className="text-[15px] font-semibold">{partyCopy.host.game}</span>
       <GamePicker value={game} onChange={setGame} />
-      <span className="mt-1 text-[15px] font-semibold">Difficulty</span>
+      <span className="mt-1 text-[15px] font-semibold">{partyCopy.host.difficulty}</span>
       <DifficultyPicker value={difficulty} onChange={setDifficulty} />
-      <label htmlFor="room-size" className="mt-1 text-[15px] font-semibold">
-        Room size
+      <label htmlFor="room-size" className="mt-1 flex items-baseline justify-between text-[15px] font-semibold">
+        {partyCopy.host.players}
+        <span className="text-muted text-[14px] font-medium">{partyCopy.host.playersValue(size)}</span>
       </label>
       <div className="flex items-center gap-3.5 py-1.5">
         <input
           id="room-size"
           type="range"
-          min={2}
-          max={8}
+          min={PARTY_MIN}
+          max={PARTY_MAX}
           value={size}
           onChange={(e) => setSize(Number(e.target.value))}
           className="room-range h-11 flex-1"
-          style={{ ["--fill" as string]: `${((size - 2) / 6) * 100}%` }}
+          style={{ ["--fill" as string]: `${((size - PARTY_MIN) / (PARTY_MAX - PARTY_MIN)) * 100}%` }}
         />
         <span className="num w-10 text-right text-[20px] font-semibold">{size}</span>
       </div>
-      <label className="bg-surface flex min-h-14 cursor-pointer items-center justify-between rounded-[16px] px-4 py-3.5">
+      <label className="bg-surface flex min-h-14 cursor-pointer items-center justify-between gap-3 rounded-[16px] px-4 py-3.5">
         <span className="flex flex-col">
-          <span className="text-[16px] font-semibold">Classroom mode</span>
-          {classroom && <span className="text-muted text-[14px]">You host on the big screen and don&apos;t race.</span>}
+          <span className="text-[16px] font-semibold">{partyCopy.host.classroom}</span>
+          <span className="text-muted text-[14px]" id="classroom-hint">
+            {partyCopy.host.classroomHint}
+          </span>
         </span>
-        <input type="checkbox" role="switch" checked={classroom} onChange={(e) => setClassroom(e.target.checked)} className="mp-switch" />
-      </label>
-      <form
-        className="flex gap-2"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (code.trim()) onJoin(code);
-        }}
-      >
-        <label htmlFor="join-code" className="sr-only">
-          Room code
-        </label>
         <input
-          id="join-code"
-          value={code}
-          onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 4))}
-          placeholder="Got a code?"
-          autoCapitalize="characters"
-          autoComplete="off"
-          className="bg-surface font-display placeholder:text-muted h-12 min-w-0 flex-1 rounded-[14px] px-4 text-[18px] font-black tracking-[.2em] placeholder:font-sans placeholder:text-[16px] placeholder:font-medium placeholder:tracking-normal"
+          type="checkbox"
+          role="switch"
+          checked={classroom}
+          aria-describedby="classroom-hint"
+          onChange={(e) => setClassroom(e.target.checked)}
+          className="mp-switch flex-none"
         />
+      </label>
+      <Cta className="mt-auto" disabled={busy} onClick={() => onOpen({ game, difficulty, maxPlayers: size, classroom })}>
+        {partyCopy.host.open}
+      </Cta>
+    </>
+  );
+}
+
+/** Join tab: type the host's 4-character room code. */
+export function JoinRoom({ onJoin }: { onJoin: (code: string) => void }) {
+  const [code, setCode] = useState("");
+  const ready = code.trim().length === 4;
+  return (
+    <form
+      className="flex flex-1 flex-col gap-3.5"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (ready) onJoin(code);
+      }}
+    >
+      <div className="mt-4 flex flex-col items-center gap-2 text-center">
+        <Spuz mood="wave" size={110} />
+        <h2 className="font-display text-[22px] font-black">{partyCopy.join.heading}</h2>
+        <p className="text-muted text-[15px]">{partyCopy.join.body}</p>
+      </div>
+      <label htmlFor="join-code" className="sr-only">
+        {partyCopy.join.label}
+      </label>
+      <input
+        id="join-code"
+        value={code}
+        onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 4))}
+        placeholder={partyCopy.join.placeholder}
+        autoCapitalize="characters"
+        autoComplete="off"
+        autoCorrect="off"
+        spellCheck={false}
+        enterKeyHint="go"
+        autoFocus
+        className="bg-surface font-display text-accent placeholder:text-muted h-[72px] w-full rounded-[18px] px-4 text-center text-[36px] font-black tracking-[.4em] placeholder:opacity-40"
+      />
+      <div className="mt-auto flex flex-col">
         <button
           type="submit"
-          disabled={code.trim().length !== 4}
-          className="press bg-surface-raised h-12 rounded-[14px] px-5 text-[15px] font-semibold disabled:opacity-50"
+          disabled={!ready}
+          className="toy font-display flex h-[60px] items-center justify-center gap-2.5 rounded-[20px] text-[17px] font-black"
+          style={{
+            background: ready ? "var(--accent)" : "var(--surface-raised)",
+            color: ready ? "var(--on-accent)" : "var(--text-muted)",
+            ["--btn-depth" as string]: ready ? "var(--accent-depth)" : "var(--depth)",
+            boxShadow: `0 6px 0 ${ready ? "var(--accent-depth)" : "var(--depth)"}`,
+          }}
         >
-          Join
+          {partyCopy.join.cta}
         </button>
-      </form>
-      <Cta className="mt-auto" disabled={busy} onClick={() => onOpen({ game, difficulty, maxPlayers: size, classroom })}>
-        Open room
-      </Cta>
-    </div>
+      </div>
+    </form>
   );
 }
 

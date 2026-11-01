@@ -1,0 +1,45 @@
+/** Party Race copy (SPZ-13): Host and Join tabs, and the game-first Challenge sheet. */
+export const partyCopy = {
+  title: "Party",
+  back: "Back",
+  tabs: { label: "Host or join a party", host: "Host", join: "Join" },
+  host: {
+    game: "Game",
+    randomMix: "Random mix",
+    randomMixHint: "A different game each round",
+    worlds: "Filter games by world",
+    gameCount: (n: number) => (n === 1 ? "1 game" : `${n} games`),
+    difficulty: "Difficulty",
+    players: "Players",
+    playersValue: (n: number) => `Up to ${n}`,
+    classroom: "Classroom mode",
+    classroomHint: "You run the race on a big screen for the room and don't play yourself.",
+    open: "Open room",
+    failed: "Couldn't open a room. Try again.",
+  },
+  join: {
+    heading: "Got a room code?",
+    body: "Ask the host for the 4-character code on their screen.",
+    label: "Room code",
+    placeholder: "ABCD",
+    cta: "Join room",
+    badCode: "Codes are 4 letters and numbers, no 0, O, 1 or I.",
+  },
+  challenge: {
+    /** the action on a game card (World view) */
+    cta: "Challenge",
+    ctaAria: (game: string) => `Challenge someone to ${game}`,
+    /** on results and the free-play end bar, where "Challenge a friend" (beat my time) already sits */
+    live: "Race live",
+    title: (game: string) => `Race ${game}`,
+    body: "Same puzzle, same clock. Pick how you want to play.",
+    friend: "Duel a friend",
+    friendHint: "Send a link. Best of 3, unranked.",
+    quick: "Quick Match",
+    quickHint: "Ranked. We find you a rival.",
+    quickLocked: "Opens at 16. Duel a friend.",
+    party: "Host a party",
+    partyHint: "2 to 8 players race with a room code.",
+    close: "Close",
+  },
+} as const;

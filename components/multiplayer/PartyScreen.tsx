@@ -12,10 +12,26 @@ import { useSettings } from "@/lib/settings/store";
 import { useBackOrHome } from "@/lib/client/nav";
 import { normalizeRoomCode } from "@/lib/multiplayer/roomCode";
 import { partyPhase } from "@/lib/multiplayer/race";
-import { gameName } from "@/lib/multiplayer/games";
+import { gameName, raceGameParam } from "@/lib/multiplayer/games";
+import { partyCopy } from "@/lib/copy/party";
 import type { MatchView } from "@/lib/multiplayer/types";
 import { MatchBoard } from "./MatchBoard";
-import { CreateRoom, DifficultyPicker, GamePicker, Lobby, Podium, RaceRail, TvMode, rowsOf, useJoinToasts, type Diff } from "./party";
+import {
+  DifficultyPicker,
+  GamePicker,
+  HostRoom,
+  JoinRoom,
+  Lobby,
+  PartyStart,
+  Podium,
+  RaceRail,
+  TvMode,
+  rowsOf,
+  useJoinToasts,
+  type Diff,
+  type PartyTab,
+  type RoomRequest,
+} from "./party";
 import { Avatar, CountdownNumber, Cta, LoadingScreen, MpToast, NeedProfile, Screen, TopButton, useToast } from "./ui";
 
 /* ---------------- /party ---------------- */
@@ -23,39 +39,53 @@ import { Avatar, CountdownNumber, Cta, LoadingScreen, MpToast, NeedProfile, Scre
 export function PartyHome() {
   const gate = useProfileGate();
   const router = useRouter();
+  const sp = useSearchParams();
   // From a crew page (/party?crew=<id>): the room is for the crew; its code goes in the crew chat.
-  const crewId = useSearchParams().get("crew");
+  const crewId = sp.get("crew");
   const back = useBackOrHome(); // SPZ-25: deep links go back to the Grid
+  // Game-first (SPZ-13): /party?host=1&game=<id> opens the Host tab with that game picked; ?join=1 opens Join.
+  const initialGame = raceGameParam(sp.get("game"));
+  const [tab, setTab] = useState<PartyTab>(sp.get("join") === "1" && sp.get("host") !== "1" ? "join" : "host");
   const relaxed = useSettings((s) => s.relaxed);
   const [busy, setBusy] = useState(false);
   const { toast, show } = useToast();
   if (gate === "loading") return <LoadingScreen />;
   if (gate === "no_profile") return <NeedProfile />;
-  const open = async (r: { game: string | null; difficulty: Diff; maxPlayers: number; classroom: boolean }) => {
+  const open = async (r: RoomRequest) => {
     setBusy(true);
     try {
       const res = await api<{ code: string }>("/api/v1/rooms", { json: r });
       router.push(`/party/${res.code}${r.classroom ? "?view=tv" : ""}`);
     } catch {
       setBusy(false);
-      show("Couldn't open a room. Try again.", "bad");
+      show(partyCopy.host.failed, "bad");
     }
   };
   const join = (raw: string) => {
     const code = normalizeRoomCode(raw);
-    if (!code) return show("Codes are 4 letters and numbers, no 0, O, 1 or I.", "bad");
+    if (!code) return show(partyCopy.join.badCode, "bad");
     router.push(`/party/${code}`);
   };
   return (
-    <Screen label="P0 Create room">
+    <Screen label={tab === "host" ? "P0 Host" : "P0 Join"}>
       <MpToast toast={toast} />
-      {relaxed && (
-        <p className="bg-surface text-muted mx-4 mt-4 rounded-[14px] px-3.5 py-2.5 text-[14px]" role="note">
-          Relaxed mode hides race strips. Turn it off in Settings to race.
-        </p>
-      )}
-      {crewId && /^[0-9a-f-]{36}$/i.test(crewId) && <CrewNote id={crewId} />}
-      <CreateRoom busy={busy} onOpen={open} onBack={back} onJoin={join} />
+      <PartyStart
+        tab={tab}
+        onTab={setTab}
+        onBack={back}
+        note={
+          <>
+            {relaxed && (
+              <p className="bg-surface text-muted rounded-[14px] px-3.5 py-2.5 text-[14px]" role="note">
+                Relaxed mode hides race strips. Turn it off in Settings to race.
+              </p>
+            )}
+            {crewId && /^[0-9a-f-]{36}$/i.test(crewId) && <CrewNote id={crewId} />}
+          </>
+        }
+      >
+        {tab === "host" ? <HostRoom initialGame={initialGame} busy={busy} onOpen={open} /> : <JoinRoom onJoin={join} />}
+      </PartyStart>
     </Screen>
   );
 }
@@ -64,7 +94,7 @@ function CrewNote({ id }: { id: string }) {
   const crew = useCrew(id);
   if (!crew.data?.member) return null;
   return (
-    <p className="bg-surface mx-4 mt-4 flex items-center gap-2.5 rounded-[14px] px-3.5 py-2.5 text-[14px]" role="note">
+    <p className="bg-surface flex items-center gap-2.5 rounded-[14px] px-3.5 py-2.5 text-[14px]" role="note">
       <span className="size-3 flex-none rounded-full" style={{ background: crew.data.color }} aria-hidden />
       <span>
         Party for <b className="font-semibold">{crew.data.name}</b>. Open a room, then share its code with your crew.

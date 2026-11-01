@@ -13,10 +13,21 @@ export const RACE_GAMES: GameMeta[] = GAMES.filter(
 const RACE_IDS = new Set(RACE_GAMES.map((g) => g.id));
 export const isRaceGame = (id: string) => RACE_IDS.has(id);
 
-/** Party room picker (Overlays P0): Random mix plus these, in design order. */
-export const ROOM_PICKS = ["quads", "crownfall", "sixer", "deadon", "echo"].filter(isRaceGame);
+/**
+ * Party room picker (Overlays P0, SPZ-13): Random mix plus every race game, in catalog order. The rooms API
+ * accepts exactly this set (`isRaceGame`), so the picker and the server can never disagree.
+ */
+export const PARTY_GAME_IDS: string[] = RACE_GAMES.map((g) => g.id);
 /** Duel entry default (Overlays M1 "Sixer | Any game"). */
 export const DUEL_DEFAULT_GAME = isRaceGame("sixer") ? "sixer" : RACE_GAMES[0]?.id;
+
+/**
+ * A `?game=<id>` query param from a game card (game-first Duel and Party): the id when it can be raced,
+ * otherwise null so the screen keeps its own default.
+ */
+export function raceGameParam(raw: string | null | undefined): string | null {
+  return raw && isRaceGame(raw) ? raw : null;
+}
 
 /** Games for a match: the chosen game every round, or a seeded mix of different games. */
 export function pickGames(rng: Rng, chosen: string | null, rounds: number, allowed?: string[]): string[] {
