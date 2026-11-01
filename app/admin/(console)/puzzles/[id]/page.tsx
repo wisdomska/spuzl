@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { adminCopy } from "@/lib/copy/admin";
 import { notFound } from "next/navigation";
 import { pageGate } from "@/lib/admin/page-gate";
 import { can } from "@/lib/admin/roles";
@@ -7,11 +8,13 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { Forbidden } from "@/components/admin/ui";
 import { PuzzlePreview } from "@/components/admin/PuzzlePreview";
 
-export const metadata: Metadata = { title: "Puzzle" };
+const P = adminCopy.pages;
+
+export const metadata: Metadata = { title: P.puzzle.title };
 
 export default async function Page({ params, searchParams }: PageProps<"/admin/puzzles/[id]">) {
   const { role, allowed } = await pageGate("calendar.read");
-  if (!allowed) return <Forbidden what="the puzzle library" />;
+  if (!allowed) return <Forbidden what={P.puzzle.what} />;
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const { data } = await supabaseAdmin().from("puzzles").select("game_id").eq("id", id).maybeSingle();

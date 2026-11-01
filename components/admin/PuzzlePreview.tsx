@@ -11,6 +11,7 @@ import { dayMonth } from "@/lib/admin/dates";
 import { SOLVED_STATE } from "@/lib/admin/solved-state";
 import { api } from "@/lib/client/api";
 import { errorText, useAdminAction, useAdminQuery } from "@/lib/client/admin";
+import { adminCopy } from "@/lib/copy/admin";
 import type { Slot } from "./DailySlot";
 import { Btn, Notice, Pill, ReadField, RowsSkeleton, textareaCls } from "./ui";
 
@@ -43,6 +44,8 @@ interface Detail {
   dailies: { date: string; locked: boolean; number: number }[];
 }
 
+const C = adminCopy.preview;
+
 const CHECK_ICON = {
   pass: { icon: "check-circle", cls: "text-accent" },
   warn: { icon: "warning", cls: "text-gold" },
@@ -55,7 +58,7 @@ function sizeOf(p: Record<string, unknown>): string {
   if (n("size")) return `${n("size")} × ${n("size")}`;
   if (n("rows") && n("cols")) return `${n("rows")} × ${n("cols")}`;
   if (n("w") && n("h")) return `${n("w")} × ${n("h")}`;
-  return "n/a";
+  return C.notApplicable;
 }
 
 /**
@@ -122,8 +125,8 @@ export function PuzzlePreview({
   const err = check.error ?? approve.error ?? regen.error ?? lock.error ?? swap.error ?? saveNote.error;
   const tags = [
     p.difficulty,
-    date && [0, 6].includes(new Date(date + "T00:00:00Z").getUTCDay()) ? "weekend" : null,
-    p.source === "human" ? "written" : "generated",
+    date && [0, 6].includes(new Date(date + "T00:00:00Z").getUTCDay()) ? C.weekend : null,
+    p.source === "human" ? C.written : C.generated,
   ]
     .filter(Boolean)
     .join(", ");
@@ -134,7 +137,7 @@ export function PuzzlePreview({
         <div className="flex flex-wrap items-center gap-3">
           <Link
             href={date ? "/admin/calendar" : (backHref ?? "/admin/puzzles")}
-            aria-label="Back"
+            aria-label={C.back}
             className="hover:bg-surface-raised -ml-2 flex size-11 items-center justify-center rounded-[10px]"
           >
             <Icon name="arrow-left" size={20} />
@@ -142,17 +145,23 @@ export function PuzzlePreview({
           <h1 className="font-display text-[20px] font-extrabold">
             {meta.name} · {date ? dayMonth(date) : p.difficulty}
           </h1>
-          {p.status === "retired" ? <Pill>retired</Pill> : review ? <Pill tone="warn">needs review</Pill> : <Pill tone="ok">verified</Pill>}
+          {p.status === "retired" ? (
+            <Pill>{C.retired}</Pill>
+          ) : review ? (
+            <Pill tone="warn">{C.needsReview}</Pill>
+          ) : (
+            <Pill tone="ok">{C.verified}</Pill>
+          )}
           {locked && (
             <Pill>
               <Icon name="lock-simple" size={12} />
-              locked
+              {C.locked}
             </Pill>
           )}
           {slot?.slot?.swapped_from && (
             <Pill tone="warn">
               <Icon name="swap" size={12} />
-              swapped
+              {C.swapped}
             </Pill>
           )}
         </div>
@@ -183,15 +192,15 @@ export function PuzzlePreview({
             ) : check.isPending ? (
               <RowsSkeleton rows={6} height={44} />
             ) : (
-              <Notice icon="info">Not solve-checked yet.</Notice>
+              <Notice icon="info">{C.notChecked}</Notice>
             )}
             {canWrite && (
               <div className="flex items-center gap-2 pt-1">
                 <Btn size="sm" icon="arrows-clockwise" disabled={check.isPending} onClick={() => check.mutate()}>
-                  {check.isPending ? "Checking" : "Run solve-check"}
+                  {check.isPending ? C.checking : C.runCheck}
                 </Btn>
                 {report && (
-                  <span className="num text-muted text-[12px]">checked {new Date(report.ranAt).toISOString().slice(11, 16)} GMT</span>
+                  <span className="num text-muted text-[12px]">{C.checkedAt(new Date(report.ranAt).toISOString().slice(11, 16))}</span>
                 )}
               </div>
             )}
@@ -199,22 +208,22 @@ export function PuzzlePreview({
         </div>
       </div>
 
-      <aside aria-label="Publish" className="bg-surface border-line flex flex-col gap-3 border-t p-5 xl:border-t-0 xl:border-l">
-        <h2 className="font-display text-[16px] font-extrabold">Publish</h2>
+      <aside aria-label={C.publish} className="bg-surface border-line flex flex-col gap-3 border-t p-5 xl:border-t-0 xl:border-l">
+        <h2 className="font-display text-[16px] font-extrabold">{C.publish}</h2>
         <ReadField
-          label="Daily number"
-          value={slot ? `#${slot.number}` : q.data.dailies[0] ? `#${q.data.dailies[0].number}` : "Not scheduled"}
+          label={C.dailyNumber}
+          value={slot ? `#${slot.number}` : q.data.dailies[0] ? `#${q.data.dailies[0].number}` : C.notScheduled}
         />
         <ReadField
-          label="Release"
-          value={date ? `${dayMonth(date)} 00:00 GMT` : q.data.dailies.map((d) => dayMonth(d.date)).join(", ") || "Not scheduled"}
+          label={C.release}
+          value={date ? C.releaseAt(dayMonth(date)) : q.data.dailies.map((d) => dayMonth(d.date)).join(", ") || C.notScheduled}
         />
-        <ReadField label="Size" value={sizeOf(p.data)} />
-        <ReadField label="Tags" value={tags} />
-        <ReadField label="Grade" value={<span className="num">{(p.grade / 10).toFixed(1)} / 10</span>} />
+        <ReadField label={C.size} value={sizeOf(p.data)} />
+        <ReadField label={C.tags} value={tags} />
+        <ReadField label={C.grade} value={<span className="num">{C.gradeValue((p.grade / 10).toFixed(1))}</span>} />
         <div className="flex flex-col gap-1">
           <label htmlFor="note" className="num text-muted text-[12px] font-semibold">
-            Reviewer note
+            {C.reviewerNote}
           </label>
           <textarea
             id="note"
@@ -223,7 +232,7 @@ export function PuzzlePreview({
             value={note ?? p.reviewer_note ?? ""}
             onChange={(e) => setNote(e.target.value)}
             onBlur={() => note !== null && note !== (p.reviewer_note ?? "") && saveNote.mutate({ note })}
-            placeholder={canWrite ? "What should the next reviewer know?" : "No note"}
+            placeholder={canWrite ? C.notePlaceholder : C.noNote}
             className={`${textareaCls} text-muted min-h-[90px] resize-y`}
           />
         </div>
@@ -236,19 +245,17 @@ export function PuzzlePreview({
             onClick={() => lock.mutate({ date, game, locked: !locked })}
             className="self-start"
           >
-            {locked ? "Unlock" : "Lock this Daily"}
+            {locked ? C.unlock : C.lock}
           </Btn>
         )}
 
         {canSwap && slot?.slot && date && (isToday || (future && locked)) && (
           <div className="bg-bg flex flex-col gap-2 rounded-[12px] p-3 shadow-[inset_0_0_0_1px_var(--line)]">
-            <span className="text-[14px] font-semibold">Emergency swap</span>
-            <span className="text-muted text-[13px] leading-[1.4]">
-              Replaces {isToday ? "today's" : "this"} puzzle with a fresh verified one. Players mid-solve finish their current puzzle.
-            </span>
+            <span className="text-[14px] font-semibold">{C.emergencySwap}</span>
+            <span className="text-muted text-[13px] leading-[1.4]">{C.swapIntro(isToday)}</span>
             {swapReason === null ? (
               <Btn tone="danger" icon="swap" onClick={() => setSwapReason("")}>
-                Swap Daily
+                {C.swapDaily}
               </Btn>
             ) : (
               <form
@@ -259,7 +266,7 @@ export function PuzzlePreview({
                 }}
               >
                 <label htmlFor="swap-reason" className="num text-muted text-[12px] font-semibold">
-                  What is broken?
+                  {C.whatBroken}
                 </label>
                 <input
                   id="swap-reason"
@@ -270,14 +277,14 @@ export function PuzzlePreview({
                   className={`${textareaCls} h-10`}
                 />
                 <div className="grid grid-cols-2 gap-2">
-                  <Btn onClick={() => setSwapReason(null)}>Cancel</Btn>
+                  <Btn onClick={() => setSwapReason(null)}>{C.cancel}</Btn>
                   <Btn type="submit" tone="danger" disabled={swap.isPending}>
-                    {swap.isPending ? "Swapping" : "Confirm swap"}
+                    {swap.isPending ? C.swapping : C.confirmSwap}
                   </Btn>
                 </div>
               </form>
             )}
-            {swap.data && <span className="text-accent text-[13px] font-semibold">Swapped. The new puzzle is live.</span>}
+            {swap.data && <span className="text-accent text-[13px] font-semibold">{C.swappedLive}</span>}
           </div>
         )}
 
@@ -286,10 +293,10 @@ export function PuzzlePreview({
             <Btn
               size="lg"
               disabled={!future || locked || regen.isPending}
-              title={locked ? "Locked Dailies change only through Swap Daily" : undefined}
+              title={locked ? C.lockedTitle : undefined}
               onClick={() => date && regen.mutate({ date, game })}
             >
-              {regen.isPending ? "Generating" : "Regenerate"}
+              {regen.isPending ? C.generating : C.regenerate}
             </Btn>
             <Btn
               size="lg"
@@ -297,7 +304,7 @@ export function PuzzlePreview({
               disabled={approve.isPending || !review}
               onClick={() => approve.mutate({ note: note ?? undefined, date })}
             >
-              {review ? (approve.isPending ? "Checking" : "Approve") : "Approved"}
+              {review ? (approve.isPending ? C.checking : C.approve) : C.approved}
             </Btn>
           </div>
         )}
@@ -349,11 +356,7 @@ function BoardFrame({
         if (mode !== "play") return;
         try {
           const v = await api<{ ok: boolean; reason: string | null }>(`/api/admin/puzzles/${puzzleId}/verify`, { json: { state } });
-          setFeedback(
-            v.ok
-              ? { text: "Server verify accepts this solve.", tone: "success" }
-              : { text: `Server verify refused it: ${v.reason ?? "not solved"}.`, tone: "danger" },
-          );
+          setFeedback(v.ok ? { text: C.verifyOk, tone: "success" } : { text: C.verifyRefused(v.reason), tone: "danger" });
         } catch (e) {
           setFeedback({ text: errorText(e), tone: "danger" });
         }
@@ -400,7 +403,7 @@ function BoardFrame({
             />
           </FitWidth>
         ) : (
-          <Notice icon="info">This game has no board yet.</Notice>
+          <Notice icon="info">{C.noBoard}</Notice>
         )}
         {mode === "play" && controls.length > 0 && (
           <div className="flex flex-wrap justify-center gap-1.5">
@@ -429,7 +432,7 @@ function BoardFrame({
             setMode(mode === "solution" ? "puzzle" : "solution");
           }}
         >
-          {mode === "solution" ? "Hide solution" : "Show solution"}
+          {mode === "solution" ? C.hideSolution : C.showSolution}
         </Btn>
         <Btn
           size="sm"
@@ -442,7 +445,7 @@ function BoardFrame({
             setMode("play");
           }}
         >
-          {mode === "play" ? "Restart test" : "Play test"}
+          {mode === "play" ? C.restartTest : C.playTest}
         </Btn>
       </div>
       <div aria-live="polite" className="sr-only">

@@ -241,6 +241,8 @@ export async function rematch(admin: SupabaseClient, id: string, playerId: strin
 
 export interface RoomInput {
   game: string | null;
+  /** hand-picked games (2 to 8); when set, each set races PARTY_GAMES of them and `game` is ignored */
+  games?: string[] | null;
   difficulty: "easy" | "medium" | "hard" | "expert";
   maxPlayers: number;
   classroom: boolean;
@@ -248,12 +250,16 @@ export interface RoomInput {
 
 export async function createRoom(admin: SupabaseClient, playerId: string, input: RoomInput) {
   if (input.game && !isRaceGame(input.game)) throw new ApiError(400, "game_not_raceable");
+  if (input.games?.some((g) => !isRaceGame(g))) throw new ApiError(400, "game_not_raceable");
+  const picks = input.games?.length ? input.games : [];
+  const game = picks.length ? null : input.game;
   const row = await insertWithCode(admin, {
     kind: "race",
     status: "lobby",
     host_id: playerId,
-    game_id: input.game,
-    mix: !input.game,
+    game_id: game,
+    mix: !game,
+    chosen_games: picks,
     difficulty: input.difficulty,
     max_players: input.maxPlayers,
     classroom: input.classroom,
@@ -284,6 +290,7 @@ export async function roomPreview(admin: SupabaseClient, code: string, playerId:
       status: l.m.status,
       game: l.m.game_id,
       mix: l.m.mix,
+      chosen: l.m.chosen_games ?? [],
       count: here.filter((p) => !p.spectator).length,
       max: l.m.max_players,
       host: host?.players?.nickname ?? null,
@@ -331,8 +338,11 @@ export async function roomSettings(admin: SupabaseClient, playerId: string, code
   const l = await roomForHost(admin, code, playerId, true);
   if (l.m.status !== "lobby") throw new ApiError(409, "not_lobby");
   if (s.game && !isRaceGame(s.game)) throw new ApiError(400, "game_not_raceable");
+  if (s.games?.some((g) => !isRaceGame(g))) throw new ApiError(400, "game_not_raceable");
   const patch: Record<string, unknown> = {};
-  if (s.game !== undefined) Object.assign(patch, { game_id: s.game, mix: !s.game });
+  if (s.game !== undefined) Object.assign(patch, { game_id: s.game, mix: !s.game, chosen_games: [] });
+  if (s.games?.length) Object.assign(patch, { game_id: null, mix: true, chosen_games: s.games });
+  else if (s.games === null) patch.chosen_games = [];
   if (s.difficulty) patch.difficulty = s.difficulty;
   await admin.from("matches").update(patch).eq("id", l.m.id);
   await serverBroadcast(matchTopic(l.m.id), "changed", { reason: "settings" });
@@ -346,7 +356,8 @@ export async function startRoom(admin: SupabaseClient, playerId: string, code: s
   if (racers.length < PARTY_MIN) throw new ApiError(409, "need_players", "Two Spuzlers make a race. Share the code.");
   const waiting = racers.find((p) => !p.ready);
   if (waiting) throw new ApiError(409, "not_ready", `${waiting.players?.nickname ?? "Someone"} is still getting ready.`);
-  const games = pickGames(createRng(`party:${l.m.id}:${l.m.set_no}`), l.m.game_id, PARTY_GAMES);
+  // One game every round, PARTY_GAMES of the host's picks (shuffled per set), or a random mix.
+  const games = pickGames(createRng(`party:${l.m.id}:${l.m.set_no}`), l.m.game_id, PARTY_GAMES, l.m.chosen_games);
   await admin
     .from("match_players")
     .update({ points: 0, place: null, progress: 0, mistakes: 0, finished_ms: null, state: null })

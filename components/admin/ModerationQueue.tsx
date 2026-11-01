@@ -34,6 +34,7 @@ interface Player {
 }
 
 const C = adminCopy.moderation;
+const K = C.cases;
 const TABS: Tab[] = ["reports", "nicknames", "flagged"];
 const FILTERS = { tab: "reports", status: "open" } as const;
 const ALLOWED = { tab: TABS, status: ["open", "actioned", "dismissed", "all"] };
@@ -194,7 +195,7 @@ function Stat({ value, label, tone }: { value: ReactNode; label: string; tone?: 
 
 const accountAge = (iso: string) => {
   const d = Math.floor((Date.now() - Date.parse(iso)) / 86_400_000);
-  return { text: d < 1 ? "today" : d === 1 ? "1 day" : `${d} days`, young: d < 7 };
+  return { text: K.accountAge(d), young: d < 7 };
 };
 
 function FlaggedCase({ id, canWrite, onDone }: { id: string; canWrite: boolean; onDone: (msg: string) => void }) {
@@ -228,24 +229,18 @@ function FlaggedCase({ id, canWrite, onDone }: { id: string; canWrite: boolean; 
   return (
     <>
       <h2 className="font-display text-[16px] font-extrabold">
-        {a.ref} · {player?.nickname ?? "player"}
+        {a.ref} · {player?.nickname ?? K.player}
       </h2>
       <div className="grid grid-cols-2 gap-2">
-        <Stat value={clock(a.time_ms)} label="claimed time" tone="danger" />
-        <Stat
-          value={q.data.bestMs ? clock(q.data.bestMs) : "none"}
-          label={a.daily_date ? "fastest verified that day" : "fastest verified"}
-        />
-        <Stat value={acc?.text ?? "?"} label="account age" tone={acc?.young ? "gold" : undefined} />
-        <Stat value={player?.reports ?? 0} label="reports" />
+        <Stat value={clock(a.time_ms)} label={K.claimedTime} tone="danger" />
+        <Stat value={q.data.bestMs ? clock(q.data.bestMs) : K.none} label={a.daily_date ? K.fastestThatDay : K.fastest} />
+        <Stat value={acc?.text ?? K.unknown} label={K.accountAgeLabel} tone={acc?.young ? "gold" : undefined} />
+        <Stat value={player?.reports ?? 0} label={K.reports} />
       </div>
       <div className="bg-bg flex flex-col gap-1.5 rounded-[10px] p-3">
-        <span className="num text-muted text-[12px] font-semibold">
-          Solve trace, {q.data.game.name}
-          {a.dailyNumber ? ` #${a.dailyNumber}` : ` (${a.mode})`}
-        </span>
+        <span className="num text-muted text-[12px] font-semibold">{K.trace(q.data.game.name, a.dailyNumber, a.mode)}</span>
         {gaps.length ? (
-          <div className="flex h-[60px] items-end gap-0.5" role="img" aria-label={`${gaps.length} inputs, median gap ${median} ms`}>
+          <div className="flex h-[60px] items-end gap-0.5" role="img" aria-label={K.traceAria(gaps.length, median)}>
             {gaps.slice(-40).map((g, i) => (
               <span
                 key={i}
@@ -255,19 +250,21 @@ function FlaggedCase({ id, canWrite, onDone }: { id: string; canWrite: boolean; 
             ))}
           </div>
         ) : (
-          <span className="text-muted text-[13px]">No timed move log was stored for this attempt.</span>
+          <span className="text-muted text-[13px]">{K.noTrace}</span>
         )}
         <span className="text-danger text-[12px] font-medium">
-          {a.flag_reason ?? "Flagged"}
-          {median !== null ? `. Median input gap ${median} ms.` : "."}
-          {q.data.game.minTimeMs ? ` Human floor ${clock(q.data.game.minTimeMs)}.` : ""}
-          {q.data.wallMs !== null ? ` Server wall time ${clock(q.data.wallMs)}.` : ""}
+          {K.flagLine(
+            a.flag_reason,
+            median,
+            q.data.game.minTimeMs ? clock(q.data.game.minTimeMs) : null,
+            q.data.wallMs !== null ? clock(q.data.wallMs) : null,
+          )}
         </span>
       </div>
       {act.error && <Notice tone="danger">{errorText(act.error)}</Notice>}
       {act.isSuccess && (
         <Notice tone="ok" icon="check-circle">
-          Resolved.
+          {K.resolved}
         </Notice>
       )}
       {canWrite && !act.isSuccess && (
@@ -277,38 +274,38 @@ function FlaggedCase({ id, canWrite, onDone }: { id: string; canWrite: boolean; 
             tone="danger"
             disabled={act.isPending}
             onClick={() =>
-              void act.mutateAsync({ decision: "reject", note: "Void times + 7-day ban", ban: { days: 7 } }).then(
-                () => onDone(`${a.ref} rejected, times voided, 7-day ban.`),
+              void act.mutateAsync({ decision: "reject", note: K.voidBan, ban: { days: 7 } }).then(
+                () => onDone(K.doneVoidBan(a.ref)),
                 () => undefined,
               )
             }
           >
-            Void times + 7-day ban
+            {K.voidBan}
           </Btn>
           <div className="grid grid-cols-2 gap-2">
             <Btn
               size="lg"
               disabled={act.isPending}
               onClick={() =>
-                void act.mutateAsync({ decision: "clear", note: "Cleared by moderator" }).then(
-                  () => onDone(`${a.ref} cleared to the boards.`),
+                void act.mutateAsync({ decision: "clear", note: K.clearedNote }).then(
+                  () => onDone(K.doneCleared(a.ref)),
                   () => undefined,
                 )
               }
             >
-              Clear to boards
+              {K.clear}
             </Btn>
             <Btn
               size="lg"
               disabled={act.isPending}
               onClick={() =>
-                void act.mutateAsync({ decision: "reject", note: "Rejected" }).then(
-                  () => onDone(`${a.ref} rejected.`),
+                void act.mutateAsync({ decision: "reject", note: K.rejectedNote }).then(
+                  () => onDone(K.doneRejected(a.ref)),
                   () => undefined,
                 )
               }
             >
-              Reject
+              {K.reject}
             </Btn>
           </div>
         </div>
@@ -363,7 +360,7 @@ function ReportCase({
     if (!t) return;
     const r = await player.mutateAsync({ pid: t.id, action, ...extra });
     if (close) await decide.mutateAsync({ decision: close, note: action });
-    onDone(r.nickname ? `${q.data!.report.ref}: renamed to ${r.nickname}.` : `${q.data!.report.ref}: ${action.replace("_", " ")} done.`);
+    onDone(r.nickname ? K.doneRenamed(q.data!.report.ref, r.nickname) : K.doneAction(q.data!.report.ref, action));
   };
   const err = decide.error ?? player.error;
   return (
@@ -372,29 +369,25 @@ function ReportCase({
         {r.ref} · {t?.nickname ?? r.target_type}
       </h2>
       <div className="grid grid-cols-2 gap-2">
-        <Stat value={r.reason} label="reason" tone="danger" />
-        <Stat value={t ? t.reports : q.data.related.length + 1} label="reports on target" />
-        <Stat value={acc?.text ?? "n/a"} label="account age" tone={acc?.young ? "gold" : undefined} />
-        <Stat value={t ? t.flagged : 0} label="flagged scores" />
+        <Stat value={r.reason} label={K.reason} tone="danger" />
+        <Stat value={t ? t.reports : q.data.related.length + 1} label={K.reportsOnTarget} />
+        <Stat value={acc?.text ?? K.notApplicable} label={K.accountAgeLabel} tone={acc?.young ? "gold" : undefined} />
+        <Stat value={t ? t.flagged : 0} label={K.flaggedScores} />
       </div>
       <div className="bg-bg flex flex-col gap-1 rounded-[10px] p-3 text-[13px]">
-        <span className="num text-muted text-[12px] font-semibold">Case</span>
+        <span className="num text-muted text-[12px] font-semibold">{C.caseLabel}</span>
         <span>
-          Reported by {q.data.reporter?.nickname ?? "a player"} {age(r.created_at)} ago. Status <b>{r.status}</b>
-          {r.resolution ? `, ${r.resolution}` : ""}.
+          {K.reportedBy(q.data.reporter?.nickname ?? K.aPlayer, age(r.created_at))} <b>{r.status}</b>
+          {K.resolution(r.resolution)}
         </span>
-        {t?.banned_at && (
-          <span className="text-danger font-semibold">Banned{t.banned_until ? ` until ${t.banned_until.slice(0, 10)}` : ""}.</span>
-        )}
-        {t?.ranking_revoked && <span className="text-gold font-semibold">Ranking revoked.</span>}
-        {q.data.related.length > 0 && (
-          <span className="text-muted">Also: {q.data.related.map((x) => `${x.ref} ${x.reason}`).join(", ")}</span>
-        )}
+        {t?.banned_at && <span className="text-danger font-semibold">{K.banned(t.banned_until ? t.banned_until.slice(0, 10) : null)}</span>}
+        {t?.ranking_revoked && <span className="text-gold font-semibold">{K.rankingRevoked}</span>}
+        {q.data.related.length > 0 && <span className="text-muted">{K.also(q.data.related.map((x) => `${x.ref} ${x.reason}`))}</span>}
       </div>
       {err && <Notice tone="danger">{errorText(err)}</Notice>}
       {player.data?.nickname && (
         <Notice tone="ok" icon="check-circle">
-          Renamed to {player.data.nickname}.
+          {K.renamed(player.data.nickname)}
         </Notice>
       )}
       {canWrite && t && nickname && (
@@ -406,17 +399,17 @@ function ReportCase({
           }}
         >
           <label htmlFor="rename" className="sr-only">
-            New nickname
+            {K.newNickname}
           </label>
           <input
             id="rename"
             value={rename}
             onChange={(e) => setRename(e.target.value)}
-            placeholder="New nickname (blank: Puzzler1234)"
+            placeholder={K.newNicknamePlaceholder}
             className="bg-bg h-11 min-w-0 flex-1 rounded-[12px] px-3 text-[14px] shadow-[inset_0_0_0_1px_var(--line)]"
           />
           <Btn type="submit" size="lg" disabled={player.isPending}>
-            Rename
+            {K.rename}
           </Btn>
         </form>
       )}
@@ -427,32 +420,32 @@ function ReportCase({
               size="lg"
               tone="danger"
               disabled={player.isPending}
-              onClick={() => run(nickname ? "ban" : "ban_void", { days: 7, reason: `Report ${r.ref}: ${r.reason}` })}
+              onClick={() => run(nickname ? "ban" : "ban_void", { days: 7, reason: K.banReason(r.ref, r.reason) })}
             >
-              {nickname ? "Ban 7 days" : "Void times + 7-day ban"}
+              {nickname ? K.ban7 : K.voidBan}
             </Btn>
           )}
           {t && (
             <div className="grid grid-cols-3 gap-2">
               <Btn disabled={player.isPending} onClick={() => run(t.ranking_revoked ? "restore_ranking" : "revoke_ranking", {}, null)}>
-                {t.ranking_revoked ? "Restore ranking" : "Revoke ranking"}
+                {t.ranking_revoked ? K.restoreRanking : K.revokeRanking}
               </Btn>
               <Btn disabled={player.isPending} onClick={() => run("reset", {}, null)}>
-                Reset times
+                {K.resetTimes}
               </Btn>
               <Btn disabled={player.isPending || !t.banned_at} onClick={() => run("unban", {}, null)}>
-                Unban
+                {K.unban}
               </Btn>
             </div>
           )}
           <div className="grid grid-cols-2 gap-2">
             {r.status === "open" ? (
               <>
-                <Btn size="lg" disabled={decide.isPending} onClick={() => decide.mutate({ decision: "actioned", note: "Handled" })}>
-                  Mark actioned
+                <Btn size="lg" disabled={decide.isPending} onClick={() => decide.mutate({ decision: "actioned", note: K.handledNote })}>
+                  {K.markActioned}
                 </Btn>
-                <Btn size="lg" disabled={decide.isPending} onClick={() => decide.mutate({ decision: "dismiss", note: "No action" })}>
-                  Dismiss
+                <Btn size="lg" disabled={decide.isPending} onClick={() => decide.mutate({ decision: "dismiss", note: K.noActionNote })}>
+                  {K.dismiss}
                 </Btn>
               </>
             ) : (
@@ -462,7 +455,7 @@ function ReportCase({
                 disabled={decide.isPending}
                 onClick={() => decide.mutate({ decision: "reopen" })}
               >
-                Reopen
+                {K.reopen}
               </Btn>
             )}
           </div>

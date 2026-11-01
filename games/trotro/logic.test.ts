@@ -6,6 +6,7 @@ import logic, {
   cellsOf,
   decodeLot,
   deepLots,
+  midLots,
   distances,
   encodeLot,
   EXIT_COL,
@@ -81,6 +82,8 @@ describe("trotro generation", () => {
         expect(g.solution.moves).toHaveLength(p.par);
         expect(p.par).toBeGreaterThanOrEqual(lo);
         expect(p.par).toBeLessThanOrEqual(hi);
+        expect(p.vehicles.length - 1).toBeGreaterThanOrEqual(SPEC[d].others[0]);
+        expect(p.vehicles.length - 1).toBeLessThanOrEqual(SPEC[d].others[1]);
         expect(verify(p, g.solution, { moves: g.solution.moves })).toEqual({ ok: true, progress: 1 });
         // The par is the true minimum: an independent BFS agrees.
         expect(solve(p, p.start)!.length).toBe(p.par);
@@ -108,6 +111,16 @@ describe("trotro generation", () => {
       expect(seen.size).toBe(20);
     }, 120_000);
 
+  it("keeps easy and medium lots to the level's vehicle count, seed after seed", () => {
+    // The old single bank of crowded lots left about 1 in 14 medium (and 1 in 9 easy) boards a vehicle over.
+    for (const d of ["easy", "medium"] as Difficulty[])
+      for (let i = 0; i < 60; i++) {
+        const n = generate(createRng(`count:${d}:${i}`), d).puzzle.vehicles.length - 1;
+        expect(n, `${d} seed ${i}`).toBeGreaterThanOrEqual(SPEC[d].others[0]);
+        expect(n, `${d} seed ${i}`).toBeLessThanOrEqual(SPEC[d].others[1]);
+      }
+  }, 120_000);
+
   it("is deterministic per seed and difficulty", () => {
     for (const d of ["easy", "medium", "hard", "expert", "mega"] as Difficulty[]) {
       const a = generate(createRng("daily:trotro"), d);
@@ -116,7 +129,20 @@ describe("trotro generation", () => {
   }, 60_000);
 
   it("every bank lot is legal and deep", () => {
-    for (const lot of deepLots()) {
+    const deep = deepLots();
+    const mid = midLots();
+    expect(deep.length).toBeGreaterThanOrEqual(192);
+    expect(mid.length).toBeGreaterThanOrEqual(128);
+    // No lot is in the banks twice.
+    const all = [...deep, ...mid].map((l) => encodeLot(l.vehicles, l.pos));
+    expect(new Set(all).size).toBe(all.length);
+    // [lot, fewest moves at its hardest position, other vehicles, search cap it was found with]
+    for (const [lot, min, others, cap] of [
+      ...deep.map((l) => [l, 22, [9, 13], SPEC.mega.cap] as const),
+      ...mid.map((l) => [l, 17, [6, 9], SPEC.medium.cap] as const),
+    ]) {
+      expect(lot.vehicles.length - 1).toBeGreaterThanOrEqual(others[0]);
+      expect(lot.vehicles.length - 1).toBeLessThanOrEqual(others[1]);
       expect(lot.vehicles[0]).toEqual({ len: 2, axis: "h", line: 2 });
       expect(lot.vehicles.slice(1).every((v) => !(v.axis === "h" && v.line === 2))).toBe(true);
       // No two vehicles share a cell, and each stays on the board.
@@ -124,8 +150,8 @@ describe("trotro generation", () => {
       expect(new Set(cells).size).toBe(cells.length);
       expect(cells.every((c) => c >= 0 && c < 36)).toBe(true);
       expect(decodeLot(encodeLot(lot.vehicles, lot.pos))).toEqual(lot);
-      const sp = distances({ size: 6, vehicles: lot.vehicles }, lot.pos, 6000)!;
-      expect(Math.max(...sp.dist.filter((x) => x !== Infinity))).toBeGreaterThanOrEqual(22);
+      const sp = distances({ size: 6, vehicles: lot.vehicles }, lot.pos, cap)!;
+      expect(Math.max(...sp.dist.filter((x) => x !== Infinity))).toBeGreaterThanOrEqual(min);
     }
   }, 60_000);
 

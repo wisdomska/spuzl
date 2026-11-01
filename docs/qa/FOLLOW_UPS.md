@@ -8,8 +8,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   - Swipe up and down is not done; it would block page scroll when a finger starts on the board.
 - **Guided first play:**
   - Before the first move, Dusk, Nine and Merge have no deduction, so the first hint coaches with the rule.
-- **Party:** "Choose games" means one game or a random mix. Hand-picking several needs a column for the chosen
-  list, since `matches.games` is overwritten at race start.
 
 ## Layout and motion
 
@@ -27,8 +25,9 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 
 ## Leagues and metrics
 
-- `leagues.minGroup` applies only when a player joins mid-week; the weekly rollover doesn't top up small tiers.
-- `/leagues/current` makes one extra database call for players already placed.
+- The weekly rollover merges a tier below `leagues.minGroup` into the nearest tier (players keep their own tier
+  through `league_members.home_tier`). With few active players most of the ladder can share one group; the
+  table shows each player's own zones, but the group name is the host tier's.
 
 ## Tooling
 
@@ -40,13 +39,7 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 
 - **Party games:** Draw It and Two Truths were not built. They need free text or drawings between players,
   which conflicts with the no-free-text rule for young players. They need a decision and moderation design first.
-- **Solve-check gaps:** Penalty King, Beat Tap, Higher or Lower, Light Up, Killer Sums and Dara have no
-  solved-state shape, so the admin solve-check asks for a Play test.
-- **Trotro Jam** lots grow from a bank of 96 deep starting lots, so their shapes can repeat; about 7% of medium
-  boards have one vehicle more than the level's range.
 - **Content-game references:** a content puzzle's `ref` (index and difficulty) is sent to the client, since the
   guess transport and the sealed quiz boards need it. The guess route answers a bare `ref` without an attempt
   (races, guided practice), so a player could try words on a Five board by reference before guessing on their
   attempt, and Penalty King's keeper dives follow from the index. Closing it needs attempt-bound or opaque refs.
-- **Admin copy:** the content editor, moderation case panels and the remaining admin pages still have inline
-  strings (`lib/copy/admin.ts` covers the lists).

@@ -4,9 +4,13 @@ import { useState } from "react";
 import { age } from "@/lib/admin/dates";
 import { errorText, useAdminAction, useAdminQuery } from "@/lib/client/admin";
 import type { SettingDef } from "@/lib/game-settings/schema";
+import { adminCopy } from "@/lib/copy/admin";
 import { Btn, Field, Notice, PageTitle, RowsSkeleton, inputCls } from "./ui";
 
 type Row = { key: string; def: SettingDef; value: number | boolean; isDefault: boolean; updatedAt: string | null };
+
+const C = adminCopy.settings;
+const { common } = adminCopy;
 
 /** Admin: runtime game settings (lib/game-settings/schema.ts). Range-checked here and on the server. */
 export function SettingsPage({ canWrite }: { canWrite: boolean }) {
@@ -16,8 +20,8 @@ export function SettingsPage({ canWrite }: { canWrite: boolean }) {
   for (const r of q.data?.rows ?? []) groups.set(r.def.group, [...(groups.get(r.def.group) ?? []), r]);
   return (
     <div className="flex flex-col gap-3.5 px-6 py-5">
-      <PageTitle title="Game settings">
-        <span className="text-muted text-[14px]">Tunables the game reads at runtime. Changes reach players within a minute.</span>
+      <PageTitle title={C.title}>
+        <span className="text-muted text-[14px]">{C.intro}</span>
       </PageTitle>
       {put.error && <Notice tone="danger">{errorText(put.error)}</Notice>}
       {q.isPending && <RowsSkeleton />}
@@ -63,15 +67,13 @@ function SettingRow({
         </p>
         <p className="text-muted text-[13px]">{d.help}</p>
         <p className="text-muted text-[12px]">
-          {row.isDefault ? "Default" : `Changed ${row.updatedAt ? age(row.updatedAt) : ""}`}
-          {d.kind === "int"
-            ? ` · default ${d.default}, range ${d.min} to ${d.max}${d.unit ? ` ${d.unit}` : ""}`
-            : ` · default ${d.default ? "on" : "off"}`}
+          {row.isDefault ? C.isDefault : C.changed(row.updatedAt ? age(row.updatedAt) : "")}
+          {d.kind === "int" ? C.intRange(d.default, d.min, d.max, d.unit) : C.boolDefault(d.default)}
         </p>
       </div>
       {d.kind === "bool" ? (
         <Btn tone={row.value ? "primary" : "secondary"} disabled={!canWrite || busy} onClick={() => onSave(!row.value)}>
-          {row.value ? "On" : "Off"}
+          {row.value ? common.on : common.off}
         </Btn>
       ) : (
         <form
@@ -81,7 +83,7 @@ function SettingRow({
             if (!bad) onSave(n);
           }}
         >
-          <Field label={d.unit ?? "Value"} htmlFor={id}>
+          <Field label={d.unit ?? C.value} htmlFor={id}>
             <input
               id={id}
               inputMode="numeric"
@@ -93,13 +95,11 @@ function SettingRow({
             />
           </Field>
           <Btn type="submit" disabled={!canWrite || busy || bad || n === row.value}>
-            Save
+            {C.save}
           </Btn>
         </form>
       )}
-      {bad && (
-        <p className="text-danger w-full text-[13px]">Must be a whole number from {d.kind === "int" ? `${d.min} to ${d.max}` : ""}.</p>
-      )}
+      {bad && <p className="text-danger w-full text-[13px]">{d.kind === "int" ? C.wholeNumber(d.min, d.max) : ""}</p>}
     </div>
   );
 }

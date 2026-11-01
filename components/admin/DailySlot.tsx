@@ -5,6 +5,7 @@ import { Icon } from "@/components/ui/Icon";
 import { GAME_BY_ID } from "@/lib/catalog";
 import { dayMonth } from "@/lib/admin/dates";
 import { errorText, useAdminAction, useAdminQuery } from "@/lib/client/admin";
+import { adminCopy } from "@/lib/copy/admin";
 import { PuzzlePreview } from "./PuzzlePreview";
 import { Btn, Empty, Notice, Pill, RowsSkeleton } from "./ui";
 
@@ -22,6 +23,8 @@ export interface Slot {
   difficulty: string;
   today: string;
 }
+
+const C = adminCopy.dailySlot;
 
 /** A calendar cell opened: the preview when a Daily exists, otherwise a way to fill the gap. */
 export function DailySlot({ game, date, canWrite, canSwap }: { game: string; date: string; canWrite: boolean; canSwap: boolean }) {
@@ -44,7 +47,7 @@ export function DailySlot({ game, date, canWrite, canSwap }: { game: string; dat
       <div className="flex items-center gap-3">
         <Link
           href="/admin/calendar"
-          aria-label="Back to the calendar"
+          aria-label={C.back}
           className="hover:bg-surface-raised -ml-2 flex size-11 items-center justify-center rounded-[10px]"
         >
           <Icon name="arrow-left" size={20} />
@@ -52,16 +55,14 @@ export function DailySlot({ game, date, canWrite, canSwap }: { game: string; dat
         <h1 className="font-display text-[20px] font-extrabold">
           {meta.name} · {dayMonth(date)}
         </h1>
-        <Pill tone="danger">missing</Pill>
+        <Pill tone="danger">{C.missing}</Pill>
       </div>
       <div className="bg-surface max-w-[640px] rounded-[12px]">
         <Empty icon="warning">
-          <span>
-            No Daily is scheduled for {meta.name} on {dayMonth(date)} ({q.data.difficulty}).
-          </span>
+          <span>{C.none(meta.name, dayMonth(date), q.data.difficulty)}</span>
           {canWrite && date > q.data.today && (
             <Btn tone="primary" icon="magic-wand" disabled={gen.isPending} onClick={() => gen.mutate({ date, game })}>
-              {gen.isPending ? "Generating" : "Generate a verified puzzle"}
+              {gen.isPending ? C.generating : C.generate}
             </Btn>
           )}
           {gen.error && <span className="text-danger">{errorText(gen.error)}</span>}

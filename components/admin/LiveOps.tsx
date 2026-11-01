@@ -6,7 +6,10 @@ import { Icon } from "@/components/ui/Icon";
 import { addDays, clock, compact, dayMonth, todayIso } from "@/lib/admin/dates";
 import { GAME_BY_ID } from "@/lib/catalog";
 import { errorText, useAdminAction, useAdminQuery } from "@/lib/client/admin";
+import { adminCopy } from "@/lib/copy/admin";
 import { Notice, PageTitle, RowsSkeleton } from "./ui";
+
+const C = adminCopy.liveops;
 
 interface Live {
   now: string;
@@ -26,11 +29,10 @@ interface Live {
   alerts: { gaps: { game: string; date: string }[]; gapCount: number; unlocked: number };
 }
 
-const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const { DAYS, MONTHS } = C;
 const stamp = (iso: string) => {
   const d = new Date(iso);
-  return `${DAYS[d.getUTCDay()]} ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${iso.slice(11, 16)} GMT`;
+  return C.stamp(DAYS[d.getUTCDay()], d.getUTCDate(), MONTHS[d.getUTCMonth()], iso.slice(11, 16));
 };
 const delta = (now: number, then: number) => (then > 0 ? `${now >= then ? "+" : ""}${Math.round(((now - then) / then) * 100)}%` : null);
 
@@ -94,40 +96,40 @@ export function LiveOps({ canLock, canModerate }: { canLock: boolean; canModerat
   const top = d.byGame.slice(0, 8);
   const most = Math.max(1, ...top.map((g) => g.clears + g.free_clears));
   const streakMax = Math.max(1, ...d.streaks.map((s) => s.players));
-  const label = (i: number) => (i === d.series.length - 1 ? "now" : d.series[i]?.slot_start.slice(11, 16));
+  const label = (i: number) => (i === d.series.length - 1 ? C.now : d.series[i]?.slot_start.slice(11, 16));
   const lastWeekDay = DAYS[new Date(addDays(todayIso(), -7) + "T00:00:00Z").getUTCDay()];
 
   return (
     <div className="flex min-h-dvh flex-col gap-3.5 px-6 py-5">
-      <PageTitle title="Live ops">
+      <PageTitle title={C.title}>
         <span className="num text-accent flex items-center gap-1.5 text-[13px] font-semibold">
           <span aria-hidden className="bg-accent size-2 rounded-full" />
-          live · {stamp(d.now)}
+          {C.live(stamp(d.now))}
         </span>
       </PageTitle>
 
       <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-5">
-        <Kpi label="Players now" value={k.players_now.toLocaleString("en-US")} sub="seen in the last 5 min" />
+        <Kpi label={C.playersNow} value={k.players_now.toLocaleString("en-US")} sub={C.playersNowSub} />
         <Kpi
-          label="DAU"
+          label={C.dau}
           value={compact(k.dau)}
-          sub={dauDelta ? `${dauDelta} vs last ${lastWeekDay}` : `${compact(k.dau_yesterday)} yesterday`}
+          sub={dauDelta ? C.vsLast(dauDelta, lastWeekDay) : C.yesterday(compact(k.dau_yesterday))}
           subTone={dauDelta?.startsWith("+") ? "ok" : undefined}
         />
         <Kpi
-          label="D1 retention"
-          value={d.retention.d1 === null ? "n/a" : `${d.retention.d1}%`}
-          sub={`cohort ${d.retention.d1_cohort.toLocaleString("en-US")}`}
+          label={C.d1}
+          value={d.retention.d1 === null ? C.notApplicable : C.percent(d.retention.d1)}
+          sub={C.cohort(d.retention.d1_cohort.toLocaleString("en-US"))}
         />
         <Kpi
-          label="D7 retention"
-          value={d.retention.d7 === null ? "n/a" : `${d.retention.d7}%`}
-          sub={`cohort ${d.retention.d7_cohort.toLocaleString("en-US")}`}
+          label={C.d7}
+          value={d.retention.d7 === null ? C.notApplicable : C.percent(d.retention.d7)}
+          sub={C.cohort(d.retention.d7_cohort.toLocaleString("en-US"))}
         />
         <Kpi
-          label="Flagged scores"
+          label={C.flagged}
           value={k.flagged.toLocaleString("en-US")}
-          sub={`${k.open_reports} open reports`}
+          sub={C.openReports(k.open_reports)}
           subTone={k.flagged ? "danger" : undefined}
         />
       </div>
@@ -135,17 +137,13 @@ export function LiveOps({ canLock, canModerate }: { canLock: boolean; canModerat
       <div className="grid flex-1 grid-cols-1 gap-3.5 lg:grid-cols-[1.4fr_1fr]">
         <section aria-labelledby="ccu" className="bg-surface flex min-h-[320px] flex-col gap-2.5 rounded-[12px] p-4">
           <h2 id="ccu" className="text-[14px] font-bold">
-            Active players, last 24 h
+            {C.active}
           </h2>
-          <div
-            className="flex flex-1 items-end gap-[3px]"
-            role="img"
-            aria-label={`Peak ${peak} players in a 30 minute slot; ${d.series.at(-1)?.players ?? 0} in the current slot`}
-          >
+          <div className="flex flex-1 items-end gap-[3px]" role="img" aria-label={C.activeAria(peak, d.series.at(-1)?.players ?? 0)}>
             {d.series.map((s, i) => (
               <span
                 key={s.slot_start}
-                title={`${s.slot_start.slice(11, 16)} GMT: ${s.players}`}
+                title={C.slotTitle(s.slot_start.slice(11, 16), s.players)}
                 className="flex-1 rounded-t-[2px]"
                 style={{
                   height: `${Math.max(2, (s.players / peak) * 98)}%`,
@@ -164,9 +162,9 @@ export function LiveOps({ canLock, canModerate }: { canLock: boolean; canModerat
         <div className="flex flex-col gap-3.5">
           <section aria-labelledby="bygame" className="bg-surface flex flex-col gap-2.5 rounded-[12px] p-4">
             <h2 id="bygame" className="text-[14px] font-bold">
-              Today by game · clears and median time
+              {C.byGame}
             </h2>
-            {top.every((g) => !g.clears && !g.free_clears) && <span className="text-muted text-[13px]">No clears yet today.</span>}
+            {top.every((g) => !g.clears && !g.free_clears) && <span className="text-muted text-[13px]">{C.noClears}</span>}
             {top.map((g) => (
               <div key={g.game_id} className="flex items-center gap-2.5 text-[13px] font-medium">
                 <span aria-hidden className="size-2.5 shrink-0 rounded-[3px]" style={{ background: `var(--w-${g.world})` }} />
@@ -177,19 +175,16 @@ export function LiveOps({ canLock, canModerate }: { canLock: boolean; canModerat
                     style={{ width: `${((g.clears + g.free_clears) / most) * 100}%`, background: `var(--w-${g.world})` }}
                   />
                 </div>
-                <span
-                  className="num w-14 text-right text-[12px] font-semibold"
-                  title={`${g.clears} Daily clears, ${g.free_clears} Free play clears`}
-                >
+                <span className="num w-14 text-right text-[12px] font-semibold" title={C.clearsTitle(g.clears, g.free_clears)}>
                   {compact(g.clears + g.free_clears)}
                 </span>
-                <span className="num text-muted w-11 text-right text-[12px] font-medium">{clock(g.median_ms) || "n/a"}</span>
+                <span className="num text-muted w-11 text-right text-[12px] font-medium">{clock(g.median_ms) || C.notApplicable}</span>
               </div>
             ))}
           </section>
           <section aria-labelledby="streaks" className="bg-surface flex flex-col gap-2 rounded-[12px] p-4">
             <h2 id="streaks" className="text-[14px] font-bold">
-              Streak distribution · current streak in days
+              {C.streaks}
             </h2>
             {d.streaks.map((s) => (
               <div key={s.bucket} className="flex items-center gap-2.5 text-[13px] font-medium">
@@ -214,17 +209,17 @@ export function LiveOps({ canLock, canModerate }: { canLock: boolean; canModerat
                 href={`/admin/calendar/${d.alerts.gaps[0].game}/${d.alerts.gaps[0].date}`}
                 className="text-accent text-[13px] font-semibold hover:underline"
               >
-                Fix
+                {C.fix}
               </Link>
             }
           >
             {d.alerts.gapCount === 1
-              ? `${GAME_BY_ID[d.alerts.gaps[0].game]?.name} ${dayMonth(d.alerts.gaps[0].date)} missing`
-              : `${d.alerts.gapCount} Dailies missing in the next 7 days`}
+              ? C.oneGap(GAME_BY_ID[d.alerts.gaps[0].game]?.name ?? d.alerts.gaps[0].game, dayMonth(d.alerts.gaps[0].date))
+              : C.gaps(d.alerts.gapCount)}
           </Alert>
         ) : (
           <Alert tone="neutral" icon="check-circle">
-            Every Daily for the next 7 days is scheduled
+            {C.noGaps}
           </Alert>
         )}
         {d.alerts.unlocked ? (
@@ -239,16 +234,16 @@ export function LiveOps({ canLock, canModerate }: { canLock: boolean; canModerat
                   onClick={() => lock.mutate({ through: addDays(todayIso(), 7) })}
                   className="text-accent text-[13px] font-semibold hover:underline"
                 >
-                  Lock
+                  {C.lock}
                 </button>
               ) : undefined
             }
           >
-            {d.alerts.unlocked} Dailies inside 7 days are unlocked
+            {C.unlocked(d.alerts.unlocked)}
           </Alert>
         ) : (
           <Alert tone="neutral" icon="lock-simple">
-            The next 7 days are locked
+            {C.allLocked}
           </Alert>
         )}
         <Alert
@@ -257,12 +252,12 @@ export function LiveOps({ canLock, canModerate }: { canLock: boolean; canModerat
           action={
             canModerate ? (
               <Link href="/admin/moderation" className="text-accent text-[13px] font-semibold hover:underline">
-                View
+                {C.view}
               </Link>
             ) : undefined
           }
         >
-          {k.flagged ? `${k.flagged} flagged scores wait for review` : "No flagged scores waiting"}
+          {k.flagged ? C.flaggedWaiting(k.flagged) : C.noFlagged}
         </Alert>
       </div>
     </div>
