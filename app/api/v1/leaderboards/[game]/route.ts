@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { getGameSettings } from "@/lib/game-settings/server";
 import { ApiError, handle, ok, requirePlayer, todayGmt } from "@/lib/api/server";
 import { GAME_BY_ID } from "@/lib/catalog";
 import { LAUNCH_DATE } from "@/lib/format";
@@ -39,6 +40,7 @@ interface Row {
  * banned players and test accounts never show. "You" is always returned for pinning.
  */
 export const GET = handle(async (req: Request, ctx: RouteContext<"/api/v1/leaderboards/[game]">) => {
+  if (!(await getGameSettings())["features.dailies"]) throw new ApiError(404, "dailies_off");
   const { game } = await ctx.params;
   const overall = game === "overall";
   if (!overall && !GAME_BY_ID[game]) throw new ApiError(404, "unknown_game");

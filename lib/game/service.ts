@@ -473,6 +473,21 @@ export async function finishAttempt(
       .neq("id", id);
     reward = freePlayReward(earned, (dup ?? 0) > 0);
     await admin.rpc("svc_grant_reward", { p_player: playerId, p_source: "free", p_ref: id, p_xp: reward.xp, p_sparks: reward.sparks });
+    // Dailies off: a day with at least one free-play clear keeps the streak going (and lights it).
+    if (!(await getGameSettings())["features.dailies"]) {
+      const { data: rec } = await admin.rpc("svc_record_play_day", { p_player: playerId, p_date: finishedAt.toISOString().slice(0, 10) });
+      const r = Array.isArray(rec) ? rec[0] : rec;
+      const milestone = r?.extended && STREAK_MILESTONES.includes(r.streak) ? r.streak : null;
+      streak = { current: r?.streak ?? 0, extended: !!r?.extended, milestone, freezeEarned: !!r?.freeze_earned };
+      if (milestone)
+        await admin.rpc("svc_grant_reward", {
+          p_player: playerId,
+          p_source: "streak_milestone",
+          p_ref: String(milestone),
+          p_xp: 0,
+          p_sparks: STREAK_MILESTONE_SPARKS[milestone],
+        });
+    }
   } else if (a.mode === "archive" && a.daily_date) {
     reward = dailyClearReward({
       hintXpKeptPct: (await getGameSettings())["hints.dailyXpKeptPct"],

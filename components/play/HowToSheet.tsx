@@ -1,5 +1,6 @@
 "use client";
 
+import { useGameSettings } from "@/lib/game-settings/client";
 import { Dialog } from "radix-ui";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
@@ -7,6 +8,7 @@ import { WORLD_BY_ID, type GameMeta } from "@/lib/catalog";
 
 /** Help button: the game's rule and how to play (FR-GP-06), replayable any time. */
 export function HowToSheet({ open, meta, onClose }: { open: boolean; meta: GameMeta; onClose: () => void }) {
+  const dailies = useGameSettings()["features.dailies"];
   const world = WORLD_BY_ID[meta.world];
   return (
     <Dialog.Root open={open} onOpenChange={(o) => !o && onClose()}>
@@ -30,14 +32,16 @@ export function HowToSheet({ open, meta, onClose }: { open: boolean; meta: GameM
             {meta.rule}
           </p>
           <ul className="text-muted flex flex-col gap-2 text-[15px]">
+            {dailies && (
+              <li className="flex gap-2">
+                <Icon name="calendar-blank" size={18} /> One shared Daily for everyone, resets at midnight GMT.
+              </li>
+            )}
             <li className="flex gap-2">
-              <Icon name="calendar-blank" size={18} /> One shared Daily for everyone, resets at midnight GMT.
+              <Icon name="infinity" size={18} /> {dailies ? "Free play never runs out." : "New puzzles never run out."}
             </li>
             <li className="flex gap-2">
-              <Icon name="infinity" size={18} /> Free play never runs out.
-            </li>
-            <li className="flex gap-2">
-              <Icon name="lightbulb" size={18} /> Up to 3 hints. Hints halve the Daily XP.
+              <Icon name="lightbulb" size={18} /> {dailies ? "Up to 3 hints. Hints halve the Daily XP." : "Up to 3 hints per puzzle."}
             </li>
             <li className="flex gap-2">
               <Icon name="keyboard" size={18} /> Arrow keys move, Space marks, Enter confirms.

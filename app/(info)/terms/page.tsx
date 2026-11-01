@@ -46,9 +46,9 @@ export default function Terms() {
 
       <h2>Service</h2>
       <p>
-        We work hard to keep SPUZL running and fair, but it is provided as it is. Dailies can be swapped if one is broken, and features may
-        change or end. To the extent the law allows, we aren&apos;t responsible for losses from using SPUZL, such as a lost streak during an
-        outage.
+        We work hard to keep SPUZL running and fair, but it is provided as it is. Puzzles can be fixed or swapped if one is broken, and
+        features may change or end. To the extent the law allows, we aren&apos;t responsible for losses from using SPUZL, such as a lost
+        streak during an outage.
       </p>
 
       <h2>Changes and contact</h2>

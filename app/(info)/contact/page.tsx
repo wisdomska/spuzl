@@ -19,7 +19,7 @@ export default function Contact() {
       </p>
 
       <h2>A puzzle looks broken</h2>
-      <p>Tell us the game and the date{EMAIL ? " by email" : ""}. If a Daily is broken we can swap it for a fixed one.</p>
+      <p>Tell us the game and the date{EMAIL ? " by email" : ""}. If a puzzle is broken we can fix it.</p>
 
       <h2>Your data or account</h2>
       <p>

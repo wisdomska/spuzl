@@ -2,6 +2,7 @@ import { z } from "zod";
 import { body, handle, ok, rateLimit, requirePlayer, todayGmt, ApiError } from "@/lib/api/server";
 import { startAttempt } from "@/lib/game/service";
 import { difficultyForDate } from "@/games/types";
+import { getGameSettings } from "@/lib/game-settings/server";
 
 const Start = z.object({
   game: z.string().min(2).max(24),
@@ -19,6 +20,9 @@ export const POST = handle(async (req: Request) => {
   const { admin, player } = await requirePlayer();
   const input = await body(req, Start);
   const today = todayGmt();
+  // Dailies switched off (admin "features.dailies"): free play is the only solo mode, enforced here.
+  if ((input.mode === "daily" || input.mode === "archive") && !(await getGameSettings())["features.dailies"])
+    throw new ApiError(404, "dailies_off", "Dailies are off. Free play is open.");
   if (input.mode === "free")
     await rateLimit(admin, `practice:${player.id}`, 60, 3600); // 60 practice puzzles/hour
   else await rateLimit(admin, `attempt:${player.id}`, 120, 3600);

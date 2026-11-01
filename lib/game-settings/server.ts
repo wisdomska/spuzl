@@ -3,7 +3,8 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { DEFAULTS, mergeSettings, type GameSettings } from "./schema";
 
 let cache: { at: number; value: GameSettings } | null = null;
-const TTL_MS = 30_000;
+// 30 s in production; no cache in development and tests (SETTINGS_CACHE_MS overrides), so a change applies at once.
+const TTL_MS = Number(process.env.SETTINGS_CACHE_MS ?? (process.env.NODE_ENV === "production" ? 30_000 : 0));
 
 /** Current game settings (stored values over defaults), cached for 30 s per server instance. */
 export async function getGameSettings(): Promise<GameSettings> {

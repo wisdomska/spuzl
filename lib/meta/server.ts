@@ -1,4 +1,8 @@
 import "server-only";
+import { SOLO_MODES } from "@/lib/gamification/progress";
+import { getGameSettings } from "@/lib/game-settings/server";
+
+const DAILY_ONLY_FAMILIES = ["speed", "fullspuzl"];
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { BADGES } from "@/lib/gamification/badges";
 import { GAME_BY_ID, WORLDS, type WorldId } from "@/lib/catalog";
@@ -29,8 +33,8 @@ export async function badgeOverview(admin: SupabaseClient, playerId: string, gam
   const head = { count: "exact" as const, head: true };
   const [{ data: owned }, { count: noHint }, { count: daily }, { count: fs }, { data: streak }, friends] = await Promise.all([
     admin.from("player_badges").select("badge_id, earned_at").eq("player_id", playerId),
-    admin.from("attempts").select("id", head).eq("player_id", playerId).eq("status", "cleared").eq("mode", "daily").eq("hints", 0),
-    admin.from("attempts").select("id", head).eq("player_id", playerId).eq("status", "cleared").eq("mode", "daily"),
+    admin.from("attempts").select("id", head).eq("player_id", playerId).eq("status", "cleared").in("mode", SOLO_MODES).eq("hints", 0),
+    admin.from("attempts").select("id", head).eq("player_id", playerId).eq("status", "cleared").in("mode", SOLO_MODES),
     admin.from("xp_ledger").select("id", head).eq("player_id", playerId).eq("source", "full_spuzl"),
     admin.from("streaks").select("best, current").eq("player_id", playerId).maybeSingle(),
     friendIds(admin, playerId),
@@ -51,7 +55,10 @@ export async function badgeOverview(admin: SupabaseClient, playerId: string, gam
     gameClears: Object.fromEntries(stats.map((s) => [s.game, s.clears])),
   };
   const earnedAt = new Map((owned ?? []).map((o) => [o.badge_id as string, o.earned_at as string]));
-  const families = badgeFamilies(BADGES, new Set(earnedAt.keys())).map((f) => ({
+  // Dailies off: the families only Dailies can earn (median speed, Full Spuzl) are hidden unless already earned.
+  const dailiesOn = (await getGameSettings())["features.dailies"];
+  const shownBadges = dailiesOn ? BADGES : BADGES.filter((b) => !DAILY_ONLY_FAMILIES.includes(b.family) || earnedAt.has(b.id));
+  const families = badgeFamilies(shownBadges, new Set(earnedAt.keys())).map((f) => ({
     family: f.family,
     label: FAMILY_LABEL[f.family] ?? f.family,
     badges: f.badges.map((b) => ({
@@ -69,7 +76,7 @@ export async function badgeOverview(admin: SupabaseClient, playerId: string, gam
   return {
     families,
     earned: earnedAt.size,
-    total: BADGES.filter((b) => !b.secret).length,
+    total: shownBadges.filter((b) => !b.secret).length,
     secretsLeft: BADGES.filter((b) => b.secret && !earnedAt.has(b.id)).length,
     stats: bs,
   };

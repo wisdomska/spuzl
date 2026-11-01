@@ -15,7 +15,7 @@ describe("notices", () => {
     expect(n[0]).toMatchObject({
       kind: "streak_at_risk",
       tone: "warn",
-      text: "12 day streak at risk. One Daily keeps it alive.",
+      text: "12 day streak at risk. One clear keeps it alive.",
       href: "/",
     });
   });

@@ -1,5 +1,6 @@
 "use client";
 
+import { useGameSettings } from "@/lib/game-settings/client";
 import Link from "next/link";
 import { useState } from "react";
 import { useNow } from "@/components/meta/useNow";
@@ -15,6 +16,7 @@ import { leaguesCopy } from "@/lib/copy/leagues";
 
 /** L1 Weekly league: 30 players, top 7 promote, bottom 5 demote, arrows on the zones, countdown to reset. */
 export default function LeaguesPage() {
+  const dailiesOn = useGameSettings()["features.dailies"];
   const q = useLeague();
   const [seen, setSeen] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
@@ -46,7 +48,7 @@ export default function LeaguesPage() {
             body={leaguesCopy.noGroupBody}
             action={
               <Link
-                href="/"
+                href="/library"
                 className="toy bg-accent text-on-accent font-display flex h-[60px] items-center justify-center rounded-[20px] text-[16px] font-black"
                 style={{ ["--btn-depth" as string]: "var(--accent-depth)" }}
               >
@@ -107,13 +109,15 @@ export default function LeaguesPage() {
         </>
       )}
       <nav aria-label="Compete" className="flex gap-2 pt-2">
-        <Link
-          href="/leaderboards"
-          className="press bg-surface flex h-11 items-center gap-2 rounded-[12px] px-3.5 text-[15px] font-semibold"
-        >
-          <Icon name="chart-bar" size={18} className="text-accent" />
-          Leaderboards
-        </Link>
+        {dailiesOn && (
+          <Link
+            href="/leaderboards"
+            className="press bg-surface flex h-11 items-center gap-2 rounded-[12px] px-3.5 text-[15px] font-semibold"
+          >
+            <Icon name="chart-bar" size={18} className="text-accent" />
+            Leaderboards
+          </Link>
+        )}
         <Link href="/quests" className="press bg-surface flex h-11 items-center gap-2 rounded-[12px] px-3.5 text-[15px] font-semibold">
           <Icon name="scroll" size={18} className="text-accent" />
           Quests

@@ -153,7 +153,7 @@ for (const profile of ["desktop", "4g-phone"] as const) {
           await card.nth(1).click();
           primary = page
             .getByRole("dialog")
-            .getByRole("button", { name: /Today's Daily|Free play/ })
+            .getByRole("button", { name: /Today's Daily|Free play|^Play$/ })
             .first();
         }
         await primary.waitFor();

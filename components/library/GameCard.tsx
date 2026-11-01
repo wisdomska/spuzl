@@ -1,5 +1,6 @@
 "use client";
 
+import { useGameSettings } from "@/lib/game-settings/client";
 import { primeAttempt } from "@/lib/client/early-attempt";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -14,7 +15,7 @@ import { formatClock } from "@/lib/format";
 import { libraryCopy as T } from "@/lib/copy/library";
 
 /**
- * One game's card (SPZ-14): the rule, then one primary action (today's Daily, or Free play once the Daily
+ * One game's card (SPZ-14): the rule, then one primary action (Play; with Dailies on, today's Daily then Free play
  * is done), Free play second, and the ways to play with others where the game supports them.
  */
 export function GameCard({
@@ -29,7 +30,8 @@ export function GameCard({
   typicalSec?: number;
 }) {
   const router = useRouter();
-  const done = doneMs !== undefined;
+  const dailies = useGameSettings()["features.dailies"];
+  const done = dailies && doneMs !== undefined;
   useEffect(() => {
     if (!meta) return;
     router.prefetch(done ? `/play/${meta.id}?mode=free` : `/play/${meta.id}`);
@@ -80,7 +82,11 @@ export function GameCard({
               </Dialog.Description>
 
               <div className="flex flex-col gap-2.5">
-                {done ? (
+                {!dailies ? (
+                  <Button size="lg" icon="play" onClick={() => go(`/play/${meta.id}?mode=free`)} autoFocus>
+                    {T.play}
+                  </Button>
+                ) : done ? (
                   <p className="text-accent flex items-center gap-2 px-1 text-[15px] font-semibold">
                     <Icon name="check-circle" size={20} />
                     {T.dailyDone(formatClock(doneMs!))}
@@ -90,15 +96,17 @@ export function GameCard({
                     {T.daily}
                   </Button>
                 )}
-                <Button
-                  size="lg"
-                  variant={done ? "primary" : "secondary"}
-                  icon="infinity"
-                  onClick={() => go(`/play/${meta.id}?mode=free`)}
-                  autoFocus={done}
-                >
-                  {T.freePlay}
-                </Button>
+                {dailies && (
+                  <Button
+                    size="lg"
+                    variant={done ? "primary" : "secondary"}
+                    icon="infinity"
+                    onClick={() => go(`/play/${meta.id}?mode=free`)}
+                    autoFocus={done}
+                  >
+                    {T.freePlay}
+                  </Button>
+                )}
                 {meta.botPlay && (
                   <Button variant="secondary" icon="robot" onClick={() => go(`/play/${meta.id}/bot`)}>
                     {T.vsBot}

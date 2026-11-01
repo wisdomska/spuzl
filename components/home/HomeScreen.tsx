@@ -1,5 +1,6 @@
 "use client";
 
+import { useGameSettings } from "@/lib/game-settings/client";
 import { homeCopy as T } from "@/lib/copy/home";
 import { FirstTips } from "@/components/ui/FirstTips";
 
@@ -10,7 +11,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
 import { useMe, useToday } from "@/lib/client/api";
 import { readOnboarding } from "@/lib/client/onboarding";
-import { GAME_BY_ID, LAUNCH_IDS, WORLD_BY_ID, gamesInWorld, type WorldId } from "@/lib/catalog";
+import { GAMES, GAME_BY_ID, LAUNCH_IDS, WORLD_BY_ID, gamesInWorld, type WorldId } from "@/lib/catalog";
 import { HomeMap, nextDaily, worldProgress } from "./HomeMap";
 import { LevelRing, SparksChip, StreakChip } from "@/components/shell/Hud";
 import { Spuz } from "@/components/brand/Spuz";
@@ -42,7 +43,12 @@ export function HomeScreen() {
     if (me.isSuccess && me.data === null) router.replace(readOnboarding().introSeen ? "/welcome" : "/intro");
   }, [me.isSuccess, me.data, router]);
 
-  const cleared = useMemo(() => me.data?.today.cleared ?? {}, [me.data]);
+  // Dailies off: progress is the games a player has ever cleared (free play), not today's Dailies.
+  const dailiesOn = useGameSettings()["features.dailies"];
+  const cleared = useMemo<Record<string, number>>(
+    () => (dailiesOn ? (me.data?.today.cleared ?? {}) : Object.fromEntries((me.data?.played ?? []).map((id) => [id, 1]))),
+    [me.data, dailiesOn],
+  );
   const ready = (id: string) => today.data?.games.find((g) => g.id === id)?.ready ?? id === "crownfall";
   const next = nextDaily(cleared, ready);
   const nextMeta = next ? GAME_BY_ID[next] : null;
@@ -100,7 +106,13 @@ export function HomeScreen() {
           />
         </div>
         <section aria-label="The Grid" className="relative overflow-y-auto pb-[250px] lg:pb-[200px]">
-          <HomeMap progress={progress} current={currentWorld} mood={mood} color={d.avatar_color} />
+          <HomeMap
+            progress={progress}
+            current={currentWorld}
+            mood={mood}
+            color={d.avatar_color}
+            unit={dailiesOn ? T.islandsToday : T.islandsTried}
+          />
         </section>
 
         <div
@@ -125,11 +137,22 @@ export function HomeScreen() {
             </motion.div>
           )}
           <PlayCard
-            href={nextMeta ? `/play/${nextMeta.id}` : "/library"}
-            title={nextMeta ? (posInWorld > 1 || counted > 0 ? T.continueGame(nextMeta.name) : T.playGame(nextMeta.name)) : T.allDone}
-            sub={nextMeta ? T.where(WORLD_BY_ID[nextMeta.world].name, posInWorld, worldGames.length) : T.allDoneSub}
-            done={counted}
-            total={LAUNCH_IDS.length}
+            href={nextMeta ? (dailiesOn ? `/play/${nextMeta.id}` : `/play/${nextMeta.id}?mode=free`) : "/library"}
+            title={
+              nextMeta
+                ? posInWorld > 1 || counted > 0
+                  ? T.continueGame(nextMeta.name)
+                  : T.playGame(nextMeta.name)
+                : dailiesOn
+                  ? T.allDone
+                  : T.allTried
+            }
+            sub={
+              nextMeta ? T.where(WORLD_BY_ID[nextMeta.world].name, posInWorld, worldGames.length) : dailiesOn ? T.allDoneSub : T.allTriedSub
+            }
+            done={dailiesOn ? counted : (d.played ?? []).length}
+            total={dailiesOn ? LAUNCH_IDS.length : GAMES.length}
+            aria={dailiesOn ? T.todayAria : T.triedAria}
           />
           <nav aria-label="More ways to play" className="grid grid-cols-3 gap-2">
             {[
@@ -172,7 +195,21 @@ function HomeSkeleton() {
 }
 
 /** SPZ-16: the one Play card. The ring is "Today x of 15"; the label names exactly what opens. */
-function PlayCard({ href, title, sub, done, total }: { href: string; title: string; sub: string; done: number; total: number }) {
+function PlayCard({
+  href,
+  title,
+  sub,
+  done,
+  total,
+  aria,
+}: {
+  href: string;
+  title: string;
+  sub: string;
+  done: number;
+  total: number;
+  aria: (done: number, total: number) => string;
+}) {
   const r = 20;
   const c = 2 * Math.PI * r;
   const pct = Math.min(1, done / Math.max(1, total));
@@ -205,7 +242,7 @@ function PlayCard({ href, title, sub, done, total }: { href: string; title: stri
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="font-display truncate text-[18px] leading-tight font-black">{title}</span>
         <span className="truncate text-[13px] font-semibold opacity-80">{sub}</span>
-        <span className="sr-only">. {T.todayAria(done, total)}</span>
+        <span className="sr-only">. {aria(done, total)}</span>
       </span>
       <Icon name="play" size={22} className="shrink-0" />
     </Link>

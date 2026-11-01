@@ -27,7 +27,11 @@ export default function Library() {
   const [filter, setFilter] = useState<Filter>("all");
   const [q, setQ] = useState("");
   const [open, setOpen] = useState<GameMeta | null>(null);
-  const cleared = me.data?.today.cleared ?? {};
+  const dailiesOn = useGameSettings()["features.dailies"];
+  // The tick marks games done today (Dailies on) or games ever played (Dailies off).
+  const cleared: Record<string, number> = dailiesOn
+    ? (me.data?.today.cleared ?? {})
+    : Object.fromEntries((me.data?.played ?? []).map((id) => [id, 1]));
 
   const list = useMemo(
     () =>
@@ -170,10 +174,10 @@ export default function Library() {
                   {done ? (
                     <span
                       className="bg-accent text-on-accent flex size-7 shrink-0 items-center justify-center rounded-full"
-                      title={T.doneToday}
+                      title={dailiesOn ? T.doneToday : T.played}
                     >
                       <Icon name="check" size={16} />
-                      <span className="sr-only">{T.doneToday}</span>
+                      <span className="sr-only">{dailiesOn ? T.doneToday : T.played}</span>
                     </span>
                   ) : (
                     <Icon name="caret-right" size={18} className="text-muted shrink-0" />
@@ -187,7 +191,7 @@ export default function Library() {
       <GameCard
         meta={open}
         onClose={() => setOpen(null)}
-        doneMs={open ? cleared[open.id] : undefined}
+        doneMs={open && dailiesOn ? cleared[open.id] : undefined}
         typicalSec={open ? meta[open.id]?.typicalSec : undefined}
       />
     </main>

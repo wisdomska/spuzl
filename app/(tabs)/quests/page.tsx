@@ -80,10 +80,10 @@ function QuestList() {
   return (
     <>
       <div className="flex items-center justify-between">
-        <h2 className="text-[16px] font-bold">Daily</h2>
+        <h2 className="text-[16px] font-bold">Today</h2>
         <span
           className="num text-muted text-[14px] font-medium"
-          aria-label={`Daily quests reset in ${formatCountdown(d.resetsInMs - elapsed)}`}
+          aria-label={`Today's quests reset in ${formatCountdown(d.resetsInMs - elapsed)}`}
         >
           resets {formatCountdown(d.resetsInMs - elapsed)}
         </span>

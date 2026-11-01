@@ -113,9 +113,25 @@ export function GameChallengeSheet({
 }
 
 /** World view: a 44 px row under a race game's card, a sibling of the card link (never nested). */
-export function ChallengeEntry({ meta }: { meta: GameMeta }) {
+export function ChallengeEntry({ meta, inline = false }: { meta: GameMeta; inline?: boolean }) {
   const [open, setOpen] = useState(false);
   if (!useCanChallenge(meta)) return null;
+  if (inline)
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-haspopup="dialog"
+          aria-label={partyCopy.challenge.ctaAria(meta.name)}
+          className="press bg-surface-raised flex h-11 items-center gap-1.5 rounded-[12px] px-3 text-[14px] font-semibold"
+        >
+          <Icon name="sword" size={18} style={{ color: "var(--world)" }} />
+          {partyCopy.challenge.cta}
+        </button>
+        <GameChallengeSheet meta={meta} open={open} onClose={() => setOpen(false)} />
+      </>
+    );
   return (
     <>
       <button

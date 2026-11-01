@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getGameSettings } from "@/lib/game-settings/server";
 import { notFound } from "next/navigation";
 import { GAME_BY_ID } from "@/lib/catalog";
 import { hasLogic } from "@/games/logic-registry";
@@ -20,7 +21,9 @@ export default async function Play({ params, searchParams }: PageProps<"/play/[g
   // SPZ-01: only the session is checked here (a local JWT check). The player profile is already in the client
   // cache from the previous screen, and PlayScreen sends players without a profile to onboarding itself.
   await requireSessionPage();
-  const mode = sp.mode === "free" || sp.mode === "archive" ? sp.mode : "daily";
+  // Dailies off (admin "features.dailies"): every link plays free; old Daily and archive links land there too.
+  const dailies = (await getGameSettings())["features.dailies"];
+  const mode = !dailies ? "free" : sp.mode === "free" || sp.mode === "archive" ? sp.mode : "daily";
   const date = typeof sp.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sp.date) ? sp.date : undefined;
   const difficulty =
     typeof sp.difficulty === "string" && ["easy", "medium", "hard", "expert", "mega"].includes(sp.difficulty)

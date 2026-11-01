@@ -20,11 +20,11 @@ test("library: search, filters and the game card", async ({ page }, info) => {
   await page.getByRole("button", { name: /^Crownfall Logic Lab/ }).click();
   const card = page.getByRole("dialog");
   await expect(card.getByRole("heading", { name: "Crownfall" })).toBeVisible();
-  await expect(card.getByRole("button", { name: "Today's Daily" })).toBeVisible();
-  await expect(card.getByRole("button", { name: "Free play" })).toBeVisible();
+  await expect(card.getByRole("button", { name: "Play", exact: true })).toBeVisible();
+  await expect(card.getByRole("button", { name: "Today's Daily" })).toHaveCount(0); // Dailies are off
   await page.screenshot({ path: `docs/qa/screens/after/library-card-${info.project.name}.png` });
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
   expect(overflow).toBe(false);
-  await card.getByRole("button", { name: "Free play" }).click();
+  await card.getByRole("button", { name: "Play", exact: true }).click();
   await page.waitForURL(/\/play\/crownfall\?mode=free/);
 });

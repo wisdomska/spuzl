@@ -69,7 +69,7 @@ export const en = {
   },
   welcome: {
     helloTitle: "Akwaaba! Ready to play?",
-    helloBody: "51 tiny games, a new Daily every day. Jump in as a guest, or sign in to keep your streak on every phone.",
+    helloBody: "51 tiny games to play any time. Jump in as a guest, or sign in to keep your streak on every phone.",
     playAsGuest: "Play as guest",
     signInWithEmail: "Sign in with email",
     signInLater: "You can sign in later from Settings. Your progress comes with you.",
@@ -79,7 +79,7 @@ export const en = {
     starts: {
       tutorial: { t: "Learn a game in 30 seconds", d: "A tiny puzzle with tips as you go." },
       pick: { t: "Browse all 51 games", d: "See every game and pick one." },
-      jump: { t: "Go to the map", d: "Islands of games, a new Daily on each." },
+      jump: { t: "Go to the map", d: "Islands of games. Pick one and play." },
     },
     startLater: "You can learn any game later from its Help button.",
     firstClear: "First clear!",

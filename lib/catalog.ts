@@ -523,7 +523,7 @@ export const GAMES: GameMeta[] = [
     { scoring: "deaths", minTimeMs: 10000, photosensitive: true },
   ),
   // Board Bay
-  g("chess", "Chess", "board", "horse", "L", "board", "Daily mates and live games", "Find the mate. White to move.", {
+  g("chess", "Chess", "board", "horse", "L", "board", "Mates to find and live games", "Find the mate. White to move.", {
     unique: true,
     minTimeMs: 1500,
     botPlay: true,

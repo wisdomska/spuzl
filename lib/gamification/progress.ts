@@ -2,6 +2,13 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { BADGES, type BadgeDef } from "./badges";
 import { questsForDate, WEEKLY_CHAIN, type QuestDef } from "./quests";
+
+/**
+ * Solo clears that count for quests, badges and streak-style goals. Dailies are off for now, so a free-play clear
+ * counts wherever a Daily clear did (the copy says "clear", not "Daily").
+ */
+export const SOLO_MODES = ["daily", "free", "archive"];
+const isSolo = (mode: string) => SOLO_MODES.includes(mode);
 import { gamesInWorld, type WorldId } from "@/lib/catalog";
 
 export interface ClearContext {
@@ -36,8 +43,8 @@ async function stats(admin: SupabaseClient, playerId: string): Promise<Stats> {
   const base = () => admin.from("attempts").select("id", { count: "exact", head: true }).eq("player_id", playerId).eq("status", "cleared");
   const [clears, dailyClears, noHintClears] = await Promise.all([
     count(base()),
-    count(base().eq("mode", "daily")),
-    count(base().eq("mode", "daily").eq("hints", 0)),
+    count(base().in("mode", SOLO_MODES)),
+    count(base().in("mode", SOLO_MODES).eq("hints", 0)),
   ]);
   const { count: fs } = await admin
     .from("xp_ledger")
@@ -78,12 +85,12 @@ async function badgeEarned(b: BadgeDef, c: ClearContext, s: Stats): Promise<bool
     case "under_ms":
       return c.timeMs < n;
     case "night_owl":
-      return c.mode === "daily" && c.localHour !== undefined && c.localHour >= 0 && c.localHour < 4;
+      return isSolo(c.mode) && c.localHour !== undefined && c.localHour >= 0 && c.localHour < 4;
     case "early_bird":
-      return c.mode === "daily" && c.localHour !== undefined && c.localHour >= 4 && c.localHour < 6;
+      return isSolo(c.mode) && c.localHour !== undefined && c.localHour >= 4 && c.localHour < 6;
     case "last_minute": {
       const now = new Date();
-      return c.mode === "daily" && now.getUTCHours() === 23 && now.getUTCMinutes() === 59;
+      return isSolo(c.mode) && now.getUTCHours() === 23 && now.getUTCMinutes() === 59;
     }
     case "zero_deaths":
       return c.world === "rage" && c.deaths === 0;
@@ -122,11 +129,11 @@ export function weekStart(d = new Date()): string {
 function questDelta(q: QuestDef, c: ClearContext): number {
   switch (q.goal.kind) {
     case "world_clears":
-      return c.mode === "daily" && c.world === q.goal.world ? 1 : 0;
+      return isSolo(c.mode) && c.world === q.goal.world ? 1 : 0;
     case "daily_clears":
-      return c.mode === "daily" ? 1 : 0;
+      return isSolo(c.mode) ? 1 : 0;
     case "no_hint_clears":
-      return c.mode === "daily" && c.hints === 0 ? 1 : 0;
+      return isSolo(c.mode) && c.hints === 0 ? 1 : 0;
     case "free_clears":
       return c.mode === "free" ? 1 : 0;
     case "full_spuzl_days":

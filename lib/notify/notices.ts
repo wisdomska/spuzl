@@ -73,7 +73,7 @@ export function buildNotices(input: NoticeInput, now: Date = new Date()): Notice
       kind: "streak_at_risk",
       icon: "fire",
       tone: "warn",
-      text: `${n} day streak at risk. One Daily keeps it alive.`,
+      text: `${n} day streak at risk. One clear keeps it alive.`,
       actionLabel: "Play",
       href: "/",
     });

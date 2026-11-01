@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { getGameSettings } from "@/lib/game-settings/server";
 import { ApiError, handle, ok, requirePlayer, todayGmt } from "@/lib/api/server";
 import { GAME_BY_ID } from "@/lib/catalog";
 import { LAUNCH_DATE } from "@/lib/format";
@@ -13,6 +14,7 @@ const Query = z.object({ game: z.string().min(1).max(32), month: z.string().rege
  * The last 7 days are free; older dates are locked (SPUZL+).
  */
 export const GET = handle(async (req: Request) => {
+  if (!(await getGameSettings())["features.dailies"]) throw new ApiError(404, "dailies_off");
   const sp = new URL(req.url).searchParams;
   const q = Query.parse({ game: sp.get("game") ?? "", month: sp.get("month") ?? todayGmt().slice(0, 7) });
   if (!GAME_BY_ID[q.game]) throw new ApiError(404, "unknown_game");

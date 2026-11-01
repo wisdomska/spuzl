@@ -66,7 +66,7 @@ function SchoolCup() {
       <div className="flex items-center gap-3 py-1">
         <Spuz mood="proud" size={80} decorative />
         <p className="text-[15px] leading-snug font-medium text-pretty">
-          Your class against the clock. Your teacher picks the games, everyone plays the Daily, the board fills up all week.
+          Your class against the clock. Your teacher picks the games, everyone plays, the board fills up all week.
         </p>
       </div>
       <form onSubmit={onJoin} className="bg-surface flex flex-col gap-3 rounded-[20px] p-4">

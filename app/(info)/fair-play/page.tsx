@@ -18,13 +18,12 @@ export default function FairPlay() {
           looks.
         </li>
         <li>We keep your moves for 90 days, so top and flagged results can be checked step by step.</li>
-        <li>You get one ranked try at each Daily. Replays are practice and never rank.</li>
       </ul>
 
       <h2>No paid advantages</h2>
       <ul>
         <li>Sparks are earned by playing. They can&apos;t be bought, sold or swapped for money.</li>
-        <li>Sparks only buy looks for Spuz, board themes, Streak Freezes and practice hints. Nothing in the Shop helps a ranked Daily.</li>
+        <li>Sparks only buy looks for Spuz, board themes, Streak Freezes and practice hints. Nothing in the Shop helps you win.</li>
         <li>There are no loot boxes and no gambling of any kind.</li>
       </ul>
 
@@ -39,7 +38,6 @@ export default function FairPlay() {
       <h2>What gets you removed</h2>
       <ul>
         <li>Using bots, scripts or tools that solve puzzles for you.</li>
-        <li>Sharing answers to today&apos;s Daily before reset.</li>
         <li>Offensive nicknames or crew names, or using reports to harass people.</li>
         <li>Making extra accounts to climb boards or leagues.</li>
       </ul>

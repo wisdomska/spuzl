@@ -1,7 +1,7 @@
 /** Library ("All games") copy, SPZ-14. */
 export const libraryCopy = {
   title: "All games",
-  subtitle: "Pick one. Today's Daily first, or Free play any time.",
+  subtitle: "Pick one and play. Every game, any time.",
   back: "Back",
   search: "Search games",
   searchPlaceholder: "Search 51 games",
@@ -14,6 +14,8 @@ export const libraryCopy = {
   daily: "Today's Daily",
   dailyDone: (time: string) => `Daily done in ${time}`,
   freePlay: "Free play",
+  play: "Play",
+  played: "Played",
   freePlayHint: "Endless boards, small XP",
   challenge: "Challenge",
   quickMatch: "Quick Match",

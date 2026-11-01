@@ -102,7 +102,7 @@ jobs:
           # The admin calendar tests read Dailies up to 55 days ahead: fill the schedule like production does.
           (set -a; . ./.env.local; set +a; pnpm gen:puzzles --days 60)
           pnpm build
-          (pnpm start -p 3000 &) && npx wait-on http://localhost:3000/api/health -t 60000
+          (SETTINGS_CACHE_MS=0 pnpm start -p 3000 &) && npx wait-on http://localhost:3000/api/health -t 60000
           pnpm vitest run -c vitest.api.config.mts
 
   build:

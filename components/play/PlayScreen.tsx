@@ -111,14 +111,17 @@ export function PlayScreen({
       moves.current = 0;
       try {
         // Started at the tap when possible (SPZ-01); otherwise start it now.
-        const a = await (takePrimed(meta.id, m, m === "free" ? (d ?? difficulty) : undefined) ??
+        const fresh = () =>
           startAttempt({
             game: meta.id,
             mode: m,
             date: m === "archive" ? date : undefined,
             // "Another <Game>" keeps the difficulty just played, so free play never drops abruptly after a Daily.
             difficulty: m === "free" ? (d ?? difficulty) : undefined,
-          }));
+          });
+        const primed = takePrimed(meta.id, m, m === "free" ? (d ?? difficulty) : undefined);
+        // A primed start that failed (offline blip, a mode the server refuses) falls back to a fresh start.
+        const a = await (primed ? primed.catch(fresh) : fresh());
         latestState.current = a.state ?? undefined;
         setGuessAttempt(a.attemptId);
         setAttempt(a);
@@ -259,15 +262,20 @@ export function PlayScreen({
   );
 
   // Named Next actions (audit: "Next is always named"): the Home path's next game, or another of this one.
-  const clearedNow = { ...(me.data?.today.cleared ?? {}), ...(result?.status === "cleared" && mode === "daily" ? { [meta.id]: 1 } : {}) };
+  // Dailies off: the path simply continues after this game (every game is always open in free play).
+  const dailiesOn = settings["features.dailies"];
+  const clearedNow = dailiesOn
+    ? { ...(me.data?.today.cleared ?? {}), ...(result?.status === "cleared" && mode === "daily" ? { [meta.id]: 1 } : {}) }
+    : { [meta.id]: 1 };
+  const playHref = (id: string) => (dailiesOn ? `/play/${id}` : `/play/${id}?mode=free`);
   const readyIds = new Set((today.data?.games ?? []).filter((g) => g.ready).map((g) => g.id));
   const nextId = nextInPath(meta.id, clearedNow, (id) => (today.data ? readyIds.has(id) : true));
   const nextAction = nextId
     ? {
         label: nextLabel(nextId),
         onClick: () => {
-          primeAttempt(`/play/${nextId}`);
-          router.push(`/play/${nextId}`);
+          primeAttempt(playHref(nextId));
+          router.push(playHref(nextId) as never);
         },
       }
     : { label: copy.play.backToGrid, onClick: () => router.push("/") };

@@ -8,6 +8,7 @@ export const boardGames = {
   bot: {
     /** entry under the game card (World view, Play anytime) */
     entry: "Play a full game vs bot",
+    entryShort: "Play vs bot",
     entryAria: (game: string) => `${game}: play a full game against the bot`,
     levels: LEVEL,
     levelGroup: "Bot level",

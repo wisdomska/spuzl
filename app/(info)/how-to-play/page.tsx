@@ -5,7 +5,7 @@ import { Icon } from "@/components/ui/Icon";
 
 export const metadata: Metadata = {
   title: "How to play",
-  description: "The rules of all 51 SPUZL games, the Daily, Free play, streaks and leagues.",
+  description: "The rules of all 51 SPUZL games, play, streaks and leagues.",
 };
 
 const CONTROLS: Record<GameMeta["engine"], string> = {
@@ -32,22 +32,17 @@ export default function HowToPlay() {
       <h2>The basics</h2>
       <ul>
         <li>
-          <strong>The Daily.</strong> Each game has one Daily a day, the same puzzle for everyone. It resets at 00:00 GMT. You get one
-          ranked try, and it counts for your streak, leaderboards and Full Spuzl.
+          <strong>Play.</strong> Fresh puzzles that never run out. Each clear earns 10 XP and 5 Sparks, up to 300 XP a day.
         </li>
         <li>
-          <strong>Free play.</strong> Fresh puzzles that never run out. Each clear earns 10 XP and 5 Sparks, up to 300 XP a day. Free play
-          never touches streaks or boards.
-        </li>
-        <li>
-          <strong>Difficulty.</strong> Dailies get harder through the week: Monday easy, Tuesday to Thursday medium, Friday hard, Saturday
-          expert, Sunday the Weekly Mega.
+          <strong>First try.</strong> The first time you open a game, a short practice round with free hints shows you how it works. You can
+          skip it.
         </li>
         <li>
           <strong>Hints.</strong> Up to 3 per puzzle. Each one shows a single safe next step. A clear with hints earns half the XP.
         </li>
         <li>
-          <strong>Streaks.</strong> Clear at least one Daily a day to keep your streak. A Streak Freeze covers one missed day. You can hold
+          <strong>Streaks.</strong> Clear at least one game a day to keep your streak. A Streak Freeze covers one missed day. You can hold
           2.
         </li>
         <li>

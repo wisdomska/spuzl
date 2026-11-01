@@ -1,5 +1,6 @@
 "use client";
 
+import { useGameSettings } from "@/lib/game-settings/client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useMe, useToday } from "@/lib/client/api";
@@ -32,11 +33,14 @@ export function SidePanel() {
     if (code) accept.mutate(code);
   }, [hasMe]); // eslint-disable-line react-hooks/exhaustive-deps
   const d = me.data;
-  const cleared = d?.today.cleared ?? {};
+  const dailiesOn = useGameSettings()["features.dailies"];
+  // Dailies off: the strip shows which featured games the player has tried, not today's Dailies.
+  const cleared: Record<string, number> = dailiesOn ? (d?.today.cleared ?? {}) : Object.fromEntries((d?.played ?? []).map((id) => [id, 1]));
   const ready = (id: string) => today.data?.games.find((g) => g.id === id)?.ready ?? id === "crownfall";
   const next = nextDaily(cleared, ready);
   const nextMeta = next ? GAME_BY_ID[next] : null;
-  const done = Math.max(LAUNCH_IDS.filter((id) => cleared[id] !== undefined).length, d?.today.counted ?? 0);
+  const featured = LAUNCH_IDS.filter((id) => cleared[id] !== undefined).length;
+  const done = dailiesOn ? Math.max(featured, d?.today.counted ?? 0) : featured;
   const online = (friends.data?.friends ?? []).filter((f) => f.presence.online).slice(0, 6);
   const pct = d ? Math.round((d.xpInto / Math.max(1, d.xpNeed)) * 100) : 0;
 
@@ -88,7 +92,7 @@ export function SidePanel() {
           </div>
           <div className="flex flex-col gap-2">
             <div className="flex justify-between text-[15px] font-semibold">
-              <span>Today</span>
+              <span>{dailiesOn ? "Today" : "Featured games tried"}</span>
               <span className="num">
                 <span className="text-accent">{done}</span> / {LAUNCH_IDS.length}
               </span>
@@ -96,7 +100,7 @@ export function SidePanel() {
             <ol
               className="grid gap-[3px]"
               style={{ gridTemplateColumns: `repeat(${LAUNCH_IDS.length}, 1fr)` }}
-              aria-label="Today's featured Dailies"
+              aria-label={dailiesOn ? "Today's featured Dailies" : "Featured games tried"}
             >
               {LAUNCH_IDS.map((id) => {
                 const c = cleared[id] !== undefined;
@@ -108,7 +112,7 @@ export function SidePanel() {
                     style={{ background: c ? "var(--accent)" : "var(--surface-raised)" }}
                   >
                     <span className="sr-only">
-                      {GAME_BY_ID[id].name}, {c ? "cleared" : "not cleared"}
+                      {GAME_BY_ID[id].name}, {c ? (dailiesOn ? "cleared" : "tried") : dailiesOn ? "not cleared" : "not tried yet"}
                     </span>
                   </li>
                 );
@@ -116,7 +120,7 @@ export function SidePanel() {
             </ol>
           </div>
           <Link
-            href={nextMeta ? `/play/${nextMeta.id}` : "/library"}
+            href={nextMeta ? (dailiesOn ? `/play/${nextMeta.id}` : `/play/${nextMeta.id}?mode=free`) : "/library"}
             className="toy bg-accent text-on-accent flex h-16 items-center justify-center gap-2.5 rounded-[20px]"
             style={{ ["--btn-depth" as string]: "var(--accent-depth)" }}
           >

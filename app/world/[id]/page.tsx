@@ -6,7 +6,7 @@ import { WorldScreen } from "@/components/world/WorldScreen";
 export async function generateMetadata({ params }: PageProps<"/world/[id]">): Promise<Metadata> {
   const { id } = await params;
   const w = WORLD_BY_ID[id as WorldId];
-  return w ? { title: w.name, description: `${w.tagline}. Daily puzzles and endless free play.` } : {};
+  return w ? { title: w.name, description: `${w.tagline}. Endless puzzles to play any time.` } : {};
 }
 
 export default async function World({ params }: PageProps<"/world/[id]">) {

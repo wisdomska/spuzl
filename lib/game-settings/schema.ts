@@ -9,6 +9,13 @@ export type SettingDef =
   | { kind: "bool"; label: string; help: string; group: string; default: boolean };
 
 export const SETTINGS = {
+  "features.dailies": {
+    kind: "bool",
+    group: "Features",
+    label: "Dailies",
+    help: "The shared Daily puzzles, their leaderboards and the archive. Off: free play is the only solo mode and every Daily screen and mention is hidden. The server refuses Daily play while off.",
+    default: false,
+  },
   "hints.dailyXpKeptPct": {
     kind: "int",
     group: "Hints",

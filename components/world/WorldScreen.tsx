@@ -1,5 +1,9 @@
 "use client";
 
+import { useGameSettings } from "@/lib/game-settings/client";
+import { useSettings } from "@/lib/settings/store";
+import { isRaceGame } from "@/lib/multiplayer/games";
+import { worldCopy } from "@/lib/copy/world";
 import Link from "next/link";
 import { motion } from "motion/react";
 import { WORLD_BY_ID, gamesInWorld, type WorldId } from "@/lib/catalog";
@@ -20,8 +24,13 @@ export function WorldScreen({ id }: { id: WorldId }) {
   const me = useMe();
   const today = useToday();
   const status = (gid: string) => today.data?.games.find((g) => g.id === gid);
-  const cleared = games.filter((g) => status(g.id)?.state === "cleared" || me.data?.today.cleared[g.id] !== undefined).length;
+  const dailiesOn = useGameSettings()["features.dailies"];
+  const played = new Set(me.data?.played ?? []);
+  const isDone = (gid: string) =>
+    dailiesOn ? status(gid)?.state === "cleared" || me.data?.today.cleared[gid] !== undefined : played.has(gid);
+  const cleared = games.filter((g) => isDone(g.id)).length;
   const rating = me.data?.ratings[id];
+  const relaxed = useSettings((x) => x.relaxed);
 
   return (
     <main
@@ -59,7 +68,7 @@ export function WorldScreen({ id }: { id: WorldId }) {
             {world.name}
           </h1>
           <p className="text-[15px] font-medium">
-            {world.tagline}. {cleared} of {games.length} cleared today.
+            {world.tagline}. {dailiesOn ? worldCopy.clearedToday(cleared, games.length) : worldCopy.tried(cleared, games.length)}
             {rating !== undefined && (
               <span className="text-muted">
                 {" "}
@@ -72,43 +81,51 @@ export function WorldScreen({ id }: { id: WorldId }) {
       <ul className="flex flex-col gap-2.5 px-4 pt-4 pb-10">
         {games.map((g, i) => {
           const s = status(g.id);
-          const done = s?.state === "cleared" || me.data?.today.cleared[g.id] !== undefined;
-          const timeMs = s?.timeMs ?? me.data?.today.cleared[g.id];
-          const inProgress = s?.state === "in_progress";
+          const done = isDone(g.id);
+          const timeMs = dailiesOn ? (s?.timeMs ?? me.data?.today.cleared[g.id]) : undefined;
+          const inProgress = dailiesOn && s?.state === "in_progress";
+          const canChallenge = isRaceGame(g.id) && !relaxed;
+          const hasActions = !!g.botPlay || canChallenge;
           return (
             <motion.li
               key={g.id}
               initial={{ opacity: 0, transform: "translateY(8px)" }}
               animate={{ opacity: 1, transform: "translateY(0px)" }}
               transition={{ duration: 0.24, delay: i * 0.04, ease: EASE_OUT }}
-              className="flex flex-col gap-1.5"
+              // One card per game: the game itself, then its ways to play with others in a footer inside the same card.
+              className="bg-surface overflow-hidden rounded-[20px]"
+              style={{ boxShadow: inProgress ? "inset 0 0 0 2px var(--world)" : undefined }}
             >
-              <Link
-                href={done ? `/play/${g.id}?mode=free` : `/play/${g.id}`}
-                className="press bg-surface flex items-center gap-3.5 rounded-[20px] p-3"
-                style={{ boxShadow: inProgress ? "inset 0 0 0 2px var(--world)" : undefined }}
-              >
+              <Link href={done || !dailiesOn ? `/play/${g.id}?mode=free` : `/play/${g.id}`} className="press flex items-center gap-3.5 p-3">
                 <GameIcon3D meta={g} size={64} />
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="font-display text-[18px] font-extrabold">{g.name}</span>
                   <span className="text-muted text-[14px] leading-[1.35]">{g.blurb}</span>
                 </span>
                 {done ? (
-                  <Chip icon="check-circle" bg="var(--success-tint)" fg="var(--accent)" num>
-                    {timeMs !== undefined ? formatClock(timeMs) : "Done"}
+                  <Chip icon="check-circle" bg="var(--success-tint)" fg="var(--accent)" num={timeMs !== undefined}>
+                    {timeMs !== undefined ? formatClock(timeMs) : dailiesOn ? worldCopy.done : worldCopy.played}
                   </Chip>
                 ) : inProgress ? (
                   <Chip icon="hourglass-medium" bg="var(--surface-raised)" fg="var(--text)">
-                    Resume
+                    {worldCopy.resume}
                   </Chip>
                 ) : (
                   <Chip icon="sparkle" bg="var(--world)" fg="#0E0F1A">
-                    New
+                    {worldCopy.isNew}
                   </Chip>
                 )}
               </Link>
-              <BotEntry meta={g} />
-              <ChallengeEntry meta={g} />
+              {hasActions && (
+                <div
+                  className="border-line flex flex-wrap items-center gap-2 border-t px-3 py-2.5"
+                  role="group"
+                  aria-label={worldCopy.withOthers(g.name)}
+                >
+                  <ChallengeEntry meta={g} inline />
+                  <BotEntry meta={g} inline />
+                </div>
+              )}
             </motion.li>
           );
         })}

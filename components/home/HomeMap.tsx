@@ -32,11 +32,14 @@ export function HomeMap({
   current,
   mood,
   color,
+  unit = "Dailies cleared today",
 }: {
   progress: Record<WorldId, WorldProgress>;
   current: WorldId;
   mood: SpuzMood;
   color: string;
+  /** what the island count means, read after it ("games tried") */
+  unit?: string;
 }) {
   const router = useRouter();
   const reduce = useReducedMotion();
@@ -101,7 +104,7 @@ export function HomeMap({
               <span className="num text-muted text-[12px] font-semibold">
                 {p.cleared}/{p.total}
               </span>
-              <span className="sr-only">, Dailies cleared today</span>
+              <span className="sr-only">, {unit}</span>
             </span>
           </button>
         );
