@@ -1,4 +1,5 @@
 import { BottomNav, DesktopRail } from "@/components/shell/BottomNav";
+import { LowDataSuggest } from "@/components/shell/LowDataSuggest";
 
 /** Tabbed screens: bottom nav on phones, 88 px rail + content + 360 px side panel on desktop. */
 export default function TabsLayout({ children }: LayoutProps<"/">) {
@@ -7,6 +8,7 @@ export default function TabsLayout({ children }: LayoutProps<"/">) {
       <DesktopRail />
       {children}
       <BottomNav />
+      <LowDataSuggest />
     </div>
   );
 }

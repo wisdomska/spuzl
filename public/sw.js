@@ -7,9 +7,12 @@
  *   without a connection. A successful finish evicts that game's entry.
  * - Static assets (Next build output, fonts, /3d, /icons) are cache-first: their names are hashed or
  *   versioned. GET /api/v1/today and /api/v1/me fall back to their last good copy.
+ * - Daily pack (SPZ-27b): where the browser fires Periodic Background Sync ("spuzl-daily-pack"),
+ *   the worker starts and caches today's pack itself, once per GMT day, unless the page said low-data
+ *   mode is on. Only ever today's: the server does not serve a Daily before its day (docs/qa/LOW_DATA.md).
  * - Never cached: other API writes, share images, Supabase and anything cross-origin.
  */
-const VERSION = "2026-10-31.2";
+const VERSION = "2026-11-01.1";
 const SHELL = `spuzl-shell-${VERSION}`;
 const STATIC = `spuzl-static-${VERSION}`;
 const DATA = `spuzl-data-${VERSION}`;
@@ -21,6 +24,8 @@ const NAV_TIMEOUT_MS = 4000;
 const todayGmt = () => new Date().toISOString().slice(0, 10);
 const dailyCache = (day = todayGmt()) => `${DAILY_PREFIX}${day}`;
 const dailyKey = (game) => `/__spuzl/daily/${encodeURIComponent(game)}`;
+const PACK_TAG = "spuzl-daily-pack";
+const PACK_CONFIG = "/__spuzl/daily-pack-config";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -53,6 +58,67 @@ self.addEventListener("message", (event) => {
       })(),
     );
   }
+  if (type === "daily-pack") {
+    // The page's word on the background pack: which games, and whether low-data mode allows it.
+    const games = Array.isArray(event.data.games) ? event.data.games.filter((g) => typeof g === "string").slice(0, 64) : [];
+    event.waitUntil(
+      (async () => {
+        const cache = await caches.open(DATA);
+        const prev = await readPackConfig();
+        const cfg = { enabled: event.data.enabled === true, games, lastDay: prev ? prev.lastDay : null };
+        await cache.put(PACK_CONFIG, new Response(JSON.stringify(cfg), { headers: { "content-type": "application/json" } }));
+      })(),
+    );
+  }
+});
+
+async function readPackConfig() {
+  const hit = await (await caches.open(DATA)).match(PACK_CONFIG);
+  return hit ? hit.json().catch(() => null) : null;
+}
+
+/**
+ * Background Daily pack: today's ready, uncleared launch Dailies, started and cached like the page's
+ * own prefetch (lib/offline/register.ts prefetchDailies). Requests from the worker itself skip its
+ * fetch handler, so the start responses are cached here.
+ */
+async function fetchDailyPack() {
+  const cfg = await readPackConfig();
+  const day = todayGmt();
+  if (!cfg || !cfg.enabled || !cfg.games.length || cfg.lastDay === day) return;
+  let today;
+  try {
+    const r = await fetch("/api/v1/today", { credentials: "same-origin" });
+    if (!r.ok) return;
+    await (await caches.open(DATA)).put("/api/v1/today", r.clone());
+    today = await r.json();
+  } catch {
+    return;
+  }
+  if (!today || today.signedIn === false || !Array.isArray(today.games) || today.date !== day) return;
+  const cache = await caches.open(dailyCache(day));
+  for (const g of today.games) {
+    if (!g.ready || g.state === "cleared" || !cfg.games.includes(g.id)) continue;
+    try {
+      const res = await fetch("/api/v1/attempts", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ game: g.id, mode: "daily" }),
+      });
+      if (res.status === 401 || res.status === 403) return; // signed out: try again another day
+      if (res.ok) await cache.put(dailyKey(g.id), res);
+    } catch {
+      return; // connection dropped: the next sync tries again
+    }
+  }
+  await pruneOldDays();
+  const data = await caches.open(DATA);
+  await data.put(PACK_CONFIG, new Response(JSON.stringify({ ...cfg, lastDay: day }), { headers: { "content-type": "application/json" } }));
+}
+
+self.addEventListener("periodicsync", (event) => {
+  if (event.tag === PACK_TAG) event.waitUntil(fetchDailyPack());
 });
 
 const offlinePage = () =>

@@ -5,7 +5,14 @@
  */
 import { initSentryClient } from "@/lib/monitoring/sentry";
 import { initAnalytics, track } from "@/lib/analytics/track";
-import { prefetchDailies, registerServiceWorker, swEnabled } from "@/lib/offline/register";
+import {
+  backgroundDownloadsOff,
+  configureDailyPack,
+  prefetchDailies,
+  registerServiceWorker,
+  scheduleDailyPack,
+  swEnabled,
+} from "@/lib/offline/register";
 import { startOfflineSync } from "@/lib/offline/queue";
 
 const safe = (fn: () => unknown) => {
@@ -30,11 +37,12 @@ if (swEnabled()) {
     document.readyState === "complete" ? fn() : window.addEventListener("load", () => fn(), { once: true });
   // Low data mode or Save-Data: no background downloads. Otherwise wait well past first paint so the
   // prefetch never competes with the screen the player opened.
-  const saveData =
-    document.documentElement.dataset.lowData === "true" ||
-    (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData === true;
   const prefetch = () => {
-    if (!saveData) setTimeout(() => idle(() => safe(prefetchDailies)), 10_000);
+    if (!backgroundDownloadsOff()) setTimeout(() => idle(() => safe(prefetchDailies)), 10_000);
+    // SPZ-27b: the next day's pack right after GMT midnight (or on return), and the worker's
+    // background fetch where the browser allows it.
+    safe(scheduleDailyPack);
+    safe(() => configureDailyPack(!backgroundDownloadsOff()));
   };
   afterLoad(() =>
     safe(async () => {
@@ -43,5 +51,14 @@ if (swEnabled()) {
       if (navigator.serviceWorker.controller) prefetch();
       else navigator.serviceWorker.addEventListener("controllerchange", prefetch, { once: true });
     }),
+  );
+  // Low-data mode switched in Settings (or by the slow-connection suggestion): tell the worker.
+  let packOn = !backgroundDownloadsOff();
+  safe(() =>
+    new MutationObserver(() => {
+      if (packOn === !backgroundDownloadsOff()) return; // settings re-apply the attribute on every change
+      packOn = !packOn;
+      safe(() => configureDailyPack(packOn));
+    }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-low-data"] }),
   );
 }
