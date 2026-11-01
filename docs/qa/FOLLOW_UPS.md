@@ -19,8 +19,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   - It uses the Board Bay board: pawns always promote to a queen and there are no coordinates.
   - The bot search ignores threefold repetition.
   - The help sheet for bot games still mentions Dailies and hints.
-- **Ranked Duel mix games:** a mix uses games both players have cleared. Two brand-new players can still get a
-  game neither has seen, with no rules card.
 - **Guided first play:**
   - Before the first move, Dusk, Nine and Merge have no deduction, so the first hint coaches with the rule.
   - Learned games are remembered per device. Cleared games are remembered per account.
