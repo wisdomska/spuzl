@@ -1,11 +1,28 @@
 # Changelog
 
-## Unreleased
+## 1.3.0 (1 November 2026)
+
+Google sign-in, a public homepage, a lemon green icon, fairer lab games and many admin and phone-fit fixes.
 
 ### For players
 
-- **World ranks move in free play.** A free-play clear moves your world rank at half the weight a Daily did,
-  scored against recent clears of the same game and difficulty. Replaying the same board does not count.
+- **Continue with Google** on the welcome screen, in Settings → Account and in "Save your streak", with Google's
+  official button. A guest who continues with Google keeps their progress (same account).
+- **Public homepage:** visitors who aren't signed in see what SPUZL is at spuzl.vercel.app, with Play now and
+  Sign in. Signed-in players still go straight to Home. The privacy policy covers Google sign-in.
+- **Lemon green Spuz** on the app icon, favicon and home-screen icons.
+- **Settings:** a Back button next to the title, and you can change your nickname (live checks; taken names are
+  refused).
+- **World ranks move in free play**, at half the weight a Daily did, scored against recent clears of the same game
+  and difficulty. Replaying the same board does not count.
+- **Phone fit:** Light Up, Five, Nine, Rage Ridge and Four Up fit small screens without sideways scroll; boards
+  read the real screen width on their first render.
+- **New games (still behind the switch):**
+  - Killer Sums expert and mega never need a guess; hints teach the 45 rule.
+  - Trotro Jam boards generate in well under a second.
+  - Five and Emoji Hits only show an answer for your own game, and a shown answer can't count as a clear.
+  - Penalty King keeps the keeper's dives on the server.
+  - Emoji Hits clues are fact-checked; one song was replaced.
 
 ### For admins
 
@@ -13,6 +30,23 @@
   (`free.sparksPerClear`, 5) and the daily XP cap (`free.xpDailyCap`, 300). How to play and Practice show the live
   values.
 - **Dusk double-tap window** (`dusk.doubleTapMs`, Games group, 320 ms by default).
+- **Filters in the address bar:** puzzle library, moderation, content desk, shop and audit log keep their tabs and
+  filters on reload, Back and shared links.
+- **Moderation:** tabs show their own counts and open on the first one with something waiting.
+- **Event quests** appear in the Quests catalogue (XP and Sparks editable inline). Saving from the Seasonal events
+  editor works again.
+- **Content desk:** Five and Emoji Hits are in content review and the solve-check; the puzzle preview checks
+  guesses on the server.
+- **Metrics:** onboarding completion counts each Welcome step and reaching Home; hints count requests and uses;
+  tap-to-board only counts Play buttons.
+- **Penalty King** clears with machine-regular timing are flagged for review.
+
+### Under the hood
+
+- `SHARE_CARD_SECRET` is documented, with a production warning when it's unset.
+- Board Bay colours moved to tokens.
+- CI retries Supabase start and falls back to the Docker Hub image mirror.
+- Lab game migrations apply on a fresh database.
 
 ## 1.2.0 (1 November 2026)
 

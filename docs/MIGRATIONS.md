@@ -43,13 +43,16 @@ All migrations are additive and reversible (rollback SQL in each header). None t
 
 The seed also rewords the badges and quests that mentioned Dailies, and adds the lab game rows. `scripts/gen-seed.ts` now writes them as well.
 
-## After 1.2.0
+## 1.3.0
 
-Additive and reversible (rollback SQL in the header). No existing rows change.
+Additive and reversible (rollback SQL in each header). No existing rows change. Applied to preview, then
+production, before the code deploys.
 
-| Migration                             | What it adds                                                                                                                                                                    | Rollback                                       |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| `20261110100001_free_play_rating.sql` | `svc_free_percentile(game, difficulty, time, attempt)`: a free-play clear against the last 30 days of free-play clears of that game and difficulty, plus a partial index for it | Drop both functions and the index (see header) |
+| Migration                                    | What it adds                                                                                                                                        | Rollback                                       |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| `20261110000001_onboarding_hint_metrics.sql` | New anonymous metric names (`onboarding_step`, `hint_request`, `hint_use`), a counting function, and those counts in the admin metrics              | See header                                     |
+| `20261110100001_free_play_rating.sql`        | `svc_free_percentile`: a free-play clear against the last 30 days of free-play clears of that game and difficulty, plus a partial index             | Drop both functions and the index (see header) |
+| `20261110200001_attempt_move_log.sql`        | `svc_attempt_log`: appends to the caller's own in-progress attempt's `moves` log (Five and Emoji Hits reveals, Penalty King shots), compare-and-set | Drop the function (see header)                 |
 
-pgTAP: `090_free_play_rating`. If the code ships first, the percentile call returns an error and the server scores
-each free-play clear as an average one (50th percentile), so ranks still move, only by hints and mistakes.
+pgTAP: `090_free_play_rating`, `095_admin_metrics_funnel`. If the code ships first, the free-play percentile call
+fails soft (each clear counts as an average one), and lab games stay behind their switch.
