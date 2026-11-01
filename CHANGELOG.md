@@ -1,5 +1,82 @@
 # Changelog
 
+## 1.1.0 (1 November 2026)
+
+The frictionless-play pass: faster taps, one consistent game screen, clearer boards and fewer steps.
+
+### For players
+
+- **Sign in or play as a guest** from the first screen, with a simple email code. Guests get a "Save your streak"
+  nudge after a few clears that keeps all their progress.
+- **Learn as you go:**
+  - The first try of every game is a short practice round with free hints that pop up when you pause. It is
+    skippable.
+  - The start screen offers "Learn a game in 30 seconds", "Browse all 51 games" or "Go to the map".
+  - The first clear flows straight into making your Spuz.
+  - XP, Sparks, streaks, islands and slips are explained the first time they appear.
+- **Faster:**
+  - The puzzle starts loading the moment you tap.
+  - A board-shaped placeholder shows at once.
+  - Home and the Library warm up the next game while you look.
+- **One game screen for all 51 games:**
+  - one clock
+  - a hint counter, with a confirm before the first hint on a Daily
+  - Help and Pause
+  - a comfort sheet in Pause: patterns, text size, reduced motion, hide timer, sound, haptics
+  - the solved board glows for a moment before results
+  - "Next in <World>: <Game>" and "Another <Game>" are always named
+- **Home:** one Play card with today's progress ring, plus Duel, Party and All games as small chips. More of
+  the map shows on phones.
+- **All games:**
+  - search and filters (Quick, Calm, Competitive, each world)
+  - typical play time and a tick for games done today
+  - one tap opens a game card with the Daily first
+- **Easier and clearer games:**
+  - Gentler Daily difficulty through the week.
+  - Crownfall: always-on region borders, a higher-contrast palette with colour names, a one-tap patterns
+    offer, and hints that explain the next real deduction.
+  - Nine and Sixer: box borders, row, column and box highlights, one status line, and a 3 × 3 number pad with
+    counts.
+  - Dusk: tap for sun, double-tap for moon; transient taps never count as slips.
+  - Four Up: whole-column tap targets with a drop preview.
+  - Quickfire: answers hidden until Start, one auto-advance, and an end summary.
+  - Quads: instant feedback and labelled difficulty colours.
+  - Flinch: auto-starts the next round; the go signal is never colour alone.
+  - Chess: pieces stay in their squares, readable coordinates, clear move dots.
+  - Rage Ridge and Gotcha: no black first frame, a bigger canvas, 64 px controls, and held keys keep moving.
+  - Word games: rotate or shuffle the board, and off-theme words count as bonuses.
+- **Play together:**
+  - Pick a game first, then Duel, Quick Match or host a Party, or pick the mode first as before.
+  - Party has Host and Join tabs and offers every race game.
+  - Duel round cards last 2 s, then 3-2-1, and the score always matches the rounds.
+  - The Practice bot is offered from the start.
+  - Ranked games use games you have cleared, and a game you have never cleared shows its rule card first.
+  - Full games against a bot (easy, medium, hard) in Four Up, Chess, Draughts, Oware, Ludo and Flip.
+- **Invites:** one Share button opens WhatsApp, Snapchat, Instagram, TikTok, Telegram, Facebook, X, Messages or
+  Email.
+- **Progress:**
+  - The lesson counts as today's first clear.
+  - Ranks never skip a tier.
+  - A starter hat you can afford early.
+  - New players join leagues with friends or players near their level, and see an invite card when alone.
+- **Low data:** a suggestion on slow connections, and the Daily pack refreshes just after midnight GMT.
+
+### For admins
+
+- **Game settings:** tunables read at runtime, with ranges, help text and an audit entry for every change:
+  - hint XP penalty
+  - solved hold
+  - Duel round card
+  - Quickfire and Flinch delays
+  - prefetch
+  - starter price
+  - sign-in prompt threshold
+  - league grouping
+- **Library:** per-game typical time and filter tags, with export and import (validated, all-or-nothing).
+- **Metrics**, with CSV export: tap-to-board p50/p95, onboarding completion, time to first move, hint and
+  accidental-hint rates, Duel abandon and bot fallback, Daily completion, share rate.
+- Every new endpoint has role checks and tests per role. See `docs/MIGRATIONS.md` for the five migrations.
+
 ## 1.0.0 (31 October 2026)
 
 First public release at https://spuzl.vercel.app.
