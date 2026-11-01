@@ -22,14 +22,14 @@ const gapFor = (size: number) => (size > 6 ? 1 : 2);
 /**
  * Cell size: Sixer keeps 44 px or more everywhere. Nine keeps 40 px from 375 px wide up (using the
  * shell's board padding when it has to) and only goes smaller on narrower phones (34 px at 320). On a
- * short screen the cells also step down (to 30 px on Nine) until the whole shell, down to its tool bar, sits
+ * short screen the cells also step down (to 28 px on Nine) until the whole shell, down to its tool bar, sits
  * above the fold (measured from the number pad, `pad`).
  */
 function useSudokuCell(size: number, boxW: number, pad: RefObject<HTMLElement | null>) {
   const vw = useViewportWidth();
   const overhead = gapTotal(size, boxW, gapFor(size), LINE) + PAD * 2;
   const wide = fitCell(vw, size, overhead, size > 6 ? 40 : 44, 56);
-  return useFitHeight(wide, size > 6 ? 30 : 44, size, pad, "shell");
+  return useFitHeight(wide, size > 6 ? 28 : 44, size, pad, "shell");
 }
 
 /** Killer Sums cage outline: dotted, inset this many px inside the cells, in a muted ink. */

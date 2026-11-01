@@ -80,6 +80,10 @@ describe("phone fit", () => {
     }
   });
 
+  it("Nine's 28 px floor fits a 320 x 568 phone's grid inside the screen width", () => {
+    expect(9 * 28 + NINE).toBeLessThanOrEqual(320 - 36);
+  });
+
   it("Rage Ridge keeps a playable canvas when it gives height back", () => {
     const ideal = stageHeight(284, { w: 320, h: 568 });
     expect(MIN_STAGE_HEIGHT).toBeLessThan(ideal);

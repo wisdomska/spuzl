@@ -29,7 +29,8 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 
 ## Layout and motion
 
-- Five and Nine still scroll a little at 320 × 568.
+- Five still scrolls about 75 px at 320 × 568 (tiles at their 30 px floor, title row hidden). Six tile rows, the
+  44 px keyboard and the tool bar need more than 568 px; fitting it needs a tool-bar-free layout or smaller keys.
 - Light Up 10 × 10 cells are 36 px at 375 wide (30 px at 320). 44 px would need a smaller hard board or zoom.
 - Party (`components/multiplayer/party.tsx`) still has raw hex colours (QR, podium, confetti, Open label).
 

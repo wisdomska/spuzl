@@ -118,7 +118,7 @@ export function LetterKeyboard({
 
   return (
     <div
-      className="flex w-full max-w-[400px] flex-col gap-1.5 rounded-[20px] p-2.5"
+      className={`flex w-full max-w-[400px] flex-col gap-1.5 rounded-[20px] p-2.5 ${compact ? "short:p-2" : ""}`}
       style={{ background: "var(--board-bg)" }}
       role="group"
       aria-label="Letter keyboard"

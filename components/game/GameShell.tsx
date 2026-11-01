@@ -307,8 +307,9 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
       {/* 2 Strip */}
       {strip && !relaxed && <div className="relative z-20 px-3">{strip}</div>}
 
-      {/* 3 Title + rule: smaller and tighter on short screens */}
-      <div className="short:pt-0 short:pb-1 flex items-baseline justify-between gap-3 px-5 pt-1.5 pb-3.5">
+      {/* 3 Title + rule: smaller and tighter on short screens; on very short ones the title row is for screen
+          readers only, so the board and tool bar keep the room. */}
+      <div className="short:pt-0 short:pb-1 tiny:sr-only flex items-baseline justify-between gap-3 px-5 pt-1.5 pb-3.5">
         <h1 className="font-display short:text-[20px] short:leading-7 text-[24px] font-black text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]">
           {meta.name}
         </h1>
@@ -318,7 +319,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
 
       {/* 4 Board slot */}
       <main
-        className={`short:py-2 relative z-0 flex justify-center p-[18px] ${theme ? "rounded-[26px]" : ""} ${celebrate || solved ? "shell-solved" : ""}`}
+        className={`short:py-2 tiny:pt-1.5 relative z-0 flex justify-center p-[18px] ${theme ? "rounded-[26px]" : ""} ${celebrate || solved ? "shell-solved" : ""}`}
         style={theme ? { background: theme.bg, boxShadow: `inset 0 0 0 2px ${theme.mark}` } : undefined}
         data-board-theme={theme ? boardTheme! : undefined}
         aria-label={`${meta.name} board`}
