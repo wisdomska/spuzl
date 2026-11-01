@@ -27,7 +27,7 @@ export async function onboardGuest(page: Page, age: Age = "18+", nickname = `Qa$
   if (!o.guided)
     await page.evaluate(
       (ids) => localStorage.setItem("spuzl.learned", JSON.stringify(ids)),
-      GAMES.map((g) => g.id),
+      [...GAMES, ...LAB_GAMES].map((g) => g.id),
     );
   await page.getByRole("button", { name: "Play as guest" }).click();
   await page.getByRole("radio", { name: AGE_LABEL[age] }).click();
