@@ -48,7 +48,9 @@ async function freeClear(g: Awaited<ReturnType<typeof guest>>) {
   expect(s.status).toBe(200);
   const { generate } = await import("@/games/crownfall/logic");
   const { createRng } = await import("@/lib/rng");
-  const gen = generate(createRng(s.data.seed), "easy");
+  // The seed stays on the server: read it with the service role.
+  const { data: att } = await admin().from("attempts").select("free_seed").eq("id", s.data.attemptId).single();
+  const gen = generate(createRng(att!.free_seed!.split("|")[0]), "easy");
   const n = gen.puzzle.size;
   const state = new Array(n * n).fill(0);
   gen.solution.forEach((c, r) => (state[r * n + c] = 2));

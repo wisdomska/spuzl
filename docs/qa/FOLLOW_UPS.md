@@ -4,8 +4,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 
 ## Game play and rules
 
-- **Free play seed:** free play sends its seed to the client, so a determined player could work out the
-  solution. Free play gives capped XP only, but a server-only seed (as Dailies have) would close it.
 - **Buried:** hint text uses unrotated cell positions after the board is rotated.
 - **Quickfire:**
   - The header clock starts on the first answer, not on Start. This needs a board-to-shell "start" call.
@@ -66,8 +64,10 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   boards have one vehicle more than the level's range.
 - **API coverage:** `tests/api/flow.test.ts` has no attempt-level cases yet for Five and Emoji Hits reveals or
   Penalty King shots (unit tests cover the checks).
-- **Free-play seed:** now that free play moves world ranks (at half weight), a server-only seed would stop a
-  modified client from solving boards faster.
+- **Content-game references:** a content puzzle's `ref` (index and difficulty) is sent to the client, since the
+  guess transport and the sealed quiz boards need it. The guess route answers a bare `ref` without an attempt
+  (races, guided practice), so a player could try words on a Five board by reference before guessing on their
+  attempt, and Penalty King's keeper dives follow from the index. Closing it needs attempt-bound or opaque refs.
 - **Admin copy:** the content editor, moderation case panels and the remaining admin pages still have inline
   strings (`lib/copy/admin.ts` covers the lists).
 - **Five content** is still marked `needsReview` for the owner.

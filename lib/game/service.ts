@@ -44,6 +44,7 @@ export interface PuzzleRef {
   gameId: string;
   mode: Mode;
   date?: string;
+  /** tutorial only: the fixed public practice seed (free play always gets a fresh server seed) */
   seed?: string;
   difficulty: Difficulty;
 }
@@ -141,7 +142,8 @@ export async function startAttempt(admin: SupabaseClient, playerId: string, ref:
       }
     }
   } else {
-    seed = ref.seed ?? `free:${meta.id}:${randomUUID()}`;
+    // Only the tutorial passes a seed (its fixed public board); every other free board gets a fresh server seed.
+    seed = ref.mode === "tutorial" && ref.seed ? ref.seed : `free:${meta.id}:${randomUUID()}`;
     loaded = await loadFree(meta.id, seed, ref.difficulty);
   }
   const { data, error } = await admin
@@ -170,7 +172,8 @@ export async function startAttempt(admin: SupabaseClient, playerId: string, ref:
     hints: 0,
     // Hint packs from the Shop extend the 3 free hints in free play and the archive (never the ranked Daily).
     hintsBanked: usesBankedHints(ref.mode) ? await bankedHints(admin, playerId) : 0,
-    seed,
+    // No seed: free play's seed stays on the attempt (free_seed, hidden from players) and finish rebuilds the
+    // solution from it, so a modified client can't regenerate the answer.
   };
 }
 

@@ -80,10 +80,13 @@ describe("api: daily clear flow", () => {
     const g = await guest(uniq("free_"));
     const s = await g.api("/api/v1/attempts", { json: { game: "crownfall", mode: "free", difficulty: "easy" } });
     expect(s.status).toBe(200);
-    expect(s.data.seed).toMatch(/^free:crownfall:/);
+    // The seed stays on the server; read it with the service role (as the finish check does).
+    const { data: att } = await admin().from("attempts").select("free_seed").eq("id", s.data.attemptId).single();
+    const [seed] = att!.free_seed!.split("|");
+    expect(seed).toMatch(/^free:crownfall:/);
     const { generate } = await import("@/games/crownfall/logic");
     const { createRng } = await import("@/lib/rng");
-    const gen = generate(createRng(s.data.seed), "easy");
+    const gen = generate(createRng(seed), "easy");
     const n = gen.puzzle.size;
     const state = new Array(n * n).fill(0);
     gen.solution.forEach((c, r) => (state[r * n + c] = 2));

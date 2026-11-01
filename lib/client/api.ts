@@ -121,12 +121,11 @@ export interface StartRes {
   hints: number;
   /** Shop hint packs usable after the 3 free hints (free play and archive only) */
   hintsBanked?: number;
-  seed?: string | null;
   date: string | null;
   difficulty: string;
 }
 
-export function startAttempt(input: { game: string; mode: string; date?: string; difficulty?: string; seed?: string }) {
+export function startAttempt(input: { game: string; mode: string; date?: string; difficulty?: string }) {
   return api<StartRes>("/api/v1/attempts", { json: input });
 }
 export function saveAttempt(id: string, state: unknown, activeMs: number) {

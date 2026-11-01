@@ -6,16 +6,20 @@ import { getGameSettings } from "@/lib/game-settings/server";
 
 const Start = z.object({
   game: z.string().min(2).max(24),
-  mode: z.enum(["tutorial", "daily", "free", "archive", "challenge"]),
+  // Challenges start through /api/v1/challenges/:code/accept, which serves the sender's puzzle.
+  mode: z.enum(["tutorial", "daily", "free", "archive"]),
   date: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .optional(),
   difficulty: z.enum(["easy", "medium", "hard", "expert", "mega"]).optional(),
-  seed: z.string().max(120).optional(),
 });
 
-/** POST /api/v1/attempts: start (or resume) an attempt; returns puzzle data without the solution. */
+/**
+ * POST /api/v1/attempts: start (or resume) an attempt; returns puzzle data without the solution or the seed.
+ * Free play's seed is made here and kept on the attempt (server only), so a client can neither pick a board
+ * it has already solved nor rebuild the solution from what it was sent.
+ */
 export const POST = handle(async (req: Request) => {
   const { admin, player } = await requirePlayer();
   const input = await body(req, Start);
@@ -33,12 +37,11 @@ export const POST = handle(async (req: Request) => {
     if (Date.parse(today) - Date.parse(date) > 7 * 86_400_000)
       throw new ApiError(403, "archive_locked", "Older Dailies arrive with SPUZL+.");
   }
-  // Seeds from clients are only accepted for tutorials and challenges (exact puzzle links).
-  const seed = input.mode === "tutorial" ? `tutorial:${input.game}` : input.mode === "challenge" ? input.seed : undefined;
+  // Clients never choose a seed: the tutorial is the fixed public practice board, free play gets a fresh one.
+  const seed = input.mode === "tutorial" ? `tutorial:${input.game}` : undefined;
   // Free play defaults to medium; Dailies follow the weekday curve (Mon easy ... Sun mega).
   const difficulty =
     input.difficulty ?? (input.mode === "tutorial" ? "easy" : input.mode === "free" ? "easy" : difficultyForDate(date ?? today));
-  const mode = input.mode === "challenge" ? "free" : input.mode;
-  const res = await startAttempt(admin, player.id, { gameId: input.game, mode, date, seed, difficulty });
+  const res = await startAttempt(admin, player.id, { gameId: input.game, mode: input.mode, date, seed, difficulty });
   return ok({ ...res, date: date ?? null, difficulty });
 });
