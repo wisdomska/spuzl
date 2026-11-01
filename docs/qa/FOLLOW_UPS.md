@@ -33,7 +33,7 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 
 - Rage Ridge at 320 × 568: the 60% canvas pushes the on-screen controls below the fold.
 - Nine on a 375 × 667 phone with the 3 × 3 pad needs a little vertical scroll.
-- Board Bay pink surfaces in `components/multiplayer/bay/boards.tsx` still use raw hex colours.
+- Party (`components/multiplayer/party.tsx`) still has raw hex colours (QR, podium, confetti, Open label).
 
 ## Accounts and email
 

@@ -322,7 +322,10 @@ export function BayMatch({ id }: { id: string }) {
           {chess && (
             <span
               className="flex items-center gap-1 text-[16px] tracking-[1px]"
-              style={{ fontFamily: "'Segoe UI Symbol','Noto Sans Symbols 2','DejaVu Sans',serif", color: mine ? "#5A5E78" : "var(--text)" }}
+              style={{
+                fontFamily: "'Segoe UI Symbol','Noto Sans Symbols 2','DejaVu Sans',serif",
+                color: mine ? "var(--bay-captured-mine)" : "var(--text)",
+              }}
             >
               {taken.map((k, i) => (
                 <span key={i}>{GLYPH[k]}</span>
@@ -430,7 +433,9 @@ export function BayMatch({ id }: { id: string }) {
                 return (
                   <span key={ply} className="flex gap-2">
                     {ply % 2 === 0 && <span>{ply / 2 + 1}.</span>}
-                    <span className={i === a.length - 1 ? "rounded-[6px] bg-[var(--w-board)] px-1.5 text-[#0E0F1A]" : "text-text"}>
+                    <span
+                      className={i === a.length - 1 ? "rounded-[6px] bg-[var(--w-board)] px-1.5 text-[var(--square-ink)]" : "text-text"}
+                    >
                       {s}
                     </span>
                   </span>

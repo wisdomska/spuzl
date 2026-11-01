@@ -260,27 +260,6 @@ select {
   --pattern-ink: 255 255 255;
   --pattern-boost: 1;
   --board-bg: #0a0b12;
-  /* Ink on chess and draughts squares (SQUARE in games/_shared/BayStyles) and on Board Bay pink: these are the same in
-     both themes, so this is not redefined for light. 6.2:1 on the dark square, 13:1 on the light one. */
-  --square-ink: #0e0f1a;
-  /* Board Bay live boards (components/multiplayer/bay/boards.tsx): board materials, the same in both themes like
-     the squares, so these are not redefined for light. Pink is var(--w-board), its depth var(--w-board-ink). */
-  --bay-well: #2a1630; /* oware pits, empty Four Up slots, Flip and Ludo board */
-  --bay-wood: #3a2232; /* oware board, Flip squares, Ludo track */
-  --bay-safe: #5a3a52; /* Ludo safe squares */
-  --bay-depth: #6a3c5e; /* drop shadow under the chess and draughts boards */
-  --bay-pit-ink: #f7c4ee; /* seed counts in oware pits */
-  --bay-check: #ff5a5f; /* the checked king's square */
-  --bay-disc-light: #f4f5fb; /* Four Up stars and Flip light discs */
-  --bay-disc-light-rim: #a2a6c2;
-  --bay-disc-dark: #0e0f1a;
-  --bay-man-light-hi: #ffffff; /* draughts light man, top to bottom of the radial gradient */
-  --bay-man-light-mid: #dcddea;
-  --bay-man-light-lo: #bfc1d4;
-  --bay-man-light-depth: #7e8199;
-  --bay-man-dark-hi: #3a3550; /* draughts dark man */
-  --bay-man-dark-mid: #16131f;
-  --bay-man-dark-rim: #000000;
 }
 [data-theme="light"] {
   --reg-0: #888deb;
