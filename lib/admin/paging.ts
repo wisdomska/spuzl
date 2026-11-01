@@ -1,6 +1,7 @@
 import "server-only";
 import { ApiError } from "@/lib/api/server";
 import { parsePageQuery, rangeOf, type PageParams } from "./pagination";
+import { parseSortQuery, type SortSpec, type SortState } from "./sorting";
 
 /** `?page=&pageSize=` from a request, or 400 bad_page. */
 export function pageParams(req: Request | URLSearchParams): PageParams {
@@ -30,4 +31,12 @@ export async function fetchPage<T>(build: () => RangeQuery<T>, p: PageParams): P
   }
   if (r.error) throw r.error;
   return { rows: r.data ?? [], total: r.count ?? 0 };
+}
+
+/** `?sort=&dir=` from a request, checked against the list's allow-list, or 400 bad_sort. */
+export function sortParams<K extends string>(req: Request | URLSearchParams, spec: SortSpec<K>): SortState<K> {
+  const sp = req instanceof URLSearchParams ? req : new URL(req.url).searchParams;
+  const r = parseSortQuery(sp, spec);
+  if (!r.success) throw new ApiError(400, "bad_sort", r.error);
+  return r.data;
 }
