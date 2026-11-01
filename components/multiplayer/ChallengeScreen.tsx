@@ -15,7 +15,6 @@ import { useProfileGate, useReduce } from "@/lib/client/multiplayer";
 import { useBackOrHome } from "@/lib/client/nav";
 import { formatClock } from "@/lib/format";
 import { play } from "@/lib/audio";
-import { haptic } from "@/lib/haptics";
 import { Avatar, Cta, EASE_OUT, LoadingScreen, MpToast, NeedProfile, Screen, TopButton, formatTenths, useToast } from "./ui";
 
 export interface ChallengeCardData {
@@ -117,9 +116,8 @@ export function ChallengeResult({ c, onSendBack, onShare }: { c: ChallengeCardDa
   const margin = Math.abs(c.senderMs - r.timeMs) / 1000;
   useEffect(() => {
     if (r.won) {
-      play("cheer", { silentHaptic: true });
-      haptic([30, 10, 30]);
-    } else play("fizzle");
+      play("duelWin");
+    } else play("duelLose");
   }, [r.won]);
   const total = Math.max(c.senderMs, r.timeMs, 1);
   const rows = [10, 30, 50, 70, 90, 110];

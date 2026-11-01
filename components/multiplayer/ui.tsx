@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { Icon } from "@/components/ui/Icon";
 import { Spuz } from "@/components/brand/Spuz";
 import { play } from "@/lib/audio";
-import { haptic } from "@/lib/haptics";
+import { haptic, LEVELS } from "@/lib/haptics";
 import { EMOTES, type EmoteId } from "@/lib/multiplayer/constants";
 import { countdownBeat } from "@/lib/multiplayer/duel";
 import { useReduce } from "@/lib/client/multiplayer";
@@ -91,7 +91,12 @@ export function RoundDots({
   );
 }
 
-/** The 3-2-1-SPUZL! number (D2). Drum per beat, horn on SPUZL!; reduced motion fades, no shake. */
+/**
+ * The 3-2-1-SPUZL! number (D2). A tick per number, horn on SPUZL!; reduced motion fades, no shake.
+ * Each sound lands on the frame the number slams down (40% of its 500 ms entrance), not when it appears.
+ */
+const SLAM_S = 0.2;
+
 export function CountdownNumber({ msToStart }: { msToStart: number }) {
   const { label, beat } = countdownBeat(msToStart);
   const reduce = useReduce();
@@ -99,9 +104,12 @@ export function CountdownNumber({ msToStart }: { msToStart: number }) {
   useEffect(() => {
     if (played.current === beat || msToStart <= 0) return;
     played.current = beat;
-    play(beat >= 3 ? "horn" : "drum", { silentHaptic: true });
-    haptic([20]);
-  }, [beat, msToStart]);
+    const delay = reduce ? 0 : SLAM_S;
+    if (beat >= 3) {
+      play("horn", { delay, silentHaptic: true });
+      setTimeout(() => haptic(LEVELS.heavy), delay * 1000);
+    } else play("countdown", { step: 3 - beat, delay });
+  }, [beat, msToStart, reduce]);
   const go = beat >= 3;
   return (
     <div aria-live="assertive" className="flex justify-center">

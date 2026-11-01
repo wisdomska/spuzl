@@ -6,7 +6,6 @@ import { AnimatePresence, motion } from "motion/react";
 import { Icon } from "@/components/ui/Icon";
 import { Spuz, type SpuzMood } from "@/components/brand/Spuz";
 import { play } from "@/lib/audio";
-import { haptic } from "@/lib/haptics";
 import { formatClock, formatNumber } from "@/lib/format";
 import { GAME_BY_ID, WORLDS, WORLD_BY_ID, type WorldId } from "@/lib/catalog";
 import { useSettings } from "@/lib/settings/store";
@@ -654,7 +653,8 @@ export function Podium({
   const standing = inSet(view).sort((a, b) => b.points - a.points || (a.place ?? 9) - (b.place ?? 9));
   const top = standing[0];
   useEffect(() => {
-    play("cheer");
+    play(top?.id === view.me ? "celebrate" : "success");
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once when the standings appear
   }, []);
   const title = top?.id === view.me ? "You take it!" : `${top?.nickname ?? "Someone"} takes it`;
   const sub = `${view.mix ? "Random mix" : gameName(view.gameId)}, ${final ? `${view.games.length} games` : `game ${view.round} of ${view.games.length}`}, ${standing.length} Spuzlers`;
@@ -892,7 +892,7 @@ export function TvMode({
   );
 }
 
-/** Player joined: pop + [8] haptic, toast like the prototype ("Kofi joined. Room is heating up."). */
+/** Player joined: a two-note bubble + medium haptic, toast like the prototype ("Kofi joined. Room is heating up."). */
 export function useJoinToasts(view: MatchView | undefined, show: (t: string, k?: "info" | "bad" | "pass") => void) {
   const known = useRef<Set<string> | null>(null);
   useEffect(() => {
@@ -906,8 +906,8 @@ export function useJoinToasts(view: MatchView | undefined, show: (t: string, k?:
     for (const p of here)
       if (!known.current.has(p.id)) {
         known.current.add(p.id);
-        play("pop", { step: ++k, silentHaptic: true });
-        haptic([8]);
+        // Two joins in one update land 90 ms apart rather than on top of each other.
+        play("partyJoin", { delay: 0.09 * k++ });
         if (p.id !== view.me) show(here.length >= 4 ? `${p.nickname} joined. Room is heating up.` : `${p.nickname} joined.`);
       }
     for (const id of [...known.current]) if (!here.some((p) => p.id === id)) known.current.delete(id);
