@@ -281,7 +281,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
             </div>
           )}
         </div>
-        {requestHint && (
+        {requestHint && controls.some((c) => c.id === "hint") && (
           // A counter only: hints are spent from the Hint button in the tool bar, never from here.
           <div
             role="status"

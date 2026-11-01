@@ -3,7 +3,7 @@
  * so the database and the app never disagree. Run: pnpm tsx scripts/gen-seed.ts
  */
 import fs from "node:fs";
-import { GAMES, WORLDS } from "../lib/catalog";
+import { GAMES, LAB_GAMES, WORLDS } from "../lib/catalog";
 import { BADGES } from "../lib/gamification/badges";
 import { DAILY_POOL, WEEKLY_CHAIN } from "../lib/gamification/quests";
 import { COSMETICS } from "../lib/gamification/cosmetics";
@@ -26,6 +26,14 @@ out.push(
   ).join(",\n") +
     "\non conflict (id) do update set world_id = excluded.world_id, name = excluded.name, phase = excluded.phase, engine = excluded.engine, scoring = excluded.scoring, is_unique = excluded.is_unique, min_time_ms = excluded.min_time_ms, sort = excluded.sort;",
 );
+
+// Phase 5 lab games (hidden while features.newGames is off): status coming_soon, never overwritten once live.
+for (const [i, g] of LAB_GAMES.entries()) {
+  out.push("insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values");
+  out.push(
+    `  (${q(g.id)}, ${q(g.world)}, ${q(g.name)}, 'coming_soon', ${q(g.phase)}, ${q(g.engine)}, ${q(g.scoring)}, ${g.unique}, ${g.minTimeMs}, ${GAMES.length + i})\non conflict (id) do nothing;`,
+  );
+}
 
 out.push("insert into public.badges (id, family, tier, name, description, secret, sparks, rule, sort) values");
 out.push(
