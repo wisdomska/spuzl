@@ -1,5 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { ALIASES, canStart, clampPan, LENGTH_MS, MAX_VOICES, PALETTE, resolve, RETRIGGER_MS, variation, VOICES } from "./palette";
+import {
+  ALIASES,
+  canStart,
+  clampPan,
+  LENGTH_MS,
+  MAX_VOICES,
+  PALETTE,
+  prune,
+  resolve,
+  RETRIGGER_MS,
+  variation,
+  VOICES,
+  type Scheduled,
+} from "./palette";
 import { RECIPES } from "./voices";
 import { HAPTIC_LEVEL, HAPTICS, LEVELS, PATTERNS } from "@/lib/haptics";
 
@@ -46,10 +59,25 @@ describe("sound palette", () => {
   });
 
   it("drops voices past the cap and quick retriggers of the same voice", () => {
-    expect(canStart({ active: MAX_VOICES, last: {} }, "tick", 0)).toBe(false);
-    expect(canStart({ active: 0, last: { tick: 100 } }, "tick", 100 + RETRIGGER_MS - 1)).toBe(false);
-    expect(canStart({ active: 0, last: { tick: 100 } }, "tick", 100 + RETRIGGER_MS)).toBe(true);
-    expect(canStart({ active: 0, last: { tick: 100 } }, "pop", 101)).toBe(true);
+    const busy = Array.from({ length: MAX_VOICES }, (_, i) => ({ name: "pop" as const, start: i * 40, end: 1000 }));
+    expect(canStart(busy, "tick", 500)).toBe(false);
+    expect(canStart(busy, "jingle", 500), "priority voices still sound").toBe(true);
+    expect(canStart(busy, "tick", 1000), "free again once they end").toBe(true);
+    const tap = [{ name: "tick" as const, start: 100, end: 160 }];
+    expect(canStart(tap, "tick", 100 + RETRIGGER_MS - 1)).toBe(false);
+    expect(canStart(tap, "tick", 100 + RETRIGGER_MS)).toBe(true);
+    expect(canStart(tap, "pop", 101)).toBe(true);
+  });
+
+  it("lets a phrase scheduled ahead through: future voices don't block earlier ones", () => {
+    let voices: Scheduled[] = [];
+    for (let i = 0; i < 12; i++) {
+      const start = 100 + i * 50;
+      expect(canStart(voices, "pop", start), `tile ${i}`).toBe(true);
+      voices.push({ name: "pop", start, end: start + LENGTH_MS.pop });
+    }
+    voices = prune(voices, 2000);
+    expect(voices).toHaveLength(0);
   });
 
   it("clamps pan", () => {

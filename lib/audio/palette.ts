@@ -117,6 +117,8 @@ export const PALETTE = {
   duelLose: "lose",
   /** someone joined the party lobby: two-note bubble */
   partyJoin: "join",
+  /** something heavy landing (rank emblem slam): the intro thump */
+  impact: "thump",
   /** logo intro: the Z flying in from the right (pass duration and pan) */
   introSwoosh: "rush",
   /** logo intro: the Z landing in its notch */
@@ -202,9 +204,18 @@ export const VARIATION_CENTS: Partial<Record<SfxName, number>> = {
 const DEFAULT_CENTS = 8;
 
 /** Max simultaneous voices. Extra plays are dropped, never queued (a late sound is worse than none). */
-export const MAX_VOICES = 6;
+export const MAX_VOICES = 8;
 /** The same voice retriggered inside this window is dropped (stops doubled ticks from two listeners). */
 export const RETRIGGER_MS = 30;
+
+/** Voices that matter more than texture: they may exceed the cap rather than vanish under a busy moment. */
+export const PRIORITY: ReadonlySet<SfxName> = new Set(["jingle", "fanfare", "cheer", "win", "lose", "buzz", "thump", "streak"]);
+
+export interface Scheduled {
+  name: SfxName;
+  start: number;
+  end: number;
+}
 
 export function resolve(name: string): SfxName | null {
   if ((VOICES as readonly string[]).includes(name)) return name as SfxName;
@@ -220,12 +231,23 @@ export function variation(name: SfxName, rand: () => number = Math.random) {
   return { rate, gain };
 }
 
-/** Voice gate: whether a new play of `name` at time `now` (ms) may start. Pure, so it can be unit tested. */
-export function canStart(state: { active: number; last: Partial<Record<SfxName, number>> }, name: SfxName, now: number) {
-  if (state.active >= MAX_VOICES) return false;
-  const prev = state.last[name];
-  if (prev !== undefined && now - prev < RETRIGGER_MS) return false;
-  return true;
+/**
+ * Voice gate: whether a play of `name` starting at `start` (ms, may be in the future when scheduled ahead)
+ * may sound. Counts only voices actually sounding at that instant, so a phrase scheduled ahead (a tile
+ * cascade, the intro) doesn't block itself. Pure, so it can be unit tested.
+ */
+export function canStart(voices: readonly Scheduled[], name: SfxName, start: number) {
+  let overlapping = 0;
+  for (const v of voices) {
+    if (v.name === name && Math.abs(start - v.start) < RETRIGGER_MS) return false;
+    if (v.start <= start && start < v.end) overlapping++;
+  }
+  return overlapping < MAX_VOICES || PRIORITY.has(name);
+}
+
+/** Drops voices that finished before `now`. */
+export function prune(voices: Scheduled[], now: number) {
+  return voices.filter((v) => v.end > now);
 }
 
 /** Clamps a stereo position to [-1, 1]; non-finite becomes centre. */

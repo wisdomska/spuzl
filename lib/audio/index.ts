@@ -7,15 +7,15 @@
  *   → 30 Hz high-pass (rumble) → high-shelf −3 dB at 6 kHz (warmth) → glue compressor → brick-wall limiter.
  *
  * - Names resolve through palette events (tap, clear...), Handoff aliases (tick_soft...) or voice names.
- * - At most MAX_VOICES overlap; extra plays are dropped, never queued. The same voice retriggered within
- *   RETRIGGER_MS is dropped too.
+ * - At most MAX_VOICES overlap at any instant (clear, win, error and thump may exceed it); extra plays
+ *   are dropped, never queued. The same voice retriggered within RETRIGGER_MS is dropped too.
  * - Audio unlocks on the first user gesture only (autoplay rules). While locked, play() is silent and
  *   never throws; a context the browser left suspended is skipped rather than allowed to burst later.
  * - Optional per-world music loops, off by default, ducked during celebrations, disabled in low-data mode.
  * - Every play dispatches a `spuzl:fx` event so E2E tests can assert sound + haptic pairing.
  */
 import { haptic, HAPTICS } from "@/lib/haptics";
-import { canStart, clampPan, LENGTH_MS, resolve, variation, type SfxName } from "./palette";
+import { canStart, clampPan, LENGTH_MS, prune, resolve, variation, type Scheduled } from "./palette";
 import { N, RECIPES, tone, type Kit } from "./voices";
 
 export { ALIASES, PALETTE, VOICES, resolve, type PaletteEvent, type SfxName } from "./palette";
@@ -57,7 +57,7 @@ let sfxBus: GainNode;
 let musicBus: GainNode;
 let nbuf: AudioBuffer;
 let unlocked = false;
-const gate = { active: 0, last: {} as Partial<Record<SfxName, number>> };
+let scheduled: Scheduled[] = [];
 
 type Activation = { userActivation?: { hasBeenActive?: boolean; isActive?: boolean } };
 
@@ -130,8 +130,9 @@ export function play(name: string, o: PlayOptions = {}) {
   const delay = Math.max(0, o.delay ?? 0);
   try {
     const a = runtime.sfx ? ctx() : null;
-    const now = Date.now() + delay * 1000;
-    if (a && ready(a) && canStart(gate, key, now)) {
+    const start = Date.now() + delay * 1000;
+    if (a && ready(a)) scheduled = prune(scheduled, Date.now());
+    if (a && ready(a) && canStart(scheduled, key, start)) {
       const t = a.currentTime + 0.005 + delay;
       const v = variation(key);
       const out = a.createGain();
@@ -145,19 +146,18 @@ export function play(name: string, o: PlayOptions = {}) {
       } else out.connect(sfxBus);
       const kit: Kit = { a, out, noise: nbuf, rate: v.rate };
       RECIPES[key](kit, t, o);
-      gate.active++;
-      gate.last[key] = now;
+      const length = Math.max(LENGTH_MS[key], (o.duration ?? 0) * 1000 + 60);
+      scheduled.push({ name: key, start, end: start + length });
       played = true;
       setTimeout(
         () => {
-          gate.active = Math.max(0, gate.active - 1);
           try {
             out.disconnect();
           } catch {
             /* already gone */
           }
         },
-        LENGTH_MS[key] + delay * 1000 + 60,
+        length + delay * 1000 + 100,
       );
     }
   } catch {
@@ -191,8 +191,7 @@ export function isUnlocked() {
 export function __resetForTests() {
   unlocked = false;
   ac = null;
-  gate.active = 0;
-  gate.last = {};
+  scheduled = [];
   Object.assign(runtime, { sfx: true, music: false, haptics: true, lowData: false });
 }
 
