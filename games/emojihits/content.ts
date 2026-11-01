@@ -233,3 +233,6 @@ export const CONTENT: HitEntry[] = [
   { title: "Lonely at the Top", emoji: "😔🔝", kind: "song", by: "Asake", year: 2023, from: "africa" },
   { title: "Rush", emoji: "🏃🏾‍♀️💨", kind: "song", by: "Ayra Starr", year: 2022, from: "africa" },
 ];
+
+/** Fact-checked against sources (docs/qa/EMOJI_HITS_FACTCHECK.md); the admin content desk reads this flag. */
+export const needsReview = false;
