@@ -12,6 +12,7 @@
 - **Free-play economy settings** (Economy group): XP per clear (`free.xpPerClear`, 10), Sparks per clear
   (`free.sparksPerClear`, 5) and the daily XP cap (`free.xpDailyCap`, 300). How to play and Practice show the live
   values.
+- **Dusk double-tap window** (`dusk.doubleTapMs`, Games group, 320 ms by default).
 
 ## 1.2.0 (1 November 2026)
 

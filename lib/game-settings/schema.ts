@@ -87,6 +87,16 @@ export const SETTINGS = {
     max: 4000,
     unit: "ms",
   },
+  "dusk.doubleTapMs": {
+    kind: "int",
+    group: "Games",
+    label: "Dusk double-tap window",
+    help: "Two taps on one Dusk cell closer together than this make a moon (a double-tap). The cell is judged once this window passes.",
+    default: 320,
+    min: 200,
+    max: 700,
+    unit: "ms",
+  },
   "perf.prefetch": {
     kind: "bool",
     group: "Performance",

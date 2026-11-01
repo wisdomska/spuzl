@@ -4,9 +4,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BoardApi } from "@/games/types";
 import DuskBoard from "@/games/dusk/Board";
 import { EMPTY, MOON, SUN, type DuskPuzzle, type DuskState } from "@/games/dusk/logic";
-import { SETTLE_MS } from "@/games/dusk/input";
+import { DEFAULTS } from "@/lib/game-settings/schema";
 
 vi.mock("@/lib/audio", () => ({ play: vi.fn() }));
+const settings = vi.hoisted(() => ({ current: {} as Record<string, unknown> }));
+vi.mock("@/lib/game-settings/client", () => ({ useGameSettings: () => ({ ...DEFAULTS, ...settings.current }) }));
+const SETTLE_MS = DEFAULTS["dusk.doubleTapMs"];
 
 const mockApi = <St,>() => ({
   onMove: vi.fn<BoardApi<St>["onMove"]>(),
@@ -19,6 +22,7 @@ const mockApi = <St,>() => ({
 
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => {
+  settings.current = {};
   cleanup();
   vi.useRealTimers();
 });
@@ -51,6 +55,20 @@ describe("Dusk input (SPZ-08)", () => {
     act(() => vi.advanceTimersByTime(SETTLE_MS + 10));
     expect(api.ruleBreak).toHaveBeenCalledTimes(1);
     expect(api.onMove.mock.calls[0][1]?.mistake).toBe(true);
+  });
+
+  it("follows the admin double-tap window (dusk.doubleTapMs)", () => {
+    settings.current = { "dusk.doubleTapMs": 600 };
+    const api = mockApi<DuskState>();
+    render(<DuskBoard puzzle={puzzle} mode="free" api={api} />);
+    fireEvent.click(cell(1, 3));
+    act(() => vi.advanceTimersByTime(500));
+    expect(api.onMove).not.toHaveBeenCalled();
+    fireEvent.click(cell(1, 3));
+    act(() => vi.advanceTimersByTime(610));
+    expect(api.onMove).toHaveBeenCalledTimes(1);
+    expect(api.onMove.mock.calls[0][0][2]).toBe(MOON);
+    expect(api.ruleBreak).not.toHaveBeenCalled();
   });
 
   it("reads = and × constraints in the cell labels", () => {

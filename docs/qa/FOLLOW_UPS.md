@@ -11,7 +11,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   - The header clock starts on the first answer, not on Start. This needs a board-to-shell "start" call.
   - A run resumed from autosave forgets earlier wrong answers.
 - **Dusk:**
-  - The 320 ms double-tap window is a constant and could become an admin setting.
   - Swipe up and down is not done; it would block page scroll when a finger starts on the board.
 - **Four Up:** at 320 px each column is about 39 px wide. The columns are full height, so the target area is
   still large.
