@@ -30,8 +30,9 @@ insert into public.daily_results (date, game_id, player_id, time_ms, finished_at
 select is((public.svc_league_candidates('00000000-0000-0000-0000-0000000008a0') -> 'candidates' -> 0 ->> 'friends')::int, 1,
   'a new player sees their friend''s group, at any tier, with the friend count');
 select is((public.svc_league_candidates('00000000-0000-0000-0000-0000000008a0') ->> 'isNew')::boolean, true, 'a first-time player is new');
-select is(jsonb_array_length(public.svc_league_candidates('00000000-0000-0000-0000-0000000008a1') -> 'candidates'), 0,
-  'a returning player only sees groups at their own tier');
+select is((select count(*) from jsonb_array_elements(public.svc_league_candidates('00000000-0000-0000-0000-0000000008a1') -> 'candidates') c
+            where (c ->> 'tier')::int <> 0), 0::bigint,
+  'a returning player only sees groups at their own tier (other test data may add same-tier groups)');
 
 -- Join
 select is(public.svc_join_current_league('00000000-0000-0000-0000-0000000008a0', '22222222-2222-2222-2222-222222222201'),
