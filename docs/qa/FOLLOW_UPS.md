@@ -41,8 +41,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   - Until then the built-in mailer allows 2 emails an hour and sends the magic link, which also signs in.
   - The hosted "Change email address" template also needs `{{ .Token }}` for the guest "Save your streak" code.
 - The work-email owner admin account still exists alongside wisdomska@gmail.com.
-- **Settings page:** "Send magic link" for a guest says "Check your email" even when the change applied
-  straight away.
 
 ## Leagues and metrics
 
