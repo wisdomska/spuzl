@@ -16,8 +16,6 @@ import { BotEntry } from "./BotEntry";
 import { ChallengeEntry } from "@/components/multiplayer/GameChallenge";
 import { PLAY_NAV } from "@/lib/analytics/play-nav";
 
-const EASE_OUT = [0.23, 1, 0.32, 1] as const;
-
 /** Solo Screens 03 World view: island header in world colour, then each game with today's status. */
 export function WorldScreen({ id }: { id: WorldId }) {
   const world = WORLD_BY_ID[id];
@@ -89,14 +87,12 @@ export function WorldScreen({ id }: { id: WorldId }) {
           const canChallenge = isRaceGame(g.id) && !relaxed;
           const hasActions = !!g.botPlay || canChallenge;
           return (
-            <motion.li
+            // CSS stagger, not Motion: it plays while the route is still loading, and CSS keeps it off the main thread.
+            // One card per game: the game itself, then its ways to play with others in a footer inside the same card.
+            <li
               key={g.id}
-              initial={{ opacity: 0, transform: "translateY(8px)" }}
-              animate={{ opacity: 1, transform: "translateY(0px)" }}
-              transition={{ duration: 0.24, delay: i * 0.04, ease: EASE_OUT }}
-              // One card per game: the game itself, then its ways to play with others in a footer inside the same card.
-              className="bg-surface overflow-hidden rounded-[20px]"
-              style={{ boxShadow: inProgress ? "inset 0 0 0 2px var(--world)" : undefined }}
+              className="list-in bg-surface overflow-hidden rounded-[20px]"
+              style={{ animationDelay: `${Math.min(i, 8) * 40}ms`, boxShadow: inProgress ? "inset 0 0 0 2px var(--world)" : undefined }}
             >
               <Link
                 href={done || !dailiesOn ? `/play/${g.id}?mode=free` : `/play/${g.id}`}
@@ -132,7 +128,7 @@ export function WorldScreen({ id }: { id: WorldId }) {
                   <BotEntry meta={g} inline />
                 </div>
               )}
-            </motion.li>
+            </li>
           );
         })}
       </ul>

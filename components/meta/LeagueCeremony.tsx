@@ -38,10 +38,16 @@ export function LeagueCeremony({ c, onDone }: { c: Ceremony; onDone: () => void 
   const below = myIdx < 0 ? 0 : c.around.length - 1 - myIdx; // rows your row flies up past
 
   useEffect(() => {
-    if (promoted) play("crowd_cheer");
+    if (promoted) play("celebrate");
     else if (!demoted) play("chime");
+    if (!reduce) {
+      // Your row's flight gets air; a promotion's emblem lands its slam (party spring from 2x settles ~130 ms in).
+      if (below > 0) play("whoosh", { gain: 0.6 });
+      if (promoted) play("impact", { delay: 0.88, gain: 0.8 });
+    }
     const t = setTimeout(() => setPhase("done"), 1200);
     return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per ceremony
   }, [promoted, demoted]);
 
   const finish = () => {
