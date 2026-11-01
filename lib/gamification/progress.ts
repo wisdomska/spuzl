@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { BADGES, type BadgeDef } from "./badges";
 import { questsForDate, WEEKLY_CHAIN, type QuestDef } from "./quests";
+import { advanceEventQuest } from "@/lib/events/server";
 
 /**
  * Solo clears that count for quests, badges and streak-style goals. Dailies are off for now, so a free-play clear
@@ -116,6 +117,12 @@ export async function evaluateAfterClear(admin: SupabaseClient, playerId: string
     unlocks.push({ type: "badge", id: b.id, name: b.name, tier: b.tier, icon: b.icon, sparks: b.sparks, secret: !!b.secret });
   }
   unlocks.push(...(await advanceQuests(admin, playerId, c)));
+  // Seasonal event bonus quest (features.seasonal): free-play clears only; a failure never blocks the clear.
+  const ev = await advanceEventQuest(admin, playerId, c).catch((e) => {
+    console.error("[events]", e);
+    return null;
+  });
+  if (ev) unlocks.push({ type: "quest", id: ev.id, title: ev.title });
   return unlocks;
 }
 

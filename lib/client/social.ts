@@ -109,7 +109,7 @@ export interface LeagueRes {
 }
 export interface QuestDTO {
   id: string;
-  kind: "daily" | "weekly";
+  kind: "daily" | "weekly" | "event";
   step: number | null;
   title: string;
   icon: string;
@@ -120,7 +120,14 @@ export interface QuestDTO {
   completed: boolean;
   claimed: boolean;
 }
+/** A seasonal event's bonus quest (features.seasonal). */
+export interface EventQuestDTO extends QuestDTO {
+  kind: "event";
+  event: { id: string; name: string; endsAt: string; accent: string };
+}
 export interface QuestsRes {
+  /** null when no event is live or seasonal events are off */
+  event?: EventQuestDTO | null;
   daily: QuestDTO[];
   weekly: QuestDTO[];
   resetsInMs: number;

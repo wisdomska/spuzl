@@ -30,6 +30,13 @@ export const SETTINGS = {
     help: 'Shows "Share my status" on Me: a card with the player\'s Spuz, nickname, level, streak, favourite world, games tried and rank. Off: the button is hidden and the card links stop working.',
     default: false,
   },
+  "features.seasonal": {
+    kind: "bool",
+    group: "Features",
+    label: "Seasonal events",
+    help: "Runs the events made on the Seasonal events page: a small Home banner and a bonus quest in Quests, counted from free-play clears, while an event is live. Off: players see no event and the server counts and pays no event quest.",
+    default: false,
+  },
   "hints.dailyXpKeptPct": {
     kind: "int",
     group: "Hints",

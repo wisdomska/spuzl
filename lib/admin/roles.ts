@@ -37,6 +37,8 @@ export const PERMISSIONS = {
   "catalog.read": ["owner", "content_editor", "analyst"],
   "catalog.write": EDIT,
   "prices.write": ["owner"],
+  "events.read": ["owner", "content_editor", "analyst"],
+  "events.write": EDIT,
   "metrics.read": ["owner", "analyst", "content_editor"],
   "audit.read": ["owner", "analyst"],
   "team.manage": ["owner"],

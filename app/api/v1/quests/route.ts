@@ -3,10 +3,14 @@ import { questsForDate, WEEKLY_CHAIN, type QuestDef } from "@/lib/gamification/q
 import { questIcon } from "@/lib/meta";
 import { msToReset } from "@/lib/format";
 import { msToLeagueReset, weekStartOf } from "@/lib/leagues";
+import { activeEvent, eventQuestFor } from "@/lib/events/server";
 
 export const dynamic = "force-dynamic";
 
-/** GET /api/v1/quests: today's 3 daily quests and the weekly 5-step chain, with progress and claim state. */
+/**
+ * GET /api/v1/quests: today's 3 daily quests and the weekly 5-step chain, with progress and claim state, plus the
+ * running seasonal event's bonus quest (`event`; null when there is none or "features.seasonal" is off).
+ */
 export const GET = handle(async () => {
   const { admin, player } = await requirePlayer();
   const today = todayGmt();
@@ -34,7 +38,9 @@ export const GET = handle(async () => {
       claimed: !!r?.claimed_at,
     };
   };
+  const ev = await activeEvent(admin);
   return ok({
+    event: ev ? await eventQuestFor(admin, player.id, ev) : null,
     daily: questsForDate(today).map((q) => shape(q, today)),
     weekly: WEEKLY_CHAIN.map((q) => shape(q, week)),
     resetsInMs: msToReset(),

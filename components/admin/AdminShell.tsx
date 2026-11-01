@@ -25,6 +25,7 @@ const NAV: NavItem[] = [
   { href: "/admin/metrics", label: "Metrics", icon: "chart-bar", perm: "metrics.read" },
   { href: "/admin/schools", label: "Schools", icon: "graduation-cap", perm: "schools.read", badge: "schools" },
   { href: "/admin/shop", label: "Shop and events", icon: "storefront", perm: "catalog.read" },
+  { href: "/admin/events", label: "Seasonal events", icon: "confetti", perm: "events.read" },
   { href: "/admin/content", label: "Content", icon: "note-pencil", perm: "content.read" },
   { href: "/admin/flags", label: "Feature flags", icon: "toggle-right", perm: "flags.read" },
   { href: "/admin/settings", label: "Game settings", icon: "sliders-horizontal", perm: "settings.read" },

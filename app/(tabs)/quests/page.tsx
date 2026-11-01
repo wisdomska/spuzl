@@ -3,7 +3,9 @@
 import { Suspense, useRef, useState } from "react";
 import { useNow } from "@/components/meta/useNow";
 import { useSearchParams } from "next/navigation";
-import { useBadges, useClaimQuest, useQuests, type QuestDTO } from "@/lib/client/social";
+import { useBadges, useClaimQuest, useQuests, type EventQuestDTO, type QuestDTO } from "@/lib/client/social";
+import { EVENT_ACCENTS } from "@/lib/events";
+import { eventsCopy as ET } from "@/lib/copy/events";
 import { useMe } from "@/lib/client/api";
 import { TabPage } from "@/components/meta/TabPage";
 import { Bar, ErrorState, Hex, ListSkeleton, PageTitle, Segmented } from "@/components/meta/ui";
@@ -79,6 +81,7 @@ function QuestList() {
 
   return (
     <>
+      {d.event && <EventQuest q={d.event} now={now} />}
       <div className="flex items-center justify-between">
         <h2 className="text-[16px] font-bold">Today</h2>
         <span
@@ -144,6 +147,28 @@ function QuestList() {
         </p>
       </div>
     </>
+  );
+}
+
+/** A live seasonal event's bonus quest (features.seasonal), above the daily quests, with the event's accent. */
+function EventQuest({ q, now }: { q: EventQuestDTO; now: number }) {
+  const accent = (EVENT_ACCENTS as readonly string[]).includes(q.event.accent) ? `var(--${q.event.accent})` : "var(--accent)";
+  const left = formatLeft(Date.parse(q.event.endsAt) - now);
+  return (
+    <section aria-label={ET.questBonus} className="flex flex-col gap-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="flex min-w-0 items-center gap-2 text-[16px] font-bold">
+          <Icon name="confetti" size={18} style={{ color: accent, flex: "none" }} />
+          <span className="truncate">{ET.questHeading(q.event.name)}</span>
+        </h2>
+        <span className="num text-muted shrink-0 text-[14px] font-medium" aria-label={ET.endsInAria(q.event.name, left)}>
+          {ET.endsIn(left)}
+        </span>
+      </div>
+      <div className="rounded-[18px]" style={{ boxShadow: `0 0 0 2px ${accent}` }}>
+        <QuestCard q={q} />
+      </div>
+    </section>
   );
 }
 

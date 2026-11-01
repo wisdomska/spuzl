@@ -17,7 +17,7 @@ const day = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString().s
 const rand = (lo: number, hi: number) => lo + Math.floor(Math.random() * (hi - lo + 1));
 
 interface Route {
-  method: "GET" | "POST" | "PATCH" | "PUT";
+  method: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
   path: string;
   perm: Permission | null;
 }
@@ -71,6 +71,10 @@ const ROUTES: Route[] = [
   { method: "GET", path: "/api/admin/games/meta", perm: "content.read" },
   { method: "PATCH", path: "/api/admin/games/meta", perm: "content.write" },
   { method: "PUT", path: "/api/admin/games/meta", perm: "content.write" },
+  { method: "GET", path: "/api/admin/events", perm: "events.read" },
+  { method: "POST", path: "/api/admin/events", perm: "events.write" },
+  { method: "PATCH", path: `/api/admin/events/${NIL}`, perm: "events.write" },
+  { method: "DELETE", path: `/api/admin/events/${NIL}`, perm: "events.write" },
 ];
 
 const S = {} as Record<Role, AdminSession>;

@@ -39,7 +39,7 @@ export interface AdminPage<T> {
 }
 
 /** POST/PATCH/PUT to an admin route, then refresh every admin query (lists, counts and the audit log). */
-export function useAdminAction<I, O = unknown>(method: "POST" | "PATCH" | "PUT", path: string | ((input: I) => string)) {
+export function useAdminAction<I, O = unknown>(method: "POST" | "PATCH" | "PUT" | "DELETE", path: string | ((input: I) => string)) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: I) => api<O>(typeof path === "function" ? path(input) : path, { method, json: input }),

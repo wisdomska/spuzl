@@ -1,6 +1,8 @@
 import { ApiError, handle, ok, rateLimit, requirePlayer, todayGmt } from "@/lib/api/server";
 import { DAILY_POOL, WEEKLY_CHAIN } from "@/lib/gamification/quests";
 import { weekStartOf } from "@/lib/leagues";
+import { eventIdFromQuest } from "@/lib/events";
+import { claimEventQuest } from "@/lib/events/server";
 
 /**
  * POST /api/v1/quests/:id/claim: claims a completed quest's XP and Sparks.
@@ -9,6 +11,13 @@ import { weekStartOf } from "@/lib/leagues";
  */
 export const POST = handle(async (_req: Request, ctx: RouteContext<"/api/v1/quests/[id]/claim">) => {
   const { id } = await ctx.params;
+  // Seasonal event bonus quest (`ev-<event id>`), refused while "features.seasonal" is off.
+  const eventId = eventIdFromQuest(id);
+  if (eventId) {
+    const { admin, player } = await requirePlayer();
+    await rateLimit(admin, `quest-claim:${player.id}`, 60, 3600);
+    return ok(await claimEventQuest(admin, player, eventId));
+  }
   const q = [...DAILY_POOL, ...WEEKLY_CHAIN].find((x) => x.id === id);
   if (!q) throw new ApiError(404, "unknown_quest");
   const { admin, player } = await requirePlayer();
