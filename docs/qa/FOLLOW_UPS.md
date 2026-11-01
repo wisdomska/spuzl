@@ -35,8 +35,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 - Nine on a 375 × 667 phone with the 3 × 3 pad needs a little vertical scroll.
 - The shared `components/meta/Sheet` slides in even with reduced motion on (used by the Challenge sheet).
 - Board Bay pink surfaces in `components/multiplayer/bay/boards.tsx` still use raw hex colours.
-- `BackButton` in `components/meta/ui.tsx` still uses `history.length > 1`; `useBackOrHome` is safer for deep
-  links.
 
 ## Accounts and email
 
