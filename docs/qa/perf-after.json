@@ -1,0 +1,54 @@
+{
+  "at": "2026-11-01T01:28:41.258Z",
+  "runs": 10,
+  "summary": {
+    "desktop:enter-grid": {
+      "runs": 10,
+      "p50": 500,
+      "p95": 518,
+      "api": ["POST /api/v1/profile", "GET /api/v1/friends"]
+    },
+    "desktop:home-play": {
+      "runs": 10,
+      "p50": 671,
+      "p95": 680,
+      "api": ["POST /api/v1/attempts", "GET /api/v1/settings/game", "POST /api/v1/metrics"]
+    },
+    "desktop:results-next": {
+      "runs": 10,
+      "p50": 633,
+      "p95": 648,
+      "api": ["POST /api/v1/attempts", "POST /api/v1/metrics"]
+    },
+    "desktop:library-row": {
+      "runs": 10,
+      "p50": 408,
+      "p95": 427,
+      "api": ["POST /api/v1/attempts", "GET /api/v1/today", "POST /api/v1/metrics"]
+    },
+    "4g-phone:enter-grid": {
+      "runs": 10,
+      "p50": 964,
+      "p95": 1018,
+      "api": ["POST /api/v1/profile"]
+    },
+    "4g-phone:home-play": {
+      "runs": 10,
+      "p50": 713,
+      "p95": 785,
+      "api": ["POST /api/v1/attempts", "GET /api/v1/settings/game", "POST /api/v1/metrics"]
+    },
+    "4g-phone:results-next": {
+      "runs": 10,
+      "p50": 746,
+      "p95": 787,
+      "api": ["POST /api/v1/attempts", "POST /api/v1/metrics"]
+    },
+    "4g-phone:library-row": {
+      "runs": 10,
+      "p50": 589,
+      "p95": 650,
+      "api": ["POST /api/v1/attempts", "GET /api/v1/today", "POST /api/v1/metrics"]
+    }
+  }
+}

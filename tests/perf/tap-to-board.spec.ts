@@ -26,14 +26,40 @@ function record(page: Page) {
   return { api, stop: () => page.off("request", on) };
 }
 
-async function measure(key: string, page: Page, act: () => Promise<void>, done: () => Promise<unknown>) {
+const BOARD = '[role="grid"], main[aria-label$=" board"] canvas, main[aria-label$=" board"] button';
+const HOME = 'a[href^="/play/"]';
+
+/**
+ * Frame-accurate: the page itself stamps the tap and the first animation frame where the target is on screen
+ * and enabled (no Playwright polling delay). Falls back to wall time if a full page load replaced the document.
+ */
+async function measure(key: string, page: Page, act: () => Promise<void>, done: () => Promise<unknown>, ready = BOARD) {
   const rec = record(page);
+  await page.evaluate((sel) => {
+    const w = window as unknown as { __t0: number; __ready: number };
+    w.__ready = 0;
+    w.__t0 = 0;
+    addEventListener("click", () => (w.__t0 ||= performance.now()), { capture: true, once: true });
+    const tick = () => {
+      const g = w.__t0 ? document.querySelector(sel) : null;
+      const r = g?.getBoundingClientRect();
+      if (g && r && r.width > 0 && r.height > 0 && g.getAttribute("aria-disabled") !== "true") w.__ready = performance.now();
+      else requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, ready);
   const t0 = Date.now();
   await act();
   await done();
-  const ms = Date.now() - t0;
+  const wall = Date.now() - t0;
+  const inPage = await page
+    .waitForFunction(() => (window as unknown as { __ready: number }).__ready > 0, null, { timeout: 2000 })
+    .then(() =>
+      page.evaluate(() => (window as unknown as { __ready: number; __t0: number }).__ready - (window as unknown as { __t0: number }).__t0),
+    )
+    .catch(() => null);
   rec.stop();
-  (results[key] ??= []).push({ ms, api: rec.api });
+  (results[key] ??= []).push({ ms: Math.round(inPage ?? wall), api: rec.api });
 }
 
 function todaysCrownfall(): number[] {
@@ -70,6 +96,7 @@ for (const profile of ["desktop", "4g-phone"] as const) {
           page,
           () => page.getByRole("button", { name: /Enter The Grid|Create my Spuz|Save my Spuz/ }).click(),
           () => page.locator('a[href^="/play/"]').first().waitFor({ state: "visible", timeout: 60_000 }),
+          HOME,
         );
         await ctx.close();
       }
@@ -117,15 +144,18 @@ for (const profile of ["desktop", "4g-phone"] as const) {
         );
         // Library row (first game)
         // SPZ-14: a row opens the game card; the timed tap is the card's primary action.
+        // (Before SPZ-14 rows were plain links; the same journey works on both builds.)
         await page.goto("/library");
-        await page
-          .getByRole("button", { name: /Open game card$/ })
-          .nth(1)
-          .click();
-        const primary = page
-          .getByRole("dialog")
-          .getByRole("button", { name: /Today's Daily|Free play/ })
-          .first();
+        const card = page.getByRole("button", { name: /Open game card$/ });
+        await page.locator(`${HOME}, button[aria-label$="Open game card"]`).first().waitFor();
+        let primary = page.locator(HOME).first();
+        if (await card.count()) {
+          await card.nth(1).click();
+          primary = page
+            .getByRole("dialog")
+            .getByRole("button", { name: /Today's Daily|Free play/ })
+            .first();
+        }
         await primary.waitFor();
         await page.waitForTimeout(1500);
         await measure(
