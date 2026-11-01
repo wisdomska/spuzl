@@ -53,6 +53,12 @@ const ROUTES: Route[] = [
   { method: "POST", path: `/api/admin/moderation/flagged/${NIL}`, perm: "moderation.write" },
   { method: "GET", path: `/api/admin/players/${NIL}`, perm: "moderation.read" },
   { method: "POST", path: `/api/admin/players/${NIL}`, perm: "moderation.write" },
+  { method: "GET", path: "/api/admin/players", perm: "players.read" },
+  { method: "GET", path: `/api/admin/players/${NIL}/detail`, perm: "players.read" },
+  { method: "POST", path: `/api/admin/players/${NIL}/actions`, perm: "players.moderate" },
+  { method: "POST", path: "/api/admin/players/bulk", perm: "players.moderate" },
+  { method: "POST", path: "/api/admin/players/export", perm: "players.export" },
+  { method: "GET", path: "/api/admin/overview", perm: "players.read" },
   { method: "GET", path: "/api/admin/schools", perm: "schools.read" },
   { method: "POST", path: `/api/admin/schools/${NIL}`, perm: "schools.write" },
   { method: "GET", path: "/api/admin/liveops", perm: "liveops.read" },
@@ -589,6 +595,8 @@ describe("pagination on every admin list", () => {
     { path: "/api/admin/catalog/badges", who: "content_editor" },
     { path: "/api/admin/catalog/cosmetics", who: "owner" },
     { path: "/api/admin/team", who: "owner" },
+    { path: "/api/admin/players", who: "analyst" },
+    { path: "/api/admin/events", who: "analyst" },
   ];
   const withQs = (path: string, qs: string) => `${path}${path.includes("?") ? "&" : "?"}${qs}`;
   /** content.ts review returns its page as games[0].entries; every other list as rows. */
