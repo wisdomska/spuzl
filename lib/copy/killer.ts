@@ -20,4 +20,13 @@ export const killerHints = {
   thisBox: "this box",
   cageNeeds: (sum: number, d: number) => `The cage of ${sum} needs a ${d}, and this is the only spot for it.`,
   reveal: (d: number) => `Try ${d} here.`,
+  /* The 45 rule: every row, column and box adds to 45 (21 on 6 × 6). `where` is "row 3", "columns 1 to 2", "box 5". */
+  innie: (where: string, total: number, d: number) =>
+    `The digits in ${where} add to ${total}, so with the whole cages inside taken away, this cell must be ${d}.`,
+  outie: (where: string, total: number, d: number) =>
+    `The digits in ${where} add to ${total}, so this cell, the one cage cell poking out, must be ${d}.`,
+  innies: (where: string, total: number, sum: number, d: number) =>
+    `The digits in ${where} add to ${total}, so the cells left outside whole cages add to ${sum}, and only ${d} fits here.`,
+  outies: (where: string, total: number, sum: number, d: number) =>
+    `The digits in ${where} add to ${total}, so the cage cells poking out add to ${sum}, and only ${d} fits here.`,
 } as const;
