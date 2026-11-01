@@ -1,5 +1,6 @@
 "use client";
 
+import { installAttemptPriming } from "@/lib/client/early-attempt";
 import { useEffect, useState, type ReactNode } from "react";
 import { MotionConfig } from "motion/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -16,6 +17,7 @@ export function Providers({ children }: { children: ReactNode }) {
   const settings = useSettings();
   const { hydrate, hydrated } = settings;
   useNavTracker();
+  useEffect(() => installAttemptPriming(), []);
 
   useEffect(() => {
     hydrate();

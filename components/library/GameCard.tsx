@@ -1,5 +1,6 @@
 "use client";
 
+import { primeAttempt } from "@/lib/client/early-attempt";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Dialog } from "radix-ui";
@@ -34,6 +35,7 @@ export function GameCard({
     router.prefetch(done ? `/play/${meta.id}?mode=free` : `/play/${meta.id}`);
   }, [meta, done, router]);
   const go = (href: string) => {
+    primeAttempt(href);
     onClose();
     router.push(href as never);
   };

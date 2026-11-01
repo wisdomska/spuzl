@@ -1,5 +1,6 @@
 "use client";
 
+import { primeAttempt, takePrimed } from "@/lib/client/early-attempt";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -107,13 +108,15 @@ export function PlayScreen({
       setFreeResult(null);
       moves.current = 0;
       try {
-        const a = await startAttempt({
-          game: meta.id,
-          mode: m,
-          date: m === "archive" ? date : undefined,
-          // "Another <Game>" keeps the difficulty just played, so free play never drops abruptly after a Daily.
-          difficulty: m === "free" ? (d ?? difficulty) : undefined,
-        });
+        // Started at the tap when possible (SPZ-01); otherwise start it now.
+        const a = await (takePrimed(meta.id, m, m === "free" ? (d ?? difficulty) : undefined) ??
+          startAttempt({
+            game: meta.id,
+            mode: m,
+            date: m === "archive" ? date : undefined,
+            // "Another <Game>" keeps the difficulty just played, so free play never drops abruptly after a Daily.
+            difficulty: m === "free" ? (d ?? difficulty) : undefined,
+          }));
         latestState.current = a.state ?? undefined;
         setGuessAttempt(a.attemptId);
         setAttempt(a);
@@ -140,12 +143,12 @@ export function PlayScreen({
   // cancels the first start instead of creating two attempts.
   const playerId = me.data?.id;
   const played = me.data?.played;
-  const todaySettled = today.isSuccess || today.isError;
   const startedToday = today.data?.games.find((g) => g.id === meta.id)?.state === "in_progress";
   // First try of a game: a short guided practice round before the real one (skippable).
   const [guided, setGuided] = useState(false);
   useEffect(() => {
-    if (!playerId || !todaySettled) return;
+    // Never waits on /today (SPZ-01): its in-progress flag is used only when already cached.
+    if (!playerId) return;
     const id = setTimeout(() => {
       const first = needsGuided({
         id: meta.id,
@@ -159,7 +162,7 @@ export function PlayScreen({
       else void beginRef.current(initialMode);
     }, 0);
     return () => clearTimeout(id);
-  }, [playerId, todaySettled, meta.id, initialMode]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [playerId, meta.id, initialMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onMove = useCallback(
     (state: unknown, elapsedMs: number) => {
@@ -258,7 +261,13 @@ export function PlayScreen({
   const readyIds = new Set((today.data?.games ?? []).filter((g) => g.ready).map((g) => g.id));
   const nextId = nextInPath(meta.id, clearedNow, (id) => (today.data ? readyIds.has(id) : true));
   const nextAction = nextId
-    ? { label: nextLabel(nextId), onClick: () => router.push(`/play/${nextId}`) }
+    ? {
+        label: nextLabel(nextId),
+        onClick: () => {
+          primeAttempt(`/play/${nextId}`);
+          router.push(`/play/${nextId}`);
+        },
+      }
     : { label: copy.play.backToGrid, onClick: () => router.push("/") };
   const anotherAction = {
     label: copy.play.another(meta.name),
