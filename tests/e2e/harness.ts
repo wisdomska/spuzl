@@ -112,6 +112,27 @@ const SOLVERS: Record<string, (page: Page, seed: string, d: Difficulty) => Promi
       await pad.getByRole("button", { name: new RegExp(`^${g.solution[i]}\\b`) }).click();
     }
   },
+  async dara(page, seed, d) {
+    const { generate, replay } = await import("@/games/dara/logic");
+    const { steps } = await import("@/games/dara/rules");
+    const g = generate(createRng(seed), d);
+    const cell = (i: number) => tapCell(page, Math.floor(i / 6) + 1, (i % 6) + 1);
+    const { from, to, takes } = g.solution;
+    await cell(from);
+    await cell(to);
+    if (g.puzzle.goal === "three2") {
+      // their reply plays at once; then step into the three it leaves
+      const fin = steps(replay(g.puzzle, [{ from, to }]).board, 1).find((s) => s.three)!;
+      await cell(fin.from);
+      await cell(fin.to);
+    }
+    if (takes.length) await cell(takes[0]);
+    else
+      await page
+        .getByRole("gridcell", { name: /can be taken/ })
+        .first()
+        .click();
+  },
 };
 
 export async function solveTestBoard(page: Page, slug: string, seed = "qa", d: Difficulty = "easy") {

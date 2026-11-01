@@ -71,4 +71,5 @@ export const BOARDS: Record<string, AnyBoard> = {
   trotro: dynamic(() => import("./trotro/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   lightup: dynamic(() => import("./lightup/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   killer: dynamic(() => import("./killer/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
+  dara: dynamic(() => import("./dara/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
 };

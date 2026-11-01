@@ -223,9 +223,16 @@ export default function BotBoard({ puzzle, disabled, api, extra }: BoardProps<Bo
 
 const isRoll = (m: unknown) => !!m && typeof m === "object" && (m as { kind?: string }).kind === "roll";
 
-/** Whose turn it is (not by colour alone: the active side is bold, outlined and says so), plus disc counts in Flip. */
+/** Whose turn it is (not by colour alone: the active side is bold, outlined and says so), plus disc counts in Flip and stones left in Dara. */
 function Seats({ game, state, turn, thinking }: { game: BotGame; state: unknown; turn: number; thinking: boolean }) {
-  const count = (who: number) => (game === "flip" && state ? (state as { grid: number[] }).grid.filter((x) => x === who).length : null);
+  const count = (who: number) =>
+    !state
+      ? null
+      : game === "flip"
+        ? (state as { grid: number[] }).grid.filter((x) => x === who).length
+        : game === "dara"
+          ? (state as { board: number[] }).board.filter((x) => x === who).length + (state as { hand: number[] }).hand[who - 1]
+          : null;
   const seat = (s: number, name: string) => {
     const active = turn === s;
     const n = count(s + 1);

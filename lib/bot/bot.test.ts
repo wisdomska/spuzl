@@ -9,11 +9,12 @@ import { owareBot } from "./games/oware";
 import { flipBot, evaluateFlip } from "./games/flip";
 import { place } from "@/games/flip/engine";
 import { ludoBot, ludoHardScore } from "./games/ludo";
+import { daraBot, evaluateDara } from "./games/dara";
 import { initialMatch } from "@/games/chess/rules";
 import { emptyGrid, COLS } from "@/games/fourup/engine";
 import { searchBest, type SearchGame } from "./search";
 
-const MAX_PLIES: Record<string, number> = { fourup: 42, flip: 70, draughts: 400, oware: 600, chess: 400, ludo: 3000 };
+const MAX_PLIES: Record<string, number> = { fourup: 42, flip: 70, draughts: 400, oware: 600, chess: 400, ludo: 3000, dara: 2000 };
 
 /** Plays a whole game between two bots and checks every move against the rules. */
 function selfPlay(bot: AnyBot, levels: [BotLevel, BotLevel], seed: string, budgetMs = 5) {
@@ -171,8 +172,31 @@ describe("hard bot tactics", () => {
   });
 });
 
+describe("Dara bot", () => {
+  const at = (r: number, c: number) => r * 6 + c;
+  const pos = (mine: number[], theirs: number[]) => {
+    const board = new Array(30).fill(0);
+    mine.forEach((i) => (board[i] = 1));
+    theirs.forEach((i) => (board[i] = 2));
+    return { board, hand: [0, 0] as [number, number], turn: 0 as const, quiet: 0 };
+  };
+
+  it("hard takes a free capture, from the line the rival nearly has", () => {
+    // seat 0 steps (0,2) down to make three across row 1; seat 1 has (3,3) (3,4) with (2,5) ready to step in
+    const s = pos([at(1, 0), at(1, 1), at(0, 2), at(4, 0)], [at(3, 3), at(3, 4), at(2, 5), at(4, 3)]);
+    const m = daraBot.choose(s, 0, "hard", createRng("d"));
+    expect(m).toMatchObject({ kind: "move", from: at(0, 2), to: at(1, 2) });
+    expect([at(3, 3), at(3, 4), at(2, 5)]).toContain((m as { take: number }).take);
+  });
+
+  it("evaluation counts stones and ready threes", () => {
+    const s = pos([at(1, 0), at(1, 1), at(0, 2), at(4, 0)], [at(3, 3), at(4, 5), at(4, 3)]);
+    expect(evaluateDara(s, 0)).toBeGreaterThan(evaluateDara(s, 1));
+  });
+});
+
 describe("hard beats easy", () => {
-  for (const game of ["fourup", "flip", "draughts", "oware"] as const)
+  for (const game of ["fourup", "flip", "draughts", "oware", "dara"] as const)
     it(`${game}: hard wins most games against easy`, async () => {
       const bot = await loadBot(game);
       let wins = 0;

@@ -2,6 +2,8 @@
  * Player-facing copy for Board Bay (chess, draughts, oware, ludo, four up, flip). See lib/copy/index.ts
  * for the voice: short, warm, plain.
  */
+import { dara } from "./dara";
+
 const LEVEL = { easy: "Easy", medium: "Medium", hard: "Hard" } as const;
 
 export const boardGames = {
@@ -61,6 +63,7 @@ export const boardGames = {
       flip: "Place a disc to outflank and flip the bot's discs. Most discs at the end wins.",
       chess: "Checkmate the bot's king. You play white.",
       ludo: "Roll, move and race all four pieces home before the bot. Land on its pieces to send them back.",
+      dara: dara.botRule,
     },
   },
 } as const;

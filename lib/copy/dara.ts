@@ -1,0 +1,52 @@
+/** Player-facing copy for Dara (games/dara, the vs-bot board in components/multiplayer/bay/boards.tsx). */
+export const dara = {
+  title: "Dara",
+  blurb: "Line up three, take a stone",
+  rule: "Step a stone across or down. Exactly three in a row takes one of their stones.",
+  /** rule line for a full game vs the bot */
+  botRule:
+    "Drop 12 stones each (no threes yet), then step them. Make exactly three in a row to take a stone. Leave the bot two and you win.",
+  cell: (row: number, col: number) => `row ${row}, column ${col}`,
+  dir: { up: "up", down: "down", left: "left", right: "right" },
+  /** goal line per puzzle kind */
+  goal: {
+    capture: "Make three in a row and take a stone.",
+    block: "Make three, then take a stone from the line they are about to finish.",
+    three2: "Set up a three they cannot stop. You have two moves.",
+  },
+  grid: "Dara board, 5 rows by 6 columns",
+  /** "Row r, column c, …": keep the prefix, tests/e2e/harness.ts finds cells by it */
+  where: (row: number, col: number) => `Row ${row}, column ${col}`,
+  yours: "your stone",
+  theirs: "their stone",
+  empty: "empty",
+  canMove: "can move",
+  picked: "picked up",
+  stepHere: "step here",
+  dropHere: "drop here",
+  canTake: "can be taken",
+  inLine: "in your three",
+  picked1: (where: string) => `Stone at ${where} picked up. Tap a cell next to it.`,
+  noStep: "That stone has nowhere to step.",
+  notYours: "That one is theirs. Pick one of your light stones.",
+  three: "Three in a row! Tap one of their stones to take it.",
+  threeBlock: "Three in a row! Take a stone from the line they nearly have.",
+  noThree: "No three there. Another step lines one up.",
+  notForcing: "They can stop that. Find the step they cannot answer.",
+  wrongTake: "They still make three next move. Take from their ready line.",
+  replied: (where: string) => `They moved to ${where}. Now make three.`,
+  took: "Stone taken. Puzzle cleared.",
+  cancelTake: "Take cancelled. Pick a stone.",
+  undo: "Undo",
+  hint: "Hint",
+  hintUndo: "Undo that move. It does not lead to three.",
+  hintCapture: (cell: string, dir: string) => `The stone at ${cell} steps ${dir} to make three.`,
+  hintBlock: (cell: string, dir: string) => `The stone at ${cell} steps ${dir} for three. Then take from their ready line.`,
+  hintSetUp: (cell: string, dir: string) => `Step the stone at ${cell} ${dir}. They cannot block every three after that.`,
+  hintFinish: (cell: string, dir: string) => `Now the stone at ${cell} steps ${dir} to make three.`,
+  /** live board (vs bot) */
+  dropPhase: (you: number, them: number) => `Drop phase. In hand: you ${you}, bot ${them}.`,
+  movePhase: "Move phase. Step a stone; three in a row takes one.",
+  dropRule: "No threes while dropping.",
+  pending: "Three! Tap one of the bot's stones to take it.",
+} as const;

@@ -18,6 +18,9 @@ import type { OwareMatch } from "@/games/oware/rules";
 import type { FourUpMatch } from "@/games/fourup/rules";
 import type { FlipMatch } from "@/games/flip/rules";
 import type { LudoMatch, LudoMove } from "@/games/ludo/rules";
+import { DaraGrid } from "@/games/dara/DaraGrid";
+import { inDropPhase, threeThrough, type DaraMatch, type DaraMove } from "@/games/dara/rules";
+import { dara as td } from "@/lib/copy/dara";
 import { useReduce } from "@/lib/client/multiplayer";
 
 /**
@@ -48,6 +51,7 @@ export function LiveBoard(p: LiveBoardProps) {
       {p.game === "fourup" && <FourUpLive {...p} />}
       {p.game === "flip" && <FlipLive {...p} />}
       {p.game === "ludo" && <LudoLive {...p} />}
+      {p.game === "dara" && <DaraLive {...p} />}
     </>
   );
 }
@@ -438,6 +442,82 @@ function FlipLive({ state, seat, legal, disabled, onMove }: LiveBoardProps) {
           </button>
         );
       })}
+    </div>
+  );
+}
+
+/* ---------------- Dara (lab) ---------------- */
+
+/**
+ * Dara vs bot: drop phase, tap an empty cell (cells that would line up three are not offered); move phase, tap
+ * one of your stones and then a cell next to it. A step that makes three asks you to tap a stone to take.
+ */
+function DaraLive({ state, seat, legal, disabled, lastMove, onMove, announce }: LiveBoardProps) {
+  const s = state as DaraMatch;
+  const moves = legal as DaraMove[];
+  const me = seat ?? 0;
+  const [sel, setSel] = useState<number | null>(null);
+  /** a step that makes three, waiting for the stone to take (for this position only) */
+  const [pend, setPend] = useState<{ board: string; from: number; to: number } | null>(null);
+  const key = s.board.join("");
+  const pending = pend?.board === key ? pend : null;
+  const drop = inDropPhase(s);
+  const live = !disabled;
+  const steps = moves.filter((m): m is Extract<DaraMove, { kind: "move" }> => m.kind === "move");
+  const drops = live ? moves.flatMap((m) => (m.kind === "drop" ? [m.to] : [])) : [];
+  const selected = sel !== null && steps.some((m) => m.from === sel) ? sel : null;
+  const targets = live && selected !== null && !pending ? [...new Set(steps.filter((m) => m.from === selected).map((m) => m.to))] : [];
+  const takeable = pending ? steps.filter((m) => m.from === pending.from && m.to === pending.to).map((m) => m.take!) : [];
+  const board = pending ? s.board.map((v, i) => (i === pending.to ? me + 1 : i === pending.from ? 0 : v)) : s.board;
+  const last = lastMove as DaraMove | null;
+  const lastCells = last ? (last.kind === "drop" ? [last.to] : [last.from, last.to]) : [];
+  const tap = (i: number) => {
+    if (!live) return;
+    if (pending) {
+      const m = steps.find((x) => x.from === pending.from && x.to === pending.to && x.take === i);
+      setPend(null);
+      setSel(null);
+      if (m) onMove(m);
+      else announce(td.cancelTake);
+      return;
+    }
+    if (drop) {
+      if (drops.includes(i)) onMove({ kind: "drop", to: i });
+      else if (!s.board[i]) announce(td.dropRule);
+      return;
+    }
+    if (selected !== null && targets.includes(i)) {
+      const opts = steps.filter((m) => m.from === selected && m.to === i);
+      if (opts.length === 1 && opts[0].take === undefined) {
+        setSel(null);
+        onMove(opts[0]);
+      } else {
+        setPend({ board: key, from: selected, to: i });
+        announce(td.pending);
+      }
+      return;
+    }
+    setSel(steps.some((m) => m.from === i) ? i : null);
+  };
+  const line = pending ? threeThrough(board, pending.to, me + 1) : [];
+  return (
+    <div className="flex w-full flex-col items-center gap-2">
+      <p className="text-muted text-[13px]" aria-live="polite">
+        {pending ? td.pending : drop ? td.dropPhase(s.hand[me], s.hand[1 - me]) : td.movePhase}
+      </p>
+      <DaraGrid
+        board={board}
+        mine={me + 1}
+        selected={pending ? pending.to : selected}
+        targets={drop ? drops : targets}
+        targetLabel={drop ? td.dropHere : td.stepHere}
+        takeable={takeable}
+        movable={live && !drop && !pending ? [...new Set(steps.map((m) => m.from))] : []}
+        last={lastCells}
+        line={line}
+        disabled={!live}
+        onTap={tap}
+      />
     </div>
   );
 }

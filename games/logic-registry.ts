@@ -67,6 +67,7 @@ export const LOGIC: Record<string, Loader> = {
   trotro: () => import("./trotro/logic"),
   lightup: () => import("./lightup/logic"),
   killer: () => import("./killer/logic"),
+  dara: () => import("./dara/logic"),
 };
 
 export function hasLogic(id: string) {

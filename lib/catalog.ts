@@ -1,4 +1,5 @@
 import { killer } from "@/lib/copy/killer";
+import { dara } from "@/lib/copy/dara";
 
 /**
  * The Grid: 9 worlds, 51 games. Source: design Game Boards (icon set + phases) and SRS section 5.
@@ -687,6 +688,13 @@ export const LAB_GAMES: GameMeta[] = [
   g("killer", killer.title, "number", "circle-dashed", "M3+", "grid", killer.blurb, killer.rule, {
     unique: true,
     minTimeMs: 15000,
+    lab: true,
+  }),
+  // Dara (Board Bay): West African three-in-a-row; puzzles in the shell plus a full game vs bot
+  g("dara", dara.title, "board", "dots-three", "M3+", "board", dara.blurb, dara.rule, {
+    unique: true,
+    minTimeMs: 1500,
+    botPlay: true,
     lab: true,
   }),
 ];
