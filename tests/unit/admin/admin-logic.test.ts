@@ -14,6 +14,9 @@ import { CONTENT as MINICROSS } from "@/games/minicross/content";
 import { CONTENT as SEVEN } from "@/games/seven/content";
 import { CONTENT as REMIX } from "@/games/remix/content";
 import { CONTENT as QUICKFIRE } from "@/games/quickfire/content";
+import { ANSWERS as FIVE } from "@/games/five/content";
+import { CONTENT as EMOJIHITS } from "@/games/emojihits/content";
+import { PRACTICE } from "@/games/_shared/guess";
 
 describe("admin roles", () => {
   it("gives the owner everything and keeps each other role to its job", () => {
@@ -76,6 +79,8 @@ describe("content payload schemas", () => {
       ["seven", SEVEN],
       ["remix", REMIX],
       ["quickfire", QUICKFIRE],
+      ["five", [...FIVE]],
+      ["emojihits", EMOJIHITS],
     ];
     for (const [game, entries] of real)
       for (const e of entries) {
@@ -102,6 +107,24 @@ describe("content payload schemas", () => {
     expect(SCHEDULABLE.pinned).toBeUndefined();
     expect(SCHEDULABLE.hunch?.guessRoute).toBe(false);
   });
+
+  it("cover the lab content games (Five, Emoji Hits) as review-only pool games", () => {
+    expect(CONTENT_GAMES).toEqual(expect.arrayContaining(["five", "emojihits"]));
+    expect(SCHEDULABLE.five).toBeUndefined();
+    expect(SCHEDULABLE.emojihits).toBeUndefined();
+    const five = validatePayload("five", " banku ");
+    expect(five.success && five.data).toBe("BANKU");
+    expect(validatePayload("five", "BANK").success).toBe(false);
+    expect(validatePayload("five", "BANK1").success).toBe(false);
+    const hit = { title: "Kpanlogo", emoji: "🥁💃", kind: "song", from: "ghana" };
+    expect(validatePayload("emojihits", { ...hit, by: "E. T. Mensah", year: 1960 }).success).toBe(true);
+    expect(validatePayload("emojihits", { ...hit, clue: "A dance from Accra." }).success).toBe(true);
+    const noFacts = validatePayload("emojihits", hit);
+    expect(noFacts.success).toBe(false);
+    expect(!noFacts.success && noFacts.issues[0].path).toEqual(["clue"]);
+    expect(validatePayload("emojihits", { ...hit, clue: "x", kind: "book" }).success).toBe(false);
+    expect(validatePayload("emojihits", { ...hit, clue: "No – dashes" }).success).toBe(false);
+  });
 });
 
 describe("solved states for the solve-check", () => {
@@ -119,6 +142,8 @@ describe("solved states for the solve-check", () => {
       "quads",
       "minicross",
       "hunch",
+      "five",
+      "emojihits",
     ]) {
       const logic = (await LOGIC[game]()).default;
       const g = logic.generate(createRng(`admin:${game}`), "easy");
@@ -132,4 +157,23 @@ describe("solved states for the solve-check", () => {
       expect(ok, game).toBe(true);
     }
   }, 60_000);
+
+  it("give the admin preview a Show solution board the guess check agrees with", async () => {
+    // Five: the solved state is the answer itself, and the admin guess route (practice) marks it all right.
+    const five = (await LOGIC.five()).default as unknown as {
+      generateAt(i: number, d: string): { puzzle: unknown; solution: { answer: string } };
+      checkGuess(p: unknown, s: unknown, g: unknown, ctx: unknown): unknown;
+    };
+    const f = five.generateAt(12, "medium");
+    const [state] = solvedStates("five", f.puzzle, f.solution);
+    expect(state.state).toEqual({ guesses: [f.solution.answer] });
+    expect(five.checkGuess(f.puzzle, f.solution, f.solution.answer, PRACTICE)).toMatchObject({ ok: true });
+    // Emoji Hits: one first-try title per round
+    const hits = (await LOGIC.emojihits()).default as unknown as {
+      generateAt(i: number, d: string): { puzzle: unknown; solution: { answers: string[][] } };
+    };
+    const h = hits.generateAt(3, "hard");
+    const [hs] = solvedStates("emojihits", h.puzzle, h.solution);
+    expect((hs.state as { rounds: { tries: string[] }[] }).rounds.map((r) => r.tries[0])).toEqual(h.solution.answers.map((a) => a[0]));
+  });
 });

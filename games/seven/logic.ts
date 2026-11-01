@@ -115,7 +115,8 @@ const logic: GuessLogic<SevenPuzzle, SevenSolution, SevenState, SevenGuess, Seve
   contentCount,
   generate,
   generateAt,
-  checkGuess,
+  // The route passes a guess context as a 4th argument; Seven's own 4th argument (found words) is internal.
+  checkGuess: (p, s, g) => checkGuess(p, s, g),
   verify,
   progress,
   hint,

@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import { createRng } from "@/lib/rng";
 import { isWord } from "@/games/_shared/words";
 import type { Difficulty } from "@/games/types";
-import logic, { checkGuess, contentCount, generate, generateAt, grade, hint, progress, verify } from "./logic";
+import { PRACTICE, type GuessContext } from "@/games/_shared/guess";
+import { checkGuessWith, finalVerdict } from "@/lib/game/guess-check";
+import logic, { audit, checkGuess, contentCount, generate, generateAt, grade, hint, progress, record, verify } from "./logic";
 import { ANSWERS, needsReview } from "./content";
 import { HIT, letterMarks, markGuess, MISS, NEAR, TRIES, type FiveState } from "./rules";
 
@@ -122,10 +124,56 @@ describe("five guesses and verification", () => {
     expect(checkGuess(puzzle, solution, "QZXQZ")).toEqual({ ok: false, invalid: "word" });
     expect(checkGuess(puzzle, solution, "CAT")).toEqual({ ok: false, invalid: "length" });
     expect(checkGuess(puzzle, solution, 42 as unknown as string)).toEqual({ ok: false, invalid: "length" });
-    expect(checkGuess(puzzle, solution, { reveal: m })).toEqual({ reveal: ans });
-    expect(checkGuess(puzzle, solution, { reveal: m.slice(0, 5) })).toEqual({ ok: false, refused: true });
-    expect(checkGuess(puzzle, solution, { reveal: [...m.slice(0, 5), "QZXQZ"] })).toEqual({ ok: false, refused: true });
-    expect(checkGuess(puzzle, solution, { reveal: [...m.slice(0, 5), ans] })).toEqual({ ok: false, refused: true });
+    expect(checkGuess(puzzle, solution, { reveal: m }, PRACTICE)).toEqual({ reveal: ans });
+    expect(checkGuess(puzzle, solution, { reveal: m.slice(0, 5) }, PRACTICE)).toEqual({ ok: false, refused: true });
+    expect(checkGuess(puzzle, solution, { reveal: [...m.slice(0, 5), "QZXQZ"] }, PRACTICE)).toEqual({ ok: false, refused: true });
+    expect(checkGuess(puzzle, solution, { reveal: [...m.slice(0, 5), ans] }, PRACTICE)).toEqual({ ok: false, refused: true });
+  });
+
+  it("shows the answer only for an attempt whose server log has the six misses, and never to a bare reference", () => {
+    const { puzzle, solution } = generateAt(5, "hard");
+    const ans = solution.answer;
+    const m = misses(ans);
+    // no context (a bare puzzle reference): refused even with a perfect proof
+    expect(checkGuess(puzzle, solution, { reveal: m })).toEqual({ ok: false, refused: true });
+    expect(checkGuess(puzzle, solution, { reveal: m }, null)).toEqual({ ok: false, refused: true });
+    // an attempt: the proof must be words the server checked for it
+    const at = (log: unknown[]): GuessContext => ({ kind: "attempt", state: { guesses: m }, log });
+    const checked = m.map((w) => ({ w, t: 1 }));
+    expect(checkGuess(puzzle, solution, { reveal: m }, at([]))).toEqual({ ok: false, refused: true });
+    expect(checkGuess(puzzle, solution, { reveal: m }, at(checked.slice(0, 5)))).toEqual({ ok: false, refused: true });
+    expect(checkGuess(puzzle, solution, { reveal: m }, at(checked))).toEqual({ reveal: ans });
+  });
+
+  it("keeps checked words and a shown answer on the attempt, and a shown answer fails the clear", () => {
+    const { puzzle, solution } = generateAt(9, "medium");
+    const ans = solution.answer;
+    const m = misses(ans);
+    // replaying the server route: each counted word is logged once (a resume re-sends them), non-words never
+    let log: unknown[] = [];
+    const send = (guess: Parameters<typeof checkGuess>[2]) => {
+      const out = checkGuessWith(logic, puzzle, solution, guess, { kind: "attempt", state: null, log }, 7);
+      if (out.entry) log = [...log, out.entry];
+      return out.result;
+    };
+    for (const w of m.slice(0, 3)) send(w);
+    for (const w of m.slice(0, 3)) send(w);
+    send("QZXQZ");
+    expect(log).toEqual(m.slice(0, 3).map((w) => ({ w, t: 7 })));
+    expect(send({ reveal: m })).toEqual({ ok: false, refused: true });
+    for (const w of m.slice(3)) send(w);
+    expect(send({ reveal: m })).toEqual({ reveal: ans });
+    expect(send({ reveal: m })).toEqual({ reveal: ans }); // asked again: shown again, logged once
+    expect(log.filter((e) => (e as { reveal?: true }).reveal)).toHaveLength(1);
+    // the cheat: six misses to see the answer, then claim a clean solve in five
+    const forged: FiveState = { guesses: [...m.slice(0, 5), ans] };
+    expect(verify(puzzle, solution, forged).ok).toBe(true);
+    expect(audit(puzzle, solution, forged, log)).toMatch(/answer shown/);
+    expect(finalVerdict(logic, puzzle, solution, forged, log).verdict.ok).toBe(false);
+    // an honest clear with checked words only passes
+    const honest = log.filter((e) => !(e as { reveal?: true }).reveal);
+    expect(finalVerdict(logic, puzzle, solution, forged, honest).verdict.ok).toBe(true);
+    expect(record(puzzle, solution, "QZXQZ", { ok: false, invalid: "word" }, [])).toBeNull();
   });
 
   it("hints show one true letter in an unfound spot, a new one each time", () => {

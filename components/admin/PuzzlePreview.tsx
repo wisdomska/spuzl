@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { BOARDS } from "@/games/board-registry";
+import { setGuessTransport } from "@/games/_shared/guess";
 import type { BoardApi, ControlSpec, FeedbackTone } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { GAME_BY_ID, WORLD_BY_ID } from "@/lib/catalog";
@@ -335,6 +336,11 @@ function BoardFrame({
       return undefined;
     }
   }, [game, puzzle, solution]);
+  // Content games send guesses through the guess transport: check them against this stored puzzle.
+  useEffect(() => {
+    setGuessTransport((_ref, guess) => api(`/api/admin/puzzles/${puzzleId}/guess`, { json: { guess } }));
+    return () => setGuessTransport(null);
+  }, [puzzleId]);
 
   const boardApi = useMemo<BoardApi<unknown>>(
     () => ({

@@ -1,7 +1,22 @@
 import { describe, expect, it } from "vitest";
 import { createRng } from "@/lib/rng";
 import type { Difficulty } from "@/games/types";
-import logic, { checkGuess, contentCount, generate, generateAt, grade, hint, progress, replay, scoreOf, verify } from "./logic";
+import { PRACTICE } from "@/games/_shared/guess";
+import { checkGuessWith, finalVerdict } from "@/lib/game/guess-check";
+import logic, {
+  audit,
+  checkGuess,
+  contentCount,
+  generate,
+  generateAt,
+  grade,
+  hint,
+  progress,
+  record,
+  replay,
+  scoreOf,
+  verify,
+} from "./logic";
 import { CONTENT } from "./content";
 import { LIMIT_MS, OPTIONS, READ_FLOOR_MS, ROUNDS, titleKey, titleMatches, TRIES, type EmojiState, type RoundLog } from "./rules";
 
@@ -148,9 +163,45 @@ describe("emoji hits guesses and verification", () => {
     expect(checkGuess(puzzle, solution, { round: 7, answer: title })).toMatchObject({ invalid: true });
     expect(checkGuess(puzzle, solution, { round: 0, answer: "" })).toMatchObject({ invalid: true });
     expect(checkGuess(puzzle, solution, null as never)).toMatchObject({ invalid: true });
-    expect(checkGuess(puzzle, solution, { round: 2, reveal: true })).toEqual({ reveal: solution.answers[2][0] });
+    expect(checkGuess(puzzle, solution, { round: 2, reveal: true }, PRACTICE)).toEqual({ reveal: solution.answers[2][0] });
     const hard = generateAt(4, "hard");
     expect(checkGuess(hard.puzzle, hard.solution, { round: 0, answer: 0 })).toMatchObject({ invalid: true });
+  });
+
+  it("never shows a title to a bare puzzle reference", () => {
+    const { puzzle, solution } = generateAt(6, "medium");
+    expect(checkGuess(puzzle, solution, { round: 1, reveal: true })).toMatchObject({ invalid: true });
+    expect(checkGuess(puzzle, solution, { round: 1, reveal: true }, null)).toMatchObject({ invalid: true });
+    expect(checkGuess(puzzle, solution, { round: 1, reveal: true }, { kind: "attempt", state: null, log: [] })).toEqual({
+      reveal: solution.answers[1][0],
+    });
+  });
+
+  it("keeps each shown title on the attempt, and a shown round can't then count as found", () => {
+    const { puzzle, solution } = generateAt(11, "medium");
+    let log: unknown[] = [];
+    const send = (guess: Parameters<typeof checkGuess>[2]) => {
+      const out = checkGuessWith(logic, puzzle, solution, guess, { kind: "attempt", state: null, log }, 3);
+      if (out.entry) log = [...log, out.entry];
+      return out.result;
+    };
+    expect(send({ round: 0, answer: "definitely not it" })).toEqual({ ok: false });
+    expect(log).toEqual([]); // tries are not logged
+    expect(send({ round: 2, reveal: true })).toEqual({ reveal: solution.answers[2][0] });
+    expect(send({ round: 2, reveal: true })).toEqual({ reveal: solution.answers[2][0] });
+    expect(log).toEqual([{ reveal: 2, t: 3 }]);
+    expect(record(puzzle, solution, { round: 0, answer: "x" }, { ok: false }, log)).toBeNull();
+    // honest run: round 2 timed out after its title was shown
+    const found = (r: number): RoundLog => ({ tries: [solution.answers[r][0]], ms: 5000 });
+    const timedOut: RoundLog = { tries: [], ms: LIMIT_MS };
+    const honest: EmojiState = { rounds: [found(0), found(1), timedOut, found(3), found(4)] };
+    expect(finalVerdict(logic, puzzle, solution, honest, log).verdict.ok).toBe(true);
+    // the cheat: peek at round 2, then claim it found
+    const forged: EmojiState = { rounds: [found(0), found(1), found(2), found(3), found(4)] };
+    expect(verify(puzzle, solution, forged).ok).toBe(true);
+    expect(audit(puzzle, solution, forged, log)).toMatch(/title shown/);
+    expect(finalVerdict(logic, puzzle, solution, forged, log).verdict).toMatchObject({ ok: false });
+    expect(audit(puzzle, solution, forged, [])).toBeNull();
   });
 
   it("hints name the maker and year of the round in play, never the title", () => {

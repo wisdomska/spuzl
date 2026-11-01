@@ -94,6 +94,24 @@ export const CONTENT_SCHEMAS = {
         .max(15),
     })
     .refine((e) => e.rows.every((r) => r.length === e.rows[0].length), { message: "Rows must share one width", path: ["rows"] }),
+  // Lab content games (Phase 5). Five: one hidden word (content.ts keeps the bare words; it must also be in the
+  // shared dictionary, which the five logic test checks). Emoji Hits: one clue row.
+  five: word(5, 5),
+  emojihits: z
+    .object({
+      title: text(80),
+      emoji: z.string().trim().min(1).max(40),
+      kind: z.enum(["song", "film", "tv"]),
+      by: text(60).optional(),
+      year: z.number().int().min(1900).max(2100).optional(),
+      clue: text(120).optional(),
+      from: z.enum(["ghana", "africa", "world"]),
+      accept: z.array(text(80)).max(8).optional(),
+    })
+    .refine((e) => !!e.clue || (!!e.by && e.year !== undefined), {
+      message: "Give who made it and the year, or a hand-written clue",
+      path: ["clue"],
+    }),
 } as const;
 
 export type ContentGame = keyof typeof CONTENT_SCHEMAS;
@@ -132,6 +150,8 @@ export const TEMPLATES: Record<ContentGame, unknown> = {
   pinned: { name: "", line: "", lat: 0, lon: 0, map: "world" },
   flagged: { name: "", continent: "africa", capital: "", currency: "" },
   pixl: { name: "", rows: ["....."] },
+  five: "",
+  emojihits: { title: "", emoji: "", kind: "song", by: "", year: 2020, from: "ghana", accept: [] },
 };
 
 /** Quickfire schedules a set of five questions; everything else schedules one entry. */

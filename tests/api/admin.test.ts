@@ -32,6 +32,7 @@ const ROUTES: Route[] = [
   { method: "PATCH", path: `/api/admin/puzzles/${NIL}`, perm: "calendar.write" },
   { method: "POST", path: `/api/admin/puzzles/${NIL}/check`, perm: "calendar.write" },
   { method: "POST", path: `/api/admin/puzzles/${NIL}/verify`, perm: "calendar.read" },
+  { method: "POST", path: `/api/admin/puzzles/${NIL}/guess`, perm: "calendar.read" },
   { method: "POST", path: `/api/admin/puzzles/${NIL}/approve`, perm: "calendar.write" },
   { method: "POST", path: "/api/admin/dailies/regenerate", perm: "calendar.write" },
   { method: "POST", path: "/api/admin/dailies/lock", perm: "calendar.write" },
