@@ -4,11 +4,12 @@ import { useState, type ReactNode } from "react";
 import { age, clock } from "@/lib/admin/dates";
 import { errorText, useAdminAction, useAdminQuery, type AdminPage } from "@/lib/client/admin";
 import { adminCopy } from "@/lib/copy/admin";
+import { PEN_COLORS, PEN_WIDTHS, strokePath, type Stroke } from "@/lib/party-adult/strokes";
 import { Pagination, usePager } from "./Pagination";
 import { useUrlFilters } from "./useUrlFilters";
 import { Btn, Empty, Notice, PageTitle, Pill, RowsSkeleton, Tabs, type PillTone } from "./ui";
 
-type Tab = "reports" | "nicknames" | "flagged";
+type Tab = "reports" | "nicknames" | "party" | "flagged";
 interface Row {
   id: string;
   ref: string;
@@ -35,7 +36,7 @@ interface Player {
 
 const C = adminCopy.moderation;
 const K = C.cases;
-const TABS: Tab[] = ["reports", "nicknames", "flagged"];
+const TABS: Tab[] = ["reports", "nicknames", "party", "flagged"];
 const FILTERS = { tab: "reports", status: "open" } as const;
 const ALLOWED = { tab: TABS, status: ["open", "actioned", "dismissed", "all"] };
 
@@ -61,7 +62,7 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
   const counts = q.data?.counts;
   if (!picked && counts) {
     setPicked(true);
-    const first = (["reports", "nicknames", "flagged"] as Tab[]).find((t) => counts[t] > 0);
+    const first = TABS.find((t) => counts[t] > 0);
     if (counts[tab] === 0 && first) {
       setFilters({ tab: first });
       setSel(null);
@@ -334,12 +335,14 @@ function ReportCase({
       target_id: string;
       created_at: string;
       resolution: string | null;
+      snapshot?: PartySnapshot | null;
     };
     target: Player | null;
     reporter: { nickname: string } | null;
     related: { ref: string; reason: string; status: string; created_at: string }[];
+    blockDays: number | null;
   }>(["report", id], `/api/admin/moderation/reports/${id}`);
-  const decide = useAdminAction<{ decision: "dismiss" | "actioned" | "reopen"; note?: string }>(
+  const decide = useAdminAction<{ decision: "dismiss" | "actioned" | "reopen"; note?: string }, { blockedUntil?: string | null }>(
     "POST",
     `/api/admin/moderation/reports/${id}`,
   );
@@ -384,6 +387,15 @@ function ReportCase({
         {t?.ranking_revoked && <span className="text-gold font-semibold">{K.rankingRevoked}</span>}
         {q.data.related.length > 0 && <span className="text-muted">{K.also(q.data.related.map((x) => `${x.ref} ${x.reason}`))}</span>}
       </div>
+      {r.target_type === "party" && r.snapshot && <PartySnapshotView s={r.snapshot} />}
+      {r.target_type === "party" && q.data.blockDays !== null && r.status === "open" && (
+        <span className="text-muted text-[12px] font-medium">{C.party.blockNote(q.data.blockDays)}</span>
+      )}
+      {decide.data?.blockedUntil && (
+        <Notice tone="ok" icon="check-circle">
+          {C.party.blocked(decide.data.blockedUntil.slice(0, 10))}
+        </Notice>
+      )}
       {err && <Notice tone="danger">{errorText(err)}</Notice>}
       {player.data?.nickname && (
         <Notice tone="ok" icon="check-circle">
@@ -462,5 +474,56 @@ function ReportCase({
         </div>
       )}
     </>
+  );
+}
+
+/** 18+ party content as the room saw it: the drawing (strokes only), the statements or the guess. */
+interface PartySnapshot {
+  mode?: string;
+  kind?: string;
+  code?: string | null;
+  round?: number;
+  word?: string | null;
+  text?: string;
+  statements?: string[];
+  lie?: number | null;
+  strokes?: Stroke[];
+}
+
+function PartySnapshotView({ s }: { s: PartySnapshot }) {
+  const P = C.party;
+  return (
+    <div className="bg-bg flex flex-col gap-1.5 rounded-[10px] p-3 text-[13px]">
+      <span className="num text-muted text-[12px] font-semibold">
+        {P.snapshot}: {P.modes[s.mode ?? ""] ?? s.mode} {P.kinds[s.kind ?? ""]?.toLowerCase() ?? ""}, {P.room(s.code ?? null, s.round ?? 0)}
+      </span>
+      {s.word && <span className="text-muted">{P.word(s.word)}</span>}
+      {s.text !== undefined && <p className="bg-surface rounded-[8px] px-2.5 py-2 text-[14px] font-medium break-words">{s.text}</p>}
+      {s.statements && (
+        <ol className="flex flex-col gap-1">
+          {s.statements.map((t, i) => (
+            <li key={i} className="bg-surface rounded-[8px] px-2.5 py-2 text-[14px] font-medium break-words">
+              {i + 1}. {t}
+              {s.lie === i && <span className="text-danger ml-1.5 text-[12px] font-semibold">({P.lie})</span>}
+            </li>
+          ))}
+        </ol>
+      )}
+      {s.strokes && (
+        <svg viewBox="0 0 1000 1000" role="img" aria-label={P.drawingLabel} className="bg-surface aspect-square w-full rounded-[8px]">
+          {s.strokes.map((k, i) => (
+            <path
+              key={i}
+              d={strokePath(k)}
+              fill="none"
+              stroke={PEN_COLORS[k.c] ?? PEN_COLORS[0]}
+              strokeWidth={PEN_WIDTHS[k.w] ?? PEN_WIDTHS[0]}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          ))}
+        </svg>
+      )}
+    </div>
   );
 }

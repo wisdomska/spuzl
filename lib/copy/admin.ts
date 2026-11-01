@@ -67,7 +67,7 @@ export const adminCopy = {
   moderation: {
     title: "Moderation queue",
     queue: "Queue",
-    tabs: { reports: "Reports", nicknames: "Nicknames", flagged: "Anti-cheat" },
+    tabs: { reports: "Reports", nicknames: "Nicknames", party: "Party content", flagged: "Anti-cheat" },
     open: (n: number) => `${n} open`,
     showing: "Showing",
     statuses: { open: "Open", actioned: "Actioned", dismissed: "Dismissed", all: "All" },
@@ -130,6 +130,17 @@ export const adminCopy = {
       markActioned: "Mark actioned",
       dismiss: "Dismiss",
       reopen: "Reopen",
+    },
+    party: {
+      kinds: { drawing: "Drawing", statements: "Statements", guess: "Guess" } as Record<string, string>,
+      modes: { draw: "Draw It", truths: "Two Truths" } as Record<string, string>,
+      snapshot: "What was shown",
+      word: (w: string) => `Secret word: ${w}`,
+      lie: "lie",
+      room: (code: string | null, round: number) => `Room ${code ?? "closed"}, round ${round}`,
+      blockNote: (days: number) => `Mark actioned also keeps this player out of 18+ party rooms for ${days} days.`,
+      blocked: (until: string) => `Blocked from 18+ party rooms until ${until}.`,
+      drawingLabel: "Reported drawing",
     },
   },
 

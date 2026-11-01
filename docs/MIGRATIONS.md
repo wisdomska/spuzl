@@ -82,3 +82,17 @@ learned games count) and saving a learned game fails quietly (the device keeps i
 | `20261111000002_party_chosen_games.sql` | `matches.chosen_games` (2 to 8 race games the Party host picked; no client writes)                                                        | See header |
 
 pgTAP: `085_league_min_group`, `086_party_chosen_games`.
+
+No existing rows change: every room keeps
+`party_mode = 'race'`. The feature stays off until the owner turns on `features.adultParty`.
+
+| Migration                        | What it adds                                                                                                                                                                                                                                                                                                                                                               | Rollback                                                                                                                                      |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `20261112000001_adult_party.sql` | 18+ party games (Draw It, Two Truths): `matches.party_mode` and `party_leads`, `match_players.kicked_at`, `players.adult_notice_at` and `adult_party_blocked_until`, `reports.snapshot` and target type `party`, the server-only `party_rounds`, `party_guesses` and `party_votes` (forced RLS, no client grants or policies), and `svc_party_strokes` (service role only) | Drop the function and the three tables, delete adult rooms and party reports, then drop the columns and restore the report check (see header) |
+
+pgTAP: `101_adult_party` (RLS and grants, the room check, stroke caps and the drawer-only rule, one correct guess
+per round, guess length, cascade with the room, reports kept). The migration, the pgTAP file and the rollback
+were each run locally inside a transaction that was rolled back.
+
+If the code ships first, nothing changes while `features.adultParty` is off: race rooms read `party_mode` as
+`race` when the column is missing, and the moderation queue only reads `reports.snapshot` on its Party content tab.
