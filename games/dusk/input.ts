@@ -1,13 +1,10 @@
 /**
  * Dusk input model (client only; the server never sees transient marks). A tap advances a cell
  * empty → sun → moon → empty, so one tap is a sun and a double-tap is a moon. Taps on the same cell
- * inside the settle window form one burst; only the settled result is judged, so a cell passing
+ * inside the settle window (admin setting `dusk.doubleTapMs`) form one burst; only the settled result is judged, so a cell passing
  * through sun on its way to moon never counts as a slip.
  */
 import { analyze, EMPTY, MOON, SUN, type DuskPuzzle, type DuskState } from "./logic";
-
-/** Taps on one cell closer together than this are one gesture (a double-tap). */
-export const SETTLE_MS = 320;
 
 export type Tool = "sun" | "moon" | null;
 

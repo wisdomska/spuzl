@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { dailyClearReward, freePlayReward, levelFromXp, speedBonus, xpForLevel, flameTier, FREE_XP_DAILY_CAP } from "./index";
-import { update, DEFAULT_RATING, dailyResult, rankFor, clampOneTier, RANKS } from "@/lib/rating/glicko2";
+import { update, DEFAULT_RATING, dailyResult, rankFor, clampOneTier, RANKS, weighted, FREE_PLAY_WEIGHT } from "@/lib/rating/glicko2";
 
 describe("rewards", () => {
   it("matches the designed Results screen: no hints, 0 slips, fast = +120 XP, +25 Sparks", () => {
@@ -42,6 +42,16 @@ describe("rewards", () => {
     expect(freePlayReward(FREE_XP_DAILY_CAP, false)).toMatchObject({ xp: 0, sparks: 0 });
     expect(freePlayReward(0, true)).toMatchObject({ xp: 0, sparks: 0 });
   });
+  it("free play follows the admin economy settings", () => {
+    const eco = { xpPerClear: 25, sparksPerClear: 2, xpDailyCap: 60 };
+    expect(freePlayReward(0, false, eco)).toMatchObject({ xp: 25, sparks: 2 });
+    expect(freePlayReward(50, false, eco)).toMatchObject({ xp: 10, sparks: 2 });
+    expect(freePlayReward(60, false, eco)).toMatchObject({ xp: 0, sparks: 0 });
+    expect(freePlayReward(0, true, eco)).toMatchObject({ xp: 0, sparks: 0 });
+    // XP off still pays Sparks under the cap; a 0 cap turns free-play rewards off.
+    expect(freePlayReward(0, false, { ...eco, xpPerClear: 0 })).toMatchObject({ xp: 0, sparks: 2 });
+    expect(freePlayReward(0, false, { ...eco, xpDailyCap: 0 })).toMatchObject({ xp: 0, sparks: 0 });
+  });
   it("levels follow 100 × n^1.4 rounded to 10", () => {
     expect(xpForLevel(1)).toBe(100);
     expect(xpForLevel(10)).toBe(2510);
@@ -77,6 +87,21 @@ describe("glicko-2", () => {
     expect(won.rating).toBeGreaterThan(1000);
     const lost = update(DEFAULT_RATING, [dailyResult(10, 2, 3)]);
     expect(lost.rating).toBeLessThan(1000);
+  });
+  it("free play moves a rating by a smaller step than a Daily, in the same direction", () => {
+    for (const pct of [90, 10]) {
+      const full = update(DEFAULT_RATING, [dailyResult(pct, 0, 0)]);
+      const free = weighted(DEFAULT_RATING, full, FREE_PLAY_WEIGHT);
+      expect(FREE_PLAY_WEIGHT).toBeGreaterThan(0);
+      expect(FREE_PLAY_WEIGHT).toBeLessThan(1);
+      expect(Math.sign(free.rating - 1000)).toBe(Math.sign(full.rating - 1000));
+      expect(Math.abs(free.rating - 1000)).toBeCloseTo(Math.abs(full.rating - 1000) * FREE_PLAY_WEIGHT, 6);
+      expect(free.rd).toBeGreaterThan(full.rd);
+      expect(free.rd).toBeLessThanOrEqual(DEFAULT_RATING.rd);
+    }
+    expect(weighted(DEFAULT_RATING, { rating: 1400, rd: 100, vol: 0.05 }, 0)).toEqual(DEFAULT_RATING);
+    expect(weighted(DEFAULT_RATING, { rating: 1400, rd: 100, vol: 0.05 }, 1)).toEqual({ rating: 1400, rd: 100, vol: 0.05 });
+    expect(weighted(DEFAULT_RATING, { rating: 1400, rd: 100, vol: 0.05 }, 3).rating).toBe(1400);
   });
   it("maps ratings to ranks and divisions", () => {
     expect(rankFor(950)).toMatchObject({ name: "Rookie" });

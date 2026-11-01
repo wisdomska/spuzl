@@ -10,6 +10,13 @@ describe("game settings schema", () => {
     expect(validateSetting("hints.dailyXpKeptPct", 12.5)).toMatch(/whole number/);
     expect(validateSetting("perf.prefetch", "yes")).toMatch(/on or off/);
     expect(validateSetting("nope", 1)).toMatch(/Unknown/);
+    expect(validateSetting("free.xpDailyCap", 5001)).toMatch(/between 0 and 5000/);
+    expect(validateSetting("free.sparksPerClear", -1)).toMatch(/between 0 and 50/);
+  });
+  it("free-play economy defaults match the original design (+10 XP, +5 Sparks, 300 XP a day)", () => {
+    expect(DEFAULTS["free.xpPerClear"]).toBe(10);
+    expect(DEFAULTS["free.sparksPerClear"]).toBe(5);
+    expect(DEFAULTS["free.xpDailyCap"]).toBe(300);
   });
   it("merges stored rows over defaults and ignores bad rows", () => {
     const s = mergeSettings([

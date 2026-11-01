@@ -11,7 +11,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   - The header clock starts on the first answer, not on Start. This needs a board-to-shell "start" call.
   - A run resumed from autosave forgets earlier wrong answers.
 - **Dusk:**
-  - The 320 ms double-tap window is a constant and could become an admin setting.
   - Swipe up and down is not done; it would block page scroll when a finger starts on the board.
 - **Four Up:** at 320 px each column is about 39 px wide. The columns are full height, so the target area is
   still large.
@@ -34,10 +33,7 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 
 - Rage Ridge at 320 × 568: the 60% canvas pushes the on-screen controls below the fold.
 - Nine on a 375 × 667 phone with the 3 × 3 pad needs a little vertical scroll.
-- The shared `components/meta/Sheet` slides in even with reduced motion on (used by the Challenge sheet).
-- Board Bay pink surfaces in `components/multiplayer/bay/boards.tsx` still use raw hex colours.
-- `BackButton` in `components/meta/ui.tsx` still uses `history.length > 1`; `useBackOrHome` is safer for deep
-  links.
+- Party (`components/multiplayer/party.tsx`) still has raw hex colours (QR, podium, confetti, Open label).
 
 ## Accounts and email
 
@@ -45,8 +41,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   - Until then the built-in mailer allows 2 emails an hour and sends the magic link, which also signs in.
   - The hosted "Change email address" template also needs `{{ .Token }}` for the guest "Save your streak" code.
 - The work-email owner admin account still exists alongside wisdomska@gmail.com.
-- **Settings page:** "Send magic link" for a guest says "Check your email" even when the change applied
-  straight away.
 
 ## Leagues and metrics
 
@@ -69,10 +63,7 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 ## From 1.2.0
 
 - **Dailies off:**
-  - World ranks (ratings) only move on Daily clears, so they stay put while Dailies are off.
   - Ghost Race still uses the day's puzzle for Rage Ridge.
-  - Free play keeps its 300 XP-a-day cap; the admin may want new settings for free-play XP and Sparks now that
-    it's the only solo mode.
 - **Party games:** Draw It and Two Truths were not built. They need free text or drawings between players,
   which conflicts with the no-free-text rule for young players. They need a decision and moderation design first.
 - **Five and Emoji Hits:** the "show the answer" request is stateless. It can reveal an answer but can't change a
@@ -87,5 +78,4 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 - **Penalty King:** keeper dives ship in the puzzle data, so a modified client could read them; there is also no
   timing-spread bot check.
 - **Seasonal event quests** live outside the admin quest catalogue.
-- **Status card links** are signed with the service-role key unless `SHARE_CARD_SECRET` is set.
 - **Admin list filters** are kept in the page, not the URL; links keep the page number but not the filters.

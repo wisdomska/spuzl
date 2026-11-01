@@ -9,7 +9,8 @@ import { play } from "@/lib/audio";
 import { popClass, shakeClass, waveStyle } from "@/games/_shared/logiclab/fx";
 import { logicGames } from "@/lib/copy/logic-games";
 import { analyze, EMPTY, MOON, SUN, type DuskPuzzle, type DuskState } from "./logic";
-import { isSlip, SETTLE_MS, tapMark, type Tool } from "./input";
+import { isSlip, tapMark, type Tool } from "./input";
+import { useGameSettings } from "@/lib/game-settings/client";
 
 const t = logicGames.dusk;
 const GAP = 4;
@@ -51,6 +52,8 @@ export default function DuskBoard({ puzzle, initialState, hint, disabled, api }:
   const doneRef = useRef(false);
   /** the open tap burst: which cell, the board before it began, and its settle timer */
   const pending = useRef<{ i: number; before: DuskState; timer: number } | null>(null);
+  /** Taps on one cell closer together than this are one gesture (a double-tap). */
+  const settleMs = useGameSettings()["dusk.doubleTapMs"];
   const cell = useCellSize(n, GAP, PAD * 2, 56);
   const a = analyze(puzzle, settled);
   const given = (i: number) => puzzle.givens[i] !== EMPTY;
@@ -139,9 +142,9 @@ export default function DuskBoard({ puzzle, initialState, hint, disabled, api }:
       if (open) window.clearTimeout(open.timer);
       const before = open?.before ?? cellsRef.current;
       show(i, tapMark(cellsRef.current[i], tool));
-      pending.current = { i, before, timer: window.setTimeout(() => settleRef.current(), SETTLE_MS) };
+      pending.current = { i, before, timer: window.setTimeout(() => settleRef.current(), settleMs) };
     },
-    [blocked, settle, show, tool],
+    [blocked, settle, settleMs, show, tool],
   );
 
   /** Keyboard S / M / Delete: place a mark directly, judged at once. */

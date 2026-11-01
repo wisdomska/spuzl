@@ -17,7 +17,7 @@ import {
   levelFromXp,
   type Reward,
 } from "@/lib/rewards";
-import { update as glicko, clampOneTier, dailyResult, DEFAULT_RATING } from "@/lib/rating/glicko2";
+import { update as glicko, clampOneTier, dailyResult, weighted, DEFAULT_RATING, FREE_PLAY_WEIGHT } from "@/lib/rating/glicko2";
 import { decodeSolution, encodeSolution } from "./solution-codec";
 import { evaluateAfterClear, type Unlock } from "@/lib/gamification/progress";
 
@@ -477,10 +477,15 @@ export async function finishAttempt(
       .eq("free_seed", a.free_seed!)
       .eq("status", "cleared")
       .neq("id", id);
-    reward = freePlayReward(earned, (dup ?? 0) > 0);
+    const settings = await getGameSettings();
+    reward = freePlayReward(earned, (dup ?? 0) > 0, {
+      xpPerClear: settings["free.xpPerClear"],
+      sparksPerClear: settings["free.sparksPerClear"],
+      xpDailyCap: settings["free.xpDailyCap"],
+    });
     await admin.rpc("svc_grant_reward", { p_player: playerId, p_source: "free", p_ref: id, p_xp: reward.xp, p_sparks: reward.sparks });
     // Dailies off: a day with at least one free-play clear keeps the streak going (and lights it).
-    if (!(await getGameSettings())["features.dailies"]) {
+    if (!settings["features.dailies"]) {
       const { data: rec } = await admin.rpc("svc_record_play_day", { p_player: playerId, p_date: finishedAt.toISOString().slice(0, 10) });
       const r = Array.isArray(rec) ? rec[0] : rec;
       const milestone = r?.extended && STREAK_MILESTONES.includes(r.streak) ? r.streak : null;
@@ -493,6 +498,19 @@ export async function finishAttempt(
           p_xp: 0,
           p_sparks: STREAK_MILESTONE_SPARKS[milestone],
         });
+    }
+    // World ranks move on free play too, at a smaller weight than a Daily. A replayed seed never moves them.
+    if (!input.relaxed && !rankingRevoked && (dup ?? 0) === 0) {
+      const difficulty = (a.free_seed ?? "").split("|")[1] || "easy";
+      const { data: pct } = await admin.rpc("svc_free_percentile", {
+        p_game: a.game_id,
+        p_difficulty: difficulty,
+        p_time: timeMs,
+        p_attempt: id,
+      });
+      // Not returned as `percentile`: the results screen reads that as "faster than N% of Spuzlers today".
+      const field = pct === null || pct === undefined ? 50 : Number(pct);
+      rank = await updateRating(admin, playerId, meta.world, field, a.hints, input.mistakes, FREE_PLAY_WEIGHT);
     }
   } else if (a.mode === "archive" && a.daily_date) {
     reward = dailyClearReward({
@@ -552,10 +570,18 @@ export async function finishAttempt(
   };
 }
 
-async function updateRating(admin: SupabaseClient, playerId: string, track: string, percentile: number, hints: number, mistakes: number) {
+async function updateRating(
+  admin: SupabaseClient,
+  playerId: string,
+  track: string,
+  percentile: number,
+  hints: number,
+  mistakes: number,
+  weight = 1,
+) {
   const { data } = await admin.from("ratings").select("rating, rd, vol, games").eq("player_id", playerId).eq("track", track).maybeSingle();
   const cur = data ? { rating: Number(data.rating), rd: Number(data.rd), vol: Number(data.vol) } : DEFAULT_RATING;
-  const raw = glicko(cur, [dailyResult(percentile, hints, mistakes)]);
+  const raw = weighted(cur, glicko(cur, [dailyResult(percentile, hints, mistakes)]), weight);
   const next = { ...raw, rating: clampOneTier(cur.rating, raw.rating) };
   await admin.from("ratings").upsert({
     player_id: playerId,

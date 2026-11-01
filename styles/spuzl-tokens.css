@@ -37,6 +37,28 @@
   --w-rage-ink: #b81e1e;
   --w-board: #f27adb;
   --w-board-ink: #a3348f; /* Board Bay: chess, draughts, oware, ludo, four up, flip */
+  /* Ink on chess and draughts squares (SQUARE in games/_shared/BayStyles) and on Board Bay pink: these are the same in
+     both themes, so this is not redefined for light. 6.2:1 on the dark square, 13:1 on the light one. */
+  --square-ink: #0e0f1a;
+  /* Board Bay live boards (components/multiplayer/bay/boards.tsx and BayScreen.tsx): board materials, the same in both themes like
+     the squares, so these are not redefined for light. Pink is var(--w-board), its depth var(--w-board-ink). */
+  --bay-well: #2a1630; /* oware pits, empty Four Up slots, Flip and Ludo board */
+  --bay-wood: #3a2232; /* oware board, Flip squares, Ludo track */
+  --bay-safe: #5a3a52; /* Ludo safe squares */
+  --bay-depth: #6a3c5e; /* drop shadow under the chess and draughts boards */
+  --bay-pit-ink: #f7c4ee; /* seed counts in oware pits */
+  --bay-check: #ff5a5f; /* the checked king's square */
+  --bay-disc-light: #f4f5fb; /* Four Up stars and Flip light discs */
+  --bay-disc-light-rim: #a2a6c2;
+  --bay-disc-dark: #0e0f1a;
+  --bay-man-light-hi: #ffffff; /* draughts light man, top to bottom of the radial gradient */
+  --bay-man-light-mid: #dcddea;
+  --bay-man-light-lo: #bfc1d4;
+  --bay-man-light-depth: #7e8199;
+  --bay-man-dark-hi: #3a3550; /* draughts dark man */
+  --bay-man-dark-mid: #16131f;
+  --bay-man-dark-rim: #000000;
+  --bay-captured-mine: #5a5e78; /* chess: pieces you have taken, under your name (the opponent's row uses var(--text)) */
   /* Rage Ridge night scene (always dark; mirrors SCENE.bg / SCENE.dot in phaser/render/types.ts) */
   --rage-scene: #1a0e12;
   --rage-scene-dot: #3a1a22;

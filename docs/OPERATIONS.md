@@ -11,7 +11,7 @@ SPUZL runs on free tiers. This page covers the setup, what to watch, and when to
 | Supabase project | `spuzl-prod` (`xwpllzwnhrrhybezkbxz`, London `eu-west-2`) | `spuzl-preview` (`cbwkrkftkkdgagambmfn`, London)         |
 | Vercel functions | London (`lhr1`)                                           | London (`lhr1`)                                          |
 
-Environment variables live in Vercel (Project → Settings → Environment Variables), split by Production and Preview: Supabase URL and keys, `CRON_SECRET`, `INITIAL_OWNER_EMAIL`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_REALTIME_TRANSPORT`. Optional: `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY`. Each feature switches off cleanly when its key is missing.
+Environment variables live in Vercel (Project → Settings → Environment Variables), split by Production and Preview: Supabase URL and keys, `CRON_SECRET`, `INITIAL_OWNER_EMAIL`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_REALTIME_TRANSPORT`. Recommended: `SHARE_CARD_SECRET` (signs status share card links; see below). Optional: `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY`. Each feature switches off cleanly when its key is missing.
 
 ## Scheduled jobs
 
@@ -60,6 +60,13 @@ This build environment cannot change GitHub repository settings, so set these on
 ## Rotating credentials
 
 Rotate the GitHub token, Vercel token and Supabase access token used during the build. For the Supabase service-role key, roll it in Supabase (Project → Settings → API), then update `SUPABASE_SERVICE_ROLE_KEY` in Vercel for that environment and redeploy.
+
+**Status card links** (`/api/og/status/<playerId>.<sig>`, admin setting `features.statusCards`) are signed with an HMAC
+of the player id. Set `SHARE_CARD_SECRET` (any long random string, for example `openssl rand -base64 32`) per
+environment. Without it the links are signed with `SUPABASE_SERVICE_ROLE_KEY`, and production logs
+`[status-card] SHARE_CARD_SECRET is not set` once per server instance. Changing whichever secret signs the links
+(including rotating the service-role key while it is the fallback) makes every link already shared stop working;
+players get a new one from "Share my status".
 
 ## Admin bootstrap
 

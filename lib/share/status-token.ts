@@ -9,9 +9,22 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SIG_BYTES = 16;
 
-/** SHARE_CARD_SECRET, falling back to the service-role key (server-only, always set where cards render). */
-export function statusSecret(): string {
-  return process.env.SHARE_CARD_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+let warned = false;
+
+/**
+ * SHARE_CARD_SECRET, falling back to the service-role key (server-only, always set where cards render).
+ * The fallback ties every shared link to that key: rotating it breaks them all. Production logs a warning once
+ * per server instance when SHARE_CARD_SECRET is unset.
+ */
+export function statusSecret(env: Partial<Record<string, string>> = process.env): string {
+  if (!env.SHARE_CARD_SECRET && env.NODE_ENV === "production" && !warned) {
+    warned = true;
+    console.warn(
+      "[status-card] SHARE_CARD_SECRET is not set; status card links are signed with SUPABASE_SERVICE_ROLE_KEY, " +
+        "so rotating that key breaks every shared link. Set SHARE_CARD_SECRET (any long random string).",
+    );
+  }
+  return env.SHARE_CARD_SECRET || env.SUPABASE_SERVICE_ROLE_KEY || "";
 }
 
 function mac(playerId: string, secret: string): Buffer {
