@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { favouriteWorld, RANK_HEX, SAMPLE_STATUS, statusCard, worldCardColours, type StatusCardInput } from "./card-model";
 import { statusShareText, SHARE_DOMAIN } from "./text";
 import { signStatusToken, verifyStatusToken } from "./status-token";
@@ -109,5 +109,22 @@ describe("status card token", () => {
     expect(verifyStatusToken("not-a-token", "s3cret")).toBeNull();
     expect(verifyStatusToken(t, "")).toBeNull();
     expect(() => signStatusToken("nope", "s3cret")).toThrow();
+  });
+
+  it("prefers SHARE_CARD_SECRET and warns once in production when it falls back to the service-role key", async () => {
+    vi.resetModules();
+    const { statusSecret } = await import("./status-token");
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      expect(statusSecret({ SHARE_CARD_SECRET: "card", SUPABASE_SERVICE_ROLE_KEY: "srk", NODE_ENV: "production" })).toBe("card");
+      expect(statusSecret({ SUPABASE_SERVICE_ROLE_KEY: "srk", NODE_ENV: "development" })).toBe("srk");
+      expect(warn).not.toHaveBeenCalled();
+      expect(statusSecret({ SUPABASE_SERVICE_ROLE_KEY: "srk", NODE_ENV: "production" })).toBe("srk");
+      expect(statusSecret({ SUPABASE_SERVICE_ROLE_KEY: "srk", NODE_ENV: "production" })).toBe("srk");
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(String(warn.mock.calls[0][0])).toMatch(/SHARE_CARD_SECRET/);
+    } finally {
+      warn.mockRestore();
+    }
   });
 });

@@ -78,5 +78,4 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 - **Penalty King:** keeper dives ship in the puzzle data, so a modified client could read them; there is also no
   timing-spread bot check.
 - **Seasonal event quests** live outside the admin quest catalogue.
-- **Status card links** are signed with the service-role key unless `SHARE_CARD_SECRET` is set.
 - **Admin list filters** are kept in the page, not the URL; links keep the page number but not the filters.

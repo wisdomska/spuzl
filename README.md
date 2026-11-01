@@ -57,4 +57,5 @@ Work on `feat/*`, `fix/*` or `chore/*`, open a PR into `preview` (staging), veri
 
 ## Environment variables
 
-See `.env.example`.
+See `.env.example`. `SHARE_CARD_SECRET` signs status share card links; set it in every deployed environment
+(see `docs/OPERATIONS.md`).
