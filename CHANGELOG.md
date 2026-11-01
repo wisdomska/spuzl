@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### For players
+
+- **World ranks move in free play.** A free-play clear moves your world rank at half the weight a Daily did,
+  scored against recent clears of the same game and difficulty. Replaying the same board does not count.
+
 ## 1.2.0 (1 November 2026)
 
 Free play is the only game mode for now, the admin console pages its tables, and ten new games are ready behind a switch.

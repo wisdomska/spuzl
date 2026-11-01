@@ -17,7 +17,7 @@ import {
   levelFromXp,
   type Reward,
 } from "@/lib/rewards";
-import { update as glicko, clampOneTier, dailyResult, DEFAULT_RATING } from "@/lib/rating/glicko2";
+import { update as glicko, clampOneTier, dailyResult, weighted, DEFAULT_RATING, FREE_PLAY_WEIGHT } from "@/lib/rating/glicko2";
 import { decodeSolution, encodeSolution } from "./solution-codec";
 import { evaluateAfterClear, type Unlock } from "@/lib/gamification/progress";
 
@@ -494,6 +494,19 @@ export async function finishAttempt(
           p_sparks: STREAK_MILESTONE_SPARKS[milestone],
         });
     }
+    // World ranks move on free play too, at a smaller weight than a Daily. A replayed seed never moves them.
+    if (!input.relaxed && !rankingRevoked && (dup ?? 0) === 0) {
+      const difficulty = (a.free_seed ?? "").split("|")[1] || "easy";
+      const { data: pct } = await admin.rpc("svc_free_percentile", {
+        p_game: a.game_id,
+        p_difficulty: difficulty,
+        p_time: timeMs,
+        p_attempt: id,
+      });
+      // Not returned as `percentile`: the results screen reads that as "faster than N% of Spuzlers today".
+      const field = pct === null || pct === undefined ? 50 : Number(pct);
+      rank = await updateRating(admin, playerId, meta.world, field, a.hints, input.mistakes, FREE_PLAY_WEIGHT);
+    }
   } else if (a.mode === "archive" && a.daily_date) {
     reward = dailyClearReward({
       hintXpKeptPct: (await getGameSettings())["hints.dailyXpKeptPct"],
@@ -552,10 +565,18 @@ export async function finishAttempt(
   };
 }
 
-async function updateRating(admin: SupabaseClient, playerId: string, track: string, percentile: number, hints: number, mistakes: number) {
+async function updateRating(
+  admin: SupabaseClient,
+  playerId: string,
+  track: string,
+  percentile: number,
+  hints: number,
+  mistakes: number,
+  weight = 1,
+) {
   const { data } = await admin.from("ratings").select("rating, rd, vol, games").eq("player_id", playerId).eq("track", track).maybeSingle();
   const cur = data ? { rating: Number(data.rating), rd: Number(data.rd), vol: Number(data.vol) } : DEFAULT_RATING;
-  const raw = glicko(cur, [dailyResult(percentile, hints, mistakes)]);
+  const raw = weighted(cur, glicko(cur, [dailyResult(percentile, hints, mistakes)]), weight);
   const next = { ...raw, rating: clampOneTier(cur.rating, raw.rating) };
   await admin.from("ratings").upsert({
     player_id: playerId,

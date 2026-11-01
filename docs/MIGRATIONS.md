@@ -42,3 +42,14 @@ All migrations are additive and reversible (rollback SQL in each header). None t
 | `20261109600001_seasonal_events.sql`            | `events` and `event_progress` (forced RLS), plus the progress function                                                       | Drop the function and both tables (see header)                                               |
 
 The seed also rewords the badges and quests that mentioned Dailies, and adds the lab game rows. `scripts/gen-seed.ts` now writes them as well.
+
+## After 1.2.0
+
+Additive and reversible (rollback SQL in the header). No existing rows change.
+
+| Migration                             | What it adds                                                                                                                                                                    | Rollback                                       |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| `20261110100001_free_play_rating.sql` | `svc_free_percentile(game, difficulty, time, attempt)`: a free-play clear against the last 30 days of free-play clears of that game and difficulty, plus a partial index for it | Drop both functions and the index (see header) |
+
+pgTAP: `090_free_play_rating`. If the code ships first, the percentile call returns an error and the server scores
+each free-play clear as an average one (50th percentile), so ranks still move, only by hints and mistakes.

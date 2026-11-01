@@ -69,7 +69,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 ## From 1.2.0
 
 - **Dailies off:**
-  - World ranks (ratings) only move on Daily clears, so they stay put while Dailies are off.
   - Ghost Race still uses the day's puzzle for Rage Ridge.
   - Free play keeps its 300 XP-a-day cap; the admin may want new settings for free-play XP and Sparks now that
     it's the only solo mode.

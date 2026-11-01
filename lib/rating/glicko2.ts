@@ -80,6 +80,22 @@ export function dailyResult(percentile: number, hints: number, mistakes: number)
   return { opponent: { rating: 1500, rd: 120, vol: 0.06 }, score: adj / 100 };
 }
 
+/**
+ * Free play moves world ranks at half the weight of a Daily: boards are unique per player, so the field is
+ * recent free-play clears of the same game and difficulty rather than everyone on the same puzzle.
+ */
+export const FREE_PLAY_WEIGHT = 0.5;
+
+/** Moves a rating only part of the way from `before` to the full Glicko-2 result `after` (0 = no change, 1 = full). */
+export function weighted(before: Rating, after: Rating, weight: number): Rating {
+  const w = Math.max(0, Math.min(1, weight));
+  return {
+    rating: before.rating + w * (after.rating - before.rating),
+    rd: before.rd + w * (after.rd - before.rd),
+    vol: before.vol + w * (after.vol - before.vol),
+  };
+}
+
 /** Rank names (SRS 4.3), each with divisions III, II, I. */
 export const RANKS = [
   { name: "Rookie", min: -Infinity, emblem: "pebble" },
