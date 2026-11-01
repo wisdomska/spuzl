@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/Button";
 import type { GameMeta } from "@/lib/catalog";
 import type { BotGame, BotLevel } from "@/lib/bot";
 import { boardGames } from "@/lib/copy/board-games";
-import { HowToSheet } from "./HowToSheet";
+import { HowToSheet, type HowToTip } from "./HowToSheet";
 import type { BotExtra, BotPuzzle } from "./BotBoard";
 
 const t = boardGames.bot;
@@ -30,6 +30,15 @@ export function BotScreen({ meta, game, initialLevel }: { meta: GameMeta; game: 
   // The puzzle rule under the title would be wrong here: show how a full game is played instead.
   const botMeta = useMemo(() => ({ ...meta, rule: t.rules[game] }), [meta, game]);
   const puzzle = useMemo<BotPuzzle>(() => ({ game, level }), [game, level]);
+  // Help for a game vs the bot: no Dailies, hints or XP here. Ludo has dice, so no Undo.
+  const tips = useMemo<HowToTip[]>(
+    () => [
+      { icon: "robot", text: t.help.casual },
+      { icon: "arrows-clockwise", text: t.help.level },
+      ...(game === "ludo" ? [] : [{ icon: "arrow-counter-clockwise", text: t.help.undo }]),
+    ],
+    [game],
+  );
 
   const restart = useCallback(() => {
     setOutcome(null);
@@ -91,7 +100,7 @@ export function BotScreen({ meta, game, initialLevel }: { meta: GameMeta; game: 
           ) : undefined
         }
       />
-      <HowToSheet open={howTo} meta={botMeta} onClose={() => setHowTo(false)} />
+      <HowToSheet open={howTo} meta={botMeta} onClose={() => setHowTo(false)} tips={tips} />
     </>
   );
 }

@@ -47,6 +47,12 @@ export const boardGames = {
     back: "Back to Board Bay",
     score: (you: number, bot: number) => `You ${you}, bot ${bot}`,
     loading: "Setting up the board…",
+    /** Help sheet tips for a game vs the bot (in place of the solo puzzle tips: no hints or XP here) */
+    help: {
+      casual: "A casual game against the computer. No XP, nothing ranked.",
+      level: "Choose Easy, Medium or Hard before your first move. Restart to change it.",
+      undo: "Undo takes back your last move.",
+    },
     /** rule line under the title, in place of the puzzle rule */
     rules: {
       fourup: "Drop discs in turn. Four in a line, any direction, wins. You go first with the stars.",
