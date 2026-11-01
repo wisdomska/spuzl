@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Spuz } from "@/components/brand/Spuz";
 import { Button } from "@/components/ui/Button";
@@ -21,7 +21,7 @@ import { formatClock } from "@/lib/format";
 import { play, duck } from "@/lib/audio";
 import { PATTERNS, haptic } from "@/lib/haptics";
 
-type Step = "hello" | "signin" | "age" | "under13" | "start" | "tutorial" | "firstclear" | "nickname";
+type Step = "hello" | "signin" | "age" | "under13" | "start" | "tutorial" | "nickname";
 type Age = "13-15" | "16-17" | "18+";
 
 const AGES: { v: Age; t: string; d: string }[] = [
@@ -54,10 +54,11 @@ const IDEAS = [
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
 /** O2 How to start: nobody is forced into the tutorial. */
+const W = copy.welcome;
 const STARTS = [
-  { id: "tutorial", icon: "graduation-cap", t: "Show me how", d: "A 30-second Crownfall lesson. Earns your first XP, Sparks and streak." },
-  { id: "pick", icon: "squares-four", t: "Pick a game", d: "Make your Spuz, then choose any of the 51 games." },
-  { id: "jump", icon: "lightning", t: "Jump straight in", d: "Make your Spuz and go straight to the Grid." },
+  { id: "tutorial", icon: "graduation-cap", ...W.starts.tutorial },
+  { id: "pick", icon: "squares-four", ...W.starts.pick },
+  { id: "jump", icon: "map-trifold", ...W.starts.jump },
 ] as const;
 
 export default function Welcome() {
@@ -126,7 +127,7 @@ export default function Welcome() {
         clear.current = { state, ms: Math.round(performance.now() - (t0.current ?? performance.now())) };
         setClearMs(clear.current.ms);
         setTimeout(() => {
-          setStep("firstclear");
+          setStep("nickname");
           duck(1200);
           play("cheer");
           haptic(PATTERNS.clear);
@@ -170,7 +171,7 @@ export default function Welcome() {
     }
   };
 
-  const progress = { hello: 0, signin: 0, age: 1, under13: 1, start: 2, tutorial: 3, firstclear: 3, nickname: 4 }[step];
+  const progress = { hello: 0, signin: 0, age: 1, under13: 1, start: 2, tutorial: 3, nickname: 4 }[step];
 
   return (
     <main className="safe-top bg-bg relative mx-auto flex min-h-dvh max-w-[560px] flex-col overflow-hidden">
@@ -319,9 +320,7 @@ export default function Welcome() {
             <Progress n={progress} />
             <div className="flex items-end gap-3">
               <Spuz mood="wave" size={96} decorative />
-              <h1 className="font-display mb-2 text-[28px] leading-[1.1] font-black tracking-[-0.02em] text-balance">
-                How do you want to start?
-              </h1>
+              <h1 className="font-display mb-2 text-[28px] leading-[1.1] font-black tracking-[-0.02em] text-balance">{W.startTitle}</h1>
             </div>
             <div className="flex flex-col gap-2.5">
               {STARTS.map((o) => (
@@ -351,7 +350,7 @@ export default function Welcome() {
                 </button>
               ))}
             </div>
-            <p className="text-muted mt-auto text-center text-[14px]">You can learn any game later from its Help button.</p>
+            <p className="text-muted mt-auto text-center text-[14px]">{W.startLater}</p>
           </Screen>
         )}
 
@@ -399,20 +398,24 @@ export default function Welcome() {
           </Screen>
         )}
 
-        {step === "firstclear" && <FirstClear key="firstclear" ms={clearMs} onNext={() => setStep("nickname")} />}
-
         {step === "nickname" && (
           <Screen key="nickname">
             <Progress n={progress} />
-            <h1 className="font-display text-[28px] leading-[1.1] font-black tracking-[-0.02em]">Make Spuz yours</h1>
+            {clearMs > 0 && <ClearBanner ms={clearMs} />}
+            <h1 className="font-display text-[28px] leading-[1.1] font-black tracking-[-0.02em]">
+              {clearMs > 0 ? W.makeYoursAfterClear : W.makeYours}
+            </h1>
             {signedIn && (
               <p className="text-accent -mt-2 flex items-center gap-1.5 text-[14px] font-semibold">
                 <Icon name="check-circle" size={16} />
                 {copy.welcome.signedInNote}
               </p>
             )}
-            <div className="bg-surface flex size-[220px] items-center justify-center self-center rounded-full">
-              <Spuz mood="proud" size={190} color={color} decorative />
+            <div
+              className="bg-surface flex items-center justify-center self-center rounded-full"
+              style={{ width: clearMs > 0 ? 150 : 220, height: clearMs > 0 ? 150 : 220 }}
+            >
+              <Spuz mood={clearMs > 0 ? "cheer" : "proud"} size={clearMs > 0 ? 130 : 190} color={color} decorative />
             </div>
             <div role="radiogroup" aria-label="Spuz colour" className="flex justify-center gap-2.5">
               {SKINS.map((k) => (
@@ -482,7 +485,7 @@ export default function Welcome() {
               </p>
             </div>
             <Button size="lg" className="mt-auto w-full text-[17px]" disabled={!nick || !!problem} loading={saving} onClick={enter}>
-              {saving ? "Making your Spuz…" : "Enter The Grid"}
+              {saving ? W.saving : dest === "/library" ? W.ctaLibrary : W.ctaMap}
             </Button>
           </Screen>
         )}
@@ -520,68 +523,53 @@ function Progress({ n }: { n: number }) {
 }
 
 /** O3 First clear: ring burst, Spuz cheer, reward tiles. Tap anywhere skips the party. */
-function FirstClear({ ms, onNext }: { ms: number; onNext: () => void }) {
-  const [skip, setSkip] = useState(false);
-  const instant = skip;
+/** SPZ-15: the first-clear party, merged into "Make Spuz yours" so the lesson flows straight into naming. */
+function ClearBanner({ ms }: { ms: number }) {
+  const reduce = useReducedMotion();
+  const instant = !!reduce;
   return (
-    <motion.section
-      className="relative flex min-h-dvh flex-col items-center gap-3.5 overflow-hidden px-5 pt-20 pb-7"
-      style={{ background: "#1B1835", color: "#F4F5FB" }}
-      onPointerDown={() => setSkip(true)}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0, transition: { duration: 0.15 } }}
-      transition={{ duration: 0.3, ease: EASE_OUT }}
+    <motion.div
+      className="bg-surface-raised relative flex flex-col items-center gap-2 overflow-hidden rounded-[24px] px-4 pt-4 pb-3.5"
+      initial={instant ? false : { opacity: 0, transform: "scale(0.94)" }}
+      animate={{ opacity: 1, transform: "scale(1)" }}
+      transition={{ type: "spring", stiffness: 320, damping: 18 }}
+      role="status"
     >
       {!instant && (
         <motion.div
           aria-hidden
-          className="absolute top-[250px] left-1/2 -mt-[120px] -ml-[120px] size-[240px] rounded-full"
-          style={{ boxShadow: "0 0 0 6px #8B7CFF" }}
-          initial={{ opacity: 1, transform: "scale(0.4)" }}
-          animate={{ opacity: 0, transform: "scale(1.7)" }}
-          transition={{ duration: 1.2, ease: EASE_OUT }}
+          className="absolute top-1/2 left-1/2 -mt-[90px] -ml-[90px] size-[180px] rounded-full"
+          style={{ boxShadow: "0 0 0 6px var(--accent)" }}
+          initial={{ opacity: 0.9, transform: "scale(0.3)" }}
+          animate={{ opacity: 0, transform: "scale(1.8)" }}
+          transition={{ duration: 1.1, ease: EASE_OUT }}
         />
       )}
-      <h1 className="font-display self-stretch text-center text-[40px] leading-none font-black tracking-[-0.03em]">First clear!</h1>
-      <motion.div
-        className="relative mt-1.5"
-        initial={instant ? false : { transform: "translateY(-40px) scale(0.8)", opacity: 0 }}
-        animate={{ transform: "translateY(0px) scale(1)", opacity: 1 }}
-        transition={{ type: "spring", stiffness: 300, damping: 12 }}
-      >
-        <Spuz mood="cheer" size={200} decorative />
-      </motion.div>
-      <p className="max-w-[300px] text-center text-[18px] leading-[1.4] font-semibold">
-        {formatClock(ms)} on your first ever puzzle. Okay, big brain.
-      </p>
-      <div className="mt-1 flex gap-2.5">
-        <Tile v="+150" c="#B8F23A" l="XP" d={0.3} instant={instant} />
-        <Tile v="+50" c="#FFC93C" l="Sparks" d={0.45} instant={instant} />
-        <Tile v="1" c="#FFC93C" l="Streak" icon="fire" d={0.6} instant={instant} />
+      <p className="font-display text-[28px] leading-none font-black tracking-[-0.03em]">{W.firstClear}</p>
+      <p className="text-center text-[15px] font-semibold">{W.firstClearLine(formatClock(ms))}</p>
+      <div className="flex gap-2">
+        <Tile v="+150" c="var(--accent)" l="XP" d={0.25} instant={instant} />
+        <Tile v="+50" c="var(--gold)" l="Sparks" d={0.4} instant={instant} />
+        <Tile v="1" c="var(--gold)" l="Streak" icon="fire" d={0.55} instant={instant} />
       </div>
-      <Button size="lg" className="mt-auto w-full text-[17px]" onClick={onNext}>
-        Make it official
-      </Button>
-      <p className="text-[14px] font-medium text-[#C9C4FF]">Tap anywhere to skip the party</p>
-    </motion.section>
+    </motion.div>
   );
 }
 
 function Tile({ v, c, l, icon, d, instant }: { v: string; c: string; l: string; icon?: string; d: number; instant: boolean }) {
   return (
     <motion.div
-      className="flex flex-col items-center rounded-[16px] bg-[#0E0F1A] px-4 py-3"
+      className="bg-surface flex flex-col items-center rounded-[16px] px-3.5 py-2"
       initial={instant ? false : { opacity: 0, transform: "translateY(12px)" }}
       animate={{ opacity: 1, transform: "translateY(0px)" }}
       transition={{ delay: instant ? 0 : d, duration: 0.4, ease: EASE_OUT }}
       onAnimationComplete={() => !instant && l === "XP" && play("coins")}
     >
-      <span className="num flex items-center gap-1 text-[24px] font-semibold" style={{ color: c }}>
+      <span className="num flex items-center gap-1 text-[20px] font-semibold" style={{ color: c }}>
         {icon && <Icon name={icon} size={22} />}
         {v}
       </span>
-      <span className="text-[13px] font-medium text-[#A2A6C2]">{l}</span>
+      <span className="text-muted text-[13px] font-medium">{l}</span>
     </motion.div>
   );
 }

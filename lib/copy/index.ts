@@ -74,6 +74,20 @@ export const en = {
     signInLater: "You can sign in later from Settings. Your progress comes with you.",
     signInTitle: "Sign in",
     signedInNote: "Signed in. Your Spuz is saved to your account.",
+    startTitle: "How do you want to start?",
+    starts: {
+      tutorial: { t: "Learn a game in 30 seconds", d: "A tiny puzzle with tips as you go." },
+      pick: { t: "Browse all 51 games", d: "See every game and pick one." },
+      jump: { t: "Go to the map", d: "Islands of games, a new Daily on each." },
+    },
+    startLater: "You can learn any game later from its Help button.",
+    firstClear: "First clear!",
+    firstClearLine: (time: string) => `${time} on your first ever puzzle. Okay, big brain.`,
+    makeYours: "Make Spuz yours",
+    makeYoursAfterClear: "Now make Spuz yours",
+    ctaMap: "Save my Spuz and open the map",
+    ctaLibrary: "Save my Spuz and see all games",
+    saving: "Making your Spuz…",
   },
 } as const;
 

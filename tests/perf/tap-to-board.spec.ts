@@ -63,7 +63,7 @@ for (const profile of ["desktop", "4g-phone"] as const) {
         await measure(
           `${profile}:enter-grid`,
           page,
-          () => page.getByRole("button", { name: /Enter The Grid|Create my Spuz/ }).click(),
+          () => page.getByRole("button", { name: /Enter The Grid|Create my Spuz|Save my Spuz/ }).click(),
           () => page.locator('a[href^="/play/"]').first().waitFor({ state: "visible", timeout: 60_000 }),
         );
         await ctx.close();

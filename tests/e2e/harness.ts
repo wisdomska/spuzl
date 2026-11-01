@@ -27,7 +27,7 @@ export async function onboardGuest(page: Page, age: Age = "18+", nickname = `Qa$
   await page.getByRole("button", { name: "Continue" }).click();
   await page.getByRole("button", { name: /Jump straight in|Go to the map/ }).click();
   await page.locator("#nick").fill(nickname);
-  await page.getByRole("button", { name: /Enter The Grid|Create my Spuz/ }).click();
+  await page.getByRole("button", { name: /Enter The Grid|Create my Spuz|Save my Spuz/ }).click();
   await page.waitForURL((u) => u.pathname === "/", { timeout: 30_000 });
   return nickname;
 }

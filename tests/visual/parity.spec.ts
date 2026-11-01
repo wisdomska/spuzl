@@ -49,9 +49,10 @@ test.beforeAll(async ({ browser }) => {
   });
   // First run: age gate, the start choice (tutorial), the 4 × 4 tutorial board, nickname.
   await page.goto("/welcome");
+  await page.getByRole("button", { name: "Play as guest" }).click();
   await page.getByRole("radio", { name: /18 or older/ }).click();
   await page.getByRole("button", { name: "Continue" }).click();
-  await page.getByRole("button", { name: /Show me how/ }).click();
+  await page.getByRole("button", { name: /Learn a game in 30 seconds/ }).click();
   for (const [r, c] of [
     [0, 1],
     [1, 3],
@@ -62,9 +63,9 @@ test.beforeAll(async ({ browser }) => {
     await cell.click();
     await cell.click();
   }
-  await page.getByRole("button", { name: "Make it official" }).click();
+  await expect(page.getByText("First clear!")).toBeVisible();
   await page.locator("#nick").fill(`Vis${Date.now() % 100000}`);
-  await page.getByRole("button", { name: "Enter The Grid" }).click();
+  await page.getByRole("button", { name: "Save my Spuz and open the map" }).click();
   await page.waitForURL((u) => u.pathname === "/", { timeout: 20_000 });
 });
 
