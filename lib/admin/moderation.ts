@@ -8,7 +8,15 @@ import { fetchPage } from "./paging";
 /** Short display id, e.g. R-3F2A for reports, F-91BC for flagged scores. */
 export const shortRef = (prefix: string, id: string) => `${prefix}-${id.replace(/-/g, "").slice(0, 4).toUpperCase()}`;
 
-const KIND: Record<string, string> = { player: "Player", nickname: "Nickname", crew: "Crew", score: "Anti-cheat", content: "Content" };
+const KIND: Record<string, string> = {
+  player: "Player",
+  nickname: "Nickname",
+  crew: "Crew",
+  score: "Anti-cheat",
+  content: "Content",
+  party: "Party content",
+};
+const PARTY_KIND: Record<string, string> = { drawing: "drawing", statements: "statements", guess: "guess" };
 const REASON: Record<string, string> = {
   nickname: "Nickname",
   cheating: "Cheating",
@@ -45,7 +53,7 @@ export async function playerSummaries(db: SupabaseClient, ids: string[]): Promis
   if (!uniq.length) return {};
   const [{ data: players }, { data: reports }, { data: flags }] = await Promise.all([
     db.from("players").select("id, nickname, created_at, banned_at, banned_until, ban_reason, ranking_revoked, is_test").in("id", uniq),
-    db.from("reports").select("target_id").in("target_type", ["player", "nickname"]).in("target_id", uniq),
+    db.from("reports").select("target_id").in("target_type", ["player", "nickname", "party"]).in("target_id", uniq),
     db.from("attempts").select("player_id").in("player_id", uniq).in("status", ["flagged"]),
   ]);
   const count = (rows: { [k: string]: string }[] | null, key: string, id: string) => (rows ?? []).filter((r) => r[key] === id).length;
@@ -64,27 +72,37 @@ export async function playerSummaries(db: SupabaseClient, ids: string[]): Promis
 
 const UUID = /^[0-9a-f-]{36}$/i;
 
-/** One page of reports (or nickname reports), newest first; id breaks ties so pages never overlap. */
+export type ReportTab = "reports" | "nicknames" | "party";
+
+const REPORT_COLS = "id, reporter_id, target_type, target_id, reason, status, created_at";
+/** Only the party tab reads the snapshot column (20261112000001), so the other tabs work without that migration. */
+const reportCols = (tab: ReportTab) => (tab === "party" ? `${REPORT_COLS}, kind:snapshot->>kind` : REPORT_COLS) as typeof REPORT_COLS;
+
+/** One page of reports (nickname reports, or 18+ party content reports), newest first; id breaks ties so pages never overlap. */
 export async function reportRows(
   db: SupabaseClient,
-  tab: "reports" | "nicknames",
+  tab: ReportTab,
   status: string,
   page: PageParams,
 ): Promise<{ rows: ModRow[]; total: number }> {
   const { rows, total } = await fetchPage(() => {
     let q = db
       .from("reports")
-      .select("id, reporter_id, target_type, target_id, reason, status, created_at", { count: "exact" })
+      .select(reportCols(tab), { count: "exact" })
       .order("created_at", { ascending: false })
       .order("id", { ascending: false });
     q =
-      tab === "nicknames" ? q.or("target_type.eq.nickname,reason.eq.nickname") : q.neq("target_type", "nickname").neq("reason", "nickname");
+      tab === "nicknames"
+        ? q.or("target_type.eq.nickname,reason.eq.nickname")
+        : tab === "party"
+          ? q.eq("target_type", "party")
+          : q.neq("target_type", "nickname").neq("target_type", "party").neq("reason", "nickname");
     if (status !== "all") q = q.eq("status", status);
     return q;
   }, page);
   const players = await playerSummaries(
     db,
-    rows.filter((r) => ["player", "nickname"].includes(r.target_type) && UUID.test(r.target_id)).map((r) => r.target_id),
+    rows.filter((r) => ["player", "nickname", "party"].includes(r.target_type) && UUID.test(r.target_id)).map((r) => r.target_id),
   );
   const out = rows.map((r) => {
     const p = players[r.target_id];
@@ -94,7 +112,9 @@ export async function reportRows(
         ? `Nickname "${who}" reported`
         : r.target_type === "player"
           ? `${who} · ${REASON[r.reason] ?? r.reason}`
-          : `${KIND[r.target_type] ?? r.target_type} ${r.target_id.slice(0, 12)} · ${REASON[r.reason] ?? r.reason}`;
+          : r.target_type === "party"
+            ? `${who} · ${PARTY_KIND[String((r as { kind?: string }).kind)] ?? "party content"} · ${REASON[r.reason] ?? r.reason}`
+            : `${KIND[r.target_type] ?? r.target_type} ${r.target_id.slice(0, 12)} · ${REASON[r.reason] ?? r.reason}`;
     return {
       id: r.id,
       ref: shortRef("R", r.id),
