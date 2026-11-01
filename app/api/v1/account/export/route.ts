@@ -29,6 +29,14 @@ const OWNED: [string, string][] = [
   ["school_cup_members", "player_id"],
 ];
 
+/**
+ * Server-only puzzle columns left out of the export: a free-play seed rebuilds that board's solution, so it
+ * never reaches the player (an open attempt could otherwise be solved from it). It says nothing about them.
+ */
+const HIDDEN: Record<string, string[]> = { attempts: ["free_seed"], challenges: ["free_seed"] };
+const withoutHidden = (t: string, rows: unknown[]) =>
+  HIDDEN[t] ? rows.map((r) => Object.fromEntries(Object.entries(r as object).filter(([k]) => !HIDDEN[t].includes(k)))) : rows;
+
 /** GET /api/v1/account/export: a JSON download of everything stored about the player (FR-AC-05). */
 export const GET = handle(async () => {
   const { user, admin } = await requireUser();
@@ -38,7 +46,7 @@ export const GET = handle(async () => {
   await Promise.all(
     OWNED.map(async ([t, col]) => {
       const { data, error } = await admin.from(t).select("*").eq(col, user.id).limit(50_000);
-      tables[t] = error ? [] : (data ?? []);
+      tables[t] = error ? [] : withoutHidden(t, data ?? []);
     }),
   );
   const { data: friends } = await admin.from("friendships").select("*").or(`player_id.eq.${user.id},friend_id.eq.${user.id}`);

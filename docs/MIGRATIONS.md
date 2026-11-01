@@ -56,3 +56,12 @@ production, before the code deploys.
 
 pgTAP: `090_free_play_rating`, `095_admin_metrics_funnel`. If the code ships first, the free-play percentile call
 fails soft (each clear counts as an average one), and lab games stay behind their switch.
+
+## After 1.3.0
+
+| Migration                              | What it adds                                                                                                                     | Rollback                                                  |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| `20261110300001_free_seed_private.sql` | Players keep select on every column of their own attempts except `free_seed` (it rebuilds a free-play solution). No rows change. | `grant select on public.attempts to anon, authenticated;` |
+
+pgTAP: `096_free_seed_private`. No app code reads `attempts` with a player's token, so the order with the code
+deploy doesn't matter.

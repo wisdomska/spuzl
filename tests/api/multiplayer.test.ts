@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { admin, guest, uniq } from "./helpers";
+import { setSetting } from "./setup";
 import { createRng } from "@/lib/rng";
 import crownfall from "@/games/crownfall/logic";
 import type { Difficulty } from "@/games/types";
@@ -310,5 +311,47 @@ describe("api: async challenge", () => {
     await b.api(`/api/v1/attempts/${acc.data.attemptId}/finish`, { json: { state, activeMs: 6200, mistakes: 0 } });
     const res = await b.api(`/api/v1/challenges/${ch.data.code}/result`, { json: { attemptId: acc.data.attemptId } });
     expect(res.data.result).toMatchObject({ timeMs: 6200, won: true });
+  });
+});
+
+describe("api: ghost race track", () => {
+  const today = () => new Date().toISOString().slice(0, 10);
+  const puzzleOf = async (attemptId: string) => {
+    const { data } = await admin().from("attempts").select("puzzle_id, mode").eq("id", attemptId).single();
+    return data!;
+  };
+
+  it("races today's Daily track while Dailies are on", async () => {
+    const g = await guest(uniq("gh_"));
+    const r = await g.api("/api/v1/ghosts/dash", { json: {} });
+    expect(r.status, JSON.stringify(r.data)).toBe(200);
+    expect(JSON.stringify(r.data)).not.toContain("solution");
+    const a = await puzzleOf(r.data.attemptId);
+    expect(a.mode).toBe("challenge");
+    const { data: daily } = await admin().from("dailies").select("puzzle_id").eq("game_id", "dash").eq("date", today()).single();
+    expect(a.puzzle_id).toBe(daily!.puzzle_id);
+  });
+
+  it("with Dailies off: races a track of the day that is not a Daily, the same for everyone", async () => {
+    await setSetting("features.dailies", false);
+    try {
+      const g = await guest(uniq("gh_"));
+      const h = await guest(uniq("gh_"));
+      const r1 = await g.api("/api/v1/ghosts/flipside", { json: {} });
+      const r2 = await h.api("/api/v1/ghosts/flipside", { json: {} });
+      expect([r1.status, r2.status]).toEqual([200, 200]);
+      const a1 = await puzzleOf(r1.data.attemptId);
+      const a2 = await puzzleOf(r2.data.attemptId);
+      expect(a1.puzzle_id).toBeTruthy();
+      expect(a2.puzzle_id).toBe(a1.puzzle_id);
+      expect(r2.data.puzzle).toEqual(r1.data.puzzle);
+      const { data: pz } = await admin().from("puzzles").select("seed").eq("id", a1.puzzle_id!).single();
+      expect(pz!.seed).toBe(`ghost:flipside:${today()}`);
+      // Racing never publishes a Daily.
+      const { data: daily } = await admin().from("dailies").select("date").eq("puzzle_id", a1.puzzle_id!);
+      expect(daily).toEqual([]);
+    } finally {
+      await setSetting("features.dailies", true);
+    }
   });
 });

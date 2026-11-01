@@ -80,16 +80,77 @@ describe("api: daily clear flow", () => {
     const g = await guest(uniq("free_"));
     const s = await g.api("/api/v1/attempts", { json: { game: "crownfall", mode: "free", difficulty: "easy" } });
     expect(s.status).toBe(200);
-    expect(s.data.seed).toMatch(/^free:crownfall:/);
+    // The seed stays on the server; read it with the service role (as the finish check does).
+    const { data: att } = await admin().from("attempts").select("free_seed").eq("id", s.data.attemptId).single();
+    const [seed] = att!.free_seed!.split("|");
+    expect(seed).toMatch(/^free:crownfall:/);
     const { generate } = await import("@/games/crownfall/logic");
     const { createRng } = await import("@/lib/rng");
-    const gen = generate(createRng(s.data.seed), "easy");
+    const gen = generate(createRng(seed), "easy");
     const n = gen.puzzle.size;
     const state = new Array(n * n).fill(0);
     gen.solution.forEach((c, r) => (state[r * n + c] = 2));
     await new Promise((r) => setTimeout(r, 6500));
     const fin = await g.api(`/api/v1/attempts/${s.data.attemptId}/finish`, { json: { state, activeMs: 6100, mistakes: 0 } });
     expect(fin.data.reward).toMatchObject({ xp: 10, sparks: 5 });
+  });
+
+  it("free play's seed stays on the server: not sent, not chosen by the client, not readable by the player", async () => {
+    const g = await guest(uniq("seed_"));
+    const s = await g.api("/api/v1/attempts", { json: { game: "crownfall", mode: "free", difficulty: "easy", seed: "mine" } });
+    expect(s.status).toBe(200);
+    expect(s.data).not.toHaveProperty("seed");
+    const { data: att } = await admin().from("attempts").select("free_seed").eq("id", s.data.attemptId).single();
+    const [seed] = att!.free_seed!.split("|");
+    expect(seed).toMatch(/^free:crownfall:/); // the client's seed was ignored
+    expect(JSON.stringify(s.data)).not.toContain(seed);
+    // The old "challenge with a seed" start is gone (challenges start from their code).
+    const ch = await g.api("/api/v1/attempts", { json: { game: "crownfall", mode: "challenge", seed: "free:crownfall:x" } });
+    expect(ch.status).toBe(400);
+
+    // Through the Data API with the player's own token: the attempt is visible, its seed is not.
+    const own = await g.sb.from("attempts").select("id, status").eq("id", s.data.attemptId);
+    expect(own.error).toBeNull();
+    expect(own.data).toHaveLength(1);
+    const hidden = await g.sb.from("attempts").select("free_seed").eq("id", s.data.attemptId);
+    expect(hidden.error?.code).toBe("42501");
+    // Nor in the account export.
+    const exp = await g.api("/api/v1/account/export");
+    expect(exp.status).toBe(200);
+    expect(exp.data.attempts.length).toBeGreaterThan(0);
+    for (const row of exp.data.attempts) expect(row).not.toHaveProperty("free_seed");
+    expect(JSON.stringify(exp.data)).not.toContain(seed);
+  });
+
+  it("finish verifies free play against the stored seed, and a replayed seed doesn't move ranks", async () => {
+    const g = await guest(uniq("replay_"));
+    const s = await g.api("/api/v1/attempts", { json: { game: "crownfall", mode: "free", difficulty: "easy" } });
+    const { data: att } = await admin().from("attempts").select("free_seed").eq("id", s.data.attemptId).single();
+    const { generate } = await import("@/games/crownfall/logic");
+    const { createRng } = await import("@/lib/rng");
+    const gen = generate(createRng(att!.free_seed!.split("|")[0]), "easy");
+    const n = gen.puzzle.size;
+    const state = new Array(n * n).fill(0);
+    gen.solution.forEach((c, r) => (state[r * n + c] = 2));
+    const ago = new Date(Date.now() - 20_000).toISOString(); // wall time above the client time, without waiting
+    await admin().from("attempts").update({ started_at: ago }).eq("id", s.data.attemptId);
+    // A wrong board doesn't clear: the server rebuilt the solution itself.
+    const other = await g.api("/api/v1/attempts", { json: { game: "crownfall", mode: "free", difficulty: "easy" } });
+    await admin().from("attempts").update({ started_at: ago }).eq("id", other.data.attemptId);
+    const wrong = await g.api(`/api/v1/attempts/${other.data.attemptId}/finish`, { json: { state, activeMs: 9000, mistakes: 0 } });
+    expect(wrong.data.ok).toBe(false);
+
+    const first = await g.api(`/api/v1/attempts/${s.data.attemptId}/finish`, { json: { state, activeMs: 9000, mistakes: 0 } });
+    expect(first.data).toMatchObject({ ok: true, status: "cleared" });
+    expect(first.data.rank).not.toBeNull();
+    // The same board again (only the server can make one: clients never choose a seed) clears without a rank move.
+    const { data: again } = await admin()
+      .from("attempts")
+      .insert({ player_id: g.userId, game_id: "crownfall", mode: "free", free_seed: att!.free_seed, started_at: ago })
+      .select("id")
+      .single();
+    const second = await g.api(`/api/v1/attempts/${again!.id}/finish`, { json: { state, activeMs: 9000, mistakes: 0 } });
+    expect(second.data).toMatchObject({ ok: true, status: "cleared", rank: null });
   });
 
   it("spends Shop hint packs only after the 3 free hints, and only in free play", async () => {
