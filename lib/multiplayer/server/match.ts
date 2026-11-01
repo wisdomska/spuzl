@@ -13,6 +13,7 @@ import { finalizeDuel, finalizeRace } from "./rewards";
 import { knownGames } from "./known";
 import { adultRoundView, isAdultRoom, modeOf, resolveAdult } from "./adult";
 import type { PartyMode } from "@/lib/party-adult/modes";
+import { bindPuzzle } from "@/lib/game/guess-token";
 
 export const matchTopic = (id: string) => `match:${id}`;
 
@@ -194,7 +195,8 @@ export async function viewOf(admin: SupabaseClient, l: Loaded, me: string, rewar
   }
   if (!adult && m.status === "playing" && start !== null && game && now >= start - TIMING.countdownMs) {
     const r = await roundPuzzle(m.id, m.set_no, m.round, game, m.difficulty);
-    puzzle = { round: m.round, game, data: r.puzzle };
+    // A content game's reference goes out as a token good only for this round, for this player.
+    puzzle = { round: m.round, game, data: bindPuzzle(r.puzzle, me, { k: "m", m: m.id, s: m.set_no, r: m.round }) };
   }
   const minor = (p: PlayerRow) => p.players?.age_band === "13-15";
   const players: MatchPlayerView[] = l.players.map((p) => ({
@@ -283,6 +285,29 @@ function requirePlaying(l: Loaded, p: PlayerRow, round: number) {
 }
 
 /* ---------------- Progress (server validated) ---------------- */
+
+/**
+ * The round puzzle behind a race token (lib/game/guess-token.ts), for the guess route: only while that round is
+ * the match's current round and its puzzle is showing, and only for a racer in it (not a spectator, not gone).
+ */
+export async function raceRoundPuzzle(
+  admin: SupabaseClient,
+  playerId: string,
+  matchId: string,
+  setNo: number,
+  round: number,
+  game: string,
+) {
+  const l = await loadMatch(admin, matchId);
+  const { m, now } = l;
+  const p = member(l, playerId);
+  if (p.spectator || p.left_at) throw new ApiError(403, "not_racing");
+  const start = ms(m.round_started_at);
+  const showing = m.status === "playing" && start !== null && now >= start - TIMING.countdownMs;
+  if (!showing || isAdultRoom(m) || m.set_no !== setNo || m.round !== round || m.games[round - 1] !== game)
+    throw new ApiError(409, "round_over");
+  return roundPuzzle(m.id, m.set_no, m.round, game, m.difficulty);
+}
 
 export async function submitProgress(
   admin: SupabaseClient,

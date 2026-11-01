@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { ApiError, todayGmt } from "@/lib/api/server";
 import { loadDaily, loadFree, solutionHash } from "@/lib/game/service";
 import { decodeSolution, encodeSolution } from "@/lib/game/solution-codec";
+import { bindPuzzle } from "@/lib/game/guess-token";
 import { getGameSettings } from "@/lib/game-settings/server";
 import { loadLogic } from "@/games/logic-registry";
 import { GAME_BY_ID } from "@/lib/catalog";
@@ -183,7 +184,7 @@ export async function acceptChallenge(admin: SupabaseClient, me: string, code: s
   if (error) throw error;
   return {
     attemptId: data.id as string,
-    puzzle,
+    puzzle: bindPuzzle(puzzle, me, { k: "a", a: data.id as string }),
     startedAt: data.started_at as string,
     game: c.game_id,
     senderMs: c.sender_ms,
@@ -329,7 +330,12 @@ export async function startGhostRace(admin: SupabaseClient, me: string, game: st
     .select("id, started_at")
     .single();
   if (error) throw error;
-  return { attemptId: att.id as string, puzzle, ghost, startedAt: att.started_at as string };
+  return {
+    attemptId: att.id as string,
+    puzzle: bindPuzzle(puzzle, me, { k: "a", a: att.id as string }),
+    ghost,
+    startedAt: att.started_at as string,
+  };
 }
 
 export async function saveGhostRun(admin: SupabaseClient, me: string, attemptId: string) {

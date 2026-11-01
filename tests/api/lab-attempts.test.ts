@@ -13,6 +13,8 @@ import penalty, { replayKick, type KickInput, type PenaltyPuzzle } from "@/games
  * Five and Emoji Hits reveals answer only on the player's own open attempt and a shown answer can't then clear;
  * Penalty King answers each shot with the keeper's dive only once the shot is kept on the attempt, and finish
  * audits the final kicks against those shots. Medium boards, so an attempt is never the public practice board.
+ * Each puzzle's `ref` is the opaque token bound to its attempt (lib/game/guess-token.ts), so a guess with it
+ * always lands on that attempt; a bare content reference is refused (tests/api/guess-tokens.test.ts).
  * Run: API_BASE=http://localhost:<port> pnpm vitest run -c vitest.api.config.mts tests/api/lab-attempts.test.ts
  */
 type G = Awaited<ReturnType<typeof guest>>;
@@ -29,7 +31,8 @@ afterAll(async () => {
   else await setSetting("features.newGames", before);
 });
 
-/** A free-play attempt, plus its solution rebuilt from the server-only seed (read with the service role). */
+/** A free-play attempt, plus its solution rebuilt from the server-only seed (read with the service role). The puzzle
+ * carries the served token as its `ref`; `raw` is the content reference behind it. */
 async function start<P, S>(
   g: G,
   game: string,
@@ -41,8 +44,12 @@ async function start<P, S>(
   const { data: att } = await admin().from("attempts").select("free_seed").eq("id", s.data.attemptId).single();
   const [seed, d] = att!.free_seed!.split("|");
   const gen = logic.generate(createRng(seed), d as Difficulty);
-  expect(s.data.puzzle).toEqual(gen.puzzle);
-  return { id: s.data.attemptId as string, puzzle: gen.puzzle, solution: gen.solution };
+  const { ref: token, ...served } = s.data.puzzle;
+  const { ref: raw, ...built } = gen.puzzle as P & { ref: unknown };
+  expect(served).toEqual(built);
+  expect(token).toEqual({ game, t: expect.any(String) });
+  const puzzle = { ...gen.puzzle, ref: token } as P;
+  return { id: s.data.attemptId as string, puzzle, raw, solution: gen.solution };
 }
 
 const guess = (g: G, game: string, ref: unknown, body: unknown, attemptId?: string) =>
@@ -71,11 +78,12 @@ describe("api: Five reveals", () => {
       .slice(0, 6);
     const reveal = { reveal: misses };
 
-    // Bare reference (no attempt): refused. Before the misses are checked on the attempt: refused too.
+    // A bare content reference: refused. Before the misses are checked on the attempt: refused too.
+    expect((await guess(g, "five", a.raw, reveal)).status).toBe(400);
     expect((await guess(g, "five", a.puzzle.ref, reveal)).data).toEqual({ ok: false, refused: true });
     expect((await guess(g, "five", a.puzzle.ref, reveal, a.id)).data).toEqual({ ok: false, refused: true });
-    // Someone else's attempt is not found.
-    expect((await guess(other, "five", a.puzzle.ref, reveal, a.id)).status).toBe(404);
+    // Someone else's token is refused.
+    expect((await guess(other, "five", a.puzzle.ref, reveal)).status).toBe(403);
 
     for (const w of misses) {
       const r = await guess(g, "five", a.puzzle.ref, w, a.id);
@@ -118,8 +126,8 @@ describe("api: Emoji Hits reveals", () => {
     const a = await start(g, "emojihits", emojihits);
     const title = a.solution.answers[0][0];
 
-    expect((await guess(g, "emojihits", a.puzzle.ref, { round: 0, reveal: true })).data).toEqual({ ok: false, invalid: true });
-    expect((await guess(other, "emojihits", a.puzzle.ref, { round: 0, reveal: true }, a.id)).status).toBe(404);
+    expect((await guess(g, "emojihits", a.raw, { round: 0, reveal: true })).status).toBe(400);
+    expect((await guess(other, "emojihits", a.puzzle.ref, { round: 0, reveal: true })).status).toBe(403);
 
     const shown = await guess(g, "emojihits", a.puzzle.ref, { round: 0, reveal: true }, a.id);
     expect(shown.data).toEqual({ reveal: title });
@@ -155,9 +163,9 @@ describe("api: Penalty King shots", () => {
     expect(JSON.stringify(s.data)).not.toContain("dives");
     const a = await start(g, "penalty", penalty);
 
-    // A bare reference gets no dive; nor does someone else's attempt; a kick that timed out has no keeper.
-    expect((await shoot(g, a.puzzle, undefined, 0, kick(0))).data).toEqual({ ok: false, refused: true });
-    expect((await shoot(other, a.puzzle, a.id, 0, kick(0))).status).toBe(404);
+    // A bare content reference gets no dive; nor does someone else; a kick that timed out has no keeper.
+    expect((await guess(g, "penalty", a.raw, { kick: 0, input: kick(0) })).status).toBe(400);
+    expect((await shoot(other, a.puzzle, undefined, 0, kick(0))).status).toBe(403);
     expect((await shoot(g, a.puzzle, a.id, 0, { aimAt: 400, powerAt: null })).data).toEqual({ ok: false, invalid: true });
     expect(await movesOf(a.id)).toEqual([]);
 

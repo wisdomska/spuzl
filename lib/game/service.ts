@@ -21,6 +21,7 @@ import { update as glicko, clampOneTier, dailyResult, weighted, DEFAULT_RATING, 
 import { decodeSolution, encodeSolution } from "./solution-codec";
 import { evaluateAfterClear, type Unlock } from "@/lib/gamification/progress";
 import { finalVerdict } from "./guess-check";
+import { bindPuzzle } from "./guess-token";
 
 export type Mode = "tutorial" | "daily" | "free" | "archive" | "challenge";
 
@@ -132,7 +133,7 @@ export async function startAttempt(admin: SupabaseClient, playerId: string, ref:
           throw new ApiError(409, "daily_done", "Today's Daily is already cleared. Free play is open.");
         return {
           attemptId: existing.id,
-          puzzle: loaded.puzzle,
+          puzzle: bindPuzzle(loaded.puzzle, playerId, { k: "a", a: existing.id }),
           state: existing.state,
           startedAt: existing.started_at,
           resumed: true,
@@ -164,7 +165,7 @@ export async function startAttempt(admin: SupabaseClient, playerId: string, ref:
   }
   return {
     attemptId: data.id,
-    puzzle: loaded.puzzle,
+    puzzle: bindPuzzle(loaded.puzzle, playerId, { k: "a", a: data.id }),
     state: null,
     startedAt: data.started_at,
     resumed: false,
