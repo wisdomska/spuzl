@@ -385,7 +385,7 @@ export function PlayScreen({
  */
 export function celebrationChips(r: FinishRes): { icon: string; label: string }[] {
   const out: { icon: string; label: string }[] = [];
-  if (r.level.after > r.level.before) out.push({ icon: "arrow-fat-up", label: copy.play.levelUp(r.level.after) });
+  if (r.level.after > r.level.before) out.push({ icon: "arrow-fat-lines-up", label: copy.play.levelUp(r.level.after) });
   if (r.rank) {
     const a = rankFor(r.rank.before),
       b = rankFor(r.rank.after);
