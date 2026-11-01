@@ -3,6 +3,11 @@
 -- count and the live-ops gap alert (both read status = 'live') leave it out.
 -- Rollback:
 --   delete from public.games where id = 'hilo';
-insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
+-- Fresh databases run migrations before the seed (worlds are empty then): insert only when the world exists;
+-- the seed adds the same row there.
+insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort)
+select * from (values
   ('hilo', 'number', 'Higher or Lower', 'coming_soon', 'M3+', 'custom', 'score', false, 6000, 53)
+) as v(id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort)
+where exists (select 1 from public.worlds w where w.id = v.world_id)
 on conflict (id) do nothing;
