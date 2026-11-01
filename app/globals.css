@@ -254,6 +254,11 @@ select {
   --reg-7: #253a12;
   --reg-8: #624d00;
   --reg-9: #585859;
+  /* Crownfall X mark: >= 3:1 on every region colour (palette.test.ts), a step dimmer than crowns in var(--text). */
+  --mark-x: #d7dae8;
+  /* Colour-blind region patterns: ink as "R G B" and an alpha multiplier, so textures show on either palette. */
+  --pattern-ink: 255 255 255;
+  --pattern-boost: 1;
   --board-bg: #0a0b12;
   /* Ink on chess and draughts squares (SQUARE in games/_shared/BayStyles) and on Board Bay pink: these are the same in
      both themes, so this is not redefined for light. 6.2:1 on the dark square, 13:1 on the light one. */
@@ -288,41 +293,61 @@ select {
   --reg-7: #9c9a2f;
   --reg-8: #ffe381;
   --reg-9: #9d9d9d;
+  --mark-x: #3a3d55;
+  /* White textures vanish on the light pastels: a dark ink, a little stronger. */
+  --pattern-ink: 14 15 26;
+  --pattern-boost: 1.5;
   --board-bg: #d8dce8;
 }
 /* Colour-blind modes add a per-region pattern so regions never rely on hue alone */
 [data-cb] [data-region="1"] {
-  background-image: repeating-linear-gradient(45deg, rgb(255 255 255 / 0.12) 0 2px, transparent 2px 8px);
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgb(var(--pattern-ink) / calc(0.12 * var(--pattern-boost))) 0 2px,
+    transparent 2px 8px
+  );
 }
 [data-cb] [data-region="2"] {
-  background-image: radial-gradient(rgb(255 255 255 / 0.16) 1.5px, transparent 1.5px);
+  background-image: radial-gradient(rgb(var(--pattern-ink) / calc(0.16 * var(--pattern-boost))) 1.5px, transparent 1.5px);
   background-size: 8px 8px;
 }
 [data-cb] [data-region="3"] {
-  background-image: repeating-linear-gradient(0deg, rgb(255 255 255 / 0.12) 0 2px, transparent 2px 8px);
+  background-image: repeating-linear-gradient(0deg, rgb(var(--pattern-ink) / calc(0.12 * var(--pattern-boost))) 0 2px, transparent 2px 8px);
 }
 [data-cb] [data-region="4"] {
-  background-image: repeating-linear-gradient(90deg, rgb(255 255 255 / 0.12) 0 2px, transparent 2px 8px);
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgb(var(--pattern-ink) / calc(0.12 * var(--pattern-boost))) 0 2px,
+    transparent 2px 8px
+  );
 }
 [data-cb] [data-region="5"] {
-  background-image: repeating-linear-gradient(-45deg, rgb(255 255 255 / 0.12) 0 2px, transparent 2px 8px);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgb(var(--pattern-ink) / calc(0.12 * var(--pattern-boost))) 0 2px,
+    transparent 2px 8px
+  );
 }
 [data-cb] [data-region="6"] {
   background-image:
-    repeating-linear-gradient(45deg, rgb(255 255 255 / 0.1) 0 1px, transparent 1px 5px),
-    repeating-linear-gradient(-45deg, rgb(255 255 255 / 0.1) 0 1px, transparent 1px 5px);
+    repeating-linear-gradient(45deg, rgb(var(--pattern-ink) / calc(0.1 * var(--pattern-boost))) 0 1px, transparent 1px 5px),
+    repeating-linear-gradient(-45deg, rgb(var(--pattern-ink) / calc(0.1 * var(--pattern-boost))) 0 1px, transparent 1px 5px);
 }
 [data-cb] [data-region="7"] {
-  background-image: radial-gradient(rgb(255 255 255 / 0.2) 2.5px, transparent 2.5px);
+  background-image: radial-gradient(rgb(var(--pattern-ink) / calc(0.2 * var(--pattern-boost))) 2.5px, transparent 2.5px);
   background-size: 12px 12px;
 }
 [data-cb] [data-region="8"] {
   background-image:
-    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.1) 0 1px, transparent 1px 6px),
-    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.1) 0 1px, transparent 1px 6px);
+    repeating-linear-gradient(0deg, rgb(var(--pattern-ink) / calc(0.1 * var(--pattern-boost))) 0 1px, transparent 1px 6px),
+    repeating-linear-gradient(90deg, rgb(var(--pattern-ink) / calc(0.1 * var(--pattern-boost))) 0 1px, transparent 1px 6px);
 }
 [data-cb] [data-region="9"] {
-  background-image: repeating-linear-gradient(135deg, rgb(255 255 255 / 0.14) 0 4px, transparent 4px 10px);
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgb(var(--pattern-ink) / calc(0.14 * var(--pattern-boost))) 0 4px,
+    transparent 4px 10px
+  );
 }
 
 /* Cell motion (Handoff): pop 1 → 1.08 → 1 in 140 ms; rule break shake ±6 px × 3 in 240 ms; clear flip wave */

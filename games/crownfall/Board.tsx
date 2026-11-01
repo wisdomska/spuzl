@@ -190,7 +190,7 @@ export default function CrownfallBoard({ puzzle, initialState, hint, disabled, m
                 else if (bad && i === last) anim = shakeN % 2 ? "cell-shake-a" : "cell-shake-b";
                 else if (i === last) anim = tapN % 2 ? "cell-pop-a" : "cell-pop-b";
                 const glow = (tutorialGlow && v !== CROWN && isSafeCrown(puzzle, cells, i)) || i === hintTarget;
-                const fg = bad ? "var(--danger)" : v === MARK ? "#8A8EB0" : "var(--text)";
+                const fg = bad ? "var(--danger)" : v === MARK ? "var(--mark-x)" : "var(--text)";
                 const radius = cornerRadius(r, c);
                 // Thick edge where the neighbour is another region or the board edge; a hairline inside a region
                 // (drawn on the right and bottom only, so it is never doubled).

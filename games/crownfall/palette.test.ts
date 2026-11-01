@@ -7,6 +7,8 @@
  *   - normal vision: ΔE00 >= 18 for EVERY pair of palette colours
  *   - each dichromacy simulation: ΔE00 >= 9 for EVERY pair
  *   - every region colour >= 4.5:1 WCAG contrast against var(--text), which draws crowns and region edges
+ *   - the X mark (var(--mark-x)) >= 3:1 on every region colour (a non-text graphic, WCAG 1.4.11)
+ *   - colour-blind pattern textures visible on every patterned region (>= 1.2:1 between texture and region)
  * Both themes are read straight from app/globals.css, so the test checks what ships.
  */
 import { readFileSync } from "node:fs";
@@ -20,6 +22,8 @@ import { generate } from "./logic";
 
 const MIN_DELTA_E: Record<Vision, number> = { normal: 18, protanopia: 9, deuteranopia: 9, tritanopia: 9 };
 const MIN_TEXT_CONTRAST = 4.5;
+const MIN_MARK_CONTRAST = 3;
+const MIN_PATTERN_CONTRAST = 1.2;
 
 const root = join(__dirname, "..", "..");
 const globals = readFileSync(join(root, "app/globals.css"), "utf8");
@@ -40,6 +44,26 @@ const THEMES = {
   dark: { regions: block(globals, ":root"), text: block(tokens, ":root").text },
   light: { regions: block(globals, '[data-theme="light"]'), text: block(tokens, '[data-theme="light"]').text },
 };
+
+/** `--name: <raw value>;` from the first top-level block whose selector is exactly `selector`. */
+function rawVar(css: string, selector: string, name: string): string {
+  for (const m of css.matchAll(/(?:^|\n)([^\n{}]+?)\s*\{([^}]*)\}/g)) {
+    if (m[1].trim() !== selector) continue;
+    const d = m[2].match(new RegExp(`--${name}:\\s*([^;]+);`));
+    if (d) return d[1].trim();
+  }
+  throw new Error(`no --${name} in ${selector}`);
+}
+const SELECTOR = { dark: ":root", light: '[data-theme="light"]' } as const;
+
+/** Pattern alpha per region, as written in the [data-cb] [data-region="N"] rules (the faintest layer). */
+const PATTERN_ALPHA = new Map<number, number>();
+for (const m of globals.matchAll(/\[data-cb\] \[data-region="(\d)"\]\s*\{([^}]*)\}/g)) {
+  const alphas = [...m[2].matchAll(/calc\(([\d.]+) \* var\(--pattern-boost\)\)/g)].map((a) => Number(a[1]));
+  if (alphas.length) PATTERN_ALPHA.set(Number(m[1]), Math.min(...alphas));
+}
+
+const over = (bg: Rgb, ink: Rgb, a: number): Rgb => [0, 1, 2].map((k) => ink[k] * a + bg[k] * (1 - a)) as unknown as Rgb;
 
 function palette(theme: keyof typeof THEMES): Rgb[] {
   const regs = THEMES[theme].regions;
@@ -74,6 +98,25 @@ describe("crownfall region palette", () => {
     it(`${theme}: every colour keeps ${MIN_TEXT_CONTRAST}:1 against the crown and edge colour`, () => {
       const text = parseHex(THEMES[theme].text);
       for (const c of palette(theme)) expect(contrastRatio(c, text)).toBeGreaterThanOrEqual(MIN_TEXT_CONTRAST);
+    });
+
+    it(`${theme}: the X mark keeps ${MIN_MARK_CONTRAST}:1 on every region colour`, () => {
+      const mark = parseHex(rawVar(globals, SELECTOR[theme], "mark-x"));
+      const low = palette(theme)
+        .map((c, i) => ({ region: CROWNFALL_COPY.regionName(i), ratio: contrastRatio(c, mark) }))
+        .filter((x) => x.ratio < MIN_MARK_CONTRAST);
+      expect(low).toEqual([]);
+    });
+
+    it(`${theme}: colour-blind pattern textures show on every patterned region`, () => {
+      const ink = rawVar(globals, SELECTOR[theme], "pattern-ink").split(/\s+/).map(Number) as unknown as Rgb;
+      const boost = Number(rawVar(globals, SELECTOR[theme], "pattern-boost"));
+      expect(PATTERN_ALPHA.size).toBe(9);
+      const cols = palette(theme);
+      for (const [region, alpha] of PATTERN_ALPHA) {
+        const ratio = contrastRatio(cols[region], over(cols[region], ink, Math.min(1, alpha * boost)));
+        expect(ratio, `${theme} ${CROWNFALL_COPY.regionName(region)}`).toBeGreaterThanOrEqual(MIN_PATTERN_CONTRAST);
+      }
     });
 
     it(`${theme}: adjacent regions on 10 seeded boards pass`, () => {
