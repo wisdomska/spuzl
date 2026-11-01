@@ -2,9 +2,13 @@
 
 import type { ReactNode } from "react";
 import { Dialog } from "radix-ui";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { prefersReducedMotion, useSettings } from "@/lib/settings/store";
 
-/** Bottom sheet (r 32 top, handle, dimmed backdrop). Radix Dialog for focus trap, Escape and labelling. */
+/**
+ * Bottom sheet (r 32 top, handle, dimmed backdrop). Radix Dialog for focus trap, Escape and labelling.
+ * Reduced motion (the OS setting or the in-app one) swaps the slide for a short fade.
+ */
 export function Sheet({
   open,
   onOpenChange,
@@ -18,6 +22,9 @@ export function Sheet({
   description?: ReactNode;
   children: ReactNode;
 }) {
+  const osReduce = useReducedMotion();
+  const appReduce = useSettings((s) => s.hydrated && prefersReducedMotion(s));
+  const reduce = !!osReduce || appReduce;
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <AnimatePresence>
@@ -35,10 +42,14 @@ export function Sheet({
             <Dialog.Content asChild forceMount>
               <motion.div
                 className="safe-bottom bg-surface fixed inset-x-0 bottom-0 z-40 mx-auto flex max-h-[90dvh] max-w-[560px] flex-col gap-2.5 overflow-y-auto rounded-t-[32px] px-5 pt-3.5 pb-7"
-                initial={{ transform: "translateY(100%)" }}
-                animate={{ transform: "translateY(0%)" }}
-                exit={{ transform: "translateY(100%)", transition: { duration: 0.15, ease: [0.23, 1, 0.32, 1] } }}
-                transition={{ duration: 0.32, ease: [0.32, 0.72, 0, 1] }}
+                initial={reduce ? { opacity: 0 } : { transform: "translateY(100%)" }}
+                animate={reduce ? { opacity: 1 } : { transform: "translateY(0%)" }}
+                exit={
+                  reduce
+                    ? { opacity: 0, transition: { duration: 0.15 } }
+                    : { transform: "translateY(100%)", transition: { duration: 0.15, ease: [0.23, 1, 0.32, 1] } }
+                }
+                transition={reduce ? { duration: 0.2, ease: "linear" } : { duration: 0.32, ease: [0.32, 0.72, 0, 1] }}
                 style={{ boxShadow: "0 -1px 0 var(--line)" }}
               >
                 <div aria-hidden className="bg-line h-[5px] w-11 shrink-0 self-center rounded-[3px]" />
