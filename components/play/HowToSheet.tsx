@@ -5,6 +5,7 @@ import { Dialog } from "radix-ui";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { WORLD_BY_ID, type GameMeta } from "@/lib/catalog";
+import { useSheetSound } from "@/lib/audio/useSheetSound";
 
 export interface HowToTip {
   icon: string;
@@ -18,12 +19,13 @@ export interface HowToTip {
 export function HowToSheet({ open, meta, onClose, tips }: { open: boolean; meta: GameMeta; onClose: () => void; tips?: HowToTip[] }) {
   const dailies = useGameSettings()["features.dailies"];
   const world = WORLD_BY_ID[meta.world];
+  useSheetSound(open);
   return (
     <Dialog.Root open={open} onOpenChange={(o) => !o && onClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-[rgb(6_7_13/.6)]" />
+        <Dialog.Overlay className="sheet-overlay fixed inset-0 z-50 bg-[rgb(6_7_13/.6)]" />
         <Dialog.Content
-          className="safe-bottom bg-surface fixed inset-x-0 bottom-0 z-50 mx-auto flex max-w-[560px] flex-col gap-4 rounded-t-[32px] px-5 pt-3.5 pb-7"
+          className="sheet-content safe-bottom bg-surface fixed inset-x-0 bottom-0 z-50 mx-auto flex max-w-[560px] flex-col gap-4 rounded-t-[32px] px-5 pt-3.5 pb-7"
           aria-describedby="howto-rule"
         >
           <div className="bg-line h-[5px] w-11 self-center rounded-[3px]" />

@@ -14,6 +14,7 @@ import { durationLabel } from "@/lib/games-meta";
 import { formatClock } from "@/lib/format";
 import { libraryCopy as T } from "@/lib/copy/library";
 import { PLAY_NAV } from "@/lib/analytics/play-nav";
+import { useSheetSound } from "@/lib/audio/useSheetSound";
 
 /**
  * One game's card (SPZ-14): the rule, then one primary action (Play; with Dailies on, today's Daily then Free play
@@ -44,6 +45,7 @@ export function GameCard({
   };
   const world = meta ? WORLD_BY_ID[meta.world] : null;
   const race = meta ? isRaceGame(meta.id) : false;
+  useSheetSound(!!meta);
   return (
     <Dialog.Root open={!!meta} onOpenChange={(o) => !o && onClose()}>
       <Dialog.Portal>

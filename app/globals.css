@@ -777,12 +777,36 @@ select {
 .sheet-overlay[data-state="open"] {
   animation: sheet-fade 200ms ease-out;
 }
+/* Exit the way it entered, faster (Radix waits for the animation before unmounting). Own keyframes rather
+   than `reverse`, which would also reverse the curve into an ease-in. */
+@keyframes sheet-down {
+  to {
+    transform: translateY(100%);
+  }
+}
+@keyframes sheet-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+.sheet-content[data-state="closed"] {
+  animation: sheet-down 160ms var(--ease-out) forwards;
+}
+.sheet-overlay[data-state="closed"] {
+  animation: sheet-fade-out 160ms var(--ease-out) forwards;
+}
 [data-motion="reduce"] .sheet-content[data-state="open"] {
   animation: sheet-fade 150ms ease-out;
+}
+[data-motion="reduce"] .sheet-content[data-state="closed"] {
+  animation: sheet-fade-out 120ms ease-out forwards;
 }
 @media (prefers-reduced-motion: reduce) {
   .sheet-content[data-state="open"] {
     animation: sheet-fade 150ms ease-out;
+  }
+  .sheet-content[data-state="closed"] {
+    animation: sheet-fade-out 120ms ease-out forwards;
   }
 }
 

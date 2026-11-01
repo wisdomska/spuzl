@@ -7,6 +7,7 @@ import { Icon } from "@/components/ui/Icon";
 import { formatClock } from "@/lib/format";
 import { useSettings } from "@/lib/settings/store";
 import { copy } from "@/lib/copy";
+import { useSheetSound } from "@/lib/audio/useSheetSound";
 
 /** G1 Pause: bottom sheet over a dimmed, blurred board. Board hidden while paused. */
 export function PauseOverlay({
@@ -35,6 +36,7 @@ export function PauseOverlay({
   const T = copy.comfort;
   // Same store as /settings, so a change here is a change everywhere (and syncs to the account).
   const nextScale = ({ 100: 110, 110: 120, 120: 130, 130: 100 } as const)[textScale];
+  useSheetSound(open);
   return (
     <Dialog.Root open={open} onOpenChange={(o) => !o && onResume()}>
       <AnimatePresence>

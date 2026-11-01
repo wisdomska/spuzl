@@ -197,7 +197,7 @@ export function Segmented<T extends string>({
             role="tab"
             aria-selected={on}
             onClick={() => onChange(t.id)}
-            className="flex h-11 flex-1 items-center justify-center rounded-[12px] text-[15px] font-semibold transition-colors duration-150"
+            className="press flex h-11 flex-1 items-center justify-center rounded-[12px] text-[15px] font-semibold transition-colors duration-150"
             style={{ background: on ? "var(--surface-raised)" : "transparent", color: on ? "var(--text)" : "var(--text-muted)" }}
           >
             {t.label}

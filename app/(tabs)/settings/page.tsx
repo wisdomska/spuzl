@@ -20,6 +20,8 @@ import { nicknameProblem } from "@/lib/validation/nickname";
 import { Sheet } from "@/components/meta/Sheet";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
+import { configure, play } from "@/lib/audio";
+import { haptic, LEVELS, setHapticsEnabled } from "@/lib/haptics";
 
 const THEME = { dark: "Dark", light: "Light", system: "System" } as const;
 const CB = { off: "Off", protan: "Protan", deutan: "Deutan", tritan: "Tritan" } as const;
@@ -109,13 +111,27 @@ function SettingsScreen() {
       </Group>
       <Group title="Sound and feel">
         <Row icon="speaker-high" label="Sound effects">
-          <Switch checked={s.sfx} onChange={(v) => save("sfx", v)} label="Sound effects" />
+          <Switch
+            checked={s.sfx}
+            onChange={(v) => {
+              save("sfx", v);
+              if (v) previewSound();
+            }}
+            label="Sound effects"
+          />
         </Row>
         <Row icon="music-notes" label="Music">
           <Switch checked={s.music && !s.lowData} disabled={s.lowData} onChange={(v) => save("music", v)} label="Music" />
         </Row>
         <Row icon="vibrate" label="Haptics">
-          <Switch checked={s.haptics} onChange={(v) => save("haptics", v)} label="Haptics" />
+          <Switch
+            checked={s.haptics}
+            onChange={(v) => {
+              save("haptics", v);
+              if (v) previewHaptic();
+            }}
+            label="Haptics"
+          />
         </Row>
       </Group>
       <Group title="Data and account">
@@ -692,4 +708,16 @@ function NicknameSheet({
       </form>
     </Sheet>
   );
+}
+
+/** Turning sound back on confirms itself with the toggle it would have made (the press fired while muted). */
+function previewSound() {
+  configure({ sfx: true });
+  play("toggle", { step: 1, silentHaptic: true });
+}
+
+/** Turning haptics on gives one medium knock so the player feels what they enabled. */
+function previewHaptic() {
+  setHapticsEnabled(true);
+  haptic(LEVELS.medium);
 }
