@@ -46,6 +46,18 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
     { keepPrevious: true },
   );
   const selected = q.data?.rows.find((r) => r.id === sel) ?? q.data?.rows[0] ?? null;
+  // Open on the first tab with something waiting (the header count adds up all three tabs), once per visit.
+  // Adjusted during render (React's pattern for state derived from the first response), not in an effect.
+  const [picked, setPicked] = useState(false);
+  const counts = q.data?.counts;
+  if (!picked && counts) {
+    setPicked(true);
+    const first = (["reports", "nicknames", "flagged"] as Tab[]).find((t) => counts[t] > 0);
+    if (counts[tab] === 0 && first) {
+      setTab(first);
+      setSel(null);
+    }
+  }
 
   return (
     <div className="grid min-h-dvh grid-cols-1 xl:grid-cols-[1fr_440px]">
@@ -58,9 +70,9 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
               value={tab}
               onChange={(t) => (setTab(t), setSel(null), setDone(null), pager.reset())}
               items={[
-                { id: "reports", label: "Reports" },
-                { id: "nicknames", label: "Nicknames" },
-                { id: "flagged", label: "Anti-cheat" },
+                { id: "reports", label: "Reports", count: q.data?.counts.reports },
+                { id: "nicknames", label: "Nicknames", count: q.data?.counts.nicknames },
+                { id: "flagged", label: "Anti-cheat", count: q.data?.counts.flagged },
               ]}
             />
           }
@@ -100,7 +112,11 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
               </Notice>
             </div>
           ) : !q.data.rows.length ? (
-            <Empty>Nothing waiting here.</Empty>
+            <Empty>
+              {q.data.open > 0 && status === "open"
+                ? `Nothing in this tab. ${q.data.open} waiting in the other tabs.`
+                : "Nothing waiting here."}
+            </Empty>
           ) : (
             <table className="w-full min-w-[620px] table-fixed border-collapse">
               <colgroup>
