@@ -205,6 +205,18 @@ describe("api: shop", () => {
   });
 });
 
+describe("api: guest clears (SPZ-20)", () => {
+  it("counts a guest's clears on the server for the Save your streak prompt", async () => {
+    const g = await guest(uniq("sv_"));
+    expect((await g.api("/api/v1/me")).data.clears).toBe(0);
+    const rows = ["cleared", "cleared", "failed"].map((status) => ({ player_id: g.userId, game_id: "crownfall", mode: "free", status }));
+    const { error } = await admin().from("attempts").insert(rows);
+    expect(error).toBeNull();
+    const me = await g.api("/api/v1/me");
+    expect(me.data).toMatchObject({ guest: true, clears: 2 });
+  });
+});
+
 describe("api: quests", () => {
   it("claims a completed quest exactly once", async () => {
     const a = await guest(uniq("qa_"));

@@ -12,6 +12,7 @@ import type { GameMeta } from "@/lib/catalog";
 import { WORLD_BY_ID } from "@/lib/catalog";
 import type { FinishRes } from "@/lib/client/api";
 import { RaceLiveButton } from "@/components/multiplayer/GameChallenge";
+import { SaveStreakPrompt } from "@/components/meta/SaveStreakPrompt";
 
 /**
  * Solo Screens 05 Results: confetti header with Spuz, the time counting up, percentile, XP bar sweep
@@ -176,6 +177,7 @@ export function ResultsScreen({
           ))}
         </ul>
       )}
+      <SaveStreakPrompt className="mx-4 mt-4" />
       <div className="safe-bottom mt-auto grid grid-cols-[1fr_60px] gap-2.5 px-4 pt-4 pb-7">
         <Button size="lg" icon="play" onClick={next.onClick} className="text-[17px]" autoFocus>
           {next.label}

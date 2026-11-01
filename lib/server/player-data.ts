@@ -24,7 +24,8 @@ export interface PlayerRow {
  */
 export async function loadMe(user: User, player: PlayerRow, admin: SupabaseClient = supabaseAdmin()): Promise<Me> {
   const today = todayGmt();
-  const [{ data: profile }, { data: streak }, { data: ratings }, { data: cleared }, { data: equipped }, { data: played }] =
+  const guest = player.is_guest || !!user.is_anonymous;
+  const [{ data: profile }, { data: streak }, { data: ratings }, { data: cleared }, { data: equipped }, clears, { data: played }] =
     await Promise.all([
       admin
         .from("players")
@@ -39,6 +40,16 @@ export async function loadMe(user: User, player: PlayerRow, admin: SupabaseClien
       admin.from("ratings").select("track, rating").eq("player_id", player.id),
       admin.from("daily_results").select("game_id, time_ms").eq("player_id", player.id).eq("date", today),
       admin.from("inventory").select("cosmetic_id").eq("player_id", player.id).eq("equipped", true),
+      // Lifetime clears, guests only: drives the "Save your streak" prompt (SPZ-20). Members skip the count.
+      guest
+        ? admin
+            .from("attempts")
+            .select("id", { count: "exact", head: true })
+            .eq("player_id", player.id)
+            .eq("status", "cleared")
+            .neq("mode", "tutorial")
+            .then((r) => r.count ?? 0)
+        : Promise.resolve(undefined),
       // Games this player has ever cleared (any mode): the guided first play is skipped for these.
       admin.from("attempts").select("game_id").eq("player_id", player.id).eq("status", "cleared").limit(2000),
     ]);
@@ -55,8 +66,9 @@ export async function loadMe(user: User, player: PlayerRow, admin: SupabaseClien
   const overall = worldRatings.length ? worldRatings.reduce((s, r) => s + Number(r.rating), 0) / worldRatings.length : 1000;
   return {
     id: player.id,
-    guest: player.is_guest || !!user.is_anonymous,
+    guest,
     email,
+    clears,
     ...profile,
     level: lv.level,
     xp: player.xp,

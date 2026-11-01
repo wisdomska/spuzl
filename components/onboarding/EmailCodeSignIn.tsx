@@ -7,6 +7,7 @@ import { Icon } from "@/components/ui/Icon";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { api } from "@/lib/client/api";
 import { copy } from "@/lib/copy";
+import { guestCopy } from "@/lib/copy/guest";
 
 const T = copy.signIn;
 
@@ -17,8 +18,20 @@ const RESEND_SECONDS = 30;
  * Email + 6-digit code sign-in (no passwords, no links). Step 1 asks for the email and sends a code; step 2
  * takes the code and signs in. `onDone(hasProfile)` reports whether this account already has a SPUZL
  * profile, so a returning player goes straight to the Grid and a new one continues onboarding.
+ *
+ * `link` (guests only): instead of signing in, attach the email to the current anonymous account with
+ * `updateUser` (the same linking path as Settings, Account), then confirm it with the emailed code
+ * (`email_change`). The user id stays, so all progress is kept; the account is then marked as no longer a guest.
  */
-export function EmailCodeSignIn({ onDone, autoFocus = true }: { onDone: (hasProfile: boolean) => void; autoFocus?: boolean }) {
+export function EmailCodeSignIn({
+  onDone,
+  autoFocus = true,
+  link = false,
+}: {
+  onDone: (hasProfile: boolean) => void;
+  autoFocus?: boolean;
+  link?: boolean;
+}) {
   const [email, setEmail] = useState("");
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [code, setCode] = useState("");
@@ -41,6 +54,32 @@ export function EmailCodeSignIn({ onDone, autoFocus = true }: { onDone: (hasProf
     setBusy(true);
     setErr(null);
     const to = email.trim().toLowerCase();
+    if (link) {
+      // Link: the confirmation email (code, or a link back to this page) adds the email to this same account.
+      const { data, error } = await supabaseBrowser().auth.updateUser(
+        { email: to },
+        { emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(window.location.pathname)}` },
+      );
+      if (error) {
+        setBusy(false);
+        setErr(
+          /rate|seconds|many/i.test(error.message)
+            ? T.tooMany
+            : /already|registered|exists/i.test(error.message)
+              ? guestCopy.linkTaken
+              : guestCopy.linkFailed,
+        );
+        return;
+      }
+      // Projects without email confirmation apply the change at once: nothing to type, the account is saved.
+      if (data.user?.email?.toLowerCase() === to) return linked();
+      setBusy(false);
+      setSentTo(to);
+      setCode("");
+      setWait(RESEND_SECONDS);
+      setTimeout(() => codeRef.current?.focus(), 250);
+      return;
+    }
     const { error } = await supabaseBrowser().auth.signInWithOtp({
       email: to,
       // The email shows a 6-digit code; on projects whose template still sends a link, the link lands here
@@ -58,11 +97,21 @@ export function EmailCodeSignIn({ onDone, autoFocus = true }: { onDone: (hasProf
     setTimeout(() => codeRef.current?.focus(), 250);
   };
 
+  /** Same user id, now with an email: refresh the token (no longer anonymous) and mark the player as saved. */
+  const linked = async () => {
+    await supabaseBrowser()
+      .auth.refreshSession()
+      .catch(() => null);
+    await api("/api/v1/account/sync", { method: "POST" }).catch(() => {});
+    setBusy(false);
+    onDone(true);
+  };
+
   const verify = async (token: string) => {
     if (!sentTo || token.length !== 6 || busy) return;
     setBusy(true);
     setErr(null);
-    const { error } = await supabaseBrowser().auth.verifyOtp({ email: sentTo, token, type: "email" });
+    const { error } = await supabaseBrowser().auth.verifyOtp({ email: sentTo, token, type: link ? "email_change" : "email" });
     if (error) {
       setBusy(false);
       setCode("");
@@ -70,6 +119,7 @@ export function EmailCodeSignIn({ onDone, autoFocus = true }: { onDone: (hasProf
       codeRef.current?.focus();
       return;
     }
+    if (link) return linked();
     const me = await api<{ id: string } | null>("/api/v1/me?optional=1").catch(() => null);
     onDone(!!me);
   };

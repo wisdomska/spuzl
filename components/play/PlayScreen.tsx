@@ -29,6 +29,7 @@ import { useSettings } from "@/lib/settings/store";
 import { rankFor } from "@/lib/rating/glicko2";
 import { STREAK_MILESTONE_SPARKS } from "@/lib/rewards";
 import { ResultsScreen } from "@/components/results/ResultsScreen";
+import { SaveStreakPrompt } from "@/components/meta/SaveStreakPrompt";
 import { PhotosensitivityNotice } from "./PhotosensitivityNotice";
 import { finishOrQueue } from "@/lib/offline/queue";
 import { OfflineBanner } from "@/components/pwa/OfflineBanner";
@@ -397,15 +398,18 @@ export function PlayScreen({
           puzzleKey={attempt.attemptId}
           endBar={
             freeResult ? (
-              <FreeResultBar
-                timeMs={freeResult.timeMs}
-                xp={freeResult.xp}
-                accuracy={freeResult.accuracy}
-                meta={meta}
-                relaxed={relaxed}
-                next={nextAction}
-                another={anotherAction}
-              />
+              <div className="flex flex-col gap-2">
+                <SaveStreakPrompt />
+                <FreeResultBar
+                  timeMs={freeResult.timeMs}
+                  xp={freeResult.xp}
+                  accuracy={freeResult.accuracy}
+                  meta={meta}
+                  relaxed={relaxed}
+                  next={nextAction}
+                  another={anotherAction}
+                />
+              </div>
             ) : undefined
           }
         />

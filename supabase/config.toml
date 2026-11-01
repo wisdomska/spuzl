@@ -254,6 +254,12 @@ content_path = "./supabase/templates/code.html"
 subject = "Your SPUZL code"
 content_path = "./supabase/templates/code.html"
 
+# A guest saving their account ("Save your streak", SPZ-20) links an email with updateUser: the email-change
+# message must show the code too (verified with type "email_change").
+[auth.email.template.email_change]
+subject = "Your SPUZL code"
+content_path = "./supabase/templates/code.html"
+
 # Uncomment to customize email template
 # [auth.email.template.invite]
 # subject = "You have been invited"
