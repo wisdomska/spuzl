@@ -22,7 +22,6 @@ export function LevelRing({
   return (
     <Link
       href="/me"
-      aria-label={`Level ${level}, ${Math.round(p)}% to next level`}
       className="relative flex items-center justify-center rounded-full"
       style={{ width: size, height: size, background: `conic-gradient(var(--accent) 0 ${p}%, var(--line) ${p}% 100%)` }}
     >
@@ -37,7 +36,9 @@ export function LevelRing({
         className="num bg-accent text-on-accent absolute -right-1 -bottom-1 flex h-[22px] min-w-[22px] items-center justify-center rounded-[8px] px-1 text-[12px] font-bold"
         style={{ boxShadow: "0 0 0 3px var(--bg)" }}
       >
+        <span className="sr-only">Level </span>
         {level}
+        <span className="sr-only">, {Math.round(p)}% to next level</span>
       </span>
     </Link>
   );
