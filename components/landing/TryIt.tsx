@@ -37,6 +37,9 @@ export function TryIt() {
         <Icon name="hand-tap" size={16} />
         {T.tryIt.label}
       </div>
+      <div className="pointer-events-none absolute -bottom-8 -left-6 z-10 hidden -rotate-6 sm:block" aria-hidden>
+        <Spuz mood={solved ? "cheer" : "wave"} size={96} decorative />
+      </div>
       <div className="bg-surface border-line rounded-[36px] border p-5 shadow-[0_30px_60px_rgb(0_0_0/0.35)]">
         <div className="flex items-center justify-between">
           <p className="font-display text-logic text-[20px] font-black">{T.tryIt.game}</p>
