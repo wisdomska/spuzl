@@ -34,7 +34,8 @@ test("first sign-in enrols TOTP, then every visit needs the code; admin pages ar
   const secret = (await page.getByTestId("totp-secret").textContent())!.trim();
   await page.getByLabel("Code").fill(totp(secret));
   await page.getByRole("button", { name: "Turn on and continue" }).click();
-  await expect(page.getByRole("heading", { name: "Content calendar" })).toBeVisible({ timeout: 20_000 });
+  // Owners land on the Overview.
+  await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible({ timeout: 20_000 });
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
   const { data: row } = await db.from("admins").select("totp_enrolled").eq("user_id", data.user!.id).single();
   expect(row!.totp_enrolled).toBe(true);
@@ -200,8 +201,9 @@ test("tablet: calendar and live ops stay usable at 834 px, light theme", async (
   await page.setViewportSize({ width: 834, height: 1112 });
   const acct = await import("./helpers").then((h) => h.adminSession("owner"));
   await login(page, acct, "light");
-  await expect(page.getByRole("heading", { name: "Content calendar" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Calendar" })).toBeVisible();
+  await page.goto("/admin/calendar");
+  await expect(page.getByRole("heading", { name: "Content calendar" })).toBeVisible();
   await page.goto("/admin/liveops");
   await expect(page.getByText("D7 retention")).toBeVisible();
   const scroll = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);

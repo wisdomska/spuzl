@@ -16,10 +16,19 @@ A real landing page, fairer free play, phones that fit, and many admin and multi
 - **Phones:** Nine fits a 375 × 667 phone with its tool bar showing, and Nine and Sixer fit 320 × 568.
 - **Ghost Race** uses a shared track of the day while Dailies are off.
 - **Welcome** says when Google sign-in was cancelled or didn't finish.
+- **Settings:** someone who hasn't started yet is no longer shown as signed in; Account offers Google or a start.
+- **Switches apply at once:** browsers no longer keep an old copy of game settings or library info.
 - **Five's answer list** is owner-approved; Trotro Jam boards have much more variety.
 
 ### For admins
 
+- **Players:** every player, guest or signed in, with search, filters and sorting; a page per player (stats,
+  attempts, reports, moderation history, inventory, audit); confirmed actions with a reason, each in the audit log:
+  reset nickname, Sparks, Streak Freeze, ban or timed ban, revoke ranking, sign out everywhere, and delete with the
+  nickname typed. Owners see emails, move Sparks, delete and export CSV; moderators ban and rename; analysts view.
+- **Overview** on the admin home: players, guests and signed-in, new and active, sign-in methods and age bands.
+- **Every admin table** sorts by its columns and has full paging: first and last, page numbers, 25/50/100 per page,
+  jump to a page, and "showing X–Y of Z". Filters stay in the address bar.
 - **Solve-check** works for Penalty King, Beat Tap, Higher or Lower, Light Up, Killer Sums and Dara.
 - **All admin text** now comes from one copy file.
 - **Google Search Console** ownership tag is on the site.

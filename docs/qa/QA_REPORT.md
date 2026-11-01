@@ -181,3 +181,25 @@ Found and fixed in this pass:
 - The homepage swap to About at first applied to in-app prefetches, which sent a brand-new guest to About after
   onboarding. It now applies only to full page loads with no session cookie.
 - Two new migrations shared a version number; one was renumbered (`20261110200001`).
+
+## 1.4.0 integration pass (1 November 2026)
+
+Local production build with `SETTINGS_CACHE_MS=0`, local Supabase with 60 days of generated puzzles.
+
+| Suite                                      | Result                                                        |
+| ------------------------------------------ | ------------------------------------------------------------- |
+| Typecheck, lint                            | Clean                                                         |
+| Unit                                       | 124 files, 1221 tests passed                                  |
+| pgTAP                                      | 19 files, 246 tests passed                                    |
+| API integration                            | 9 files, 130 tests passed                                     |
+| E2E, realtime, visual (mobile and desktop) | All passed after the fixes below; skips are the existing ones |
+
+Found and fixed in this pass:
+
+- Browsers kept serving a stale copy of `/api/v1/settings/game` (Chrome honours stale-while-revalidate), so a
+  switched-off feature stayed visible for minutes. Same for `/api/v1/games/meta` (up to an hour). The edge cache now
+  uses `CDN-Cache-Control`; browsers revalidate.
+- Admin player actions validated the body before the role, so a moderator's delete attempt read as "invalid"
+  rather than "forbidden".
+- Settings showed "Signed in" with Sign out and Delete account to a visitor with no profile.
+- Tests updated for the Ranked Duel rules break and the new admin Overview landing.
