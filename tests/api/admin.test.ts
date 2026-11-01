@@ -1,6 +1,8 @@
 import fs from "node:fs";
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { can, ROLES, type Permission } from "@/lib/admin/roles";
+import { addDays } from "@/lib/admin/dates";
+import { percentile } from "@/lib/admin/metrics";
 import { admin, BASE, guest, uniq } from "./helpers";
 import { adminSession, type AdminSession, type Role } from "./admin-helpers";
 
@@ -53,6 +55,8 @@ const ROUTES: Route[] = [
   { method: "GET", path: "/api/admin/schools", perm: "schools.read" },
   { method: "POST", path: `/api/admin/schools/${NIL}`, perm: "schools.write" },
   { method: "GET", path: "/api/admin/liveops", perm: "liveops.read" },
+  { method: "GET", path: "/api/admin/metrics", perm: "metrics.read" },
+  { method: "POST", path: "/api/admin/metrics", perm: "metrics.read" },
   { method: "GET", path: "/api/admin/flags", perm: "flags.read" },
   { method: "PUT", path: "/api/admin/flags", perm: "flags.write" },
   { method: "GET", path: "/api/admin/catalog/quests", perm: "catalog.read" },
@@ -643,5 +647,155 @@ describe("Library metadata (SPZ-14 admin cascade)", () => {
     const { data: log } = await admin().from("audit_log").select("id").eq("action", "game_meta.update").eq("target", "game:quads").limit(1);
     expect(log?.length).toBe(1);
     await S.owner.aal2("/api/admin/games/meta", { method: "PATCH", json: { id: "quads", typicalSec: null, tags: null } });
+  });
+});
+
+describe("Metrics (admin cascade)", () => {
+  // A random 7-day window years back, so the seeded rows are the only data in it.
+  const end = day(-rand(4_000, 9_000));
+  const on = addDays(end, -1);
+  const at = (ms = 0) => new Date(Date.parse(`${on}T12:00:00Z`) + ms).toISOString();
+  const matchIds: string[] = [];
+  const metricIds: number[] = [];
+
+  beforeAll(async () => {
+    const db = admin();
+    const a = await guest(uniq("mA"));
+    const b = await guest(uniq("mB"));
+    for (const id of [a.userId, b.userId]) await db.from("players").update({ created_at: at(), is_test: false }).eq("id", id);
+    const att = (mode: string, status: string, hints: number, firstMs: number | null) => ({
+      player_id: a.userId,
+      game_id: "crownfall",
+      mode,
+      status,
+      hints,
+      daily_date: mode === "daily" ? on : null,
+      started_at: at(),
+      first_move_at: firstMs === null ? null : at(firstMs),
+      finished_at: status === "in_progress" ? null : at(60_000),
+    });
+    const { error } = await db
+      .from("attempts")
+      .insert([
+        att("tutorial", "cleared", 0, null),
+        att("daily", "cleared", 1, 1_000),
+        att("free", "abandoned", 2, 3_000),
+        att("archive", "cleared", 0, 2_000),
+      ]);
+    expect(error).toBeNull();
+    const duel = { kind: "duel", status: "finished", created_at: at(), finished_at: at(300_000) };
+    const m = await db
+      .from("matches")
+      .insert([
+        { ...duel, result: "left", is_bot: false },
+        { ...duel, result: null, is_bot: true },
+      ])
+      .select("id");
+    expect(m.error).toBeNull();
+    matchIds.push(...m.data!.map((r) => r.id));
+    const cm = (name: string, kind: string | null, value_ms: number | null) => ({ name, kind, value_ms, created_at: at() });
+    const c = await db
+      .from("client_metrics")
+      .insert([
+        ...[100, 200, 300, 400].map((v) => cm("tap_to_board", "tap", v)),
+        cm("tap_to_board", "load", 1_500),
+        cm("hint_cancel", null, null),
+        cm("share", "daily", null),
+        cm("share", "duel", null),
+      ])
+      .select("id");
+    expect(c.error).toBeNull();
+    metricIds.push(...c.data!.map((r) => r.id));
+  }, 60_000);
+
+  afterAll(async () => {
+    await admin().from("matches").delete().in("id", matchIds);
+    await admin().from("client_metrics").delete().in("id", metricIds);
+  });
+
+  it("aggregates the seeded rows per day and for the range", async () => {
+    const r = await S.analyst.aal2(`/api/admin/metrics?days=7&end=${end}`);
+    expect(r.status).toBe(200);
+    expect([r.data.from, r.data.to, r.data.rows.length]).toEqual([addDays(end, -6), end, 7]);
+    expect(r.data.total).toMatchObject({
+      tap_n: 4,
+      tap_p50: percentile([100, 200, 300, 400], 0.5),
+      tap_p95: percentile([100, 200, 300, 400], 0.95),
+      load_n: 1,
+      load_p50: 1_500,
+      created: 2,
+      tutorial_started: 1,
+      tutorial_cleared: 1,
+      played: 1,
+      first_move_n: 3,
+      first_move_p50: 2_000,
+      first_move_p95: percentile([1_000, 2_000, 3_000], 0.95),
+      attempts: 3,
+      hinted: 2,
+      hints_used: 3,
+      hinted_abandoned: 1,
+      hint_cancels: 1,
+      duels_started: 2,
+      duels_abandoned: 1,
+      duels_matchmade: 2,
+      duels_bot: 1,
+      daily_started: 1,
+      daily_cleared: 1,
+      shares: 2,
+      finished_games: 4,
+    });
+    const day1 = r.data.rows.find((x: { date: string }) => x.date === on);
+    expect(day1).toMatchObject({ tap_n: 4, created: 2, shares: 2 });
+    expect(r.data.rows.find((x: { date: string }) => x.date === end)).toMatchObject({ tap_n: 0, created: 0, tap_p50: null });
+  });
+
+  it("exports one metric as CSV, audited; refuses bad ranges and roles without metrics.read", async () => {
+    const x = await S.content_editor.aal2("/api/admin/metrics", { json: { metric: "hints", days: 7, end } });
+    expect(x.status).toBe(200);
+    const lines = x.data.csv.trimEnd().split("\r\n");
+    expect(lines[0]).toBe(
+      "date,finished_attempts,attempts_with_hint,hints_used,hint_use_pct,hinted_then_abandoned,confirm_cancels,accidental_pct",
+    );
+    expect(lines).toHaveLength(9);
+    // 2 of 3 attempts hinted; accidental = (1 abandoned + 1 cancel) / (2 hinted + 1 cancel)
+    expect(lines[8]).toBe("total,3,2,3,66.7,1,1,66.7");
+    expect(x.data.filename).toBe(`spuzl-hints-${addDays(end, -6)}-to-${end}.csv`);
+    const log = await lastAudit(S.content_editor.userId, "metrics.export");
+    expect(log?.target).toBe("metric:hints");
+
+    expect((await S.owner.aal2("/api/admin/metrics?days=14")).status).toBe(400);
+    expect((await S.owner.aal2(`/api/admin/metrics?days=7&end=${day(2)}`)).status).toBe(400);
+    expect((await S.owner.aal2("/api/admin/metrics", { json: { metric: "nope", days: 7 } })).status).toBe(400);
+    expect((await S.moderator.aal2("/api/admin/metrics?days=7")).data.error).toBe("forbidden");
+  });
+
+  it("records anonymous client metrics from guests and signed-out visitors", async () => {
+    const g = await guest();
+    const ok = await g.api("/api/v1/metrics", { json: { name: "tap_to_board", game: "crownfall", mode: "daily", kind: "tap", ms: 321 } });
+    expect(ok.status).toBe(204);
+    const anon = await fetch(`${BASE}/api/v1/metrics`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: "share", kind: "daily" }),
+    });
+    expect(anon.status).toBe(204);
+    expect((await g.api("/api/v1/metrics", { json: { name: "tap_to_board", kind: "tap" } })).status).toBe(400);
+    expect((await g.api("/api/v1/metrics", { json: { name: "nickname", kind: "x" } })).status).toBe(400);
+    expect((await g.api("/api/v1/metrics", { json: { name: "share", game: "not-a-game" } })).status).toBe(400);
+    const { data } = await admin()
+      .from("client_metrics")
+      .select("id, name, game_id, mode, kind, value_ms")
+      .eq("name", "tap_to_board")
+      .eq("value_ms", 321)
+      .order("id", { ascending: false })
+      .limit(1);
+    expect(data?.[0]).toMatchObject({ game_id: "crownfall", mode: "daily", kind: "tap" });
+    await admin()
+      .from("client_metrics")
+      .delete()
+      .in(
+        "id",
+        data!.map((r) => r.id),
+      );
   });
 });

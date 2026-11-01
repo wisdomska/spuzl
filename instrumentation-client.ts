@@ -5,6 +5,7 @@
  */
 import { initSentryClient } from "@/lib/monitoring/sentry";
 import { initAnalytics, track } from "@/lib/analytics/track";
+import { installTapStamp } from "@/lib/analytics/tap-to-board";
 import {
   backgroundDownloadsOff,
   configureDailyPack,
@@ -28,6 +29,7 @@ safe(initSentryClient);
 safe(initAnalytics);
 safe(() => track("app_open", { standalone: window.matchMedia("(display-mode: standalone)").matches }));
 safe(startOfflineSync);
+safe(installTapStamp);
 safe(() => window.addEventListener("appinstalled", () => track("pwa_installed")));
 
 if (swEnabled()) {

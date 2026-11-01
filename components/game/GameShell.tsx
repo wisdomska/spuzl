@@ -16,6 +16,7 @@ import { play } from "@/lib/audio";
 import { formatClock } from "@/lib/format";
 import { PauseOverlay } from "./PauseOverlay";
 import { HintConfirm, hintConfirmed, rememberHintConfirmed } from "./HintConfirm";
+import { track } from "@/lib/analytics/track";
 import { copy } from "@/lib/copy";
 
 /**
@@ -364,7 +365,10 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
       <HintConfirm
         open={confirmHint}
         daily={mode === "daily"}
-        onCancel={() => setConfirmHint(false)}
+        onCancel={() => {
+          setConfirmHint(false);
+          track("hint_cancel", { game: meta.id, mode });
+        }}
         onConfirm={() => {
           rememberHintConfirmed(meta.id);
           setConfirmHint(false);

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { KEY_EVENTS, sanitize, track } from "./track";
+import { firstPartyBody, KEY_EVENTS, sanitize, track } from "./track";
+import { tapToBoard } from "./tap-to-board";
 
 describe("analytics", () => {
   it("covers every SRS key event", () => {
@@ -38,5 +39,39 @@ describe("analytics", () => {
     vi.stubEnv("NEXT_PUBLIC_POSTHOG_KEY", "");
     expect(() => track("app_open", { a: 1 })).not.toThrow();
     vi.unstubAllEnvs();
+  });
+});
+
+describe("first-party metrics", () => {
+  it("forwards only the Metrics events, with labels and a clamped duration", () => {
+    expect(firstPartyBody("app_open", {})).toBeNull();
+    expect(firstPartyBody("share", { target: "x", kind: "daily", lowData: false })).toEqual({
+      name: "share",
+      game: undefined,
+      mode: undefined,
+      kind: "daily",
+      ms: undefined,
+    });
+    expect(firstPartyBody("tap_to_board", { game: "crownfall", mode: "daily", kind: "tap", ms: 999_999.4 })).toMatchObject({
+      game: "crownfall",
+      kind: "tap",
+      ms: 120_000,
+    });
+    expect(firstPartyBody("hint_cancel", { game: "Bad Game!", mode: "free" })).toMatchObject({ game: undefined, mode: "free" });
+  });
+});
+
+describe("tap to board", () => {
+  const t = { mount: 10_000, ready: 10_400, origin: 1, sinceNav: 2_000 };
+  it("measures from a tap made before the Play screen mounted", () => {
+    expect(tapToBoard({ at: 9_900, origin: 1 }, t)).toEqual({ kind: "tap", ms: 500 });
+    // across a full page load the stamp carries the old document's origin
+    expect(tapToBoard({ at: 9_900, origin: 0 }, t)).toEqual({ kind: "tap", ms: 500 });
+  });
+  it("falls back to navigation start on a cold load, and ignores stale or later taps", () => {
+    expect(tapToBoard(null, t)).toEqual({ kind: "load", ms: 2_000 });
+    expect(tapToBoard(null, { ...t, sinceNav: 60_000 })).toBeNull();
+    expect(tapToBoard({ at: 10_200, origin: 1 }, t)).toBeNull();
+    expect(tapToBoard({ at: 1_000, origin: 1 }, { ...t, ready: 30_000 })).toBeNull();
   });
 });

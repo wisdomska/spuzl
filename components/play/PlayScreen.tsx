@@ -45,6 +45,7 @@ import { hasLogic } from "@/games/logic-registry";
 import { Spuz } from "@/components/brand/Spuz";
 import { Button } from "@/components/ui/Button";
 import { RaceLiveButton } from "@/components/multiplayer/GameChallenge";
+import { useTapToBoard } from "@/lib/analytics/tap-to-board";
 
 type Mode = "daily" | "free" | "archive";
 type Phase = "loading" | "playing" | "results" | "failed" | "error";
@@ -88,6 +89,7 @@ export function PlayScreen({
   const latestState = useRef<unknown>(undefined);
   const elapsedRef = useRef(0);
   const Board = BOARDS[meta.id];
+  useTapToBoard(phase === "playing" && !!attempt && !!Board, meta.id, mode);
 
   // No profile yet: first run goes through onboarding.
   useEffect(() => {

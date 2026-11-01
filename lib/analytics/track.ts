@@ -4,7 +4,8 @@
  *   import { track } from "@/lib/analytics/track";
  *   track("attempt_clear", { game: "crownfall", mode: "daily", timeMs: 72000, hints: 0 });
  *
- * - No-op unless NEXT_PUBLIC_POSTHOG_KEY is set; posthog-js loads lazily on the first event.
+ * - PostHog is a no-op unless NEXT_PUBLIC_POSTHOG_KEY is set; posthog-js loads lazily on the first event.
+ * - A few events (FIRST_PARTY) also go to our own anonymous /api/v1/metrics for the admin Metrics page.
  * - Anonymous: memory persistence (no cookies, no localStorage id), no person profiles, never
  *   `identify`, no autocapture, no session replay, no surveys, IP and URL query strings stripped.
  * - Off when the browser sends Do Not Track or Global Privacy Control, or after `setAnalyticsEnabled(false)`.
@@ -41,6 +42,9 @@ export const KEY_EVENTS = [
   "pwa_installed",
   "notice_shown",
   "notice_action",
+  // Admin Metrics page: also recorded first party (POST /api/v1/metrics), see FIRST_PARTY
+  "tap_to_board",
+  "hint_cancel",
 ] as const;
 export type KeyEvent = (typeof KEY_EVENTS)[number];
 
@@ -115,10 +119,48 @@ function load(): Promise<PostHog | null> {
   return client;
 }
 
+/**
+ * Events the admin Metrics page needs that the database cannot see: also sent to our own anonymous
+ * POST /api/v1/metrics (name, game, mode, kind and a duration only), with or without PostHog.
+ */
+const FIRST_PARTY: ReadonlySet<KeyEvent> = new Set(["tap_to_board", "hint_cancel", "share"]);
+
+/** Pure: the first-party metric body for an event, or null. Exported for tests. */
+export function firstPartyBody(event: KeyEvent, clean: Record<string, string | number | boolean>) {
+  if (!FIRST_PARTY.has(event)) return null;
+  const str = (v: unknown, re: RegExp) => (typeof v === "string" && re.test(v) ? v : undefined);
+  const LABEL = /^[a-z_]{1,16}$/;
+  return {
+    name: event,
+    game: str(clean.game, /^[a-z0-9-]{2,32}$/),
+    mode: str(clean.mode, LABEL),
+    kind: str(clean.kind, LABEL),
+    ms: typeof clean.ms === "number" ? Math.max(0, Math.min(120_000, Math.round(clean.ms))) : undefined,
+  };
+}
+
+function sendFirstParty(event: KeyEvent, clean: Record<string, string | number | boolean>) {
+  const b = firstPartyBody(event, clean);
+  if (!b || typeof window === "undefined" || typeof fetch !== "function") return;
+  try {
+    void fetch("/api/v1/metrics", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(b),
+      credentials: "same-origin",
+      keepalive: true,
+    }).catch(() => undefined);
+  } catch {
+    /* analytics must never break play */
+  }
+}
+
 /** Records one key event. Never throws, never blocks. */
 export function track(event: KeyEvent, props?: Props): void {
-  if (!enabled || !process.env.NEXT_PUBLIC_POSTHOG_KEY || optedOut()) return;
+  if (!enabled || optedOut()) return;
   const clean = sanitize(props);
+  sendFirstParty(event, clean);
+  if (!process.env.NEXT_PUBLIC_POSTHOG_KEY) return;
   void load().then((ph) => {
     try {
       ph?.capture(event, clean);
