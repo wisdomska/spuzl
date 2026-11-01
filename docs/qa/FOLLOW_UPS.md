@@ -70,8 +70,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 
 - **Dailies off:**
   - Ghost Race still uses the day's puzzle for Rage Ridge.
-  - Free play keeps its 300 XP-a-day cap; the admin may want new settings for free-play XP and Sparks now that
-    it's the only solo mode.
 - **Party games:** Draw It and Two Truths were not built. They need free text or drawings between players,
   which conflicts with the no-free-text rule for young players. They need a decision and moderation design first.
 - **Five and Emoji Hits:** the "show the answer" request is stateless. It can reveal an answer but can't change a

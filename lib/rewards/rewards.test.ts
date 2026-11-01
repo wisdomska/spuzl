@@ -42,6 +42,16 @@ describe("rewards", () => {
     expect(freePlayReward(FREE_XP_DAILY_CAP, false)).toMatchObject({ xp: 0, sparks: 0 });
     expect(freePlayReward(0, true)).toMatchObject({ xp: 0, sparks: 0 });
   });
+  it("free play follows the admin economy settings", () => {
+    const eco = { xpPerClear: 25, sparksPerClear: 2, xpDailyCap: 60 };
+    expect(freePlayReward(0, false, eco)).toMatchObject({ xp: 25, sparks: 2 });
+    expect(freePlayReward(50, false, eco)).toMatchObject({ xp: 10, sparks: 2 });
+    expect(freePlayReward(60, false, eco)).toMatchObject({ xp: 0, sparks: 0 });
+    expect(freePlayReward(0, true, eco)).toMatchObject({ xp: 0, sparks: 0 });
+    // XP off still pays Sparks under the cap; a 0 cap turns free-play rewards off.
+    expect(freePlayReward(0, false, { ...eco, xpPerClear: 0 })).toMatchObject({ xp: 0, sparks: 2 });
+    expect(freePlayReward(0, false, { ...eco, xpDailyCap: 0 })).toMatchObject({ xp: 0, sparks: 0 });
+  });
   it("levels follow 100 × n^1.4 rounded to 10", () => {
     expect(xpForLevel(1)).toBe(100);
     expect(xpForLevel(10)).toBe(2510);

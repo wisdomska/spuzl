@@ -13,6 +13,8 @@ import { GAME_BY_ID, LAUNCH_IDS, WORLDS, WORLD_BY_ID, gamesInWorld } from "@/lib
 import { LAUNCH_DATE, formatClock, gmtDate } from "@/lib/format";
 import { monthGrid, shortDate } from "@/lib/meta";
 import { difficultyForDate } from "@/games/types";
+import { useGameSettings } from "@/lib/game-settings/client";
+import { freePlayCopy } from "@/lib/copy/free-play";
 
 type Day = ArchiveRes["days"][number];
 const DOW = ["M", "T", "W", "T", "F", "S", "S"];
@@ -45,6 +47,7 @@ function Archive() {
   const [sel, setSel] = useState<string | null>(null);
   const [picking, setPicking] = useState(false);
   const q = useArchive(game, month);
+  const settings = useGameSettings();
   const meta = GAME_BY_ID[game];
   const world = WORLD_BY_ID[meta.world];
   const [y, m] = month.split("-").map(Number);
@@ -85,7 +88,7 @@ function Archive() {
 
       {tab === "practice" ? (
         <section aria-label="Practice" className="flex flex-col gap-2.5">
-          <p className="text-muted text-[15px]">Endless fresh puzzles. 10 XP and 5 Sparks a clear, never on the boards.</p>
+          <p className="text-muted text-[15px]">{freePlayCopy.practice(settings["free.xpPerClear"], settings["free.sparksPerClear"])}</p>
           {DIFFS.map((d) => (
             <Link
               key={d}

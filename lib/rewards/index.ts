@@ -2,6 +2,7 @@
  * Reward maths (SRS 4.1, 4.2, 4.6). Pure functions; the server calls these after verification and
  * writes the result through svc_grant_reward, which is idempotent per (source, ref).
  */
+import { DEFAULTS } from "@/lib/game-settings/schema";
 
 export interface DailyClearInput {
   timeMs: number;
@@ -52,14 +53,25 @@ export function dailyClearReward(i: DailyClearInput): Reward {
   return { xp, sparks, lines };
 }
 
-/** Free play (design: +10 XP, +5 Sparks), capped at 300 XP per day; duplicate seeds earn nothing. */
-export const FREE_XP = 10;
-export const FREE_SPARKS = 5;
-export const FREE_XP_DAILY_CAP = 300;
-export function freePlayReward(xpEarnedToday: number, duplicateSeed: boolean): Reward {
+/** Free play defaults (design: +10 XP, +5 Sparks, 300 XP a day); live values are the admin settings `free.*`. */
+export const FREE_XP = DEFAULTS["free.xpPerClear"];
+export const FREE_SPARKS = DEFAULTS["free.sparksPerClear"];
+export const FREE_XP_DAILY_CAP = DEFAULTS["free.xpDailyCap"];
+
+export interface FreePlayEconomy {
+  xpPerClear: number;
+  sparksPerClear: number;
+  xpDailyCap: number;
+}
+const FREE_DEFAULTS: FreePlayEconomy = { xpPerClear: FREE_XP, sparksPerClear: FREE_SPARKS, xpDailyCap: FREE_XP_DAILY_CAP };
+
+/** A free-play clear: XP up to the daily cap, Sparks while under it; duplicate seeds earn nothing. */
+export function freePlayReward(xpEarnedToday: number, duplicateSeed: boolean, economy: FreePlayEconomy = FREE_DEFAULTS): Reward {
   if (duplicateSeed) return { xp: 0, sparks: 0, lines: [] };
-  const xp = Math.max(0, Math.min(FREE_XP, FREE_XP_DAILY_CAP - xpEarnedToday));
-  return { xp, sparks: xp > 0 ? FREE_SPARKS : 0, lines: [{ label: "Free play clear", xp, sparks: xp > 0 ? FREE_SPARKS : 0 }] };
+  const underCap = xpEarnedToday < economy.xpDailyCap;
+  const xp = underCap ? Math.max(0, Math.min(economy.xpPerClear, economy.xpDailyCap - xpEarnedToday)) : 0;
+  const sparks = underCap ? Math.max(0, economy.sparksPerClear) : 0;
+  return { xp, sparks, lines: [{ label: "Free play clear", xp, sparks }] };
 }
 
 export const FULL_SPUZL = { xp: 150, sparks: 25 };

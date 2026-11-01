@@ -7,6 +7,12 @@
 - **World ranks move in free play.** A free-play clear moves your world rank at half the weight a Daily did,
   scored against recent clears of the same game and difficulty. Replaying the same board does not count.
 
+### For admins
+
+- **Free-play economy settings** (Economy group): XP per clear (`free.xpPerClear`, 10), Sparks per clear
+  (`free.sparksPerClear`, 5) and the daily XP cap (`free.xpDailyCap`, 300). How to play and Practice show the live
+  values.
+
 ## 1.2.0 (1 November 2026)
 
 Free play is the only game mode for now, the admin console pages its tables, and ten new games are ready behind a switch.

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { WORLDS, gamesInWorld, type GameMeta } from "@/lib/catalog";
 import { Icon } from "@/components/ui/Icon";
+import { FreePlayRewards } from "@/components/info/FreePlayRewards";
+import { freePlayCopy } from "@/lib/copy/free-play";
 
 export const metadata: Metadata = {
   title: "How to play",
@@ -32,7 +34,7 @@ export default function HowToPlay() {
       <h2>The basics</h2>
       <ul>
         <li>
-          <strong>Play.</strong> Fresh puzzles that never run out. Each clear earns 10 XP and 5 Sparks, up to 300 XP a day.
+          <strong>{freePlayCopy.howToPlayLead}</strong> <FreePlayRewards />
         </li>
         <li>
           <strong>First try.</strong> The first time you open a game, a short practice round with free hints shows you how it works. You can
