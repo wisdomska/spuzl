@@ -1,6 +1,9 @@
 "use client";
 
 import { homeCopy as T } from "@/lib/copy/home";
+import { FirstTips } from "@/components/ui/FirstTips";
+
+const HOME_TIPS = ["islands", "xp", "streak", "sparks"] as const;
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -80,6 +83,7 @@ export function HomeScreen() {
 
         <div className="relative z-10 flex flex-col gap-2 px-3">
           <OfflineBanner context="home" />
+          <FirstTips order={HOME_TIPS} />
           {/* Streak at risk has its own designed card below; banners carry new games and league results. */}
           <BannerStack
             items={notices

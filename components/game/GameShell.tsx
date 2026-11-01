@@ -1,5 +1,7 @@
 "use client";
 
+import { markTip, seenTips } from "@/lib/tips";
+import { tipsCopy } from "@/lib/copy/tips";
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, type CSSProperties, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import type { BoardApi, BoardProps, ControlSpec, FeedbackTone, Hint, PlayMode } from "@/games/types";
@@ -172,8 +174,14 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
       feedback(text, tone = "info", icon) {
         setFeedback((f) => ({ text, tone, icon, n: f.n + 1 }));
       },
-      ruleBreak(message) {
+      ruleBreak(rule) {
         countMistake();
+        // The first slip ever also says what a slip is (SPZ-15).
+        let message = rule;
+        if (!seenTips().has("slips")) {
+          markTip("slips");
+          message = `${rule} ${tipsCopy.slips}`;
+        }
         setFeedback((f) => ({ text: message, tone: "danger", icon: "warning", n: f.n + 1 }));
         setLive(message);
         play("buzz");
