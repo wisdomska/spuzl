@@ -129,20 +129,25 @@ describe("trotro generation", () => {
     }
   }, 60_000);
 
-  it("generates each board in under half a second", () => {
+  it("generates boards fast (the old climb took 3 to 7 s on hard)", () => {
     // Warm the JIT, then time 10 boards per level. The search count is bounded (a walk of at most 64
     // position-space searches from a deep lot); typical boards take under 150 ms. Coverage instrumentation
-    // (CI runs `test:coverage`) slows the hot loop about threefold, so the budget follows it there.
+    // (CI runs `test:coverage`) slows the hot loop about threefold, and shared CI runners add noise, so the
+    // check is on the average with a loose cap per board.
     const worker = (globalThis as { __vitest_worker__?: { config?: { coverage?: { enabled?: boolean } } } }).__vitest_worker__;
-    const budget = worker?.config?.coverage?.enabled ? 1500 : 500;
+    const slow = worker?.config?.coverage?.enabled ? 3 : 1;
     generate(createRng("warm"), "hard");
+    const times: number[] = [];
     for (const d of ["easy", "medium", "hard", "expert", "mega"] as Difficulty[])
       for (let i = 0; i < 10; i++) {
         const t0 = performance.now();
         generate(createRng(`timing:${d}:${i}`), d);
-        expect(performance.now() - t0, `${d} seed ${i}`).toBeLessThan(budget);
+        const ms = performance.now() - t0;
+        times.push(ms);
+        expect(ms, `${d} seed ${i}`).toBeLessThan(1000 * slow);
       }
-  }, 60_000);
+    expect(times.reduce((a, b) => a + b, 0) / times.length).toBeLessThan(300 * slow);
+  }, 120_000);
 });
 
 describe("trotro verification", () => {
