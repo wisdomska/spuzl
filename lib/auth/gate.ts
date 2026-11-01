@@ -12,6 +12,12 @@ import type { PlayerRow } from "@/lib/server/player-data";
  * download and boot the Home or Play screen just to be bounced. Returns the player for pages that
  * prefetch their data; null when the backend is not configured (local demo mode).
  */
+/** Session only (no database): signed-out visitors go to the intro. */
+export async function requireSessionPage(): Promise<void> {
+  if (!hasSupabase()) return;
+  if (!(await currentUser())) redirect("/intro");
+}
+
 export async function requirePlayerPage(): Promise<{ user: User; player: PlayerRow } | null> {
   if (!hasSupabase()) return null;
   const user = await currentUser();

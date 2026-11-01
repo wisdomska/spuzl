@@ -3,9 +3,7 @@ import { notFound } from "next/navigation";
 import { GAME_BY_ID } from "@/lib/catalog";
 import { hasLogic } from "@/games/logic-registry";
 import { PlayScreen } from "@/components/play/PlayScreen";
-import { HydrationBoundary, QueryClient, dehydrate } from "@tanstack/react-query";
-import { requirePlayerPage } from "@/lib/auth/gate";
-import { loadMe } from "@/lib/server/player-data";
+import { requireSessionPage } from "@/lib/auth/gate";
 
 export async function generateMetadata({ params }: PageProps<"/play/[game]">): Promise<Metadata> {
   const { game } = await params;
@@ -19,17 +17,14 @@ export default async function Play({ params, searchParams }: PageProps<"/play/[g
   const sp = await searchParams;
   const meta = GAME_BY_ID[game];
   if (!meta || !hasLogic(game)) notFound();
-  const ctx = await requirePlayerPage();
+  // SPZ-01: only the session is checked here (a local JWT check). The player profile is already in the client
+  // cache from the previous screen, and PlayScreen sends players without a profile to onboarding itself.
+  await requireSessionPage();
   const mode = sp.mode === "free" || sp.mode === "archive" ? sp.mode : "daily";
   const date = typeof sp.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sp.date) ? sp.date : undefined;
   const difficulty =
     typeof sp.difficulty === "string" && ["easy", "medium", "hard", "expert", "mega"].includes(sp.difficulty)
       ? (sp.difficulty as "easy" | "medium" | "hard" | "expert" | "mega")
       : undefined;
-  const screen = <PlayScreen meta={meta} initialMode={mode} date={date} difficulty={difficulty} />;
-  if (!ctx) return screen;
-  // Seed the player so the attempt starts right after hydration instead of after a /me round trip.
-  const qc = new QueryClient();
-  qc.setQueryData(["me"], await loadMe(ctx.user, ctx.player));
-  return <HydrationBoundary state={dehydrate(qc)}>{screen}</HydrationBoundary>;
+  return <PlayScreen meta={meta} initialMode={mode} date={date} difficulty={difficulty} />;
 }
