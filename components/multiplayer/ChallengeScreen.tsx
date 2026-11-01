@@ -1,5 +1,6 @@
 "use client";
 
+import { challengeCopy } from "@/lib/copy/challenge";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
@@ -251,7 +252,7 @@ function GhostTimer({ name, color, senderMs, startedAt }: { name: string; color:
   return (
     <div
       className="bg-surface -mx-3 flex flex-col gap-2 rounded-[16px] px-3 py-2.5"
-      role="timer"
+      role="group"
       aria-label={`${name}'s time ${formatClock(senderMs)}`}
     >
       <div className="flex justify-between text-[14px] font-semibold">
@@ -259,7 +260,7 @@ function GhostTimer({ name, color, senderMs, startedAt }: { name: string; color:
           <Icon name="ghost" size={16} /> vs {name}&apos;s time, <span className="num">{formatClock(senderMs)}</span>
         </span>
         <span className="num" style={{ color: left >= 0 ? "var(--accent)" : "var(--danger)" }}>
-          {left >= 0 ? `${formatClock(left)} left` : `${formatClock(-left)} over`}
+          {left >= 0 ? challengeCopy.ahead : challengeCopy.behind}
         </span>
       </div>
       <div className="bg-line relative h-2.5 rounded-[5px]">

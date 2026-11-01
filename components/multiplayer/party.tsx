@@ -552,12 +552,10 @@ export function rowsOf(view: MatchView): RailRow[] {
 export function RaceRail({
   view,
   rows,
-  elapsedMs,
   onToast,
 }: {
   view: MatchView;
   rows: RailRow[];
-  elapsedMs: number;
   onToast: (t: string, kind: "pass" | "info") => void;
 }) {
   const reduce = useReduce();
@@ -587,7 +585,6 @@ export function RaceRail({
         <span>
           Game {view.round} of {view.games.length}
         </span>
-        <span className="num text-text">{formatClock(elapsedMs)}</span>
       </div>
       <ol className="relative" style={{ height: n * ROW }} aria-label="Race standings">
         {rows.map((r, i) => {

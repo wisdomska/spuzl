@@ -312,7 +312,7 @@ function Room({ id, code }: { id: string; code: string }) {
       <div className="relative flex flex-1 flex-col">
         <MatchBoard
           view={view}
-          strip={<RaceRail view={view} rows={rows} elapsedMs={phase === "countdown" ? 0 : elapsed} onToast={show} />}
+          strip={<RaceRail view={view} rows={rows} onToast={show} />}
           locked={phase !== "race" || iFinished}
           label={`Game ${view.round} of ${view.games.length}`}
           onExit={leave}
