@@ -84,7 +84,7 @@ export default function Library() {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder={T.searchPlaceholder}
-            className="placeholder:text-muted min-w-0 flex-1 bg-transparent text-[16px] outline-none focus-visible:outline-none focus-visible:shadow-none [&::-webkit-search-cancel-button]:hidden"
+            className="placeholder:text-muted min-w-0 flex-1 bg-transparent text-[16px] outline-none focus-visible:shadow-none focus-visible:outline-none [&::-webkit-search-cancel-button]:hidden"
             enterKeyHint="search"
             autoComplete="off"
           />

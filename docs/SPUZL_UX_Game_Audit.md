@@ -119,7 +119,7 @@ reach the lesson in one tap from the splash.</p></td>
 **Scorecard (after playing)**
 
 | **Area**                  | **Score** | **Verdict**                                                                                                                                                         |
-|---------------------------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Concept and breadth       | 9/10      | 51 well-chosen games in nine worlds, with real local flavour (Ghana regions in Quads, Akosombo in trivia, Kente Cap, Oware).                                        |
 | Visual design and brand   | 8/10      | Distinct mascot, punchy type, colour-coded worlds. Some palettes are too dark and too similar to read quickly.                                                      |
 | First-run experience      | 8.5/10    | The lesson is excellent. Too many concepts and four steps before home.                                                                                              |
@@ -134,7 +134,7 @@ reach the lesson in one tap from the splash.</p></td>
 **2. How I played**
 
 | **Item**             | **Detail**                                                                                                                                                                                                                                                                               |
-|----------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Devices              | Desktop browser (800 px wide pane) and a 375 × 812 phone viewport.                                                                                                                                                                                                                       |
 | Account              | Fresh guest profile, age band 18 or older, nickname "GridGyal" (one of the suggested names).                                                                                                                                                                                             |
 | Played to completion | Crownfall lesson (4×4), Crownfall daily \#214 (9×9), Crownfall free play, Dusk daily and free play, Quads (two groups plus a deliberate wrong guess), Quickfire (all 5 questions, one deliberately wrong), Flinch, Four Up (win in 2), Practice-bot Duel in Sixer.                       |
@@ -144,7 +144,7 @@ reach the lesson in one tap from the splash.</p></td>
 **Personas**
 
 | **Persona**           | **What they need from SPUZL**                                                                                                                                 |
-|-----------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Ama, 15, SHS student  | Quick games between classes on a mid-range Android with patchy data. Needs instant loading, big tap targets, safe social features, and to brag to classmates. |
 | Kwame, 22, university | Wants to beat friends, climb leagues, duel strangers, share results on WhatsApp and X. Hates waiting and losing to bugs.                                      |
 | Esi, 31, professional | Plays the daily on the commute in 5 minutes. Wants calm, readable boards, no surprise pop-ups, and progress that survives a phone change.                     |
@@ -156,7 +156,7 @@ it happened. Green is smooth, amber is friction, red is a blocker to
 "just play".
 
 | **Step**            | **What happened**                                                                                                                                       | **Time / taps**    | **Feel** |
-|---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------|----------|
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | -------- |
 | 1\. Splash          | Mascot and logo, "Tiny games. Big brain." Tap to skip.                                                                                                  | About 3 s or 1 tap | Smooth   |
 | 2\. Age             | "Akwaaba, Spuzler. How old are you?" Three bands with plain consequences ("No global chat"), plus "I am under 13".                                      | 2 taps             | Smooth   |
 | 3\. How to start    | Three choices: Show me how, Pick a game, Jump straight in. Copy uses Crownfall, XP, Sparks, streak, Spuz and Grid before any are explained.             | 1 tap              | Friction |
@@ -222,7 +222,7 @@ Severity: **High** blocks or frustrates play, **Medium** confuses or
 slows players, **Low** is polish.
 
 | **\#** | **Severity** | **What happened**                                                                                                                                                                                                                                                                          | **Where and fix**                                                                                                                                                                  |
-|--------|--------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1      | High         | **Slow, silent transitions.** Play Crownfall took 5 to 7 s with no pressed state; Enter The Grid 4 to 8 s; Next puzzle 16 s. Full page loads are fast (about 1 s), so the delay is in client-side data fetching.                                                                           | Home CTA, onboarding, results. Prefetch the next game route and data while the player is on the previous screen; show pressed state under 100 ms and a board skeleton immediately. |
 | 2      | High         | **Sudoku boxes are not drawn.** Nine (9×9) and Sixer (6×6) have no thicker borders around the 3×3 / 2×3 boxes.                                                                                                                                                                             | Nine, Sixer. Add 2 px box borders in a lighter tone; this is the single most important visual cue in sudoku.                                                                       |
 | 3      | High         | **Duel round switched under my fingers.** When the bot finished round 1, round 2's board replaced mine with no transition; my next taps became wrong answers on the new board. Result: "You DNF" for both rounds.                                                                          | Duel. Freeze input on round end, show a 2 s result card, then a 3-2-1 countdown before the next board.                                                                             |
@@ -257,7 +257,7 @@ With 51 games, consistency is the biggest usability lever. These rules
 should apply to every game, enforced by one shared game shell component.
 
 | **Rule**              | **Concrete standard**                                                                                                                                             |
-|-----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Instant response      | Every tap shows a visual change within 100 ms. Navigation shows the destination skeleton immediately. No action takes more than 1 s without a progress indicator. |
 | One tap to play       | From Home, "Continue" resumes the last unfinished puzzle or starts the next in the path. No modal between tapping Play and seeing the board.                      |
 | Board first           | The board is visible and interactive on first paint. Rules sit in one short line above it; full rules in Help.                                                    |
@@ -277,7 +277,7 @@ Priority: **P0** fix now, **P1** next release, **P2** nice to have.
 **7.1 Splash and onboarding**
 
 | **What I saw**                                                                 | **Recommendation**                                                                                                                                                                     | **Priority** | **Persona** |
-|--------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|-------------|
+| ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | ----------- |
 | Splash, age, start choice, lesson, celebration, avatar: 6 screens before Home. | Merge avatar and nickname into the celebration screen ("Claim your first clear: pick a colour and name"). Default to "Show me how" and move the other two options under "Skip lesson". | P1           | All         |
 | Start options use unexplained terms.                                           | Plain copy: "Learn a game in 30 seconds", "Browse all 51 games", "Go to the map".                                                                                                      | P1           | Ama         |
 | "Make it official" CTA.                                                        | "Save my progress" or "Create my Spuz". Say what happens next.                                                                                                                         | P2           | All         |
@@ -286,7 +286,7 @@ Priority: **P0** fix now, **P1** next release, **P2** nice to have.
 **7.2 Home (the Grid)**
 
 | **What I saw**                                    | **Recommendation**                                                                                                                        | **Priority** | **Persona** |
-|---------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|--------------|-------------|
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------ | ----------- |
 | Play button silent for 5 to 7 s.                  | Pressed state, haptic tick, route prefetch on Home load; board skeleton on tap.                                                           | P0           | All         |
 | Streak and daily counters contradict the lesson.  | Count the lesson; if not, change lesson copy to "Your streak starts with today's first daily".                                            | P0           | Esi         |
 | Bottom stack covers a third of the map on phones. | One Play card ("Continue: Dusk · Logic Lab 2 of 7") plus small Duel and Party chips; "Today 1 of 15" becomes a progress ring on the card. | P1           | Ama         |
@@ -295,7 +295,7 @@ Priority: **P0** fix now, **P1** next release, **P2** nice to have.
 **7.3 Library (Play anytime)**
 
 | **What I saw**                          | **Recommendation**                                                                                                          | **Priority** | **Persona** |
-|-----------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|--------------|-------------|
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------ | ----------- |
 | 51 rows, two buttons each, no search.   | Search field at top; filter chips: Quick (under 2 min), Calm, Competitive, Word, Number, Reflex, Board; "Done today" ticks. | P1           | All         |
 | Free play vs Daily choice on every row. | One tap opens a game card with Daily (if available) as primary and Free play as secondary.                                  | P1           | All         |
 | Desktop scrollbar under chips.          | Hide scrollbar, add edge fade and arrow buttons on desktop.                                                                 | P2           | Esi         |
@@ -303,7 +303,7 @@ Priority: **P0** fix now, **P1** next release, **P2** nice to have.
 **7.4 Game shell (all 51 games)**
 
 | **What I saw**                                       | **Recommendation**                                                                                                                     | **Priority** | **Persona** |
-|------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|--------------|-------------|
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------ | ----------- |
 | Header bulb silently uses hints.                     | Counter only, not a button; Hint button confirms the XP cost the first time.                                                           | P0           | All         |
 | Two timers in several games; timer runs during Help. | One header timer; pause on Help and Pause.                                                                                             | P0           | All         |
 | Tool state invisible.                                | Filled active tool with aria-pressed; long-press on a cell for the secondary action.                                                   | P0           | All         |
@@ -313,7 +313,7 @@ Priority: **P0** fix now, **P1** next release, **P2** nice to have.
 **7.5 Logic and number games**
 
 | **What I saw**                                   | **Recommendation**                                                                                             | **Priority** | **Persona** |
-|--------------------------------------------------|----------------------------------------------------------------------------------------------------------------|--------------|-------------|
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- | ------------ | ----------- |
 | Nine and Sixer have no box borders.              | 2 px box borders; highlight the selected cell's row, column and box; highlight all cells with the same number. | P0           | All         |
 | Crownfall regions hard to tell apart.            | Region borders always; brighter palette; auto-X neighbours of a placed crown as an option.                     | P0           | All         |
 | Nine number pad: 5 + 4 layout.                   | Single row of 9 on wide screens; 3×3 grid on phones; show remaining count per digit.                           | P2           | Esi         |
@@ -322,14 +322,14 @@ Priority: **P0** fix now, **P1** next release, **P2** nice to have.
 **7.6 Word and trivia**
 
 | **What I saw**                                                       | **Recommendation**                                                                               | **Priority** | **Persona** |
-|----------------------------------------------------------------------|--------------------------------------------------------------------------------------------------|--------------|-------------|
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------ | ----------- |
 | Quads: same colour for every group; slow feedback.                   | Difficulty colours; feedback under 600 ms; "one away" shakes the tiles.                          | P1           | Kwame       |
 | Quickfire: options visible before Start; stale feedback; no summary. | Hide options until Start; reset feedback; always end with "4 of 5 · 469 pts" and a share button. | P0           | All         |
 
 **7.7 Reflex, rage and board games**
 
 | **What I saw**                              | **Recommendation**                                                                              | **Priority** | **Persona** |
-|---------------------------------------------|-------------------------------------------------------------------------------------------------|--------------|-------------|
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------ | ----------- |
 | Flinch needs a tap between every round.     | Auto-start the next round after 1.5 s, with a tap to skip the wait.                             | P2           | Kwame       |
 | Gotcha: black first frame, small playfield. | Show the level instantly; enlarge canvas; on-screen buttons sized 64 px; keep keyboard support. | P1           | Ama         |
 | Four Up needs exact empty-cell taps.        | Whole-column hit area with a drop preview.                                                      | P1           | All         |
@@ -339,7 +339,7 @@ Priority: **P0** fix now, **P1** next release, **P2** nice to have.
 **7.8 Duel**
 
 | **What I saw**                                                     | **Recommendation**                                                                                  | **Priority** | **Persona** |
-|--------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|--------------|-------------|
+| ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- | ------------ | ----------- |
 | Round switch with no transition; inputs spill into the next board. | Input freeze, round result card, 3-2-1 countdown, then next board.                                  | P0           | Kwame       |
 | "Usual wait ~0:12" while nobody is online.                         | Hide or base on live data; offer the bot from the start ("Play bot now or keep searching").         | P1           | All         |
 | Ranked match in an unfamiliar game.                                | Choose from games the player has cleared at least once; otherwise a 20 s rules card before round 1. | P1           | Kwame       |
@@ -348,7 +348,7 @@ Priority: **P0** fix now, **P1** next release, **P2** nice to have.
 **7.9 Party, Leagues, Friends**
 
 | **What I saw**                                           | **Recommendation**                                                                                                         | **Priority** | **Persona** |
-|----------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|--------------|-------------|
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------ | ----------- |
 | Party offers 3 of 51 games; join field inside host form. | Host and Join tabs; any game with a party variant; explain Classroom mode in one line.                                     | P1           | Kwame       |
 | Leagues: one-player table.                               | Group new players with friends or level-matched players; designed empty state with "Invite 3 friends to fill your league". | P1           | Kwame       |
 | Friends: strong invite card and empty state.             | Keep. Add "Add from contacts" via share link only (never read contacts), and show friends' daily results on Home.          | P2           | Ama         |
@@ -356,7 +356,7 @@ Priority: **P0** fix now, **P1** next release, **P2** nice to have.
 **7.10 Shop, Me, Settings**
 
 | **What I saw**                                       | **Recommendation**                                                                                             | **Priority** | **Persona** |
-|------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|--------------|-------------|
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------ | ----------- |
 | First cosmetic is ~14 puzzles away.                  | A free starter hat for finishing the lesson; one item at 100 Sparks.                                           | P1           | Ama         |
 | Rank-up interstitial blocks flow and skipped a tier. | Toast on results; fix the rank jump.                                                                           | P1           | All         |
 | Settings are excellent but hidden.                   | Add a "Comfort" quick sheet from the pause menu: patterns, text size, reduced motion, timer visibility, sound. | P1           | Esi         |
@@ -494,7 +494,7 @@ Twelve games that are not already among the 51, chosen for youth appeal,
 quick sessions and easy controls. Each lists the island it fits.
 
 | **Game**        | **Island**  | **How it plays**                                                                                                                      | **Effort** | **Appeal** |
-|-----------------|-------------|---------------------------------------------------------------------------------------------------------------------------------------|------------|------------|
+| --------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ---------- |
 | Five            | Word Woods  | Guess a five-letter word in six tries, with coloured feedback. The one daily word game every youth audience knows; currently missing. | Low        | Very high  |
 | Trotro Jam      | Shape Shed  | Slide trotros and taxis out of a crowded station (Rush Hour style). Local, visual, one-finger drag.                                   | Medium     | High       |
 | Penalty King    | Reflex Rink | Swipe to aim and curve penalties past a keeper; then dive as keeper. 60-second rounds, perfect for duels.                             | Medium     | Very high  |
@@ -530,7 +530,7 @@ Hits, Dara.</p></td>
 **11. Roadmap and metrics**
 
 | **Phase**         | **What to ship**                                                                                                                                                                                                              |
-|-------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | This week         | Pressed states and route prefetch (target under 1 s tap-to-board) · sudoku box borders · Duel round transition · hint bulb fix · single timer and pause-on-Help · streak copy fix · Quickfire option leak and stale feedback. |
 | Next 2 to 4 weeks | Shared game shell (tool state, endings, named Next) · Crownfall borders and patterns prompt · Library search and filters · Continue card · rank-up as toast · starter cosmetic · Party host/join split.                       |
 | 1 to 2 months     | Daily Five with share grid · interactive first-play for every game · async duels · Five and Higher or Lower · comfort sheet · sign-in nudge after 3rd clear.                                                                  |

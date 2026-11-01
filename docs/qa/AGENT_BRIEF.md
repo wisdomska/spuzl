@@ -4,6 +4,7 @@ Read first: `AGENTS.md`, `docs/ARCHITECTURE_NOTES.md`, `components/game/GameShel
 the board(s) you are changing, and the ticket text below.
 
 Rules
+
 - One commit per ticket, message `SPZ-XX: <short title>`. Plain message, no trailers of any kind. The commit
   author is already configured (`git config user.name` = wisdomska(senya)); do not change it. The repo's
   commit-msg hook rejects some words; if it fails, reword. Do not push.
