@@ -43,7 +43,7 @@ async function addPlayer(admin: SupabaseClient, matchId: string, playerId: strin
 export async function enqueue(admin: SupabaseClient, player: { id: string; age_band: string }, game: string | null, rulesSeen = false) {
   if (player.age_band === "13-15") throw new ApiError(403, "age_restricted", "Quick Match opens at 16. Challenge a friend instead.");
   if (game && !isRaceGame(game)) throw new ApiError(400, "game_not_duelable");
-  // A ranked game the player has never cleared: read the rules first (the client shows a 20 s rules card).
+  // A ranked game the player has never cleared or learned: read the rules first (the client shows a 20 s rules card).
   if (game && !rulesSeen && !(await knownGames(admin, [player.id], [game])).get(player.id)?.has(game))
     throw new ApiError(409, "needs_rules", GAME_BY_ID[game]?.rule ?? "");
   const [{ rating }, { data: me }] = await Promise.all([

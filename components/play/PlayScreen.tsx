@@ -40,7 +40,8 @@ import { cardUrl } from "@/lib/share/urls";
 import { createChallengeLink, GHOST_GAMES, saveGhostRun } from "@/lib/client/challenge";
 import { HowToSheet } from "./HowToSheet";
 import { GuidedPlay } from "./GuidedPlay";
-import { learnedGames, markLearned, needsGuided } from "@/lib/guided";
+import { allLearned, learnedGames, needsGuided } from "@/lib/guided";
+import { useLearnedSync, useMarkLearned } from "@/lib/client/learned";
 import { hasLogic } from "@/games/logic-registry";
 import { Spuz } from "@/components/brand/Spuz";
 import { Button } from "@/components/ui/Button";
@@ -149,6 +150,9 @@ export function PlayScreen({
   // cancels the first start instead of creating two attempts.
   const playerId = me.data?.id;
   const played = me.data?.played;
+  // Learned games live on the account and on this device; keep both in step.
+  useLearnedSync(me.data);
+  const markLearned = useMarkLearned();
   const startedToday = today.data?.games.find((g) => g.id === meta.id)?.state === "in_progress";
   // First try of a game: a short guided practice round before the real one (skippable).
   const [guided, setGuided] = useState(false);
@@ -160,7 +164,7 @@ export function PlayScreen({
         id: meta.id,
         mode: initialMode,
         played,
-        learned: learnedGames(),
+        learned: allLearned(learnedGames(), me.data?.learned),
         started: startedToday,
         available: hasLogic(meta.id),
       });

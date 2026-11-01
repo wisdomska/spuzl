@@ -65,7 +65,7 @@ export function nextRoundStart(now: number, roundEndMs: number = TIMING.roundEnd
 }
 
 /**
- * Ranked Quick Match games (SPZ-12): a random mix only uses games both players have cleared, or failing
+ * Ranked Quick Match games (SPZ-12): a random mix only uses games both players know (cleared or learned), or failing
  * that either of them, so nobody meets a game for the first time with rating on the line when it can be
  * helped. When it can't (two brand-new players), that round starts with a rules break.
  */
@@ -78,7 +78,7 @@ export function rankedPool(known: Map<string, Set<string>>): string[] | undefine
 }
 
 /**
- * The players for whom a round's game is new: never cleared by them. A ranked round of a game
+ * The players for whom a round's game is new: never cleared or learned by them. A ranked round of a game
  * that is new to anyone starts after a rules break (`rulesBreakMs`), the same for both players.
  */
 export function newToGame(game: string | null | undefined, players: readonly string[], known: Map<string, Set<string>>): string[] {

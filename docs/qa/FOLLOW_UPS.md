@@ -21,7 +21,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   - The help sheet for bot games still mentions Dailies and hints.
 - **Guided first play:**
   - Before the first move, Dusk, Nine and Merge have no deduction, so the first hint coaches with the rule.
-  - Learned games are remembered per device. Cleared games are remembered per account.
 - **Party:** "Choose games" means one game or a random mix. Hand-picking several needs a column for the chosen
   list, since `matches.games` is overwritten at race start.
 
