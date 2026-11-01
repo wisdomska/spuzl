@@ -13,7 +13,6 @@ export function BotEntry({ meta, inline = false }: { meta: GameMeta; inline?: bo
     return (
       <Link
         href={`/play/${meta.id}/bot`}
-        aria-label={boardGames.bot.entryAria(meta.name)}
         className="press bg-surface-raised flex h-11 items-center gap-1.5 rounded-[12px] px-3 text-[14px] font-semibold"
       >
         <Icon name="robot" size={18} style={{ color: "var(--world)" }} />

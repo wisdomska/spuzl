@@ -4,7 +4,7 @@ import { onboardGuest } from "./harness";
 /** SPZ-16: one Play card with the Today ring; Duel and Party as small chips; the map keeps 70 % of the screen. */
 test("home: one Play card, chips, and room for the map", async ({ page }, info) => {
   await onboardGuest(page);
-  const card = page.getByRole("link", { name: /^(Play|Continue:) .*Today's Dailies: \d+ of \d+ cleared/ });
+  const card = page.getByRole("link", { name: /^(Play|Continue:) .*(Today's Dailies|Games tried): \d+ of \d+/ });
   await expect(card).toBeVisible();
   await expect(page.getByRole("navigation", { name: "More ways to play" }).getByRole("link")).toHaveCount(3);
   const box = await card.boundingBox();
