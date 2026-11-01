@@ -102,7 +102,7 @@ export interface BoardApi<St> {
    * phrase finishes (a found word's chimes, a check sting); default 100 ms.
    */
   onSolved(state: St, opts?: { clearDelayMs?: number }): void;
-  /** Hard fail (out of lives, Hunch out of guesses...) */
+  /** Hard fail (out of lives, Hunch out of guesses...). The shell plays the run-over sound. */
   onFailed?(state: St, reason: string): void;
   /** Feedback line under the board. Never overlays the board. */
   feedback(text: string, tone?: FeedbackTone, icon?: string): void;

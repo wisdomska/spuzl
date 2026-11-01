@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
-import { play } from "@/lib/audio";
+import { sfx } from "@/games/_shared/sfx";
 import { hilo as t } from "@/lib/copy/hilo";
 import { answer, CALLS, MAX_SLIPS, replay, show, valueOf, type Call, type HiloPuzzle, type HiloState } from "./logic";
 
@@ -55,7 +55,7 @@ export default function HiloBoard({ puzzle, initialState, hint, disabled, mode, 
       const ok = c === truth;
       if (ok) {
         streak.current++;
-        play("pop", { step: streak.current });
+        sfx.place(streak.current);
         const msg = t.right(expr, values[i + 1], word, values[i]);
         api.feedback(msg, "success", "check-circle");
         api.announce(msg);
@@ -104,7 +104,12 @@ export default function HiloBoard({ puzzle, initialState, hint, disabled, mode, 
   return (
     <div
       className={`flex flex-col gap-3 rounded-[20px] p-4 ${over && !r.failed ? "board-pulse" : ""}`}
-      style={{ width: "min(358px, calc(100vw - 36px))", background: "var(--board-bg)", boxShadow: "0 0 0 2px var(--line)" }}
+      style={{
+        width: "min(358px, calc(100vw - 36px))",
+        background: "var(--board-bg)",
+        boxShadow: "0 0 0 2px var(--line)",
+        perspective: 800,
+      }}
       aria-label={t.board}
       role="group"
     >
@@ -134,7 +139,8 @@ export default function HiloBoard({ puzzle, initialState, hint, disabled, mode, 
             <li
               key={k}
               aria-label={t.pip(k + 1, res)}
-              className="flex h-6 items-center justify-center rounded-full"
+              // the pip for the call just made pops as it fills
+              className={`flex h-6 items-center justify-center rounded-full ${flipN && k === calls.length - 1 ? (flipN % 2 ? "cell-pop-a" : "cell-pop-b") : ""}`}
               style={{
                 background: res === "right" ? "var(--world)" : res === "slip" ? "var(--danger-tint)" : "var(--surface)",
                 color: res === "right" ? "var(--on-accent)" : res === "slip" ? "var(--danger)" : "var(--text-muted)",
@@ -147,10 +153,15 @@ export default function HiloBoard({ puzzle, initialState, hint, disabled, mode, 
         })}
       </ol>
 
+      {/* The called card turns over into the "now showing" slot (a quarter flip, never on first show). */}
       <div
         key={`a-${at}`}
-        className={`${card} min-h-[96px] ${flipN && !over ? (flipN % 2 ? "cell-pop-a" : "cell-pop-b") : ""}`}
-        style={{ background: "var(--surface-raised)", boxShadow: "0 4px 0 var(--depth)" }}
+        className={`${card} min-h-[96px]`}
+        style={{
+          background: "var(--surface-raised)",
+          boxShadow: "0 4px 0 var(--depth)",
+          animation: flipN && !over ? "flip-in 220ms var(--ease-out) both" : undefined,
+        }}
         aria-label={t.anchorCard(show(anchor), anchorV)}
       >
         <span className="text-muted text-[13px] font-medium">{t.anchor}</span>
@@ -174,7 +185,8 @@ export default function HiloBoard({ puzzle, initialState, hint, disabled, mode, 
         <span className="num text-muted text-[28px] leading-none font-semibold">{shown ?? t.hidden}</span>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      {/* The call's answer (right or slip) is these buttons' sound. */}
+      <div className="grid grid-cols-2 gap-2" data-no-tick>
         {(["hi", "lo"] as const).map((c) => (
           <button
             key={c}

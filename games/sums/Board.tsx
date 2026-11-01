@@ -4,8 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent }
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { useCellSize } from "@/components/game/useBoardSize";
-import { useGridKeys } from "@/components/game/useGridKeys";
-import { play } from "@/lib/audio";
+import { isKeyedInput, useGridKeys, viaKeys } from "@/components/game/useGridKeys";
+import { sfx } from "@/games/_shared/sfx";
 import { analyze, runsOf, type SumsPuzzle, type SumsState } from "./logic";
 
 const GAP = 2;
@@ -23,6 +23,7 @@ export default function SumsBoard({ puzzle, initialState, hint, disabled, mode, 
   const [sel, setSel] = useState(firstWhite);
   const [last, setLast] = useState(-1);
   const [tapN, setTapN] = useState(0);
+  const [quiet, setQuiet] = useState(false);
   const [done, setDone] = useState(false);
   const ref = useRef(cells);
   const streak = useRef(0);
@@ -42,6 +43,7 @@ export default function SumsBoard({ puzzle, initialState, hint, disabled, mode, 
       setHist((h) => [...h, prev]);
       setLast(i);
       setTapN((t) => t + 1);
+      setQuiet(isKeyedInput());
       const before = analyze(puzzle, prev, runs);
       const after = analyze(puzzle, next, runs);
       const broke = v !== 0 && after.bad.has(i) && (after.bad.size > before.bad.size || !before.bad.has(i));
@@ -53,11 +55,13 @@ export default function SumsBoard({ puzzle, initialState, hint, disabled, mode, 
         api.announce(`Row ${r}, column ${c}, ${v}. ${after.message}`);
       } else if (after.clear) {
         setDone(true);
+        sfx.place(streak.current + 1);
         api.feedback("Every run adds up. Board cleared.", "success", "check-circle");
         api.announce("Board cleared.");
       } else {
         if (v) streak.current++;
-        play(v ? "pop" : "tick", { step: streak.current });
+        if (v) sfx.place(streak.current);
+        else sfx.remove();
         api.announce(`Row ${r}, column ${c}, ${v || "empty"}`);
         api.feedback(
           mode === "tutorial" && after.filled === 1
@@ -79,7 +83,6 @@ export default function SumsBoard({ puzzle, initialState, hint, disabled, mode, 
       const prev = h[h.length - 1];
       ref.current = prev;
       setCells(prev);
-      play("tick");
       api.onMove(prev);
       return h.slice(0, -1);
     });
@@ -109,22 +112,22 @@ export default function SumsBoard({ puzzle, initialState, hint, disabled, mode, 
         if (down || right) api.announce(`Clue. ${right ? `Across ${right}.` : ""} ${down ? `Down ${down}.` : ""}`);
         return;
       }
+      if (i !== sel) sfx.select();
       setSel(i);
-      play("tick");
     },
-    [api, puzzle],
+    [api, puzzle, sel],
   );
   const keys = useGridKeys(rows, cols, select);
   const onKey = (e: KeyboardEvent) => {
     if (/^[1-9]$/.test(e.key)) {
       e.preventDefault();
       setSel(keys.focus);
-      put(keys.focus, Number(e.key));
+      viaKeys(() => put(keys.focus, Number(e.key)));
       return;
     }
     if (e.key === "Backspace" || e.key === "Delete" || e.key === "0") {
       e.preventDefault();
-      put(keys.focus, 0);
+      viaKeys(() => put(keys.focus, 0));
       return;
     }
     keys.onKeyDown(e);
@@ -164,7 +167,8 @@ export default function SumsBoard({ puzzle, initialState, hint, disabled, mode, 
                 const bad = a.bad.has(i);
                 const dist = Math.abs(r - lastR) + Math.abs(c - lastC);
                 let anim = "";
-                if (!done && i === last) anim = bad ? (tapN % 2 ? "cell-shake-a" : "cell-shake-b") : tapN % 2 ? "cell-pop-a" : "cell-pop-b";
+                if (!done && i === last)
+                  anim = bad ? (tapN % 2 ? "cell-shake-a" : "cell-shake-b") : quiet ? "" : tapN % 2 ? "cell-pop-a" : "cell-pop-b";
                 if (!isWhite) {
                   const down = puzzle.down[i],
                     right = puzzle.right[i];
@@ -245,7 +249,8 @@ export default function SumsBoard({ puzzle, initialState, hint, disabled, mode, 
         </div>
       </div>
 
-      <div className="grid w-full grid-cols-5 gap-2" role="group" aria-label="Number pad" style={{ maxWidth: 358 }}>
+      {/* Each key makes its own sound (place, or the soft erase), not the generic tap. */}
+      <div className="grid w-full grid-cols-5 gap-2" role="group" aria-label="Number pad" style={{ maxWidth: 358 }} data-no-tick>
         {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => (
           <button
             key={d}

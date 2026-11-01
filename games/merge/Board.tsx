@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type Poin
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { play } from "@/lib/audio";
+import { sfx } from "@/games/_shared/sfx";
+import { nudge } from "@/games/_shared/nudge";
 import { quick } from "@/lib/copy/quick";
 import { best, canMove, DIR_WORD, initialBoard, slide, total, type Dir, type MergePuzzle, type MergeState } from "./logic";
 
@@ -12,6 +14,8 @@ const PAD = 8;
 const INK = "#0E0F1A";
 const t = quick.merge;
 const KEY_DIR: Record<string, Dir> = { ArrowUp: "U", ArrowDown: "D", ArrowLeft: "L", ArrowRight: "R", w: "U", s: "D", a: "L", d: "R" };
+/** Grid direction (0 N, 1 E, 2 S, 3 W) for a swipe, for the blocked lean. */
+const DIR_NUM: Record<Dir, number> = { U: 0, R: 1, D: 2, L: 3 };
 
 /** Tile fills climb through the world palette; the number is always printed, so colour is never alone. */
 function look(v: number): { bg: string; fg: string } {
@@ -55,7 +59,8 @@ export default function MergeBoard({ puzzle, initialState, hint, disabled, mode,
       const st = slide(n, b, d);
       if (st.changed) b = init.spawn(st.board).board;
     }
-    const t: Tile[] = b.flatMap((v, at) => (v ? [{ id: at, v, at, fx: "new" as const }] : []));
+    // The opening tiles are simply there: no spawn animation while the board first appears.
+    const t: Tile[] = b.flatMap((v, at) => (v ? [{ id: at, v, at, fx: "" as const }] : []));
     return { engine: { board: b, spawn: init.spawn, moves: initialState?.moves.slice() ?? [], ids: n * n }, tiles: t, board: b };
   });
   const engine = useRef(boot.engine);
@@ -66,6 +71,7 @@ export default function MergeBoard({ puzzle, initialState, hint, disabled, mode,
   const [moveN, setMoveN] = useState(0);
   const clock = useRef({ base: initialState?.moves.at(-1)?.[1] ?? 0, since: 0, running: false });
   const swipe = useRef<{ x: number; y: number } | null>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(358);
   useEffect(() => {
     const on = () => setWidth(Math.min(358, window.innerWidth - 36));
@@ -126,7 +132,9 @@ export default function MergeBoard({ puzzle, initialState, hint, disabled, mode,
       const t = Math.round(Math.min(now(), puzzle.limitMs));
       const s = slide(n, e.board, d);
       if (!s.changed) {
-        play("tick");
+        // Nothing can slide that way: the board leans into the wall and settles.
+        nudge(gridRef.current, DIR_NUM[d], 4);
+        sfx.remove();
         api.announce(`Nothing moves ${DIR_WORD[d]}.`);
         return;
       }
@@ -154,8 +162,12 @@ export default function MergeBoard({ puzzle, initialState, hint, disabled, mode,
       });
       setBoard(sp.board);
       setMoveN((k) => k + 1);
-      if (s.gained) play("pop", { step: Math.min(7, Math.log2(Math.max(...s.mergedAt.map((i) => s.board[i]))) - 1) });
-      else play("tick");
+      // A merge blips higher for bigger tiles; two or more in one swipe answer with a second, higher blip.
+      if (s.gained) {
+        const step = Math.min(7, Math.log2(Math.max(...s.mergedAt.map((i) => s.board[i]))) - 1);
+        sfx.place(step);
+        if (s.mergedAt.length > 1) play("place", { step: Math.min(7, step + 2), delay: 0.07, silentHaptic: true });
+      } else sfx.select();
       const top = best(sp.board);
       api.announce(
         `Swiped ${DIR_WORD[d]}.${s.gained ? ` Merged to ${Math.max(...s.mergedAt.map((i) => s.board[i]))}.` : ""} Best tile ${top}.`,
@@ -255,6 +267,7 @@ export default function MergeBoard({ puzzle, initialState, hint, disabled, mode,
       </div>
 
       <div
+        ref={gridRef}
         role="grid"
         tabIndex={0}
         aria-label={`Merge board, ${n} by ${n}. Arrow keys slide the tiles.`}
@@ -309,14 +322,14 @@ export default function MergeBoard({ puzzle, initialState, hint, disabled, mode,
               }}
             >
               <div
-                key={`${t.v}-${moveN}`}
                 className={`num flex h-full w-full items-center justify-center rounded-[12px] font-semibold ${t.fx === "merged" ? (moveN % 2 ? "cell-pop-a" : "cell-pop-b") : ""}`}
                 style={{
                   background: bg,
                   color: fg,
                   fontSize: Math.round(cell * (digits <= 2 ? 0.42 : digits === 3 ? 0.34 : 0.27)),
                   boxShadow: "0 4px 0 var(--depth)",
-                  ...(t.fx === "new" ? { animation: "fade-in 160ms var(--ease-out) 90ms both" } : {}),
+                  // A spawned tile grows in from 0.9 once the slide has landed (nothing appears from nothing).
+                  ...(t.fx === "new" ? { animation: "tile-in 160ms var(--ease-out) 90ms both" } : {}),
                 }}
               >
                 {t.v}

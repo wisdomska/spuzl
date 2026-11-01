@@ -70,6 +70,8 @@ interface FeedbackState {
 const GUIDED_IDLE_MS = 6000;
 /** Gap between the board's last placement sound and the clear arpeggio. */
 const CLEAR_GAP_MS = 100;
+/** Gap between the last slip's buzz and the run-over sound. */
+const FAIL_GAP_MS = 320;
 /** Tool controls that take something back press with the soft tap (lib/audio/press.ts). */
 const SOFT_TOOLS = new Set(["undo", "erase", "clear", "delete", "reset", "restart", "deselect"]);
 
@@ -191,6 +193,12 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
       onFailed(state, reason) {
         stateRef.current = state;
         setSolved(true);
+        // The end of a run that did not clear (out of tries, a lost bot game): a gentle falling pair,
+        // after the slip's own buzz has had its moment. Once, like the clear.
+        if (!clearPlayed.current) {
+          clearPlayed.current = true;
+          play("duelLose", { delay: FAIL_GAP_MS / 1000 });
+        }
         onFailed?.(state, reason, now());
       },
       feedback(text, tone = "info", icon) {

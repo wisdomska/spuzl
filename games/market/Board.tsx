@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
-import { useGridKeys } from "@/components/game/useGridKeys";
-import { play } from "@/lib/audio";
+import { isKeyedInput, useGridKeys, viaKeys } from "@/components/game/useGridKeys";
+import { sfx } from "@/games/_shared/sfx";
 import { market as t } from "@/lib/copy/market";
 import { basketCost, clueText, costOf, MAX_Q, MIN_Q, ruleStatus, spendOf, type MarketPuzzle, type MarketState } from "./logic";
 
@@ -54,13 +54,15 @@ export default function MarketBoard({ puzzle, initialState, hint, disabled, mode
       const c = basketCost(puzzle, next);
       const key = puzzle.items[i].key;
       if (!entered) {
-        play("tick");
+        sfx.remove();
         setBad(null);
         api.announce(t.erased(key));
         api.onMove({ qty: next });
         return;
       }
-      setPop((p) => ({ i, n: (p?.n ?? 0) + 1 }));
+      // Typed quantities change without the pop (fast, repeated entry).
+      if (!isKeyedInput()) setPop((p) => ({ i, n: (p?.n ?? 0) + 1 }));
+      else setPop(null);
       const full = next.every((q) => q != null);
       if (c > spend) {
         streak.current = 0;
@@ -75,6 +77,7 @@ export default function MarketBoard({ puzzle, initialState, hint, disabled, mode
         if (broken < 0) {
           setDone(true);
           setBad(null);
+          sfx.place(streak.current + 1);
           api.feedback(t.cleared(puzzle.change), "success", "check-circle");
           api.announce(t.cleared(puzzle.change));
           api.onMove({ qty: next }, { correctStreak: ++streak.current });
@@ -88,7 +91,7 @@ export default function MarketBoard({ puzzle, initialState, hint, disabled, mode
         return;
       }
       setBad(null);
-      play("pop", { step: ++streak.current });
+      sfx.place(++streak.current);
       const msg = t.set(key, next[i]!, c);
       api.feedback(msg, "info", "storefront");
       api.announce(msg);
@@ -134,7 +137,6 @@ export default function MarketBoard({ puzzle, initialState, hint, disabled, mode
     qtyRef.current = prev;
     setQty(prev);
     setBad(null);
-    play("tick");
     api.announce(t.undone);
     api.onMove({ qty: prev });
   }, [api, history, locked]);
@@ -151,12 +153,12 @@ export default function MarketBoard({ puzzle, initialState, hint, disabled, mode
     const d = Number(e.key);
     if (Number.isInteger(d) && d >= MIN_Q && d <= MAX_Q) {
       e.preventDefault();
-      enter(d);
+      viaKeys(() => enter(d));
       return;
     }
     if (e.key === "Backspace" || e.key === "Delete" || e.key === "0") {
       e.preventDefault();
-      erase();
+      viaKeys(erase);
       return;
     }
     keys.onKeyDown(e);
@@ -213,6 +215,7 @@ export default function MarketBoard({ puzzle, initialState, hint, disabled, mode
                 aria-label={t.row(i + 1, it.key, it.price, it.deal, q)}
                 onClick={() => {
                   keys.setFocus(i);
+                  if (sel !== i && !locked) sfx.select();
                   setSel(i);
                 }}
                 className={`relative flex min-h-[56px] cursor-pointer items-center gap-3 rounded-[14px] px-3 py-1.5 outline-none focus-visible:ring-2 focus-visible:ring-[var(--text)] ${anim} ${hinted ? "hint-ring" : ""}`}
@@ -278,7 +281,8 @@ export default function MarketBoard({ puzzle, initialState, hint, disabled, mode
       </div>
 
       {/* Number pad */}
-      <div className="grid grid-cols-5 gap-2" role="group" aria-label={t.pad}>
+      {/* Each key makes its own sound (place, or the soft erase), not the generic tap. */}
+      <div className="grid grid-cols-5 gap-2" role="group" aria-label={t.pad} data-no-tick>
         {DIGITS.map((d) => {
           const hinted = hintT?.value === d && hintT.item === sel && qty[sel ?? -1] !== d;
           return (
