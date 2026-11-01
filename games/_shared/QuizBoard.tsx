@@ -105,6 +105,8 @@ export function QuizBoard({ rounds, correct, limitMs, noun, initial, hint, disab
   );
 
   const ask = useCallback(() => {
+    // The header clock runs from Start, not from the first answer.
+    api.start?.();
     clock.current = { used: 0, since: performance.now() };
     setLeft(limitMs);
     setPhase("asking");

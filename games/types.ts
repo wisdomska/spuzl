@@ -103,6 +103,8 @@ export interface BoardApi<St> {
    * shows and submits this time instead of wall-clock time, so the player sees exactly what is scored.
    */
   setClock?(clock: (() => number) | null): void;
+  /** Optional: the player pressed Start (timed boards with a ready screen). The shell clock starts now. */
+  start?(): void;
 }
 
 export interface ControlSpec {

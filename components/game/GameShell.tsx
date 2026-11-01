@@ -201,6 +201,9 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
       setClock(fn) {
         boardClock.current = fn;
       },
+      start() {
+        if (!started) setStarted(true);
+      },
     }),
     [started, now, onMove, onSolved, onFailed],
   );
