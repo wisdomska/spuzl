@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useState } from "react";
 import { GAMES, GAME_BY_ID } from "@/lib/catalog";
 import { dayMonth } from "@/lib/admin/dates";
-import { errorText, useAdminQuery } from "@/lib/client/admin";
-import { Btn, Empty, Notice, PageTitle, Pill, RowsSkeleton, Swatch, inputCls } from "./ui";
+import { errorText, useAdminQuery, type AdminPage } from "@/lib/client/admin";
+import { Pagination, usePager } from "./Pagination";
+import { Empty, Notice, PageTitle, Pill, RowsSkeleton, Swatch, inputCls } from "./ui";
 
 interface Row {
   id: string;
@@ -32,16 +33,25 @@ const STATUS_TONE: Record<string, "ok" | "warn" | "neutral"> = {
 export function PuzzleLibrary() {
   const [game, setGame] = useState("");
   const [status, setStatus] = useState("");
-  const [offset, setOffset] = useState(0);
-  const qs = new URLSearchParams({ ...(game && { game }), ...(status && { status }), offset: String(offset) });
-  const q = useAdminQuery<{ total: number; rows: Row[] }>(["puzzles", game, status, offset], `/api/admin/puzzles?${qs}`);
+  const pager = usePager();
+  const qs = new URLSearchParams({ ...(game && { game }), ...(status && { status }) });
+  const q = useAdminQuery<AdminPage<Row>>(
+    ["puzzles", game, status, pager.query],
+    `/api/admin/puzzles?${qs}${qs.size ? "&" : ""}${pager.query}`,
+    { keepPrevious: true },
+  );
   return (
     <div className="flex flex-col gap-3.5 px-6 py-5">
       <PageTitle
         title="Puzzles"
         aside={
           <>
-            <select aria-label="Game" value={game} onChange={(e) => (setGame(e.target.value), setOffset(0))} className={`${inputCls} w-44`}>
+            <select
+              aria-label="Game"
+              value={game}
+              onChange={(e) => (setGame(e.target.value), pager.reset())}
+              className={`${inputCls} w-44`}
+            >
               <option value="">All games</option>
               {GAMES.map((g) => (
                 <option key={g.id} value={g.id}>
@@ -52,7 +62,7 @@ export function PuzzleLibrary() {
             <select
               aria-label="Status"
               value={status}
-              onChange={(e) => (setStatus(e.target.value), setOffset(0))}
+              onChange={(e) => (setStatus(e.target.value), pager.reset())}
               className={`${inputCls} w-40`}
             >
               <option value="">Any status</option>
@@ -112,19 +122,7 @@ export function PuzzleLibrary() {
           </table>
         )}
       </div>
-      {q.data && q.data.total > 50 && (
-        <div className="flex items-center gap-2">
-          <Btn size="sm" icon="caret-left" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - 50))}>
-            Newer
-          </Btn>
-          <span className="num text-muted text-[13px]">
-            {offset + 1} to {Math.min(offset + 50, q.data.total)}
-          </span>
-          <Btn size="sm" disabled={offset + 50 >= q.data.total} onClick={() => setOffset(offset + 50)}>
-            Older
-          </Btn>
-        </div>
-      )}
+      {q.data && <Pagination pager={pager} total={q.data.total} />}
     </div>
   );
 }

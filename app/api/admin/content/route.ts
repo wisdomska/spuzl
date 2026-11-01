@@ -3,29 +3,43 @@ import { body, handle, ok, ApiError } from "@/lib/api/server";
 import { audit, requireAdmin } from "@/lib/admin/auth";
 import { CONTENT_GAMES, isContentGame, validatePayload } from "@/lib/admin/content-schemas";
 import { ITEM_COLS } from "@/lib/admin/content-files";
+import { fetchPage, pageParams } from "@/lib/admin/paging";
 
 const STATUSES = ["draft", "in_review", "approved", "rejected", "scheduled"];
 
-/** GET /api/admin/content?status=&game=: editor items, newest first, with author and reviewer emails. */
+/**
+ * GET /api/admin/content?status=&game=&page=&pageSize=: one page of editor items, last updated first (id
+ * breaks ties), with author and reviewer emails.
+ */
 export const GET = handle(async (req: Request) => {
   const ctx = await requireAdmin("content.read");
   const url = new URL(req.url);
+  const p = pageParams(url.searchParams);
   const status = url.searchParams.get("status");
   const game = url.searchParams.get("game");
   if (status && !STATUSES.includes(status)) throw new ApiError(400, "bad_status");
   if (game && !isContentGame(game)) throw new ApiError(400, "bad_game");
-  let q = ctx.db.from("content_items").select(ITEM_COLS).eq("source", "editor").order("updated_at", { ascending: false }).limit(200);
-  if (status) q = q.eq("status", status);
-  if (game) q = q.eq("game_id", game);
-  const { data, error } = await q;
-  if (error) throw error;
-  const ids = [...new Set((data ?? []).flatMap((r) => [r.author_id, r.reviewer_id]).filter(Boolean))] as string[];
+  const { rows: data, total } = await fetchPage(() => {
+    let q = ctx.db
+      .from("content_items")
+      .select(ITEM_COLS, { count: "exact" })
+      .eq("source", "editor")
+      .order("updated_at", { ascending: false })
+      .order("id", { ascending: false });
+    if (status) q = q.eq("status", status);
+    if (game) q = q.eq("game_id", game);
+    return q;
+  }, p);
+  const ids = [...new Set(data.flatMap((r) => [r.author_id, r.reviewer_id]).filter(Boolean))] as string[];
   const { data: admins } = ids.length ? await ctx.db.from("admins").select("user_id, email").in("user_id", ids) : { data: [] };
   const email = Object.fromEntries((admins ?? []).map((a) => [a.user_id, a.email]));
   return ok({
     me: ctx.user.id,
     games: CONTENT_GAMES,
-    rows: (data ?? []).map((r) => ({
+    page: p.page,
+    pageSize: p.pageSize,
+    total,
+    rows: data.map((r) => ({
       ...r,
       author_email: email[r.author_id] ?? null,
       reviewer_email: r.reviewer_id ? (email[r.reviewer_id] ?? null) : null,

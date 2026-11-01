@@ -3,6 +3,8 @@ import { body, handle, ok, ApiError } from "@/lib/api/server";
 import { audit, requireAdmin } from "@/lib/admin/auth";
 import { isContentGame, type ContentGame } from "@/lib/admin/content-schemas";
 import { fileEntry, needsReviewEntries } from "@/lib/admin/content-files";
+import { slicePage } from "@/lib/admin/pagination";
+import { pageParams } from "@/lib/admin/paging";
 
 type Review = {
   source_ref: string;
@@ -25,14 +27,22 @@ const stateOf = (r: Review | undefined, hash: string) =>
           ? "rejected"
           : "pending";
 
+const SHOW = ["all", "todo"] as const;
+
 /**
- * GET /api/admin/content/files?game=: the content.ts entries flagged `needsReview`, with the owner's
- * decision recorded per entry. Without `game`, a summary per game.
+ * GET /api/admin/content/files?game=&show=all|todo&page=&pageSize=: the content.ts entries flagged
+ * `needsReview`, with the owner's decision recorded per entry. With `game`, one page of that game's entries
+ * (in file order; `show=todo` keeps pending and changed ones) as `entries`, plus `page`, `pageSize` and
+ * `total` (entries matching `show`). Without `game`, a summary per game.
  */
 export const GET = handle(async (req: Request) => {
   const ctx = await requireAdmin("content.read");
-  const game = new URL(req.url).searchParams.get("game");
+  const sp = new URL(req.url).searchParams;
+  const p = pageParams(sp);
+  const game = sp.get("game");
+  const show = (sp.get("show") ?? "all") as (typeof SHOW)[number];
   if (game && !isContentGame(game)) throw new ApiError(400, "bad_game");
+  if (!SHOW.includes(show)) throw new ApiError(400, "bad_show");
   const files = await needsReviewEntries(game ? (game as ContentGame) : undefined);
   const { data } = await ctx.db
     .from("content_items")
@@ -43,20 +53,25 @@ export const GET = handle(async (req: Request) => {
       files.map((f) => f.game),
     );
   const byRef = new Map(((data ?? []) as Review[]).map((r) => [r.source_ref, r]));
+  const games = files.map((f) => {
+    const entries = f.entries.map((e) => {
+      const state = stateOf(byRef.get(e.ref), e.hash);
+      return { index: e.index, entry: e.entry, state, notes: byRef.get(e.ref)?.notes ?? null };
+    });
+    const shown = show === "todo" ? entries.filter((e) => e.state === "pending" || e.state === "changed") : entries;
+    return {
+      game: f.game,
+      total: f.total,
+      approved: entries.filter((e) => e.state === "approved").length,
+      rejected: entries.filter((e) => e.state === "rejected").length,
+      page: game ? slicePage(shown, p) : undefined,
+    };
+  });
+  const one = game ? games[0]?.page : undefined;
   return ok({
     canApprove: ctx.role === "owner",
-    games: files.map((f) => {
-      const states = f.entries.map((e) => stateOf(byRef.get(e.ref), e.hash));
-      return {
-        game: f.game,
-        total: f.total,
-        approved: states.filter((s) => s === "approved").length,
-        rejected: states.filter((s) => s === "rejected").length,
-        entries: game
-          ? f.entries.map((e, k) => ({ index: e.index, entry: e.entry, state: states[k], notes: byRef.get(e.ref)?.notes ?? null }))
-          : undefined,
-      };
-    }),
+    ...(one && { page: one.page, pageSize: one.pageSize, total: one.total }),
+    games: games.map(({ page, ...g }) => ({ ...g, entries: page?.rows })),
   });
 });
 

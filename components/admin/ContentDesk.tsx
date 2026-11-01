@@ -5,7 +5,8 @@ import { useMemo, useState } from "react";
 import { GAME_BY_ID } from "@/lib/catalog";
 import { CONTENT_GAMES, SCHEDULABLE, TEMPLATES, validatePayload, type ContentGame } from "@/lib/admin/content-schemas";
 import { addDays, age, dayMonth, todayIso } from "@/lib/admin/dates";
-import { errorText, useAdminAction, useAdminQuery } from "@/lib/client/admin";
+import { errorText, useAdminAction, useAdminQuery, type AdminPage } from "@/lib/client/admin";
+import { Pagination, usePager, type Pager } from "./Pagination";
 import { Btn, Empty, Field, Notice, PageTitle, Pill, RowsSkeleton, Swatch, Tabs, inputCls, textareaCls, type PillTone } from "./ui";
 
 interface Item {
@@ -41,6 +42,7 @@ function summary(p: unknown): string {
 /** Content editor (FR-AD-03): drafts, two-person review, scheduling, and the owner's review of content.ts entries. */
 export function ContentDesk(props: { canWrite: boolean; canApprove: boolean; canSchedule: boolean; isOwner: boolean }) {
   const [tab, setTab] = useState<"items" | "files">("items");
+  const pager = usePager();
   return (
     <div className="flex flex-col gap-3.5 px-6 py-5">
       <PageTitle
@@ -49,7 +51,7 @@ export function ContentDesk(props: { canWrite: boolean; canApprove: boolean; can
           <Tabs
             label="Content views"
             value={tab}
-            onChange={setTab}
+            onChange={(t) => (setTab(t), pager.reset())}
             items={[
               { id: "items", label: "Written items" },
               { id: "files", label: "content.ts review" },
@@ -57,21 +59,44 @@ export function ContentDesk(props: { canWrite: boolean; canApprove: boolean; can
           />
         }
       />
-      {tab === "items" ? <Items {...props} /> : <FileReview isOwner={props.isOwner} />}
+      {tab === "items" ? <Items {...props} pager={pager} /> : <FileReview isOwner={props.isOwner} pager={pager} />}
     </div>
   );
 }
 
-function Items({ canWrite, canApprove, canSchedule }: { canWrite: boolean; canApprove: boolean; canSchedule: boolean }) {
+function Items({
+  canWrite,
+  canApprove,
+  canSchedule,
+  pager,
+}: {
+  canWrite: boolean;
+  canApprove: boolean;
+  canSchedule: boolean;
+  pager: Pager;
+}) {
   const [status, setStatus] = useState("");
   const [open, setOpen] = useState<string | "new" | null>(null);
-  const q = useAdminQuery<{ me: string; rows: Item[] }>(["content", status], `/api/admin/content${status ? `?status=${status}` : ""}`);
-  const item = open && open !== "new" ? q.data?.rows.find((r) => r.id === open) : undefined;
+  const q = useAdminQuery<AdminPage<Item> & { me: string }>(
+    ["content", status, pager.query],
+    `/api/admin/content?${status ? `status=${status}&` : ""}${pager.query}`,
+    { keepPrevious: true },
+  );
+  // The open item stays in the editor when its row leaves the current page.
+  const [held, setHeld] = useState<Item | undefined>(undefined);
+  const found = open && open !== "new" ? q.data?.rows.find((r) => r.id === open) : undefined;
+  if (found && found !== held) setHeld(found);
+  const item = open && open !== "new" ? (found ?? (held?.id === open ? held : undefined)) : undefined;
   return (
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_480px]">
       <div className="flex min-w-0 flex-col gap-3">
         <div className="flex items-center gap-2">
-          <select aria-label="Status" value={status} onChange={(e) => setStatus(e.target.value)} className={`${inputCls} w-44`}>
+          <select
+            aria-label="Status"
+            value={status}
+            onChange={(e) => (setStatus(e.target.value), pager.reset())}
+            className={`${inputCls} w-44`}
+          >
             <option value="">Any status</option>
             {["draft", "in_review", "approved", "rejected", "scheduled"].map((s) => (
               <option key={s} value={s}>
@@ -139,6 +164,7 @@ function Items({ canWrite, canApprove, canSchedule }: { canWrite: boolean; canAp
             </table>
           )}
         </div>
+        {q.data && <Pagination pager={pager} total={q.data.total} />}
       </div>
       {open && (
         <Editor
@@ -148,7 +174,7 @@ function Items({ canWrite, canApprove, canSchedule }: { canWrite: boolean; canAp
           canWrite={canWrite}
           canApprove={canApprove}
           canSchedule={canSchedule}
-          onCreated={(id) => setOpen(id)}
+          onCreated={(id) => (setOpen(id), pager.reset())}
           onClose={() => setOpen(null)}
         />
       )}
@@ -371,14 +397,19 @@ interface FileGame {
 }
 const FILE_TONE: Record<string, PillTone> = { pending: "warn", changed: "warn", approved: "ok", rejected: "danger" };
 
-function FileReview({ isOwner }: { isOwner: boolean }) {
+function FileReview({ isOwner, pager }: { isOwner: boolean; pager: Pager }) {
   const [game, setGame] = useState<ContentGame | null>(null);
   const [picked, setPicked] = useState<Set<number>>(new Set());
   const [only, setOnly] = useState<"todo" | "all">("todo");
   const sum = useAdminQuery<{ games: FileGame[] }>(["files"], "/api/admin/content/files");
-  const one = useAdminQuery<{ games: FileGame[] }>(["files", game], game ? `/api/admin/content/files?game=${game}` : null);
+  const one = useAdminQuery<{ games: FileGame[]; total?: number }>(
+    ["files", game, only, pager.query],
+    game ? `/api/admin/content/files?game=${game}&show=${only}&${pager.query}` : null,
+    { keepPrevious: true },
+  );
   const act = useAdminAction<{ game: string; indexes: number[]; decision: "approve" | "reject" }>("POST", "/api/admin/content/files");
-  const entries = (one.data?.games[0]?.entries ?? []).filter((e) => only === "all" || e.state === "pending" || e.state === "changed");
+  const shown = one.data?.games[0]?.game === game ? one.data : undefined;
+  const entries = shown?.games[0]?.entries ?? [];
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-[280px_1fr]">
@@ -391,7 +422,7 @@ function FileReview({ isOwner }: { isOwner: boolean }) {
               key={g.game}
               type="button"
               aria-pressed={game === g.game}
-              onClick={() => (setGame(g.game), setPicked(new Set()))}
+              onClick={() => (setGame(g.game), setPicked(new Set()), pager.reset())}
               className={`flex h-11 items-center gap-2 rounded-[10px] px-2.5 text-left text-[14px] font-semibold ${game === g.game ? "bg-surface-raised" : "hover:bg-surface-raised/60"}`}
             >
               <Swatch world={GAME_BY_ID[g.game]?.world ?? "word"} />
@@ -415,7 +446,7 @@ function FileReview({ isOwner }: { isOwner: boolean }) {
               <Tabs
                 label="Show"
                 value={only}
-                onChange={setOnly}
+                onChange={(v) => (setOnly(v), pager.reset())}
                 items={[
                   { id: "todo", label: "To review" },
                   { id: "all", label: "All" },
@@ -445,7 +476,11 @@ function FileReview({ isOwner }: { isOwner: boolean }) {
             </div>
             {act.error && <Notice tone="danger">{errorText(act.error)}</Notice>}
             <div className="bg-surface overflow-x-auto rounded-[12px]">
-              {one.isPending ? (
+              {one.error ? (
+                <div className="p-3">
+                  <Notice tone="danger">{errorText(one.error)}</Notice>
+                </div>
+              ) : !shown ? (
                 <RowsSkeleton />
               ) : !entries.length ? (
                 <Empty>Nothing left to review for {GAME_BY_ID[game]?.name}.</Empty>
@@ -457,9 +492,16 @@ function FileReview({ isOwner }: { isOwner: boolean }) {
                         <th scope="col" className="w-11 px-3 py-2.5">
                           <input
                             type="checkbox"
-                            aria-label="Select all shown"
-                            checked={picked.size > 0 && entries.every((e) => picked.has(e.index))}
-                            onChange={(e) => setPicked(e.target.checked ? new Set(entries.map((x) => x.index)) : new Set())}
+                            aria-label="Select all on this page"
+                            checked={entries.every((e) => picked.has(e.index))}
+                            onChange={(e) => {
+                              const n = new Set(picked);
+                              for (const x of entries) {
+                                if (e.target.checked) n.add(x.index);
+                                else n.delete(x.index);
+                              }
+                              setPicked(n);
+                            }}
                             className="size-5 accent-[var(--accent)]"
                           />
                         </th>
@@ -510,6 +552,7 @@ function FileReview({ isOwner }: { isOwner: boolean }) {
                 </table>
               )}
             </div>
+            {shown?.total !== undefined && <Pagination pager={pager} total={shown.total} />}
           </>
         )}
       </div>
