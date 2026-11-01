@@ -46,6 +46,7 @@ import { Spuz } from "@/components/brand/Spuz";
 import { Button } from "@/components/ui/Button";
 import { RaceLiveButton } from "@/components/multiplayer/GameChallenge";
 import { useTapToBoard } from "@/lib/analytics/tap-to-board";
+import { PLAY_NAV } from "@/lib/analytics/play-nav";
 
 type Mode = "daily" | "free" | "archive";
 type Phase = "loading" | "playing" | "results" | "failed" | "error";
@@ -273,6 +274,7 @@ export function PlayScreen({
   const nextAction = nextId
     ? {
         label: nextLabel(nextId),
+        playNav: true,
         onClick: () => {
           primeAttempt(playHref(nextId));
           router.push(playHref(nextId) as never);
@@ -540,7 +542,7 @@ function FreeResultBar({
   xp: number;
   accuracy: number;
   relaxed: boolean;
-  next: { label: string; onClick: () => void };
+  next: { label: string; onClick: () => void; playNav?: boolean };
   another: { label: string; onClick: () => void };
 }) {
   return (
@@ -551,7 +553,7 @@ function FreeResultBar({
         {xp > 0 && <span className="num text-[15px] font-semibold">+{xp} XP</span>}
         <span className="text-muted text-[14px]">{copy.play.accuracy(accuracy)}</span>
       </div>
-      <Button size="lg" icon="play" className="w-full" onClick={next.onClick} autoFocus>
+      <Button size="lg" icon="play" className="w-full" onClick={next.onClick} autoFocus {...(next.playNav ? PLAY_NAV : {})}>
         {next.label}
       </Button>
       <Button size="md" variant="secondary" className="w-full" onClick={another.onClick}>

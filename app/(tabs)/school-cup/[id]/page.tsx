@@ -11,6 +11,7 @@ import { Icon } from "@/components/ui/Icon";
 import { GAME_BY_ID, WORLD_BY_ID } from "@/lib/catalog";
 import { formatLeft } from "@/lib/leagues";
 import { shortDate } from "@/lib/meta";
+import { PLAY_NAV } from "@/lib/analytics/play-nav";
 
 /** School Cup class board on a phone. Teachers get the class code and TV mode. */
 export default function CupPage({ params }: PageProps<"/school-cup/[id]">) {
@@ -45,6 +46,7 @@ export default function CupPage({ params }: PageProps<"/school-cup/[id]">) {
                 <Link
                   key={g}
                   href={`/play/${g}`}
+                  {...PLAY_NAV}
                   aria-label={`Play ${meta.name}`}
                   className="press flex size-12 items-center justify-center rounded-[16px]"
                   style={{ background: WORLD_BY_ID[meta.world].color, color: "#0E0F1A" }}

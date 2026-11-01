@@ -44,7 +44,9 @@ export const KEY_EVENTS = [
   "notice_action",
   // Admin Metrics page: also recorded first party (POST /api/v1/metrics), see FIRST_PARTY
   "tap_to_board",
-  "hint_cancel",
+  "hint_cancel", // older clients only; now derived as hint_request minus hint_use
+  "hint_request",
+  "hint_use",
 ] as const;
 export type KeyEvent = (typeof KEY_EVENTS)[number];
 
@@ -123,7 +125,7 @@ function load(): Promise<PostHog | null> {
  * Events the admin Metrics page needs that the database cannot see: also sent to our own anonymous
  * POST /api/v1/metrics (name, game, mode, kind and a duration only), with or without PostHog.
  */
-const FIRST_PARTY: ReadonlySet<KeyEvent> = new Set(["tap_to_board", "hint_cancel", "share"]);
+const FIRST_PARTY: ReadonlySet<KeyEvent> = new Set(["tap_to_board", "hint_cancel", "hint_request", "hint_use", "share", "onboarding_step"]);
 
 /** Pure: the first-party metric body for an event, or null. Exported for tests. */
 export function firstPartyBody(event: KeyEvent, clean: Record<string, string | number | boolean>) {

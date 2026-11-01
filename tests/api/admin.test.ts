@@ -884,6 +884,12 @@ describe("Metrics (admin cascade)", () => {
         ...[100, 200, 300, 400].map((v) => cm("tap_to_board", "tap", v)),
         cm("tap_to_board", "load", 1_500),
         cm("hint_cancel", null, null),
+        cm("hint_request", "confirm", null),
+        cm("hint_request", "confirm", null),
+        cm("hint_use", "confirm", null),
+        cm("onboarding_step", "age", null),
+        cm("onboarding_step", "age", null),
+        cm("onboarding_step", "home", null),
         cm("share", "daily", null),
         cm("share", "duel", null),
       ])
@@ -919,6 +925,10 @@ describe("Metrics (admin cascade)", () => {
       hints_used: 3,
       hinted_abandoned: 1,
       hint_cancels: 1,
+      hint_requests: 2,
+      hint_uses: 1,
+      onboarding_age: 2,
+      onboarding_home: 1,
       duels_started: 2,
       duels_abandoned: 1,
       duels_matchmade: 2,
@@ -938,11 +948,12 @@ describe("Metrics (admin cascade)", () => {
     expect(x.status).toBe(200);
     const lines = x.data.csv.trimEnd().split("\r\n");
     expect(lines[0]).toBe(
-      "date,finished_attempts,attempts_with_hint,hints_used,hint_use_pct,hinted_then_abandoned,confirm_cancels,accidental_pct",
+      "date,finished_attempts,attempts_with_hint,hints_used,hint_use_pct,hinted_then_abandoned,hint_requests,hint_went_ahead,confirm_cancels,accidental_pct",
     );
     expect(lines).toHaveLength(9);
-    // 2 of 3 attempts hinted; accidental = (1 abandoned + 1 cancel) / (2 hinted + 1 cancel)
-    expect(lines[8]).toBe("total,3,2,3,66.7,1,1,66.7");
+    // 2 of 3 attempts hinted; cancels = (2 requested - 1 went ahead) + 1 older hint_cancel;
+    // accidental = (1 abandoned + 2 cancels) / (2 hinted + 2 cancels)
+    expect(lines[8]).toBe("total,3,2,3,66.7,1,2,1,2,75");
     expect(x.data.filename).toBe(`spuzl-hints-${addDays(end, -6)}-to-${end}.csv`);
     const log = await lastAudit(S.content_editor.userId, "metrics.export");
     expect(log?.target).toBe("metric:hints");
@@ -966,6 +977,15 @@ describe("Metrics (admin cascade)", () => {
     expect((await g.api("/api/v1/metrics", { json: { name: "tap_to_board", kind: "tap" } })).status).toBe(400);
     expect((await g.api("/api/v1/metrics", { json: { name: "nickname", kind: "x" } })).status).toBe(400);
     expect((await g.api("/api/v1/metrics", { json: { name: "share", game: "not-a-game" } })).status).toBe(400);
+    expect((await g.api("/api/v1/metrics", { json: { name: "onboarding_step", kind: "age" } })).status).toBe(204);
+    expect((await g.api("/api/v1/metrics", { json: { name: "onboarding_step", kind: "nowhere" } })).status).toBe(400);
+    expect((await g.api("/api/v1/metrics", { json: { name: "hint_request", game: "crownfall", kind: "confirm" } })).status).toBe(204);
+    expect((await g.api("/api/v1/metrics", { json: { name: "hint_use", kind: "maybe" } })).status).toBe(400);
+    await admin()
+      .from("client_metrics")
+      .delete()
+      .in("name", ["onboarding_step", "hint_request"])
+      .gte("created_at", new Date(Date.now() - 60_000).toISOString());
     const { data } = await admin()
       .from("client_metrics")
       .select("id, name, game_id, mode, kind, value_ms")

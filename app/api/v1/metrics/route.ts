@@ -4,11 +4,13 @@ import { body, handle, rateLimit } from "@/lib/api/server";
 import { currentUser } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { GAME_BY_ID } from "@/lib/catalog";
+import { isOnboardingStep } from "@/lib/analytics/onboarding";
 
 const label = z.string().regex(/^[a-z_]{1,16}$/);
 const Metric = z
   .object({
-    name: z.enum(["tap_to_board", "hint_cancel", "share"]),
+    // hint_cancel: older clients only (now hint_request minus hint_use).
+    name: z.enum(["tap_to_board", "hint_cancel", "hint_request", "hint_use", "share", "onboarding_step"]),
     game: z
       .string()
       .refine((g) => g in GAME_BY_ID)
@@ -20,11 +22,15 @@ const Metric = z
   .refine(
     (m) => m.name !== "tap_to_board" || (m.ms !== undefined && (m.kind === "tap" || m.kind === "load")),
     "tap_to_board needs ms and kind",
-  );
+  )
+  .refine((m) => m.name !== "onboarding_step" || isOnboardingStep(m.kind), "onboarding_step needs a known step as kind")
+  .refine((m) => !m.name.startsWith("hint_") || m.name === "hint_cancel" || m.kind === "confirm" || m.kind === "direct", {
+    message: "hint_request and hint_use need kind confirm or direct",
+  });
 
 /**
  * POST /api/v1/metrics: one anonymous client measurement for the admin Metrics page (tap-to-board latency,
- * hint-confirm cancels, shares). Guests and signed-out visitors may send; nothing that identifies them is
+ * hint requests and uses, shares, onboarding steps). Guests and signed-out visitors may send; nothing that identifies them is
  * stored (no player id, IP or URL). Rate limited per user, else per hashed client address.
  */
 export const POST = handle(async (req: Request) => {

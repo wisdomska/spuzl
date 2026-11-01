@@ -13,6 +13,7 @@ import { WORLD_BY_ID } from "@/lib/catalog";
 import type { FinishRes } from "@/lib/client/api";
 import { RaceLiveButton } from "@/components/multiplayer/GameChallenge";
 import { SaveStreakPrompt } from "@/components/meta/SaveStreakPrompt";
+import { PLAY_NAV } from "@/lib/analytics/play-nav";
 
 /**
  * Solo Screens 05 Results: confetti header with Spuz, the time counting up, percentile, XP bar sweep
@@ -41,7 +42,8 @@ export function ResultsScreen({
   relaxed: boolean;
   color: string;
   /** primary: the named next game on the Home path ("Next in Logic Lab: Dusk") */
-  next: { label: string; onClick: () => void };
+  /** playNav: the action opens another game (tap-to-board metric). */
+  next: { label: string; onClick: () => void; playNav?: boolean };
   /** secondary: another puzzle of this game, same difficulty */
   another: { label: string; onClick: () => void };
   /** rank ups, badges, streaks: inline chips, never interstitials */
@@ -179,7 +181,7 @@ export function ResultsScreen({
       )}
       <SaveStreakPrompt className="mx-4 mt-4" />
       <div className="safe-bottom mt-auto grid grid-cols-[1fr_60px] gap-2.5 px-4 pt-4 pb-7">
-        <Button size="lg" icon="play" onClick={next.onClick} className="text-[17px]" autoFocus>
+        <Button size="lg" icon="play" onClick={next.onClick} className="text-[17px]" autoFocus {...(next.playNav ? PLAY_NAV : {})}>
           {next.label}
         </Button>
         <button

@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { firstPartyBody, KEY_EVENTS, sanitize, track } from "./track";
 import { tapToBoard } from "./tap-to-board";
+import { isPlayNav, PLAY_NAV } from "./play-nav";
+import { ONBOARDING_STEPS, onboardingStepOf } from "./onboarding";
 
 describe("analytics", () => {
   it("covers every SRS key event", () => {
@@ -58,6 +60,30 @@ describe("first-party metrics", () => {
       ms: 120_000,
     });
     expect(firstPartyBody("hint_cancel", { game: "Bad Game!", mode: "free" })).toMatchObject({ game: undefined, mode: "free" });
+  });
+
+  it("forwards onboarding steps and hint requests and uses", () => {
+    expect(firstPartyBody("onboarding_step", { kind: "too_young" })).toMatchObject({ name: "onboarding_step", kind: "too_young" });
+    expect(firstPartyBody("hint_request", { game: "crownfall", mode: "free", kind: "confirm" })).toMatchObject({ kind: "confirm" });
+    expect(firstPartyBody("hint_use", { game: "crownfall", mode: "free", kind: "direct" })).toMatchObject({ kind: "direct" });
+  });
+
+  it("maps Welcome steps to metric labels", () => {
+    expect(onboardingStepOf("under13")).toBe("too_young");
+    expect(onboardingStepOf("nickname")).toBe("nickname");
+    expect(onboardingStepOf("somewhere")).toBeNull();
+    for (const s of ONBOARDING_STEPS) expect(s).toMatch(/^[a-z_]{1,16}$/);
+  });
+});
+
+describe("play navigation marker", () => {
+  it("matches only elements inside a data-play-nav element", () => {
+    const at = (hit: boolean) => ({ closest: (sel: string) => (sel === "[data-play-nav]" && hit ? ({} as Element) : null) });
+    expect(isPlayNav(at(true))).toBe(true);
+    expect(isPlayNav(at(false))).toBe(false);
+    expect(isPlayNav(null)).toBe(false);
+    expect(isPlayNav({} as Element)).toBe(false);
+    expect(PLAY_NAV).toEqual({ "data-play-nav": "" });
   });
 });
 

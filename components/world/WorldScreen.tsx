@@ -14,6 +14,7 @@ import { formatClock } from "@/lib/format";
 import { GameIcon3D } from "./GameIcon3D";
 import { BotEntry } from "./BotEntry";
 import { ChallengeEntry } from "@/components/multiplayer/GameChallenge";
+import { PLAY_NAV } from "@/lib/analytics/play-nav";
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
@@ -97,7 +98,11 @@ export function WorldScreen({ id }: { id: WorldId }) {
               className="bg-surface overflow-hidden rounded-[20px]"
               style={{ boxShadow: inProgress ? "inset 0 0 0 2px var(--world)" : undefined }}
             >
-              <Link href={done || !dailiesOn ? `/play/${g.id}?mode=free` : `/play/${g.id}`} className="press flex items-center gap-3.5 p-3">
+              <Link
+                href={done || !dailiesOn ? `/play/${g.id}?mode=free` : `/play/${g.id}`}
+                className="press flex items-center gap-3.5 p-3"
+                {...PLAY_NAV}
+              >
                 <GameIcon3D meta={g} size={64} />
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="font-display text-[18px] font-extrabold">{g.name}</span>
