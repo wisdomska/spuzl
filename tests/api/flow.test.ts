@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { admin, guest, uniq } from "./helpers";
+import { BASE, admin, guest, uniq } from "./helpers";
 import { setSetting } from "./setup";
 import { TUTORIAL_PUZZLE, TUTORIAL_SOLUTION } from "@/games/crownfall/tutorial";
 
 /** Full solo loop through the real API: guest → profile → Daily → finish → rewards, streak, results. */
 describe("api: daily clear flow", () => {
   it("rejects anonymous access and unknown games", async () => {
-    const r = await fetch("http://localhost:3000/api/v1/me");
+    const r = await fetch(`${BASE}/api/v1/me`);
     expect(r.status).toBe(401);
     const g = await guest(uniq("t_"));
     expect((await g.api("/api/v1/attempts", { json: { game: "nope", mode: "daily" } })).status).toBe(404);
