@@ -3,7 +3,11 @@ import { createRng } from "@/lib/rng";
 import type { Difficulty } from "@/games/types";
 import logic, {
   applyMove,
+  cellsOf,
+  decodeLot,
+  deepLots,
   distances,
+  encodeLot,
   EXIT_COL,
   explain,
   generate,
@@ -86,12 +90,58 @@ describe("trotro generation", () => {
     }, 120_000);
   }
 
-  it("is deterministic per seed and fills expert and mega", () => {
-    const a = generate(createRng("daily:trotro"), "expert");
-    expect(generate(createRng("daily:trotro"), "expert")).toEqual(a);
-    expect(a.puzzle.par).toBeGreaterThanOrEqual(18);
-    const m = generate(createRng("daily:trotro"), "mega");
-    expect(verify(m.puzzle, m.solution, { moves: m.solution.moves }).ok).toBe(true);
+  for (const d of ["expert", "mega"] as Difficulty[])
+    it(`generates 20 ${d} lots in range, with the level's vehicle count, each its own`, () => {
+      const [lo, hi] = SPEC[d].range;
+      const seen = new Set<string>();
+      for (let i = 0; i < 20; i++) {
+        const g = generate(createRng(`trotro:${d}:${i}`), d);
+        const p = g.puzzle;
+        expect(p.par).toBeGreaterThanOrEqual(lo);
+        expect(p.par).toBeLessThanOrEqual(hi);
+        expect(p.vehicles.length - 1).toBeGreaterThanOrEqual(SPEC[d].others[0]);
+        expect(p.vehicles.length - 1).toBeLessThanOrEqual(SPEC[d].others[1]);
+        expect(verify(p, g.solution, { moves: g.solution.moves })).toEqual({ ok: true, progress: 1 });
+        expect(solve(p, p.start)!.length).toBe(p.par);
+        seen.add(encodeLot(p.vehicles, p.start));
+      }
+      expect(seen.size).toBe(20);
+    }, 120_000);
+
+  it("is deterministic per seed and difficulty", () => {
+    for (const d of ["easy", "medium", "hard", "expert", "mega"] as Difficulty[]) {
+      const a = generate(createRng("daily:trotro"), d);
+      expect(generate(createRng("daily:trotro"), d)).toEqual(a);
+    }
+  }, 60_000);
+
+  it("every bank lot is legal and deep", () => {
+    for (const lot of deepLots()) {
+      expect(lot.vehicles[0]).toEqual({ len: 2, axis: "h", line: 2 });
+      expect(lot.vehicles.slice(1).every((v) => !(v.axis === "h" && v.line === 2))).toBe(true);
+      // No two vehicles share a cell, and each stays on the board.
+      const cells = lot.vehicles.flatMap((v, i) => cellsOf(6, v, lot.pos[i]));
+      expect(new Set(cells).size).toBe(cells.length);
+      expect(cells.every((c) => c >= 0 && c < 36)).toBe(true);
+      expect(decodeLot(encodeLot(lot.vehicles, lot.pos))).toEqual(lot);
+      const sp = distances({ size: 6, vehicles: lot.vehicles }, lot.pos, 6000)!;
+      expect(Math.max(...sp.dist.filter((x) => x !== Infinity))).toBeGreaterThanOrEqual(22);
+    }
+  }, 60_000);
+
+  it("generates each board in under half a second", () => {
+    // Warm the JIT, then time 10 boards per level. The search count is bounded (a walk of at most 64
+    // position-space searches from a deep lot); typical boards take under 150 ms. Coverage instrumentation
+    // (CI runs `test:coverage`) slows the hot loop about threefold, so the budget follows it there.
+    const worker = (globalThis as { __vitest_worker__?: { config?: { coverage?: { enabled?: boolean } } } }).__vitest_worker__;
+    const budget = worker?.config?.coverage?.enabled ? 1500 : 500;
+    generate(createRng("warm"), "hard");
+    for (const d of ["easy", "medium", "hard", "expert", "mega"] as Difficulty[])
+      for (let i = 0; i < 10; i++) {
+        const t0 = performance.now();
+        generate(createRng(`timing:${d}:${i}`), d);
+        expect(performance.now() - t0, `${d} seed ${i}`).toBeLessThan(budget);
+      }
   }, 60_000);
 });
 

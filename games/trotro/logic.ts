@@ -3,10 +3,13 @@
  * (cars are 2 long, trucks 3 long); slide the others out of the way until the trotro (2 long, horizontal, on
  * the exit row) reaches the exit on the right edge. A slide of any distance is one move.
  *
- * Generation: a random legal layout, then a breadth-first search of every position reachable from it. A
- * second, multi-source BFS from the solved positions in that space gives the true minimum moves for each
- * one, and the puzzle is a position whose minimum falls in the difficulty's range (the hardest one for hard
- * and up). The server verifies by replaying the move log, slide by slide.
+ * Generation: a lot's position space is every position reachable from it (breadth-first); a second,
+ * multi-source BFS from the solved positions gives the true minimum moves for each one. Every level starts
+ * from one of a bank of deep lots (found offline by a long hill climb, see `climb`) and takes a short random
+ * walk from it, swapping one vehicle at a time (thinning the lot to the level's vehicle count) and keeping
+ * only lots that stay deep enough, so every seed gets its own lot in a bounded number of searches (well
+ * under half a second). Hard and up take the walked lot's hardest position; easy and medium take a position
+ * exactly the par they drew from their range. The server verifies by replaying the move log, slide by slide.
  */
 import type { Difficulty, GameLogic, Generated, Hint, VerifyResult } from "@/games/types";
 import type { Rng } from "@/lib/rng";
@@ -56,14 +59,19 @@ interface Spec {
   hardest: boolean;
   /** positions searched per layout; deep puzzles live in tight lots with small spaces, so hard caps low */
   cap: number;
+  /** how far the walk from a deep lot may let the hardest position's minimum drop per step */
+  drift: number;
 }
 export const SPEC: Record<Difficulty, Spec> = {
-  easy: { others: [6, 8], trucks: 0.25, range: [6, 10], hardest: false, cap: 12000 },
-  medium: { others: [8, 10], trucks: 0.3, range: [11, 16], hardest: false, cap: 8000 },
-  hard: { others: [9, 12], trucks: 0.3, range: [20, 60], hardest: true, cap: 6000 },
-  expert: { others: [10, 12], trucks: 0.3, range: [21, 60], hardest: true, cap: 6000 },
-  mega: { others: [10, 12], trucks: 0.35, range: [22, 60], hardest: true, cap: 6000 },
+  easy: { others: [6, 8], trucks: 0.25, range: [6, 10], hardest: false, cap: 8000, drift: 60 },
+  medium: { others: [8, 10], trucks: 0.3, range: [11, 16], hardest: false, cap: 8000, drift: 60 },
+  hard: { others: [9, 12], trucks: 0.3, range: [20, 60], hardest: true, cap: 6000, drift: 4 },
+  expert: { others: [10, 12], trucks: 0.3, range: [21, 60], hardest: true, cap: 6000, drift: 2 },
+  mega: { others: [10, 12], trucks: 0.35, range: [22, 60], hardest: true, cap: 6000, drift: 1 },
 };
+/** Vehicle swaps the walk from a deep lot keeps, and the most it tries (each try is one search). */
+const WALK_SWAPS = 10;
+const WALK_STEPS = 64;
 /** Positions searched per layout before giving up on it (keeps generation and hints fast). */
 const SPACE_CAP = 40000;
 const MAX_MOVES = 1000;
@@ -176,82 +184,142 @@ export function solve(p: Pick<TrotroPuzzle, "size" | "vehicles">, pos: number[],
   return null;
 }
 
+export interface Space {
+  /** positions in the space */
+  size: number;
+  /** minimum moves to the exit per position (Infinity when the trotro can never leave); position 0 is `pos` */
+  dist: Float64Array;
+  /** the offsets of position `i` */
+  at(i: number): number[];
+  /** a fewest-move route from position `i` to the exit, or null when it has none */
+  route(i: number): Move[] | null;
+}
+
 /**
  * The whole position space reachable from `pos`, with each position's minimum moves to the exit
  * (Infinity when the trotro can never leave). Moves are reversible, so one BFS from every solved position
  * gives exact distances. Null when the space passes `cap`.
  */
-export function distances(p: Pick<TrotroPuzzle, "size" | "vehicles">, pos: number[], cap = SPACE_CAP) {
-  // Hot loop of the generator: states are base-5 keys, neighbours are key arithmetic, nothing is allocated
-  // per move. `edges` is a flat neighbour list with `from` offsets.
+export function distances(p: Pick<TrotroPuzzle, "size" | "vehicles">, pos: number[], cap = SPACE_CAP): Space | null {
+  // Hot loop of the generator, so nothing is allocated per position or move. Positions are numbered in
+  // discovery order; each keeps its offsets in `offs` (n per position) and its base-5 key in `keys`, found
+  // again through an open-addressing hash table. `edges` is a flat neighbour list with `from` offsets.
   const { size, vehicles } = p;
   const n = vehicles.length;
-  const pow = Array.from({ length: n }, (_, i) => 5 ** i);
-  const lineCell = vehicles.map((v) => (k: number) => (v.axis === "h" ? v.line * size + k : k * size + v.line));
-  const occ = new Int8Array(size * size);
-  const cur = new Array<number>(n);
-  const keys: number[] = [keyOf(pos)];
-  const index = new Map<number, number>([[keys[0], 0]]);
-  const edges: number[] = [];
-  const from: number[] = [];
-  for (let s = 0; s < keys.length; s++) {
-    from.push(edges.length);
-    let k = keys[s];
-    for (let i = 0; i < n; i++) {
-      cur[i] = k % 5;
-      k = (k - cur[i]) / 5;
+  const pow = new Float64Array(n);
+  const base = new Int32Array(n),
+    stride = new Int32Array(n),
+    len = new Int32Array(n);
+  for (let i = 0; i < n; i++) {
+    pow[i] = 5 ** i;
+    const v = vehicles[i];
+    base[i] = v.axis === "h" ? v.line * size : v.line;
+    stride[i] = v.axis === "h" ? 1 : size;
+    len[i] = v.len;
+  }
+  let tableSize = 1024;
+  while (tableSize < cap * 2) tableSize *= 2;
+  const mask = tableSize - 1;
+  const slot = new Int32Array(tableSize).fill(-1);
+  const keys = new Float64Array(cap);
+  const offs = new Int8Array(cap * n);
+  const from = new Int32Array(cap + 1);
+  let edges = new Int32Array(cap * 8);
+  let edgeCount = 0;
+  const hash = (k: number) => Math.imul((k >>> 0) ^ Math.floor(k / 4294967296), 0x9e3779b1) >>> 0;
+  /** index of key `k`, adding it (with offsets `src` moved by `dv` for vehicle `iv`) when new; -1 past the cap */
+  let count = 0;
+  const find = (k: number, src: number, iv: number, dv: number) => {
+    let h = hash(k) & mask;
+    for (;;) {
+      const j = slot[h];
+      if (j < 0) break;
+      if (keys[j] === k) return j;
+      h = (h + 1) & mask;
     }
+    if (count >= cap) return -1;
+    const j = count++;
+    slot[h] = j;
+    keys[j] = k;
+    offs.copyWithin(j * n, src * n, src * n + n);
+    offs[j * n + iv] += dv;
+    return j;
+  };
+  // The start is position 0 (its offsets are copied onto themselves).
+  for (let i = 0; i < n; i++) offs[i] = pos[i];
+  find(keyOf(pos), 0, 0, 0);
+  const occ = new Int8Array(size * size);
+  for (let s = 0; s < count; s++) {
+    from[s] = edgeCount;
+    const o = s * n;
     occ.fill(-1);
-    for (let i = 0; i < n; i++) for (let c = 0; c < vehicles[i].len; c++) occ[lineCell[i](cur[i] + c)] = i;
+    for (let i = 0; i < n; i++) for (let c = 0, cell = base[i] + offs[o + i] * stride[i]; c < len[i]; c++, cell += stride[i]) occ[cell] = i;
+    const key = keys[s];
     for (let i = 0; i < n; i++) {
-      const at = cur[i],
-        len = vehicles[i].len,
-        cell = lineCell[i];
+      const at = offs[o + i],
+        l = len[i],
+        b = base[i],
+        st = stride[i];
       for (let dir = -1; dir <= 1; dir += 2)
         for (let d = dir; ; d += dir) {
-          const edge = dir < 0 ? at + d : at + len - 1 + d;
-          if (edge < 0 || edge >= size || occ[cell(edge)] !== -1) break;
-          const nk = keys[s] + d * pow[i];
-          let j = index.get(nk);
-          if (j === undefined) {
-            if (keys.length >= cap) return null;
-            j = keys.length;
-            index.set(nk, j);
-            keys.push(nk);
+          const edge = dir < 0 ? at + d : at + l - 1 + d;
+          if (edge < 0 || edge >= size || occ[b + edge * st] !== -1) break;
+          const j = find(key + d * pow[i], s, i, d);
+          if (j < 0) return null;
+          if (edgeCount === edges.length) {
+            const grown = new Int32Array(edges.length * 2);
+            grown.set(edges);
+            edges = grown;
           }
-          edges.push(j);
+          edges[edgeCount++] = j;
         }
     }
   }
-  from.push(edges.length);
-  const dist = new Array<number>(keys.length).fill(Infinity);
-  let frontier: number[] = [];
-  keys.forEach((k, i) => {
-    if (k % 5 === EXIT_COL) {
-      dist[i] = 0;
-      frontier.push(i);
+  from[count] = edgeCount;
+  const dist = new Float64Array(count).fill(Infinity);
+  let frontier = new Int32Array(count),
+    next = new Int32Array(count);
+  let fl = 0;
+  for (let s = 0; s < count; s++)
+    if (offs[s * n] === EXIT_COL) {
+      dist[s] = 0;
+      frontier[fl++] = s;
     }
-  });
-  for (let d = 1; frontier.length; d++) {
-    const next: number[] = [];
-    for (const s of frontier)
-      for (let e = from[s]; e < from[s + 1]; e++)
-        if (dist[edges[e]] === Infinity) {
-          dist[edges[e]] = d;
-          next.push(edges[e]);
+  for (let d = 1; fl; d++) {
+    let nl = 0;
+    for (let f = 0; f < fl; f++) {
+      const s = frontier[f];
+      for (let e = from[s]; e < from[s + 1]; e++) {
+        const t = edges[e];
+        if (dist[t] === Infinity) {
+          dist[t] = d;
+          next[nl++] = t;
         }
-    frontier = next;
+      }
+    }
+    [frontier, next] = [next, frontier];
+    fl = nl;
   }
-  const at = (i: number) => {
-    const out: number[] = [];
-    let k = keys[i];
-    for (let v = 0; v < n; v++) {
-      out.push(k % 5);
-      k = (k - (k % 5)) / 5;
+  const at = (i: number) => Array.from(offs.subarray(i * n, i * n + n));
+  const route = (i: number) => {
+    if (dist[i] === Infinity) return null;
+    const out: Move[] = [];
+    for (let s = i; dist[s] > 0;) {
+      let t = from[s];
+      while (dist[edges[t]] !== dist[s] - 1) t++;
+      const j = edges[t];
+      for (let v = 0; v < n; v++) {
+        const d = offs[j * n + v] - offs[s * n + v];
+        if (d) {
+          out.push([v, d]);
+          break;
+        }
+      }
+      s = j;
     }
     return out;
   };
-  return { size: keys.length, dist, at };
+  return { size: count, dist, at, route };
 }
 
 /* ---------------- Generator and grader ---------------- */
@@ -283,7 +351,113 @@ function addVehicles(rng: Rng, vehicles: Vehicle[], pos: number[], count: number
   }
 }
 
-type Found = { vehicles: Vehicle[]; pos: number[]; d: number };
+/** A lot at its hardest position (`index` in `space`), `d` moves from the exit. */
+export type Found = { vehicles: Vehicle[]; pos: number[]; d: number; space: Space; index: number };
+
+/** One vehicle swapped: drop a random one and/or add a random car or truck, steering the count into range. */
+function mutate(rng: Rng, spec: Spec, cur: Found): { vehicles: Vehicle[]; pos: number[] } {
+  const vehicles = cur.vehicles.slice();
+  const pos = cur.pos.slice();
+  const others = vehicles.length - 1;
+  const drop = others > spec.others[0] && (others >= spec.others[1] || rng.chance(0.5));
+  if (drop) {
+    const i = rng.int(1, vehicles.length - 1);
+    vehicles.splice(i, 1);
+    pos.splice(i, 1);
+  }
+  // Over the range, a step only drops (so a crowded bank lot thins out to the level's count).
+  if (others <= spec.others[1] && (!drop || rng.chance(0.7))) addVehicles(rng, vehicles, pos, 1, spec.trucks);
+  return { vehicles, pos };
+}
+
+/* Deep lots (22 to 46 moves at their hardest position), 4 characters a vehicle: length, axis, line,
+ * offset. The trotro comes first. Found offline with `climb`; every seed walks away from one of them. */
+// prettier-ignore
+const DEEP_LOTS: readonly string[] = [
+  "2h202h332v033v202v342h042v413h502h412v303v512h31", "2h213h312h032v312v202v012h442v502v522v412v342v03",
+  "2h212v322v233h522h432h502v402v302h302v202h002v013v50", "2h232v002h502h332h022h442v222v243v022h123v512v342h04",
+  "2h222h042v303h312v522v242h143h002h532v113v013h43", "2h212h022v502v312h313v522v403h532v102v332v032v012v24",
+  "2h222h122v502h503v022h442v243v412v522h002h542v343h31", "2h203v222v412v342v002h123h032h333h502h012v522v132v54",
+  "2h202h333v403h012v042v212v232h532v502h512h442v52", "2h232v222h102v522h522h032h442h542v502v202h132v332v03",
+  "2h202h313v312h032v542h342v442v032h012v212h502h52", "2h223v003v102h132v202h442h513v512h532h302v232v332h04",
+  "2h223h102h132h442h542h032h332v232v502v522v342v033h00", "2h223h033v003v512h302h542h402v422v242h122v342h322h01",
+  "2h203v033v322h012h442v212h532h512v502h132v522h312h03", "2h233v502v122h022v402h002h112v433v222v142h542v043v33",
+  "2h203h133h033h402v002h512h332v212h012h542v532v34", "2h212h042h512h022v103v412h443v512h322v002h302h122v34",
+  "2h212h003v412h033v022h102v343h312v522h442h542h502v20", "2h202h033h132h332v212h312v522h502v542h413h002v032v34",
+  "2h202h042h022h332v442h412v342v212v032v102h312v532v51", "2h203v522v142h122v222v322h142v002v422h303h422h542h01",
+  "2h212v523h022v012v032h502h003h322h442h142v312h542v24", "2h222h532h512h013v503v002v332h442v302v112v042h302v23",
+  "2h202h332h503h002v032v223h523h422h142h033v532v31", "2h202v313v202v002v522v433h032h422v542h142v103v033h52",
+  "2h202h112h433h332h512h043v222v002v542v312h532h012v41", "2h202h442v302v523h003h412h142v042v212h323h512h302h54",
+  "2h202v032v343v403h113h502v532v512h412h332h022v002v22", "2h212h342v412h102v332v203h532h032v503h402v312h512v02",
+  "2h212h032v202v043v132h103v502v332h342v312h532v02", "2h212v322h002v302v233h433h512v522h302h542v422v012h04",
+  "2h232v302h312h333v102v212v442v022h412v523h502h042v54", "2h203h502v132v312v542h032h342v032v442h012h322v212v50",
+  "2h202h333v512v222h522h302v443h032v142h112v002h012v31", "2h223v022v502v123v403v522h542v142h112h522h432v233h01",
+  "2h213h113v022v513v412h542h432v242h042h502h022v53", "2h223h012v503v022h502v112v132h522v232h442v523v402v00",
+  "2h212v442v322v012v202h342v502h512v232v342h002h132h30", "2h223h522v512v043v412v012h433v102h303v532v232h04",
+  "2h203v523h532v222h032h513v032h122v412v102v432v332h41", "2h222v443v102v202v423v532h502v302h303v002h042h522h40",
+  "2h223v403v022h502h443v122v102v242h532h022v512h122v33", "2h222h132h323h012v342v033v002v422h043v112h442h503v51",
+  "2h202h332h012v443v513v033v132v302h043v222h112h52", "2h212v202h542h342h503v502v032v342h032h412v012h132v32",
+  "2h223v512h123v002h312h042h443v102v422h532h022v332h50", "2h203h013h523v322h342v032v003v402v222v502h412v54",
+  "2h202h332v342v002v033v513h503v202h312v442v102h04", "2h213h012h042h302h443v512h322v422h543v002h522h112v14",
+  "2h202v002h532v102v033h312v313v203v532h042h142h50", "2h202h522h012v043h422v142h032h142v313v523v212v002h54",
+  "2h212h122v132h323v412h442v242h013v512h032v342h102h50", "2h212h542v523h122h102v503h022h312h002v322v243h432v03",
+  "2h222h543v033v402h002h522v332v012v143v502v302h342h44", "2h202h112v002h013h302v302v322h042h533v412h432v24",
+  "2h202h332v522v502h012v002h542h442h423v402v222v132v30", "2h222v342h312h332v112h503v512h542v012h002v202v032v41",
+  "2h233h302v112v522v212h012v242h502v332v502v402h532h44", "2h213h503h432v002v523v022v102v322v402h022h532v502v23",
+  "2h202v432h012h303h402v332h122v222h142v002v522v54", "2h223h022h532v523v412h442v232v102v012h512v042v503v12",
+  "2h202v522v502h442v312v332v212h502v412h313h522v003h01", "2h202h342v402v542v102v212h532v242v502v312h312h022v33",
+  "2h212h342v022v542v322v512h422v132h122v002v042v443h03", "2h202h332h502h312h442v522h042v033v303h002h542v242h14",
+  "2h202v212h332h042v522v442h412h022v102v032v342h312v54", "2h223h523h322h502h422v302v412h303v512h442v202h043v00",
+  "2h213h332v402h542v012v312h402v342v232v502h023h502h00", "2h212h322h042h523h013v003v512h303h432h542v142h112v42",
+  "2h223h012h042h322v423v512v012v342h443v113h122h502v03", "2h212h332h542v032v313h032h442v522h312v012h142v242v20",
+  "2h202h302v432v413h022h122v103v332v042v222h412h543v52", "2h202v223v522v443h412h522h012h502h332h042v002h142v03",
+  "2h202v322v512v232v343v402v542v213h502h022h302v00", "2h203h112h303v412v222v242h012v532v512h043v332h542v04",
+  "2h222h542v122v043v412v012v503h112v142h012h033v233v52", "2h212v202h502v132h343h032h142v542v242v023v312h102h43",
+  "2h212h432h412v102h032h543v023h312v422h522v003v522v31", "2h212v042v243v412h042h302h542v342h323v512v302v20",
+  "2h222h503h022h322v502v242v422v523h433v122h002h53", "2h212v312v502v012v402h332v343h502h022v102v522v232h30",
+  "2h202h543v412v042h523h302v323h422h122h102v532h042v51", "2h222v242h443v023v332h122v522h312v002h543h012v50",
+  "2h222v343v512h322h542h043v122h512v422v002h443h012v02", "2h212v313h313h432h032v522h143v012h502h532v422v242h00",
+  "2h203v412h313v032v142v242v302h012h043h102v522v332h53", "2h202h322h013h533v413h432h302v512h042v002v302h112v24",
+  "2h223h312h043v012v302v422h142v243h532h432h503v522h00", "2h223v412v042h122h312v332h442h523v012h543v512h033v10",
+  "2h223v002v033v102h503v413v512v342h122h442h042h022h31", "2h233h123h002v332v502v522h542h102h032v222v022h442h52",
+  "2h222v332h112h512h013h533v502v122v412v043v012h342h41", "2h203v522h033v212v502v412h102v312h512h543h002h422v04",
+  "2h212h332h312v102h442v413v512v032h022v002v342h042h51", "2h233v332h303v522v502v232v212h542v402h402v103v002h02",
+];
+
+export const encodeLot = (vehicles: Vehicle[], pos: number[]) => vehicles.map((v, i) => `${v.len}${v.axis}${v.line}${pos[i]}`).join("");
+
+export function decodeLot(s: string): { vehicles: Vehicle[]; pos: number[] } {
+  const vehicles: Vehicle[] = [];
+  const pos: number[] = [];
+  for (let k = 0; k < s.length; k += 4) {
+    vehicles.push({ len: Number(s[k]) as 2 | 3, axis: s[k + 1] as Axis, line: Number(s[k + 2]) });
+    pos.push(Number(s[k + 3]));
+  }
+  return { vehicles, pos };
+}
+
+export const deepLots = () => DEEP_LOTS.map(decodeLot);
+
+/**
+ * A random walk from a deep lot: each step swaps one vehicle (see `mutate`) and keeps the new lot when its
+ * hardest position still needs between `need` and `hi` moves, and no more than `spec.drift` fewer than the
+ * current one. It stops after `WALK_SWAPS` kept swaps with the vehicle count in the level's range, or after
+ * `WALK_STEPS` tries, so the time stays bounded.
+ */
+function walk(rng: Rng, spec: Spec, need: number, hi: number): Found {
+  const start = decodeLot(rng.pick(DEEP_LOTS));
+  let cur = hardestOf(start.vehicles, start.pos, SPACE_CAP)!;
+  const fits = (f: Found) => f.vehicles.length - 1 >= spec.others[0] && f.vehicles.length - 1 <= spec.others[1];
+  for (let step = 0, swaps = 0; step < WALK_STEPS && (swaps < WALK_SWAPS || !fits(cur)); step++) {
+    const { vehicles, pos } = mutate(rng, spec, cur);
+    const h = hardestOf(vehicles, pos, spec.cap);
+    if (h && h.d >= need && h.d <= hi && h.d >= cur.d - spec.drift) {
+      cur = h;
+      swaps++;
+    }
+  }
+  return cur;
+}
 
 /** The hardest solvable position in a layout's space, or null. */
 function hardestOf(vehicles: Vehicle[], pos: number[], cap: number): Found | null {
@@ -293,15 +467,18 @@ function hardestOf(vehicles: Vehicle[], pos: number[], cap: number): Found | nul
   sp.dist.forEach((d, i) => {
     if (d !== Infinity && (far < 0 || d > sp.dist[far])) far = i;
   });
-  return far >= 0 && sp.dist[far] > 0 ? { vehicles, pos: sp.at(far), d: sp.dist[far] } : null;
+  return far >= 0 && sp.dist[far] > 0 ? { vehicles, pos: sp.at(far), d: sp.dist[far], space: sp, index: far } : null;
 }
 
 /**
  * Hill climb for deep lots: take the hardest position of a random layout, then keep swapping one vehicle
  * for a random new one (starting from that hardest position) while the depth does not drop, restarting
- * when it stalls. Random layouts alone rarely reach 20+ moves; this gets there in a few hundred searches.
+ * when it stalls. Random layouts alone rarely reach 20+ moves; this gets there in a few hundred searches,
+ * but the count has a long tail (seconds), so it only runs offline to fill `DEEP_LOTS`:
+ * `climb(createRng("trotro-bank:" + i), SPEC.mega)` (and expert), keeping lots of 22 moves or more, encoded
+ * with `encodeLot`.
  */
-function climb(rng: Rng, spec: Spec): Found | null {
+export function climb(rng: Rng, spec: Spec): Found | null {
   const [lo, hi] = spec.range;
   let cur: Found | null = null;
   let best: Found | null = null;
@@ -312,18 +489,7 @@ function climb(rng: Rng, spec: Spec): Found | null {
       ({ vehicles, pos } = layout(rng, rng.int(spec.others[0], spec.others[1]), spec.trucks));
       cur = null;
       stall = 0;
-    } else {
-      vehicles = cur.vehicles.slice();
-      pos = cur.pos.slice();
-      const others = vehicles.length - 1;
-      const drop = others > spec.others[0] && (others >= spec.others[1] || rng.chance(0.5));
-      if (drop) {
-        const i = rng.int(1, vehicles.length - 1);
-        vehicles.splice(i, 1);
-        pos.splice(i, 1);
-      }
-      if (!drop || rng.chance(0.7)) addVehicles(rng, vehicles, pos, 1, spec.trucks);
-    }
+    } else ({ vehicles, pos } = mutate(rng, spec, cur));
     stall++;
     const h = hardestOf(vehicles, pos, spec.cap);
     if (!h || h.d > hi) continue;
@@ -346,36 +512,23 @@ export function generate(rng: Rng, difficulty: Difficulty): Generated<TrotroPuzz
   const spec = SPEC[difficulty];
   const [lo, hi] = spec.range;
   if (spec.hardest) {
-    const c = climb(rng, spec);
-    if (!c) throw new Error(`trotro: could not generate a ${difficulty} lot`);
-    return finish(c.vehicles, c.pos);
+    const c = walk(rng, spec, lo, hi);
+    return finish(c.vehicles, c.space, c.index);
   }
   // Easy and medium aim for a par drawn evenly from the range (most spaces are full of short positions).
   const want = rng.int(lo, hi);
-  let best: Found | null = null;
-  for (let attempt = 0; attempt < 600; attempt++) {
-    const { vehicles, pos } = layout(rng, rng.int(spec.others[0], spec.others[1]), spec.trucks);
-    const sp = distances({ size: SIZE, vehicles }, pos, spec.cap);
-    if (!sp) continue;
-    const inRange = sp.dist.flatMap((d, i) => (d >= lo && d <= hi ? [i] : []));
-    if (!inRange.length) {
-      // Keep the hardest position seen so far, for the rare seed where no layout reaches the range.
-      const far = sp.dist.reduce((b, d, i) => (d !== Infinity && (b < 0 || d > sp.dist[b]) ? i : b), -1);
-      if (far >= 0 && sp.dist[far] > 0 && (!best || sp.dist[far] > best.d)) best = { vehicles, pos: sp.at(far), d: sp.dist[far] };
-      continue;
-    }
-    const exact = inRange.filter((i) => sp.dist[i] === want);
-    if (!exact.length && attempt < 200) continue;
-    const pick = rng.pick(exact.length ? exact : inRange);
-    return finish(vehicles, sp.at(pick));
-  }
-  if (best) return finish(best.vehicles, best.pos);
-  throw new Error(`trotro: could not generate a ${difficulty} lot`);
+  // Any lot whose hardest position is `want` or more has a position exactly `want` from the exit (one step
+  // along a shortest route at a time), so walk until the lot is thin enough and take one of those.
+  const c = walk(rng, spec, want, Infinity);
+  const exact: number[] = [];
+  c.space.dist.forEach((d, i) => d === want && exact.push(i));
+  return finish(c.vehicles, c.space, rng.pick(exact));
 }
 
-function finish(vehicles: Vehicle[], pos: number[]): Generated<TrotroPuzzle, TrotroSolution> {
-  const moves = solve({ size: SIZE, vehicles }, pos)!;
-  const puzzle: TrotroPuzzle = { size: SIZE, exitRow: EXIT_ROW, vehicles, start: pos, par: moves.length };
+/** The puzzle at position `i` of a searched space, with a fewest-move route as the stored solution. */
+function finish(vehicles: Vehicle[], space: Space, i: number): Generated<TrotroPuzzle, TrotroSolution> {
+  const moves = space.route(i)!;
+  const puzzle: TrotroPuzzle = { size: SIZE, exitRow: EXIT_ROW, vehicles, start: space.at(i), par: moves.length };
   return { puzzle, solution: { moves }, grade: grade(puzzle) };
 }
 
