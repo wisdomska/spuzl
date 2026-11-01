@@ -22,6 +22,11 @@ export const en = {
     sendFailed: "We couldn't send a code. Check the email and try again.",
     // Supabase answers "Token has expired or is invalid" for both cases, so don't guess which.
     badCode: "That code didn't work. Check it against the email, or send a new one.",
+    // Google's approved button wording.
+    google: "Continue with Google",
+    googleOpening: "Opening Google…",
+    googleFailed: "Google sign-in didn't start. Try again, or use your email.",
+    or: "or",
   },
   account: {
     signInExisting: "Sign in to an existing account",

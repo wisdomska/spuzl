@@ -8,6 +8,7 @@ import { supabaseBrowser } from "@/lib/supabase/browser";
 import { api } from "@/lib/client/api";
 import { copy } from "@/lib/copy";
 import { guestCopy } from "@/lib/copy/guest";
+import { GoogleButton, OrRule } from "@/components/auth/GoogleButton";
 
 const T = copy.signIn;
 
@@ -22,15 +23,19 @@ const RESEND_SECONDS = 30;
  * `link` (guests only): instead of signing in, attach the email to the current anonymous account with
  * `updateUser` (the same linking path as Settings, Account), then confirm it with the emailed code
  * (`email_change`). The user id stays, so all progress is kept; the account is then marked as no longer a guest.
+ *
+ * `googleNext`: also offer "Continue with Google" above the email (linking for guests), returning to that path.
  */
 export function EmailCodeSignIn({
   onDone,
   autoFocus = true,
   link = false,
+  googleNext,
 }: {
   onDone: (hasProfile: boolean) => void;
   autoFocus?: boolean;
   link?: boolean;
+  googleNext?: string;
 }) {
   const [email, setEmail] = useState("");
   const [sentTo, setSentTo] = useState<string | null>(null);
@@ -137,6 +142,12 @@ export function EmailCodeSignIn({
             exit={{ opacity: 0, transition: { duration: 0.12 } }}
             transition={{ duration: 0.24, ease: EASE_OUT }}
           >
+            {googleNext && (
+              <>
+                <GoogleButton next={googleNext} link={link} />
+                <OrRule />
+              </>
+            )}
             <label htmlFor="signin-email" className="text-[15px] font-semibold">
               {T.emailLabel}
             </label>

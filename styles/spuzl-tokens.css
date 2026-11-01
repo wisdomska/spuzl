@@ -48,6 +48,10 @@
   --tier-silver: #c9ccdd;
   --tier-gold: #ffc93c;
   --tier-prism: #b8f23a;
+  /* Sign in with Google button (Google's dark theme: fill, stroke, text) */
+  --google-bg: #131314;
+  --google-line: #8e918f;
+  --google-text: #e3e3e3;
   --rule-hatch: repeating-linear-gradient(135deg, rgb(255 90 95 / 0.45) 0 4px, transparent 4px 9px);
 
   /* type */
@@ -144,6 +148,10 @@
   --success-tint: #e7f2d8;
   --danger-tint: #fbe6e6;
   --warn-tint: #fbf1da;
+  /* Sign in with Google button (Google's light theme) */
+  --google-bg: #ffffff;
+  --google-line: #747775;
+  --google-text: #1f1f1f;
 }
 
 /* Colour-blind modes swap hues AND turn on glyph/pattern helpers (data-cb also toggles .cb-patterns in components) */

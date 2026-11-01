@@ -7,12 +7,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useSettings, prefersReducedMotion, type Settings } from "@/lib/settings/store";
 import { api, HttpError, useMe } from "@/lib/client/api";
 import { EmailCodeSignIn } from "@/components/onboarding/EmailCodeSignIn";
+import { GoogleButton } from "@/components/auth/GoogleButton";
 import { copy } from "@/lib/copy";
 import { settingsCopy } from "@/lib/copy/settings";
 import { emailChangeApplied } from "@/lib/client/save-streak";
 import { useBlocks, usePatchProfile, useUnblock, type MeExtra } from "@/lib/client/social";
 import { supabaseBrowser } from "@/lib/supabase/browser";
-import { hasSupabase } from "@/lib/supabase/env";
 import { clearOfflineUserData } from "@/lib/offline/register";
 import { TabPage } from "@/components/meta/TabPage";
 import { AvatarChip, BackButton, PageTitle, Switch } from "@/components/meta/ui";
@@ -352,14 +352,6 @@ function AccountSheet({ open, onClose, onDelete }: { open: boolean; onClose: () 
   const d = me.data;
   const redirect = () => `${window.location.origin}/auth/callback?next=/settings`;
 
-  const google = async () => {
-    setErr(null);
-    if (!hasSupabase()) return;
-    const sb = supabaseBrowser();
-    // Linking keeps the same user id, so the guest's progress stays (FR-AC-04).
-    const { error } = await sb.auth.linkIdentity({ provider: "google", options: { redirectTo: redirect() } });
-    if (error) setErr("Google sign-in isn't available right now. Try email.");
-  };
   const byEmail = async (e: FormEvent) => {
     e.preventDefault();
     setErr(null);
@@ -415,9 +407,7 @@ function AccountSheet({ open, onClose, onDelete }: { open: boolean; onClose: () 
       )}
       {d?.guest && (
         <>
-          <Button size="lg" variant="secondary" className="w-full" icon="globe" onClick={google}>
-            Continue with Google
-          </Button>
+          {mode === "link" && !sent && <GoogleButton link next="/settings" />}
           {sent ? (
             sent.applied ? null : (
               <p role="status" className="bg-surface-raised rounded-[14px] px-3.5 py-3 text-[15px]">
@@ -430,6 +420,7 @@ function AccountSheet({ open, onClose, onDelete }: { open: boolean; onClose: () 
               <p className="text-gold text-[13px]">{copy.account.signInLeavesGuest}</p>
               <EmailCodeSignIn
                 autoFocus={false}
+                googleNext="/welcome"
                 onDone={(hasProfile) => {
                   qc.clear();
                   router.replace(hasProfile ? "/" : "/welcome");

@@ -8,6 +8,7 @@ import { Spuz } from "@/components/brand/Spuz";
 import { Button } from "@/components/ui/Button";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { EmailCodeSignIn } from "@/components/onboarding/EmailCodeSignIn";
+import { GoogleButton } from "@/components/auth/GoogleButton";
 import { copy } from "@/lib/copy";
 import { Icon } from "@/components/ui/Icon";
 import CrownfallBoard from "@/games/crownfall/Board";
@@ -195,6 +196,7 @@ export default function Welcome() {
               <Button size="lg" className="w-full text-[17px]" icon="play" onClick={() => setStep("age")}>
                 {copy.welcome.playAsGuest}
               </Button>
+              <GoogleButton next="/welcome" />
               <Button size="lg" variant="secondary" className="w-full text-[17px]" icon="envelope-simple" onClick={() => setStep("signin")}>
                 {copy.welcome.signInWithEmail}
               </Button>

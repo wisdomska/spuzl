@@ -90,6 +90,7 @@ export function SaveStreakPrompt({ className = "" }: { className?: string }) {
         <EmailCodeSignIn
           link
           autoFocus={false}
+          googleNext={typeof window === "undefined" ? "/" : window.location.pathname}
           onDone={() => {
             setOpen(false);
             setSaved(true);
