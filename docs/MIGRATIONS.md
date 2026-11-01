@@ -57,7 +57,10 @@ production, before the code deploys.
 pgTAP: `090_free_play_rating`, `095_admin_metrics_funnel`. If the code ships first, the free-play percentile call
 fails soft (each clear counts as an average one), and lab games stay behind their switch.
 
-## After 1.3.0
+## 1.4.0
+
+All additive and reversible (rollback SQL in each header). No existing player rows change, except that league
+members get a `home_tier` copied from their group at the next rollover.
 
 | Migration                              | What it adds                                                                                                                     | Rollback                                                  |
 | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
@@ -72,3 +75,10 @@ deploy doesn't matter.
 
 pgTAP: `100_learned_games`. If the code ships first, reads of the missing table fail soft (only this device's
 learned games count) and saving a learned game fails quietly (the device keeps it and syncs it later).
+
+| Migration                               | What it adds                                                                                                                              | Rollback   |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| `20261111000001_league_min_group.sql`   | `league_members.home_tier`; the weekly rollover merges tiers below `leagues.minGroup` into the nearest tier (players keep their own tier) | See header |
+| `20261111000002_party_chosen_games.sql` | `matches.chosen_games` (2 to 8 race games the Party host picked; no client writes)                                                        | See header |
+
+pgTAP: `085_league_min_group`, `086_party_chosen_games`.

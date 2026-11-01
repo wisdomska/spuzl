@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.4.0 (1 November 2026)
+
+A real landing page, fairer free play, phones that fit, and many admin and multiplayer upgrades.
+
+### For players
+
+- **New landing page** for visitors: a playable Crownfall demo, the nine worlds, how it works and what happens
+  with your data.
+- **Free play is fairer:** the puzzle's seed never leaves the server, so a modified app can't work out answers.
+- **Learned games follow your account:** a new phone skips practice rounds you've already done.
+- **Ranked Duels:** if a round's game is new to you, both players get a short rules break and you see its rules.
+- **Party:** the host can hand-pick 2 to 8 games for the room.
+- **Leagues:** small tiers merge at the weekly reset, so nobody sits in a group of one. You keep your own tier.
+- **Phones:** Nine fits a 375 × 667 phone with its tool bar showing, and Nine and Sixer fit 320 × 568.
+- **Ghost Race** uses a shared track of the day while Dailies are off.
+- **Welcome** says when Google sign-in was cancelled or didn't finish.
+- **Five's answer list** is owner-approved; Trotro Jam boards have much more variety.
+
+### For admins
+
+- **Solve-check** works for Penalty King, Beat Tap, Higher or Lower, Light Up, Killer Sums and Dara.
+- **All admin text** now comes from one copy file.
+- **Google Search Console** ownership tag is on the site.
+
 ## 1.3.0 (1 November 2026)
 
 Google sign-in, a public homepage, a lemon green icon, fairer lab games and many admin and phone-fit fixes.
