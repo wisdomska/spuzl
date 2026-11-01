@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Spuz } from "@/components/brand/Spuz";
@@ -22,7 +22,6 @@ import { onboardingStepOf } from "@/lib/analytics/onboarding";
 import { track } from "@/lib/analytics/track";
 import { formatClock } from "@/lib/format";
 import { play, duck } from "@/lib/audio";
-import { PATTERNS, haptic } from "@/lib/haptics";
 
 type Step = "hello" | "signin" | "age" | "under13" | "start" | "tutorial" | "nickname";
 type Age = "13-15" | "16-17" | "18+";
@@ -68,6 +67,9 @@ export default function Welcome() {
   const router = useRouter();
   const qc = useQueryClient();
   const [step, setStep] = useState<Step>("hello");
+  // Forward steps enter from the right, going back enters from the left (spatial consistency).
+  const [nav, setNav] = useState({ step, dir: 1 });
+  if (nav.step !== step) setNav({ step, dir: STEP_ORDER[step] >= STEP_ORDER[nav.step] ? 1 : -1 });
   // Signed in with email during onboarding: the profile then belongs to that account, not a guest.
   const [signedIn, setSignedIn] = useState(false);
   const [age, setAge] = useState<Age | null>(null);
@@ -141,8 +143,7 @@ export default function Welcome() {
         setTimeout(() => {
           setStep("nickname");
           duck(1200);
-          play("cheer");
-          haptic(PATTERNS.clear);
+          play("celebrate");
         }, 1100);
       },
       feedback(text) {
@@ -150,7 +151,7 @@ export default function Welcome() {
       },
       ruleBreak(message) {
         setCoach(message);
-        play("buzz");
+        play("error");
       },
       announce() {},
       setControls() {},
@@ -189,332 +190,353 @@ export default function Welcome() {
   return (
     <main className="safe-top bg-bg relative mx-auto flex min-h-dvh max-w-[560px] flex-col overflow-hidden">
       {leaving && <PageLoader message={dest === "/library" ? "Opening all games" : "Opening the Grid"} />}
-      <AnimatePresence mode="wait" initial={false}>
-        {step === "hello" && (
-          <Screen key="hello">
-            <motion.div
-              className="mt-8 flex justify-center"
-              initial={{ opacity: 0, transform: "translateY(24px) scale(0.85)" }}
-              animate={{ opacity: 1, transform: "translateY(0px) scale(1)" }}
-              transition={{ type: "spring", stiffness: 260, damping: 16 }}
-            >
-              <Spuz mood="wave" size={180} decorative />
-            </motion.div>
-            <h1 className="font-display text-center text-[32px] leading-[1.08] font-black tracking-[-0.02em] text-balance">
-              {copy.welcome.helloTitle}
-            </h1>
-            <p className="text-muted text-center text-[16px] leading-normal text-balance">{copy.welcome.helloBody}</p>
-            <div className="mt-auto flex flex-col gap-3">
-              <Button size="lg" className="w-full text-[17px]" icon="play" onClick={() => setStep("age")}>
-                {copy.welcome.playAsGuest}
-              </Button>
-              <GoogleButton next="/welcome" />
-              <Button size="lg" variant="secondary" className="w-full text-[17px]" icon="envelope-simple" onClick={() => setStep("signin")}>
-                {copy.welcome.signInWithEmail}
-              </Button>
-              <p className="text-muted text-center text-[13px]">{copy.welcome.signInLater}</p>
-            </div>
-          </Screen>
-        )}
-
-        {step === "signin" && (
-          <Screen key="signin">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                aria-label="Back"
-                onClick={() => setStep("hello")}
-                className="press bg-surface-raised flex size-11 items-center justify-center rounded-[14px]"
+      <Dir.Provider value={nav.dir}>
+        <AnimatePresence mode="wait" initial={false} custom={nav.dir}>
+          {step === "hello" && (
+            <Screen key="hello">
+              <motion.div
+                className="mt-8 flex justify-center"
+                initial={{ opacity: 0, transform: "translateY(24px) scale(0.85)" }}
+                animate={{ opacity: 1, transform: "translateY(0px) scale(1)" }}
+                transition={{ type: "spring", stiffness: 260, damping: 16 }}
               >
-                <Icon name="arrow-left" size={20} />
-              </button>
-              <h1 className="font-display text-[26px] leading-[1.1] font-black tracking-[-0.02em]">{copy.welcome.signInTitle}</h1>
-            </div>
-            <div className="flex justify-center">
-              <Spuz mood="thinking" size={120} decorative />
-            </div>
-            <EmailCodeSignIn
-              onDone={(hasProfile) => {
-                if (hasProfile) {
-                  qc.removeQueries({ queryKey: ["me"] });
-                  qc.removeQueries({ queryKey: ["today"] });
-                  writeOnboarding({ introSeen: true, tutorialDone: true });
-                  setLeaving(true);
-                  router.replace("/");
-                } else {
-                  // New account: set it up like any new player, signed in from the start.
-                  setSignedIn(true);
-                  setStep("age");
-                }
-              }}
-            />
-          </Screen>
-        )}
-
-        {step === "age" && (
-          <Screen key="age">
-            <Progress n={progress} />
-            <div className="mt-2.5 flex justify-center">
-              <Spuz mood="wave" size={150} decorative />
-            </div>
-            <h1 className="font-display text-center text-[30px] leading-[1.1] font-black tracking-[-0.02em]">
-              Akwaaba, Spuzler.
-              <br />
-              How old are you?
-            </h1>
-            <p className="text-muted text-center text-[16px] leading-normal">
-              So we can keep things safe and fair. We never show it to anyone.
-            </p>
-            <div role="radiogroup" aria-label="Age band" className="mt-1.5 flex flex-col gap-2.5">
-              {AGES.map((o) => {
-                const on = age === o.v;
-                return (
-                  <button
-                    key={o.v}
-                    type="button"
-                    role="radio"
-                    aria-checked={on}
-                    onClick={() => setAge(o.v)}
-                    className="press flex h-16 items-center gap-3.5 rounded-[20px] px-[18px] text-left"
-                    style={{
-                      background: on ? "var(--success-tint)" : "var(--surface)",
-                      boxShadow: on ? "inset 0 0 0 2px var(--accent)" : undefined,
-                    }}
-                  >
-                    <span
-                      className="flex size-6 items-center justify-center rounded-full"
-                      style={{ boxShadow: `inset 0 0 0 2px ${on ? "var(--accent)" : "#5A5E78"}` }}
-                    >
-                      <span className="size-3 rounded-full" style={{ background: on ? "var(--accent)" : "transparent" }} />
-                    </span>
-                    <span className="flex flex-1 flex-col">
-                      <span className="text-[17px] font-semibold">{o.t}</span>
-                      <span className="text-muted text-[14px]">{o.d}</span>
-                    </span>
-                  </button>
-                );
-              })}
-              <button
-                type="button"
-                onClick={() => setStep("under13")}
-                className="text-muted self-center px-3 py-2 text-[14px] underline-offset-4 hover:underline"
-              >
-                I am under 13
-              </button>
-            </div>
-            <Button
-              size="lg"
-              className="mt-auto w-full text-[17px]"
-              disabled={!age}
-              onClick={() => {
-                writeOnboarding({ ageBand: age! });
-                setStep("start");
-              }}
-            >
-              Continue
-            </Button>
-          </Screen>
-        )}
-
-        {step === "under13" && (
-          <Screen key="under13">
-            <div className="mt-16 flex justify-center">
-              <Spuz mood="sad" size={150} decorative />
-            </div>
-            <h1 className="font-display text-center text-[28px] leading-[1.1] font-black">SPUZL is for 13 and up</h1>
-            <p className="text-muted text-center text-[16px] leading-normal">Come back when you turn 13. Spuz will keep your seat warm.</p>
-            <Button size="lg" variant="secondary" className="mt-auto w-full" onClick={() => setStep("age")}>
-              Back
-            </Button>
-          </Screen>
-        )}
-
-        {step === "start" && (
-          <Screen key="start">
-            <Progress n={progress} />
-            <div className="flex items-end gap-3">
-              <Spuz mood="wave" size={96} decorative />
-              <h1 className="font-display mb-2 text-[28px] leading-[1.1] font-black tracking-[-0.02em] text-balance">{W.startTitle}</h1>
-            </div>
-            <div className="flex flex-col gap-2.5">
-              {STARTS.map((o) => (
-                <button
-                  key={o.id}
-                  type="button"
-                  onClick={() => {
-                    if (o.id === "tutorial") {
-                      setDest("/");
-                      setStep("tutorial");
-                    } else {
-                      setDest(o.id === "pick" ? "/library" : "/");
-                      setStep("nickname");
-                    }
-                  }}
-                  className="toy bg-surface-raised flex min-h-[76px] items-center gap-3.5 rounded-[20px] px-4 py-3 text-left"
-                  style={{ boxShadow: "0 5px 0 var(--depth)" }}
+                <Spuz mood="wave" size={180} decorative />
+              </motion.div>
+              <h1 className="font-display text-center text-[32px] leading-[1.08] font-black tracking-[-0.02em] text-balance">
+                {copy.welcome.helloTitle}
+              </h1>
+              <p className="text-muted text-center text-[16px] leading-normal text-balance">{copy.welcome.helloBody}</p>
+              <div className="mt-auto flex flex-col gap-3">
+                <Button size="lg" className="w-full text-[17px]" icon="play" onClick={() => setStep("age")}>
+                  {copy.welcome.playAsGuest}
+                </Button>
+                <GoogleButton next="/welcome" />
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  className="w-full text-[17px]"
+                  icon="envelope-simple"
+                  onClick={() => setStep("signin")}
                 >
-                  <span className="bg-surface flex size-12 flex-none items-center justify-center rounded-[14px]">
-                    <Icon name={o.icon} size={24} className="text-accent" />
-                  </span>
-                  <span className="flex min-w-0 flex-col gap-0.5">
-                    <span className="font-display text-[17px] font-extrabold">{o.t}</span>
-                    <span className="text-muted text-[14px] leading-snug">{o.d}</span>
-                  </span>
-                  <Icon name="caret-right" size={18} className="text-muted ml-auto flex-none" />
-                </button>
-              ))}
-            </div>
-            <p className="text-muted mt-auto text-center text-[14px]">{W.startLater}</p>
-          </Screen>
-        )}
-
-        {step === "tutorial" && (
-          <Screen key="tutorial">
-            <Progress n={progress} />
-            <div className="flex items-center justify-between gap-3">
-              <h1 className="font-display text-logic text-[24px] font-black">Crownfall</h1>
-              <button
-                type="button"
-                onClick={() => setStep("nickname")}
-                className="text-muted min-h-11 px-2 text-[15px] font-semibold underline-offset-4 hover:underline"
-              >
-                Skip
-              </button>
-            </div>
-            <ul className="flex flex-col gap-2">
-              {rules.map((r) => (
-                <li
-                  key={r.t}
-                  className="flex items-center gap-2.5 text-[16px] font-medium transition-colors duration-200"
-                  style={{ color: r.ok ? "var(--accent)" : "var(--text)" }}
-                >
-                  <Icon name={r.ok ? "check-circle" : "circle"} size={18} />
-                  {r.t}
-                </li>
-              ))}
-            </ul>
-            <div className="mt-2 flex justify-center" style={{ ["--world" as string]: "var(--w-logic)" }}>
-              <CrownfallBoard puzzle={TUTORIAL_PUZZLE} mode="tutorial" api={boardApi} />
-            </div>
-            <div className="mt-auto flex items-end gap-1">
-              <Spuz mood="thinking" size={90} decorative />
-              <motion.p
-                key={coach}
-                initial={{ opacity: 0, transform: "translateY(4px)" }}
-                animate={{ opacity: 1, transform: "translateY(0px)" }}
-                transition={{ duration: 0.2, ease: EASE_OUT }}
-                aria-live="polite"
-                className="bg-surface-raised mb-5 flex-1 rounded-[20px_20px_20px_6px] px-4 py-3.5 text-[16px] leading-[1.4] font-medium"
-              >
-                {coach}
-              </motion.p>
-            </div>
-          </Screen>
-        )}
-
-        {step === "nickname" && (
-          <Screen key="nickname">
-            <Progress n={progress} />
-            {clearMs > 0 && <ClearBanner ms={clearMs} />}
-            <h1 className="font-display text-[28px] leading-[1.1] font-black tracking-[-0.02em]">
-              {clearMs > 0 ? W.makeYoursAfterClear : W.makeYours}
-            </h1>
-            {signedIn && (
-              <p className="text-accent -mt-2 flex items-center gap-1.5 text-[14px] font-semibold">
-                <Icon name="check-circle" size={16} />
-                {copy.welcome.signedInNote}
-              </p>
-            )}
-            <div
-              className="bg-surface flex items-center justify-center self-center rounded-full"
-              style={{ width: clearMs > 0 ? 150 : 220, height: clearMs > 0 ? 150 : 220 }}
-            >
-              <Spuz mood={clearMs > 0 ? "cheer" : "proud"} size={clearMs > 0 ? 130 : 190} color={color} decorative />
-            </div>
-            <div role="radiogroup" aria-label="Spuz colour" className="flex justify-center gap-2.5">
-              {SKINS.map((k) => (
-                <button
-                  key={k.c}
-                  type="button"
-                  role="radio"
-                  aria-checked={color === k.c}
-                  aria-label={k.n}
-                  onClick={() => setColor(k.c)}
-                  className="press flex size-11 items-center justify-center rounded-[14px] text-[#0E0F1A]"
-                  style={{ background: k.c, boxShadow: color === k.c ? "0 0 0 3px var(--bg), 0 0 0 6px var(--text)" : undefined }}
-                >
-                  {color === k.c && <Icon name="check" size={20} />}
-                </button>
-              ))}
-            </div>
-            <div className="mt-1.5 flex flex-col gap-2">
-              <label htmlFor="nick" className="text-[15px] font-semibold">
-                Nickname
-              </label>
-              <div
-                className="bg-surface-raised flex h-14 items-center gap-2.5 rounded-[16px] px-4"
-                style={{ boxShadow: `inset 0 0 0 2px ${problem || error ? "var(--danger)" : nick ? "var(--accent)" : "var(--line)"}` }}
-              >
-                <input
-                  id="nick"
-                  value={nick}
-                  onChange={(e) => {
-                    setNick(e.target.value.replace(/\s/g, "").slice(0, 16));
-                    setError(null);
-                  }}
-                  autoComplete="off"
-                  autoCapitalize="off"
-                  spellCheck={false}
-                  maxLength={16}
-                  placeholder="Pick a name"
-                  aria-invalid={!!problem}
-                  aria-describedby="nick-help"
-                  className="placeholder:text-muted h-full flex-1 bg-transparent text-[18px] font-semibold outline-none"
-                />
-                {nick && !problem && <Icon name="check-circle" size={22} className="text-accent" />}
+                  {copy.welcome.signInWithEmail}
+                </Button>
+                <p className="text-muted text-center text-[13px]">{copy.welcome.signInLater}</p>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {ideas.map((n) => (
+            </Screen>
+          )}
+
+          {step === "signin" && (
+            <Screen key="signin">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  aria-label="Back"
+                  onClick={() => setStep("hello")}
+                  className="press bg-surface-raised flex size-11 items-center justify-center rounded-[14px]"
+                >
+                  <Icon name="arrow-left" size={20} />
+                </button>
+                <h1 className="font-display text-[26px] leading-[1.1] font-black tracking-[-0.02em]">{copy.welcome.signInTitle}</h1>
+              </div>
+              <div className="flex justify-center">
+                <Spuz mood="thinking" size={120} decorative />
+              </div>
+              <EmailCodeSignIn
+                onDone={(hasProfile) => {
+                  if (hasProfile) {
+                    qc.removeQueries({ queryKey: ["me"] });
+                    qc.removeQueries({ queryKey: ["today"] });
+                    writeOnboarding({ introSeen: true, tutorialDone: true });
+                    setLeaving(true);
+                    router.replace("/");
+                  } else {
+                    // New account: set it up like any new player, signed in from the start.
+                    setSignedIn(true);
+                    setStep("age");
+                  }
+                }}
+              />
+            </Screen>
+          )}
+
+          {step === "age" && (
+            <Screen key="age">
+              <Progress n={progress} />
+              <div className="mt-2.5 flex justify-center">
+                <Spuz mood="wave" size={150} decorative />
+              </div>
+              <h1 className="font-display text-center text-[30px] leading-[1.1] font-black tracking-[-0.02em]">
+                Akwaaba, Spuzler.
+                <br />
+                How old are you?
+              </h1>
+              <p className="text-muted text-center text-[16px] leading-normal">
+                So we can keep things safe and fair. We never show it to anyone.
+              </p>
+              <div role="radiogroup" aria-label="Age band" className="mt-1.5 flex flex-col gap-2.5">
+                {AGES.map((o) => {
+                  const on = age === o.v;
+                  return (
+                    <button
+                      key={o.v}
+                      type="button"
+                      role="radio"
+                      aria-checked={on}
+                      onClick={() => setAge(o.v)}
+                      className="press flex h-16 items-center gap-3.5 rounded-[20px] px-[18px] text-left"
+                      style={{
+                        background: on ? "var(--success-tint)" : "var(--surface)",
+                        boxShadow: on ? "inset 0 0 0 2px var(--accent)" : undefined,
+                      }}
+                    >
+                      <span
+                        className="flex size-6 items-center justify-center rounded-full"
+                        style={{ boxShadow: `inset 0 0 0 2px ${on ? "var(--accent)" : "#5A5E78"}` }}
+                      >
+                        <span className="size-3 rounded-full" style={{ background: on ? "var(--accent)" : "transparent" }} />
+                      </span>
+                      <span className="flex flex-1 flex-col">
+                        <span className="text-[17px] font-semibold">{o.t}</span>
+                        <span className="text-muted text-[14px]">{o.d}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+                <button
+                  type="button"
+                  onClick={() => setStep("under13")}
+                  className="text-muted self-center px-3 py-2 text-[14px] underline-offset-4 hover:underline"
+                >
+                  I am under 13
+                </button>
+              </div>
+              <Button
+                size="lg"
+                className="mt-auto w-full text-[17px]"
+                disabled={!age}
+                onClick={() => {
+                  writeOnboarding({ ageBand: age! });
+                  setStep("start");
+                }}
+              >
+                Continue
+              </Button>
+            </Screen>
+          )}
+
+          {step === "under13" && (
+            <Screen key="under13">
+              <div className="mt-16 flex justify-center">
+                <Spuz mood="sad" size={150} decorative />
+              </div>
+              <h1 className="font-display text-center text-[28px] leading-[1.1] font-black">SPUZL is for 13 and up</h1>
+              <p className="text-muted text-center text-[16px] leading-normal">
+                Come back when you turn 13. Spuz will keep your seat warm.
+              </p>
+              <Button size="lg" variant="secondary" className="mt-auto w-full" onClick={() => setStep("age")}>
+                Back
+              </Button>
+            </Screen>
+          )}
+
+          {step === "start" && (
+            <Screen key="start">
+              <Progress n={progress} />
+              <div className="flex items-end gap-3">
+                <Spuz mood="wave" size={96} decorative />
+                <h1 className="font-display mb-2 text-[28px] leading-[1.1] font-black tracking-[-0.02em] text-balance">{W.startTitle}</h1>
+              </div>
+              <div className="flex flex-col gap-2.5">
+                {STARTS.map((o) => (
                   <button
-                    key={n}
+                    key={o.id}
                     type="button"
-                    onClick={() => setNick(n)}
-                    className="press bg-surface text-muted flex items-center gap-1.5 rounded-[12px] px-3 py-2 text-[14px] font-medium"
+                    onClick={() => {
+                      if (o.id === "tutorial") {
+                        setDest("/");
+                        setStep("tutorial");
+                      } else {
+                        setDest(o.id === "pick" ? "/library" : "/");
+                        setStep("nickname");
+                      }
+                    }}
+                    className="toy bg-surface-raised flex min-h-[76px] items-center gap-3.5 rounded-[20px] px-4 py-3 text-left"
+                    style={{ boxShadow: "0 5px 0 var(--depth)" }}
                   >
-                    <Icon name="shuffle" size={14} />
-                    {n}
+                    <span className="bg-surface flex size-12 flex-none items-center justify-center rounded-[14px]">
+                      <Icon name={o.icon} size={24} className="text-accent" />
+                    </span>
+                    <span className="flex min-w-0 flex-col gap-0.5">
+                      <span className="font-display text-[17px] font-extrabold">{o.t}</span>
+                      <span className="text-muted text-[14px] leading-snug">{o.d}</span>
+                    </span>
+                    <Icon name="caret-right" size={18} className="text-muted ml-auto flex-none" />
                   </button>
                 ))}
+              </div>
+              <p className="text-muted mt-auto text-center text-[14px]">{W.startLater}</p>
+            </Screen>
+          )}
+
+          {step === "tutorial" && (
+            <Screen key="tutorial">
+              <Progress n={progress} />
+              <div className="flex items-center justify-between gap-3">
+                <h1 className="font-display text-logic text-[24px] font-black">Crownfall</h1>
                 <button
                   type="button"
-                  aria-label="More ideas"
-                  onClick={() => setIdeas(shuffle(IDEAS).slice(0, 3))}
-                  className="press bg-surface text-muted flex size-9 items-center justify-center rounded-[12px]"
+                  onClick={() => setStep("nickname")}
+                  className="text-muted min-h-11 px-2 text-[15px] font-semibold underline-offset-4 hover:underline"
                 >
-                  <Icon name="arrows-clockwise" size={16} />
+                  Skip
                 </button>
               </div>
-              <p id="nick-help" className="text-[14px]" style={{ color: problem || error ? "var(--danger)" : "var(--text-muted)" }}>
-                {problem ?? error ?? "Free and yours. No real names, no phone numbers."}
-              </p>
-            </div>
-            <Button size="lg" className="mt-auto w-full text-[17px]" disabled={!nick || !!problem} loading={saving} onClick={enter}>
-              {saving ? W.saving : dest === "/library" ? W.ctaLibrary : W.ctaMap}
-            </Button>
-          </Screen>
-        )}
-      </AnimatePresence>
+              <ul className="flex flex-col gap-2">
+                {rules.map((r) => (
+                  <li
+                    key={r.t}
+                    className="flex items-center gap-2.5 text-[16px] font-medium transition-colors duration-200"
+                    style={{ color: r.ok ? "var(--accent)" : "var(--text)" }}
+                  >
+                    <Icon name={r.ok ? "check-circle" : "circle"} size={18} />
+                    {r.t}
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-2 flex justify-center" style={{ ["--world" as string]: "var(--w-logic)" }}>
+                <CrownfallBoard puzzle={TUTORIAL_PUZZLE} mode="tutorial" api={boardApi} />
+              </div>
+              <div className="mt-auto flex items-end gap-1">
+                <Spuz mood="thinking" size={90} decorative />
+                <motion.p
+                  key={coach}
+                  initial={{ opacity: 0, transform: "translateY(4px)" }}
+                  animate={{ opacity: 1, transform: "translateY(0px)" }}
+                  transition={{ duration: 0.2, ease: EASE_OUT }}
+                  aria-live="polite"
+                  className="bg-surface-raised mb-5 flex-1 rounded-[20px_20px_20px_6px] px-4 py-3.5 text-[16px] leading-[1.4] font-medium"
+                >
+                  {coach}
+                </motion.p>
+              </div>
+            </Screen>
+          )}
+
+          {step === "nickname" && (
+            <Screen key="nickname">
+              <Progress n={progress} />
+              {clearMs > 0 && <ClearBanner ms={clearMs} />}
+              <h1 className="font-display text-[28px] leading-[1.1] font-black tracking-[-0.02em]">
+                {clearMs > 0 ? W.makeYoursAfterClear : W.makeYours}
+              </h1>
+              {signedIn && (
+                <p className="text-accent -mt-2 flex items-center gap-1.5 text-[14px] font-semibold">
+                  <Icon name="check-circle" size={16} />
+                  {copy.welcome.signedInNote}
+                </p>
+              )}
+              <div
+                className="bg-surface flex items-center justify-center self-center rounded-full"
+                style={{ width: clearMs > 0 ? 150 : 220, height: clearMs > 0 ? 150 : 220 }}
+              >
+                <Spuz mood={clearMs > 0 ? "cheer" : "proud"} size={clearMs > 0 ? 130 : 190} color={color} decorative />
+              </div>
+              <div role="radiogroup" aria-label="Spuz colour" className="flex justify-center gap-2.5">
+                {SKINS.map((k) => (
+                  <button
+                    key={k.c}
+                    type="button"
+                    role="radio"
+                    aria-checked={color === k.c}
+                    aria-label={k.n}
+                    onClick={() => setColor(k.c)}
+                    className="press flex size-11 items-center justify-center rounded-[14px] text-[#0E0F1A]"
+                    style={{ background: k.c, boxShadow: color === k.c ? "0 0 0 3px var(--bg), 0 0 0 6px var(--text)" : undefined }}
+                  >
+                    {color === k.c && <Icon name="check" size={20} />}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-1.5 flex flex-col gap-2">
+                <label htmlFor="nick" className="text-[15px] font-semibold">
+                  Nickname
+                </label>
+                <div
+                  className="bg-surface-raised flex h-14 items-center gap-2.5 rounded-[16px] px-4"
+                  style={{ boxShadow: `inset 0 0 0 2px ${problem || error ? "var(--danger)" : nick ? "var(--accent)" : "var(--line)"}` }}
+                >
+                  <input
+                    id="nick"
+                    value={nick}
+                    onChange={(e) => {
+                      setNick(e.target.value.replace(/\s/g, "").slice(0, 16));
+                      setError(null);
+                    }}
+                    autoComplete="off"
+                    autoCapitalize="off"
+                    spellCheck={false}
+                    maxLength={16}
+                    placeholder="Pick a name"
+                    aria-invalid={!!problem}
+                    aria-describedby="nick-help"
+                    className="placeholder:text-muted h-full flex-1 bg-transparent text-[18px] font-semibold outline-none"
+                  />
+                  {nick && !problem && <Icon name="check-circle" size={22} className="text-accent" />}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {ideas.map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setNick(n)}
+                      className="press bg-surface text-muted flex items-center gap-1.5 rounded-[12px] px-3 py-2 text-[14px] font-medium"
+                    >
+                      <Icon name="shuffle" size={14} />
+                      {n}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    aria-label="More ideas"
+                    onClick={() => setIdeas(shuffle(IDEAS).slice(0, 3))}
+                    className="press bg-surface text-muted flex size-9 items-center justify-center rounded-[12px]"
+                  >
+                    <Icon name="arrows-clockwise" size={16} />
+                  </button>
+                </div>
+                <p id="nick-help" className="text-[14px]" style={{ color: problem || error ? "var(--danger)" : "var(--text-muted)" }}>
+                  {problem ?? error ?? "Free and yours. No real names, no phone numbers."}
+                </p>
+              </div>
+              <Button size="lg" className="mt-auto w-full text-[17px]" disabled={!nick || !!problem} loading={saving} onClick={enter}>
+                {saving ? W.saving : dest === "/library" ? W.ctaLibrary : W.ctaMap}
+              </Button>
+            </Screen>
+          )}
+        </AnimatePresence>
+      </Dir.Provider>
     </main>
   );
 }
 
+const STEP_ORDER: Record<Step, number> = { hello: 0, signin: 1, age: 1, under13: 2, start: 2, tutorial: 3, nickname: 4 };
+const Dir = createContext(1);
+const SCREEN = {
+  enter: (d: number) => ({ opacity: 0, transform: `translateX(${24 * d}px)` }),
+  center: { opacity: 1, transform: "translateX(0px)" },
+  exit: (d: number) => ({ opacity: 0, transform: `translateX(${-24 * d}px)`, transition: { duration: 0.15, ease: EASE_OUT } }),
+};
+
 function Screen({ children }: { children: React.ReactNode }) {
+  const dir = useContext(Dir);
   return (
     <motion.section
       className="flex min-h-dvh flex-col gap-4 px-5 pt-[60px] pb-7"
-      initial={{ opacity: 0, transform: "translateX(24px)" }}
-      animate={{ opacity: 1, transform: "translateX(0px)" }}
-      exit={{ opacity: 0, transform: "translateX(-24px)", transition: { duration: 0.15, ease: EASE_OUT } }}
+      custom={dir}
+      variants={SCREEN}
+      initial="enter"
+      animate="center"
+      exit="exit"
       transition={{ duration: 0.28, ease: EASE_OUT }}
     >
       {children}
@@ -577,7 +599,11 @@ function Tile({ v, c, l, icon, d, instant }: { v: string; c: string; l: string; 
       initial={instant ? false : { opacity: 0, transform: "translateY(12px)" }}
       animate={{ opacity: 1, transform: "translateY(0px)" }}
       transition={{ delay: instant ? 0 : d, duration: 0.4, ease: EASE_OUT }}
-      onAnimationComplete={() => !instant && l === "XP" && play("coins")}
+      onAnimationComplete={() => {
+        if (instant) return;
+        if (l === "XP") play("reward");
+        if (l === "Streak") play("streak");
+      }}
     >
       <span className="num flex items-center gap-1 text-[20px] font-semibold" style={{ color: c }}>
         {icon && <Icon name={icon} size={22} />}
