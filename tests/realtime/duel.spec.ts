@@ -35,8 +35,9 @@ test("duel: two devices play a best of 3 in real time", async ({ browser }) => {
   await expect(a.page.getByText(b.nickname).first()).toBeVisible();
   await expect(b.page.getByText(a.nickname).first()).toBeVisible();
 
-  // Round 1: the board unlocks after 3-2-1-SPUZL!. The strip never shows their board.
-  await expect(a.page.getByText("Their board stays hidden")).toBeVisible({ timeout: 15_000 });
+  // Round 1: both players are new to the game, so a 12 s rules break comes first (ranked rules card), then
+  // 3-2-1-SPUZL! unlocks the board. The strip never shows their board.
+  await expect(a.page.getByText("Their board stays hidden")).toBeVisible({ timeout: 40_000 });
   await expect(b.page.getByText("Their board stays hidden")).toBeVisible();
   const view = (await inPage<{ difficulty: string; setNo: number }>(a.page, `/api/v1/matches/${id}`)).data;
   const r1 = crownfallRound(id, view.setNo, 1, view.difficulty);

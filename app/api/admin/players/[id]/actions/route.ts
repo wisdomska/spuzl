@@ -38,6 +38,13 @@ export const POST = handle(async (req: Request, rc: RouteContext<"/api/admin/pla
   // Every action needs at least players.moderate; the specific permission is checked once the action is known.
   const ctx = await requireAdmin("players.moderate");
   const id = Id.parse((await rc.params).id);
+  // Permission before validation: a role that may not take this action learns nothing about the request shape.
+  const raw = (await req
+    .clone()
+    .json()
+    .catch(() => null)) as { action?: unknown } | null;
+  const asked = typeof raw?.action === "string" && raw.action in ACTION_PERMISSION ? (raw.action as keyof typeof ACTION_PERMISSION) : null;
+  if (asked && !can(ctx.role, ACTION_PERMISSION[asked])) throw new ApiError(403, "forbidden");
   const input = await body(req, ActionBody);
   if (!can(ctx.role, ACTION_PERMISSION[input.action])) throw new ApiError(403, "forbidden");
   const { data: player } = await ctx.db.from("players").select("nickname, age_band").eq("id", id).maybeSingle();
