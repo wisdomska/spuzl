@@ -89,7 +89,16 @@ export async function solveTestBoard(page: Page, slug: string, seed = "qa", d: D
 
 export async function duelVsBot(page: Page) {
   await page.goto("/duel");
-  await page.getByRole("button", { name: /bot/i }).first().click();
+  // Quick Match, past the rules card for a game never cleared (SPZ-12), then the Practice bot (offered at once).
+  await page
+    .getByRole("button", { name: /Quick Match/ })
+    .first()
+    .click();
+  const ready = page.getByRole("button", { name: /I'm ready/ });
+  const bot = page.getByRole("button", { name: /Practice bot/ });
+  await expect(ready.or(bot).first()).toBeVisible({ timeout: 20_000 });
+  if (await ready.isVisible()) await ready.click();
+  await bot.first().click();
   await page.waitForURL(/\/duel\?m=/, { timeout: 30_000 });
   return waitForBoard(page, 45_000);
 }
