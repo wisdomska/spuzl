@@ -8,6 +8,8 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["games/**/*.test.ts", "lib/**/*.test.ts", "tests/unit/**/*.test.{ts,tsx}"],
+    // Puzzle generators with uniqueness proofs (Market Run, Killer Sums, Trotro Jam) run slower under coverage in CI.
+    testTimeout: 60_000,
     coverage: {
       provider: "v8",
       include: [
