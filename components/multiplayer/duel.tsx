@@ -164,7 +164,7 @@ export function Matchmaking({
   rating,
   game,
   waitedMs,
-  usualMs,
+  searching,
   color,
   onCancel,
   botReady,
@@ -175,7 +175,7 @@ export function Matchmaking({
   rating: number;
   game: string | null;
   waitedMs: number;
-  usualMs: number;
+  searching: number | null;
   color: string;
   onCancel: () => void;
   botReady: boolean;
@@ -228,25 +228,20 @@ export function Matchmaking({
       <div className="mt-5 flex gap-2.5">
         <div className="bg-surface flex flex-col items-center gap-0.5 rounded-[14px] px-4 py-2.5">
           <span className="num text-[22px] font-semibold">{formatClock(waitedMs).replace(/^0/, "")}</span>
-          <span className="text-muted text-[13px] font-medium">searching</span>
+          <span className="text-muted text-[13px] font-medium">{duelCopy.searching}</span>
         </div>
-        <div className="bg-surface flex flex-col items-center gap-0.5 rounded-[14px] px-4 py-2.5">
-          <span className="num text-muted text-[22px] font-semibold">~{formatClock(usualMs).replace(/^0/, "")}</span>
-          <span className="text-muted text-[13px] font-medium">usual wait</span>
-        </div>
+        {searching !== null && searching > 0 && (
+          <div className="bg-surface flex flex-col items-center justify-center gap-0.5 rounded-[14px] px-4 py-2.5">
+            <span className="text-muted text-[14px] font-semibold">{duelCopy.searchingNow(searching)}</span>
+          </div>
+        )}
       </div>
-      {botReady ? (
-        <div className="mt-4 flex w-full max-w-[358px] flex-col items-center gap-2">
-          <p className="text-muted text-center text-[14px]">Nobody yet. Warm up with a Practice bot. No rating on the line.</p>
-          <Cta onClick={onBot} icon="robot" className="w-full">
-            Play the Practice bot
-          </Cta>
-        </div>
-      ) : (
-        <p className="text-muted mt-3.5 max-w-[280px] text-center text-[14px]">
-          No one by 0:20? You&apos;ll get a Practice bot. No rating on the line.
-        </p>
-      )}
+      <div className="mt-4 flex w-full max-w-[358px] flex-col items-center gap-2">
+        <p className="text-muted text-center text-[14px]">{botReady ? duelCopy.botLate : duelCopy.botHint}</p>
+        <Cta onClick={onBot} icon="robot" tone={botReady ? undefined : "raised"} className="w-full">
+          {duelCopy.botNow}
+        </Cta>
+      </div>
       <div className="mt-auto w-full max-w-[528px] pt-6">
         <Cta tone="raised" onClick={onCancel} className="w-full">
           Cancel
@@ -738,7 +733,9 @@ export function MatchEnd({
       : view.result === "left"
         ? won
           ? `${them.nickname} left the duel. Win counts.`
-          : "You left the duel. It counts as a loss."
+          : view.isBot
+            ? duelCopy.leftBot
+            : "You left the duel. It counts as a loss."
         : draw
           ? "Level after three. Fewer slips next time breaks it."
           : won

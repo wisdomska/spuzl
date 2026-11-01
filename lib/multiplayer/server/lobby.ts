@@ -7,10 +7,11 @@ import { createRng } from "@/lib/rng";
 import { DUEL_ROUNDS, PARTY_GAMES, PARTY_MIN, TIMING } from "../constants";
 import { botTimes, firstRoundStart } from "../duel";
 import { isRaceGame, pickGames } from "../games";
-import { pickOpponent, usualWaitMs, type QueueEntry } from "../matchmaking";
+import { pickOpponent, type QueueEntry } from "../matchmaking";
 import { CODE_ALPHABET, makeRoomCode, roomExpired } from "../roomCode";
 import { loadMatch, matchTopic, member, touch, viewOf } from "./match";
 import { readRating } from "./rewards";
+import { GAME_BY_ID } from "@/lib/catalog";
 
 const iso = (n: number) => new Date(n).toISOString();
 const secureRandom = () => randomInt(0, CODE_ALPHABET.length) / CODE_ALPHABET.length;
@@ -38,9 +39,32 @@ async function addPlayer(admin: SupabaseClient, matchId: string, playerId: strin
 
 /* ---------------- Duel: matchmaking ---------------- */
 
-export async function enqueue(admin: SupabaseClient, player: { id: string; age_band: string }, game: string | null) {
+/** Race games each player has cleared at least once (any mode). */
+async function clearedGames(admin: SupabaseClient, playerIds: string[]): Promise<Map<string, Set<string>>> {
+  const out = new Map(playerIds.map((p) => [p, new Set<string>()]));
+  const { data } = await admin.from("attempts").select("player_id, game_id").in("player_id", playerIds).eq("status", "cleared").limit(2000);
+  for (const r of data ?? []) if (isRaceGame(r.game_id)) out.get(r.player_id)?.add(r.game_id);
+  return out;
+}
+
+/**
+ * Ranked Quick Match games (SPZ-12): a random mix only uses games both players have cleared (or, failing
+ * that, either of them), so nobody meets a game for the first time with rating on the line.
+ */
+export async function rankedPool(admin: SupabaseClient, playerIds: string[]): Promise<string[] | undefined> {
+  const sets = [...(await clearedGames(admin, playerIds)).values()];
+  const both = [...(sets[0] ?? [])].filter((g) => sets.every((s) => s.has(g)));
+  if (both.length) return both;
+  const either = [...new Set(sets.flatMap((s) => [...s]))];
+  return either.length ? either : undefined;
+}
+
+export async function enqueue(admin: SupabaseClient, player: { id: string; age_band: string }, game: string | null, rulesSeen = false) {
   if (player.age_band === "13-15") throw new ApiError(403, "age_restricted", "Quick Match opens at 16. Challenge a friend instead.");
   if (game && !isRaceGame(game)) throw new ApiError(400, "game_not_duelable");
+  // A ranked game the player has never cleared: read the rules first (the client shows a 20 s rules card).
+  if (game && !rulesSeen && !(await clearedGames(admin, [player.id])).get(player.id)?.has(game))
+    throw new ApiError(409, "needs_rules", GAME_BY_ID[game]?.rule ?? "");
   const [{ rating }, { data: me }] = await Promise.all([
     readRating(admin, player.id, "duel"),
     admin.from("players").select("country").eq("id", player.id).single(),
@@ -90,14 +114,8 @@ export async function pollQueue(admin: SupabaseClient, playerId: string) {
     const matchId = await createDuel(admin, [me.playerId, opp.playerId], me.gameId ?? opp.gameId, { rated: true, claim: true });
     if (matchId) return { status: "matched" as const, matchId, rating, waitedMs: waited };
   }
-  const { data: recent } = await admin
-    .from("matches")
-    .select("created_at")
-    .eq("kind", "duel")
-    .eq("rated", true)
-    .order("created_at", { ascending: false })
-    .limit(1);
-  return { status: "searching" as const, rating, waitedMs: waited, usualWaitMs: usualWaitMs(recent?.length ? [12_000] : []) };
+  // Live data only (SPZ-12): how many others are searching right now. No estimated wait is shown.
+  return { status: "searching" as const, rating, waitedMs: waited, searching: (others ?? []).length };
 }
 
 export async function cancelQueue(admin: SupabaseClient, playerId: string) {
@@ -112,7 +130,7 @@ async function createDuel(
 ): Promise<string | null> {
   const id = randomUUID();
   const rng = createRng(`duel:${id}`);
-  const games = pickGames(rng, game, DUEL_ROUNDS);
+  const games = pickGames(rng, game, DUEL_ROUNDS, !game && o.rated ? await rankedPool(admin, players) : undefined);
   const now = Date.now();
   const { error } = await admin.from("matches").insert({
     id,
@@ -155,7 +173,7 @@ export async function practiceBot(admin: SupabaseClient, playerId: string, game:
     .eq("player_id", playerId)
     .maybeSingle();
   if (q?.match_id) return { matchId: q.match_id as string };
-  if (q && Date.now() - Date.parse(q.enqueued_at) < TIMING.botAfterMs - 1000) throw new ApiError(409, "too_soon");
+  // The Practice bot is unrated, so it is offered from the start (SPZ-12); no waiting rule needed.
   await cancelQueue(admin, playerId);
   const id = await createDuel(admin, [playerId], game ?? q?.game_id ?? null, { rated: false, bot: true });
   return { matchId: id! };

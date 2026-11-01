@@ -8,6 +8,7 @@ import { api, HttpError, useMe } from "@/lib/client/api";
 import { matchAction, matchKey, useEmotes, useMatch, useProfileGate, useServerNow } from "@/lib/client/multiplayer";
 import { useSettings } from "@/lib/settings/store";
 import { useGameSettings } from "@/lib/game-settings/client";
+import { duelCopy } from "@/lib/copy/duel";
 import { botProgress, duelPhase, roundOutcomes, BOT_ID } from "@/lib/multiplayer/duel";
 import { DUEL_DEFAULT_GAME, gameName } from "@/lib/multiplayer/games";
 import { TIMING, type EmoteId } from "@/lib/multiplayer/constants";
@@ -44,7 +45,8 @@ function DuelLobby({ joinCode, friendName }: { joinCode: string | null; friendNa
   const [game, setGame] = useState<string | null>(DUEL_DEFAULT_GAME ?? null);
   const [mode, setMode] = useState<"sheet" | "search" | "friend">("sheet");
   const [waited, setWaited] = useState(0);
-  const [usual, setUsual] = useState(12_000);
+  const [searching, setSearching] = useState<number | null>(null);
+  const [rulesFor, setRulesFor] = useState<{ game: string; rule: string } | null>(null);
   const [queueRating, setRating] = useState<number | null>(null);
   const rating = queueRating ?? Math.round(me.data?.ratings?.duel ?? 1000);
   const [friend, setFriend] = useState<{ code: string; matchId: string } | null>(null);
@@ -68,9 +70,9 @@ function DuelLobby({ joinCode, friendName }: { joinCode: string | null; friendNa
     const t = setInterval(async () => {
       setWaited(Date.now() - since.current);
       try {
-        const r = await api<{ status: string; matchId?: string; usualWaitMs?: number }>("/api/v1/duel/queue");
+        const r = await api<{ status: string; matchId?: string; searching?: number }>("/api/v1/duel/queue");
         if (stop) return;
-        if (r.usualWaitMs) setUsual(r.usualWaitMs);
+        setSearching(typeof r.searching === "number" ? r.searching : null);
         if (r.status === "matched" && r.matchId) router.replace(`/duel?m=${r.matchId}`);
       } catch {
         /* keep searching */
@@ -96,16 +98,24 @@ function DuelLobby({ joinCode, friendName }: { joinCode: string | null; friendNa
     return () => clearInterval(t);
   }, [mode, friend, router]);
 
-  const quick = async () => {
+  const quick = async (rulesSeen = false) => {
     try {
       since.current = Date.now();
       setWaited(0);
+      setRulesFor(null);
       setMode("search");
-      const r = await api<{ status: string; matchId?: string; rating?: number }>("/api/v1/duel/queue", { json: { game } });
+      const r = await api<{ status: string; matchId?: string; rating?: number; searching?: number }>("/api/v1/duel/queue", {
+        json: { game, rulesSeen },
+      });
+      setSearching(typeof r.searching === "number" ? r.searching : null);
       if (r.rating) setRating(r.rating);
       if (r.status === "matched" && r.matchId) router.replace(`/duel?m=${r.matchId}`);
     } catch (e) {
       setMode("sheet");
+      if (e instanceof HttpError && e.code === "needs_rules" && game) {
+        setRulesFor({ game, rule: e.message });
+        return;
+      }
       show(e instanceof HttpError && e.message !== e.code ? e.message : "Couldn't join the queue. Try again.", "bad");
     }
   };
@@ -165,7 +175,7 @@ function DuelLobby({ joinCode, friendName }: { joinCode: string | null; friendNa
           rating={rating}
           game={game}
           waitedMs={waited}
-          usualMs={usual}
+          searching={searching}
           color={me.data?.avatar_color ?? "#B8F23A"}
           onCancel={cancel}
           botReady={waited >= TIMING.botAfterMs}
@@ -195,12 +205,15 @@ function DuelLobby({ joinCode, friendName }: { joinCode: string | null; friendNa
           </div>
         </div>
       )}
-      {mode === "sheet" && (
+      {mode === "sheet" && rulesFor && (
+        <RulesCard game={rulesFor.game} rule={rulesFor.rule} onReady={() => quick(true)} onBack={() => setRulesFor(null)} />
+      )}
+      {mode === "sheet" && !rulesFor && (
         <DuelEntrySheet
           game={game}
           setGame={setGame}
           rating={rating}
-          onQuick={quick}
+          onQuick={() => quick()}
           onFriend={challengeFriend}
           onClose={() => router.push("/")}
           youngster={me.data?.age_band === "13-15"}
@@ -482,11 +495,13 @@ function DuelMatch({ id }: { id: string }) {
           aria-label="Leave the duel"
         >
           <div className="bg-surface flex w-full max-w-[560px] flex-col gap-3 rounded-t-[32px] p-5 pb-[max(28px,env(safe-area-inset-bottom))]">
-            <h2 className="font-display text-[22px] font-black">Leave the duel?</h2>
-            <p className="text-muted text-[15px]">Leaving counts as a loss. Your rival gets the win.</p>
+            <h2 className="font-display text-[22px] font-black">{view.isBot ? duelCopy.leaveTitleBot : "Leave the duel?"}</h2>
+            <p className="text-muted text-[15px]">
+              {view.isBot ? duelCopy.leaveBodyBot : "Leaving counts as a loss. Your rival gets the win."}
+            </p>
             <Cta onClick={() => setConfirmLeave(false)}>Keep playing</Cta>
             <button type="button" onClick={leave} className="text-muted min-h-12 text-[16px] font-semibold">
-              Leave and lose
+              {view.isBot ? duelCopy.leaveConfirmBot : "Leave and lose"}
             </button>
           </div>
         </div>
@@ -501,5 +516,43 @@ function CountdownOverlay({ ms, round }: { ms: number; round: number }) {
       <CountdownNumber msToStart={ms} />
       <div className="text-[15px] font-semibold text-[#A2A6C2]">Round {round} of 3</div>
     </>
+  );
+}
+
+/** SPZ-12: a ranked game the player has never cleared gets its rule first; search starts by itself after 20 s. */
+function RulesCard({ game, rule, onReady, onBack }: { game: string; rule: string; onReady: () => void; onBack: () => void }) {
+  const [left, setLeft] = useState(20_000);
+  useEffect(() => {
+    const t0 = Date.now();
+    const t = setInterval(() => setLeft(Math.max(0, 20_000 - (Date.now() - t0))), 200);
+    return () => clearInterval(t);
+  }, []);
+  useEffect(() => {
+    if (left === 0) onReady();
+  }, [left]); // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <div className="flex flex-1 flex-col gap-4 px-4 pt-[max(56px,env(safe-area-inset-top))] pb-[max(28px,env(safe-area-inset-bottom))]">
+      <div className="flex items-center gap-3">
+        <TopButton icon="arrow-left" label="Back" onClick={onBack} />
+        <h1 className="font-display min-w-0 text-[22px] leading-tight font-black">{duelCopy.rulesTitle(gameName(game))}</h1>
+      </div>
+      <p className="text-muted text-[15px]">{duelCopy.rulesBody}</p>
+      <div className="bg-surface rounded-[20px] p-4 text-[18px] leading-[1.45] font-semibold">{rule}</div>
+      <div
+        className="bg-line h-2 overflow-hidden rounded-full"
+        role="progressbar"
+        aria-label={duelCopy.rulesAuto}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(100 * (1 - left / 20_000))}
+      >
+        <div className="bg-accent h-full origin-left rounded-full" style={{ transform: `scaleX(${1 - left / 20_000})` }} />
+      </div>
+      <div className="mt-auto">
+        <Cta className="w-full" onClick={onReady}>
+          {duelCopy.rulesReady}
+        </Cta>
+      </div>
+    </div>
   );
 }

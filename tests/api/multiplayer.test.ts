@@ -29,9 +29,9 @@ const startNow = (id: string, agoMs = 1000) =>
 async function pairDuel(): Promise<{ a: G; b: G; id: string }> {
   const a = await guest(uniq("da_"));
   const b = await guest(uniq("db_"));
-  const qa = await a.api("/api/v1/duel/queue", { json: { game: "crownfall" } });
+  const qa = await a.api("/api/v1/duel/queue", { json: { game: "crownfall", rulesSeen: true } });
   expect(qa.status).toBe(200);
-  const qb = await b.api("/api/v1/duel/queue", { json: { game: "crownfall" } });
+  const qb = await b.api("/api/v1/duel/queue", { json: { game: "crownfall", rulesSeen: true } });
   expect(qb.data.status).toBe("matched");
   const pa = await a.api("/api/v1/duel/queue");
   expect(pa.data).toMatchObject({ status: "matched", matchId: qb.data.matchId });
@@ -151,14 +151,23 @@ describe("api: duel", () => {
     expect((await a.api(`/api/v1/matches/${id}/rematch`, { json: {} })).data.matchId).toBe(r2.data.matchId);
   });
 
-  it("offers the Practice bot only after 20 s, unrated", async () => {
+  it("asks for the rules on a game never cleared, shows only live queue data, and offers the bot at once (SPZ-12)", async () => {
+    const n = await guest(uniq("nr_"));
+    const first = await n.api("/api/v1/duel/queue", { json: { game: "crownfall" } });
+    expect([first.status, first.data.error]).toEqual([409, "needs_rules"]);
+    expect(first.data.message).toBeTruthy();
+    const second = await n.api("/api/v1/duel/queue", { json: { game: "crownfall", rulesSeen: true } });
+    expect(second.status).toBe(200);
+    if (second.data.status === "searching") {
+      expect(second.data.usualWaitMs).toBeUndefined();
+      expect(typeof second.data.searching).toBe("number");
+    }
+    await n.api("/api/v1/duel/queue", { method: "DELETE" });
+  });
+
+  it("offers the Practice bot from the start, unrated", async () => {
     const a = await guest(uniq("bt_"));
-    await a.api("/api/v1/duel/queue", { json: { game: "crownfall" } });
-    expect((await a.api("/api/v1/duel/bot", { json: {} })).status).toBe(409);
-    await admin()
-      .from("matchmaking_queue")
-      .update({ enqueued_at: new Date(Date.now() - 21_000).toISOString() })
-      .eq("player_id", a.userId);
+    await a.api("/api/v1/duel/queue", { json: { game: "crownfall", rulesSeen: true } });
     const bot = await a.api("/api/v1/duel/bot", { json: {} });
     expect(bot.status).toBe(200);
     const v = (await a.api(`/api/v1/matches/${bot.data.matchId}`)).data;

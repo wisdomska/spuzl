@@ -19,9 +19,10 @@ export const ROOM_PICKS = ["quads", "crownfall", "sixer", "deadon", "echo"].filt
 export const DUEL_DEFAULT_GAME = isRaceGame("sixer") ? "sixer" : RACE_GAMES[0]?.id;
 
 /** Games for a match: the chosen game every round, or a seeded mix of different games. */
-export function pickGames(rng: Rng, chosen: string | null, rounds: number): string[] {
+export function pickGames(rng: Rng, chosen: string | null, rounds: number, allowed?: string[]): string[] {
   if (chosen && isRaceGame(chosen)) return Array.from({ length: rounds }, () => chosen);
-  const pool = rng.shuffle(RACE_GAMES.map((g) => g.id));
+  const fromAllowed = (allowed ?? []).filter(isRaceGame);
+  const pool = rng.shuffle(fromAllowed.length ? fromAllowed : RACE_GAMES.map((g) => g.id));
   return Array.from({ length: rounds }, (_, i) => pool[i % pool.length]);
 }
 
