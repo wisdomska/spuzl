@@ -98,6 +98,21 @@ describe("admin events: roles, validation, audit", () => {
     expect((await S.owner.aal2(`/api/admin/events/00000000-0000-4000-8000-000000000000`, { method: "PATCH", json: {} })).status).toBe(404);
   });
 
+  it("edits the bonus quest when the body repeats the event id (console editor, quest catalogue)", async () => {
+    const e = await create();
+    const edited = { ...quest, xp: 55, sparks: 30 };
+    const r = await S.content_editor.aal2(`/api/admin/events/${e.id}`, { method: "PATCH", json: { id: e.id, quest: edited } });
+    expect(r.status, JSON.stringify(r.data)).toBe(200);
+    expect(r.data.quest).toMatchObject({ xp: 55, sparks: 30 });
+    const other = await S.content_editor.aal2(`/api/admin/events/${e.id}`, {
+      method: "PATCH",
+      json: { id: "00000000-0000-4000-8000-000000000000", quest: edited },
+    });
+    expect(other.data.error).toBe("id_mismatch");
+    const tooRich = await S.content_editor.aal2(`/api/admin/events/${e.id}`, { method: "PATCH", json: { quest: { ...quest, xp: 5000 } } });
+    expect(tooRich.status).toBe(400);
+  });
+
   it("audits create, edit and delete, and lists pages", async () => {
     const e = await create();
     expect(await lastAudit(S.content_editor.userId, "event.create", `event:${e.id}`)).toBeTruthy();

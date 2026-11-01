@@ -1,14 +1,18 @@
 "use client";
 
 /** Smaller admin tools: schools, shop and events (FR-AD-04), feature flags (FR-AD-07), audit log (FR-AD-08), team. */
+import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { age, todayIso } from "@/lib/admin/dates";
 import { ROLES, ROLE_LABEL, type Role } from "@/lib/admin/roles";
+import { WORLD_BY_ID } from "@/lib/catalog";
 import { errorText, useAdminAction, useAdminQuery, type AdminPage } from "@/lib/client/admin";
+import { adminCopy } from "@/lib/copy/admin";
+import type { EventQuest, EventStatus } from "@/lib/events";
 import { Pagination, usePager } from "./Pagination";
 import { useDebouncedFilter, useUrlFilters } from "./useUrlFilters";
-import { Btn, Empty, Field, Notice, PageTitle, Pill, RowsSkeleton, Tabs, inputCls } from "./ui";
+import { Btn, Empty, Field, Notice, PageTitle, Pill, RowsSkeleton, Tabs, inputCls, type PillTone } from "./ui";
 
 function Table({ head, children, min = 640 }: { head: string[]; children: ReactNode; min?: number }) {
   return (
@@ -145,7 +149,16 @@ interface CatalogRow {
   xp?: number;
 }
 
-export function ShopPage({ canWrite, canPrice }: { canWrite: boolean; canPrice: boolean }) {
+export function ShopPage({
+  canWrite,
+  canPrice,
+  canWriteEvents = false,
+}: {
+  canWrite: boolean;
+  canPrice: boolean;
+  /** events.write: edit seasonal event quests listed under Quests. */
+  canWriteEvents?: boolean;
+}) {
   const [filters, setFilters] = useUrlFilters(SHOP_FILTERS, SHOP_ALLOWED);
   const kind = filters.kind as Kind;
   const pager = usePager();
@@ -260,7 +273,109 @@ export function ShopPage({ canWrite, canPrice }: { canWrite: boolean; canPrice: 
         }
       </Frame>
       {q.data && <Pagination pager={pager} total={q.data.total} />}
+      {kind === "quests" && <EventQuests canWrite={canWriteEvents} />}
     </div>
+  );
+}
+
+/** How many events the quest catalogue lists: seasonal events are few, so the latest page is all of them in practice. */
+const EVENT_QUEST_LIMIT = 100;
+const EVENT_TONE: Record<EventStatus, PillTone> = { live: "ok", upcoming: "warn", ended: "neutral" };
+const shortWhen = (iso: string) =>
+  new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+
+interface EventQuestRow {
+  id: string;
+  name: string;
+  starts_at: string;
+  ends_at: string;
+  quest: EventQuest;
+  status: EventStatus;
+}
+
+/**
+ * Seasonal events' bonus quests (stored on `events.quest`, not in `quests`), listed under the quest catalogue so
+ * every quest players can see is in one place. XP and Sparks are edited inline like catalogue quests and saved
+ * through the events API (validated and audited there); the rest of an event is edited on Seasonal events.
+ */
+function EventQuests({ canWrite }: { canWrite: boolean }) {
+  const c = adminCopy.eventQuests;
+  const q = useAdminQuery<AdminPage<EventQuestRow>>(["events", "quests"], `/api/admin/events?page=1&pageSize=${EVENT_QUEST_LIMIT}`);
+  const save = useAdminAction<{ id: string; quest: EventQuest }>("PATCH", (i) => `/api/admin/events/${i.id}`);
+  const [edit, setEdit] = useState<Record<string, number>>({});
+  const cell = (e: EventQuestRow, field: "xp" | "sparks", label: "XP" | "Sparks", max: number) => {
+    const key = `${e.id}.${field}`;
+    return (
+      <input
+        type="number"
+        min={0}
+        max={max}
+        aria-label={c.fieldLabel(e.quest.title, label)}
+        readOnly={!canWrite}
+        value={edit[key] ?? e.quest[field]}
+        onChange={(ev) => setEdit({ ...edit, [key]: Number(ev.target.value) })}
+        onBlur={() => {
+          const v = edit[key];
+          if (canWrite && v !== undefined && v !== e.quest[field]) save.mutate({ id: e.id, quest: { ...e.quest, [field]: v } });
+        }}
+        className={`${inputCls} num w-24`}
+      />
+    );
+  };
+  return (
+    <section aria-labelledby="event-quests" className="mt-2 flex flex-col gap-2">
+      <div className="flex flex-wrap items-end gap-x-3 gap-y-1">
+        <div className="flex flex-col">
+          <h2 id="event-quests" className="font-display text-[17px] font-extrabold">
+            {c.heading}
+          </h2>
+          <p className="text-muted text-[13px]">
+            {c.intro} {canWrite ? c.editHere : c.readOnly}
+          </p>
+        </div>
+        <Link href="/admin/events" className="text-accent ml-auto flex h-11 items-center text-[13px] font-semibold hover:underline">
+          {c.manage}
+        </Link>
+      </div>
+      {save.error && <Notice tone="danger">{errorText(save.error)}</Notice>}
+      {save.isSuccess && (
+        <Notice tone="ok" icon="check-circle">
+          {c.saved}
+        </Notice>
+      )}
+      <Frame q={q}>
+        {() =>
+          !q.data!.rows.length ? (
+            <Empty icon="calendar-blank">{c.empty}</Empty>
+          ) : (
+            <Table head={[...c.head]} min={860}>
+              {q.data!.rows.map((e) => (
+                <tr key={e.id}>
+                  <td className={`${td} font-semibold`}>{e.quest.title}</td>
+                  <td className={td}>
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="text-[13px] font-semibold">{e.name}</span>
+                      <Pill tone={EVENT_TONE[e.status]}>{e.status}</Pill>
+                    </span>
+                  </td>
+                  <td className={`${td} num text-muted text-[13px] whitespace-nowrap`}>
+                    {c.runs(shortWhen(e.starts_at), shortWhen(e.ends_at))}
+                  </td>
+                  <td className={`${td} text-muted text-[13px]`}>
+                    {c.goal[e.quest.kind](e.quest.n, e.quest.world ? (WORLD_BY_ID[e.quest.world]?.name ?? e.quest.world) : "")}
+                  </td>
+                  <td className={td}>{cell(e, "xp", "XP", 1000)}</td>
+                  <td className={td}>{cell(e, "sparks", "Sparks", 500)}</td>
+                </tr>
+              ))}
+            </Table>
+          )
+        }
+      </Frame>
+      {q.data && q.data.total > q.data.rows.length && (
+        <p className="num text-muted text-[13px]">{c.latestOnly(q.data.rows.length, q.data.total)}</p>
+      )}
+    </section>
   );
 }
 
