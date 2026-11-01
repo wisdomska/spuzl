@@ -61,6 +61,7 @@ export const LOGIC: Record<string, Loader> = {
   penalty: () => import("./penalty/logic"),
   beattap: () => import("./beattap/logic"),
   hilo: () => import("./hilo/logic"),
+  market: () => import("./market/logic"),
 };
 
 export function hasLogic(id: string) {

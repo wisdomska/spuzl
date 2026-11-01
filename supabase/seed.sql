@@ -74,7 +74,8 @@ insert into public.games (id, world_id, name, status, phase, engine, scoring, is
 on conflict (id) do nothing;
 -- Phase 5 lab game: migration 20261109200001
 insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
-  ('hilo', 'number', 'Higher or Lower', 'coming_soon', 'M3+', 'custom', 'score', false, 6000, 53)
+  ('hilo', 'number', 'Higher or Lower', 'coming_soon', 'M3+', 'custom', 'score', false, 6000, 53),
+  ('market', 'number', 'Market Run', 'coming_soon', 'M3+', 'custom', 'time', true, 8000, 54)
 on conflict (id) do nothing;
 insert into public.badges (id, family, tier, name, description, secret, sparks, rule, sort) values
   ('first-clear', 'starter', 'bronze', 'First Clear', 'Clear your first puzzle.', false, 10, '{"kind":"clears","n":1,"icon":"seal-check"}'::jsonb, 0),

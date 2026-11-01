@@ -626,6 +626,17 @@ export const LAB_GAMES: GameMeta[] = [
     "Work out the next card. Higher or lower than this one? Ten calls, three slips and you are out.",
     { scoring: "score", minTimeMs: 6000, lab: true },
   ),
+  g(
+    "market",
+    "Market Run",
+    "number",
+    "storefront",
+    "M3+",
+    "custom",
+    "Shop Makola to the exact change",
+    "Buy 1 to 9 of each item so you bring back the exact change and every rule on the list holds.",
+    { unique: true, minTimeMs: 8000, lab: true },
+  ),
 ];
 
 export const GAME_BY_ID: Record<string, GameMeta> = Object.fromEntries([...GAMES, ...LAB_GAMES].map((x) => [x.id, x]));
