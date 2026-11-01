@@ -5,7 +5,7 @@ import type { BoardApi, Hint, PlayMode } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { play } from "@/lib/audio";
 import { quick } from "@/lib/copy/quick";
-import { READ_FLOOR_MS, timedScore, type TimedAnswer } from "./cluecave";
+import { READ_FLOOR_MS, timedMisses, timedScore, type TimedAnswer } from "./cluecave";
 
 const INK = "#0E0F1A";
 const LETTERS = ["A", "B", "C", "D"];
@@ -227,6 +227,11 @@ export function QuizBoard({ rounds, correct, limitMs, noun, initial, hint, disab
   }, [api, ask, disabled, i, noun, phase, total, answers.length]);
 
   useEffect(() => {
+    // A run resumed from autosave keeps its earlier slips, so the results never call it clean.
+    if (initial?.length) {
+      const misses = timedMisses(initial, correct);
+      if (misses) api.restoreMistakes?.(misses);
+    }
     if (phase === "done") {
       api.feedback(t.summary(summary.right, total, summary.score), "info", "flag-checkered");
       return;

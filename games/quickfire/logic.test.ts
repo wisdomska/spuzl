@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createRng } from "@/lib/rng";
 import type { Difficulty } from "@/games/types";
-import { checkTimedAnswers, READ_FLOOR_MS, unseal } from "@/games/_shared/cluecave";
+import { checkTimedAnswers, READ_FLOOR_MS, timedMisses, unseal } from "@/games/_shared/cluecave";
 import logic, { contentCount, generate, generateAt, gradeOf, hint, LIMIT_MS, QUESTIONS, sealKey, verify } from "./logic";
 import { CONTENT, needsReview } from "./content";
 
@@ -108,5 +108,23 @@ describe("quickfire verify", () => {
     }
     expect(hint(g.puzzle, g.solution, all(4000))).toBeNull();
     expect((hint(g.puzzle, g.solution, null as never)!.target as { question: number }).question).toBe(0);
+  });
+});
+
+describe("quickfire resume", () => {
+  it("counts wrong and timed-out answers so a resumed run keeps its slips", () => {
+    const correct = [0, 1, 2, 3, 0];
+    expect(timedMisses([], correct)).toBe(0);
+    expect(timedMisses([{ pick: 0, ms: 4000 }], correct)).toBe(0);
+    expect(
+      timedMisses(
+        [
+          { pick: 0, ms: 4000 },
+          { pick: 2, ms: 4000 },
+          { pick: null, ms: LIMIT_MS },
+        ],
+        correct,
+      ),
+    ).toBe(2);
   });
 });

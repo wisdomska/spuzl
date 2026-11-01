@@ -177,6 +177,11 @@ export function timedScore(answers: TimedAnswer[], correct: number[], limitMs: n
   return { score, right };
 }
 
+/** Questions answered wrong or timed out so far (a resumed run restores its slips from this). */
+export function timedMisses(answers: TimedAnswer[], correct: number[]) {
+  return answers.filter((a, i) => a.pick === null || a.pick !== correct[i]).length;
+}
+
 /** Stable per-puzzle key for sealing, so two puzzles never share a stream. */
 export function puzzleKey(...parts: (string | number)[]) {
   return hashSeed(parts.join("|")).toString(36);

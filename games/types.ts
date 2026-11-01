@@ -105,6 +105,8 @@ export interface BoardApi<St> {
   setClock?(clock: (() => number) | null): void;
   /** Optional: the player pressed Start (timed boards with a ready screen). The shell clock starts now. */
   start?(): void;
+  /** Optional: slips already made before a resume (restored from the board's saved state), so results stay honest. */
+  restoreMistakes?(count: number): void;
 }
 
 export interface ControlSpec {

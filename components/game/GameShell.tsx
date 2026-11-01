@@ -204,6 +204,9 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
       start() {
         if (!started) setStarted(true);
       },
+      restoreMistakes(count) {
+        mistakes.current = Math.max(mistakes.current, count);
+      },
     }),
     [started, now, onMove, onSolved, onFailed],
   );
