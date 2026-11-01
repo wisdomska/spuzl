@@ -123,13 +123,13 @@ export const TEAM_SORT = sortSpec({
 
 export const CATALOG_SORT = {
   cosmetics: sortSpec({
-    keys: ["sort", "name", "type", "rarity", "price", "active"],
+    keys: ["sort", "name", "type", "price", "active"],
     default: "sort",
     dir: "asc",
     firstDir: { price: "desc", active: "desc" },
   }),
   badges: sortSpec({
-    keys: ["sort", "name", "family", "tier", "sparks", "secret"],
+    keys: ["sort", "name", "family", "sparks", "secret"],
     default: "sort",
     dir: "asc",
     firstDir: { sparks: "desc", secret: "desc" },

@@ -1,14 +1,16 @@
 import { handle, ok, ApiError } from "@/lib/api/server";
 import { requireAdmin } from "@/lib/admin/auth";
-import { flaggedRows, reportRows } from "@/lib/admin/moderation";
-import { pageParams } from "@/lib/admin/paging";
+import { REPORT_KINDS, flaggedRows, reportRows } from "@/lib/admin/moderation";
+import { pageParams, sortParams } from "@/lib/admin/paging";
+import { MODERATION_SORT } from "@/lib/admin/sorting";
 
 const TABS = ["reports", "nicknames", "flagged"] as const;
 const STATUSES = ["open", "actioned", "dismissed", "all"];
 
 /**
- * GET /api/admin/moderation?tab=reports|nicknames|flagged&status=open&page=&pageSize=: one page of the
- * moderation queue (FR-AD-05), with the open count per tab.
+ * GET /api/admin/moderation?tab=reports|nicknames|flagged&status=open&kind=&sort=&dir=&page=&pageSize=: one page
+ * of the moderation queue (FR-AD-05), with the open count per tab. `kind` (player, crew, score, content) narrows
+ * the reports tab; sort by created_at (age), kind or status.
  */
 export const GET = handle(async (req: Request) => {
   const ctx = await requireAdmin("moderation.read");
@@ -16,11 +18,14 @@ export const GET = handle(async (req: Request) => {
   const p = pageParams(url.searchParams);
   const tab = (url.searchParams.get("tab") ?? "reports") as (typeof TABS)[number];
   const status = url.searchParams.get("status") ?? "open";
+  const kind = url.searchParams.get("kind");
+  const sort = sortParams(url.searchParams, MODERATION_SORT);
+  if (kind && !(REPORT_KINDS as readonly string[]).includes(kind)) throw new ApiError(400, "bad_kind");
   if (!TABS.includes(tab)) throw new ApiError(400, "bad_tab");
   if (!STATUSES.includes(status)) throw new ApiError(400, "bad_status");
   const head = { count: "exact" as const, head: true };
   const [list, reports, nicknames, flagged] = await Promise.all([
-    tab === "flagged" ? flaggedRows(ctx.db, p) : reportRows(ctx.db, tab, status, p),
+    tab === "flagged" ? flaggedRows(ctx.db, p, sort) : reportRows(ctx.db, tab, status, p, sort, kind),
     ctx.db.from("reports").select("id", head).eq("status", "open").neq("target_type", "nickname").neq("reason", "nickname"),
     ctx.db.from("reports").select("id", head).eq("status", "open").or("target_type.eq.nickname,reason.eq.nickname"),
     ctx.db.from("attempts").select("id", head).eq("status", "flagged"),

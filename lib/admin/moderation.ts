@@ -4,6 +4,12 @@ import { GAME_BY_ID } from "@/lib/catalog";
 import { clock } from "./dates";
 import type { PageParams } from "./pagination";
 import { fetchPage } from "./paging";
+import type { SortState } from "./sorting";
+
+/** Sort for the moderation queue (MODERATION_SORT). Flagged scores only have a time, so every key sorts by it. */
+export type ModSort = SortState<"created_at" | "kind" | "status">;
+const REPORT_COLUMN = { created_at: "created_at", kind: "target_type", status: "status" } as const;
+export const REPORT_KINDS = ["player", "crew", "score", "content"] as const;
 
 /** Short display id, e.g. R-3F2A for reports, F-91BC for flagged scores. */
 export const shortRef = (prefix: string, id: string) => `${prefix}-${id.replace(/-/g, "").slice(0, 4).toUpperCase()}`;
@@ -64,22 +70,31 @@ export async function playerSummaries(db: SupabaseClient, ids: string[]): Promis
 
 const UUID = /^[0-9a-f-]{36}$/i;
 
-/** One page of reports (or nickname reports), newest first; id breaks ties so pages never overlap. */
+/**
+ * One page of reports (or nickname reports), newest first unless sorted otherwise; id breaks ties so pages never
+ * overlap. `kind` narrows the reports tab to one target type.
+ */
 export async function reportRows(
   db: SupabaseClient,
   tab: "reports" | "nicknames",
   status: string,
   page: PageParams,
+  sort: ModSort = { sort: "created_at", dir: "desc" },
+  kind: string | null = null,
 ): Promise<{ rows: ModRow[]; total: number }> {
+  const asc = sort.dir === "asc";
   const { rows, total } = await fetchPage(() => {
     let q = db
       .from("reports")
       .select("id, reporter_id, target_type, target_id, reason, status, created_at", { count: "exact" })
-      .order("created_at", { ascending: false })
-      .order("id", { ascending: false });
+      .order(REPORT_COLUMN[sort.sort], { ascending: asc });
+    // Within one kind or status, newest first; id keeps pages apart.
+    if (sort.sort !== "created_at") q = q.order("created_at", { ascending: false });
+    q = q.order("id", { ascending: sort.sort === "created_at" ? asc : false });
     q =
       tab === "nicknames" ? q.or("target_type.eq.nickname,reason.eq.nickname") : q.neq("target_type", "nickname").neq("reason", "nickname");
     if (status !== "all") q = q.eq("status", status);
+    if (kind && tab === "reports") q = q.eq("target_type", kind);
     return q;
   }, page);
   const players = await playerSummaries(
@@ -108,16 +123,21 @@ export async function reportRows(
   return { rows: out, total };
 }
 
-/** One page of flagged scores, latest finish first; id breaks ties. */
-export async function flaggedRows(db: SupabaseClient, page: PageParams): Promise<{ rows: ModRow[]; total: number }> {
+/** One page of flagged scores, latest finish first (or oldest first when sorted ascending); id breaks ties. */
+export async function flaggedRows(
+  db: SupabaseClient,
+  page: PageParams,
+  sort: ModSort = { sort: "created_at", dir: "desc" },
+): Promise<{ rows: ModRow[]; total: number }> {
+  const asc = sort.dir === "asc";
   const { rows: data, total } = await fetchPage(
     () =>
       db
         .from("attempts")
         .select("id, player_id, game_id, mode, time_ms, started_at, finished_at", { count: "exact" })
         .eq("status", "flagged")
-        .order("finished_at", { ascending: false, nullsFirst: false })
-        .order("id", { ascending: false }),
+        .order("finished_at", { ascending: asc, nullsFirst: false })
+        .order("id", { ascending: asc }),
     page,
   );
   const players = await playerSummaries(

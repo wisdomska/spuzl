@@ -3,26 +3,34 @@ import { body, handle, ok, ApiError } from "@/lib/api/server";
 import { requireAdmin } from "@/lib/admin/auth";
 import { ROLES } from "@/lib/admin/roles";
 import { provisionAdmin, resetRedirect } from "@/lib/admin/provision";
-import { fetchPage, pageParams } from "@/lib/admin/paging";
+import { fetchPage, pageParams, sortParams } from "@/lib/admin/paging";
+import { TEAM_SORT } from "@/lib/admin/sorting";
+
+const COLUMN = { created_at: "created_at", email: "email", role: "role", totp: "totp_enrolled" } as const;
 
 const site = () => process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
 /**
- * GET /api/admin/team?page=&pageSize=: one page of admins, newest first (user id breaks ties), with role,
- * TOTP status and last sign-in (owner only).
+ * GET /api/admin/team?role=&sort=&dir=&page=&pageSize=: one page of admins, newest first unless sorted by email,
+ * role or authenticator (user id breaks ties), with role, TOTP status and last sign-in (owner only).
  */
 export const GET = handle(async (req: Request) => {
   const ctx = await requireAdmin("team.manage");
   const p = pageParams(req);
-  const { rows: data, total } = await fetchPage(
-    () =>
-      ctx.db
-        .from("admins")
-        .select("user_id, role, email, totp_enrolled, disabled_at, created_at", { count: "exact" })
-        .order("created_at", { ascending: false })
-        .order("user_id", { ascending: false }),
-    p,
-  );
+  const sp = new URL(req.url).searchParams;
+  const { sort, dir } = sortParams(sp, TEAM_SORT);
+  const role = sp.get("role");
+  if (role && !(ROLES as readonly string[]).includes(role)) throw new ApiError(400, "bad_role");
+  const asc = dir === "asc";
+  const { rows: data, total } = await fetchPage(() => {
+    let q = ctx.db
+      .from("admins")
+      .select("user_id, role, email, totp_enrolled, disabled_at, created_at", { count: "exact" })
+      .order(COLUMN[sort], { ascending: asc, nullsFirst: false })
+      .order("user_id", { ascending: asc });
+    if (role) q = q.eq("role", role);
+    return q;
+  }, p);
   const rows = await Promise.all(
     data.map(async (a) => {
       const { data: u } = await ctx.db.auth.admin.getUserById(a.user_id);
