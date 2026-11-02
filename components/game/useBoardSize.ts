@@ -2,13 +2,34 @@
 
 import { useLayoutEffect, useState, useSyncExternalStore, type RefObject } from "react";
 
+/** The game shell's board slot pads the board by this much on each side (GameShell's board `main`, px-3). */
+export const SLOT_PAD = 12;
 /**
- * Board sizing rule (Game Boards template): cell = floor((min(vw, 420) − 36 − gaps − padding) / cols),
+ * Height of the shell around a board on a wide screen: the slim top bar (with its desktop top padding), the
+ * board slot's own padding, the feedback line and the tool row. A board that grows past the phone fit keeps
+ * a square board inside the viewport height with this much room for the rest.
+ */
+export const SHELL_CHROME = 232;
+
+/**
+ * Board sizing rule (Game Boards template): cell = floor((min(vw, 420) − 24 − gaps − padding) / cols),
  * capped at `max`. Boards always fit the screen width: big grids get smaller cells instead of a
- * sideways scroll (never below 24 px, the WCAG 2.5.8 minimum target).
+ * sideways scroll (never below 24 px, the WCAG 2.5.8 minimum target). Wider than a phone (tablets,
+ * desktop) the board may use the shell's full 560 px width, as long as a square board still fits the
+ * viewport height.
  */
 export function useCellSize(cols: number, gap: number, padding = 6, max = 64): number {
-  return compute(useViewportWidth(), cols, gap, padding, max);
+  return cellSize(useViewportWidth(), useViewportHeight(), cols, gap, padding, max);
+}
+
+/** The pure rule behind `useCellSize`. */
+export function cellSize(vw: number, vh: number, cols: number, gap: number, padding: number, max: number): number {
+  const overhead = gap * (cols - 1) + padding;
+  const across = (w: number) => Math.floor((w - SLOT_PAD * 2 - overhead) / cols);
+  const phone = across(Math.min(vw, 420));
+  const wide = across(Math.min(vw, 560));
+  const tall = Math.floor((vh - SHELL_CHROME - overhead) / cols);
+  return Math.max(24, Math.min(max, Math.max(phone, Math.min(wide, tall))));
 }
 
 const onResize = (cb: () => void) => {
@@ -29,15 +50,24 @@ export function useViewportWidth(): number {
   );
 }
 
+/** Viewport height in px, kept current on resize (844 while server rendering). */
+export function useViewportHeight(): number {
+  return useSyncExternalStore(
+    onResize,
+    () => window.innerHeight,
+    () => 844,
+  );
+}
+
 /**
  * Cell size with a floor for dense boards (Nine). `overhead` is every px across the board that is not a cell
- * (gaps, lines, padding). The roomy fit sits inside the shell's 18 px board padding (36 px in all, width
+ * (gaps, lines, padding). The roomy fit sits inside the shell's 12 px board padding (24 px in all, width
  * capped at `cap`). If that falls below `floor`, the board may also use that padding, edge to edge, to keep
  * `floor`; when even that does not fit (the narrowest phones) it takes the largest cell that fits, never
  * under 24 px (WCAG 2.5.8).
  */
 export function fitCell(vw: number, cols: number, overhead: number, floor: number, max: number, cap = 560): number {
-  const roomy = Math.floor((Math.min(vw, cap) - 36 - overhead) / cols);
+  const roomy = Math.floor((Math.min(vw, cap) - SLOT_PAD * 2 - overhead) / cols);
   if (roomy >= floor) return Math.min(max, roomy);
   const edgeToEdge = Math.floor((vw - overhead) / cols);
   return Math.max(24, Math.min(floor, edgeToEdge));
@@ -116,9 +146,4 @@ export function useFitHeight(
     };
   }, [ideal, min, unit, target, margin, size]);
   return size;
-}
-
-function compute(vw: number, cols: number, gap: number, padding: number, max: number) {
-  const avail = Math.min(vw, 420) - 36 - gap * (cols - 1) - padding;
-  return Math.max(24, Math.min(max, Math.floor(avail / cols)));
 }

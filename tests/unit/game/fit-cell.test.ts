@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fitCell, fitStep, shellContentBottom } from "@/components/game/useBoardSize";
+import { cellSize, fitCell, fitStep, SHELL_CHROME, shellContentBottom, SLOT_PAD } from "@/components/game/useBoardSize";
 import { columnWidth } from "@/games/fourup/Board";
 import { MIN_STAGE_HEIGHT, stageHeight } from "@/phaser/layout";
 
@@ -28,7 +28,38 @@ describe("fitCell", () => {
   it("uses the roomy fit and the cap on wide screens", () => {
     expect(fitCell(1280, 9, NINE, 40, 56)).toBe(56);
     expect(fitCell(1280, 9, NINE, 40, 48)).toBe(48);
-    expect(fitCell(375, 6, 14, 44, 56)).toBe(54); // Sixer
+    expect(fitCell(375, 6, 14, 44, 56)).toBe(56); // Sixer (54 with the old 18 px board padding)
+  });
+});
+
+describe("cellSize (useCellSize)", () => {
+  // Crownfall 8 x 8: no gaps, 6 px of padding.
+  const crown = (vw: number, vh: number) => cellSize(vw, vh, 8, 0, 6, 64);
+
+  it("grows on phones now the board slot pads 12 px a side instead of 18", () => {
+    const old = (vw: number) => Math.floor((Math.min(vw, 420) - 36 - 6) / 8);
+    for (const vw of [320, 360, 375, 390, 414]) {
+      expect(crown(vw, 667)).toBeGreaterThan(old(vw));
+      expect(8 * crown(vw, 667) + 6 + SLOT_PAD * 2).toBeLessThanOrEqual(vw);
+    }
+    expect(crown(375, 667)).toBe(43); // was 41
+    expect(crown(320, 568)).toBe(36); // was 34
+  });
+
+  it("uses the shell's full width on desktop while a square board fits the height", () => {
+    expect(crown(1280, 800)).toBe(64); // was 47: 420 px was the cap
+    expect(cellSize(1280, 800, 10, 2, 8, 64)).toBe(51); // was 35
+    // Growth past the phone fit stops where a square board meets the height (a 700 px tall laptop)...
+    const mid = cellSize(1366, 700, 10, 2, 8, 64);
+    expect(mid).toBe(44);
+    expect(10 * mid + 26).toBeLessThanOrEqual(700 - SHELL_CHROME);
+    // ...and a very short window keeps the phone fit (never smaller than before).
+    expect(cellSize(1366, 500, 10, 2, 8, 64)).toBe(Math.floor((420 - 24 - 26) / 10));
+  });
+
+  it("never goes under 24 px or over the cap", () => {
+    expect(cellSize(320, 568, 20, 2, 6, 64)).toBe(24);
+    expect(cellSize(414, 896, 3, 4, 6, 60)).toBe(60);
   });
 });
 
