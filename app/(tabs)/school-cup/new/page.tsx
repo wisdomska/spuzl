@@ -24,7 +24,7 @@ export default function NewCupPage() {
   const [step, setStep] = useState(1);
   const [school, setSchool] = useState("");
   const [klass, setKlass] = useState("");
-  const [games, setGames] = useState<string[]>(["crownfall", "quads", "deadon"].filter((g) => CLASSROOM_GAMES.some((c) => c.id === g)));
+  const [games, setGames] = useState<string[]>(["crownfall", "coil", "weave"].filter((g) => CLASSROOM_GAMES.some((c) => c.id === g)));
   const mondays = useMemo(() => Array.from({ length: 4 }, (_, i) => addDays(nextMonday(today), 7 * i)), [today]);
   const thisMonday = addDays(today, -((new Date(today + "T00:00:00Z").getUTCDay() + 6) % 7));
   const starts = thisMonday < today ? [thisMonday, ...mondays] : mondays;

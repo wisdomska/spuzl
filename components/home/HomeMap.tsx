@@ -8,8 +8,8 @@ import { Island } from "./Island";
 import { Spuz, type SpuzMood } from "@/components/brand/Spuz";
 import { play } from "@/lib/audio";
 
-/** Island layout: the design's zigzag (x 200/40/220/30, ~77 px rows), extended to all 9 worlds. */
-const SLOTS = [
+/** Island layout: the design's zigzag (x 200/40/220/30, ~77 px rows), one slot per live world (up to 9). */
+const ALL_SLOTS = [
   { x: 200, y: 60 },
   { x: 40, y: 135 },
   { x: 220, y: 215 },
@@ -20,6 +20,8 @@ const SLOTS = [
   { x: 35, y: 610 },
   { x: 200, y: 690 },
 ];
+/** Empty worlds are hidden (lib/catalog WORLDS), so the path is as long as the live worlds. */
+const SLOTS = ALL_SLOTS.slice(0, WORLDS.length);
 const BOB = [5, 5.6, 4.8, 6, 5.3, 5.8, 4.9, 5.5, 5.1];
 
 export interface WorldProgress {
@@ -49,7 +51,8 @@ export function HomeMap({
 }) {
   const router = useRouter();
   const reduce = useReducedMotion();
-  const [spuzAt, setSpuzAt] = useState<WorldId>(current);
+  // A saved "current" world can be one that has since been hidden: Spuz then starts on the first island.
+  const [spuzAt, setSpuzAt] = useState<WorldId>(WORLDS.some((w) => w.id === current) ? current : WORLDS[0].id);
   const [hopTo, setHopTo] = useState<{ x: number; y: number } | null>(null);
   const busy = useRef(false);
   const idx = (w: WorldId) => WORLDS.findIndex((x) => x.id === w);

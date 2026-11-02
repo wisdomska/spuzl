@@ -123,13 +123,13 @@ export const choiceReady = (c: GameChoice) => c.picks === null || c.picks.length
 const PARTY_WORLDS = WORLDS.filter((w) => RACE_GAMES.some((g) => g.world === w.id));
 
 /**
- * Random mix, any one race game, or several hand-picked ones (filtered by world so 25 games fit a phone without
+ * Random mix, any one race game, or several hand-picked ones (filtered by world so every race game fits a phone without
  * a long scroll). Picking mode turns the game tiles into checkboxes; each set races PARTY_GAMES of the picks.
  */
 export function GamePicker({ value, onChange }: { value: GameChoice; onChange: (c: GameChoice) => void }) {
   const picks = value.picks;
   const first = value.game ?? picks?.[0];
-  const [world, setWorld] = useState<WorldId>(() => (first && GAME_BY_ID[first]?.world) || PARTY_WORLDS[0].id);
+  const [world, setWorld] = useState<WorldId>(() => RACE_GAMES.find((g) => g.id === first)?.world ?? PARTY_WORLDS[0].id);
   const games = RACE_GAMES.filter((g) => g.world === world);
   const toggle = (id: string) =>
     picks && onChange({ game: null, picks: picks.includes(id) ? picks.filter((x) => x !== id) : [...picks, id] });
