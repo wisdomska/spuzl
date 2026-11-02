@@ -109,6 +109,20 @@ pgTAP: `103_adult_block_reopen`. The migration, the pgTAP file and the rollback 
 transaction that was rolled back. If the code ships first, reopening an actioned party report works as before
 (the report reopens, the block stays).
 
+## Unreleased
+
+Reversible (rollback SQL in the header). No rows are deleted and no player data changes: attempts, Dailies,
+puzzles and results for retired games stay where they are.
+
+| Migration                         | What it does                                                                                                                                                                                                                      | Rollback                                                                                                                                                         |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `20261116000001_retire_games.sql` | `games.status` accepts `'retired'`; the 32 retired games (`lib/catalog.ts` `RETIRED_IDS`) get it, and Trotro Jam, Emoji Hits and Beat Tap go from `coming_soon` to `live`. The rollover and live-ops gap alert count `live` only. | Set the 3 promoted and 7 retired lab games back to `coming_soon`, the other retired games back to `live`, and restore the 3-value check constraint (see header). |
+
+`supabase/seed.sql` (from `scripts/gen-seed.ts`) writes each game's status from the catalogue, so a fresh database
+matches. pgTAP: `105_retire_games`. The migration, the seed, the pgTAP file and the rollback were each run locally
+inside a transaction that was rolled back. If the code ships first, players already see 29 games (the catalogue
+decides); the migration only lines up the database (gap alerts and the rollover's missing-Dailies count).
+
 ## 1.5.1
 
 | Migration                             | What it adds                                                                                           | Rollback                                               |

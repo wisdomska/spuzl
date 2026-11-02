@@ -1,5 +1,45 @@
 # Changelog
 
+## Unreleased
+
+A tighter Grid: 29 games across 8 worlds.
+
+### For players
+
+- **29 games, 8 worlds.** SPUZL now focuses on the games people play most. Trotro Jam (Shape Shed), Emoji Hits
+  (Clue Cave) and Beat Tap (Reflex Rink) are now regular games for everyone, no longer behind the new-games
+  setting. 32 games are retired: Pixl, Blackout, Tripwire, Light Up, Isles, Quilt, Snug, Shuffle, Reflect,
+  Squint, Dead On, Merge, Sums, Equal, Higher or Lower, Market Run, Killer Sums, Quads, Five, Hunch, Pinned,
+  Flagged, Penalty King, Flipside, Ricochet, Stacked, Wobble, Grapple, Ghosted, Slip, Flip and Dara.
+- **Number Den is gone from the map** (all its games are retired). The map, Library filters, the landing page
+  and How to play show the 8 worlds that have games; its Explorer badge stays only if you already earned it.
+- Retired games leave every list: Library and search, World pages, the Home Play card ("Games tried x of 29"),
+  Duel and Party pickers and random mixes, Ghost Race (Dash only now), School Cup, challenges and the guided first
+  play. Old links to them show "not found". Your past clears, XP and badges are kept.
+- Every count you see (landing page, welcome, Library search, site title and description, app manifest, How to
+  play, share cards) now comes from the live catalogue, so it can't go stale.
+
+### For admins
+
+- Retired games are still in the console, marked **retired**: the Library list, puzzle filters and content desk
+  show them, and their old Dailies open read-only. Generating, swapping or scheduling a Daily for one, or editing
+  its Library metadata, is refused (`409 game_retired`). The calendar, live-ops gap alert and Daily generation
+  skip them.
+- Bringing a game back: remove its id from `RETIRED_IDS` in `lib/catalog.ts` and set its `games.status` to
+  `live` in a migration. Its code, boards and tests never left.
+- Migration `20261116000001_retire_games.sql` adds the `retired` status and sets it for the 32 games; the 3
+  promoted games go `live`.
+
+### Under the hood
+
+- `lib/catalog.ts`: `RETIRED_IDS`, `ALL_GAMES` (everything in code), `GAMES` (live only), `WORLDS` (worlds with a
+  live game), `GAME_COUNT` / `WORLD_COUNT`, and the gates `playableGame`, `isLiveGame`, `isLiveWorld`,
+  `isRetired`. `GAME_BY_ID` still resolves every id, for names on old results.
+- The server refuses retired games like unknown ones (404 `unknown_game`): start attempt, guided play, guess,
+  play and bot pages, ghost races, challenges, archive, leaderboards, School Cup, presence, metrics.
+- `LAB_GAMES` is empty; the lab mechanism and its e2e test stay and switch on with the next lab game.
+- Board Bay still lists Flip until its own change lands (`lib/multiplayer/bay.ts` is owned by that work).
+
 ## 1.5.1 (2 November 2026)
 
 ### For admins
