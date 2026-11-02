@@ -22,7 +22,7 @@ const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? env.NEXT_PUBLIC_SUPABA
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY ?? env.SUPABASE_SERVICE_ROLE_KEY;
 export const admin = () => createClient(SB_URL, SERVICE, { auth: { persistSession: false } });
 
-export const uniq = (p: string) => `${p}${Math.random().toString(36).slice(2, 7)}`;
+export const uniq = (p: string) => `${p}${String(Math.floor(Math.random() * 1e5)).padStart(5, "0")}`;
 
 export interface Player {
   id: string;
