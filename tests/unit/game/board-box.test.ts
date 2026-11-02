@@ -83,9 +83,11 @@ describe("the two-column shell on wide screens", () => {
 
 describe("boards grow on wide screens", () => {
   // Chess (puzzle, vs bot and Board Bay): 8 x 8, no gaps; was capped at 48 px (384 px board).
-  it("Chess: 85 px squares at 1280 x 800 (680 px board, was 624), 96 at 1440 x 900, 73 at 1024 x 768", () => {
+  it("Chess: 85 px squares at 1280 x 800 (680 px board, was 624), 97 at 1440 x 900, 73 at 1024 x 768", () => {
     expect(cellSize(1280, 800, 8, 0, 10, 48)).toBe(85);
-    expect(cellSize(1440, 900, 8, 0, 10, 48)).toBe(96);
+    expect(cellSize(1440, 900, 8, 0, 10, 48)).toBe(97);
+    // A 1920 x 1080 desktop: a 944 px board (was 768 at the old 2x cap).
+    expect(cellSize(1920, 1080, 8, 0, 10, 48)).toBe(118);
     expect(cellSize(1024, 768, 8, 0, 10, 48)).toBe(73);
     expect(cellSize(1280, 800, 8, 0, 0, 48)).toBe(86);
   });
@@ -101,8 +103,8 @@ describe("boards grow on wide screens", () => {
     expect(6 * c + 5 * 8 + 12).toBeLessThanOrEqual(boardBox(1280, 800).h);
   });
 
-  it("caps cells at twice the phone cap", () => {
-    expect(wideCell(1440, 900, 3, 0, 60)).toBe(120);
+  it("caps cells at 2.5 times the phone cap", () => {
+    expect(wideCell(1440, 900, 3, 0, 60)).toBe(150);
   });
 
   it("Nine (fitCell with the height): grows past the phone's 56 px cap on a laptop", () => {

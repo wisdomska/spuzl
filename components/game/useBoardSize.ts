@@ -40,7 +40,7 @@ export const WIDE_MAX = 960;
 /** A square board stays inside this share of the viewport height. */
 export const WIDE_HEIGHT = 0.9;
 /** A wide board's cells may grow to this many times the phone cap (glyphs scale with the cell). */
-export const WIDE_GROW = 2;
+export const WIDE_GROW = 2.5;
 /** The wide shell's whole width: gutters, the largest board with its slot padding, the gap and the side panel. */
 export const WIDE_SHELL_MAX = WIDE_GUTTER * 2 + WIDE_MAX + SLOT_PAD * 2 + WIDE_GAP + WIDE_ASIDE;
 
