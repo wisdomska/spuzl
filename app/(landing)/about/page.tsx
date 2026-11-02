@@ -158,6 +158,23 @@ export default function Landing() {
           </ul>
         </section>
 
+        {/* Sister app: SPIL, for players who'd rather play party and card games */}
+        <section aria-labelledby="spil" className="pb-16 sm:pb-24">
+          <div className="bg-surface border-line flex flex-col gap-5 rounded-[28px] border p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
+            <div className="flex max-w-[560px] flex-col gap-2">
+              <p className={EYEBROW}>{T.spil.eyebrow}</p>
+              <h2 id="spil" className="font-display text-[26px] leading-[1.1] font-black tracking-[-0.03em] sm:text-[32px]">
+                {T.spil.title}
+              </h2>
+              <p className="text-muted text-[16px] leading-relaxed">{T.spil.body}</p>
+            </div>
+            <a href={T.spil.url} target="_blank" rel="noopener" className={`${SECONDARY} shrink-0 gap-2`}>
+              {T.spil.cta}
+              <Icon name="arrow-square-out" size={18} />
+            </a>
+          </div>
+        </section>
+
         {/* Final call to action */}
         <section className="bg-accent text-on-accent relative mb-16 flex flex-col items-center gap-5 overflow-hidden rounded-[36px] px-6 py-12 text-center sm:py-16">
           <Spuz mood="wave" size={120} color="var(--surface)" decorative />

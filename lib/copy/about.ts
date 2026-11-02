@@ -58,6 +58,13 @@ export const aboutCopy = {
   ] as const,
   privacy: "Privacy policy",
   terms: "Terms of use",
+  spil: {
+    eyebrow: "From the same studio",
+    title: "Prefer card and party games?",
+    body: "SPIL is our party game for friends: answer in private, guess each other's scores, then watch them spill. Made for a room full of phones.",
+    cta: "Play SPIL",
+    url: "https://spil-party.vercel.app",
+  },
   ctaTitle: "Your first puzzle takes 30 seconds.",
   ctaBody: "No sign-up, no download. Just tap and play.",
   credit: "Designed & Developed by Senya",
