@@ -97,7 +97,7 @@ were each run locally inside a transaction that was rolled back.
 If the code ships first, nothing changes while `features.adultParty` is off: race rooms read `party_mode` as
 `race` when the column is missing, and the moderation queue only reads `reports.snapshot` on its Party content tab.
 
-## Unreleased
+## 1.5.0
 
 Additive and reversible (rollback SQL in the header). No existing rows change.
 

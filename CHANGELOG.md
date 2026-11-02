@@ -1,9 +1,24 @@
 # Changelog
 
-## Unreleased
+## 1.5.0 (2 November 2026)
+
+Sound, motion and haptics everywhere, a logo intro with a swoosh and a thump, and fairer content games.
 
 ### For players
 
+- **Logo intro:** the letters drop with gravity and tap as they land; the Z winds up, swooshes in from the right
+  and slams into place with a deep thump and a vibration; Spuz pops out. Sound and motion land on the same frame.
+- **A new sound kit:** warmer, layered sounds with a little variation so repeats never sound robotic, for taps,
+  toggles, placements, clears, errors, hints, rewards, streaks, level ups, countdowns, duels and parties. Sheets
+  whoosh open and closed. Turning sound or haptics on in Settings plays a preview.
+- **One haptic language:** light for taps, medium for placements, a success pattern for clears, a warning for
+  rule breaks and a celebration for level ups (where the phone supports it, and only if haptics are on).
+- **Every game board** got a feel pass: placements climb in pitch with your streak, paths hum as they grow, merges
+  and flips land on the beat, blocked moves lean instead of shaking, typed letters stay quiet, and each clear plays
+  once from the game screen.
+- **Motion:** Home hops arc with gravity, results count up smoothly, celebrations land with a thump, welcome steps
+  slide the way you're going, and toasts and sheets leave the way they came.
+- **Site icon** is a plain file now, so the browser tab and hosts like Vercel show the lemon green Spuz.
 - **Content games are harder to game:** a word or quiz puzzle no longer carries its content number. The server
   sends an opaque token instead, good only for your own attempt, the race round you're in or the practice board,
   for a limited time. Nobody can try words on a board outside their attempt, and Penalty King's keeper can't be
@@ -24,6 +39,7 @@
   from `SUPABASE_SERVICE_ROLE_KEY` is used and production logs a warning. Clients on an older build get refused
   content-game guesses until they reload.
 - Migration `20261114000001_adult_block_reopen.sql` (see `docs/MIGRATIONS.md`).
+- `GUESS_REF_SECRET` and `SHARE_CARD_SECRET` are set in Vercel for production and preview.
 
 ## 1.4.0 (1 November 2026)
 
