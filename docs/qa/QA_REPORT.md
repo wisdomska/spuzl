@@ -203,3 +203,11 @@ Found and fixed in this pass:
   rather than "forbidden".
 - Settings showed "Signed in" with Sign out and Delete account to a visitor with no profile.
 - Tests updated for the Ranked Duel rules break and the new admin Overview landing.
+
+## 1.5.0 integration pass (2 November 2026)
+
+Local production build, local Supabase. Typecheck and lint clean; unit 136 files and 1319 tests; pgTAP 20 files and
+262 tests; API 10 files and 133 tests; E2E, realtime and visual (mobile and desktop) 177 passed, the usual skips.
+Fixed in this pass: two pgTAP checks and one API count assumed no rows from other runs (or counted 18+ party reports
+the reports tab leaves out). Sound and motion were not judged by ear or eye in this pass; check the intro and a few
+boards on a real phone.
