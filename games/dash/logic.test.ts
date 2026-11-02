@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { courseGameSuite } from "@/phaser/sim/testkit";
 import { BTN } from "@/phaser/sim/input";
 import logic, { createSim } from "./logic";
-import { CONFIG, LEVELS } from "./levels";
+import { CONFIG, DAILY_POOL, HAND_LEVELS, LEVELS } from "./levels";
+import { ladderSuite } from "@/phaser/sim/ladderkit";
 import SOLUTIONS from "./solutions.json";
 
 describe("dash", () => {
@@ -23,5 +24,17 @@ describe("dash", () => {
     expect(sim.progress()).toBeGreaterThan(0);
     expect(sim.progress()).toBeLessThan(0.5);
     expect(() => createSim({ levels: ["nope"] })).toThrow();
+  });
+});
+
+describe("dash level ladder", () => {
+  ladderSuite({
+    logic,
+    levels: LEVELS,
+    hand: HAND_LEVELS,
+    dailyPool: DAILY_POOL,
+    sim: createSim,
+    solutions: SOLUTIONS,
+    pause: CONFIG.levelPause,
   });
 });

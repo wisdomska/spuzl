@@ -1,11 +1,12 @@
 /**
  * Dash: auto-runner. Spuz runs right on its own; tap to jump. A Daily course strings 3 to 8
  * hand-designed segments (games/dash/levels.ts) in a seeded order. Hitting a spike, a wall face or a
- * pit restarts the segment. verify() re-simulates the input log. Fewest deaths, then time.
+ * pit restarts the segment. verify() re-simulates the input log. Fewest deaths, then time. Levels mode
+ * plays the whole ladder (LEVELS: hand segments, set pieces, generated runs) one segment per level.
  */
 import { makeCourseLogic, type CoursePuzzle, type CourseSolution, type RageState } from "@/phaser/sim/course";
 import { PlatformerCourse } from "@/phaser/sim/platformer";
-import { CONFIG, LEVELS } from "./levels";
+import { CONFIG, DAILY_POOL, LEVELS } from "./levels";
 
 export type DashPuzzle = CoursePuzzle;
 export type DashSolution = CourseSolution;
@@ -24,7 +25,14 @@ export function createSim(p: CoursePuzzle): PlatformerCourse {
   );
 }
 
-const logic = makeCourseLogic({ id: "dash", pool: LEVELS.map((l) => l.id), sim: createSim, scoring: "deaths", ramp: false });
+const logic = makeCourseLogic({
+  id: "dash",
+  pool: DAILY_POOL,
+  ladder: LEVELS.map((l) => l.id),
+  sim: createSim,
+  scoring: "deaths",
+  ramp: false,
+});
 
 export const { generate, verify, progress } = logic;
 export default logic;

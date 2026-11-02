@@ -5,11 +5,13 @@
  */
 import type { LevelDef } from "@/phaser/sim/level";
 import { BASE_CONFIG, type PlatformerConfig } from "@/phaser/sim/platformer";
+import { GENERATED, LADDER } from "./levels.generated";
 
 /** Gotcha physics: free run left and right, variable jump. */
 export const CONFIG: PlatformerConfig = { ...BASE_CONFIG };
 
-export const LEVELS: LevelDef[] = [
+/** The original hand-designed rooms. Daily and free-play courses draw from these only. */
+export const HAND_LEVELS: LevelDef[] = [
   {
     id: "trust-fall",
     name: "Trust Fall",
@@ -193,3 +195,126 @@ export const LEVELS: LevelDef[] = [
     platforms: [{ w: 2, from: [6, 6], to: [6, 2], period: 200 }],
   },
 ];
+
+/** Hand-tuned set pieces that close tiers of the level ladder (solutions found by scripts/rage-design.ts). */
+export const SET_PIECES: LevelDef[] = [
+  {
+    // The floor lies, the spikes pop and the door runs twice: the first rooms in one.
+    id: "encore",
+    name: "Encore",
+    tiles: [
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..........................===.....",
+      ".S..........#.22..............E...",
+      "#####111##########################",
+      "#####111##########################",
+    ],
+    traps: {
+      "1": { kind: "drop", delay: 3 },
+      "2": { kind: "spikes", delay: 0 },
+      "3": { kind: "exit", delay: 0, to: [20, 6], frames: 40 },
+      "4": { kind: "exit", delay: 0, to: [27, 4], frames: 40 },
+    },
+    triggers: [
+      { zone: [5, 0, 3, 7], fire: ["1"] },
+      { zone: [12, 0, 1, 6], fire: ["2"] },
+      { zone: [27, 0, 1, 7], fire: ["3"] },
+      { zone: [22, 0, 1, 7], fire: ["4"] },
+    ],
+  },
+  {
+    // Ride the slab over the spikes. The landing looks solid and is not, so ride on to the far side.
+    id: "ferry-tale",
+    name: "Ferry Tale",
+    tiles: [
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      ".S.....................................E",
+      "######..........11.........#############",
+      "######^^^^^^^^^^11^^^^^^^^^#############",
+    ],
+    traps: { "1": { kind: "drop", delay: 6 } },
+    triggers: [{ zone: [16, 4, 2, 3], fire: ["1"] }],
+    platforms: [{ w: 2, from: [6, 7], to: [24, 7], period: 480 }],
+  },
+  {
+    // A bridge that falls behind you, then a hall whose spikes wake up: keep moving.
+    id: "crumble-run",
+    name: "Crumble Run",
+    tiles: [
+      "..............................................",
+      "..............................................",
+      "..............................................",
+      "..............................................",
+      "..............................................",
+      "..............................................",
+      ".S.................55555555..............E....",
+      "#####111222333444#########...#################",
+      "#####^^^^^^^^^^^^#########^^^#################",
+    ],
+    traps: {
+      "1": { kind: "drop", delay: 12 },
+      "2": { kind: "drop", delay: 12 },
+      "3": { kind: "drop", delay: 12 },
+      "4": { kind: "drop", delay: 12 },
+      "5": { kind: "spikes", delay: 110 },
+    },
+    triggers: [
+      { zone: [5, 6, 3, 1], fire: ["1"] },
+      { zone: [8, 6, 3, 1], fire: ["2"] },
+      { zone: [11, 6, 3, 1], fire: ["3"] },
+      { zone: [14, 6, 3, 1], fire: ["4"] },
+      { zone: [17, 0, 1, 7], fire: ["5"] },
+    ],
+  },
+  {
+    // Everything Gotcha knows, in one long room.
+    id: "grand-finale",
+    name: "Grand Finale",
+    tiles: [
+      "..........................................#########.............",
+      "..........................................#########.............",
+      "..........................................#########.............",
+      "..........................................#########.............",
+      "..........................................666666666.............",
+      ".....................33................................===......",
+      ".S..........#.11..............................^.............E...",
+      "######777############..###444555####..##########################",
+      "######777############^^###^^^^^^####^^##########################",
+    ],
+    traps: {
+      "1": { kind: "spikes", delay: 0 },
+      "2": { kind: "exit", delay: 0, to: [56, 4], frames: 35 },
+      "3": { kind: "block", delay: 0 },
+      "4": { kind: "drop", delay: 10 },
+      "5": { kind: "drop", delay: 10 },
+      "6": { kind: "spikes", delay: 0 },
+      "7": { kind: "drop", delay: 3 },
+    },
+    triggers: [
+      { zone: [6, 0, 3, 7], fire: ["7"] },
+      { zone: [12, 0, 1, 6], fire: ["1"] },
+      { zone: [19, 2, 2, 3], fire: ["3"] },
+      { zone: [26, 6, 3, 1], fire: ["4"] },
+      { zone: [29, 6, 3, 1], fire: ["5"] },
+      { zone: [42, 5, 1, 2], fire: ["6"] },
+      { zone: [58, 0, 1, 7], fire: ["2"] },
+    ],
+  },
+];
+
+const BY_ID = new Map([...HAND_LEVELS, ...SET_PIECES, ...GENERATED].map((l) => [l.id, l]));
+
+/** Every level in ladder order (Level 1 first): hand rooms, set pieces and generated rooms by difficulty. */
+export const LEVELS: LevelDef[] = LADDER.length ? LADDER.map((id) => BY_ID.get(id)!) : [...HAND_LEVELS, ...SET_PIECES];
+
+/** Level ids Daily and free-play courses draw from, in difficulty order (unchanged by the ladder). */
+export const DAILY_POOL: string[] = HAND_LEVELS.map((l) => l.id);

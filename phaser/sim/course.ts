@@ -50,6 +50,11 @@ export interface CourseLogicOptions {
   pick?(rng: Rng, difficulty: Difficulty): string[];
   /** hint copy for the level being played (index into the course) */
   hint?(p: CoursePuzzle, level: number): string;
+  /**
+   * Level ladder: every level id in ladder order (Level 1 first). Level n is a one-room course of ladder[n - 1].
+   * These ids are also accepted in courses, alongside the pool's.
+   */
+  ladder?: string[];
 }
 
 export function isRageState(s: unknown): s is RageState {
@@ -75,7 +80,7 @@ export function replayPartial(core: SimCore, log: InputLog): SimCore {
 
 export function makeCourseLogic(o: CourseLogicOptions) {
   const lengths = o.lengths ?? COURSE_LENGTH;
-  const known = new Set(o.pool);
+  const known = new Set([...o.pool, ...(o.ladder ?? [])]);
 
   const generate = (rng: Rng, difficulty: Difficulty): Generated<CoursePuzzle, CourseSolution> => {
     const n = Math.min(o.pool.length, lengths[difficulty]);
@@ -126,6 +131,20 @@ export function makeCourseLogic(o: CourseLogicOptions) {
     return { target: { level }, text: o.hint(p, level) };
   };
 
-  const logic: GameLogic<CoursePuzzle, CourseSolution, RageState> = { id: o.id, generate, verify, progress, ...(o.hint ? { hint } : {}) };
+  const ladder = o.ladder;
+  const level = (n: number): Generated<CoursePuzzle, CourseSolution> | null => {
+    if (!ladder || !Number.isInteger(n) || n < 1 || n > ladder.length) return null;
+    const id = ladder[n - 1];
+    return { puzzle: { levels: [id] }, solution: { levels: [id] }, grade: Math.round((100 * (n - 1)) / Math.max(1, ladder.length - 1)) };
+  };
+
+  const logic: GameLogic<CoursePuzzle, CourseSolution, RageState> = {
+    id: o.id,
+    generate,
+    verify,
+    progress,
+    ...(o.hint ? { hint } : {}),
+    ...(ladder ? { level } : {}),
+  };
   return logic;
 }

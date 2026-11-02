@@ -3,7 +3,8 @@ import { createRng } from "@/lib/rng";
 import { courseGameSuite } from "@/phaser/sim/testkit";
 import { BTN } from "@/phaser/sim/input";
 import logic, { createSim, generate, hint } from "./logic";
-import { CONFIG, LEVELS } from "./levels";
+import { CONFIG, DAILY_POOL, HAND_LEVELS, LEVELS } from "./levels";
+import { ladderSuite } from "@/phaser/sim/ladderkit";
 import SOLUTIONS from "./solutions.json";
 
 describe("gauntlet", () => {
@@ -40,5 +41,17 @@ describe("gauntlet", () => {
     const g = generate(createRng("h"), "easy");
     expect(hint(g.puzzle, g.solution, undefined as never)?.text.length).toBeGreaterThan(10);
     expect(() => createSim({ levels: ["nope"] })).toThrow();
+  });
+});
+
+describe("gauntlet level ladder", () => {
+  ladderSuite({
+    logic,
+    levels: LEVELS,
+    hand: HAND_LEVELS,
+    dailyPool: DAILY_POOL,
+    sim: createSim,
+    solutions: SOLUTIONS,
+    pause: CONFIG.levelPause,
   });
 });
