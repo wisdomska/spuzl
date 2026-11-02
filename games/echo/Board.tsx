@@ -218,7 +218,7 @@ export default function EchoBoard({ puzzle, initialState, disabled, mode, api }:
   const keys = useGridKeys(2, 2, tap);
   // Wide screen: the pads grow to fill the board's height (two pads, the dots, the status and the padding).
   const box = useBoardBox();
-  const pad = box.wide ? Math.min(232, Math.floor((box.side - 142) / 2)) : 0;
+  const pad = box.wide ? Math.min(300, Math.floor((box.side - 142) / 2)) : 0;
   const done = current?.taps.length ?? 0;
   const dots = Array.from({ length: phase === "idle" && !rounds.length ? puzzle.start : len }, (_, i) => {
     if (phase === "watch") return i < pos || (i === pos && lit !== null) ? (i === pos ? "now" : "done") : "todo";

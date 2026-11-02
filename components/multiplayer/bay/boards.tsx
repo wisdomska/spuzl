@@ -3,7 +3,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { boardGames } from "@/lib/copy/board-games";
-import { isWide, useCellSize, useViewportHeight, useViewportWidth, wideCell } from "@/components/game/useBoardSize";
+import { fitRow, isWide, useCellSize, useViewportHeight, useViewportWidth, wideCell } from "@/components/game/useBoardSize";
 import { BayStyles, BEVEL, SQUARE } from "@/games/_shared/BayStyles";
 import { parseFen, toRows, inCheck, kingSquare } from "@/games/chess/engine";
 import { CH_N, Piece, useSprites } from "@/games/chess/Piece";
@@ -73,11 +73,14 @@ function useLudoCell() {
   return Math.min(24, Math.floor((Math.min(vw, 420) - 40) / 15));
 }
 
-/** Oware pits: 48 px on a phone, bigger on a wide screen (6 pits, 5 gaps of 8, 24 px of frame). */
+/**
+ * Oware pits: the phone width shared by six (48 to 56 px), or up to 128 px on a wide screen (6 pits, 5 gaps
+ * of 8, 24 px of frame; the two score pills above and below take 120 px of the height).
+ */
 function useOwarePit() {
   const vw = useViewportWidth();
   const vh = useViewportHeight();
-  return isWide(vw, vh) ? wideCell(vw, vh, 6, 5 * 8 + 24, 48, 2, 10 + 24 + 120) : 48;
+  return isWide(vw, vh) ? wideCell(vw, vh, 6, 5 * 8 + 24, 64, 2, 10 + 24 + 120) : fitRow(Math.min(vw, 420) - 24, 6, 8, 24, 44, 56);
 }
 
 const FILES = "abcdefgh";

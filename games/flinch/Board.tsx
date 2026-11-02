@@ -205,7 +205,7 @@ export default function FlinchBoard({ puzzle, initialState, disabled, mode, api 
   return (
     <div
       className="flex w-[min(358px,calc(100vw-36px))] flex-col gap-3 rounded-[20px] p-3"
-      style={{ background: "var(--board-bg)", ...(box.wide ? { width: Math.min(640, box.side - 90) } : null) }}
+      style={{ background: "var(--board-bg)", ...(box.wide ? { width: Math.min(820, box.side - 90) } : null) }}
     >
       <style href="spuzl-flinch" precedence="default">
         {CSS}

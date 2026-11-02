@@ -33,6 +33,9 @@ import type { Stage } from "./scene";
 import { HeldInput } from "./held";
 import { MIN_STAGE_HEIGHT, SHORT_VIEWPORT, stageHeight } from "./layout";
 import { useFitHeight } from "@/components/game/useBoardSize";
+import { useOnScreenKeys } from "@/components/game/useInputMode";
+import { Kbd } from "@/games/_shared/LetterKeyboard";
+import { keyboardCopy as KC } from "@/lib/copy/keyboard";
 import { posterStyle } from "./RagePoster";
 
 export type ControlsKind = "dpad" | "tap" | "hold" | "lr" | "drag";
@@ -128,6 +131,8 @@ export function RageBoard<S extends SimCore>({
   });
   // The canvas gives up height (to MIN_STAGE_HEIGHT) until the controls under it and the shell fit the screen.
   const stageH = useFitHeight(size.h, Math.min(size.h, MIN_STAGE_HEIGHT), 1);
+  // A computer plays with the keys: the on-screen pad gives way to a line naming them (useInputMode).
+  const keys = useOnScreenKeys();
   const [bump, setBump] = useState(0);
   const [message, setMessage] = useState("");
   const [notice, setNotice] = useState(() => {
@@ -557,43 +562,78 @@ export function RageBoard<S extends SimCore>({
 
       {/* Controls under the board */}
       {/* A controller, not a form: the game's own sounds (jump, land, flip) answer these, not the button tap. */}
-      <div className="flex items-center justify-between gap-2 select-none" style={{ WebkitTouchCallout: "none" }} data-no-tick>
-        {spec.controls === "dpad" || spec.controls === "lr" || spec.controls === "drag" ? (
-          <div className="flex flex-none gap-2">
-            <PadButton label="Move left" icon="caret-left" small={size.short} {...holdProps("pl", BTN.LEFT)} />
-            <PadButton label="Move right" icon="caret-right" small={size.short} {...holdProps("pr", BTN.RIGHT)} />
+      {!keys.show ? (
+        // A computer: the keys that play it, in one slim line, so the canvas keeps the height. "Show controls"
+        // brings the pad back (a touch laptop; a touch on the screen does it by itself).
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-[16px] px-3.5 py-1" style={{ background: "var(--surface)" }}>
+          <p className="m-0 flex min-h-11 flex-wrap items-center gap-x-3.5 gap-y-1 text-[14px] font-medium">
+            {(spec.controls === "dpad" || spec.controls === "lr" || spec.controls === "drag") && (
+              <span className="inline-flex items-center gap-1.5">
+                <Kbd>{KC.moveKeys}</Kbd>
+                <span className="text-muted">{KC.moveDoes}</span>
+              </span>
+            )}
+            {spec.controls !== "lr" && (
+              <span className="inline-flex items-center gap-1.5">
+                <Kbd>{KC.space}</Kbd>
+                <span className="text-muted">{KC.actionDoes(spec.action ?? "Jump")}</span>
+              </span>
+            )}
+          </p>
+          <div className="text-muted min-w-0 flex-1 text-center text-[14px] leading-[1.4] font-medium" aria-live="off">
+            {total > 1 && (
+              <span className="num font-semibold text-[var(--text)]">{`Level ${Math.min(total, hud.cleared + 1)} of ${total}`}</span>
+            )}
+            {hud.level && <span className="truncate">{` · ${hud.level}`}</span>}
           </div>
-        ) : (
-          <span className="text-muted text-[14px] font-medium">or tap anywhere</span>
-        )}
-        <div className="text-muted min-w-0 flex-1 text-center text-[14px] leading-[1.4] font-medium" aria-live="off">
-          {total > 1 && (
-            <div className="num font-semibold text-balance text-[var(--text)]">{`Level ${Math.min(total, hud.cleared + 1)} of ${total}`}</div>
-          )}
-          {hud.level && <div className="truncate">{hud.level}</div>}
-        </div>
-        {spec.controls !== "lr" && (
           <button
             type="button"
-            aria-label={spec.action ?? "Jump"}
-            className="toy flex flex-none items-center justify-center rounded-full"
-            style={{
-              // 80 px on short screens (still well over 44), so the canvas keeps more of its height.
-              width: size.short ? 80 : 96,
-              height: size.short ? 80 : 96,
-              background: "var(--w-rage)",
-              color: "#0E0F1A",
-              ["--btn-depth" as string]: "#8A1E1E",
-              boxShadow: "0 7px 0 #8A1E1E",
-              font: "900 16px var(--font-display, Unbounded), sans-serif",
-              touchAction: "none",
-            }}
-            {...holdProps("pj", BTN.JUMP)}
+            onClick={keys.toggle}
+            className="press text-muted flex h-11 items-center gap-2 rounded-[12px] px-2 text-[14px] font-semibold"
           >
-            {(spec.action ?? "Jump").toUpperCase()}
+            <Icon name="game-controller" size={18} />
+            {KC.showControls}
           </button>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between gap-2 select-none" style={{ WebkitTouchCallout: "none" }} data-no-tick>
+          {spec.controls === "dpad" || spec.controls === "lr" || spec.controls === "drag" ? (
+            <div className="flex flex-none gap-2">
+              <PadButton label="Move left" icon="caret-left" small={size.short} {...holdProps("pl", BTN.LEFT)} />
+              <PadButton label="Move right" icon="caret-right" small={size.short} {...holdProps("pr", BTN.RIGHT)} />
+            </div>
+          ) : (
+            <span className="text-muted text-[14px] font-medium">or tap anywhere</span>
+          )}
+          <div className="text-muted min-w-0 flex-1 text-center text-[14px] leading-[1.4] font-medium" aria-live="off">
+            {total > 1 && (
+              <div className="num font-semibold text-balance text-[var(--text)]">{`Level ${Math.min(total, hud.cleared + 1)} of ${total}`}</div>
+            )}
+            {hud.level && <div className="truncate">{hud.level}</div>}
+          </div>
+          {spec.controls !== "lr" && (
+            <button
+              type="button"
+              aria-label={spec.action ?? "Jump"}
+              className="toy flex flex-none items-center justify-center rounded-full"
+              style={{
+                // 80 px on short screens (still well over 44), so the canvas keeps more of its height.
+                width: size.short ? 80 : 96,
+                height: size.short ? 80 : 96,
+                background: "var(--w-rage)",
+                color: "#0E0F1A",
+                ["--btn-depth" as string]: "#8A1E1E",
+                boxShadow: "0 7px 0 #8A1E1E",
+                font: "900 16px var(--font-display, Unbounded), sans-serif",
+                touchAction: "none",
+              }}
+              {...holdProps("pj", BTN.JUMP)}
+            >
+              {(spec.action ?? "Jump").toUpperCase()}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

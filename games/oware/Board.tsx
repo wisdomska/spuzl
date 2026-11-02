@@ -146,7 +146,7 @@ export default function OwareBoard({ puzzle, initialState, hint, disabled, api }
   const keys = useGridKeys(2, 6, (i) => choose(ROWS[Math.floor(i / 6)][i % 6]));
   // The board fills the slot's width; on a wide screen the pits grow with it, and so do the seeds (7 px on a phone).
   const box = useBoardBox();
-  const seed = box.wide ? Math.max(7, Math.min(14, Math.round(((box.w - 50) / 6) * 0.11))) : 7;
+  const seed = box.wide ? Math.max(7, Math.min(18, Math.round(((box.w - 50) / 6) * 0.11))) : 7;
   const hintPit = typeof hint?.target === "number" ? hint.target : -1;
   const fed = new Set(preview && !sowing && !done ? preview.path : []);
   const willTake = new Set(preview && !sowing && !done ? preview.captured : []);
