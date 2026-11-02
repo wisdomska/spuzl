@@ -19,7 +19,19 @@ import { createRng } from "@/lib/rng";
 import type { Difficulty } from "@/games/types";
 
 export type Age = "13-15" | "16-17" | "18+";
-const AGE_LABEL: Record<Age, RegExp> = { "13-15": /13 to 15/, "16-17": /16 to 17/, "18+": /18 or older/ };
+/** A birth month and year in each band today (December births are the youngest of their year). */
+export function birthFor(age: Age, today = new Date()): { year: number; month: number } {
+  const y = today.getUTCFullYear();
+  return age === "18+" ? { year: y - 30, month: 1 } : age === "16-17" ? { year: y - 17, month: 12 } : { year: y - 14, month: 12 };
+}
+
+/** The onboarding step "When were you born?": picks a birth month and year for the band and continues. */
+export async function pickBirth(page: Page, age: Age = "18+") {
+  const b = birthFor(age);
+  await page.getByLabel("Month", { exact: true }).selectOption(String(b.month));
+  await page.getByLabel("Year", { exact: true }).selectOption(String(b.year));
+  await page.getByRole("button", { name: "Continue" }).click();
+}
 
 export async function onboardGuest(page: Page, age: Age = "18+", nickname = `Qa${Date.now() % 1e7}`, o: { guided?: boolean } = {}) {
   await page.goto("/welcome");
@@ -30,8 +42,8 @@ export async function onboardGuest(page: Page, age: Age = "18+", nickname = `Qa$
       [...GAMES, ...LAB_GAMES].map((g) => g.id),
     );
   await page.getByRole("button", { name: "Play as guest" }).click();
-  await page.getByRole("radio", { name: AGE_LABEL[age] }).click();
-  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("heading", { name: /When were you born\?/ })).toBeVisible();
+  await pickBirth(page, age);
   await page.getByRole("button", { name: /Jump straight in|Go to the map/ }).click();
   await page.locator("#nick").fill(nickname);
   await page.getByRole("button", { name: /Enter The Grid|Create my Spuz|Save my Spuz/ }).click();

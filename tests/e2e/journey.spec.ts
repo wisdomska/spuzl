@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { duelVsBot, openPartyRoom, tapCell, waitForBoard } from "./harness";
+import { duelVsBot, openPartyRoom, pickBirth, tapCell, waitForBoard } from "./harness";
 import { solve, type CrownfallPuzzle } from "@/games/crownfall/logic";
 
 /**
@@ -19,8 +19,7 @@ test("full journey: guest to clears, social and multiplayer, with no Daily anywh
   await page.goto("/welcome");
   await noDaily(page, "welcome");
   await page.getByRole("button", { name: "Play as guest" }).click();
-  await page.getByRole("radio", { name: /18 or older/ }).click();
-  await page.getByRole("button", { name: "Continue" }).click();
+  await pickBirth(page, "18+");
   await noDaily(page, "start choices");
   await page.getByRole("button", { name: /Learn a game in 30 seconds/ }).click();
   for (const [r, c] of [
