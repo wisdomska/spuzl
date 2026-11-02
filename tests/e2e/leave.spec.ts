@@ -45,9 +45,10 @@ test("solo: the game menu's Leave game and the back gesture leave at once too", 
 test("timed run: one light confirm with Keep playing as the default; a second back always leaves", async ({ page }) => {
   await onboardGuest(page);
   await page.goto("/world/word");
-  await openGame(page, "quickfire", "free");
+  // Quickfire opens on its ready screen (Start sits under the board), so wait for Start rather than the board.
+  await page.goto("/play/quickfire?mode=free");
   // Before Start there is nothing to lose: Escape would leave. Start the run first.
-  await page.getByRole("button", { name: "Start" }).click();
+  await page.getByRole("button", { name: "Start" }).click({ timeout: 30_000 });
 
   await page.getByRole("button", { name: "Back" }).click();
   const confirm = page.getByRole("alertdialog", { name: "Leave this round?" });
@@ -70,8 +71,8 @@ test("timed run: one light confirm with Keep playing as the default; a second ba
 
 test("timed run: Leave from the confirm goes straight out", async ({ page }) => {
   await onboardGuest(page);
-  await openGame(page, "quickfire", "free");
-  await page.getByRole("button", { name: "Start" }).click();
+  await page.goto("/play/quickfire?mode=free");
+  await page.getByRole("button", { name: "Start" }).click({ timeout: 30_000 });
   await page.keyboard.press("Escape");
   const confirm = page.getByRole("alertdialog", { name: "Leave this round?" });
   await expect(confirm).toBeVisible();

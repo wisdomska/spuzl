@@ -238,3 +238,9 @@ Local production build. Unit 147 files, 1440+ tests; API 17 files, 172 tests; E2
 desktop) all pass. pgTAP passes on a fresh database (CI); locally `085_league_min_group` is sensitive to hundreds of
 leftover test players and is not a product issue. Found and fixed: missing 3D tiles for the promoted games, and the
 "different worlds" quests that never counted.
+
+## 1.9.0 integration pass (2 November 2026)
+
+Unit 151 files, 1469 tests; API 17 files, 172 tests; E2E, realtime and visual 195+ passed (the leave spec's timed-run
+cases now wait for Quickfire's Start button). Checked on production with a throwaway account (deleted after):
+profile with birth month and year, presence heartbeat, and a Trotro Jam free clear (+10 XP, +5 Sparks, streak 1).

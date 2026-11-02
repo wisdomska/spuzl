@@ -218,3 +218,9 @@ to before.
 Order: either way works. If the code ships first, players already see the 4 worlds (the catalogue decides) and
 moved games rate into their group's track; the migration lines up world names, carried-over ratings, badges and
 quests in the database.
+
+## 1.9.0
+
+| Migration                                 | What it does                                                                                        | Rollback    |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------- | ----------- |
+| `20261122000001_last_active_backfill.sql` | Data only: fills `players.last_seen_at` from the latest game or sign-in where it was empty or older | None needed |
