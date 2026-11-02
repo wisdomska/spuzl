@@ -33,6 +33,33 @@ export interface CourseSolution {
 
 export const COURSE_LENGTH: Record<Difficulty, number> = { easy: 3, medium: 4, hard: 5, expert: 6, mega: 8 };
 
+/** Share of the ladder (from, to) a free-play course draws from at each difficulty: easy stays early, mega late. */
+export const LADDER_WINDOW: Record<Difficulty, [number, number]> = {
+  easy: [0, 0.3],
+  medium: [0, 0.45],
+  hard: [0.15, 0.65],
+  expert: [0.35, 0.85],
+  mega: [0.55, 1],
+};
+
+/**
+ * Free-play pick over a whole level ladder: `n` distinct rooms from the difficulty's window, in ladder order, so a
+ * course still ramps. Deterministic per seed like every generator.
+ */
+export function ladderPick(ladder: string[], lengths: Record<Difficulty, number> = COURSE_LENGTH) {
+  return (rng: Rng, difficulty: Difficulty): string[] => {
+    const [a, b] = LADDER_WINDOW[difficulty];
+    const lo = Math.floor(a * ladder.length);
+    const hi = Math.max(lo + lengths[difficulty], Math.ceil(b * ladder.length));
+    const window = ladder.slice(lo, Math.min(ladder.length, hi)).map((_, i) => lo + i);
+    return rng
+      .shuffle(window)
+      .slice(0, Math.min(window.length, lengths[difficulty]))
+      .sort((x, y) => x - y)
+      .map((i) => ladder[i]);
+  };
+}
+
 export interface CourseLogicOptions {
   id: string;
   /** ids of every hand-designed level, in authoring (difficulty) order */

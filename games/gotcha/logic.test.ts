@@ -89,7 +89,9 @@ describe("gotcha", () => {
   });
 
   it("counts deaths, scores fewer deaths higher, and rejects forged deaths or time", () => {
-    const g = generate(createRng("deaths"), "easy");
+    // The first three ladder rooms: running right meets their first trap (free-play courses now draw from the ladder).
+    const levels = LEVELS.slice(0, 3).map((l) => l.id);
+    const g = { puzzle: { levels }, solution: { levels: levels.slice() } };
     const clean = courseLog(g.puzzle.levels, SOLUTIONS, CONFIG.levelPause);
     const { log, frames } = logWithOneDeath(g.puzzle.levels);
     const ok = verify(g.puzzle, g.solution, state(log, 1, frames));

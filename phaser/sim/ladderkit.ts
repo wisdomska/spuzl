@@ -7,7 +7,7 @@ import { expect, it } from "vitest";
 import type { GameLogic } from "@/games/types";
 import { createRng } from "@/lib/rng";
 import { replay, type SimCore } from "./core";
-import type { CoursePuzzle, CourseSolution, RageState } from "./course";
+import { LADDER_WINDOW, type CoursePuzzle, type CourseSolution, type RageState } from "./course";
 import { compileLevel, type LevelDef } from "./level";
 import { courseLog } from "./scripted";
 
@@ -41,14 +41,20 @@ export function ladderSuite(o: LadderKitOptions) {
     }
   });
 
-  it("keeps the hand rooms in their order and Daily courses on the hand rooms", () => {
+  it("keeps the hand rooms in their order, and free-play courses draw from the ladder window for their difficulty", () => {
     const at = o.hand.map((h) => o.levels.findIndex((l) => l.id === h.id));
     expect(at.every((i) => i >= 0)).toBe(true);
     expect(at).toEqual(at.slice().sort((a, b) => a - b));
-    expect(o.dailyPool).toEqual(o.hand.map((h) => h.id));
-    for (let i = 0; i < 10; i++) {
-      const g = o.logic.generate(createRng(`ladder:${i}`), i % 2 ? "mega" : "easy");
-      expect(g.puzzle.levels.every((id) => o.dailyPool.includes(id))).toBe(true);
+    const ids = o.levels.map((l) => l.id);
+    for (let i = 0; i < 20; i++) {
+      const d = (["easy", "medium", "hard", "expert", "mega"] as const)[i % 5];
+      const g = o.logic.generate(createRng(`ladder:${i}`), d);
+      const idx = g.puzzle.levels.map((id) => ids.indexOf(id));
+      expect(idx.every((x) => x >= 0)).toBe(true);
+      expect(idx).toEqual(idx.slice().sort((a, b) => a - b)); // still ramps
+      const [lo, hi] = LADDER_WINDOW[d];
+      expect(Math.min(...idx)).toBeGreaterThanOrEqual(Math.floor(lo * ids.length));
+      if (d === "easy") expect(Math.max(...idx)).toBeLessThan(Math.max(Math.ceil(hi * ids.length), 10));
     }
   });
 

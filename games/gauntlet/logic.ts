@@ -5,9 +5,9 @@
  * Levels mode plays the whole ladder (LEVELS: hand rooms, set pieces, generated rooms) one room per level.
  */
 import type { Difficulty } from "@/games/types";
-import { makeCourseLogic, type CoursePuzzle, type CourseSolution, type RageState } from "@/phaser/sim/course";
+import { ladderPick, makeCourseLogic, type CoursePuzzle, type CourseSolution, type RageState } from "@/phaser/sim/course";
 import { PlatformerCourse } from "@/phaser/sim/platformer";
-import { CONFIG, DAILY_POOL, LEVELS } from "./levels";
+import { CONFIG, LEVELS } from "./levels";
 
 export type GauntletPuzzle = CoursePuzzle;
 export type GauntletSolution = CourseSolution;
@@ -33,7 +33,12 @@ export const GAUNTLET_LENGTH: Record<Difficulty, number> = { easy: 10, medium: 1
 const logic = makeCourseLogic({
   id: "gauntlet",
   lengths: GAUNTLET_LENGTH,
-  pool: DAILY_POOL,
+  // Free play draws from the whole ladder, in a window that matches the difficulty (phaser/sim/course.ts).
+  pool: LEVELS.map((l) => l.id),
+  pick: ladderPick(
+    LEVELS.map((l) => l.id),
+    GAUNTLET_LENGTH,
+  ),
   ladder: LEVELS.map((l) => l.id),
   sim: createSim,
   scoring: "deaths",

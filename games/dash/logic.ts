@@ -4,9 +4,9 @@
  * pit restarts the segment. verify() re-simulates the input log. Fewest deaths, then time. Levels mode
  * plays the whole ladder (LEVELS: hand segments, set pieces, generated runs) one segment per level.
  */
-import { makeCourseLogic, type CoursePuzzle, type CourseSolution, type RageState } from "@/phaser/sim/course";
+import { ladderPick, makeCourseLogic, type CoursePuzzle, type CourseSolution, type RageState } from "@/phaser/sim/course";
 import { PlatformerCourse } from "@/phaser/sim/platformer";
-import { CONFIG, DAILY_POOL, LEVELS } from "./levels";
+import { CONFIG, LEVELS } from "./levels";
 
 export type DashPuzzle = CoursePuzzle;
 export type DashSolution = CourseSolution;
@@ -27,7 +27,9 @@ export function createSim(p: CoursePuzzle): PlatformerCourse {
 
 const logic = makeCourseLogic({
   id: "dash",
-  pool: DAILY_POOL,
+  // Free play draws from the whole ladder, in a window that matches the difficulty (phaser/sim/course.ts).
+  pool: LEVELS.map((l) => l.id),
+  pick: ladderPick(LEVELS.map((l) => l.id)),
   ladder: LEVELS.map((l) => l.id),
   sim: createSim,
   scoring: "deaths",

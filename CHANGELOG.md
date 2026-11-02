@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### For players
+
+- **Free play uses the new levels too.** Gotcha, Dash and Gauntlet free-play courses now draw from all 64 to 66
+  rooms, not only the original 10 to 12: easy courses from the first 30% of the ladder, medium up to 45%, hard 15 to
+  65%, expert 35 to 85% and mega from the hardest 45%, always ordered from easier to harder.
+
 ## 1.6.0 (2 November 2026)
 
 A tighter Grid: 29 games across 8 worlds.
