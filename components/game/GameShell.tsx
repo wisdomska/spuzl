@@ -9,6 +9,8 @@ import type { GameMeta } from "@/lib/catalog";
 import { WORLD_BY_ID } from "@/lib/catalog";
 import { IconButton } from "@/components/ui/IconButton";
 import { Icon } from "@/components/ui/Icon";
+import { GameMenu, type GameMenuEntry } from "./GameMenu";
+import { gameMenuCopy } from "@/lib/copy/game-menu";
 import { useSettings } from "@/lib/settings/store";
 import { useMe } from "@/lib/client/api";
 import { BOARD_THEMES } from "@/lib/gamification/cosmetics";
@@ -20,8 +22,12 @@ import { track } from "@/lib/analytics/track";
 import { copy } from "@/lib/copy";
 
 /**
- * The reusable 6-zone board template (Game Boards file):
- * 1 top bar, 2 optional strip, 3 title + rule, 4 board slot, 5 feedback line, 6 controls.
+ * The reusable board template (Game Boards file), slimmed so the board gets the room:
+ * 1 slim top bar (Back, game name and label, timer, "⋯" menu), 2 optional strip, 3 board slot,
+ * 4 feedback line, 5 compact tool row. The rule is read out with the board and lives in How to play.
+ * Everything not needed while playing (How to play, Restart, New puzzle, Difficulty, Sound, Haptics,
+ * Settings, Share, Report) sits in the menu. Opening the menu pauses the clock and hides the board where
+ * the mode can pause; live matches keep running and the menu says so.
  * The shell owns timer, hints, pause, help, feedback and live-region announcements. Boards only
  * render the puzzle and report moves; the parent decides what a clear means (server verifies).
  */
@@ -58,7 +64,23 @@ export interface GameShellProps<P, St> {
   endBar?: ReactNode;
   /** solved: hold the board with a highlight (set by the parent while it waits for the server) */
   celebrate?: boolean;
+  /** menu: start this puzzle over (used when the board has no Restart or Reset tool of its own) */
+  onRestart?: () => void;
+  /** menu: a fresh puzzle of this game (free play) */
+  onNewPuzzle?: () => void;
+  /** menu: the difficulty picker (free play levels, bot levels); a change starts a new puzzle */
+  difficulty?: { value: string; options: { id: string; label: string }[]; onChange: (id: string) => void };
+  /**
+   * Whether the menu (and Pause) may stop the clock. Default: every mode but live Duels and Races,
+   * where the opponent keeps playing and the server keeps time.
+   */
+  canPause?: boolean;
 }
+
+/** Board tools that start the puzzle over move from the tool row to the menu's Restart. */
+const RESTART_TOOLS = new Set(["restart", "reset"]);
+/** At most this many tools stay one tap away; any more go in the menu. */
+const MAX_TOOLS = 5;
 
 interface FeedbackState {
   text: string;
@@ -98,9 +120,16 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
     pausedExternally,
     endBar,
     celebrate,
+    onRestart,
+    onNewPuzzle,
+    difficulty,
+    canPause = mode !== "duel" && mode !== "race",
   } = props;
   const world = WORLD_BY_ID[meta.world];
   const relaxed = useSettings((s) => s.relaxed);
+  const sfx = useSettings((s) => s.sfx);
+  const haptics = useSettings((s) => s.haptics);
+  const setSetting = useSettings((s) => s.set);
   // Equipped Shop board theme: colours the backdrop and frame around the board, never the cells.
   const boardTheme = useMe().data?.boardTheme ?? null;
   const theme = boardTheme ? BOARD_THEMES[boardTheme] : undefined;
@@ -115,6 +144,10 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   const [feedback, setFeedback] = useState<FeedbackState>({ text: "", tone: "info", n: 0 });
   const [live, setLive] = useState("");
   const [confirmHint, setConfirmHint] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
+  // A menu item opened a sheet: focus goes back to the menu button when that sheet closes.
+  const returnFocus = useRef(false);
   const stateRef = useRef<St | undefined>(initialState);
   const mistakes = useRef(0);
   const lastActive = useRef(0);
@@ -133,8 +166,10 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   // A board whose view differs from the puzzle layout (Buried after Rotate) words the hint for that view.
   const hintText = useRef<((hint: Hint) => string) | null>(null);
 
+  // The open menu holds the game like Pause does (clock stopped, board hidden), where the mode can pause.
+  const menuHold = menuOpen && canPause && !solved;
   // Timer: starts on first interaction, stops while paused or hidden (FR-GP-02).
-  const running = started && !paused && !solved && !pausedExternally && !confirmHint;
+  const running = started && !paused && !solved && !pausedExternally && !confirmHint && !menuHold;
   useEffect(() => {
     if (!running) return;
     const c = clock.current; // one mutable clock for the shell's lifetime
@@ -268,7 +303,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
     lastActive.current = performance.now();
   }, [feedback.n]);
   useEffect(() => {
-    if (!guided || !requestHint || solved || paused || pausedExternally) return;
+    if (!guided || !requestHint || solved || paused || pausedExternally || menuHold) return;
     const t = setInterval(() => {
       if (performance.now() - lastActive.current > GUIDED_IDLE_MS) {
         lastActive.current = performance.now();
@@ -276,13 +311,96 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
       }
     }, 1000);
     return () => clearInterval(t);
-  }, [guided, requestHint, solved, paused, pausedExternally, spendHint]);
+  }, [guided, requestHint, solved, paused, pausedExternally, menuHold, spendHint]);
 
   // Hint controls registered by the board call into the shell.
   // No hint source (Duels, Party Races): the Hint control is hidden rather than dead.
   const shownControls = controls
     .filter((c) => c.id !== "hint" || requestHint)
     .map((c) => (c.id === "hint" ? { ...c, onPress: askHint, disabled: hints <= 0 || solved || c.disabled } : c));
+  const { row, overflow, restart } = splitTools(shownControls);
+  const hintBadge = guided ? "∞" : String(hints);
+  const hintLeft = guided ? copy.shell.hintsFree : copy.shell.hintsLeft(hints);
+
+  // Focus back on the menu button once a sheet opened from the menu closes.
+  useEffect(() => {
+    if (!returnFocus.current || paused || pausedExternally) return;
+    returnFocus.current = false;
+    const id = requestAnimationFrame(() => menuButton.current?.focus());
+    return () => cancelAnimationFrame(id);
+  }, [paused, pausedExternally]);
+
+  const M = gameMenuCopy;
+  const openSheet = (fn: () => void) => () => {
+    returnFocus.current = true;
+    fn();
+  };
+  const share = async () => {
+    const url = `${window.location.origin}/play/${meta.id}?mode=free`;
+    const data = { title: M.shareTitle(meta.name), text: M.shareText(meta.name), url };
+    try {
+      if (navigator.share) await navigator.share(data);
+      else {
+        await navigator.clipboard.writeText(`${data.text} ${url}`);
+        setFeedback((f) => ({ text: M.linkCopied, tone: "info", icon: "link", n: f.n + 1 }));
+        setLive(M.linkCopied);
+      }
+    } catch {
+      /* share sheet dismissed or clipboard refused */
+    }
+  };
+  const report = () => {
+    const email = process.env.NEXT_PUBLIC_SUPPORT_EMAIL;
+    const subject = M.reportSubject(meta.name, label);
+    if (email)
+      window.location.assign(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(window.location.href)}`);
+    else window.open("/contact", "_blank", "noopener");
+  };
+  const restartEntry = restart
+    ? { onSelect: restart.onPress, disabled: restart.disabled }
+    : onRestart && !solved
+      ? { onSelect: onRestart, disabled: false }
+      : null;
+  const menuSections: GameMenuEntry[][] = [
+    [
+      ...(onHelp ? [{ kind: "action", id: "help", label: M.howToPlay, icon: "question", onSelect: openSheet(onHelp) } as const] : []),
+      ...(restartEntry ? [{ kind: "action", id: "restart", label: M.restart, icon: "arrow-clockwise", ...restartEntry } as const] : []),
+      ...(onNewPuzzle ? [{ kind: "action", id: "new", label: M.newPuzzle, icon: "plus", onSelect: onNewPuzzle } as const] : []),
+      ...(difficulty
+        ? [{ kind: "choice", id: "difficulty", label: M.difficulty, icon: "sliders-horizontal", ...difficulty } as const]
+        : []),
+      ...overflow.map(
+        (c) => ({ kind: "action", id: `tool-${c.id}`, label: c.label, icon: c.icon, onSelect: c.onPress, disabled: c.disabled }) as const,
+      ),
+    ],
+    [
+      {
+        kind: "toggle",
+        id: "sound",
+        label: M.sound,
+        icon: sfx ? "speaker-high" : "speaker-slash",
+        checked: sfx,
+        onChange: (v) => setSetting("sfx", v),
+      },
+      { kind: "toggle", id: "haptics", label: M.haptics, icon: "vibrate", checked: haptics, onChange: (v) => setSetting("haptics", v) },
+      ...(canPause
+        ? [
+            {
+              kind: "action",
+              id: "settings",
+              label: M.settings,
+              icon: "gear-six",
+              onSelect: openSheet(() => setPaused(true)),
+              disabled: solved,
+            } as const,
+          ]
+        : []),
+    ],
+    [
+      { kind: "action", id: "share", label: M.share, icon: "share-network", onSelect: () => void share() },
+      { kind: "action", id: "report", label: M.report, icon: "flag", onSelect: report },
+    ],
+  ];
 
   const style = {
     "--world": world.color,
@@ -292,57 +410,52 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
 
   return (
     <div className="bg-bg relative mx-auto flex min-h-dvh w-full max-w-[560px] flex-col" style={style} data-world={meta.world} data-shell>
-      {/* 1 Top bar */}
-      <header className="safe-top short:pb-1 relative z-10 flex items-center gap-3 px-3 pb-2 lg:pt-6">
+      {/* 1 Slim top bar: Back, the game (name over its label), the clock and the menu. */}
+      <header className="safe-top short:pb-1.5 relative z-10 flex items-center gap-3 px-3 pb-2 lg:pt-6">
         <IconButton icon="arrow-left" label="Back" onClick={onExit} />
-        <div className="flex min-w-0 flex-1 justify-center">
-          {!relaxed && (
-            <div
-              className="num bg-surface flex h-11 items-center gap-2 rounded-[14px] px-4 text-[22px] font-semibold max-[359px]:px-2.5 max-[359px]:text-[19px]"
-              role="timer"
-              aria-label={`Time ${formatClock(elapsed)}`}
-            >
-              <Icon name="timer" size={18} className="text-muted max-[359px]:hidden" />
-              {formatClock(elapsed)}
-            </div>
-          )}
+        <div className="min-w-0 flex-1">
+          <h1 className="font-display truncate text-[18px] leading-6 font-black text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]">
+            {meta.name}
+          </h1>
+          <p className="num text-muted truncate text-[12px] leading-4 font-medium">{label}</p>
         </div>
-        {requestHint && controls.some((c) => c.id === "hint") && (
-          // A counter only: hints are spent from the Hint button in the tool bar, never from here.
+        {!relaxed && (
           <div
-            role="status"
-            aria-label={guided ? copy.shell.hintsFree : copy.shell.hintsLeft(hints)}
-            className="text-gold bg-surface relative flex size-11 shrink-0 items-center justify-center rounded-[14px]"
+            className="num bg-surface flex h-11 shrink-0 items-center gap-1.5 rounded-[14px] px-3 text-[20px] font-semibold max-[359px]:px-2 max-[359px]:text-[18px]"
+            role="timer"
+            aria-label={`Time ${formatClock(elapsed)}`}
           >
-            <Icon name="lightbulb" size={20} />
-            <span className="num bg-gold text-on-accent absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[12px] font-bold">
-              {guided ? "∞" : hints}
-            </span>
+            <Icon name="timer" size={16} className="text-muted max-[359px]:hidden" />
+            {formatClock(elapsed)}
           </div>
         )}
-        <IconButton icon="question" label="Help" onClick={onHelp} />
-        <IconButton icon="pause" label="Pause" onClick={() => setPaused(true)} disabled={solved} />
+        <GameMenu
+          open={menuOpen}
+          onOpenChange={setMenuOpen}
+          sections={menuSections}
+          note={solved ? undefined : canPause ? M.paused : M.livePaused}
+          shield={menuHold}
+          triggerRef={menuButton}
+          onCloseAutoFocus={(e) => {
+            // A sheet opened from the menu takes focus; it comes back to this button when the sheet closes.
+            if (returnFocus.current) e.preventDefault();
+          }}
+        />
       </header>
 
       {/* 2 Strip */}
       {strip && !relaxed && <div className="relative z-20 px-3">{strip}</div>}
 
-      {/* 3 Title + rule: smaller and tighter on short screens; on very short ones the title row is for screen
-          readers only, so the board and tool bar keep the room. */}
-      <div className="short:pt-0 short:pb-1 tiny:sr-only flex items-baseline justify-between gap-3 px-5 pt-1.5 pb-3.5">
-        <h1 className="font-display short:text-[20px] short:leading-7 text-[24px] font-black text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]">
-          {meta.name}
-        </h1>
-        <span className="num text-muted text-[14px] font-medium whitespace-nowrap">{label}</span>
-      </div>
-      <p className="text-muted short:text-[13px] short:leading-[18px] px-[18px] text-[15px] leading-[1.4]">{meta.rule}</p>
-
-      {/* 4 Board slot */}
+      {/* 3 Board slot: 12 px each side (SLOT_PAD in useBoardSize), the rule read out with it. */}
+      <p id={`rule-${meta.id}`} className="sr-only">
+        {meta.rule}
+      </p>
       <main
-        className={`short:py-2 tiny:pt-1.5 relative z-0 flex justify-center p-[18px] ${theme ? "rounded-[26px]" : ""} ${celebrate || solved ? "shell-solved" : ""}`}
+        className={`short:py-1 relative z-0 flex justify-center px-3 py-2 ${theme ? "rounded-[26px]" : ""} ${celebrate || solved ? "shell-solved" : ""}`}
         style={theme ? { background: theme.bg, boxShadow: `inset 0 0 0 2px ${theme.mark}` } : undefined}
         data-board-theme={theme ? boardTheme! : undefined}
         aria-label={`${meta.name} board`}
+        aria-describedby={`rule-${meta.id}`}
       >
         <Board
           {...extra}
@@ -352,34 +465,38 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
           mode={mode}
           initialState={initialState}
           hint={hint}
-          disabled={locked || paused || solved || pausedExternally}
+          disabled={locked || paused || solved || pausedExternally || menuHold}
           api={api}
         />
       </main>
 
-      {/* 5 Feedback line: never overlays the board */}
+      {/* 4 Feedback line: never overlays the board */}
       {/* One status at a time: the old line leaves (120 ms) before the new one enters. */}
-      <div className="short:min-h-10 relative mx-4 min-h-12" data-shell-tail>
+      <div className="short:min-h-9 relative mx-3 min-h-11" data-shell-tail>
         <AnimatePresence mode="wait" initial={false}>
           {feedback.text && <FeedbackLine key={feedback.n} {...feedback} />}
         </AnimatePresence>
       </div>
 
-      {/* 6 Controls (or the end bar after a clear) */}
+      {/* 5 Compact tool row (or the end bar after a clear) */}
       {endBar ? (
-        <div className="safe-bottom short:pt-2 mt-auto px-4 pt-3.5 pb-7" data-shell-tail>
+        <div className="safe-bottom short:pt-1.5 mt-auto px-3 pt-2.5" data-shell-tail>
           {endBar}
         </div>
       ) : (
-        shownControls.length > 0 && (
+        row.length > 0 && (
           <div
-            className="safe-bottom short:pt-2 mt-auto grid gap-2.5 px-4 pt-3.5 pb-7"
+            className="safe-bottom short:pt-1.5 mt-auto grid gap-2 px-3 pt-2.5"
             data-shell-tail
-            style={{ gridTemplateColumns: `repeat(${shownControls.length}, minmax(0, 1fr))` }}
+            style={{ gridTemplateColumns: `repeat(${row.length}, minmax(0, 1fr))` }}
           >
-            {shownControls.map((c) => (
-              <ToolButton key={c.id} c={c} />
-            ))}
+            {row.map((c) =>
+              c.id === "hint" ? (
+                <ToolButton key={c.id} c={c} badge={hintBadge} label={M.hint(c.label, hintLeft)} />
+              ) : (
+                <ToolButton key={c.id} c={c} />
+              ),
+            )}
           </div>
         )
       )}
@@ -438,7 +555,7 @@ export function FeedbackLine({ text, tone, icon }: Omit<FeedbackState, "n">) {
       animate={{ opacity: 1, transform: "translateY(0px) scale(1)" }}
       exit={{ opacity: 0, transition: { duration: 0.12 } }}
       transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
-      className="short:min-h-10 short:py-2 flex min-h-12 items-center gap-2.5 rounded-[16px] px-3.5 py-3"
+      className="short:min-h-9 short:py-1.5 flex min-h-11 items-center gap-2.5 rounded-[16px] px-3.5 py-2.5"
       style={{ background: look.bg, boxShadow: look.ring }}
     >
       <Icon name={look.i} size={22} style={{ color: look.ic, flex: "none" }} />
@@ -447,7 +564,21 @@ export function FeedbackLine({ text, tone, icon }: Omit<FeedbackState, "n">) {
   );
 }
 
-function ToolButton({ c }: { c: ControlSpec }) {
+/**
+ * Tool row split: Restart / Reset go to the menu, at most MAX_TOOLS stay in the row (Hint always among them),
+ * the rest go to the menu too.
+ */
+export function splitTools(controls: ControlSpec[]): { row: ControlSpec[]; overflow: ControlSpec[]; restart?: ControlSpec } {
+  const restart = controls.find((c) => RESTART_TOOLS.has(c.id));
+  const rest = controls.filter((c) => !RESTART_TOOLS.has(c.id));
+  if (rest.length <= MAX_TOOLS) return { row: rest, overflow: [], restart };
+  const hint = rest.find((c) => c.id === "hint");
+  const others = rest.filter((c) => c !== hint);
+  const keep = others.slice(0, hint ? MAX_TOOLS - 1 : MAX_TOOLS);
+  return { row: hint ? [...keep, hint] : keep, overflow: others.slice(keep.length), restart };
+}
+
+function ToolButton({ c, badge, label }: { c: ControlSpec; badge?: string; label?: string }) {
   // The active tool is always visible: filled accent, aria-pressed="true" (audit: tool mode was invisible).
   const tone = c.active ? "active" : c.tone === "world" ? "world" : c.tone === "gold" ? "gold" : "default";
   const look =
@@ -464,7 +595,8 @@ function ToolButton({ c }: { c: ControlSpec }) {
       aria-pressed={c.active ?? undefined}
       data-press={c.active !== undefined ? "toggle" : SOFT_TOOLS.has(c.id) ? "soft" : undefined}
       data-no-tick={c.quiet || undefined}
-      className="toy short:h-12 short:gap-0.5 flex h-16 flex-col items-center justify-center gap-[3px] rounded-[18px]"
+      aria-label={label}
+      className="toy short:h-12 relative flex h-14 flex-col items-center justify-center gap-0.5 rounded-[16px]"
       style={
         c.disabled
           ? undefined
@@ -472,7 +604,15 @@ function ToolButton({ c }: { c: ControlSpec }) {
       }
     >
       <Icon name={c.icon} size={22} />
-      <span className="text-[13px] font-semibold">{c.label}</span>
+      <span className="text-[13px] leading-4 font-semibold">{c.label}</span>
+      {badge !== undefined && (
+        <span
+          aria-hidden
+          className="num bg-gold text-on-accent absolute -top-1.5 right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[12px] font-bold"
+        >
+          {badge}
+        </span>
+      )}
     </button>
   );
 }
