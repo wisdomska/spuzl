@@ -12,6 +12,8 @@ insert into public.crews (id, name, owner_id, join_code) values
 insert into public.crew_members (crew_id, player_id) values
   ('00000000-0000-0000-0000-00000000c0a1', '00000000-0000-0000-0000-0000000c1a51'),
   ('00000000-0000-0000-0000-00000000c0b2', '00000000-0000-0000-0000-0000000c1a52');
+-- Only this test's clash is due: clashes other runs left behind don't change the count (rolled back below).
+update public.crew_clashes set settled_at = now() where settled_at is null;
 -- last week's clash, with more XP for Alpha
 insert into public.crew_clashes (id, crew_a, crew_b, week_start) values
   ('00000000-0000-0000-0000-0000000c1a00', '00000000-0000-0000-0000-00000000c0a1', '00000000-0000-0000-0000-00000000c0b2',

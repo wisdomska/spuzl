@@ -27,7 +27,8 @@ insert into public.daily_results (date, game_id, player_id, time_ms, finished_at
   from unnest(array['00000000-0000-0000-0000-0000000008a0', '00000000-0000-0000-0000-0000000008a1']::uuid[]) id;
 
 -- Candidates
-select is((public.svc_league_candidates('00000000-0000-0000-0000-0000000008a0') -> 'candidates' -> 0 ->> 'friends')::int, 1,
+-- Other groups opened this week by other runs may be listed too: look for the friend's group.
+select is((select max((c ->> 'friends')::int) from jsonb_array_elements(public.svc_league_candidates('00000000-0000-0000-0000-0000000008a0') -> 'candidates') c), 1,
   'a new player sees their friend''s group, at any tier, with the friend count');
 select is((public.svc_league_candidates('00000000-0000-0000-0000-0000000008a0') ->> 'isNew')::boolean, true, 'a first-time player is new');
 select is((select count(*) from jsonb_array_elements(public.svc_league_candidates('00000000-0000-0000-0000-0000000008a1') -> 'candidates') c

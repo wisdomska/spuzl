@@ -664,6 +664,7 @@ describe("pagination on every admin list", () => {
       .select("id", { count: "exact" })
       .eq("status", "open")
       .neq("target_type", "nickname")
+      .neq("target_type", "party") // 18+ party content has its own tab
       .neq("reason", "nickname")
       .order("created_at", { ascending: false })
       .order("id", { ascending: false })
