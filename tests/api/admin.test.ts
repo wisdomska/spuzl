@@ -321,7 +321,7 @@ describe("content editor and two-person approval (FR-AD-03)", () => {
     expect(notContent.status).toBe(400);
   });
 
-  it("drafts, submits, refuses self-approval, approves by a second person, then schedules", async () => {
+  it("drafts, submits, refuses self-approval, approves by a second person; a retired game's item can't be scheduled", async () => {
     for (const [author, reviewer] of [
       ["content_editor", "owner"],
       ["owner", "content_editor"],
@@ -337,21 +337,17 @@ describe("content editor and two-person approval (FR-AD-03)", () => {
       expect([self.status, self.data.error]).toEqual([403, "own_item"]);
       const ok = await S[reviewer].aal2(`/api/admin/content/${id}/review`, { json: { decision: "approve", notes: "checked" } });
       expect(ok.data).toMatchObject({ status: "approved", reviewer_id: S[reviewer].userId });
-      const date = day(rand(25, 55));
-      await admin().from("dailies").update({ locked: false }).eq("date", date).eq("game_id", "hunch");
-      const sch = await S[author].aal2("/api/admin/dailies/schedule", { json: { itemId: id, date } });
-      expect(sch.status, JSON.stringify(sch.data)).toBe(200);
-      const daily = (await admin().from("dailies").select("puzzle_id").eq("date", date).eq("game_id", "hunch").single()).data!;
-      expect(daily.puzzle_id).toBe(sch.data.puzzleId);
-      const pz = (await admin().from("puzzles").select("source, content_item_id, data").eq("id", sch.data.puzzleId).single()).data!;
-      expect(pz).toMatchObject({ source: "human", content_item_id: id });
-      expect((await S.owner.aal2(`/api/admin/content/${id}`)).data.status).toBe("scheduled");
+      // Hunch is retired (lib/catalog RETIRED_IDS): its Dailies are read-only, so scheduling is refused.
+      const sch = await S[author].aal2("/api/admin/dailies/schedule", { json: { itemId: id, date: day(rand(25, 55)) } });
+      expect([sch.status, sch.data.error]).toEqual([409, "game_retired"]);
+      expect((await S.owner.aal2(`/api/admin/content/${id}`)).data.status).toBe("approved");
     }
   }, 60_000);
 
   it("refuses unapproved items and schedules guess games (checked by attempt)", async () => {
     const c = await S.content_editor.aal2("/api/admin/content", { json: { game: "hunch", payload: hunch() } });
     const r = await S.owner.aal2("/api/admin/dailies/schedule", { json: { itemId: c.data.id, date: day(40) } });
+    // Retired or not, an unapproved item is refused first.
     expect([r.status, r.data.error]).toEqual([409, "not_approved"]);
     const coil = await S.content_editor.aal2("/api/admin/content", {
       json: { game: "coil", payload: { theme: "Test", words: ["ABCDEF", "GHIJKL", "MNOPQR", "STUVWX", "YZABCD"] } },
@@ -810,37 +806,54 @@ describe("game settings (admin cascade)", () => {
 
 describe("Library metadata (SPZ-14 admin cascade)", () => {
   it("edits, validates, serves publicly, audits, and round-trips export and import", async () => {
-    const bad = await S.owner.aal2("/api/admin/games/meta", { method: "PATCH", json: { id: "quads", typicalSec: 2 } });
+    const bad = await S.owner.aal2("/api/admin/games/meta", { method: "PATCH", json: { id: "minicross", typicalSec: 2 } });
     expect([bad.status, bad.data.error]).toEqual([422, "invalid_meta"]);
-    const badTag = await S.owner.aal2("/api/admin/games/meta", { method: "PATCH", json: { id: "quads", tags: ["fun"] } });
+    const badTag = await S.owner.aal2("/api/admin/games/meta", { method: "PATCH", json: { id: "minicross", tags: ["fun"] } });
     expect(badTag.status).toBe(422);
     const set = await S.content_editor.aal2("/api/admin/games/meta", {
       method: "PATCH",
-      json: { id: "quads", typicalSec: 95, tags: ["quick", "competitive"] },
+      json: { id: "minicross", typicalSec: 95, tags: ["quick", "competitive"] },
     });
     expect(set.status).toBe(200);
     const pub = await fetch(`${BASE}/api/v1/games/meta`).then((r) => r.json());
-    expect(pub.quads).toEqual({ typicalSec: 95, tags: ["quick", "competitive"] });
+    expect(pub.minicross).toEqual({ typicalSec: 95, tags: ["quick", "competitive"] });
 
     const exp = (await S.owner.aal2("/api/admin/games/meta")).data.export;
-    expect(exp.quads).toEqual({ typicalSec: 95, tags: ["quick", "competitive"] });
-    await S.owner.aal2("/api/admin/games/meta", { method: "PATCH", json: { id: "quads", typicalSec: null, tags: null } });
-    expect((await S.owner.aal2("/api/admin/games/meta")).data.export.quads).toBeUndefined();
+    expect(exp.minicross).toEqual({ typicalSec: 95, tags: ["quick", "competitive"] });
+    await S.owner.aal2("/api/admin/games/meta", { method: "PATCH", json: { id: "minicross", typicalSec: null, tags: null } });
+    expect((await S.owner.aal2("/api/admin/games/meta")).data.export.minicross).toBeUndefined();
     const imp = await S.owner.aal2("/api/admin/games/meta", { method: "PUT", json: { rows: exp } });
     expect(imp.status).toBe(200);
     expect((await S.owner.aal2("/api/admin/games/meta")).data.export).toEqual(exp);
     // A bad row rejects the whole import before anything is saved.
     const mixed = await S.owner.aal2("/api/admin/games/meta", {
       method: "PUT",
-      json: { rows: { dusk: { typicalSec: 100 }, quads: { typicalSec: 1 } } },
+      json: { rows: { dusk: { typicalSec: 100 }, minicross: { typicalSec: 1 } } },
     });
     expect(mixed.status).toBe(422);
     expect((await S.owner.aal2("/api/admin/games/meta")).data.export.dusk).toBeUndefined();
 
-    expect((await S.moderator.aal2("/api/admin/games/meta", { method: "PATCH", json: { id: "quads", typicalSec: 90 } })).status).toBe(403);
-    const { data: log } = await admin().from("audit_log").select("id").eq("action", "game_meta.update").eq("target", "game:quads").limit(1);
+    expect((await S.moderator.aal2("/api/admin/games/meta", { method: "PATCH", json: { id: "minicross", typicalSec: 90 } })).status).toBe(
+      403,
+    );
+    const { data: log } = await admin()
+      .from("audit_log")
+      .select("id")
+      .eq("action", "game_meta.update")
+      .eq("target", "game:minicross")
+      .limit(1);
     expect(log?.length).toBe(1);
-    await S.owner.aal2("/api/admin/games/meta", { method: "PATCH", json: { id: "quads", typicalSec: null, tags: null } });
+    await S.owner.aal2("/api/admin/games/meta", { method: "PATCH", json: { id: "minicross", typicalSec: null, tags: null } });
+  });
+
+  it("lists retired games, marked, and refuses to change them", async () => {
+    const rows = (await S.owner.aal2("/api/admin/games/meta")).data.rows as { id: string; retired: boolean }[];
+    expect(rows.find((r) => r.id === "quads")).toMatchObject({ retired: true });
+    expect(rows.find((r) => r.id === "minicross")).toMatchObject({ retired: false });
+    const r = await S.owner.aal2("/api/admin/games/meta", { method: "PATCH", json: { id: "quads", typicalSec: 95 } });
+    expect([r.status, r.data.error]).toEqual([409, "game_retired"]);
+    const pub = await fetch(`${BASE}/api/v1/games/meta`).then((x) => x.json());
+    expect(pub.quads).toBeUndefined();
   });
 });
 

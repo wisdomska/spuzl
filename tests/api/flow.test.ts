@@ -193,7 +193,7 @@ describe("api: daily clear flow", () => {
     expect((await other.api("/api/games/rungs/guess", { json: { ref, guess } })).status).toBe(403);
     const c = await g.api("/api/v1/attempts", { json: { game: "crownfall", mode: "free", difficulty: "easy" } });
     expect((await g.api("/api/games/rungs/guess", { json: { ref, guess, attemptId: c.data.attemptId } })).status).toBe(400);
-    expect((await g.api("/api/games/quads/guess", { json: { ref, guess } })).status).toBe(404);
+    expect((await g.api("/api/games/coil/guess", { json: { ref, guess } })).status).toBe(404);
   });
 
   it("gives a hint before the first move (no state sent)", async () => {

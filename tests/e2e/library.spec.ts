@@ -1,17 +1,18 @@
 import { expect, test } from "@playwright/test";
 import { onboardGuest } from "./harness";
+import { GAME_COUNT } from "@/lib/catalog";
 
 /** SPZ-14: search, filter chips, one action per row opening the game card, no horizontal scroll. */
 test("library: search, filters and the game card", async ({ page }, info) => {
   await onboardGuest(page);
   await page.goto("/library");
   await expect(page.getByRole("heading", { name: "All games" })).toBeVisible();
-  await expect(page.getByText("51 games")).toBeVisible();
+  await expect(page.getByText(`${GAME_COUNT} games`)).toBeVisible();
 
   await page.getByRole("button", { name: "Quick", exact: true }).click();
   await expect(page.getByRole("button", { name: "Quick", exact: true })).toHaveAttribute("aria-pressed", "true");
   const quick = await page.getByText(/^\d+ games$/).textContent();
-  expect(Number(quick!.split(" ")[0])).toBeLessThan(51);
+  expect(Number(quick!.split(" ")[0])).toBeLessThan(GAME_COUNT);
   await page.getByRole("button", { name: "All", exact: true }).click();
 
   await page.getByRole("searchbox").fill("crownf");

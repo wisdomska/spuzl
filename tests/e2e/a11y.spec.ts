@@ -9,7 +9,7 @@ const SCREENS: { path: string; ready?: (p: import("@playwright/test").Page) => P
   { path: "/play/crownfall?mode=free", ready: (p) => waitForBoard(p) },
   { path: "/play/nine?mode=free", ready: (p) => waitForBoard(p) },
   { path: "/play/dusk?mode=free", ready: (p) => waitForBoard(p) },
-  { path: "/play/quads?mode=free", ready: (p) => waitForBoard(p) },
+  { path: "/play/minicross?mode=free", ready: (p) => waitForBoard(p) },
   { path: "/duel" },
   { path: "/party" },
   { path: "/friends" },

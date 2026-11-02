@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { GAME_COUNT } from "@/lib/catalog";
 
 /** SPZ-15 + SPZ-05: plain start choices, lesson flows into "Make Spuz yours", CTA names the destination, lesson counts today. */
 test("onboarding: lesson, merged celebration, named CTA, counted on Home", async ({ page }, info) => {
@@ -6,7 +7,7 @@ test("onboarding: lesson, merged celebration, named CTA, counted on Home", async
   await page.getByRole("button", { name: "Play as guest" }).click();
   await page.getByRole("radio", { name: /18 or older/ }).click();
   await page.getByRole("button", { name: "Continue" }).click();
-  await expect(page.getByRole("button", { name: /Browse all 51 games/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: `Browse all ${GAME_COUNT} games`, exact: false })).toBeVisible();
   await expect(page.getByRole("button", { name: /Go to the map/ })).toBeVisible();
   await page.getByRole("button", { name: /Learn a game in 30 seconds/ }).click();
   for (const [r, c] of [

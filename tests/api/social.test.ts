@@ -345,7 +345,7 @@ describe("api: School Cup", () => {
       json: {
         schoolCode: code,
         className: "Form 2B",
-        games: ["crownfall", "quads", "deadon"],
+        games: ["crownfall", "coil", "weave"],
         weekStart: monday,
         endsOn: friday,
         relaxed: true,

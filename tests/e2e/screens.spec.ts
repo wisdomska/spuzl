@@ -11,7 +11,7 @@ const PAGES: [string, string, boolean?][] = [
   ["play-crownfall", "/play/crownfall?mode=free", true],
   ["play-nine", "/play/nine?mode=free", true],
   ["play-dusk", "/play/dusk?mode=free", true],
-  ["play-quads", "/play/quads?mode=free", true],
+  ["play-minicross", "/play/minicross?mode=free", true],
   ["play-fourup", "/play/fourup?mode=free", true],
   ["bot-chess", "/play/chess/bot", true],
   ["duel", "/duel"],

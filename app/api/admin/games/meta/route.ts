@@ -34,7 +34,9 @@ export const GET = handle(async () => {
       }),
     ],
     export: Object.fromEntries(
-      (data ?? []).filter((r) => r.typical_sec != null || r.tags != null).map((r) => [r.id, { typicalSec: r.typical_sec, tags: r.tags }]),
+      (data ?? [])
+        .filter((r) => (r.typical_sec != null || r.tags != null) && !isRetired(r.id))
+        .map((r) => [r.id, { typicalSec: r.typical_sec, tags: r.tags }]),
     ),
   });
 });
