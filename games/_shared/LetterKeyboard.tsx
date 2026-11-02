@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { viaKeys } from "@/components/game/useGridKeys";
+import { useOnScreenKeys } from "@/components/game/useInputMode";
+import { keyboardCopy as K } from "@/lib/copy/keyboard";
 
 const ROWS = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
 
@@ -31,27 +33,44 @@ export interface LetterKeyboardProps {
   decorate?: (letter: string) => KeyDecor | undefined;
   /** short screens: ENTER takes the left key of the third row (no undo key, no fourth row) and keys are 44 px */
   compact?: boolean;
+  /** what Enter does, for the typing keys shown instead of the keyboard on a computer ("submit") */
+  enterDoes?: string;
 }
 
 /**
  * The SPUZL letter keyboard (Components: Letter keyboard). Three QWERTY rows with undo and backspace on
  * the third, then a world-colour ENTER. A pressed key pops a 1.3× preview above the finger. 48 px tall
  * keys; physical keys work too. `compact` saves a row: ENTER sits left on the third row, keys are 44 px.
+ *
+ * On a computer (a fine, hovering pointer: `useOnScreenKeys`) the keys give way to one line naming the
+ * typing keys, with a "Show keyboard" button for touch laptops; the physical keys work either way.
  */
-export function LetterKeyboard({
-  onLetter,
-  onBackspace,
-  onEnter,
-  onUndo,
-  undoLabel = "Undo",
-  enterLabel = "ENTER",
-  disabled,
-  listen = true,
-  decorate,
-  compact = false,
-}: LetterKeyboardProps) {
-  const [pressed, setPressed] = useState<string | null>(null);
+export function LetterKeyboard(props: LetterKeyboardProps) {
+  const keys = useOnScreenKeys();
+  const { physical, toggle } = keys;
+  // A decorated keyboard (Five's seen letters) is information as well as input: it stays.
+  const show = keys.show || !!props.decorate;
+  usePhysicalKeys(props);
+  if (!show) return <TypingKeys enterDoes={props.onEnter ? (props.enterDoes ?? K.submit) : undefined} onShow={toggle} />;
+  return (
+    <div className="flex w-full max-w-[400px] flex-col items-center gap-1.5">
+      <OnScreenKeys {...props} />
+      {physical && !props.decorate && (
+        <button
+          type="button"
+          onClick={toggle}
+          className="press text-muted flex h-9 items-center gap-1.5 rounded-[10px] px-2.5 text-[13px] font-semibold"
+        >
+          <Icon name="keyboard" size={16} />
+          {K.hide}
+        </button>
+      )}
+    </div>
+  );
+}
 
+/** Physical letters, Backspace and Enter, whether or not the on-screen keys show. */
+function usePhysicalKeys({ onLetter, onBackspace, onEnter, disabled, listen = true }: LetterKeyboardProps) {
   useEffect(() => {
     if (!listen || disabled) return;
     const on = (e: KeyboardEvent) => {
@@ -73,6 +92,79 @@ export function LetterKeyboard({
     window.addEventListener("keydown", on);
     return () => window.removeEventListener("keydown", on);
   }, [listen, disabled, onLetter, onBackspace, onEnter]);
+}
+
+/** A key cap drawn in text, for the typing-keys line. */
+export function Kbd({ children }: { children: React.ReactNode }) {
+  return (
+    <kbd
+      className="bg-surface-raised inline-flex h-7 min-w-7 items-center justify-center rounded-[8px] px-2 text-[13px] font-bold"
+      style={{ boxShadow: "0 2px 0 var(--depth)", fontFamily: "var(--font-ui)" }}
+    >
+      {children}
+    </kbd>
+  );
+}
+
+/**
+ * The computer's stand-in for the on-screen keys: which keys to press, on one line, and a button that brings
+ * the on-screen keys back (a touch laptop, or a player who prefers them).
+ */
+export function TypingKeys({ enterDoes, onShow, letters = true }: { enterDoes?: string; onShow?: () => void; letters?: boolean }) {
+  return (
+    <div
+      className="flex w-full flex-col items-start gap-1 rounded-[16px] px-3.5 pt-2.5 pb-1"
+      style={{ background: "var(--surface)" }}
+      role="group"
+      aria-label={K.typingGroup}
+      data-typing-keys
+    >
+      <p className={`m-0 flex flex-wrap items-center gap-x-3.5 gap-y-1.5 text-[14px] font-medium ${onShow ? "" : "pb-1.5"}`}>
+        {letters && (
+          <span className="inline-flex items-center gap-1.5">
+            <Kbd>A–Z</Kbd>
+            {K.typeLetters}
+          </span>
+        )}
+        {enterDoes && (
+          <span className="inline-flex items-center gap-1.5">
+            <Kbd>{K.enter}</Kbd>
+            <span className="text-muted">{K.enterDoes(enterDoes)}</span>
+          </span>
+        )}
+        <span className="inline-flex items-center gap-1.5">
+          <Kbd>
+            <Icon name="backspace" size={16} label={K.backspace} />
+          </Kbd>
+          <span className="text-muted">{K.backspaceDoes}</span>
+        </span>
+      </p>
+      {onShow && (
+        <button
+          type="button"
+          onClick={onShow}
+          className="press text-muted -ml-2 flex h-11 items-center gap-2 rounded-[12px] px-2 text-[14px] font-semibold"
+        >
+          <Icon name="keyboard" size={18} />
+          {K.show}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function OnScreenKeys({
+  onLetter,
+  onBackspace,
+  onEnter,
+  onUndo,
+  undoLabel = "Undo",
+  enterLabel = "ENTER",
+  disabled,
+  decorate,
+  compact = false,
+}: LetterKeyboardProps) {
+  const [pressed, setPressed] = useState<string | null>(null);
 
   const key = (id: string, label: React.ReactNode, act: () => void, opts: { wide?: boolean; aria?: string; decor?: KeyDecor } = {}) => (
     <button
@@ -126,7 +218,7 @@ export function LetterKeyboard({
       className={`flex w-full max-w-[400px] flex-col gap-1.5 rounded-[20px] p-2.5 ${compact ? "short:p-2" : ""}`}
       style={{ background: "var(--board-bg)" }}
       role="group"
-      aria-label="Letter keyboard"
+      aria-label={K.group}
     >
       {ROWS.map((row, ri) => (
         <div key={row} className="flex justify-center gap-1">
