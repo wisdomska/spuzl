@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Fixes
+
+- **"Different worlds" quests now count.** The daily "Clear a game in 3 different worlds" and the weekly "all 4
+  worlds" step never moved, which also stalled the weekly chain. They now count distinct worlds cleared in the day or week.
+- **3D tiles** for Trotro Jam, Emoji Hits and Beat Tap (they had none, so their cards showed a broken image).
+
 ### For players
 
 - **Draw It is live.** Everyone now watches the drawer's line appear as it is drawn, smoothly, instead of the whole

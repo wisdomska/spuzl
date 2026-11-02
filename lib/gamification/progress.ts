@@ -151,6 +151,35 @@ function questDelta(q: QuestDef, c: ClearContext): number {
   }
 }
 
+/**
+ * Distinct live worlds with a solo clear since `from` (an ISO date, UTC midnight), counting this clear's world too.
+ * The "different worlds" quests set progress to this count rather than adding one per clear.
+ */
+export async function worldsClearedSince(admin: SupabaseClient, playerId: string, from: string, current: WorldId): Promise<number> {
+  const { data } = await admin
+    .from("attempts")
+    .select("game_id")
+    .eq("player_id", playerId)
+    .eq("status", "cleared")
+    .in("mode", SOLO_MODES)
+    .gte("finished_at", `${from}T00:00:00Z`)
+    .limit(2000);
+  return countWorlds(
+    (data ?? []).map((r) => r.game_id as string),
+    current,
+  );
+}
+
+/** Pure part of worldsClearedSince: the number of distinct live worlds among these games plus `current`. */
+export function countWorlds(gameIds: string[], current: WorldId): number {
+  const worlds = new Set<string>([current]);
+  for (const id of gameIds) {
+    const w = GAME_BY_ID[id]?.world;
+    if (w && gamesInWorld(w as WorldId).length) worlds.add(w);
+  }
+  return worlds.size;
+}
+
 async function advanceQuests(admin: SupabaseClient, playerId: string, c: ClearContext): Promise<Unlock[]> {
   const today = new Date().toISOString().slice(0, 10);
   const week = weekStart();
@@ -162,6 +191,9 @@ async function advanceQuests(admin: SupabaseClient, playerId: string, c: ClearCo
   for (const [q, period] of list) {
     let delta = questDelta(q, c);
     if (q.goal.kind === "streak") delta = c.streak >= q.goal.n ? q.goal.n : 0;
+    // "Different worlds" quests: progress is the number of distinct worlds cleared in the period, set (not added).
+    const distinct = q.goal.kind === "worlds_today" || q.goal.kind === "worlds_week";
+    if (distinct) delta = isSolo(c.mode) ? await worldsClearedSince(admin, playerId, period, c.world) : 0;
     if (!delta) continue;
     const { data: row } = await admin
       .from("player_quests")
@@ -183,7 +215,10 @@ async function advanceQuests(admin: SupabaseClient, playerId: string, c: ClearCo
         .maybeSingle();
       if (!p?.completed_at) continue;
     }
-    const progress = q.goal.kind === "streak" ? delta : Math.min(q.goal.n, (row?.progress ?? 0) + delta);
+    const progress =
+      q.goal.kind === "streak" || distinct
+        ? Math.min(q.goal.n, Math.max(delta, row?.progress ?? 0))
+        : Math.min(q.goal.n, (row?.progress ?? 0) + delta);
     const done = progress >= q.goal.n;
     await admin.from("player_quests").upsert({
       player_id: playerId,
