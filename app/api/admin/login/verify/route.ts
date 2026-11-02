@@ -16,7 +16,7 @@ export const POST = handle(async (req: Request) => {
   const { data, error } = await codeClient().auth.verifyOtp({ email: user.email!, token: code, type: "email" });
   if (error || !data.user || data.user.id !== user.id)
     throw new ApiError(400, "bad_code", "That code didn't work. Check it, or send a new one.");
-  if (data.session) await db.auth.admin.signOut(data.session.access_token).catch(() => undefined);
+  if (data.session) await db.auth.admin.signOut(data.session.access_token, "local").catch(() => undefined);
 
   const { error: e } = await db
     .from("admin_verified_sessions")
