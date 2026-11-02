@@ -17,6 +17,7 @@
 --   badges: the 4 Explorer badges take their group's name, description and icon ("Clear every game in Puzzles").
 --     The Explorer badges of the hidden worlds stay (no earned row is touched); the app hides them unless earned.
 --     Untouched (secret, zero deaths) now names the action courses, which left Rage Ridge.
+--   quests: world quests name their group; the weekly worlds step asks for 4 worlds (there are no longer 5).
 -- Every row the copy and the event update touch is recorded in private.world_regroup_undo (forced RLS, no
 -- policies, service role only), so the rollback below restores exactly what was there.
 --
@@ -47,6 +48,11 @@
 --     ('explorer-board', 'Board Bay Explorer', 'Clear every game in Board Bay.', 'horse', 9))
 --     as v(id, name, description, icon, sort) where b.id = v.id;
 --   update public.badges set description = 'Clear a Rage Ridge course with zero deaths.' where id = 'secret-pacifist';
+--   update public.quests q set title = v.title, goal = v.goal::jsonb from (values
+--     ('d-clear-2-word', 'Clear 2 Word Woods games', '{"kind":"world_clears","world":"word","n":2}'),
+--     ('d-clear-2-logic', 'Clear 2 Logic Lab games', '{"kind":"world_clears","world":"logic","n":2}'),
+--     ('d-board', 'Clear a Board Bay puzzle', '{"kind":"world_clears","world":"board","n":1}'),
+--     ('w-3', 'Clear games in 5 worlds', '{"kind":"worlds_week","n":5}')) as v(id, title, goal) where q.id = v.id;
 --   delete from supabase_migrations.schema_migrations where version = '20261121000001';
 
 -- ---------- undo log ----------
@@ -138,3 +144,16 @@ from (values
 where b.id = v.id;
 
 update public.badges set description = 'Clear a Gotcha, Dash or Gauntlet course with zero deaths.' where id = 'secret-pacifist';
+
+-- ---------- quests ----------
+-- World quests name their group; the weekly "worlds" step asks for all 4 worlds (5 of 4 could never be met).
+-- player_quests rows are untouched: their target is rewritten from the code on the next progress.
+update public.quests q
+set title = v.title, goal = v.goal::jsonb
+from (values
+  ('d-clear-2-word', 'Clear 2 games in Words & Quiz', '{"kind":"world_clears","world":"word","n":2}'),
+  ('d-clear-2-logic', 'Clear 2 games in Puzzles', '{"kind":"world_clears","world":"logic","n":2}'),
+  ('d-board', 'Clear a Board Games puzzle', '{"kind":"world_clears","world":"board","n":1}'),
+  ('w-3', 'Clear games in all 4 worlds', '{"kind":"worlds_week","n":4}')
+) as v(id, title, goal)
+where q.id = v.id;

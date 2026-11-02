@@ -42,7 +42,7 @@ export function ResultsScreen({
   mistakes: number;
   relaxed: boolean;
   color: string;
-  /** primary: the named next game on the Home path ("Next in Logic Lab: Dusk") */
+  /** primary: the named next game on the Home path ("Next in Puzzles: Dusk") */
   /** playNav: the action opens another game (tap-to-board metric). */
   next: { label: string; onClick: () => void; playNav?: boolean };
   /** secondary: another puzzle of this game, same difficulty */

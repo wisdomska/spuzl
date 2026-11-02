@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(11);
+select plan(12);
 
 -- Migration 20261121000001 plus the seed: the 29 live games sit in 4 groups; the other worlds keep their rows and
 -- only retired games.
@@ -30,6 +30,11 @@ select results_eq(
 select ok(exists (select 1 from public.badges where id = 'explorer-rage'), 'hidden worlds keep their Explorer badge');
 select ok((select relrowsecurity and relforcerowsecurity from pg_class where oid = 'private.world_regroup_undo'::regclass),
   'the undo log has forced RLS');
+select results_eq(
+  $$select title, (goal ->> 'n')::int from public.quests where id = 'w-3'$$,
+  $$values ('Clear games in all 4 worlds', 4)$$,
+  'the weekly worlds step fits the 4 groups'
+);
 
 -- The rating copy, replayed on fixture rows: a folded track is copied into its group when the player has none
 -- there (most games wins), and never overwrites one the player already has.

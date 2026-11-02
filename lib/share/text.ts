@@ -151,7 +151,7 @@ export function partyShareText(p: PartyShare): string {
  *
  *   SPUZL · Kofi · Solver II
  *   Lv 15 · 🔥 12 days · 17 of 29 games tried
- *   Favourite world: Logic Lab
+ *   Favourite world: Puzzles
  *   spuzl.gg
  */
 export function statusShareText(m: StatusCardModel): string {

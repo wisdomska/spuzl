@@ -119,18 +119,18 @@ insert into public.badges (id, family, tier, name, description, secret, sparks, 
   ('secret-pacifist', 'secret', 'prism', 'Untouched', 'Clear a Gotcha, Dash or Gauntlet course with zero deaths.', true, 100, '{"kind":"zero_deaths","n":1,"icon":"ghost"}'::jsonb, 41)
 on conflict (id) do update set name = excluded.name, description = excluded.description, sparks = excluded.sparks, rule = excluded.rule, sort = excluded.sort;
 insert into public.quests (id, kind, title, goal, xp, sparks, step) values
-  ('d-clear-2-word', 'daily', 'Clear 2 Word Woods games', '{"kind":"world_clears","world":"word","n":2}'::jsonb, 40, 15, null),
-  ('d-clear-2-logic', 'daily', 'Clear 2 Logic Lab games', '{"kind":"world_clears","world":"logic","n":2}'::jsonb, 40, 15, null),
+  ('d-clear-2-word', 'daily', 'Clear 2 games in Words & Quiz', '{"kind":"world_clears","world":"word","n":2}'::jsonb, 40, 15, null),
+  ('d-clear-2-logic', 'daily', 'Clear 2 games in Puzzles', '{"kind":"world_clears","world":"logic","n":2}'::jsonb, 40, 15, null),
   ('d-clear-3', 'daily', 'Clear 3 puzzles', '{"kind":"daily_clears","n":3}'::jsonb, 50, 20, null),
   ('d-no-hint', 'daily', 'Clear a puzzle without hints', '{"kind":"no_hint_clears","n":1}'::jsonb, 30, 10, null),
   ('d-beat-friend', 'daily', 'Beat a friend''s time', '{"kind":"beat_friend","n":1}'::jsonb, 60, 20, null),
   ('d-duel', 'daily', 'Play a Duel', '{"kind":"duels","n":1}'::jsonb, 50, 15, null),
   ('d-free-3', 'daily', 'Clear 3 Free play puzzles', '{"kind":"free_clears","n":3}'::jsonb, 30, 10, null),
   ('d-new-world', 'daily', 'Clear a game in 3 different worlds', '{"kind":"worlds_today","n":3}'::jsonb, 80, 30, null),
-  ('d-board', 'daily', 'Clear a Board Bay puzzle', '{"kind":"world_clears","world":"board","n":1}'::jsonb, 40, 15, null),
+  ('d-board', 'daily', 'Clear a Board Games puzzle', '{"kind":"world_clears","world":"board","n":1}'::jsonb, 40, 15, null),
   ('w-1', 'weekly', 'Clear 5 puzzles', '{"kind":"daily_clears","n":5}'::jsonb, 60, 20, 1),
   ('w-2', 'weekly', 'Win 2 Duels or Races', '{"kind":"mp_wins","n":2}'::jsonb, 80, 25, 2),
-  ('w-3', 'weekly', 'Clear games in 5 worlds', '{"kind":"worlds_week","n":5}'::jsonb, 100, 30, 3),
+  ('w-3', 'weekly', 'Clear games in all 4 worlds', '{"kind":"worlds_week","n":4}'::jsonb, 100, 30, 3),
   ('w-4', 'weekly', 'Clear 25 puzzles', '{"kind":"daily_clears","n":25}'::jsonb, 150, 50, 4),
   ('w-5', 'weekly', 'Keep a 7 day streak', '{"kind":"streak","n":7}'::jsonb, 200, 100, 5)
 on conflict (id) do update set title = excluded.title, goal = excluded.goal, xp = excluded.xp, sparks = excluded.sparks, step = excluded.step;

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { BADGES } from "@/lib/gamification/badges";
-import { ALL_WORLDS, GAME_BY_ID, WORLDS, gamesInWorld } from "@/lib/catalog";
+import { ALL_WORLDS, GAME_BY_ID, WORLDS, WORLD_BY_ID, gamesInWorld, isLiveWorld, type WorldId } from "@/lib/catalog";
+import { DAILY_POOL, WEEKLY_CHAIN } from "@/lib/gamification/quests";
 import {
   addDays,
   archiveAccess,
@@ -63,6 +64,18 @@ describe("badges", () => {
     expect(BADGES.find((b) => b.id === "explorer-logic")!.name).toBe("Puzzles Explorer");
     // Folded worlds keep their badge (earned rows still show), under their old name.
     expect(BADGES.find((b) => b.id === "explorer-rage")!.name).toBe("Rage Ridge Explorer");
+  });
+});
+
+describe("quests and the 4 groups", () => {
+  it("only asks for worlds players can open, and never more worlds than there are", () => {
+    for (const q of [...DAILY_POOL, ...WEEKLY_CHAIN]) {
+      if (q.goal.world) {
+        expect(isLiveWorld(q.goal.world), q.id).toBe(true);
+        expect(q.title, q.id).toContain(WORLD_BY_ID[q.goal.world as WorldId].name);
+      }
+      if (q.goal.kind.startsWith("worlds_")) expect(q.goal.n, q.id).toBeLessThanOrEqual(WORLDS.length);
+    }
   });
 });
 
