@@ -244,3 +244,10 @@ leftover test players and is not a product issue. Found and fixed: missing 3D ti
 Unit 151 files, 1469 tests; API 17 files, 172 tests; E2E, realtime and visual 195+ passed (the leave spec's timed-run
 cases now wait for Quickfire's Start button). Checked on production with a throwaway account (deleted after):
 profile with birth month and year, presence heartbeat, and a Trotro Jam free clear (+10 XP, +5 Sparks, streak 1).
+
+## 1.10.0 device pass (2 November 2026)
+
+Every live game screenshotted at 360×740, 375×667, 390×844, 768×1024, 1024×768, 1280×720, 1326×645, 1366×768,
+1440×900 and 1920×1080 (fine and coarse pointer), fixed, and shot again. Unit 153 files, 1481 tests; API 17 files,
+172 tests (one timing flake passed on rerun); E2E 183 passed; realtime and visual 21 passed. No horizontal scroll at
+any size; no vertical scroll at 375×667 or 1326×645.

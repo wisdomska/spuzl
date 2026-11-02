@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.10.0 (2 November 2026)
 
 ### For players
 
