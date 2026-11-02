@@ -11,7 +11,10 @@ import { useBay, useEmotes, useProfileGate, useServerNow } from "@/lib/client/mu
 import { GAME_BY_ID } from "@/lib/catalog";
 import { formatClock, formatNumber } from "@/lib/format";
 import { play } from "@/lib/audio";
-import { BAY_GAMES, loadRules, type AnyRules, type BayGame, type BayRulesGame } from "@/lib/multiplayer/bay";
+import { BAY_GAMES, isBayGame, loadRules, type AnyRules, type BayGame, type BayRulesGame } from "@/lib/multiplayer/bay";
+import { bayLive } from "@/lib/copy/bay-live";
+import { useSettings } from "@/lib/settings/store";
+import { BaySearch } from "./BaySearch";
 import type { BayView } from "@/lib/multiplayer/types";
 import { ShareCode } from "../party";
 import { Avatar, Cta, EmoteBar, EmoteBubble, LoadingScreen, MpToast, NeedProfile, Screen, TopButton, useToast } from "../ui";
@@ -22,16 +25,22 @@ import { LiveBoard } from "./boards";
 export function BayInbox() {
   const gate = useProfileGate();
   const router = useRouter();
+  const sp = useSearchParams();
+  const liveParam = sp.get("live");
+  const newParam = sp.get("new");
+  const liveGame = liveParam && isBayGame(liveParam) ? liveParam : null;
+  const newGame = newParam && isBayGame(newParam) ? newParam : null;
   const { toast, show } = useToast();
-  const [sheet, setSheet] = useState(false);
+  const [sheet, setSheet] = useState(!!newGame);
   const q = useQuery({
     queryKey: ["bay-inbox"],
-    enabled: gate === "ready",
+    enabled: gate === "ready" && !liveGame,
     queryFn: () => api<{ games: InboxGame[] }>("/api/v1/bay"),
     refetchInterval: 30_000,
   });
   if (gate === "loading") return <LoadingScreen />;
   if (gate === "no_profile") return <NeedProfile />;
+  if (liveGame) return <BaySearch key={liveGame} game={liveGame} />;
   const action = async (id: string, a: "nudge" | "rematch") => {
     try {
       const v = await api<BayView>(`/api/v1/bay/${id}/action`, { json: { action: a } });
@@ -61,13 +70,31 @@ export function BayInbox() {
           onNewGame={() => setSheet(true)}
         />
       )}
-      {sheet && <NewBaySheet onClose={() => setSheet(false)} onCreated={(id) => router.push(`/bay/${id}`)} />}
+      {sheet && (
+        <NewBaySheet
+          initialGame={newGame ?? "chess"}
+          onClose={() => setSheet(false)}
+          onCreated={(id) => router.push(`/bay/${id}`)}
+          onLive={(g) => router.push(`/bay?live=${g}`)}
+        />
+      )}
     </Screen>
   );
 }
 
-function NewBaySheet({ onClose, onCreated }: { onClose: () => void; onCreated: (id: string) => void }) {
-  const [game, setGame] = useState<BayGame>("chess");
+function NewBaySheet({
+  initialGame,
+  onClose,
+  onCreated,
+  onLive,
+}: {
+  initialGame: BayGame;
+  onClose: () => void;
+  onCreated: (id: string) => void;
+  onLive: (game: BayGame) => void;
+}) {
+  const relaxed = useSettings((s) => s.relaxed);
+  const [game, setGame] = useState<BayGame>(initialGame);
   const [mode, setMode] = useState<"live" | "async">("async");
   const [busy, setBusy] = useState(false);
   const create = async (bot: boolean) => {
@@ -127,6 +154,11 @@ function NewBaySheet({ onClose, onCreated }: { onClose: () => void; onCreated: (
         <Cta onClick={() => create(false)} disabled={busy} icon="user-plus">
           Invite a friend
         </Cta>
+        {!relaxed && (
+          <Cta tone="raised" onClick={() => onLive(game)} disabled={busy} icon="lightning">
+            {bayLive.playLive}
+          </Cta>
+        )}
         <button type="button" onClick={() => create(true)} disabled={busy} className="text-muted min-h-12 text-[16px] font-semibold">
           Play the Practice bot
         </button>
