@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.5.1 (2 November 2026)
+
+### For admins
+
+- **No more authenticator app.** Admin sign-in is your password, then a 6-digit code we email you (the same
+  Brevo codes players get). A correct code opens the console on that browser for 12 hours. Old authenticator
+  factors are removed the first time you verify by email, and every verification is in the audit log
+  (`admin.email_code_verified`). Non-admin accounts are refused right after the password; no code is sent to them.
+- Migration `20261115000001_admin_email_code.sql` adds the server-only `admin_verified_sessions` table.
+
 ## 1.5.0 (2 November 2026)
 
 Sound, motion and haptics everywhere, a logo intro with a swoosh and a thump, and fairer content games.

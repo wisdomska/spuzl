@@ -108,3 +108,11 @@ Additive and reversible (rollback SQL in the header). No existing rows change.
 pgTAP: `103_adult_block_reopen`. The migration, the pgTAP file and the rollback were each run locally inside a
 transaction that was rolled back. If the code ships first, reopening an actioned party report works as before
 (the report reopens, the block stays).
+
+## 1.5.1
+
+| Migration                             | What it adds                                                                                           | Rollback                                               |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
+| `20261115000001_admin_email_code.sql` | `admin_verified_sessions` (forced RLS, service role only): sign-in sessions that passed the email code | `drop table if exists public.admin_verified_sessions;` |
+
+pgTAP: `104_admin_verified_sessions`. Apply before the code deploys, or admins see "aal2 required" until it lands.

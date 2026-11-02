@@ -120,7 +120,7 @@ describe("admin gate", () => {
           .replace(/catalog\/quests/, "catalog/[kind]"),
       ),
     );
-    const routes = files.map((f) => f.replace("app", "")).filter((p) => p !== "/api/admin/bootstrap");
+    const routes = files.map((f) => f.replace("app", "")).filter((p) => p !== "/api/admin/bootstrap" && !p.startsWith("/api/admin/login/")); // the code step runs before the full gate
     expect(routes.filter((p) => !covered.has(p))).toEqual([]);
   });
 
