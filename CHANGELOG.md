@@ -1,5 +1,40 @@
 # Changelog
 
+## Unreleased
+
+### For players
+
+- **Games use big screens.** On tablets in landscape, laptops and desktops (900 × 600 and up) every game splits
+  into two columns: the board on the left, grown to the height under the top bar (up to 760 px, and 80 % of the
+  screen height), and a side panel on the right with whose turn it is, the move list or captured pieces, clue
+  lists, words found, the feedback line and the tools. Chess vs the bot at 1280 × 800 goes from a 384 px board to
+  624 px; Minicross, Coil, Buried, Rungs and Seven move their clues, word lists and keyboards to the panel. Live
+  Board Bay games, bot games, Duels and Party races follow the same layout. Phones and tablets held upright keep
+  the single column. Turning a tablet or resizing a window never restarts the game.
+- **Leave any game, any way.** Back, the new **Leave game** in the ⋯ menu, the browser or phone back gesture and
+  Escape (when nothing else is open) all lead out:
+  - Free play and levels leave at once. The puzzle is saved and its game card says **Resume**; opening it again
+    carries on with the same puzzle, moves and time. Guided practice and casual games vs the bot leave at once
+    too (they are short and start over).
+  - A timed scored run that has started (Quickfire, Echo, Flinch, Beat Tap, Gotcha, Dash, Gauntlet) asks once:
+    "Leave this round? Your progress here won't count." Keep playing is the default.
+  - A live Duel or live Board Bay game asks "Leave the match? Your opponent wins this one." and tells them at once;
+    a Party race asks first too ("You'll leave the room."). A Practice-bot Duel leaves without asking.
+  - Only these confirms use the back gesture, and a second back always leaves.
+
+### Under the hood
+
+- `components/game/useBoardSize.ts`: `isWide`, `boardBox` and `wideCell` (the two-column rule); `useCellSize` takes
+  the row count for tall boards; `fitCell` takes the viewport height. `components/game/ShellAside.tsx` moves board
+  content into the side panel on wide screens (a portal, so state is untouched). CSS variant `wide`.
+- Leave policy in `lib/game/leave.ts` (pure, unit tested), the shared `useLeave` hook (confirm, one-entry history
+  guard, Escape, keepalive leave calls) and `LeaveConfirm` dialog. Duel, Party and Board Bay screens own leaving for
+  the whole match; their old leave sheet is gone.
+- `POST /api/v1/attempts` takes `resume`: the player's own free-play or level attempt, still open and under 36 hours
+  old, comes back with its saved state and time; anything else starts fresh. The client keeps a per-game note
+  (`lib/client/resume.ts`) and flushes the last moves with a keepalive save when the page goes away. Abandoned
+  attempts are unchanged: never finished, marked abandoned by the daily housekeeping, nothing awarded.
+
 ## 1.8.0 (2 November 2026)
 
 ### Fixes
