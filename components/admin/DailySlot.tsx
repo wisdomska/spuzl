@@ -27,7 +27,20 @@ export interface Slot {
 const C = adminCopy.dailySlot;
 
 /** A calendar cell opened: the preview when a Daily exists, otherwise a way to fill the gap. */
-export function DailySlot({ game, date, canWrite, canSwap }: { game: string; date: string; canWrite: boolean; canSwap: boolean }) {
+export function DailySlot({
+  game,
+  date,
+  canWrite,
+  canSwap,
+  retired = false,
+}: {
+  game: string;
+  date: string;
+  canWrite: boolean;
+  canSwap: boolean;
+  /** Retired game: read-only, with a note saying so. */
+  retired?: boolean;
+}) {
   const q = useAdminQuery<Slot>(["daily", game, date], `/api/admin/dailies?date=${date}&game=${game}`);
   const gen = useAdminAction<{ date: string; game: string }>("POST", "/api/admin/dailies/regenerate");
   if (q.isPending) return <RowsSkeleton rows={6} height={44} />;
@@ -39,8 +52,20 @@ export function DailySlot({ game, date, canWrite, canSwap }: { game: string; dat
         </Notice>
       </div>
     );
+  const note = retired && (
+    <div className="px-6 pt-5">
+      <Notice tone="warn" icon="info">
+        {adminCopy.retired.slotNote}
+      </Notice>
+    </div>
+  );
   if (q.data.slot)
-    return <PuzzlePreview puzzleId={q.data.slot.puzzle_id} game={game} date={date} slot={q.data} canWrite={canWrite} canSwap={canSwap} />;
+    return (
+      <>
+        {note}
+        <PuzzlePreview puzzleId={q.data.slot.puzzle_id} game={game} date={date} slot={q.data} canWrite={canWrite} canSwap={canSwap} />
+      </>
+    );
   const meta = GAME_BY_ID[game];
   return (
     <div className="flex flex-col gap-4 px-6 py-5">
@@ -56,7 +81,9 @@ export function DailySlot({ game, date, canWrite, canSwap }: { game: string; dat
           {meta.name} · {dayMonth(date)}
         </h1>
         <Pill tone="danger">{C.missing}</Pill>
+        {retired && <Pill tone="neutral">{adminCopy.retired.pill}</Pill>}
       </div>
+      {note}
       <div className="bg-surface max-w-[640px] rounded-[12px]">
         <Empty icon="warning">
           <span>{C.none(meta.name, dayMonth(date), q.data.difficulty)}</span>

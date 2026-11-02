@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { GAMES, GAME_BY_ID } from "@/lib/catalog";
+import { ALL_GAMES, GAME_BY_ID } from "@/lib/catalog";
 import { dayMonth } from "@/lib/admin/dates";
 import { PUZZLE_SORT } from "@/lib/admin/sorting";
 import { errorText, useAdminQuery, type AdminPage } from "@/lib/client/admin";
@@ -30,7 +30,8 @@ const { common } = adminCopy;
 const STATUSES = ["in_review", "scheduled", "approved", "draft", "retired"];
 const SOURCES = ["generated", "human"];
 const FILTERS = { game: "", status: "", source: "" } as const;
-const ALLOWED = { game: GAMES.map((g) => g.id), status: STATUSES, source: SOURCES };
+// Every game in code, retired ones too (marked), so their old puzzles stay findable.
+const ALLOWED = { game: ALL_GAMES.map((g) => g.id), status: STATUSES, source: SOURCES };
 type SortKey = (typeof PUZZLE_SORT.keys)[number];
 const COLS: HeadCol<SortKey>[] = [
   { label: C.head[0], sort: "game" },
@@ -78,9 +79,9 @@ export function PuzzleLibrary() {
               className={`${inputCls} w-44`}
             >
               <option value="">{common.allGames}</option>
-              {GAMES.map((g) => (
+              {ALL_GAMES.map((g) => (
                 <option key={g.id} value={g.id}>
-                  {g.name}
+                  {g.retired ? adminCopy.retired.option(g.name) : g.name}
                 </option>
               ))}
             </select>

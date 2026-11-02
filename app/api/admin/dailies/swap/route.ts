@@ -3,7 +3,7 @@ import { body, handle, ok, ApiError } from "@/lib/api/server";
 import { requireAdmin } from "@/lib/admin/auth";
 import { hasLogic } from "@/games/logic-registry";
 import { ISO_DATE, todayIso } from "@/lib/admin/dates";
-import { getDaily, verifiedFreshPuzzle } from "@/lib/admin/dailies";
+import { assertSchedulable, getDaily, verifiedFreshPuzzle } from "@/lib/admin/dailies";
 
 const Body = z.object({
   game: z.string().min(2).max(20),
@@ -20,6 +20,7 @@ export const POST = handle(async (req: Request) => {
   const ctx = await requireAdmin("daily.swap");
   const { game, reason, date = todayIso() } = await body(req, Body);
   if (!hasLogic(game)) throw new ApiError(404, "unknown_game");
+  assertSchedulable(game);
   if (date < todayIso()) throw new ApiError(409, "past_date");
   const current = await getDaily(ctx.db, date, game);
   if (!current) throw new ApiError(404, "daily_not_found");

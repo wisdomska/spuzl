@@ -1,20 +1,38 @@
 import { z } from "zod";
 import { ApiError, body, handle, ok } from "@/lib/api/server";
 import { audit, requireAdmin } from "@/lib/admin/auth";
-import { DEFAULT_META, validateMeta } from "@/lib/games-meta";
+import { DEFAULT_META, defaultMetaFor, validateMeta } from "@/lib/games-meta";
+import { RETIRED_GAMES, isRetired } from "@/lib/catalog";
 import { mergeMeta } from "@/lib/games-meta/server";
 
-/** GET /api/admin/games/meta: every game's Library metadata, defaults and overrides (also the export format). */
+/**
+ * GET /api/admin/games/meta: every game's Library metadata, defaults and overrides (also the export format).
+ * Retired games are listed last, marked `retired`, and cannot be changed.
+ */
 export const GET = handle(async () => {
   const ctx = await requireAdmin("content.read");
   const { data, error } = await ctx.db.from("games").select("id, typical_sec, tags");
   if (error) throw error;
   const current = mergeMeta(data ?? []);
   return ok({
-    rows: Object.keys(DEFAULT_META).map((id) => {
-      const r = (data ?? []).find((x) => x.id === id);
-      return { id, ...current[id], default: DEFAULT_META[id], overridden: r?.typical_sec != null || r?.tags != null };
-    }),
+    rows: [
+      ...Object.keys(DEFAULT_META).map((id) => {
+        const r = (data ?? []).find((x) => x.id === id);
+        return { id, ...current[id], default: DEFAULT_META[id], overridden: r?.typical_sec != null || r?.tags != null, retired: false };
+      }),
+      ...RETIRED_GAMES.map((g) => {
+        const def = defaultMetaFor(g.id);
+        const r = (data ?? []).find((x) => x.id === g.id);
+        return {
+          id: g.id,
+          typicalSec: r?.typical_sec ?? def.typicalSec,
+          tags: r?.tags ?? def.tags,
+          default: def,
+          overridden: r?.typical_sec != null || r?.tags != null,
+          retired: true,
+        };
+      }),
+    ],
     export: Object.fromEntries(
       (data ?? []).filter((r) => r.typical_sec != null || r.tags != null).map((r) => [r.id, { typicalSec: r.typical_sec, tags: r.tags }]),
     ),
@@ -29,6 +47,7 @@ const Patch = z.object({ id: z.string().min(2).max(24) }).merge(Row);
 const Import = z.object({ rows: z.record(z.string().min(2).max(24), Row) });
 
 async function apply(ctx: Awaited<ReturnType<typeof requireAdmin>>, id: string, r: z.infer<typeof Row>) {
+  if (isRetired(id)) throw new ApiError(409, "game_retired", id);
   if (!DEFAULT_META[id]) throw new ApiError(404, "unknown_game", id);
   const problem = validateMeta({ typicalSec: r.typicalSec ?? undefined, tags: r.tags ?? undefined });
   if (problem) throw new ApiError(422, "invalid_meta", `${id}: ${problem}`);
@@ -54,6 +73,7 @@ export const PUT = handle(async (req: Request) => {
   const ctx = await requireAdmin("content.write");
   const { rows } = await body(req, Import);
   for (const [id, r] of Object.entries(rows)) {
+    if (isRetired(id)) throw new ApiError(409, "game_retired", id);
     if (!DEFAULT_META[id]) throw new ApiError(404, "unknown_game", id);
     const problem = validateMeta({ typicalSec: r.typicalSec ?? undefined, tags: r.tags ?? undefined });
     if (problem) throw new ApiError(422, "invalid_meta", `${id}: ${problem}`);

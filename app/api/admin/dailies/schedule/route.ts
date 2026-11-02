@@ -6,7 +6,7 @@ import { ISO_DATE, todayIso } from "@/lib/admin/dates";
 import { SCHEDULABLE, isContentGame } from "@/lib/admin/content-schemas";
 import { buildFromItem } from "@/lib/admin/content-files";
 import { checkAndStore, getPuzzle, canonicalHash, insertPuzzle } from "@/lib/admin/puzzles";
-import { getDaily, retireIfUnused } from "@/lib/admin/dailies";
+import { assertSchedulable, getDaily, retireIfUnused } from "@/lib/admin/dailies";
 
 const Body = z.object({ itemId: z.string().uuid(), date: z.string().regex(ISO_DATE) });
 
@@ -23,6 +23,7 @@ export const POST = handle(async (req: Request) => {
   if (!item) throw new ApiError(404, "item_not_found");
   if (item.status !== "approved") throw new ApiError(409, "not_approved", "Only approved items can be scheduled.");
   const game = item.game_id as string;
+  assertSchedulable(game);
   const plan = isContentGame(game) ? SCHEDULABLE[game] : undefined;
   if (!plan) throw new ApiError(409, "not_schedulable", "Items for this game join the content pool instead of a single Daily.");
   const current = await getDaily(ctx.db, date, game);
