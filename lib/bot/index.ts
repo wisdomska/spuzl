@@ -1,6 +1,6 @@
 /**
  * "Play a full game vs bot": casual games against a computer opponent for the Board Bay games (the six
- * launch games plus the lab game Dara, which is only reachable while "features.newGames" is on).
+ * launch games; Flip and Dara are retired, so `/play/<id>/bot` refuses them: lib/catalog.ts RETIRED_IDS).
  * Everything runs on the device with the same match rules the server uses for Board Bay; nothing is
  * sent anywhere and nothing is rewarded, so there is nothing for the server to enforce.
  */

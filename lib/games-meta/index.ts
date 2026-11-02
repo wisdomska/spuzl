@@ -3,7 +3,7 @@
  * These are the defaults; the admin console can override them per game (games.typical_sec and games.tags),
  * read at runtime through useGamesMeta().
  */
-import { GAMES, LAB_GAMES } from "@/lib/catalog";
+import { GAMES, GAME_BY_ID, LAB_GAMES } from "@/lib/catalog";
 import { isRaceGame } from "@/lib/multiplayer/games";
 
 export const TAGS = ["quick", "calm", "competitive"] as const;
@@ -78,7 +78,7 @@ export const TYPICAL_SEC: Record<string, number> = {
 const PRESSURE = new Set(["merge", "quickfire", "flagged", "deadon", "seven"]);
 
 export function defaultTags(id: string): Tag[] {
-  const g = [...GAMES, ...LAB_GAMES].find((x) => x.id === id);
+  const g = GAME_BY_ID[id];
   if (!g) return [];
   const tags: Tag[] = [];
   if ((TYPICAL_SEC[id] ?? 180) < 120) tags.push("quick");
@@ -89,8 +89,12 @@ export function defaultTags(id: string): Tag[] {
 
 export type GameMetaRow = { typicalSec: number; tags: Tag[] };
 
+/** The default row for any game in code (retired ones too, for the admin Library list). */
+export const defaultMetaFor = (id: string): GameMetaRow => ({ typicalSec: TYPICAL_SEC[id] ?? 180, tags: defaultTags(id) });
+
+/** Defaults for the games players can reach (live and lab). Retired games are left out. */
 export const DEFAULT_META: Record<string, GameMetaRow> = Object.fromEntries(
-  [...GAMES, ...LAB_GAMES].map((g) => [g.id, { typicalSec: TYPICAL_SEC[g.id] ?? 180, tags: defaultTags(g.id) }]),
+  [...GAMES, ...LAB_GAMES].map((g) => [g.id, defaultMetaFor(g.id)]),
 );
 
 /** "About 2 min" style label; under a minute shows "Under 1 min". */
