@@ -38,13 +38,16 @@ const Body = z.object({ decision: z.enum(["dismiss", "actioned", "reopen"]), not
 
 /**
  * POST /api/admin/moderation/reports/:id: closes a report as dismissed or actioned (or reopens it). Actioning
- * an 18+ party content report also blocks the reported player from 18+ party rooms ("adultParty.blockDays").
+ * an 18+ party content report also blocks the reported player from 18+ party rooms ("adultParty.blockDays");
+ * taking that back (reopen or dismiss) lifts the block, unless another actioned party report on the player still
+ * justifies one (svc_adult_party_lift_block, which audits the change).
  */
 export const POST = handle(async (req: Request, rc: RouteContext<"/api/admin/moderation/reports/[id]">) => {
   const ctx = await requireAdmin("moderation.write");
   const id = Id.parse((await rc.params).id);
   const { decision, note } = await body(req, Body);
   const status = decision === "dismiss" ? "dismissed" : decision === "actioned" ? "actioned" : "open";
+  const { data: was } = await ctx.db.from("reports").select("status").eq("id", id).maybeSingle();
   const { data, error } = await ctx.db
     .from("reports")
     .update({
@@ -58,10 +61,30 @@ export const POST = handle(async (req: Request, rc: RouteContext<"/api/admin/mod
     .maybeSingle();
   if (error) throw error;
   if (!data) throw new ApiError(404, "report_not_found");
-  const blockedUntil =
-    status === "actioned" && data.target_type === "party" && Id.safeParse(data.target_id).success
-      ? await blockFromAdultParty(ctx.db, data.target_id)
-      : null;
-  await audit(ctx, `report.${decision}`, `report:${id}`, { target: `${data.target_type}:${data.target_id}`, note, blockedUntil });
-  return ok({ ok: true, status, blockedUntil });
+  const party = data.target_type === "party" && Id.safeParse(data.target_id).success;
+  let blockedUntil: string | null = null;
+  let blockLifted = false;
+  if (party && status === "actioned") blockedUntil = await blockFromAdultParty(ctx.db, data.target_id);
+  else if (party && was?.status === "actioned") {
+    const { data: lift, error: liftError } = await ctx.db.rpc("svc_adult_party_lift_block", {
+      p_player: data.target_id,
+      p_report: id,
+      p_days: (await getGameSettings())["adultParty.blockDays"],
+      p_actor: ctx.user.id,
+    });
+    // PGRST202: the 20261114000001 migration isn't applied yet; the block stays, as before.
+    if (liftError && liftError.code !== "PGRST202") throw liftError;
+    if (!liftError) {
+      const r = lift as { changed: boolean; blockedUntil: string | null };
+      blockLifted = r.changed;
+      blockedUntil = r.blockedUntil;
+    }
+  }
+  await audit(ctx, `report.${decision}`, `report:${id}`, {
+    target: `${data.target_type}:${data.target_id}`,
+    note,
+    blockedUntil,
+    ...(blockLifted ? { blockLifted } : {}),
+  });
+  return ok({ ok: true, status, blockedUntil, blockLifted });
 });

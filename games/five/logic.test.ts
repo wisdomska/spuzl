@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createRng } from "@/lib/rng";
 import { isWord } from "@/games/_shared/words";
 import type { Difficulty } from "@/games/types";
-import { PRACTICE, type GuessContext } from "@/games/_shared/guess";
+import { PRACTICE, type ContentRef, type GuessContext } from "@/games/_shared/guess";
 import { checkGuessWith, finalVerdict } from "@/lib/game/guess-check";
 import logic, { audit, checkGuess, contentCount, generate, generateAt, grade, hint, progress, record, verify } from "./logic";
 import { ANSWERS, needsReview } from "./content";
@@ -65,7 +65,7 @@ describe("five generator", () => {
         expect(JSON.stringify(a.puzzle)).not.toContain(a.solution.answer);
         expect(a.puzzle.ref).toMatchObject({ game: "five", d });
         // the ref rebuilds the same answer (the guess route without an attempt)
-        expect(generateAt(a.puzzle.ref.i, d).solution).toEqual(a.solution);
+        expect(generateAt((a.puzzle.ref as ContentRef).i, d).solution).toEqual(a.solution);
         if (d === "easy") expect(new Set(a.solution.answer).size).toBe(5);
         expect(a.grade).toBeGreaterThanOrEqual(0);
         expect(a.grade).toBeLessThanOrEqual(100);

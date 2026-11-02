@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createRng } from "@/lib/rng";
 import type { Difficulty } from "@/games/types";
-import { PRACTICE } from "@/games/_shared/guess";
+import { PRACTICE, type ContentRef } from "@/games/_shared/guess";
 import { checkGuessWith, finalVerdict } from "@/lib/game/guess-check";
 import logic, {
   audit,
@@ -76,7 +76,7 @@ describe("emoji hits generator", () => {
       for (let s = 0; s < 25; s++) {
         const g = generate(createRng(`seed-${s}`), d);
         expect(generate(createRng(`seed-${s}`), d)).toEqual(g);
-        expect(generateAt(g.puzzle.ref.i, d)).toEqual(g);
+        expect(generateAt((g.puzzle.ref as ContentRef).i, d)).toEqual(g);
         expect(g.puzzle.rounds).toHaveLength(ROUNDS);
         expect(g.grade).toBeGreaterThanOrEqual(0);
         expect(g.grade).toBeLessThanOrEqual(100);

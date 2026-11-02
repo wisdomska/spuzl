@@ -35,27 +35,23 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   `pnpm install --offline`.
 - **Periodic Background Sync:** the Daily pack's background sync only runs in installed Chrome-based apps.
 
-## From 1.2.0
-
-- **Content-game references:** a content puzzle's `ref` (index and difficulty) is sent to the client, since the
-  guess transport and the sealed quiz boards need it. The guess route answers a bare `ref` without an attempt
-  (races, guided practice), so a player could try words on a Five board by reference before guessing on their
-  attempt, and Penalty King's keeper dives follow from the index. Closing it needs attempt-bound or opaque refs.
-
 ## 18+ party games (Draw It, Two Truths)
 
 - **Age band is self-declared:** the 18+ gate trusts `players.age_band`, which the player picks at sign-up and can
   set again by posting the profile once more. Locking the band after sign-up (or an age check) would make the gate
   stronger.
-- **API tests not run yet:** `tests/api/adult-party.test.ts` needs a dev server on this branch with
-  `20261112000001_adult_party.sql` applied.
 - **Live drawing:** strokes reach other players when each line is finished (pen up), through a refetch on the
   realtime "changed" event, not point by point. Streaming points would feel smoother.
 - **Round state in the database:** strokes, statements and guesses live in server-only tables for the round
   (needed on serverless hosts and for trustworthy report snapshots) and are wiped when it closes; nothing is kept
   in memory only.
-- **Filter limits:** spelled-out phone numbers ("zero two four ...") and look-alike Unicode letters get past the
-  contact and word checks; reports are the backstop.
-- **Reopening** an actioned party report does not lift the player's 18+ block; an admin would clear
-  `players.adult_party_blocked_until` by hand.
 - **No rewards:** the 18+ party games pay no XP or Sparks (only room points).
+
+## Content-game tokens and the 18+ fixes (Unreleased)
+
+- **API tests not run yet:** `tests/api/guess-tokens.test.ts`, the updated `lab-attempts`, `flow` and
+  `adult-party` tests need a dev server on this branch (and `20261114000001_adult_block_reopen.sql` applied).
+- **Sealed quiz boards** (Flagged, Hunch, Pinned, Quickfire) still carry their string `ref`: it is the salt their
+  boards unseal answers with, and those answers are on the client by design (instant feedback, server verify).
+- **Brute force:** the generators are deterministic, so someone with the game code could still match a served
+  board to its content index by generating every index; the token only stops the guess route from helping.

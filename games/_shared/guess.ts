@@ -1,12 +1,15 @@
 /**
  * Word-by-word feedback for content games whose answers stay on the server.
  *
- * A content puzzle carries a `ref` ({ game, i, d }): the content index and difficulty that rebuild it with
- * `generateAt`. Boards call `sendGuess(ref, guess)`; the server route resolves the player's open attempt
- * (set with `setGuessAttempt`) or rebuilds the puzzle from `ref`, then calls the game's pure
- * `checkGuess(puzzle, solution, guess, ctx)` from logic.ts and returns its result. The app (or a test) installs
- * the real transport with `setGuessTransport`. In development, with no transport installed, the guess is
- * checked locally (as practice) so the /dev/board fixture works on its own.
+ * A content puzzle is built from a `ContentRef` ({ game, i, d }): the content index and difficulty that rebuild
+ * it with `generateAt`. That reference stays on the server: wherever a content puzzle is served, the server
+ * swaps it for an opaque `GuessToken` bound to the player and to where the puzzle was served (their open
+ * attempt, the current round of a race they are in, or the public practice board), with an expiry
+ * (lib/game/guess-token.ts). Boards call `sendGuess(puzzle.ref, guess)`; the server route opens the token,
+ * resolves its context, then calls the game's pure `checkGuess(puzzle, solution, guess, ctx)` from logic.ts and
+ * returns its result. A bare content reference is refused. The app (or a test) installs another transport
+ * with `setGuessTransport` (the admin preview). In development, a board holding a bare content reference (the
+ * /dev/board fixture) is checked locally, as practice, so it works on its own.
  *
  * Requests that give something away (show the answer, the keeper's dive) are answered only with a context:
  * the caller's own open attempt, whose saved state and server move log the logic reads, or a practice board
@@ -15,12 +18,25 @@
  */
 import type { ContentLogic, Difficulty } from "@/games/types";
 
-export interface PuzzleRef {
+/** Server side: what rebuilds a content puzzle. Never sent to players as is. */
+export interface ContentRef {
   game: string;
   /** content index */
   i: number;
   d: Difficulty;
 }
+
+/** Client side: the opaque, bound token the server sends in place of a ContentRef. */
+export interface GuessToken {
+  game: string;
+  t: string;
+}
+
+/** A content puzzle's `ref`: a ContentRef where it is built, a GuessToken once it is served. */
+export type PuzzleRef = ContentRef | GuessToken;
+
+export const isGuessToken = (r: unknown): r is GuessToken =>
+  !!r && typeof r === "object" && typeof (r as GuessToken).t === "string" && typeof (r as GuessToken).game === "string";
 
 /**
  * Where a guess is checked from.
@@ -54,7 +70,11 @@ export function setGuessTransport(t: GuessTransport | null) {
 
 let attemptId: string | null = null;
 
-/** The open attempt guesses belong to (set by the Play screen; null in races and dev fixtures). */
+/**
+ * The open attempt the board belongs to (set by the Play screen; null in races, guided practice and dev
+ * fixtures). The server reads the attempt from the token itself; this only keeps a dev Play screen from
+ * checking a bare reference locally.
+ */
 export function setGuessAttempt(id: string | null) {
   attemptId = id;
 }
@@ -64,7 +84,7 @@ export const GUESS_ROUTE = (game: string) => `/api/games/${encodeURIComponent(ga
 
 export async function sendGuess<R>(ref: PuzzleRef, guess: unknown): Promise<R> {
   if (transport) return (await transport(ref, guess)) as R;
-  if (process.env.NODE_ENV !== "production" && !attemptId) {
+  if (!isGuessToken(ref) && process.env.NODE_ENV !== "production" && !attemptId) {
     const { LOGIC } = await import("@/games/logic-registry");
     const l = (await LOGIC[ref.game]()).default as unknown as GuessLogic;
     const g = l.generateAt(ref.i, ref.d);
@@ -73,7 +93,8 @@ export async function sendGuess<R>(ref: PuzzleRef, guess: unknown): Promise<R> {
   const res = await fetch(GUESS_ROUTE(ref.game), {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify(attemptId ? { ref, guess, attemptId } : { ref, guess }),
+    // The token names its own context (attempt, race round or practice board); nothing else is sent.
+    body: JSON.stringify({ ref, guess }),
   });
   if (!res.ok) throw new Error(`guess failed: ${res.status}`);
   return (await res.json()) as R;

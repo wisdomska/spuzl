@@ -96,3 +96,15 @@ were each run locally inside a transaction that was rolled back.
 
 If the code ships first, nothing changes while `features.adultParty` is off: race rooms read `party_mode` as
 `race` when the column is missing, and the moderation queue only reads `reports.snapshot` on its Party content tab.
+
+## Unreleased
+
+Additive and reversible (rollback SQL in the header). No existing rows change.
+
+| Migration                               | What it adds                                                                                                                                                                                                                                                                                                                                                                              | Rollback                                       |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| `20261114000001_adult_block_reopen.sql` | `svc_adult_party_lift_block` (service role only): after a moderator reopens or dismisses an actioned 18+ party report, it sets the player's `adult_party_blocked_until` to what their other actioned party reports still justify (never later), or clears it, and writes a `player.adult_party_unblock` audit row in the same transaction; plus a partial index on actioned party reports | Drop both functions and the index (see header) |
+
+pgTAP: `103_adult_block_reopen`. The migration, the pgTAP file and the rollback were each run locally inside a
+transaction that was rolled back. If the code ships first, reopening an actioned party report works as before
+(the report reopens, the block stays).

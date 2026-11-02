@@ -5,48 +5,69 @@ import { LOGIC } from "@/games/logic-registry";
 import { PRACTICE, type GuessLogic } from "@/games/_shared/guess";
 import { assertGameOpen, attemptPuzzle, guidedSeed, loadFree, logAttemptMove } from "@/lib/game/service";
 import { checkGuessWith, samePuzzleRef } from "@/lib/game/guess-check";
+import { openGuessToken } from "@/lib/game/guess-token";
+import { raceRoundPuzzle } from "@/lib/multiplayer/server/match";
 
 const Guess = z.object({
-  ref: z.object({ game: z.string(), i: z.number().int().min(0).max(100_000), d: z.enum(["easy", "medium", "hard", "expert", "mega"]) }),
+  /** the token the server sent in the puzzle's `ref` (a bare content reference is refused) */
+  ref: z.object({ game: z.string().max(24), t: z.string().max(600) }),
   guess: z.unknown().default(null),
-  /** the open attempt this guess belongs to; the server checks against that attempt's stored puzzle */
+  /** the open attempt the board belongs to; must match the token's attempt when sent */
   attemptId: z.uuid().optional(),
 });
 
 /**
  * POST /api/games/:game/guess: word-by-word feedback for content games; answers never ship to the client.
- * With `attemptId` the guess is checked against that attempt's stored puzzle (so admin-scheduled custom
- * items work), its autosaved state and its server move log; whatever the game records (a shown answer, a
- * committed shot) is stored on the attempt before the result is sent. Without one (races, guided practice)
- * the puzzle is rebuilt from its content reference, and requests that give an answer away are refused
- * unless it is the public practice board. Rate limited per player.
+ * The puzzle's `ref` is an opaque token (lib/game/guess-token.ts) bound to where the puzzle was served:
+ * - the player's own open attempt: the guess is checked against that attempt's stored puzzle (so
+ *   admin-scheduled custom items work), its autosaved state and its server move log; whatever the game records
+ *   (a shown answer, a committed shot) is stored on the attempt before the result is sent;
+ * - the current round of a race or duel the player races in: checked against the round puzzle; requests that
+ *   give an answer away are refused;
+ * - the public guided practice board: checked as practice.
+ * A bare content reference, a forged, expired or someone else's token, or one used outside its context is
+ * refused. Rate limited per player.
  */
 export const POST = handle(async (req: Request, ctx: RouteContext<"/api/games/[game]/guess">) => {
   const { game } = await ctx.params;
   const { admin, player } = await requirePlayer();
+  // A bare content reference (`{ game, i, d }`, as old clients send) fails here with a 400.
   const { ref, guess, attemptId } = await body(req, Guess);
-  // Instant feedback (Quads aims for under 600 ms): the rate limit, the attempt lookup and the logic
-  // import run side by side. The rate limit is still checked first, so a limited player learns nothing.
+  // The rate limit is checked first, so a limited player learns nothing; the logic import runs meanwhile.
   const limited = rateLimit(admin, `guess:${player.id}`, 600, 3600);
-  const attempt = attemptId ? attemptPuzzle(admin, player.id, attemptId) : null;
-  attempt?.catch(() => {}); // a failure is rethrown below, after the rate limit
+  const logicP = LOGIC[game]?.();
+  logicP?.catch(() => {});
   await limited;
   if (ref.game !== game || !LOGIC[game]) throw new ApiError(404, "unknown_game");
+  const tok = openGuessToken(ref.t);
+  if (!tok || tok.g !== game) throw new ApiError(400, "bad_ref");
+  if (tok.c.k !== "p" && tok.p !== player.id) throw new ApiError(403, "not_your_puzzle");
   if (GAME_BY_ID[game]) await assertGameOpen(GAME_BY_ID[game]);
-  const logic = (await LOGIC[game]()).default as unknown as Partial<GuessLogic>;
+  const logic = (await logicP!).default as unknown as Partial<GuessLogic>;
   if (typeof logic.checkGuess !== "function" || typeof logic.generateAt !== "function") throw new ApiError(400, "no_guess_check");
   const checker = { checkGuess: logic.checkGuess, record: logic.record };
-  if (attempt && attemptId) {
-    const a = await attempt;
+  const c = tok.c;
+
+  if (c.k === "a") {
+    if (attemptId && attemptId !== c.a) throw new ApiError(400, "wrong_attempt");
+    const a = await attemptPuzzle(admin, player.id, c.a);
     if (a.gameId !== game) throw new ApiError(400, "wrong_game");
     const out = checkGuessWith(checker, a.puzzle, a.solution, guess, { kind: "attempt", state: a.state, log: a.log });
     // Kept on the attempt first: if the log moved on meanwhile (another guess at once), nothing is given away.
-    if (out.entry && !(await logAttemptMove(admin, player.id, attemptId, a.log.length, out.entry)))
-      throw new ApiError(409, "guess_conflict");
+    if (out.entry && !(await logAttemptMove(admin, player.id, c.a, a.log.length, out.entry))) throw new ApiError(409, "guess_conflict");
     return ok(out.result);
   }
-  if (ref.i >= (logic.contentCount ?? Infinity) * 4) throw new ApiError(400, "bad_ref");
-  const g = logic.generateAt(ref.i, ref.d);
-  const practice = GAME_BY_ID[game] ? samePuzzleRef((await loadFree(game, guidedSeed(game), "easy")).puzzle, ref) : false;
-  return ok(checker.checkGuess(g.puzzle, g.solution, guess, practice ? PRACTICE : null));
+  if (attemptId) throw new ApiError(400, "wrong_attempt");
+
+  if (c.k === "m") {
+    const r = await raceRoundPuzzle(admin, player.id, c.m, c.s, c.r, game);
+    if (!samePuzzleRef(r.puzzle, { game: tok.g, i: tok.i, d: tok.d })) throw new ApiError(409, "round_over");
+    return ok(checker.checkGuess(r.puzzle, r.solution, guess, null));
+  }
+
+  // Practice: only the guided board was ever given a practice token; checked again against it all the same.
+  if (!GAME_BY_ID[game]) throw new ApiError(404, "unknown_game");
+  const board = await loadFree(game, guidedSeed(game), "easy");
+  if (!samePuzzleRef(board.puzzle, { game: tok.g, i: tok.i, d: tok.d })) throw new ApiError(400, "bad_ref");
+  return ok(checker.checkGuess(board.puzzle, board.solution, guess, PRACTICE));
 });

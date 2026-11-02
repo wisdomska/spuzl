@@ -11,7 +11,7 @@ SPUZL runs on free tiers. This page covers the setup, what to watch, and when to
 | Supabase project | `spuzl-prod` (`xwpllzwnhrrhybezkbxz`, London `eu-west-2`) | `spuzl-preview` (`cbwkrkftkkdgagambmfn`, London)         |
 | Vercel functions | London (`lhr1`)                                           | London (`lhr1`)                                          |
 
-Environment variables live in Vercel (Project → Settings → Environment Variables), split by Production and Preview: Supabase URL and keys, `CRON_SECRET`, `INITIAL_OWNER_EMAIL`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_REALTIME_TRANSPORT`. Recommended: `SHARE_CARD_SECRET` (signs status share card links; see below). Optional: `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY`. Each feature switches off cleanly when its key is missing.
+Environment variables live in Vercel (Project → Settings → Environment Variables), split by Production and Preview: Supabase URL and keys, `CRON_SECRET`, `INITIAL_OWNER_EMAIL`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_REALTIME_TRANSPORT`. Recommended: `SHARE_CARD_SECRET` (signs status share card links; see below), `GUESS_REF_SECRET` (encrypts content-game puzzle tokens; see below). Optional: `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY`. Each feature switches off cleanly when its key is missing.
 
 ## Scheduled jobs
 
@@ -67,6 +67,12 @@ environment. Without it the links are signed with `SUPABASE_SERVICE_ROLE_KEY`, a
 `[status-card] SHARE_CARD_SECRET is not set` once per server instance. Changing whichever secret signs the links
 (including rotating the service-role key while it is the fallback) makes every link already shared stop working;
 players get a new one from "Share my status".
+
+**Content-game tokens** (the `ref` of a served Five, Rungs, Quads, Penalty King ... puzzle) are encrypted and
+authenticated with a key derived from `GUESS_REF_SECRET` (any long random string), falling back to
+`SUPABASE_SERVICE_ROLE_KEY` (production logs `[guess] GUESS_REF_SECRET is not set` once per instance). A token
+lasts 3 days on an attempt, 3 hours in a race and a day on the practice board. Rotating the secret only fails the
+guesses of boards already open; reloading the board (or resuming the attempt) hands out a new token.
 
 ## Admin bootstrap
 

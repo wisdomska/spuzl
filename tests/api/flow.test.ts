@@ -180,17 +180,20 @@ describe("api: daily clear flow", () => {
     const g = await guest(uniq("guess_"));
     const s = await g.api("/api/v1/attempts", { json: { game: "rungs", mode: "free", difficulty: "easy" } });
     expect(s.status).toBe(200);
+    // The served ref is an opaque token bound to the attempt: with or without the attempt id, the same answer.
     const ref = s.data.puzzle.ref;
+    expect(ref).toEqual({ game: "rungs", t: expect.any(String) });
     const guess = { rung: 1, word: "ZZZZ" };
-    const byRef = await g.api("/api/games/rungs/guess", { json: { ref, guess } });
+    const byToken = await g.api("/api/games/rungs/guess", { json: { ref, guess } });
     const byAttempt = await g.api("/api/games/rungs/guess", { json: { ref, guess, attemptId: s.data.attemptId } });
     expect(byAttempt.status).toBe(200);
-    expect(byAttempt.data).toEqual(byRef.data);
-    // Someone else's attempt is not found; a different game is refused.
+    expect(byAttempt.data).toEqual(byToken.data);
+    // Someone else's token is refused; another attempt, or a different game, is refused.
     const other = await guest(uniq("guess2_"));
-    expect((await other.api("/api/games/rungs/guess", { json: { ref, guess, attemptId: s.data.attemptId } })).status).toBe(404);
+    expect((await other.api("/api/games/rungs/guess", { json: { ref, guess } })).status).toBe(403);
     const c = await g.api("/api/v1/attempts", { json: { game: "crownfall", mode: "free", difficulty: "easy" } });
     expect((await g.api("/api/games/rungs/guess", { json: { ref, guess, attemptId: c.data.attemptId } })).status).toBe(400);
+    expect((await g.api("/api/games/quads/guess", { json: { ref, guess } })).status).toBe(404);
   });
 
   it("gives a hint before the first move (no state sent)", async () => {

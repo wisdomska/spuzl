@@ -201,6 +201,45 @@ describe("18+ party: Draw It round, text filter, reports and moderation", () => 
     expect(blocked.status).toBe(403);
     expect(blocked.data.error).toBe("adult_party_blocked");
     expect((await host.api(`/api/v1/matches/${matchId}`)).status).toBe(403);
+
+    // Reopening the only actioned report lifts the block it caused, and says so in the audit log.
+    const reopen = await mod.aal2(`/api/admin/moderation/reports/${drawingReport.id}`, { json: { decision: "reopen" } });
+    expect(reopen.status).toBe(200);
+    expect(reopen.data).toMatchObject({ status: "open", blockLifted: true, blockedUntil: null });
+    const { data: unblocked } = await admin().from("players").select("adult_party_blocked_until").eq("id", host.userId).single();
+    expect(unblocked!.adult_party_blocked_until).toBeNull();
+    const { data: trail } = await admin()
+      .from("audit_log")
+      .select("action, detail")
+      .eq("target", `player:${host.userId}`)
+      .eq("action", "player.adult_party_unblock");
+    expect(trail).toHaveLength(1);
+    expect(trail![0].detail).toMatchObject({ report: drawingReport.id, after: null });
+    const back = await host.api("/api/v1/rooms", { json: draw });
+    expect(back.status, JSON.stringify(back.data)).toBe(200);
+
+    // With a second actioned report on the player, taking one back keeps the block the other justifies.
+    const { data: second } = await admin()
+      .from("reports")
+      .insert({ reporter_id: guesser.userId, target_type: "party", target_id: host.userId, reason: "other", snapshot: { kind: "guess" } })
+      .select("id")
+      .single();
+    expect(
+      (await mod.aal2(`/api/admin/moderation/reports/${second!.id}`, { json: { decision: "actioned" } })).data.blockedUntil,
+    ).toBeTruthy();
+    expect((await mod.aal2(`/api/admin/moderation/reports/${drawingReport.id}`, { json: { decision: "actioned" } })).status).toBe(200);
+    const keep = await mod.aal2(`/api/admin/moderation/reports/${drawingReport.id}`, { json: { decision: "dismiss" } });
+    expect(keep.data.status).toBe("dismissed");
+    expect(Date.parse(keep.data.blockedUntil)).toBeGreaterThan(Date.now() + 86_400_000 - 60_000);
+    expect((await host.api("/api/v1/rooms", { json: draw })).data.error).toBe("adult_party_blocked");
+    // Reopening a report that was never actioned changes nothing.
+    expect((await mod.aal2(`/api/admin/moderation/reports/${drawingReport.id}`, { json: { decision: "reopen" } })).data).toMatchObject({
+      blockLifted: false,
+      blockedUntil: null,
+    });
+    // Taking back the last one lifts it.
+    const last = await mod.aal2(`/api/admin/moderation/reports/${second!.id}`, { json: { decision: "reopen" } });
+    expect(last.data).toMatchObject({ blockLifted: true, blockedUntil: null });
   }, 60_000);
 
   it("lets the host remove a player, who can't rejoin, and closes rooms when the switch goes off", async () => {

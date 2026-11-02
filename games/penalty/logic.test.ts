@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createRng } from "@/lib/rng";
 import type { Difficulty } from "@/games/types";
-import { PRACTICE, type GuessContext } from "@/games/_shared/guess";
+import { PRACTICE, type ContentRef, type GuessContext } from "@/games/_shared/guess";
 import { checkGuessWith, finalVerdict } from "@/lib/game/guess-check";
 import logic, {
   accuracyFor,
@@ -95,7 +95,7 @@ describe("penalty generation", () => {
       for (let s = 0; s < 25; s++) {
         const g = generate(createRng(`pk:${d}:${s}`), d);
         expect(generate(createRng(`pk:${d}:${s}`), d)).toEqual(g);
-        expect(generateAt(g.puzzle.ref.i, d)).toEqual(g);
+        expect(generateAt((g.puzzle.ref as ContentRef).i, d)).toEqual(g);
         expect(g.puzzle.ref).toMatchObject({ game: "penalty", d });
         expect(g.puzzle.kicks).toHaveLength(KICKS);
         expect(g.solution.dives).toHaveLength(KICKS);
@@ -113,7 +113,7 @@ describe("penalty generation", () => {
     }
     // indices wrap like a content game's
     expect(generateAt(contentCount + 3, "easy")).toEqual(generateAt(3, "easy"));
-    expect(generateAt(-1, "easy").puzzle.ref.i).toBe(contentCount - 1);
+    expect((generateAt(-1, "easy").puzzle.ref as ContentRef).i).toBe(contentCount - 1);
   });
 
   it("grades faster meters as harder", () => {
