@@ -22,6 +22,9 @@ import {
 } from "./rules";
 import { useBoardBox } from "@/components/game/useBoardSize";
 import { ShellAside } from "@/components/game/ShellAside";
+import { usePhysicalKeyboard } from "@/components/game/useInputMode";
+import { TypingKeys } from "@/games/_shared/LetterKeyboard";
+import { keyboardCopy } from "@/lib/copy/keyboard";
 
 const INK = "#0E0F1A";
 const HEX_W = 84;
@@ -215,9 +218,11 @@ export default function SevenBoard({ puzzle, initialState, hint, disabled, mode,
   ];
   const W = HEX_W * 2.6 + 8,
     H = HEX_H * 3.12 + 8;
-  // Wide screen: the honeycomb zooms (layout and hit areas too) to fill the board's height, up to 1.8 times.
+  // Wide screen: the honeycomb zooms (layout and hit areas too) to fill the board's height under the word
+  // line, up to 2.6 times (the score and words found sit in the side panel).
   const box = useBoardBox();
-  const zoom = box.wide ? Math.max(1, Math.min(1.8, Math.round(((box.side - 80) / H) * 10) / 10)) : 1;
+  const physical = usePhysicalKeyboard();
+  const zoom = box.wide ? Math.max(1, Math.min(2.6, Math.round(((Math.min(box.w, box.h) - 96) / H) * 10) / 10)) : 1;
   const hintT = hint?.target as { start?: string; len?: number } | undefined;
   const nextRank = RANKS.find((r) => Math.ceil(r.pct * maxScore) > score);
 
@@ -285,7 +290,7 @@ export default function SevenBoard({ puzzle, initialState, hint, disabled, mode,
               ref={(el) => {
                 letterEls.current[k] = el;
               }}
-              className="font-display text-[30px] font-extrabold tracking-[0.04em]"
+              className="font-display wide:text-[40px] text-[30px] font-extrabold tracking-[0.04em]"
               style={{ color: bad ? "var(--danger)" : ch === centre ? "var(--hl)" : "var(--text)" }}
             >
               {ch}
@@ -293,7 +298,11 @@ export default function SevenBoard({ puzzle, initialState, hint, disabled, mode,
           ))
         ) : (
           <span className="text-muted text-[15px]">
-            {hintT?.start ? `Hint: ${hintT.start}${"·".repeat(Math.max(0, (hintT.len ?? 2) - 2))}` : "Tap letters"}
+            {hintT?.start
+              ? `Hint: ${hintT.start}${"·".repeat(Math.max(0, (hintT.len ?? 2) - 2))}`
+              : physical
+                ? keyboardCopy.typeOrClick
+                : "Tap letters"}
           </span>
         )}
       </div>
@@ -343,6 +352,13 @@ export default function SevenBoard({ puzzle, initialState, hint, disabled, mode,
           ))}
         </div>
       </div>
+
+      {/* A computer: the keys that play it, in the side panel. */}
+      {physical && box.wide && !done && (
+        <ShellAside>
+          <TypingKeys enterDoes={keyboardCopy.submit} />
+        </ShellAside>
+      )}
 
       {/* found words */}
       <ShellAside>

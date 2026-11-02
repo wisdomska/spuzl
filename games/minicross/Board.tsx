@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
-import { useCellSize } from "@/components/game/useBoardSize";
+import { useCellSize, useFitHeight } from "@/components/game/useBoardSize";
 import { isKeyedInput } from "@/components/game/useGridKeys";
 import { sendGuess } from "@/games/_shared/guess";
 import { LetterKeyboard } from "@/games/_shared/LetterKeyboard";
+import { keyboardCopy } from "@/lib/copy/keyboard";
 import { ShellAside, useShellWide } from "@/components/game/ShellAside";
 import { ClueList } from "@/games/_shared/ClueList";
 import { cellsOf, clueAt, numberGrid, type Clue, type Dir, type MinicrossCheck, type MinicrossPuzzle, type MinicrossState } from "./rules";
@@ -43,7 +44,9 @@ export default function MinicrossBoard({ puzzle, initialState, hint, disabled, m
   const lastChecked = useRef("");
   const streak = useRef(0);
   const gridRef = useRef<HTMLDivElement>(null);
-  const cell = useCellSize(size, GAP, 6, 64);
+  // Short phones: the squares step down (to 40 px) until the shell, down to its tools, fits the screen.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const cell = useFitHeight(useCellSize(size, GAP, 6, 64), 40, size, rootRef, "shell");
   const wide = useShellWide();
   const { nums } = useMemo(() => numberGrid(blocks, size), [blocks, size]);
   const off = disabled || done || busy;
@@ -301,11 +304,20 @@ export default function MinicrossBoard({ puzzle, initialState, hint, disabled, m
   );
 
   const keyboard = !done && (
-    <LetterKeyboard onLetter={onLetter} onBackspace={onBackspace} onEnter={onEnter} enterLabel="NEXT" disabled={off} />
+    // Phone: the compact keyboard (NEXT on the third row) so the grid, the keys and the tools fit one screen.
+    <LetterKeyboard
+      onLetter={onLetter}
+      onBackspace={onBackspace}
+      onEnter={onEnter}
+      enterLabel="NEXT"
+      enterDoes={keyboardCopy.next}
+      compact={!wide}
+      disabled={off}
+    />
   );
 
   return (
-    <div className="flex w-full flex-col items-center gap-3">
+    <div ref={rootRef} className="flex w-full flex-col items-center gap-3">
       {/* Phone: the clue bar above the grid. Wide: every clue, then the keyboard, in the side panel. */}
       <ShellAside phone={clueBar}>
         <ClueList

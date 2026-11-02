@@ -6,6 +6,7 @@ import { Icon } from "@/components/ui/Icon";
 import { play } from "@/lib/audio";
 import { sfx } from "@/games/_shared/sfx";
 import { sendGuess } from "@/games/_shared/guess";
+import { usePhysicalKeyboard } from "@/components/game/useInputMode";
 import { EMOJI_COPY as t } from "@/lib/copy/emojihits";
 import { READ_FLOOR_MS, roundScore, type EmojiCheck, type EmojiPuzzle, type EmojiState, type HitTry, type RoundLog } from "./rules";
 
@@ -47,6 +48,12 @@ export default function EmojiHitsBoard({ puzzle, initialState, hint, disabled, m
   const bar = useRef<HTMLDivElement>(null);
   const anim = useRef<Animation | null>(null);
   const input = useRef<HTMLInputElement>(null);
+  // A computer types straight away: the guess box takes focus as each round opens. (Never on a phone, where
+  // focus would throw the on-screen keyboard over the emoji.)
+  const physical = usePhysicalKeyboard();
+  useEffect(() => {
+    if (physical && phase === "asking") input.current?.focus({ preventScroll: true });
+  }, [physical, phase]);
   const streak = useRef(0);
   useEffect(() => {
     phaseRef.current = phase;
@@ -312,7 +319,7 @@ export default function EmojiHitsBoard({ puzzle, initialState, hint, disabled, m
 
   return (
     <div
-      className="wide:w-[560px] flex w-[min(358px,calc(100vw-36px))] flex-col gap-3 rounded-[20px] p-3.5"
+      className="wide:w-[min(760px,100%)] wide:gap-4 wide:p-5 flex w-[min(358px,calc(100vw-36px))] flex-col gap-3 rounded-[20px] p-3.5"
       style={{ background: "var(--board-bg)" }}
     >
       <div className="flex items-center gap-2.5">
@@ -367,7 +374,7 @@ export default function EmojiHitsBoard({ puzzle, initialState, hint, disabled, m
       </div>
 
       <div
-        className={`flex min-h-[150px] flex-col items-center justify-center gap-2 rounded-[16px] px-3 py-4 text-center ${hinted ? "hint-ring" : ""}`}
+        className={`wide:min-h-[260px] flex min-h-[150px] flex-col items-center justify-center gap-2 rounded-[16px] px-3 py-4 text-center ${hinted ? "hint-ring" : ""}`}
         style={{ background: "var(--surface)", boxShadow: hinted ? "inset 0 0 0 3px var(--gold)" : undefined }}
       >
         {phase === "done" ? (
@@ -391,7 +398,7 @@ export default function EmojiHitsBoard({ puzzle, initialState, hint, disabled, m
             <span
               role="img"
               aria-label={t.clueSay(round.kind, round.words, round.emoji)}
-              className={`text-[44px] leading-[1.15] tracking-[0.06em] ${shakeN && phase === "asking" ? (shakeN % 2 ? "cell-shake-a" : "cell-shake-b") : ""}`}
+              className={`wide:text-[72px] text-[44px] leading-[1.15] tracking-[0.06em] ${shakeN && phase === "asking" ? (shakeN % 2 ? "cell-shake-a" : "cell-shake-b") : ""}`}
             >
               {round.emoji}
             </span>
@@ -426,13 +433,13 @@ export default function EmojiHitsBoard({ puzzle, initialState, hint, disabled, m
               spellCheck={false}
               enterKeyHint="go"
               maxLength={80}
-              className="h-12 min-w-0 flex-1 rounded-[14px] px-3 font-semibold outline-none disabled:opacity-50"
+              className="wide:h-14 wide:text-[18px] h-12 min-w-0 flex-1 rounded-[14px] px-3 text-[16px] font-semibold outline-none disabled:opacity-50"
               style={{ background: "var(--surface-raised)", color: "var(--text)", boxShadow: "inset 0 0 0 2px var(--line)" }}
             />
             <button
               type="submit"
               disabled={off || !text.trim()}
-              className="toy h-12 flex-none rounded-[14px] px-4 text-[16px] font-bold disabled:opacity-50"
+              className="toy wide:h-14 wide:px-6 h-12 flex-none rounded-[14px] px-4 text-[16px] font-bold disabled:opacity-50"
               style={{ background: "var(--world)", color: "var(--on-accent)", boxShadow: "0 3px 0 var(--world-depth)" }}
             >
               {t.guess}

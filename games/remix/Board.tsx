@@ -8,6 +8,10 @@ import { play } from "@/lib/audio";
 import { sfx } from "@/games/_shared/sfx";
 import { isKeyedInput, viaKeys } from "@/components/game/useGridKeys";
 import { sendGuess } from "@/games/_shared/guess";
+import { fitRow, useBoardBox } from "@/components/game/useBoardSize";
+import { usePhysicalKeyboard } from "@/components/game/useInputMode";
+import { ShellAside } from "@/components/game/ShellAside";
+import { TypingKeys } from "@/games/_shared/LetterKeyboard";
 import { ROUNDS, type RemixCheck, type RemixPuzzle, type RemixState } from "./rules";
 
 const INK = "#0E0F1A";
@@ -146,10 +150,17 @@ export default function RemixBoard({ puzzle, initialState, hint, disabled, mode,
 
   const hintPrefix =
     (hint?.target as { round?: number; prefix?: string } | undefined)?.round === round ? (hint!.target as { prefix: string }).prefix : "";
-  const tile = 48;
+  // Phones: 48 px tiles. Wide: the tiles grow to fill the board column (up to 96 px), so the word is the hero.
+  const box = useBoardBox();
+  const tile = box.wide ? fitRow(Math.min(box.w, 760), letters.length, 12, 24, 48, 112) : 48;
+  const physical = usePhysicalKeyboard();
 
   return (
-    <div className="wide:max-w-[560px] flex w-full max-w-[400px] flex-col items-center gap-5">
+    <div
+      className={`flex w-full flex-col items-center ${box.wide ? "max-w-[760px] justify-center gap-8" : "max-w-[400px] gap-5"}`}
+      // Wide: centred in the height under the top bar, level with the side panel's middle.
+      style={box.wide ? { minHeight: Math.round(box.h * 0.7) } : undefined}
+    >
       {/* rounds */}
       <div
         className="flex items-center gap-2"
@@ -190,11 +201,12 @@ export default function RemixBoard({ puzzle, initialState, hint, disabled, mode,
               data-press={ch ? "soft" : undefined}
               data-no-tick={ch ? undefined : true}
               aria-label={ch ? `Slot ${k + 1}, ${ch}. Tap to remove.` : `Slot ${k + 1}, empty`}
-              className={`font-display flex items-center justify-center rounded-[12px] text-[22px] font-extrabold ${ch && k === picks.length - 1 && !quiet ? (tapN % 2 ? "cell-pop-a" : "cell-pop-b") : ""}`}
+              className={`font-display flex items-center justify-center rounded-[12px] font-extrabold ${ch && k === picks.length - 1 && !quiet ? (tapN % 2 ? "cell-pop-a" : "cell-pop-b") : ""}`}
 
               style={{
                 width: tile - 4,
                 height: tile + 4,
+                fontSize: Math.round(tile * 0.46),
                 background: flash ? "var(--world)" : ch ? "var(--surface-raised)" : "transparent",
                 color: flash ? INK : "var(--text)",
                 boxShadow: flash ? "none" : ch ? "0 3px 0 var(--depth)" : "inset 0 0 0 2px var(--line)",
@@ -228,10 +240,11 @@ export default function RemixBoard({ puzzle, initialState, hint, disabled, mode,
                 onClick={() => pick(i)}
                 disabled={off || used}
                 aria-label={`${letters[i]}${used ? ", used" : ""}`}
-                className="toy font-display flex items-center justify-center rounded-[14px] text-[24px] font-extrabold"
+                className="toy font-display flex items-center justify-center rounded-[14px] font-extrabold"
                 style={{
                   width: tile,
                   height: tile,
+                  fontSize: Math.round(tile * 0.5),
                   background: used ? "var(--surface)" : "var(--surface-raised)",
                   color: used ? "transparent" : "var(--text)",
                   ["--btn-depth" as string]: "var(--depth)",
@@ -245,6 +258,12 @@ export default function RemixBoard({ puzzle, initialState, hint, disabled, mode,
           })}
         </div>
       </div>
+      {/* A computer: the keys that play it, in the side panel (typing picks the first free matching tile). */}
+      {physical && box.wide && !done && (
+        <ShellAside>
+          <TypingKeys />
+        </ShellAside>
+      )}
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
-import { useCellSize } from "@/components/game/useBoardSize";
+import { useCellSize, useFitHeight } from "@/components/game/useBoardSize";
 import { ShellAside, useShellWide } from "@/components/game/ShellAside";
 import { useGridKeys } from "@/components/game/useGridKeys";
 import { play } from "@/lib/audio";
@@ -33,7 +33,9 @@ export default function CoilBoard({ puzzle, initialState, hint, disabled, mode, 
   const [turns, setTurns] = useState(0);
   const [vRows, vCols] = viewDims(rows, cols, turns);
   const reduce = useReducedMotion();
-  const cell = useCellSize(vCols, GAP, PAD, 60, vRows);
+  // Short phones: the grid steps down (to 40 px cells) until the shell, down to its tools, fits the screen.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const cell = useFitHeight(useCellSize(vCols, GAP, PAD, 60, vRows), 40, vRows, rootRef, "shell");
   const wide = useShellWide();
   const badge = Math.round(cell * 0.52);
   const [found, setFound] = useState<number[][]>(() => initialState?.found?.map((p) => p.slice()) ?? []);
@@ -350,7 +352,7 @@ export default function CoilBoard({ puzzle, initialState, hint, disabled, mode, 
   );
 
   return (
-    <div className="flex w-full flex-col items-center gap-3">
+    <div ref={rootRef} className="flex w-full flex-col items-center gap-3">
       {/* Phone: theme and count above the grid, words under it. Wide: all of it in the side panel. */}
       <ShellAside phone={themeRow()}>
         {themeRow()}

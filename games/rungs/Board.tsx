@@ -8,9 +8,10 @@ import { sfx } from "@/games/_shared/sfx";
 import { sendGuess } from "@/games/_shared/guess";
 import { LetterKeyboard } from "@/games/_shared/LetterKeyboard";
 import { ShellAside } from "@/components/game/ShellAside";
+import { useBoardBox, useViewportHeight } from "@/components/game/useBoardSize";
 import { changedAt, diffCount, LEN, RUNGS, type RungsCheck, type RungsGuess, type RungsPuzzle, type RungsState } from "./rules";
+import { rungsLayout } from "./layout";
 
-const PITCH = 52; // 44 px row + 8 px gap
 type Active = { kind: "rung"; k: number } | { kind: "cap"; c: 0 | 1 } | null;
 
 /**
@@ -31,6 +32,12 @@ export default function RungsBoard({ puzzle, initialState, hint, disabled, mode,
   const [done, setDone] = useState(() => !!initialState?.caps?.every(Boolean));
   const streak = useRef(0);
   const off = disabled || done || busy;
+  // Phone: 44 px rows. Wide: the ladder fills the height under the top bar, with bigger tiles and clues.
+  const box = useBoardBox();
+  // Phones: tight rows and, below 860 px of height, the compact keyboard, so ladder, keys and tools fit.
+  const L = rungsLayout(box, useViewportHeight());
+  const compact = L.compactKeys;
+  const PITCH = L.pitch;
 
   const words = order.map((k) => answers[k]);
   const allAnswered = answers.every(Boolean);
@@ -218,8 +225,12 @@ export default function RungsBoard({ puzzle, initialState, hint, disabled, mode,
   const cell = (ch: string, opts: { bg: string; fg?: string; ring?: string; placeholder?: string; key: string; mark?: boolean }) => (
     <div
       key={opts.key}
-      className="relative flex h-11 w-10 items-center justify-center rounded-[10px] text-[20px] font-extrabold"
+      className="relative flex items-center justify-center rounded-[10px] font-extrabold"
       style={{
+        height: L.row,
+        width: L.tile,
+        fontSize: L.letter,
+        borderRadius: L.row > 52 ? 12 : 10,
         background: opts.bg,
         color: opts.fg ?? "var(--text)",
         boxShadow: opts.ring,
@@ -271,7 +282,7 @@ export default function RungsBoard({ puzzle, initialState, hint, disabled, mode,
             }),
           )}
         </div>
-        <span className="text-muted flex-1 text-[13px] leading-[1.3]">
+        <span className="text-muted flex-1 leading-[1.3]" style={{ fontSize: L.clue }}>
           {locked ? puzzle.caps[c] : `${c === 0 ? "Top" : "Bottom"}: crack it last`}
         </span>
         <span className="w-[44px]" aria-hidden />
@@ -280,15 +291,15 @@ export default function RungsBoard({ puzzle, initialState, hint, disabled, mode,
   };
 
   return (
-    <div className="flex w-full flex-col items-center gap-3">
+    <div className="wide:gap-3 flex w-full flex-col items-center gap-2">
       <div
         role="grid"
         aria-label="Rungs ladder"
-        className={`wide:max-w-[560px] flex w-full max-w-[400px] flex-col gap-2 rounded-[20px] p-4 [--hl:var(--world)] [[data-theme=light]_&]:[--hl:var(--world-ink)] ${done ? "board-pulse" : ""}`}
-        style={{ background: "var(--board-bg)" }}
+        className={`flex w-full flex-col rounded-[20px] [--hl:var(--world)] [[data-theme=light]_&]:[--hl:var(--world-ink)] ${done ? "board-pulse" : ""}`}
+        style={{ background: "var(--board-bg)", maxWidth: L.maxW, gap: L.gap, padding: L.pad }}
       >
         {capRow(0)}
-        <div className="relative flex flex-col gap-2">
+        <div className="relative flex flex-col" style={{ gap: L.gap }}>
           {order.map((id, pos) => {
             const word = answers[id];
             const isActive = active?.kind === "rung" && active.k === id;
@@ -342,7 +353,8 @@ export default function RungsBoard({ puzzle, initialState, hint, disabled, mode,
                   )}
                 </div>
                 <span
-                  className="text-muted flex flex-1 items-center gap-1.5 text-[13px] leading-[1.3]"
+                  className="text-muted flex flex-1 items-center gap-1.5 leading-[1.3]"
+                  style={{ fontSize: L.clue }}
                   onClick={() => pick(id, word, isActive)}
                 >
                   {broken && (
@@ -369,8 +381,8 @@ export default function RungsBoard({ puzzle, initialState, hint, disabled, mode,
                       moveTo(id, pos + (e.key === "ArrowUp" ? -1 : 1));
                     }
                   }}
-                  className="flex h-11 w-11 items-center justify-center rounded-[10px] disabled:opacity-40"
-                  style={{ color: "var(--text-muted)", touchAction: "none", cursor: locked ? "default" : "grab" }}
+                  className="flex w-11 items-center justify-center rounded-[10px] disabled:opacity-40"
+                  style={{ height: L.row, color: "var(--text-muted)", touchAction: "none", cursor: locked ? "default" : "grab" }}
                 >
                   <Icon name={locked ? "check" : "dots-six-vertical"} size={18} />
                 </button>
@@ -389,6 +401,7 @@ export default function RungsBoard({ puzzle, initialState, hint, disabled, mode,
             onEnter={() => entry.length === LEN && void submit(entry)}
             onUndo={() => setEntry("")}
             undoLabel="Clear word"
+            compact={compact}
             disabled={off || !active}
           />
         </ShellAside>

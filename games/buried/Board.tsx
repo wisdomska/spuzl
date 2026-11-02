@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
-import { useCellSize } from "@/components/game/useBoardSize";
+import { useCellSize, useFitHeight } from "@/components/game/useBoardSize";
 import { ShellAside } from "@/components/game/ShellAside";
 import { useGridKeys } from "@/components/game/useGridKeys";
 import { play } from "@/lib/audio";
@@ -40,7 +40,9 @@ export default function BuriedBoard({ puzzle, initialState, hint, disabled, mode
   const [turns, setTurns] = useState(0);
   const [vRows, vCols] = viewDims(rows, cols, turns);
   const reduce = useReducedMotion();
-  const cell = useCellSize(vCols, GAP, PAD, 52, vRows);
+  // Short phones: the grid steps down (to 40 px cells) until the shell, down to its tools, fits the screen.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const cell = useFitHeight(useCellSize(vCols, GAP, PAD, 52, vRows), 40, vRows, rootRef, "shell");
   const [found, setFound] = useState<number[][]>(() => initialState?.found?.map((p) => p.slice()) ?? []);
   // bonus paths are saved in reading order, so the word is just their letters
   const [bonus, setBonus] = useState<{ word: string; path: number[] }[]>(() =>
@@ -293,14 +295,17 @@ export default function BuriedBoard({ puzzle, initialState, hint, disabled, mode
   const phrase = done ? splitPhrase(leftovers(puzzle, found), puzzle.phraseShape) : puzzle.phraseShape.map((n) => " ".repeat(n));
 
   return (
-    <div className="flex w-full flex-col items-center gap-3">
-      <span
-        className="flex items-center gap-2 self-start rounded-[12px] px-3 py-1.5 text-[14px] font-semibold"
-        style={{ background: "var(--surface)" }}
-      >
-        <Icon name="shovel" size={16} style={{ color: "var(--world)" }} />
-        {puzzle.theme}
-      </span>
+    <div ref={rootRef} className="flex w-full flex-col items-center gap-3">
+      {/* The theme: above the grid on a phone, at the top of the side panel on a wide screen (the grid keeps the height). */}
+      <ShellAside>
+        <span
+          className="flex items-center gap-2 self-start rounded-[12px] px-3 py-1.5 text-[14px] font-semibold"
+          style={{ background: "var(--surface)" }}
+        >
+          <Icon name="shovel" size={16} style={{ color: "var(--world)" }} />
+          {puzzle.theme}
+        </span>
+      </ShellAside>
 
       <div className="overflow-x-auto" style={{ maxWidth: "100%" }}>
         {/* a fresh layer per turn: it starts a quarter turn back (the old view) and settles into the new one */}
@@ -347,12 +352,14 @@ export default function BuriedBoard({ puzzle, initialState, hint, disabled, mode
                       aria-selected={used.has(i) || inLine}
                       aria-label={`${cellName(i)}${used.has(i) ? ", in a found word" : ""}${anchor === i ? ", line start" : ""}${lo >= 0 ? ", part of the secret" : ""}`}
                       onFocus={() => keys.setFocus(v)}
-                      className={`num absolute flex items-center justify-center rounded-[10px] text-[19px] font-semibold outline-none ${i === hinted && !done ? "hint-ring" : ""}`}
+                      className={`num absolute flex items-center justify-center rounded-[10px] font-semibold outline-none ${i === hinted && !done ? "hint-ring" : ""}`}
                       style={{
                         left: x - cell / 2,
                         top: y - cell / 2,
                         width: cell,
                         height: cell,
+                        // 19 px on a phone; on a big screen the letters grow with the cell.
+                        fontSize: Math.max(19, Math.round(cell * 0.42)),
                         color: lo >= 0 ? INK : "var(--text)",
                         boxShadow:
                           anchor === i ? "inset 0 0 0 3px var(--text)" : i === hinted && !done ? "inset 0 0 0 3px var(--gold)" : undefined,

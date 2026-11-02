@@ -7,6 +7,10 @@ import { play } from "@/lib/audio";
 import { sfx } from "@/games/_shared/sfx";
 import { quick } from "@/lib/copy/quick";
 import { READ_FLOOR_MS, timedMisses, timedScore, type TimedAnswer } from "./cluecave";
+import { ShellAside } from "@/components/game/ShellAside";
+import { usePhysicalKeyboard } from "@/components/game/useInputMode";
+import { keyboardCopy } from "@/lib/copy/keyboard";
+import { Kbd } from "./LetterKeyboard";
 
 const INK = "#0E0F1A";
 const LETTERS = ["A", "B", "C", "D"];
@@ -358,12 +362,26 @@ export function QuizBoard({ rounds, judge, limitMs, noun, initial, hint, disable
 
   const waiting = phase === "checking" || phase === "retry";
   const secsLeft = Math.ceil((phase === "asking" ? left : limitMs) / 1000);
+  const physical = usePhysicalKeyboard();
 
   return (
     <div
-      className="wide:w-[560px] flex w-[min(358px,calc(100vw-36px))] flex-col gap-3 rounded-[20px] p-3.5"
+      // Wide: the quiz fills the board column (up to 760 px), the question reads larger and the answers sit
+      // two by two; a computer also gets the answer keys in the side panel.
+      className="wide:w-[min(760px,100%)] wide:gap-4 wide:p-5 wide:[&_p]:text-[26px] flex w-[min(358px,calc(100vw-36px))] flex-col gap-3 rounded-[20px] p-3.5"
       style={{ background: "var(--board-bg)" }}
     >
+      {physical && phase !== "done" && (
+        <ShellAside phone={null}>
+          <p
+            className="m-0 flex items-center gap-2 rounded-[16px] px-3.5 py-2.5 text-[14px] font-medium"
+            style={{ background: "var(--surface)" }}
+          >
+            <Kbd>{keyboardCopy.pickKeys}</Kbd>
+            <span className="text-muted">{keyboardCopy.pickDoes}</span>
+          </p>
+        </ShellAside>
+      )}
       <div className="flex items-center gap-2.5">
         <div className="flex gap-[5px]" role="img" aria-label={t.answered(answers.length, total)}>
           {Array.from({ length: total }, (_, k) => {
@@ -417,7 +435,7 @@ export function QuizBoard({ rounds, judge, limitMs, noun, initial, hint, disable
       </div>
 
       <div
-        className="flex min-h-[120px] flex-col items-center justify-center gap-2 rounded-[16px] px-3 py-3 text-center"
+        className="wide:min-h-[200px] wide:px-6 flex min-h-[120px] flex-col items-center justify-center gap-2 rounded-[16px] px-3 py-3 text-center"
         style={{ background: "var(--surface)" }}
       >
         {phase === "done" ? (
@@ -443,14 +461,19 @@ export function QuizBoard({ rounds, judge, limitMs, noun, initial, hint, disable
       </div>
 
       {phase !== "done" && (
-        <div className="flex flex-col gap-2" role="group" aria-label={t.answers} aria-busy={phase === "checking"}>
+        <div
+          className="wide:grid wide:grid-cols-2 wide:gap-3 flex flex-col gap-2"
+          role="group"
+          aria-label={t.answers}
+          aria-busy={phase === "checking"}
+        >
           {phase === "ready"
             ? // Answers stay hidden until Start: empty slots keep the layout still.
               round.choices.map((_, k) => (
                 <div
                   key={k}
                   aria-hidden
-                  className="min-h-[52px] rounded-[14px]"
+                  className="wide:min-h-[72px] min-h-[52px] rounded-[14px]"
                   style={{ background: "var(--surface-raised)", opacity: 0.35 }}
                 />
               ))
@@ -467,7 +490,7 @@ export function QuizBoard({ rounds, judge, limitMs, noun, initial, hint, disable
                     disabled={disabled || phase !== "asking" || gone}
                     onClick={() => commit(k)}
                     aria-label={`${LETTERS[k]}, ${c}${isRight ? t.rightAnswer : ""}${wrongPick ? t.yourWrongAnswer : ""}${mine ? t.yourAnswerChecking : ""}`}
-                    className={`press relative flex min-h-[52px] items-center gap-3 overflow-hidden rounded-[14px] px-3 text-left disabled:cursor-default ${wrongPick ? (shakeN % 2 ? "cell-shake-a" : "cell-shake-b") : isRight && picked ? "cell-pop-a" : ""}`}
+                    className={`press wide:min-h-[72px] wide:px-4 relative flex min-h-[52px] items-center gap-3 overflow-hidden rounded-[14px] px-3 text-left disabled:cursor-default ${wrongPick ? (shakeN % 2 ? "cell-shake-a" : "cell-shake-b") : isRight && picked ? "cell-pop-a" : ""}`}
                     style={{
                       background: isRight ? "var(--world)" : "var(--surface-raised)",
                       color: isRight ? INK : "var(--text)",
@@ -488,7 +511,7 @@ export function QuizBoard({ rounds, judge, limitMs, noun, initial, hint, disable
                     >
                       {isRight ? <Icon name="check" size={14} /> : wrongPick ? <Icon name="x" size={14} /> : LETTERS[k]}
                     </span>
-                    <span className={`relative text-[16px] font-semibold ${gone ? "line-through" : ""}`}>{c}</span>
+                    <span className={`wide:text-[19px] relative text-[16px] font-semibold ${gone ? "line-through" : ""}`}>{c}</span>
                   </button>
                 );
               })}
