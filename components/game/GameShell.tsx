@@ -22,7 +22,7 @@ import { track } from "@/lib/analytics/track";
 import { copy } from "@/lib/copy";
 import { leaveCopy } from "@/lib/copy/leave";
 import { leavePolicy, type LeaveContext } from "@/lib/game/leave";
-import { useWide } from "./useBoardSize";
+import { useViewportWidth, useWide, wideAside, SLOT_PAD, WIDE_GAP, WIDE_GUTTER, WIDE_MAX } from "./useBoardSize";
 import { ShellAsideProvider } from "./ShellAside";
 import { useLeave } from "./useLeave";
 import { LeaveConfirm } from "./LeaveConfirm";
@@ -62,6 +62,11 @@ export interface GameShellProps<P, St> {
   onHelp?: () => void;
   /** zone 2: opponent strip, race rail or ghost HUD */
   strip?: ReactNode;
+  /**
+   * A slim notice across the top (the guided round's practice note): one line under the top bar, over both
+   * columns on a wide screen, so it never takes a side-panel slot or pushes the board down much on a phone.
+   */
+  banner?: ReactNode;
   /** locks input (countdown, opponent finished) */
   locked?: boolean;
   /** a key that changes per puzzle so the board remounts (free play next puzzle) */
@@ -134,6 +139,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
     onExit,
     onHelp,
     strip,
+    banner,
     locked,
     puzzleKey,
     extra,
@@ -149,6 +155,8 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
     initialElapsed = 0,
   } = props;
   const wide = useWide();
+  const vw = useViewportWidth();
+  const asideW = wideAside(vw);
   const [aside, setAside] = useState<HTMLElement | null>(null);
   // The game's own colour (lib/catalog colourOf): moved games keep the hue they were designed in.
   const world = colourOf(meta);
@@ -463,6 +471,12 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
         </h1>
         <p className="num text-muted truncate text-[12px] leading-4 font-medium">{label}</p>
       </div>
+      {/* Wide: the banner sits inline in the top bar's empty middle, so the board keeps the whole height. */}
+      {wide && banner && (
+        <div className="flex max-w-[640px] min-w-0 flex-[2] justify-center" data-shell-banner>
+          {banner}
+        </div>
+      )}
       {!relaxed && (
         <div
           className="num bg-surface flex h-11 shrink-0 items-center gap-1.5 rounded-[14px] px-3 text-[20px] font-semibold max-[359px]:px-2 max-[359px]:text-[18px]"
@@ -525,7 +539,8 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
     </div>
   );
 
-  // 5 Compact tool row (or the end bar after a clear). In the side panel: at most 3 tools a row.
+  // 5 Compact tool row (or the end bar after a clear). In the side panel: at most 3 tools a row, each a slim
+  // icon-and-label button (a mouse needs no 56 px target, and the panel stays short).
   const toolCols = wide ? Math.min(row.length, row.length === 4 ? 2 : 3) : row.length;
   const toolZone = endBar ? (
     <div className={wide ? "" : "safe-bottom short:pt-1.5 mt-auto px-3 pt-2.5"} data-shell-tail>
@@ -539,7 +554,11 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
         style={{ gridTemplateColumns: `repeat(${toolCols}, minmax(0, 1fr))` }}
       >
         {row.map((c) =>
-          c.id === "hint" ? <ToolButton key={c.id} c={c} badge={hintBadge} extra={hintLeft} /> : <ToolButton key={c.id} c={c} />,
+          c.id === "hint" ? (
+            <ToolButton key={c.id} c={c} badge={hintBadge} extra={hintLeft} slim={wide} />
+          ) : (
+            <ToolButton key={c.id} c={c} slim={wide} />
+          ),
         )}
       </div>
     )
@@ -554,17 +573,22 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   return (
     <ShellAsideProvider value={{ wide, node: aside }}>
       <div
-        className={`bg-bg relative mx-auto flex min-h-dvh w-full flex-col ${wide ? "max-w-[1224px] px-6" : "max-w-[560px]"}`}
-        style={style}
+        className={`bg-bg relative mx-auto flex min-h-dvh w-full flex-col ${wide ? "px-6" : "max-w-[560px]"}`}
+        style={wide ? { ...style, maxWidth: WIDE_GUTTER * 2 + WIDE_MAX + SLOT_PAD * 2 + WIDE_GAP + asideW } : style}
         data-world={meta.world}
         data-shell
         data-wide={wide || undefined}
       >
         {header}
+        {banner && !wide && (
+          <div className="relative z-20 px-3 pb-1" data-shell-banner>
+            {banner}
+          </div>
+        )}
         {/* Wide: two columns (useBoardSize `boardBox`), the board filling the left and the side panel holding the
             rest. Phone: one column (the board column is `display: contents`). The board keeps its place in the
             tree either way, so turning a tablet or resizing a window never restarts the game. */}
-        <div className={wide ? "flex flex-1 items-start gap-8 pb-6" : "flex flex-1 flex-col"}>
+        <div className={wide ? "flex flex-1 items-start pb-6" : "flex flex-1 flex-col"} style={wide ? { gap: WIDE_GAP } : undefined}>
           <div className={wide ? "flex min-w-0 flex-1 justify-center" : "contents"}>
             {!wide && stripZone}
             {rule}
@@ -573,7 +597,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
             {!wide && toolZone}
           </div>
           {wide && (
-            <aside className="flex w-[360px] shrink-0 flex-col gap-3 pt-3 pr-3" aria-label={M.panel}>
+            <aside className="flex shrink-0 flex-col gap-3 pt-3 pr-3" style={{ width: asideW }} aria-label={M.panel}>
               {stripZone}
               <div ref={setAside} className="flex flex-col gap-3 empty:hidden" />
               {feedbackZone}
@@ -677,7 +701,7 @@ export function splitTools(controls: ControlSpec[]): { row: ControlSpec[]; overf
 }
 
 /** `extra` is read after the label by screen readers only (the hint count), so the spoken name starts with the visible label. */
-function ToolButton({ c, badge, extra }: { c: ControlSpec; badge?: string; extra?: string }) {
+function ToolButton({ c, badge, extra, slim }: { c: ControlSpec; badge?: string; extra?: string; slim?: boolean }) {
   // The active tool is always visible: filled accent, aria-pressed="true" (audit: tool mode was invisible).
   const tone = c.active ? "active" : c.tone === "world" ? "world" : c.tone === "gold" ? "gold" : "default";
   const look =
@@ -694,15 +718,19 @@ function ToolButton({ c, badge, extra }: { c: ControlSpec; badge?: string; extra
       aria-pressed={c.active ?? undefined}
       data-press={c.active !== undefined ? "toggle" : SOFT_TOOLS.has(c.id) ? "soft" : undefined}
       data-no-tick={c.quiet || undefined}
-      className="toy short:h-12 relative flex h-14 flex-col items-center justify-center gap-0.5 rounded-[16px]"
+      className={
+        slim
+          ? "toy relative flex h-12 items-center justify-center gap-2 rounded-[14px] px-2"
+          : "toy short:h-12 relative flex h-14 flex-col items-center justify-center gap-0.5 rounded-[16px]"
+      }
       style={
         c.disabled
           ? undefined
           : { background: look.bg, color: look.fg, ["--btn-depth" as string]: look.sh, boxShadow: `0 5px 0 ${look.sh}` }
       }
     >
-      <Icon name={c.icon} size={22} />
-      <span className="text-[13px] leading-4 font-semibold">{c.label}</span>
+      <Icon name={c.icon} size={slim ? 20 : 22} />
+      <span className={slim ? "truncate text-[14px] leading-5 font-semibold" : "text-[13px] leading-4 font-semibold"}>{c.label}</span>
       {extra && <span className="sr-only">, {extra}</span>}
       {badge !== undefined && (
         <span

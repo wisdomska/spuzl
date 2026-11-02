@@ -13,16 +13,20 @@ export const SHELL_CHROME = 232;
 
 /*
  * Wide screens (tablets in landscape, laptops, desktops): the shell splits into two columns, the board on the
- * left and a side panel on the right (players or turn strip, clue lists, feedback line, tools). The board then
- * grows to fill the height under the top bar, up to WIDE_MAX px (and 80 % of the viewport height). Landscape
- * phones (wide but short) keep the single column.
+ * left and a compact side panel on the right (players or turn strip, clue lists, feedback line, tools). The
+ * board is the hero: it fills the height under the top bar (up to WIDE_HEIGHT of the viewport) and the column,
+ * up to WIDE_MAX px. Landscape phones (wide but short) keep the single column.
  */
 /** Narrowest viewport, in px, that gets the two-column shell. Keep in step with the `wide` CSS variant. */
 export const WIDE_MIN_W = 900;
 /** Shortest viewport, in px, that gets the two-column shell. Keep in step with the `wide` CSS variant. */
 export const WIDE_MIN_H = 600;
-/** Side panel width on a wide screen. */
+/** Side panel width on a big screen (WIDE_ASIDE_FROM px and wider). */
 export const WIDE_ASIDE = 360;
+/** Side panel width on a smaller wide screen (landscape tablets, small laptops), so the board keeps the room. */
+export const WIDE_ASIDE_NARROW = 320;
+/** Viewport width from which the side panel takes its full WIDE_ASIDE width. */
+export const WIDE_ASIDE_FROM = 1280;
 /** Gap between the board column and the side panel. */
 export const WIDE_GAP = 32;
 /** Page gutter on each side of the wide shell. */
@@ -31,16 +35,26 @@ export const WIDE_GUTTER = 24;
 export const WIDE_TOP = 72;
 /** Room kept under the board on a wide screen. */
 export const WIDE_BOTTOM = 24;
-/** Largest board, in px, on any screen. */
-export const WIDE_MAX = 760;
+/** Largest board, in px, on any screen (a 1920 × 1080 desktop reaches it). */
+export const WIDE_MAX = 960;
+/** A square board stays inside this share of the viewport height. */
+export const WIDE_HEIGHT = 0.9;
 /** A wide board's cells may grow to this many times the phone cap (glyphs scale with the cell). */
 export const WIDE_GROW = 2;
 /** The wide shell's whole width: gutters, the largest board with its slot padding, the gap and the side panel. */
 export const WIDE_SHELL_MAX = WIDE_GUTTER * 2 + WIDE_MAX + SLOT_PAD * 2 + WIDE_GAP + WIDE_ASIDE;
 
+/** A short screen, in px of height (a 375 × 667 phone). Keep in step with the `short` CSS variant. */
+export const SHORT_H = 740;
+
 /** Does this viewport get the two-column shell? */
 export function isWide(vw: number, vh: number): boolean {
   return vw >= WIDE_MIN_W && vh >= WIDE_MIN_H;
+}
+
+/** The side panel's width for this viewport width (wide shell only). */
+export function wideAside(vw: number): number {
+  return vw >= WIDE_ASIDE_FROM ? WIDE_ASIDE : WIDE_ASIDE_NARROW;
 }
 
 /** The space a board has, in px, inside the board slot's padding. */
@@ -51,23 +65,32 @@ export interface BoardBox {
   w: number;
   /** usable height (on phones the viewport less the shell's chrome, a soft limit: the page may scroll) */
   h: number;
-  /** the largest square board: min(w, h), on wide screens at most 80 % of the viewport height */
+  /** the largest square board: min(w, h), on wide screens at most WIDE_HEIGHT of the viewport height */
   side: number;
 }
 
 /** The pure rule behind `useBoardBox`. */
 export function boardBox(vw: number, vh: number): BoardBox {
   if (isWide(vw, vh)) {
-    const shell = Math.min(vw, WIDE_SHELL_MAX);
-    const w = Math.min(WIDE_MAX, shell - WIDE_GUTTER * 2 - WIDE_GAP - WIDE_ASIDE - SLOT_PAD * 2);
+    const aside = wideAside(vw);
+    const shell = Math.min(vw, WIDE_GUTTER * 2 + WIDE_MAX + SLOT_PAD * 2 + WIDE_GAP + aside);
+    const w = Math.min(WIDE_MAX, shell - WIDE_GUTTER * 2 - WIDE_GAP - aside - SLOT_PAD * 2);
     const h = vh - WIDE_TOP - SLOT_PAD - WIDE_BOTTOM;
-    return { wide: true, w, h, side: Math.max(0, Math.min(w, h, Math.floor(vh * 0.8))) };
+    return { wide: true, w, h, side: Math.max(0, Math.min(w, h, Math.floor(vh * WIDE_HEIGHT))) };
   }
   const w = Math.min(vw, 560) - SLOT_PAD * 2;
   const h = vh - SHELL_CHROME;
   // Phones: a square board always gets the phone width, and more only while it still fits the height.
   const phone = Math.min(vw, 420) - SLOT_PAD * 2;
   return { wide: false, w, h, side: Math.max(phone, Math.min(w, h)) };
+}
+
+/**
+ * A row of `n` equal tiles across `avail` px (`gap` between tiles, `pad` px of padding in all), between `min`
+ * and `max`. Letter tiles in Remix, pads in Echo: phones keep their touch size, big screens grow them.
+ */
+export function fitRow(avail: number, n: number, gap: number, pad: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, Math.floor((avail - pad - gap * (n - 1)) / Math.max(1, n))));
 }
 
 /** The board's space for this viewport, kept current on resize. */
@@ -154,7 +177,7 @@ export function fitCell(vw: number, cols: number, overhead: number, floor: numbe
 export function wideCell(vw: number, vh: number, cols: number, overW: number, max: number, rows = cols, overH = overW): number {
   const box = boardBox(vw, vh);
   const across = Math.floor((box.w - overW) / cols);
-  const down = Math.floor((Math.min(box.h, Math.floor(vh * 0.8)) - overH) / rows);
+  const down = Math.floor((Math.min(box.h, Math.floor(vh * WIDE_HEIGHT)) - overH) / rows);
   return Math.max(24, Math.min(Math.round(max * WIDE_GROW), across, down));
 }
 

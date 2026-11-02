@@ -46,13 +46,13 @@ describe("cellSize (useCellSize)", () => {
     expect(crown(320, 568)).toBe(36); // was 34
   });
 
-  it("fills the two-column shell's board column on desktop, inside 80 % of the height", () => {
-    expect(crown(1280, 800)).toBe(79); // 640 px board (was 64: the 560 px shell)
-    expect(cellSize(1280, 800, 10, 2, 8, 64)).toBe(61); // was 51
-    // A 700 px tall laptop: the board meets 80 % of the height.
+  it("fills the two-column shell's board column on desktop, inside 90 % of the height", () => {
+    expect(crown(1280, 800)).toBe(85); // 686 px board, the height under the top bar (was 79, and 64 before that)
+    expect(cellSize(1280, 800, 10, 2, 8, 64)).toBe(66); // was 61
+    // A 700 px tall laptop: the board fills the height under the top bar.
     const mid = cellSize(1366, 700, 10, 2, 8, 64);
-    expect(mid).toBe(53);
-    expect(10 * mid + 26).toBeLessThanOrEqual(700 * 0.8);
+    expect(mid).toBe(56);
+    expect(10 * mid + 26).toBeLessThanOrEqual(700 * 0.9);
     // A very short window (a landscape phone) keeps the single column and the phone fit.
     expect(cellSize(1366, 500, 10, 2, 8, 64)).toBe(Math.floor((420 - 24 - 26) / 10));
   });

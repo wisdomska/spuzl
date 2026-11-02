@@ -7,6 +7,9 @@ import {
   wideCell,
   SLOT_PAD,
   WIDE_ASIDE,
+  WIDE_ASIDE_NARROW,
+  WIDE_HEIGHT,
+  wideAside,
   WIDE_GAP,
   WIDE_GUTTER,
   WIDE_MAX,
@@ -35,18 +38,32 @@ describe("the two-column shell on wide screens", () => {
     for (const [w, h] of SINGLE) expect(isWide(w, h), `${w}x${h}`).toBe(false);
   });
 
-  it("gives the board the column beside a 360 px side panel and the height under the top bar", () => {
+  it("narrows the side panel to 320 px under 1280 px wide, 360 px from there", () => {
+    expect(wideAside(1024)).toBe(WIDE_ASIDE_NARROW);
+    expect(wideAside(1279)).toBe(WIDE_ASIDE_NARROW);
+    expect(wideAside(1280)).toBe(WIDE_ASIDE);
+    expect(wideAside(1920)).toBe(WIDE_ASIDE);
+  });
+
+  it("makes the board the hero: the whole height under the top bar, the column beside a compact panel", () => {
     expect(WIDE_SHELL_MAX).toBe(WIDE_GUTTER * 2 + WIDE_MAX + SLOT_PAD * 2 + WIDE_GAP + WIDE_ASIDE);
-    expect(boardBox(1280, 800)).toEqual({ wide: true, w: 760, h: 800 - WIDE_TOP - SLOT_PAD - WIDE_BOTTOM, side: 640 });
-    expect(boardBox(1440, 900)).toEqual({ wide: true, w: 760, h: 792, side: 720 });
-    expect(boardBox(1024, 768)).toEqual({ wide: true, w: 560, h: 660, side: 560 });
-    for (const [w, h] of DESKTOP) {
+    expect(boardBox(1280, 800)).toEqual({ wide: true, w: 816, h: 800 - WIDE_TOP - SLOT_PAD - WIDE_BOTTOM, side: 692 });
+    expect(boardBox(1440, 900)).toEqual({ wide: true, w: 960, h: 792, side: 792 }); // was 720
+    expect(boardBox(1024, 768)).toEqual({ wide: true, w: 600, h: 660, side: 600 }); // was 560
+    // The owner's laptop (1326 x 645) and a 1366 x 768 laptop: height-bound, the whole height.
+    expect(boardBox(1326, 645).side).toBe(645 - WIDE_TOP - SLOT_PAD - WIDE_BOTTOM);
+    expect(boardBox(1366, 768).side).toBe(660);
+    // A 1920 x 1080 desktop reaches the largest board (about 89 % of the height), never small in the middle.
+    expect(boardBox(1920, 1080)).toMatchObject({ w: WIDE_MAX, side: WIDE_MAX });
+    for (const [w, h] of [...DESKTOP, [1326, 645], [1366, 768], [1920, 1080]] as const) {
       const b = boardBox(w, h);
       // The board column, the gap, the side panel and the gutters fit across: no sideways scroll.
-      expect(WIDE_GUTTER * 2 + b.w + SLOT_PAD * 2 + WIDE_GAP + WIDE_ASIDE, `${w}x${h}`).toBeLessThanOrEqual(w);
-      // A square board stays inside 80 % of the height and under the top bar.
-      expect(b.side).toBeLessThanOrEqual(Math.floor(h * 0.8));
+      expect(WIDE_GUTTER * 2 + b.w + SLOT_PAD * 2 + WIDE_GAP + wideAside(w), `${w}x${h}`).toBeLessThanOrEqual(w);
+      // A square board stays inside 90 % of the height and under the top bar.
+      expect(b.side).toBeLessThanOrEqual(Math.floor(h * WIDE_HEIGHT));
       expect(WIDE_TOP + SLOT_PAD + b.side + WIDE_BOTTOM).toBeLessThanOrEqual(h);
+      // At least 80 % of the height (the old cap) whenever the column allows it.
+      expect(b.side, `${w}x${h}`).toBeGreaterThanOrEqual(Math.min(b.w, b.h, Math.floor(h * 0.8)));
     }
   });
 
@@ -59,11 +76,11 @@ describe("the two-column shell on wide screens", () => {
 
 describe("boards grow on wide screens", () => {
   // Chess (puzzle, vs bot and Board Bay): 8 x 8, no gaps; was capped at 48 px (384 px board).
-  it("Chess: 78 px squares at 1280 x 800 (624 px board, was 384), 88 at 1440 x 900, 68 at 1024 x 768", () => {
-    expect(cellSize(1280, 800, 8, 0, 10, 48)).toBe(78);
-    expect(cellSize(1440, 900, 8, 0, 10, 48)).toBe(88);
-    expect(cellSize(1024, 768, 8, 0, 10, 48)).toBe(68);
-    expect(cellSize(1280, 800, 8, 0, 0, 48)).toBe(80);
+  it("Chess: 85 px squares at 1280 x 800 (680 px board, was 624), 96 at 1440 x 900, 73 at 1024 x 768", () => {
+    expect(cellSize(1280, 800, 8, 0, 10, 48)).toBe(85);
+    expect(cellSize(1440, 900, 8, 0, 10, 48)).toBe(96);
+    expect(cellSize(1024, 768, 8, 0, 10, 48)).toBe(73);
+    expect(cellSize(1280, 800, 8, 0, 0, 48)).toBe(86);
   });
 
   it("never under 44 px targets on the desktop viewports for every square board up to 9 x 9", () => {
@@ -74,7 +91,7 @@ describe("boards grow on wide screens", () => {
   it("keeps a tall board inside the height", () => {
     // Twins 4 x 6 (rows x cols swapped would overflow): rows bound the cell.
     const c = cellSize(1280, 800, 4, 8, 12, 76, 6);
-    expect(6 * c + 5 * 8 + 12).toBeLessThanOrEqual(640);
+    expect(6 * c + 5 * 8 + 12).toBeLessThanOrEqual(boardBox(1280, 800).h);
   });
 
   it("caps cells at twice the phone cap", () => {
@@ -82,15 +99,15 @@ describe("boards grow on wide screens", () => {
   });
 
   it("Nine (fitCell with the height): grows past the phone's 56 px cap on a laptop", () => {
-    expect(fitCell(1280, 9, 14, 40, 56, 560, 800)).toBe(69);
+    expect(fitCell(1280, 9, 14, 40, 56, 560, 800)).toBe(75);
     // Without the height (old callers) the phone rule stands.
     expect(fitCell(1280, 9, 14, 40, 56)).toBe(56);
   });
 
   it("Four Up: columns grow to fill the column and the height", () => {
     expect(columnWidth(1280)).toBe(60);
-    expect(columnWidth(1280, 800)).toBe(104);
-    expect(6 * columnWidth(1280, 800) + 12).toBeLessThanOrEqual(640);
-    expect(7 * columnWidth(1024, 768) + 12).toBeLessThanOrEqual(560);
+    expect(columnWidth(1280, 800)).toBe(113);
+    expect(6 * columnWidth(1280, 800) + 12).toBeLessThanOrEqual(boardBox(1280, 800).h);
+    expect(7 * columnWidth(1024, 768) + 12).toBeLessThanOrEqual(boardBox(1024, 768).w);
   });
 });
