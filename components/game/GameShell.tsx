@@ -491,11 +491,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
             style={{ gridTemplateColumns: `repeat(${row.length}, minmax(0, 1fr))` }}
           >
             {row.map((c) =>
-              c.id === "hint" ? (
-                <ToolButton key={c.id} c={c} badge={hintBadge} extra={hintLeft} />
-              ) : (
-                <ToolButton key={c.id} c={c} />
-              ),
+              c.id === "hint" ? <ToolButton key={c.id} c={c} badge={hintBadge} extra={hintLeft} /> : <ToolButton key={c.id} c={c} />,
             )}
           </div>
         )

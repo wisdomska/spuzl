@@ -39,4 +39,5 @@ export async function guest(nickname?: string) {
   return { sb, token, userId: data.user!.id, api };
 }
 
-export const uniq = (p: string) => `${p}${Math.random().toString(36).slice(2, 8)}`;
+// Digits only: random letters now and then spell a word the nickname filter rightly refuses.
+export const uniq = (p: string) => `${p}${String(Math.floor(Math.random() * 1e6)).padStart(6, "0")}`;

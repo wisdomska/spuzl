@@ -18,14 +18,12 @@ export const POST = handle(async (req: Request) => {
     throw new ApiError(400, "bad_code", "That code didn't work. Check it, or send a new one.");
   if (data.session) await db.auth.admin.signOut(data.session.access_token, "local").catch(() => undefined);
 
-  const { error: e } = await db
-    .from("admin_verified_sessions")
-    .upsert({
-      session_id: sessionId,
-      user_id: user.id,
-      verified_at: new Date().toISOString(),
-      expires_at: new Date(Date.now() + 12 * 3600_000).toISOString(),
-    });
+  const { error: e } = await db.from("admin_verified_sessions").upsert({
+    session_id: sessionId,
+    user_id: user.id,
+    verified_at: new Date().toISOString(),
+    expires_at: new Date(Date.now() + 12 * 3600_000).toISOString(),
+  });
   if (e) throw e;
 
   // The email code replaces the authenticator app: drop old factors so they never block a password change.
