@@ -81,7 +81,7 @@ describe("client bundles", () => {
     expect(via.has(path.join(ROOT, "games/quickfire/Board.tsx"))).toBe(true);
   });
 
-  it.each(["games/logic-registry.ts"])("never reach %s", (target) => {
+  it.each(["games/quickfire/content.ts", "games/quickfire/logic.ts", "games/logic-registry.ts"])("never reach %s", (target) => {
     const t = path.join(ROOT, target);
     expect(via.has(t) ? chain(via, t) : null).toBeNull();
   });

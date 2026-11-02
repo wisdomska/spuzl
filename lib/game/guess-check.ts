@@ -11,15 +11,19 @@ export interface CheckedGuess {
   entry: Record<string, unknown> | null;
 }
 
-/** Answers one guess. For an attempt, the game's `record` says what to keep; entries are stamped with `t` (ms). */
+/**
+ * Answers one guess. For an attempt, the game sees the server time (`now`) and its `record` says what to keep;
+ * entries are stamped with that time as `t` (ms).
+ */
 export function checkGuessWith(
   logic: Pick<GuessLogic, "checkGuess" | "record">,
   puzzle: unknown,
   solution: unknown,
   guess: unknown,
-  ctx: GuessContext,
+  context: GuessContext,
   now = Date.now(),
 ): CheckedGuess {
+  const ctx: GuessContext = context?.kind === "attempt" ? { ...context, now } : context;
   const result = logic.checkGuess(puzzle, solution, guess, ctx);
   if (ctx?.kind !== "attempt" || !logic.record) return { result, entry: null };
   const e = logic.record(puzzle, solution, guess, result, ctx.log);

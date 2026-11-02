@@ -12,6 +12,10 @@ const INK = "#0E0F1A";
 const LETTERS = ["A", "B", "C", "D"];
 /** default pause on the revealed answer before the next question (Quickfire passes its game setting) */
 const REVEAL_MS = 1100;
+/** "Checking your answer" shows only when the judge takes longer than this */
+const CHECKING_AFTER_MS = 400;
+/** waits between automatic retries of a request that failed (then the player is offered Try again) */
+const RETRY_WAITS = [300, 900];
 const t = quick.quiz;
 
 export interface QuizRound {
@@ -23,51 +27,116 @@ export interface QuizRound {
   choices: string[];
 }
 
+/** An answer as the board keeps it (and autosaves): the judged pick and time, and once judged, the result. */
+export interface QuizAnswer extends TimedAnswer {
+  right?: boolean;
+  /** the right option, shown after the answer */
+  answer?: number;
+}
+
+/** A judged answer. `ms` is the time that scores (the judge's, which may differ from the board's own). */
+export interface QuizVerdict {
+  pick: number | null;
+  ms: number;
+  right: boolean;
+  answer: number;
+  /** the answer reached the judge after the time ran out: it counts as a timeout */
+  late?: boolean;
+}
+
+/**
+ * Who says whether an answer is right. Quickfire's judge is the server (games/_shared/guess.ts), so the board
+ * never holds the answers; `open` starts a question's window there. A judge throws when it can't be reached.
+ */
+export interface QuizJudge {
+  /** The question is on screen. Resolves with the time left in its window, or its verdict if already judged. */
+  open(q: number): Promise<{ leftMs: number; verdict?: QuizVerdict }>;
+  answer(q: number, pick: number | null, ms: number): Promise<QuizVerdict>;
+}
+
+/** A judge for boards that carry their own answer key (Flagged). */
+export function localJudge(correct: number[], limitMs: number): QuizJudge {
+  return {
+    open: async () => ({ leftMs: limitMs }),
+    answer: async (q, pick, ms) => ({
+      pick,
+      ms: pick === null ? limitMs : ms,
+      right: pick !== null && pick === correct[q],
+      answer: correct[q],
+    }),
+  };
+}
+
 interface Props {
   rounds: QuizRound[];
-  correct: number[];
+  judge: QuizJudge;
   limitMs: number;
   noun: string;
-  initial?: TimedAnswer[];
+  initial?: QuizAnswer[];
   hint?: Hint | null;
   disabled?: boolean;
   mode: PlayMode;
-  api: BoardApi<{ answers: TimedAnswer[] }>;
+  api: BoardApi<{ answers: QuizAnswer[] }>;
   /** how long the revealed answer stays before the next question appears on its own */
   advanceMs?: number;
 }
 
-type Phase = "ready" | "asking" | "reveal" | "done";
+/** checking: an answer is with the judge; retry: the judge could not be reached, the answer waits to be sent again */
+type Phase = "ready" | "asking" | "checking" | "retry" | "reveal" | "done";
+
+/** The answer key as far as the board knows it: the pick where it was judged right, -1 otherwise. */
+const keyOf = (answers: QuizAnswer[]) => answers.map((a) => (a.right && a.pick !== null ? a.pick : -1));
+
+async function withRetry<T>(f: () => Promise<T>): Promise<T> {
+  for (let k = 0; ; k++) {
+    try {
+      return await f();
+    } catch (e) {
+      if (k >= RETRY_WAITS.length) throw e;
+      await new Promise((ok) => window.setTimeout(ok, RETRY_WAITS[k]));
+    }
+  }
+}
 
 /**
  * Timed multiple choice (Quickfire, Flagged). The shell header holds the only clock; each question's
  * time limit is a world coloured bar that drains inside the card (no second mm:ss). Answers stay hidden
- * until Start. After an answer the right one is shown (letter badges and ticks, so never colour alone),
- * then the next question appears on its own after `advanceMs`: there is no Next button. The run ends
- * on a summary ("4 of 5 · 469 pts"). The bar pauses with the shell. Taps under the reading floor are
- * ignored, since the server rejects them.
+ * until Start. A tap marks the pick at once and goes to the judge; the right one is then shown (letter badges
+ * and ticks, so never colour alone), and the next question appears on its own after `advanceMs`: there is no
+ * Next button. If the judge can't be reached the pick is kept and Try again sends it. The run ends on a
+ * summary ("4 of 5 · 469 pts"). The question clock is the judge's, so it keeps running through a pause.
+ * Taps under the reading floor are ignored, since the server rejects them.
  */
-export function QuizBoard({ rounds, correct, limitMs, noun, initial, hint, disabled, mode, api, advanceMs = REVEAL_MS }: Props) {
+export function QuizBoard({ rounds, judge, limitMs, noun, initial, hint, disabled, mode, api, advanceMs = REVEAL_MS }: Props) {
   const total = rounds.length;
-  const [answers, setAnswers] = useState<TimedAnswer[]>(() => initial ?? []);
+  const [answers, setAnswers] = useState<QuizAnswer[]>(() => initial ?? []);
   const [phase, setPhase] = useState<Phase>(() => ((initial?.length ?? 0) >= total ? "done" : "ready"));
   const [left, setLeft] = useState(limitMs);
   const [shakeN, setShakeN] = useState(0);
+  const [pendingPick, setPendingPick] = useState<number | null>(null);
   const answersRef = useRef(answers);
-  const clock = useRef({ used: 0, since: 0 });
+  /** performance.now() when the current question's time runs out */
+  const deadline = useRef(0);
   const timer = useRef<number | null>(null);
   const ticker = useRef<number | null>(null);
   const bar = useRef<HTMLDivElement>(null);
   const anim = useRef<Animation | null>(null);
   const streak = useRef(0);
+  const opened = useRef<{ q: number; p: Promise<unknown> } | null>(null);
+  const pending = useRef<{ q: number; pick: number | null; ms: number } | null>(null);
   const phaseRef = useRef(phase);
   const disabledRef = useRef(disabled);
   useEffect(() => {
     phaseRef.current = phase;
     disabledRef.current = disabled;
   }, [phase, disabled]);
+  const go = (p: Phase) => {
+    phaseRef.current = p;
+    setPhase(p);
+  };
 
-  const i = phase === "reveal" || phase === "done" ? Math.max(0, answers.length - 1) : answers.length;
+  const revealed = phase === "reveal" || phase === "done";
+  const i = revealed ? Math.max(0, answers.length - 1) : answers.length;
   const round = rounds[Math.min(i, total - 1)];
   const last = answers[answers.length - 1];
   const struck = useMemo(
@@ -77,10 +146,7 @@ export function QuizBoard({ rounds, correct, limitMs, noun, initial, hint, disab
         : [],
     [hint, i, phase],
   );
-  const summary = useMemo(() => {
-    const { score, right } = timedScore(answers, correct, limitMs);
-    return { score, right };
-  }, [answers, correct, limitMs]);
+  const summary = useMemo(() => timedScore(answers, keyOf(answers), limitMs), [answers, limitMs]);
 
   const stop = () => {
     if (timer.current) window.clearTimeout(timer.current);
@@ -88,29 +154,24 @@ export function QuizBoard({ rounds, correct, limitMs, noun, initial, hint, disab
     timer.current = ticker.current = null;
   };
   useEffect(() => stop, []);
-  // The time-up callback reads the latest commit (declared below, after the advance helpers).
+  // The time-up callback and the open's catch-up read the latest handlers (declared below).
   const commitRef = useRef<(pick: number | null) => void>(() => {});
+  const settleRef = useRef<(v: QuizVerdict, q: number) => void>(() => {});
 
-  const runClock = useCallback(
-    (remaining: number) => {
-      clock.current.since = performance.now();
-      stop();
-      timer.current = window.setTimeout(() => commitRef.current(null), remaining);
-      ticker.current = window.setInterval(
-        () => setLeft(Math.max(0, limitMs - (clock.current.used + performance.now() - clock.current.since))),
-        250,
-      );
-      anim.current?.play();
-    },
-    [limitMs],
-  );
+  const runClock = useCallback(() => {
+    stop();
+    const remaining = () => Math.max(0, deadline.current - performance.now());
+    timer.current = window.setTimeout(() => commitRef.current(null), remaining());
+    ticker.current = window.setInterval(() => setLeft(remaining()), 250);
+  }, []);
 
   const ask = useCallback(() => {
     // The header clock runs from Start, not from the first answer.
     api.start?.();
-    clock.current = { used: 0, since: performance.now() };
+    const q = answersRef.current.length;
+    deadline.current = performance.now() + limitMs;
     setLeft(limitMs);
-    setPhase("asking");
+    go("asking");
     anim.current?.cancel();
     anim.current =
       bar.current?.animate([{ transform: "scaleX(1)" }, { transform: "scaleX(0)" }], {
@@ -118,17 +179,32 @@ export function QuizBoard({ rounds, correct, limitMs, noun, initial, hint, disab
         easing: "linear",
         fill: "forwards",
       }) ?? null;
-    runClock(limitMs);
-    const q = answersRef.current.length;
+    runClock();
     api.announce(`${t.step(noun, q + 1, total)}. ${rounds[q].say}. ${rounds[q].choices.map((c, k) => `${LETTERS[k]}, ${c}`).join(". ")}`);
-  }, [api, limitMs, noun, rounds, runClock, total]);
+    // The judge starts the question's window now. A question it already judged (a resumed run) catches up; a
+    // window that started earlier (asked before a reload) shortens the bar.
+    const p = withRetry(() => judge.open(q)).then(
+      (r) => {
+        if (phaseRef.current !== "asking" || answersRef.current.length !== q) return;
+        if (r.verdict) return settleRef.current(r.verdict, q);
+        const now = performance.now();
+        if (now + r.leftMs < deadline.current) {
+          deadline.current = now + r.leftMs;
+          if (anim.current) anim.current.currentTime = limitMs - r.leftMs;
+          runClock();
+        }
+      },
+      () => {}, // the answer opens it again if it has to
+    );
+    opened.current = { q, p };
+  }, [api, judge, limitMs, noun, rounds, runClock, total]);
 
   // One advance model: the next question (or the summary) follows the reveal on its own.
   const advance = useCallback(() => {
     const next = answersRef.current;
     if (next.length >= total) {
-      setPhase("done");
-      const { score, right } = timedScore(next, correct, limitMs);
+      go("done");
+      const { score, right } = timedScore(next, keyOf(next), limitMs);
       api.feedback(t.summary(right, total, score), "info", "flag-checkered");
       api.announce(t.summarySay(right, total, score));
       api.onSolved({ answers: next });
@@ -137,30 +213,26 @@ export function QuizBoard({ rounds, correct, limitMs, noun, initial, hint, disab
     // The last answer's right/wrong line belongs to that question only.
     api.feedback("");
     ask();
-  }, [api, ask, correct, limitMs, total]);
+  }, [api, ask, limitMs, total]);
 
   const scheduleAdvance = useCallback(() => {
     stop();
     timer.current = window.setTimeout(advance, advanceMs);
   }, [advance, advanceMs]);
 
-  const commit = useCallback(
-    (pick: number | null) => {
-      if (phaseRef.current !== "asking") return;
-      const used = clock.current.used + performance.now() - clock.current.since;
-      const ms = pick === null ? limitMs : Math.min(limitMs, Math.round(used));
-      if (pick !== null && ms < READ_FLOOR_MS) return;
+  /** Shows a judged answer and moves on. */
+  const settle = useCallback(
+    (v: QuizVerdict, q: number) => {
+      if (answersRef.current.length !== q) return;
       stop();
       anim.current?.pause();
-      const next = [...answersRef.current, { pick, ms }];
+      pending.current = null;
+      const next = [...answersRef.current, { pick: v.pick, ms: v.ms, right: v.right, answer: v.answer }];
       answersRef.current = next;
       setAnswers(next);
-      setPhase("reveal");
-      phaseRef.current = "reveal";
-      const q = next.length - 1;
-      const right = pick !== null && pick === correct[q];
-      const answerText = rounds[q].choices[correct[q]];
-      if (right) {
+      go("reveal");
+      const answerText = rounds[q].choices[v.answer] ?? "";
+      if (v.right) {
         streak.current++;
         // a right answer is the palette's small win (the two-note lift)
         play("success");
@@ -172,36 +244,68 @@ export function QuizBoard({ rounds, correct, limitMs, noun, initial, hint, disab
         setShakeN((k) => k + 1);
         // The mistake flag also feeds race and duel mistake counts (MatchBoard), so it stays on every miss.
         api.onMove({ answers: next }, { mistake: true });
-        if (pick === null) {
+        if (v.late) {
           sfx.miss();
-
+          api.feedback(t.late(answerText), "danger", "timer");
+          api.announce(t.late(answerText));
+        } else if (v.pick === null) {
+          sfx.miss();
           api.feedback(t.time(answerText), "danger", "timer");
           api.announce(t.timeSay(answerText));
         } else api.ruleBreak(t.wrong(answerText));
       }
       if (!disabledRef.current) scheduleAdvance();
     },
-    [api, correct, limitMs, rounds, scheduleAdvance],
+    [api, rounds, scheduleAdvance],
+  );
+  useEffect(() => {
+    settleRef.current = settle;
+  }, [settle]);
+
+  /** Sends the kept answer to the judge (after its open), retrying a little before offering Try again. */
+  const send = useCallback(async () => {
+    const p = pending.current;
+    if (!p) return;
+    go("checking");
+    const slow = window.setTimeout(() => api.feedback(t.checking, "info", "hourglass"), CHECKING_AFTER_MS);
+    try {
+      if (opened.current?.q === p.q) await opened.current.p;
+      const v = await withRetry(() => judge.answer(p.q, p.pick, p.ms));
+      window.clearTimeout(slow);
+      if (pending.current === p) settle(v, p.q);
+    } catch {
+      window.clearTimeout(slow);
+      if (pending.current !== p) return;
+      go("retry");
+      api.feedback(t.offline, "danger", "wifi-slash");
+      api.announce(t.offline);
+    }
+  }, [api, judge, settle]);
+
+  const commit = useCallback(
+    (pick: number | null) => {
+      if (phaseRef.current !== "asking") return;
+      const used = limitMs - (deadline.current - performance.now());
+      const ms = pick === null ? limitMs : Math.min(limitMs, Math.max(0, Math.round(used)));
+      if (pick !== null && ms < READ_FLOOR_MS) return;
+      stop();
+      anim.current?.pause();
+      // The pick shows at once; the judge's verdict follows.
+      pending.current = { q: answersRef.current.length, pick, ms };
+      setPendingPick(pick);
+      void send();
+    },
+    [limitMs, send],
   );
   useEffect(() => {
     commitRef.current = commit;
   }, [commit]);
 
-  // Pause with the shell: freeze the bar (or the reveal), resume where it stopped.
+  // Pause with the shell: the question clock is the judge's and keeps running; the reveal waits.
   useEffect(() => {
-    if (phase === "reveal") {
-      if (disabled) stop();
-      else if (!timer.current) scheduleAdvance();
-      return;
-    }
-    if (phase !== "asking") return;
-    if (disabled) {
-      clock.current.used += performance.now() - clock.current.since;
-      stop();
-      anim.current?.pause();
-      return;
-    }
-    if (clock.current.used > 0) runClock(limitMs - clock.current.used);
+    if (phase !== "reveal") return;
+    if (disabled) stop();
+    else if (!timer.current) scheduleAdvance();
   }, [disabled]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -215,23 +319,33 @@ export function QuizBoard({ rounds, correct, limitMs, noun, initial, hint, disab
   }, [commit, disabled, phase, round.choices.length, struck]);
 
   useEffect(() => {
+    const retrying = phase === "retry";
     api.setControls([
       {
         id: "go",
-        label: phase === "ready" ? (answers.length ? t.resume : t.start) : phase === "done" ? t.done : t.step(noun, i + 1, total),
-        icon: phase === "ready" ? "play" : phase === "done" ? "flag-checkered" : "timer",
-        onPress: phase === "ready" ? ask : () => {},
-        tone: phase === "ready" ? "world" : "default",
-        disabled: disabled || phase !== "ready",
+        label:
+          phase === "ready"
+            ? answers.length
+              ? t.resume
+              : t.start
+            : retrying
+              ? t.retry
+              : phase === "done"
+                ? t.done
+                : t.step(noun, i + 1, total),
+        icon: phase === "ready" ? "play" : retrying ? "arrow-clockwise" : phase === "done" ? "flag-checkered" : "timer",
+        onPress: phase === "ready" ? ask : retrying ? () => void send() : () => {},
+        tone: phase === "ready" || retrying ? "world" : "default",
+        disabled: disabled || (phase !== "ready" && !retrying),
       },
       { id: "hint", label: t.fiftyFifty, icon: "lightbulb", onPress: () => {}, tone: "gold", disabled: phase !== "asking" },
     ]);
-  }, [api, ask, disabled, i, noun, phase, total, answers.length]);
+  }, [api, ask, send, disabled, i, noun, phase, total, answers.length]);
 
   useEffect(() => {
     // A run resumed from autosave keeps its earlier slips, so the results never call it clean.
     if (initial?.length) {
-      const misses = timedMisses(initial, correct);
+      const misses = timedMisses(initial, keyOf(initial));
       if (misses) api.restoreMistakes?.(misses);
     }
     if (phase === "done") {
@@ -242,7 +356,7 @@ export function QuizBoard({ rounds, correct, limitMs, noun, initial, hint, disab
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const revealed = phase === "reveal" || phase === "done";
+  const waiting = phase === "checking" || phase === "retry";
   const secsLeft = Math.ceil((phase === "asking" ? left : limitMs) / 1000);
 
   return (
@@ -251,23 +365,23 @@ export function QuizBoard({ rounds, correct, limitMs, noun, initial, hint, disab
         <div className="flex gap-[5px]" role="img" aria-label={t.answered(answers.length, total)}>
           {Array.from({ length: total }, (_, k) => {
             const a = answers[k];
-            const ok = a && a.pick !== null && a.pick === correct[k];
+            const known = a && a.right !== undefined;
             return (
               <span
                 key={k}
                 className="flex h-4 w-4 items-center justify-center rounded-[5px]"
                 style={{
-                  background: !a
-                    ? k === i && phase === "asking"
+                  background: !known
+                    ? k === i && (phase === "asking" || waiting)
                       ? "var(--text)"
                       : "color-mix(in srgb, var(--text-muted) 30%, var(--board-bg))"
-                    : ok
+                    : a.right
                       ? "var(--world)"
                       : "var(--danger)",
                   color: INK,
                 }}
               >
-                {a && <Icon name={ok ? "check" : "x"} size={11} />}
+                {known && <Icon name={a.right ? "check" : "x"} size={11} />}
               </span>
             );
           })}
@@ -315,6 +429,7 @@ export function QuizBoard({ rounds, correct, limitMs, noun, initial, hint, disab
               {answers.length ? t.resumeNext(noun, answers.length + 1, total) : t.intro(total, noun, Math.round(limitMs / 1000))}
             </span>
             {!answers.length && <span className="text-muted text-[14px]">{t.ready}</span>}
+            <span className="text-muted text-[13px]">{t.clockRuns}</span>
           </>
         ) : (
           <>
@@ -325,7 +440,7 @@ export function QuizBoard({ rounds, correct, limitMs, noun, initial, hint, disab
       </div>
 
       {phase !== "done" && (
-        <div className="flex flex-col gap-2" role="group" aria-label={t.answers}>
+        <div className="flex flex-col gap-2" role="group" aria-label={t.answers} aria-busy={phase === "checking"}>
           {phase === "ready"
             ? // Answers stay hidden until Start: empty slots keep the layout still.
               round.choices.map((_, k) => (
@@ -338,8 +453,9 @@ export function QuizBoard({ rounds, correct, limitMs, noun, initial, hint, disab
               ))
             : round.choices.map((c, k) => {
                 const picked = revealed && last?.pick === k;
-                const isRight = revealed && k === correct[i];
-                const wrongPick = picked && !isRight;
+                const isRight = revealed && k === last?.answer;
+                const wrongPick = picked && !isRight && last?.right === false;
+                const mine = waiting && pendingPick === k;
                 const gone = struck.includes(k);
                 return (
                   <button
@@ -347,17 +463,19 @@ export function QuizBoard({ rounds, correct, limitMs, noun, initial, hint, disab
                     type="button"
                     disabled={disabled || phase !== "asking" || gone}
                     onClick={() => commit(k)}
-                    aria-label={`${LETTERS[k]}, ${c}${isRight ? t.rightAnswer : ""}${wrongPick ? t.yourWrongAnswer : ""}`}
+                    aria-label={`${LETTERS[k]}, ${c}${isRight ? t.rightAnswer : ""}${wrongPick ? t.yourWrongAnswer : ""}${mine ? t.yourAnswerChecking : ""}`}
                     className={`press relative flex min-h-[52px] items-center gap-3 overflow-hidden rounded-[14px] px-3 text-left disabled:cursor-default ${wrongPick ? (shakeN % 2 ? "cell-shake-a" : "cell-shake-b") : isRight && picked ? "cell-pop-a" : ""}`}
                     style={{
                       background: isRight ? "var(--world)" : "var(--surface-raised)",
                       color: isRight ? INK : "var(--text)",
                       boxShadow: wrongPick
                         ? "inset 0 0 0 3px var(--danger)"
-                        : isRight
-                          ? "0 4px 0 var(--world-depth)"
-                          : "0 4px 0 var(--depth)",
-                      opacity: gone ? 0.35 : revealed && !isRight && !picked ? 0.6 : 1,
+                        : mine
+                          ? "inset 0 0 0 3px var(--text)"
+                          : isRight
+                            ? "0 4px 0 var(--world-depth)"
+                            : "0 4px 0 var(--depth)",
+                      opacity: gone ? 0.35 : (revealed && !isRight && !picked) || (waiting && !mine) ? 0.6 : 1,
                     }}
                   >
                     {wrongPick && <span aria-hidden className="hatch absolute inset-0" />}

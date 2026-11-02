@@ -41,12 +41,13 @@ export const isGuessToken = (r: unknown): r is GuessToken =>
 /**
  * Where a guess is checked from.
  * - `attempt`: the caller's own in-progress attempt, with its last autosaved state and the entries the server
- *   recorded on it (`record`), oldest first.
+ *   recorded on it (`record`), oldest first. Log entries carry the server time they were stored at (`t`, ms);
+ *   `now` is the server time of this request, for games that time answers on the server (Quickfire).
  * - `practice`: a board whose answers are public anyway (the guided practice round, the dev fixture).
  * - null: a bare puzzle reference, which could be anyone's scored puzzle; requests that give an answer away
  *   are refused.
  */
-export type GuessContext = { kind: "attempt"; state: unknown; log: unknown[] } | { kind: "practice" } | null;
+export type GuessContext = { kind: "attempt"; state: unknown; log: unknown[]; now?: number } | { kind: "practice" } | null;
 
 export const PRACTICE: GuessContext = { kind: "practice" };
 

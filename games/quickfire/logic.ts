@@ -1,15 +1,29 @@
 /**
  * Quickfire: 5 trivia questions, 15 seconds each, tap one of 4 answers.
  * 100 per right answer plus up to 50 for speed. The hint is a 50:50 on the current question.
+ *
+ * The answers stay on the server. The client gets the questions and options, and its `ref` is an opaque token
+ * (games/_shared/guess.ts). Each question goes through the guess transport twice: `{ q, open: true }` when it
+ * appears, which starts its window on the server, and `{ q, pick, ms }` when it is answered (pick null on a
+ * timeout). On the player's attempt the server keeps both on the move log, judges the answer and only then
+ * says right or wrong and which option was right. Time is the server's: an answer that reaches it more than
+ * NET_SLACK_MS after the window closed counts as a timeout, and the scored time is never put more than
+ * NET_SLACK_MS under the server's own measure. Finish checks that the final state holds exactly the answers
+ * the server judged (`audit`), so a score can't be forged.
  */
-import type { ContentLogic, Difficulty, Generated, Hint, VerifyResult } from "@/games/types";
+import type { Difficulty, Generated, Hint, VerifyResult } from "@/games/types";
+import type { ContentRef, GuessContext, GuessLogic, PuzzleRef } from "@/games/_shared/guess";
 import { createRng, type Rng } from "@/lib/rng";
-import { checkTimedAnswers, puzzleKey, rotation, seal, timedScore, type TimedAnswer } from "@/games/_shared/cluecave";
+import { checkTimedAnswers, READ_FLOOR_MS, rotation, timedScore, type TimedAnswer } from "@/games/_shared/cluecave";
 import { CONTENT, type QuickfireCategory, type QuickfireItem } from "./content";
 
 export const QUESTIONS = 5;
 export const OPTIONS = 4;
 export const LIMIT_MS = 15000;
+/** Network allowance on the server's clock, both for a late answer and for the time it scores. */
+export const NET_SLACK_MS = 3000;
+/** Content indexes from here up are free play boards (FREE_BASE + seed); below are Daily rotation days. */
+export const FREE_BASE = 1_000_000_000;
 
 export interface QuickfireQuestion {
   q: string;
@@ -17,25 +31,55 @@ export interface QuickfireQuestion {
   choices: string[];
 }
 export interface QuickfirePuzzle {
-  ref: string;
+  /** a content reference where it is built; an opaque token once served */
+  ref: PuzzleRef;
   questions: QuickfireQuestion[];
   limitMs: number;
-  /** sealed correct indexes, for instant feedback only */
-  sealed: string;
 }
 export interface QuickfireSolution {
   correct: number[];
 }
+/** An answer as the board keeps it: the judged pick and time, and once judged, whether it was right. */
+export interface QuickfireAnswer extends TimedAnswer {
+  right?: boolean;
+  /** the right option, shown after the answer */
+  answer?: number;
+}
 export interface QuickfireState {
-  answers: TimedAnswer[];
+  answers: QuickfireAnswer[];
 }
 
-export const sealKey = (ref: string) => puzzleKey("quickfire", ref);
+/** `open` when the question appears; otherwise its answer (pick null when the time ran out). */
+export type QuickfireGuess = { q: number; open: true } | { q: number; pick: number | null; ms: number };
+export interface QuickfireVerdict {
+  q: number;
+  pick: number | null;
+  /** the time that scores (the limit on a timeout) */
+  ms: number;
+  right: boolean;
+  answer: number;
+  /** the answer reached the server after the window: it counts as a timeout */
+  late: boolean;
+}
+/**
+ * `leftMs`: the time left in the question's window (an open); `verdict`: the judged answer (an answer, or an
+ * open of a question the server already judged, so a resumed board catches up).
+ */
+export type QuickfireCheck =
+  { ok: true; leftMs?: number; verdict?: QuickfireVerdict } | { ok: false; refused: true } | { ok: false; invalid: true };
 
 const LEVELS_FOR: Record<Difficulty, number[]> = { easy: [1], medium: [1, 2], hard: [2, 3], expert: [3, 2], mega: [1, 2, 3] };
 
-function build(items: QuickfireItem[], ref: string): Generated<QuickfirePuzzle, QuickfireSolution> {
-  const rng = createRng(`qf-choices:${ref}`);
+/** The legacy string key of a board ("d<day>" or "f<seed>"): it seeds the option order and the 50:50. */
+function boardKey(ref: unknown): string {
+  if (typeof ref === "string") return ref;
+  const i = (ref as Partial<ContentRef> | null)?.i;
+  if (!Number.isInteger(i)) return "x";
+  return i! >= FREE_BASE ? `f${i! - FREE_BASE}` : `d${i}`;
+}
+
+function build(items: QuickfireItem[], i: number, d: Difficulty): Generated<QuickfirePuzzle, QuickfireSolution> {
+  const rng = createRng(`qf-choices:${boardKey({ i })}`);
   const correct: number[] = [];
   const questions = items.map((it) => {
     const choices = rng.shuffle([it.answer, ...it.wrong]);
@@ -43,7 +87,7 @@ function build(items: QuickfireItem[], ref: string): Generated<QuickfirePuzzle, 
     return { q: it.q, cat: it.cat, choices };
   });
   return {
-    puzzle: { ref, questions, limitMs: LIMIT_MS, sealed: seal(correct, sealKey(ref)) },
+    puzzle: { ref: { game: "quickfire", i, d }, questions, limitMs: LIMIT_MS },
     solution: { correct },
     grade: gradeOf(items),
   };
@@ -57,25 +101,36 @@ export function gradeOf(items: QuickfireItem[]) {
 
 export const contentCount = Math.floor(CONTENT.length / QUESTIONS);
 
-/** Daily: five consecutive slots of a fixed permutation, so no question repeats on consecutive days. */
-export function generateAt(index: number): Generated<QuickfirePuzzle, QuickfireSolution> {
-  const picks = rotation(CONTENT.length, QUESTIONS, index, "quickfire");
-  return build(
-    picks.map((i) => CONTENT[i]),
-    `d${index}`,
-  );
-}
-
-/** Free play: five questions at the difficulty's levels, at most two from one category. */
-export function generate(rng: Rng, difficulty: Difficulty): Generated<QuickfirePuzzle, QuickfireSolution> {
-  const levels = LEVELS_FOR[difficulty];
+/** Five questions at the difficulty's levels, at most two from one category. */
+function freePicks(rng: Rng, difficulty: Difficulty): QuickfireItem[] {
+  const levels = LEVELS_FOR[difficulty] ?? LEVELS_FOR.easy;
   const pool = rng.shuffle(CONTENT.filter((it) => levels.includes(it.level)));
   const picked: QuickfireItem[] = [];
   for (const it of pool) {
     if (picked.length === QUESTIONS) break;
     if (picked.filter((x) => x.cat === it.cat).length < 2) picked.push(it);
   }
-  return build(picked, `f${rng.int(0, 1e9)}`);
+  return picked;
+}
+
+/**
+ * Daily (index below FREE_BASE): five consecutive slots of a fixed permutation, so no question repeats on
+ * consecutive days. Free play (FREE_BASE + seed): the seed's board at that difficulty. Either way the content
+ * reference rebuilds the board, so it is never sent to players as is.
+ */
+export function generateAt(index: number, difficulty: Difficulty = "easy"): Generated<QuickfirePuzzle, QuickfireSolution> {
+  if (index >= FREE_BASE) return build(freePicks(createRng(`qf-free:${index - FREE_BASE}`), difficulty), index, difficulty);
+  const picks = rotation(CONTENT.length, QUESTIONS, index, "quickfire");
+  return build(
+    picks.map((i) => CONTENT[i]),
+    index,
+    difficulty,
+  );
+}
+
+/** Free play: a fresh free board from the seed. */
+export function generate(rng: Rng, difficulty: Difficulty): Generated<QuickfirePuzzle, QuickfireSolution> {
+  return generateAt(FREE_BASE + rng.int(0, FREE_BASE - 1), difficulty);
 }
 
 export function verify(p: QuickfirePuzzle, sol: QuickfireSolution, state: QuickfireState): VerifyResult {
@@ -95,15 +150,113 @@ export function hint(p: QuickfirePuzzle, sol: QuickfireSolution, state: Quickfir
   const i = Array.isArray(state?.answers) ? state.answers.length : 0;
   if (i >= p.questions.length) return null;
   const wrong = [0, 1, 2, 3].filter((k) => k !== sol.correct[i]);
-  const drop = createRng(`qf-hint:${p.ref}:${i}`).shuffle(wrong).slice(0, 2).sort();
+  const drop = createRng(`qf-hint:${boardKey(p.ref)}:${i}`)
+    .shuffle(wrong)
+    .slice(0, 2)
+    .sort();
   return { target: { question: i, remove: drop }, text: "Two wrong answers are gone." };
 }
 
-const logic: ContentLogic<QuickfirePuzzle, QuickfireSolution, QuickfireState> = {
+/* ---------- Server check per answer (guess transport) ---------- */
+
+interface Judged {
+  q: number;
+  pick: number | null;
+  ms: number;
+  late: boolean;
+}
+
+/** The attempt's move log: when each question opened (server ms) and the answers judged, in order. */
+function readLog(log: unknown[]): { opens: Map<number, number>; answers: Judged[] } {
+  const opens = new Map<number, number>();
+  const answers: Judged[] = [];
+  for (const e of Array.isArray(log) ? log : []) {
+    const x = e as Partial<Judged & { open: boolean; t: number }> | null;
+    if (!x || typeof x !== "object" || !Number.isInteger(x.q)) continue;
+    if (x.open === true) {
+      if (!opens.has(x.q!) && Number.isFinite(x.t)) opens.set(x.q!, x.t!);
+    } else if (x.q === answers.length && Number.isInteger(x.ms))
+      answers.push({ q: x.q!, pick: Number.isInteger(x.pick) ? x.pick! : null, ms: x.ms!, late: x.late === true });
+  }
+  return { opens, answers };
+}
+
+const isOpen = (g: QuickfireGuess): g is { q: number; open: true } => (g as { open?: unknown }).open === true;
+
+function validGuess(p: QuickfirePuzzle, g: QuickfireGuess): boolean {
+  if (!g || typeof g !== "object" || !Number.isInteger(g.q) || g.q < 0 || g.q >= p.questions.length) return false;
+  if (isOpen(g)) return true;
+  const { pick, ms } = g as { pick: unknown; ms: unknown };
+  if (pick !== null && (!Number.isInteger(pick) || (pick as number) < 0 || (pick as number) >= OPTIONS)) return false;
+  return typeof ms === "number" && Number.isFinite(ms) && ms >= 0 && ms <= p.limitMs;
+}
+
+const judged = (s: QuickfireSolution, j: Judged): QuickfireVerdict => ({
+  ...j,
+  right: j.pick !== null && j.pick === s.correct[j.q],
+  answer: s.correct[j.q],
+});
+
+/**
+ * Opens or answers one question. As practice (the guided board, the admin preview, the dev fixture) the pick
+ * is judged at once with its own time. On an attempt, questions go in order: each must be opened before it is
+ * answered, an answer counts once (asking again returns the same verdict), and its time is the server's (see
+ * the file comment). With no context (a bare reference, a race round) nothing is answered.
+ */
+export function checkGuess(p: QuickfirePuzzle, s: QuickfireSolution, g: QuickfireGuess, ctx: GuessContext = null): QuickfireCheck {
+  if (!validGuess(p, g)) return { ok: false, invalid: true };
+  if (!ctx) return { ok: false, refused: true };
+  const limit = p.limitMs;
+  if (ctx.kind === "practice") {
+    if (isOpen(g)) return { ok: true, leftMs: limit };
+    const ms = g.pick === null ? limit : Math.min(limit, Math.max(READ_FLOOR_MS, Math.round(g.ms)));
+    return { ok: true, verdict: judged(s, { q: g.q, pick: g.pick, ms, late: false }) };
+  }
+  const now = ctx.now ?? Date.now();
+  const { opens, answers } = readLog(ctx.log);
+  const done = answers[g.q];
+  if (done) return { ok: true, leftMs: 0, verdict: judged(s, done) };
+  if (g.q !== answers.length) return { ok: false, refused: true };
+  const openedAt = opens.get(g.q);
+  if (isOpen(g)) return { ok: true, leftMs: openedAt === undefined ? limit : Math.max(0, Math.min(limit, limit - (now - openedAt))) };
+  if (openedAt === undefined) return { ok: false, refused: true };
+  const elapsed = now - openedAt;
+  const late = elapsed > limit + NET_SLACK_MS;
+  if (late || g.pick === null) return { ok: true, verdict: judged(s, { q: g.q, pick: null, ms: limit, late }) };
+  const ms = Math.round(Math.min(limit, Math.max(g.ms, elapsed - NET_SLACK_MS, READ_FLOOR_MS)));
+  return { ok: true, verdict: judged(s, { q: g.q, pick: g.pick, ms, late: false }) };
+}
+
+/** Kept on the attempt: each question's first open, and each answer once, before its verdict is sent. */
+export function record(_p: QuickfirePuzzle, _s: QuickfireSolution, g: QuickfireGuess, res: QuickfireCheck, log: unknown[]) {
+  if (!res.ok) return null;
+  const { opens, answers } = readLog(log);
+  if (answers[g.q]) return null;
+  if (isOpen(g)) return opens.has(g.q) ? null : { q: g.q, open: true };
+  const v = res.verdict;
+  return v ? { q: v.q, pick: v.pick, ms: v.ms, late: v.late } : null;
+}
+
+/** The final state must hold exactly the answers the server judged, with the times it gave them. */
+export function audit(_p: QuickfirePuzzle, _s: QuickfireSolution, state: QuickfireState, log: unknown[]): string | null {
+  const { answers } = readLog(log);
+  const mine = Array.isArray(state?.answers) ? state.answers : [];
+  for (let i = 0; i < mine.length; i++) {
+    const j = answers[i];
+    if (!j) return "answer the server never judged";
+    if (mine[i]?.pick !== j.pick || mine[i]?.ms !== j.ms) return "answer differs from the server's record";
+  }
+  return answers.length > mine.length ? "judged answer missing from the state" : null;
+}
+
+const logic: GuessLogic<QuickfirePuzzle, QuickfireSolution, QuickfireState, QuickfireGuess, QuickfireCheck> = {
   id: "quickfire",
   contentCount,
   generateAt,
   generate,
+  checkGuess,
+  record,
+  audit,
   verify,
   progress,
   hint,
