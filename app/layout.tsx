@@ -4,6 +4,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Providers } from "@/components/shell/Providers";
 import { settingsBootScript } from "@/lib/settings/store";
+import { siteCopy } from "@/lib/copy/site";
 import "./globals.css";
 
 const unbounded = Unbounded({ variable: "--font-unbounded", subsets: ["latin"], weight: ["700", "800", "900"], display: "swap" });
@@ -14,8 +15,8 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://spuzl.vercel.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: { default: "SPUZL · 51 games, one Grid", template: "%s · SPUZL" },
-  description: "Puzzles, skill games and classic board games across 9 worlds. Play anytime, duel your friends, keep your streak alive.",
+  title: { default: siteCopy.title, template: "%s · SPUZL" },
+  description: siteCopy.description,
   applicationName: "SPUZL",
   manifest: "/manifest.webmanifest",
   // Plain files in /public (not generated routes), so hosts like the Vercel dashboard can find the site icon.

@@ -1,11 +1,19 @@
-/** Public landing page (what signed-out visitors and Google's reviewers see at "/"). */
+import { GAME_COUNT, WORLD_COUNT } from "@/lib/catalog";
+
+/** "Eight" for 8: the worlds headline spells small counts out; larger ones stay digits. */
+const SPELLED = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"];
+const spelled = (n: number) => SPELLED[n] ?? String(n);
+
+/**
+ * Public landing page (what signed-out visitors and Google's reviewers see at "/").
+ * Game and world counts come from the catalog (live games only), never typed by hand.
+ */
 export const aboutCopy = {
-  metaTitle: "SPUZL: 51 puzzle games, duels and leagues",
-  metaDescription:
-    "SPUZL is a free web app with 51 short puzzle, word, number and board games. Play any time as a guest, duel friends and climb weekly leagues.",
+  metaTitle: `SPUZL: ${GAME_COUNT} puzzle games, duels and leagues`,
+  metaDescription: `SPUZL is a free web app with ${GAME_COUNT} short puzzle, word, reflex and board games. Play any time as a guest, duel friends and climb weekly leagues.`,
   name: "SPUZL",
   nav: { how: "How it works", worlds: "Games", friends: "Friends", signIn: "Sign in", play: "Play" },
-  eyebrow: "51 free games · 9 worlds",
+  eyebrow: `${GAME_COUNT} free games · ${WORLD_COUNT} worlds`,
   headline: ["Tiny puzzles.", "Big brain"],
   headlineAccent: "energy.",
   lede: "SPUZL is a free puzzle games app. Logic grids, word games, quick reflex runs and classic board games like oware and draughts. Right in your browser, no download.",
@@ -17,12 +25,12 @@ export const aboutCopy = {
     game: "Crownfall",
     rules: ["One crown per row and column", "One crown per colour", "Crowns never touch, even corners"],
     hint: "Tap a square twice to place a crown.",
-    solved: "Cleared! That's one of 51.",
+    solved: `Cleared! That's one of ${GAME_COUNT}.`,
     more: "Play the rest",
   },
   stats: [
-    ["51", "games"],
-    ["9", "worlds"],
+    [String(GAME_COUNT), "games"],
+    [String(WORLD_COUNT), "worlds"],
     ["Free", "to play"],
   ] as const,
   howEyebrow: "How it works",
@@ -33,8 +41,8 @@ export const aboutCopy = {
     ["Keep it going.", "Clear one game a day to grow your streak, earn badges and climb your weekly league."],
   ] as const,
   worldsEyebrow: "The games",
-  worldsTitle: "Nine worlds to wander.",
-  gamesCount: (n: number) => `${n} games`,
+  worldsTitle: `${spelled(WORLD_COUNT)} worlds to wander.`,
+  gamesCount: (n: number) => (n === 1 ? "1 game" : `${n} games`),
   friendsEyebrow: "With friends",
   friendsTitle: "Better with your people.",
   friends: [

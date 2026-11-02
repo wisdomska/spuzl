@@ -150,7 +150,7 @@ export function partyShareText(p: PartyShare): string {
  * Status share text, built from the card model so it carries exactly what the image shows (same privacy rules):
  *
  *   SPUZL · Kofi · Solver II
- *   Lv 15 · 🔥 12 days · 23 of 51 games tried
+ *   Lv 15 · 🔥 12 days · 17 of 29 games tried
  *   Favourite world: Logic Lab
  *   spuzl.gg
  */

@@ -1,5 +1,5 @@
 import type { SpuzMood } from "@/components/brand/Spuz";
-import { GAME_BY_ID, WORLDS, WORLD_BY_ID, type WorldId } from "@/lib/catalog";
+import { GAME_BY_ID, GAME_COUNT, WORLDS, WORLD_BY_ID, type WorldId } from "@/lib/catalog";
 import { formatNumber, formatShort } from "@/lib/format";
 
 /**
@@ -372,8 +372,8 @@ export const SAMPLE_STATUS: StatusCardModel = statusCard({
   level: 15,
   streak: 12,
   favouriteWorld: "logic",
-  gamesTried: 23,
-  totalGames: 51,
+  gamesTried: 17,
+  totalGames: GAME_COUNT,
   rank: { name: "Solver", division: "II", emblem: "gear" },
   minor: false,
   hideActivity: false,

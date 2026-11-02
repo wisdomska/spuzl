@@ -3,6 +3,7 @@
  * consistent across screens and can be translated later: swap `en` for another locale object.
  * Keep SPUZL's voice: short, warm, plain; local flavour where it fits ("Akwaaba").
  */
+import { GAME_COUNT } from "@/lib/catalog";
 export const en = {
   signIn: {
     emailLabel: "Your email",
@@ -74,7 +75,7 @@ export const en = {
   },
   welcome: {
     helloTitle: "Akwaaba! Ready to play?",
-    helloBody: "51 tiny games to play any time. Jump in as a guest, or sign in to keep your streak on every phone.",
+    helloBody: `${GAME_COUNT} tiny games to play any time. Jump in as a guest, or sign in to keep your streak on every phone.`,
     playAsGuest: "Play as guest",
     signInWithEmail: "Sign in with email",
     signInLater: "You can sign in later from Settings. Your progress comes with you.",
@@ -84,7 +85,7 @@ export const en = {
     startTitle: "How do you want to start?",
     starts: {
       tutorial: { t: "Learn a game in 30 seconds", d: "A tiny puzzle with tips as you go." },
-      pick: { t: "Browse all 51 games", d: "See every game and pick one." },
+      pick: { t: `Browse all ${GAME_COUNT} games`, d: "See every game and pick one." },
       jump: { t: "Go to the map", d: "Islands of games. Pick one and play." },
     },
     startLater: "You can learn any game later from its Help button.",

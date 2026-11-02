@@ -1,10 +1,12 @@
+import { GAME_COUNT } from "@/lib/catalog";
+
 /** Library ("All games") copy, SPZ-14. */
 export const libraryCopy = {
   title: "All games",
   subtitle: "Pick one and play. Every game, any time.",
   back: "Back",
   search: "Search games",
-  searchPlaceholder: "Search 51 games",
+  searchPlaceholder: `Search ${GAME_COUNT} games`,
   clear: "Clear search",
   filters: "Filter games",
   all: "All",
