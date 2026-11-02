@@ -1,3 +1,5 @@
+import { isWide } from "@/components/game/useBoardSize";
+
 /**
  * Rage Ridge canvas height. The base size follows the board width; on a phone held upright the canvas
  * grows to at least 60 % of the viewport height (487 px on a 375 x 812 screen) so the course reads at
@@ -13,6 +15,9 @@ export const MIN_STAGE_HEIGHT = 200;
 export const SHORT_VIEWPORT = 700;
 
 export function stageHeight(width: number, viewport: { w: number; h: number }, tall = false): number {
+  // The two-column shell on a wide screen: the canvas keeps the course's proportions at the column's width
+  // (the height fit then gives back what the controls under it need).
+  if (isWide(viewport.w, viewport.h)) return Math.round(Math.max(320, width * (tall ? 0.9 : 0.7)));
   const base = tall ? Math.round(Math.max(300, Math.min(400, width * 0.9))) : Math.round(Math.max(230, Math.min(320, width * 0.7)));
   const phone = viewport.w < PHONE_MAX_WIDTH && viewport.h > viewport.w;
   return phone ? Math.max(base, Math.ceil(viewport.h * PHONE_MIN_VIEWPORT_SHARE)) : base;

@@ -46,15 +46,22 @@ describe("cellSize (useCellSize)", () => {
     expect(crown(320, 568)).toBe(36); // was 34
   });
 
-  it("uses the shell's full width on desktop while a square board fits the height", () => {
-    expect(crown(1280, 800)).toBe(64); // was 47: 420 px was the cap
-    expect(cellSize(1280, 800, 10, 2, 8, 64)).toBe(51); // was 35
-    // Growth past the phone fit stops where a square board meets the height (a 700 px tall laptop)...
+  it("fills the two-column shell's board column on desktop, inside 80 % of the height", () => {
+    expect(crown(1280, 800)).toBe(79); // 640 px board (was 64: the 560 px shell)
+    expect(cellSize(1280, 800, 10, 2, 8, 64)).toBe(61); // was 51
+    // A 700 px tall laptop: the board meets 80 % of the height.
     const mid = cellSize(1366, 700, 10, 2, 8, 64);
-    expect(mid).toBe(44);
-    expect(10 * mid + 26).toBeLessThanOrEqual(700 - SHELL_CHROME);
-    // ...and a very short window keeps the phone fit (never smaller than before).
+    expect(mid).toBe(53);
+    expect(10 * mid + 26).toBeLessThanOrEqual(700 * 0.8);
+    // A very short window (a landscape phone) keeps the single column and the phone fit.
     expect(cellSize(1366, 500, 10, 2, 8, 64)).toBe(Math.floor((420 - 24 - 26) / 10));
+  });
+
+  it("keeps the single column on a tablet in portrait (the 560 px shell, the phone cap)", () => {
+    expect(cellSize(768, 1024, 8, 0, 6, 64)).toBe(64);
+    expect(cellSize(768, 1024, 8, 0, 6, 80)).toBe(Math.floor((560 - 24 - 6) / 8));
+    const mid = cellSize(800, 500, 10, 2, 8, 64);
+    expect(10 * mid + 26).toBeLessThanOrEqual(Math.max(500 - SHELL_CHROME, 420 - 24));
   });
 
   it("never goes under 24 px or over the cap", () => {

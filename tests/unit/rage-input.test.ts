@@ -107,9 +107,14 @@ describe("stageHeight", () => {
     expect(stageHeight(284, { w: 320, h: 568 })).toBeGreaterThanOrEqual(0.6 * 568);
   });
 
-  it("keeps the width-based size on desktop and landscape", () => {
-    expect(stageHeight(524, { w: 1280, h: 800 })).toBe(320);
-    expect(stageHeight(524, { w: 1280, h: 800 }, true)).toBe(400);
+  it("keeps the width-based size on a landscape phone", () => {
     expect(stageHeight(339, { w: 812, h: 375 })).toBe(237);
+  });
+
+  it("keeps the course's proportions at the board column's width on a wide screen", () => {
+    // 1280 x 800: the column is 760 px wide (was 524 x 320).
+    expect(stageHeight(760, { w: 1280, h: 800 })).toBe(532);
+    expect(stageHeight(760, { w: 1280, h: 800 }, true)).toBe(684);
+    expect(stageHeight(400, { w: 1024, h: 768 })).toBe(320);
   });
 });

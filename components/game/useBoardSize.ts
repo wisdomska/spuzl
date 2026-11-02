@@ -11,19 +11,91 @@ export const SLOT_PAD = 12;
  */
 export const SHELL_CHROME = 232;
 
+/*
+ * Wide screens (tablets in landscape, laptops, desktops): the shell splits into two columns, the board on the
+ * left and a side panel on the right (players or turn strip, clue lists, feedback line, tools). The board then
+ * grows to fill the height under the top bar, up to WIDE_MAX px (and 80 % of the viewport height). Landscape
+ * phones (wide but short) keep the single column.
+ */
+/** Narrowest viewport, in px, that gets the two-column shell. Keep in step with the `wide` CSS variant. */
+export const WIDE_MIN_W = 900;
+/** Shortest viewport, in px, that gets the two-column shell. Keep in step with the `wide` CSS variant. */
+export const WIDE_MIN_H = 600;
+/** Side panel width on a wide screen. */
+export const WIDE_ASIDE = 360;
+/** Gap between the board column and the side panel. */
+export const WIDE_GAP = 32;
+/** Page gutter on each side of the wide shell. */
+export const WIDE_GUTTER = 24;
+/** The wide shell's top bar: 20 px top padding, 44 px buttons, 8 px under. */
+export const WIDE_TOP = 72;
+/** Room kept under the board on a wide screen. */
+export const WIDE_BOTTOM = 24;
+/** Largest board, in px, on any screen. */
+export const WIDE_MAX = 760;
+/** A wide board's cells may grow to this many times the phone cap (glyphs scale with the cell). */
+export const WIDE_GROW = 2;
+/** The wide shell's whole width: gutters, the largest board with its slot padding, the gap and the side panel. */
+export const WIDE_SHELL_MAX = WIDE_GUTTER * 2 + WIDE_MAX + SLOT_PAD * 2 + WIDE_GAP + WIDE_ASIDE;
+
+/** Does this viewport get the two-column shell? */
+export function isWide(vw: number, vh: number): boolean {
+  return vw >= WIDE_MIN_W && vh >= WIDE_MIN_H;
+}
+
+/** The space a board has, in px, inside the board slot's padding. */
+export interface BoardBox {
+  /** two-column shell */
+  wide: boolean;
+  /** usable width */
+  w: number;
+  /** usable height (on phones the viewport less the shell's chrome, a soft limit: the page may scroll) */
+  h: number;
+  /** the largest square board: min(w, h), on wide screens at most 80 % of the viewport height */
+  side: number;
+}
+
+/** The pure rule behind `useBoardBox`. */
+export function boardBox(vw: number, vh: number): BoardBox {
+  if (isWide(vw, vh)) {
+    const shell = Math.min(vw, WIDE_SHELL_MAX);
+    const w = Math.min(WIDE_MAX, shell - WIDE_GUTTER * 2 - WIDE_GAP - WIDE_ASIDE - SLOT_PAD * 2);
+    const h = vh - WIDE_TOP - SLOT_PAD - WIDE_BOTTOM;
+    return { wide: true, w, h, side: Math.max(0, Math.min(w, h, Math.floor(vh * 0.8))) };
+  }
+  const w = Math.min(vw, 560) - SLOT_PAD * 2;
+  const h = vh - SHELL_CHROME;
+  // Phones: a square board always gets the phone width, and more only while it still fits the height.
+  const phone = Math.min(vw, 420) - SLOT_PAD * 2;
+  return { wide: false, w, h, side: Math.max(phone, Math.min(w, h)) };
+}
+
+/** The board's space for this viewport, kept current on resize. */
+export function useBoardBox(): BoardBox {
+  return boardBox(useViewportWidth(), useViewportHeight());
+}
+
+/** Is the shell in its two-column layout? */
+export function useWide(): boolean {
+  return isWide(useViewportWidth(), useViewportHeight());
+}
+
 /**
  * Board sizing rule (Game Boards template): cell = floor((min(vw, 420) − 24 − gaps − padding) / cols),
  * capped at `max`. Boards always fit the screen width: big grids get smaller cells instead of a
  * sideways scroll (never below 24 px, the WCAG 2.5.8 minimum target). Wider than a phone (tablets,
  * desktop) the board may use the shell's full 560 px width, as long as a square board still fits the
- * viewport height.
+ * viewport height. In the wide two-column shell the board fills its column and the height under the top bar
+ * (`boardBox`), with the cap raised to WIDE_GROW × `max`; `rows` (default `cols`) keeps a tall board inside
+ * the height there.
  */
-export function useCellSize(cols: number, gap: number, padding = 6, max = 64): number {
-  return cellSize(useViewportWidth(), useViewportHeight(), cols, gap, padding, max);
+export function useCellSize(cols: number, gap: number, padding = 6, max = 64, rows = cols): number {
+  return cellSize(useViewportWidth(), useViewportHeight(), cols, gap, padding, max, rows);
 }
 
 /** The pure rule behind `useCellSize`. */
-export function cellSize(vw: number, vh: number, cols: number, gap: number, padding: number, max: number): number {
+export function cellSize(vw: number, vh: number, cols: number, gap: number, padding: number, max: number, rows = cols): number {
+  if (isWide(vw, vh)) return wideCell(vw, vh, cols, gap * (cols - 1) + padding, max, rows, gap * (rows - 1) + padding);
   const overhead = gap * (cols - 1) + padding;
   const across = (w: number) => Math.floor((w - SLOT_PAD * 2 - overhead) / cols);
   const phone = across(Math.min(vw, 420));
@@ -66,11 +138,24 @@ export function useViewportHeight(): number {
  * `floor`; when even that does not fit (the narrowest phones) it takes the largest cell that fits, never
  * under 24 px (WCAG 2.5.8).
  */
-export function fitCell(vw: number, cols: number, overhead: number, floor: number, max: number, cap = 560): number {
+export function fitCell(vw: number, cols: number, overhead: number, floor: number, max: number, cap = 560, vh?: number): number {
+  if (vh !== undefined && isWide(vw, vh)) return wideCell(vw, vh, cols, overhead, max);
   const roomy = Math.floor((Math.min(vw, cap) - SLOT_PAD * 2 - overhead) / cols);
   if (roomy >= floor) return Math.min(max, roomy);
   const edgeToEdge = Math.floor((vw - overhead) / cols);
   return Math.max(24, Math.min(floor, edgeToEdge));
+}
+
+/**
+ * A cell in the wide two-column shell: the board fills the box (`boardBox`) across `cols` and down `rows`
+ * (`overW` and `overH` are the px across and down that are not cells), capped at WIDE_GROW × `max`, never
+ * under 24 px.
+ */
+export function wideCell(vw: number, vh: number, cols: number, overW: number, max: number, rows = cols, overH = overW): number {
+  const box = boardBox(vw, vh);
+  const across = Math.floor((box.w - overW) / cols);
+  const down = Math.floor((Math.min(box.h, Math.floor(vh * 0.8)) - overH) / rows);
+  return Math.max(24, Math.min(Math.round(max * WIDE_GROW), across, down));
 }
 
 /**
@@ -91,7 +176,14 @@ export function fitStep(cur: number, ideal: number, min: number, unit: number, o
  * Null outside a shell.
  */
 export function shellContentBottom(el: HTMLElement): number | null {
-  const tails = el.closest("[data-shell]")?.querySelectorAll<HTMLElement>("[data-shell-tail]");
+  const shell = el.closest<HTMLElement>("[data-shell]");
+  // Two columns: the side panel holds the feedback line and the tools, so only the board slot (sized to its
+  // content) has to fit, with the wide shell's bottom gutter under it.
+  if (shell?.dataset?.wide !== undefined) {
+    const slot = shell.querySelector<HTMLElement>("[data-shell-slot]");
+    return slot ? slot.getBoundingClientRect().bottom + WIDE_BOTTOM : null;
+  }
+  const tails = shell?.querySelectorAll<HTMLElement>("[data-shell-tail]");
   const last = tails?.[tails.length - 1];
   if (!last) return null;
   return last.getBoundingClientRect().bottom - (parseFloat(getComputedStyle(last).marginTop) || 0);
