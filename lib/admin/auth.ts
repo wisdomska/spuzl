@@ -6,7 +6,7 @@ import { ApiError } from "@/lib/api/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from "@/lib/supabase/env";
 import { can, isRole, type Permission, type Role } from "./roles";
-import { ADMIN_COOKIE, aalOf } from "./session";
+import { ADMIN_COOKIE, aalOf, sessionIdOf } from "./session";
 
 export interface AdminCtx {
   user: User;
@@ -38,7 +38,7 @@ export async function adminAuthClient(): Promise<SupabaseClient> {
  * The verified admin user and assurance level for this request, from a Bearer token (API clients and tests)
  * or the admin session cookie. The JWT is validated by Supabase Auth before its `aal` claim is trusted.
  */
-export async function adminIdentity(): Promise<{ user: User; aal: "aal1" | "aal2" | null } | null> {
+export async function adminIdentity(): Promise<{ user: User; aal: "aal1" | "aal2" | null; sessionId: string | null } | null> {
   const auth = (await headers()).get("authorization");
   let token: string | null = null;
   let sb: SupabaseClient;
@@ -53,7 +53,7 @@ export async function adminIdentity(): Promise<{ user: User; aal: "aal1" | "aal2
   if (!token) return null;
   const { data, error } = await sb.auth.getUser(token);
   if (error || !data.user) return null;
-  return { user: data.user, aal: aalOf(token) };
+  return { user: data.user, aal: aalOf(token), sessionId: sessionIdOf(token) };
 }
 
 export type GateResult =
@@ -61,7 +61,8 @@ export type GateResult =
 
 /**
  * The admin gate. Order: signed in (401), listed in `admins` and not disabled (403 not_admin),
- * TOTP second factor verified this session (403 aal2_required), role holds the permission (403 forbidden).
+ * second step done for this sign-in session (403 aal2_required): an emailed code (admin_verified_sessions), or an
+ * authenticator (aal2) for accounts and tests that still use one, then role holds the permission (403 forbidden).
  */
 export async function checkAdmin(permission?: Permission): Promise<GateResult> {
   const who = await adminIdentity();
@@ -69,9 +70,36 @@ export async function checkAdmin(permission?: Permission): Promise<GateResult> {
   const db = supabaseAdmin();
   const { data: row } = await db.from("admins").select("role, disabled_at, email").eq("user_id", who.user.id).maybeSingle();
   if (!row || row.disabled_at || !isRole(row.role)) return { ok: false, status: 403, code: "not_admin" };
-  if (who.aal !== "aal2") return { ok: false, status: 403, code: "aal2_required" };
+  if (who.aal !== "aal2" && !(await sessionVerified(db, who.user.id, who.sessionId)))
+    return { ok: false, status: 403, code: "aal2_required" };
   if (permission && !can(row.role, permission)) return { ok: false, status: 403, code: "forbidden" };
   return { ok: true, ctx: { user: who.user, role: row.role, email: row.email ?? who.user.email ?? null, db } };
+}
+
+/** True when this sign-in session passed the emailed code step and hasn't expired. */
+async function sessionVerified(db: SupabaseClient, userId: string, sessionId: string | null): Promise<boolean> {
+  if (!sessionId) return false;
+  const { data } = await db
+    .from("admin_verified_sessions")
+    .select("session_id")
+    .eq("session_id", sessionId)
+    .eq("user_id", userId)
+    .gt("expires_at", new Date().toISOString())
+    .maybeSingle();
+  return !!data;
+}
+
+/**
+ * The first gate for the code step: signed in with a password and listed as an active admin, second step not
+ * needed yet. Returns the identity or throws.
+ */
+export async function requirePasswordAdmin(): Promise<{ user: User; sessionId: string; db: SupabaseClient; role: Role }> {
+  const who = await adminIdentity();
+  if (!who || !who.sessionId || !who.user.email) throw new ApiError(401, "unauthenticated");
+  const db = supabaseAdmin();
+  const { data: row } = await db.from("admins").select("role, disabled_at").eq("user_id", who.user.id).maybeSingle();
+  if (!row || row.disabled_at || !isRole(row.role)) throw new ApiError(403, "not_admin");
+  return { user: who.user, sessionId: who.sessionId, db, role: row.role };
 }
 
 /** Route-handler gate: throws ApiError so `handle` maps it to JSON. */

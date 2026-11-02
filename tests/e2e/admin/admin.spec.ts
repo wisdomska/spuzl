@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { admin, guest, uniq } from "../../api/helpers";
-import { login, signedIn, totp } from "./helpers";
+import { login, mailCode, signedIn } from "./helpers";
 
 /**
  * Admin console flows (FR-AD-01 to FR-AD-08). Desktop first, so the phone projects skip.
@@ -26,14 +26,19 @@ test("first sign-in enrols TOTP, then every visit needs the code; admin pages ar
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByText("Email or password is wrong.")).toBeVisible();
   await page.getByLabel("Password").fill(password);
+  const since = Date.now();
   await page.getByRole("button", { name: "Continue" }).click();
 
-  await expect(page.getByRole("heading", { name: "Set up your authenticator" })).toBeVisible();
-  await expect(page.getByRole("img", { name: "Authenticator QR code" })).toBeVisible();
-  // Password alone (AAL1) never opens the console.
-  const secret = (await page.getByTestId("totp-secret").textContent())!.trim();
-  await page.getByLabel("Code").fill(totp(secret));
-  await page.getByRole("button", { name: "Turn on and continue" }).click();
+  // Password alone never opens the console: a 6-digit code is emailed (no authenticator app).
+  await expect(page.getByRole("heading", { name: "Check your email" })).toBeVisible();
+  await page.goto("/admin/calendar");
+  await expect(page).toHaveURL(/\/admin\/login/);
+  await expect(page.getByRole("heading", { name: "Check your email" })).toBeVisible();
+  await page.getByLabel("Code").fill("000000");
+  await page.getByRole("button", { name: "Verify" }).click();
+  await expect(page.getByText("That code didn't work.")).toBeVisible();
+  await page.getByLabel("Code").fill(await mailCode(email, since));
+  await page.getByRole("button", { name: "Verify" }).click();
   // Owners land on the Overview.
   await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible({ timeout: 20_000 });
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
@@ -46,7 +51,7 @@ test("first sign-in enrols TOTP, then every visit needs the code; admin pages ar
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Continue" }).click();
-  await expect(page.getByRole("heading", { name: "Authenticator code" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Check your email" })).toBeVisible();
   await page.goto("/admin/liveops");
   await expect(page).toHaveURL(/\/admin\/login/);
 });
@@ -60,10 +65,7 @@ test("players and non-admin accounts never reach the console", async ({ page }) 
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Continue" }).click();
-  // No factor yet: enrolment is offered, but the role check refuses after it.
-  const secret = (await page.getByTestId("totp-secret").textContent())!.trim();
-  await page.getByLabel("Code").fill(totp(secret));
-  await page.getByRole("button", { name: "Turn on and continue" }).click();
+  // The role check refuses right after the password; no code is sent to non-admins.
   await expect(page.getByText("This account has no admin role.")).toBeVisible();
   await page.goto("/admin/calendar");
   await expect(page).toHaveURL(/\/admin\/login/);

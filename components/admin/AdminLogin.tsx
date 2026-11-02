@@ -7,47 +7,76 @@ import { adminSupabase } from "@/lib/client/admin-auth";
 import { adminCopy } from "@/lib/copy/admin";
 import { Btn, Field, Notice, inputCls } from "./ui";
 
-type Step = "loading" | "password" | "set-password" | "enroll" | "verify" | "denied";
+type Step = "loading" | "password" | "set-password" | "verify" | "denied";
 
 const C = adminCopy.login;
+const SENT_KEY = "spuzl.admin.codeSentAt";
 const REASONS: Record<string, string> = C.reasons;
 
 /**
- * Admin sign-in (SRS 15.1): email and password, then a TOTP second factor through Supabase MFA. First sign-in
- * enrols the authenticator. A password-reset link lands here too and asks for a new password first.
+ * Admin sign-in: email and password, then a 6-digit code emailed to the admin (no authenticator app). The server
+ * marks this sign-in session verified for 12 hours. A password-reset link lands here too and asks for a new password
+ * first.
  */
 export function AdminLogin({ next, reason }: { next: string; reason: string | null }) {
   const router = useRouter();
   const [step, setStep] = useState<Step>("loading");
   const [error, setError] = useState<string | null>(reason && reason !== "aal2_required" ? (REASONS[reason] ?? null) : null);
   const [busy, setBusy] = useState(false);
-  const [enroll, setEnroll] = useState<{ factorId: string; qr: string; secret: string } | null>(null);
+  const [sentAt, setSentAt] = useState(0);
   const pendingPassword = useRef<string | null>(null);
 
-  const finish = useCallback(
-    async (justEnrolled: boolean) => {
-      try {
-        if (justEnrolled) await api("/api/admin/me", { method: "POST" });
-        else await api("/api/admin/me");
-        router.replace(next);
-        router.refresh();
-      } catch (e) {
-        if (e instanceof HttpError && e.code === "not_admin") setStep("denied");
-        else setError(C.cannotOpen);
-      }
-    },
-    [next, router],
-  );
+  const finish = useCallback(async () => {
+    try {
+      await api("/api/admin/me");
+      router.replace(next);
+      router.refresh();
+    } catch (e) {
+      if (e instanceof HttpError && e.code === "not_admin") setStep("denied");
+      else setError(C.cannotOpen);
+    }
+  }, [next, router]);
 
-  /** After a password step: route to TOTP enrolment, TOTP verification, or straight in. */
+  /** Ask the server to email a code to this admin. */
+  const sendCode = useCallback(async (force = false) => {
+    // A reload within a minute of the last code reuses it (Supabase sends one email a minute per address).
+    let last = 0;
+    try {
+      last = Number(sessionStorage.getItem(SENT_KEY)) || 0;
+    } catch {
+      /* storage blocked */
+    }
+    if (!force && Date.now() - last < 60_000) return setSentAt(last);
+    try {
+      await api("/api/admin/login/code", { method: "POST" });
+      const now = Date.now();
+      setSentAt(now);
+      try {
+        sessionStorage.setItem(SENT_KEY, String(now));
+      } catch {
+        /* storage blocked */
+      }
+    } catch (e) {
+      if (e instanceof HttpError && e.code === "not_admin") return setStep("denied");
+      setError(e instanceof HttpError && e.code === "too_many" ? C.tooMany : C.codeNotSent);
+    }
+  }, []);
+
+  /** After a password step: straight in if this session already passed the code step, else email a code. */
   const route = useCallback(async () => {
-    const sb = adminSupabase();
-    const { data, error: e } = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (e || !data) return setStep("password");
-    if (data.currentLevel === "aal2") return finish(false);
-    if (data.nextLevel === "aal2") return setStep("verify");
-    setStep("enroll");
-  }, [finish]);
+    try {
+      await api("/api/admin/me");
+      router.replace(next);
+      router.refresh();
+    } catch (e) {
+      if (e instanceof HttpError && e.code === "not_admin") return setStep("denied");
+      if (e instanceof HttpError && e.code === "aal2_required") {
+        setStep("verify");
+        return sendCode();
+      }
+      setStep("password");
+    }
+  }, [next, router, sendCode]);
 
   useEffect(() => {
     const sb = adminSupabase();
@@ -71,23 +100,6 @@ export function AdminLogin({ next, reason }: { next: string; reason: string | nu
       setStep("password");
     })();
   }, [route]);
-
-  // Enrolment: clear abandoned factors, then show the QR code and secret.
-  useEffect(() => {
-    if (step !== "enroll" || enroll) return;
-    const sb = adminSupabase();
-    (async () => {
-      const { data: list } = await sb.auth.mfa.listFactors();
-      for (const f of list?.all ?? [])
-        if (f.factor_type === "totp" && f.status !== "verified") await sb.auth.mfa.unenroll({ factorId: f.id });
-      const { data, error: e } = await sb.auth.mfa.enroll({
-        factorType: "totp",
-        friendlyName: C.factorName(new Date().toISOString().slice(0, 10)),
-      });
-      if (e || !data) return setError(C.enrollFailed);
-      setEnroll({ factorId: data.id, qr: data.totp.qr_code, secret: data.totp.secret });
-    })();
-  }, [step, enroll]);
 
   const signIn = async (ev: FormEvent<HTMLFormElement>) => {
     ev.preventDefault();
@@ -115,8 +127,10 @@ export function AdminLogin({ next, reason }: { next: string; reason: string | nu
     setBusy(false);
     if (e) {
       if (/aal/i.test(e.code ?? e.message)) {
+        // An old authenticator on the account blocks the change until the code step removes it.
         pendingPassword.current = pw;
-        return setStep("verify");
+        setStep("verify");
+        return sendCode();
       }
       return setError(e.message);
     }
@@ -126,28 +140,24 @@ export function AdminLogin({ next, reason }: { next: string; reason: string | nu
   const verify = async (ev: FormEvent<HTMLFormElement>) => {
     ev.preventDefault();
     const code = String(new FormData(ev.currentTarget).get("code")).replace(/\s/g, "");
-    const sb = adminSupabase();
     setBusy(true);
     setError(null);
-    let factorId = enroll?.factorId;
-    if (!factorId) {
-      const { data } = await sb.auth.mfa.listFactors();
-      factorId = data?.totp?.[0]?.id;
-    }
-    if (!factorId) {
+    try {
+      await api("/api/admin/login/verify", { json: { code } });
+    } catch (e) {
       setBusy(false);
-      return setStep("enroll");
-    }
-    const { error: e } = await sb.auth.mfa.challengeAndVerify({ factorId, code });
-    if (e) {
-      setBusy(false);
+      if (e instanceof HttpError && e.code === "not_admin") return setStep("denied");
       return setError(C.badCode);
     }
     if (pendingPassword.current) {
-      await sb.auth.updateUser({ password: pendingPassword.current });
+      const { error: e } = await adminSupabase().auth.updateUser({ password: pendingPassword.current });
       pendingPassword.current = null;
+      if (e) {
+        setBusy(false);
+        return setError(e.message);
+      }
     }
-    await finish(!!enroll);
+    await finish();
     setBusy(false);
   };
 
@@ -223,32 +233,6 @@ export function AdminLogin({ next, reason }: { next: string; reason: string | nu
           </form>
         )}
 
-        {step === "enroll" && (
-          <form onSubmit={verify} className="flex flex-col gap-3.5">
-            <h1 className="font-display text-[20px] font-extrabold">{C.setUp}</h1>
-            <p className="text-muted text-[14px] leading-[1.4]">{C.scan}</p>
-            <div className="flex items-center justify-center rounded-[12px] bg-white p-3">
-              {enroll ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={enroll.qr} alt={C.qrAlt} width={180} height={180} />
-              ) : (
-                <div className="size-[180px]" />
-              )}
-            </div>
-            {enroll && (
-              <Field label={C.typeKey}>
-                <code data-testid="totp-secret" className="num bg-bg rounded-[10px] px-3 py-2 text-[13px] break-all select-all">
-                  {enroll.secret}
-                </code>
-              </Field>
-            )}
-            <CodeInput />
-            <Btn type="submit" tone="primary" size="lg" disabled={busy || !enroll} className="w-full">
-              {C.turnOn}
-            </Btn>
-          </form>
-        )}
-
         {step === "verify" && (
           <form onSubmit={verify} className="flex flex-col gap-3.5">
             <h1 className="font-display text-[20px] font-extrabold">{C.codeTitle}</h1>
@@ -257,6 +241,7 @@ export function AdminLogin({ next, reason }: { next: string; reason: string | nu
             <Btn type="submit" tone="primary" size="lg" disabled={busy} className="w-full">
               {C.verify}
             </Btn>
+            <ResendButton sentAt={sentAt} onResend={() => sendCode(true)} />
           </form>
         )}
 
@@ -279,6 +264,21 @@ export function AdminLogin({ next, reason }: { next: string; reason: string | nu
         )}
       </div>
     </main>
+  );
+}
+
+/** "Send a new code", available 30 s after the last one (Supabase allows one email a minute per address). */
+function ResendButton({ sentAt, onResend }: { sentAt: number; onResend: () => void }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const wait = Math.max(0, Math.ceil((sentAt + 60_000 - now) / 1000));
+  return (
+    <button type="button" onClick={onResend} disabled={wait > 0} className="text-accent text-[14px] font-semibold disabled:opacity-50">
+      {wait > 0 ? C.resendIn(wait) : C.resend}
+    </button>
   );
 }
 

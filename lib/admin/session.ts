@@ -16,3 +16,16 @@ export function aalOf(accessToken: string): "aal1" | "aal2" | null {
     return null;
   }
 }
+
+/** The sign-in session id (`session_id` claim) of a Supabase access token. The token must already be verified. */
+export function sessionIdOf(accessToken: string): string | null {
+  try {
+    const part = accessToken.split(".")[1];
+    const json = JSON.parse(
+      typeof atob === "function" ? atob(part.replace(/-/g, "+").replace(/_/g, "/")) : Buffer.from(part, "base64url").toString("utf8"),
+    ) as { session_id?: string };
+    return typeof json.session_id === "string" ? json.session_id : null;
+  } catch {
+    return null;
+  }
+}

@@ -667,7 +667,7 @@ const TEAM_ALLOWED = { role: [...ROLES] };
 const TEAM_COLS: HeadCol<(typeof TEAM_SORT.keys)[number]>[] = [
   { label: "Admin", sort: "email" },
   { label: "Role", sort: "role" },
-  { label: "Authenticator", sort: "totp" },
+  { label: "Email code", sort: "totp" },
   { label: "Last sign-in" },
   { label: "Access" },
 ];
