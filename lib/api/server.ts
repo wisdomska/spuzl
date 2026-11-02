@@ -5,6 +5,7 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { currentUser } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { hasSupabase } from "@/lib/supabase/env";
+import { effectiveBand } from "@/lib/age";
 
 export class ApiError extends Error {
   constructor(
@@ -50,7 +51,10 @@ export interface PlayerCtx {
   player: {
     id: string;
     nickname: string;
+    /** Derived from birth month and year at read time when they are kept (lib/age), else the stored band. */
     age_band: string;
+    /** False for players from before birth month and year were asked, until they add theirs. */
+    birth_set: boolean;
     level: number;
     xp: number;
     sparks: number;
@@ -60,19 +64,28 @@ export interface PlayerCtx {
   };
 }
 
-/** Requires a signed-in user (anonymous guests included) with a player profile. */
+/**
+ * Requires a signed-in user (anonymous guests included) with a player profile. The age band every gate reads
+ * (player.age_band) is derived here from the stored birth month and year, so it moves the day the player ages,
+ * even before the daily refresh (private.refresh_age_bands) updates the stored column; a stale stored band is
+ * brought up to date on the way.
+ */
 export async function requirePlayer(): Promise<PlayerCtx> {
   const user = await currentUser();
   if (!user) throw new ApiError(401, "unauthenticated");
   const admin = supabaseAdmin();
-  const { data: player } = await admin
+  const { data: row } = await admin
     .from("players")
-    .select("id, nickname, age_band, level, xp, sparks, banned_at, ranking_revoked, is_guest")
+    .select("id, nickname, age_band, birth_year, birth_month, level, xp, sparks, banned_at, ranking_revoked, is_guest")
     .eq("id", user.id)
     .maybeSingle();
-  if (!player) throw new ApiError(409, "no_profile");
-  if (player.banned_at) throw new ApiError(403, "banned");
-  return { user, admin, player };
+  if (!row) throw new ApiError(409, "no_profile");
+  if (row.banned_at) throw new ApiError(403, "banned");
+  const { birth_year, birth_month, ...rest } = row;
+  const band = effectiveBand(row);
+  // The trigger re-derives it from birth month and year; this only refreshes a band the daily job hasn't reached.
+  if (birth_year != null && band !== row.age_band) await admin.from("players").update({ age_band: band }).eq("id", row.id);
+  return { user, admin, player: { ...rest, age_band: band, birth_set: birth_year != null && birth_month != null } };
 }
 
 export async function requireUser(): Promise<{ user: User; admin: SupabaseClient }> {

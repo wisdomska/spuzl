@@ -10,6 +10,7 @@ import { dailyNumber, msToReset } from "@/lib/format";
 import { todayGmt } from "@/lib/api/server";
 import { getGameSettings } from "@/lib/game-settings/server";
 import type { Me, Today } from "@/lib/client/api";
+import { effectiveBand } from "@/lib/age";
 
 /** The columns `loadMe` needs from the player row (the API's requirePlayer selects a superset). */
 export interface PlayerRow {
@@ -38,7 +39,9 @@ export async function loadMe(user: User, player: PlayerRow, admin: SupabaseClien
   ] = await Promise.all([
     admin
       .from("players")
-      .select("nickname, avatar_color, skin, hat, title, age_band, country, city, settings, hide_activity, created_at")
+      .select(
+        "nickname, avatar_color, skin, hat, title, age_band, birth_year, birth_month, country, city, settings, hide_activity, created_at",
+      )
       .eq("id", player.id)
       .single(),
     admin
@@ -74,13 +77,17 @@ export async function loadMe(user: User, player: PlayerRow, admin: SupabaseClien
   const theme = COSMETICS.find((c) => c.type === "board_theme" && (equipped ?? []).some((e) => e.cosmetic_id === c.id));
   const lv = levelFromXp(player.xp);
   const worldRatings = (ratings ?? []).filter((r) => !r.track.startsWith("duel") && !r.track.startsWith("board:"));
+  // The band comes from birth month and year (never sent to the client); birthSet asks players from before once.
+  const { birth_year, birth_month, ...shown } = profile ?? {};
   const overall = worldRatings.length ? worldRatings.reduce((s, r) => s + Number(r.rating), 0) / worldRatings.length : 1000;
   return {
     id: player.id,
     guest,
     email,
     clears,
-    ...profile,
+    ...shown,
+    age_band: effectiveBand(profile ?? {}),
+    birthSet: birth_year != null && birth_month != null,
     level: lv.level,
     xp: player.xp,
     xpInto: lv.into,

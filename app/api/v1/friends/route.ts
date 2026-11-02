@@ -2,6 +2,7 @@ import { z } from "zod";
 import { ApiError, body, handle, ok, rateLimit, requirePlayer } from "@/lib/api/server";
 import { blockedIds, cards, friendshipBetween } from "@/lib/social/server";
 import { canRequestByUsername, isUnder16, presenceFor } from "@/lib/social";
+import { effectiveBand } from "@/lib/age";
 
 export const dynamic = "force-dynamic";
 
@@ -68,12 +69,12 @@ export const POST = handle(async (req: Request) => {
   if (isUnder16(player.age_band)) throw new ApiError(403, "invite_only", "Under-16 players add friends by invite link or QR.");
   const { data: target } = await admin
     .from("players")
-    .select("id, age_band, banned_at, is_test")
+    .select("id, age_band, birth_year, birth_month, banned_at, is_test")
     .ilike("nickname", nickname.replace(/[%_\\]/g, "\\$&"))
     .maybeSingle();
   if (!target || target.banned_at) throw new ApiError(404, "not_found", "No Spuzler with that name.");
   if (target.id === player.id) throw new ApiError(400, "self", "That's you.");
-  if (!canRequestByUsername(player.age_band, target.age_band))
+  if (!canRequestByUsername(player.age_band, effectiveBand(target)))
     throw new ApiError(403, "invite_only", "Under-16 players add friends by invite link or QR.");
   const blocked = await blockedIds(admin, player.id);
   // Same answer as "not found", so a block is never revealed.

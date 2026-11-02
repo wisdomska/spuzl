@@ -14,6 +14,8 @@ import { knownGames } from "./known";
 import { adultRoundView, isAdultRoom, modeOf, resolveAdult } from "./adult";
 import type { PartyMode } from "@/lib/party-adult/modes";
 import { bindPuzzle } from "@/lib/game/guess-token";
+import { effectiveBand } from "@/lib/age";
+import { isUnder16 } from "@/lib/social";
 
 export const matchTopic = (id: string) => `match:${id}`;
 
@@ -75,7 +77,16 @@ export interface PlayerRow {
   rematch: boolean;
   joined_at: string;
   kicked_at?: string | null;
-  players: { nickname: string; avatar_color: string; level: number; country: string | null; city: string | null; age_band: string } | null;
+  players: {
+    nickname: string;
+    avatar_color: string;
+    level: number;
+    country: string | null;
+    city: string | null;
+    age_band: string;
+    birth_year?: number | null;
+    birth_month?: number | null;
+  } | null;
 }
 
 export interface RoundRow {
@@ -107,7 +118,7 @@ export async function loadMatch(admin: SupabaseClient, id: string): Promise<Load
     admin.from("matches").select("*").eq("id", id).maybeSingle(),
     admin
       .from("match_players")
-      .select("*, players(nickname, avatar_color, level, country, city, age_band)")
+      .select("*, players(nickname, avatar_color, level, country, city, age_band, birth_year, birth_month)")
       .eq("match_id", id)
       .order("seat"),
   ]);
@@ -198,7 +209,7 @@ export async function viewOf(admin: SupabaseClient, l: Loaded, me: string, rewar
     // A content game's reference goes out as a token good only for this round, for this player.
     puzzle = { round: m.round, game, data: bindPuzzle(r.puzzle, me, { k: "m", m: m.id, s: m.set_no, r: m.round }) };
   }
-  const minor = (p: PlayerRow) => p.players?.age_band === "13-15";
+  const minor = (p: PlayerRow) => !p.players || isUnder16(effectiveBand(p.players));
   const players: MatchPlayerView[] = l.players.map((p) => ({
     id: p.player_id,
     nickname: p.players?.nickname ?? "Spuzler",

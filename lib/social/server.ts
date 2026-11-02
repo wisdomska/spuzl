@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ApiError } from "@/lib/api/server";
+import { effectiveBand } from "@/lib/age";
 import { isUnder16 } from "./index";
 
 /** Public player card fields (SRS 11). Under-16s expose nickname and avatar only. */
@@ -15,7 +16,7 @@ export interface Card {
   minor: boolean;
 }
 
-const CARD_COLS = "id, nickname, avatar_color, skin, hat, title, level, age_band";
+const CARD_COLS = "id, nickname, avatar_color, skin, hat, title, level, age_band, birth_year, birth_month";
 
 type CardRow = {
   id: string;
@@ -26,10 +27,12 @@ type CardRow = {
   title: string | null;
   level: number;
   age_band: string;
+  birth_year?: number | null;
+  birth_month?: number | null;
 };
 
 export function toCard(r: CardRow): Card {
-  const minor = isUnder16(r.age_band);
+  const minor = isUnder16(effectiveBand(r));
   return {
     id: r.id,
     nickname: r.nickname,

@@ -54,7 +54,10 @@ export interface Me {
   hide_activity: boolean;
   country: string | null;
   city: string | null;
+  /** derived on the server from birth month and year (which never reach the client) */
   age_band: string;
+  /** false for players from before birth month and year were asked, until they add theirs once */
+  birthSet?: boolean;
   settings: Record<string, unknown>;
   level: number;
   xp: number;
@@ -169,7 +172,7 @@ export function finishAttempt(
 export function useCreateProfile() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { nickname: string; ageBand: string; color: string; turnstile?: string }) => {
+    mutationFn: async (input: { nickname: string; birthYear: number; birthMonth: number; color: string; turnstile?: string }) => {
       await ensureSession();
       return api<{ ok: true }>("/api/v1/profile", { json: input });
     },

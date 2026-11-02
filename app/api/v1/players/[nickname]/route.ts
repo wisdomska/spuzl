@@ -17,7 +17,9 @@ export const GET = handle(async (_req: Request, ctx: RouteContext<"/api/v1/playe
   const { admin, player } = await requirePlayer();
   const { data: p } = await admin
     .from("players")
-    .select("id, nickname, avatar_color, skin, hat, title, level, age_band, hide_activity, last_seen_at, playing_game, banned_at")
+    .select(
+      "id, nickname, avatar_color, skin, hat, title, level, age_band, birth_year, birth_month, hide_activity, last_seen_at, playing_game, banned_at",
+    )
     .eq("nickname", nickname)
     .maybeSingle();
   if (!p || p.banned_at) throw new ApiError(404, "not_found", "No Spuzler with that name.");
