@@ -1,0 +1,67 @@
+/**
+ * Shared Vitest checks for a Rage Ridge level ladder (Levels mode): at least 60 levels, unique ids and names,
+ * every level compiles and has a bot-found no-death solution that replays, the hand rooms keep their order,
+ * and Daily or free-play courses still draw only from the hand rooms. Test-only module.
+ */
+import { expect, it } from "vitest";
+import type { GameLogic } from "@/games/types";
+import { createRng } from "@/lib/rng";
+import { replay, type SimCore } from "./core";
+import type { CoursePuzzle, CourseSolution, RageState } from "./course";
+import { compileLevel, type LevelDef } from "./level";
+import { courseLog } from "./scripted";
+
+export interface LadderKitOptions {
+  logic: GameLogic<CoursePuzzle, CourseSolution, RageState>;
+  levels: LevelDef[];
+  hand: LevelDef[];
+  dailyPool: string[];
+  sim(p: CoursePuzzle): SimCore;
+  solutions: Record<string, number[][]>;
+  pause: number;
+}
+
+export function ladderSuite(o: LadderKitOptions) {
+  it("has a ladder of at least 60 levels with unique ids and names", () => {
+    expect(o.levels.length).toBeGreaterThanOrEqual(60);
+    expect(new Set(o.levels.map((l) => l.id)).size).toBe(o.levels.length);
+    expect(new Set(o.levels.map((l) => l.name)).size).toBe(o.levels.length);
+    for (const l of o.levels) expect(() => compileLevel(l), l.id).not.toThrow();
+    // no two rooms alike
+    const shapes = new Set(o.levels.map((l) => JSON.stringify({ ...l, id: "", name: "" })));
+    expect(shapes.size).toBe(o.levels.length);
+  });
+
+  it("stores exactly one solution per level, and every one clears its level without a death", () => {
+    expect(Object.keys(o.solutions).sort()).toEqual(o.levels.map((l) => l.id).sort());
+    for (const l of o.levels) {
+      const r = replay(o.sim({ levels: [l.id] }), courseLog([l.id], o.solutions, o.pause));
+      expect(r.ok, l.id).toBe(true);
+      expect(r.deaths, l.id).toBe(0);
+    }
+  });
+
+  it("keeps the hand rooms in their order and Daily courses on the hand rooms", () => {
+    const at = o.hand.map((h) => o.levels.findIndex((l) => l.id === h.id));
+    expect(at.every((i) => i >= 0)).toBe(true);
+    expect(at).toEqual(at.slice().sort((a, b) => a - b));
+    expect(o.dailyPool).toEqual(o.hand.map((h) => h.id));
+    for (let i = 0; i < 10; i++) {
+      const g = o.logic.generate(createRng(`ladder:${i}`), i % 2 ? "mega" : "easy");
+      expect(g.puzzle.levels.every((id) => o.dailyPool.includes(id))).toBe(true);
+    }
+  });
+
+  it("serves level n as a one-room course that verifies with its solution", () => {
+    for (const n of [1, Math.ceil(o.levels.length / 2), o.levels.length]) {
+      const g = o.logic.level!(n)!;
+      const id = o.levels[n - 1].id;
+      expect(g.puzzle).toEqual({ levels: [id] });
+      const log = courseLog([id], o.solutions, o.pause);
+      const r = replay(o.sim(g.puzzle), log);
+      const v = o.logic.verify(g.puzzle, g.solution, { log, deaths: r.deaths, timeMs: r.timeMs });
+      expect(v.ok, v.reason).toBe(true);
+    }
+    expect(o.logic.level!(o.levels.length + 1)).toBeNull();
+  });
+}

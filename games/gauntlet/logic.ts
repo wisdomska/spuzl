@@ -2,11 +2,12 @@
  * Gauntlet: 10 tiny troll rooms in a row (games/gauntlet/levels.ts), the same 10 for everyone, picked
  * by seed in difficulty order (the scheduler changes the seed weekly). verify() re-simulates the log on the shared
  * fixed-step sim (phaser/sim) and rejects any deaths or time that do not match. Fewest deaths, then time.
+ * Levels mode plays the whole ladder (LEVELS: hand rooms, set pieces, generated rooms) one room per level.
  */
 import type { Difficulty } from "@/games/types";
 import { makeCourseLogic, type CoursePuzzle, type CourseSolution, type RageState } from "@/phaser/sim/course";
 import { PlatformerCourse } from "@/phaser/sim/platformer";
-import { CONFIG, LEVELS } from "./levels";
+import { CONFIG, DAILY_POOL, LEVELS } from "./levels";
 
 export type GauntletPuzzle = CoursePuzzle;
 export type GauntletSolution = CourseSolution;
@@ -32,7 +33,8 @@ export const GAUNTLET_LENGTH: Record<Difficulty, number> = { easy: 10, medium: 1
 const logic = makeCourseLogic({
   id: "gauntlet",
   lengths: GAUNTLET_LENGTH,
-  pool: LEVELS.map((l) => l.id),
+  pool: DAILY_POOL,
+  ladder: LEVELS.map((l) => l.id),
   sim: createSim,
   scoring: "deaths",
   hint: (p, level) => PlatformerCourse.trapHint(createSim(p).levels[level]),

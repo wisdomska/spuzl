@@ -6,9 +6,9 @@ import { advanceEventQuest } from "@/lib/events/server";
 
 /**
  * Solo clears that count for quests, badges and streak-style goals. Dailies are off for now, so a free-play clear
- * counts wherever a Daily clear did (the copy says "clear", not "Daily").
+ * counts wherever a Daily clear did (the copy says "clear", not "Daily"). A level clear is a free-play clear too.
  */
-export const SOLO_MODES = ["daily", "free", "archive"];
+export const SOLO_MODES = ["daily", "free", "archive", "level"];
 const isSolo = (mode: string) => SOLO_MODES.includes(mode);
 import { gamesInWorld, type WorldId } from "@/lib/catalog";
 
@@ -142,7 +142,7 @@ function questDelta(q: QuestDef, c: ClearContext): number {
     case "no_hint_clears":
       return isSolo(c.mode) && c.hints === 0 ? 1 : 0;
     case "free_clears":
-      return c.mode === "free" ? 1 : 0;
+      return c.mode === "free" || c.mode === "level" ? 1 : 0;
     case "full_spuzl_days":
       return c.fullSpuzl ? 1 : 0;
     default:

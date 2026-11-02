@@ -22,8 +22,9 @@ import { decodeSolution, encodeSolution } from "./solution-codec";
 import { evaluateAfterClear, type Unlock } from "@/lib/gamification/progress";
 import { finalVerdict } from "./guess-check";
 import { bindPuzzle } from "./guess-token";
+import { isLadderGame, isLevel, levelCount, levelDifficulty, levelOpen, levelSeed, nextLevel } from "./levels";
 
-export type Mode = "tutorial" | "daily" | "free" | "archive" | "challenge";
+export type Mode = "tutorial" | "daily" | "free" | "archive" | "challenge" | "level";
 
 /**
  * Retired games are refused always, and Phase 5 (lab) games while the admin setting "features.newGames" is off,
@@ -52,6 +53,8 @@ export interface PuzzleRef {
   /** tutorial only: the fixed public practice seed (free play always gets a fresh server seed) */
   seed?: string;
   difficulty: Difficulty;
+  /** level mode: the level to play (default: the player's next one) */
+  level?: number;
 }
 
 interface Loaded {
@@ -112,6 +115,36 @@ export async function loadFree(gameId: string, seed: string, difficulty: Difficu
   return { puzzleId: null, puzzle: g.puzzle, solution: g.solution, difficulty };
 }
 
+/**
+ * Level n of a game's ladder (lib/game/levels.ts): a pool game's n-th room, or a seeded board from
+ * `level:<game>:<n>` at the level's difficulty. Server only: the seed is never sent to the client.
+ */
+export async function loadLevel(gameId: string, n: number): Promise<Loaded> {
+  if (!isLadderGame(gameId) || !isLevel(gameId, n)) throw new ApiError(404, "no_such_level");
+  const logic = await loadLogic(gameId);
+  const difficulty = levelDifficulty(n);
+  const g = logic.level ? logic.level(n) : logic.generate(createRng(levelSeed(gameId, n)), difficulty);
+  if (!g) throw new ApiError(404, "no_such_level");
+  return { puzzleId: null, puzzle: g.puzzle, solution: g.solution, difficulty };
+}
+
+/** The player's highest verified clear on a game's ladder (0 when none). Levels unlock one at a time from it. */
+export async function topLevel(admin: SupabaseClient, playerId: string, gameId: string): Promise<number> {
+  const { data, error } = await admin
+    .from("player_levels")
+    .select("level")
+    .eq("player_id", playerId)
+    .eq("game_id", gameId)
+    .order("level", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.level ?? 0;
+}
+
+/** Level number stored in a level attempt's server seed (`level:<game>:<n>|<difficulty>`). */
+export const levelOfSeed = (freeSeed: string | null): number => Number((freeSeed ?? "").split("|")[0].split(":")[2]) || 0;
+
 /* ---------------- Attempts ---------------- */
 
 export async function startAttempt(admin: SupabaseClient, playerId: string, ref: PuzzleRef) {
@@ -119,7 +152,17 @@ export async function startAttempt(admin: SupabaseClient, playerId: string, ref:
   await assertGameOpen(meta);
   let loaded: Loaded;
   let seed: string | null = null;
-  if (ref.mode === "daily" || ref.mode === "archive") {
+  let level: number | undefined;
+  if (ref.mode === "level") {
+    // Level ladder: any level up to one past the highest verified clear; cleared levels replay.
+    if (!isLadderGame(meta.id)) throw new ApiError(404, "no_levels");
+    const top = await topLevel(admin, playerId, meta.id);
+    level = ref.level ?? nextLevel(meta.id, top);
+    if (!isLevel(meta.id, level)) throw new ApiError(404, "no_such_level");
+    if (!levelOpen(meta.id, level, top)) throw new ApiError(403, "level_locked", "Clear the level before this one first.");
+    loaded = await loadLevel(meta.id, level);
+    seed = levelSeed(meta.id, level);
+  } else if (ref.mode === "daily" || ref.mode === "archive") {
     if (!ref.date) throw new ApiError(400, "date_required");
     loaded = await loadDaily(admin, meta.id, ref.date);
     if (ref.mode === "daily") {
@@ -177,6 +220,7 @@ export async function startAttempt(admin: SupabaseClient, playerId: string, ref:
     hints: 0,
     // Hint packs from the Shop extend the 3 free hints in free play and the archive (never the ranked Daily).
     hintsBanked: usesBankedHints(ref.mode) ? await bankedHints(admin, playerId) : 0,
+    ...(level !== undefined ? { level, levels: levelCount(meta.id) } : {}),
     // No seed: free play's seed stays on the attempt (free_seed, hidden from players) and finish rebuilds the
     // solution from it, so a modified client can't regenerate the answer.
   };
@@ -184,7 +228,7 @@ export async function startAttempt(admin: SupabaseClient, playerId: string, ref:
 
 /** Free hints per puzzle before banked (bought) hints are spent. */
 export const FREE_HINTS = 3;
-const usesBankedHints = (mode: Mode) => mode === "free" || mode === "archive";
+const usesBankedHints = (mode: Mode) => mode === "free" || mode === "archive" || mode === "level";
 
 async function bankedHints(admin: SupabaseClient, playerId: string): Promise<number> {
   const { data } = await admin.from("players").select("practice_hints").eq("id", playerId).maybeSingle();
@@ -225,6 +269,7 @@ async function loadForAttempt(admin: SupabaseClient, a: AttemptRow): Promise<Loa
     const { data } = await admin.from("puzzles").select("data, solution, difficulty").eq("id", a.puzzle_id).single();
     return { puzzleId: a.puzzle_id, puzzle: data!.data, solution: decodeSolution(data!.solution), difficulty: data!.difficulty };
   }
+  if (a.mode === "level") return loadLevel(a.game_id, levelOfSeed(a.free_seed));
   const [seed, difficulty] = (a.free_seed ?? "").split("|");
   return loadFree(a.game_id, seed, (difficulty as Difficulty) || "easy");
 }
@@ -314,6 +359,8 @@ export interface FinishResult {
   fullSpuzl: boolean;
   unlocks: Unlock[];
   rank: { track: string; before: number; after: number } | null;
+  /** level mode: the level just cleared, the player's highest clear after it, and the next level (null at the end) */
+  ladder?: { level: number; top: number; next: number | null; bestMs: number; levels: number | null };
 }
 
 const WALL_SLACK_MS = 3000;
@@ -489,7 +536,8 @@ export async function finishAttempt(
       game_id: a.game_id,
       payload: { timeMs, hints: a.hints, date: a.daily_date },
     });
-  } else if (a.mode === "free") {
+  } else if (a.mode === "free" || a.mode === "level") {
+    // Levels earn exactly what free play does (same daily cap, same settings); a replayed level earns nothing.
     const since = new Date();
     since.setUTCHours(0, 0, 0, 0);
     const { data: today } = await admin
@@ -529,7 +577,8 @@ export async function finishAttempt(
         });
     }
     // World ranks move on free play too, at a smaller weight than a Daily. A replayed seed never moves them.
-    if (!input.relaxed && !rankingRevoked && (dup ?? 0) === 0) {
+    // Levels are the same board for everyone and replayable, so they never move ranks.
+    if (a.mode === "free" && !input.relaxed && !rankingRevoked && (dup ?? 0) === 0) {
       const difficulty = (a.free_seed ?? "").split("|")[1] || "easy";
       const { data: pct } = await admin.rpc("svc_free_percentile", {
         p_game: a.game_id,
@@ -569,6 +618,28 @@ export async function finishAttempt(
     streak = { current: 1, extended: true, milestone: null, freezeEarned: false };
   }
 
+  let ladder: FinishResult["ladder"];
+  if (a.mode === "level") {
+    // Only a verified clear (this point) records the level and unlocks the next one.
+    const n = levelOfSeed(a.free_seed);
+    const { data: rec, error } = await admin.rpc("svc_record_level_clear", {
+      p_player: playerId,
+      p_game: a.game_id,
+      p_level: n,
+      p_time: timeMs,
+    });
+    if (error) throw error;
+    const r = Array.isArray(rec) ? rec[0] : rec;
+    const count = levelCount(a.game_id);
+    ladder = {
+      level: n,
+      top: Math.max(n, Number(r?.top ?? n)),
+      next: count !== null && n >= count ? null : n + 1,
+      bestMs: Number(r?.best_ms ?? timeMs),
+      levels: count,
+    };
+  }
+
   const unlocks = await evaluateAfterClear(admin, playerId, {
     gameId: a.game_id,
     world: meta.world,
@@ -596,6 +667,7 @@ export async function finishAttempt(
     fullSpuzl,
     unlocks,
     rank,
+    ...(ladder ? { ladder } : {}),
   };
 }
 

@@ -7,7 +7,8 @@ import { framesToMs } from "@/phaser/sim/fixed";
 import { courseLog } from "@/phaser/sim/scripted";
 import { EV } from "@/phaser/sim/core";
 import logic, { createSim, generate, hint, progress, verify } from "./logic";
-import { CONFIG, LEVELS } from "./levels";
+import { CONFIG, DAILY_POOL, HAND_LEVELS, LEVELS } from "./levels";
+import { ladderSuite } from "@/phaser/sim/ladderkit";
 import SOLUTIONS_JSON from "./solutions.json";
 
 const SOLUTIONS: Record<string, number[][]> = SOLUTIONS_JSON;
@@ -166,5 +167,17 @@ describe("gotcha", () => {
     expect(hint({ levels: ["x"] }, g.solution, state(full, 0, full.frames))).toBeNull();
     const texts = new Set(LEVELS.map((l) => hint({ levels: [l.id] }, { levels: [l.id] }, undefined as never)?.text));
     expect(texts.size).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe("gotcha level ladder", () => {
+  ladderSuite({
+    logic,
+    levels: LEVELS,
+    hand: HAND_LEVELS,
+    dailyPool: DAILY_POOL,
+    sim: createSim,
+    solutions: SOLUTIONS,
+    pause: CONFIG.levelPause,
   });
 });

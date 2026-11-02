@@ -139,5 +139,20 @@ Additive and reversible (rollback SQL in the header). No existing rows change.
 | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | `20261117000001_board_queue.sql` | `board_queue` (forced RLS, service role only): one Board Bay "Play live" search per player (game, rating, when they joined, last poll, the match it found); and `svc_bay_mm_claim(players, game, match)` (service role only), which pairs waiting entries atomically and refuses blocked pairs | `drop function if exists public.svc_bay_mm_claim(uuid[], text, uuid); drop table if exists public.board_queue;` |
 
-pgTAP: `105_board_queue`. Apply before the code deploys: until it lands, Play live answers with an error and
+pgTAP: `106_board_queue`. Apply before the code deploys: until it lands, Play live answers with an error and
 everything else in Board Bay works as before.
+
+## Unreleased: level ladders
+
+Additive and reversible (rollback SQL in the header). No existing rows change.
+
+| Migration                          | What it adds                                                                                                                                                                                                                                                                                            | Rollback                                                                                                 |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `20261118000001_player_levels.sql` | `player_levels` (player, game, level, best time, first clear; forced RLS, players read their own, no client writes), `svc_record_level_clear` (keeps the best time, refuses a level more than one past the highest clear) and `svc_level_tops` (both service role only), and `level` in `attempts.mode` | Drop both functions and the table, delete `level` attempts, then restore the old mode check (see header) |
+
+pgTAP: `107_player_levels` (forced RLS and grants, the unlock rule, best time kept on replays, per game and per
+player, account deletion cascades). The migration, the pgTAP file and the rollback were each run locally inside a
+transaction that was rolled back.
+
+Apply before the code deploys: until it lands, starting a level answers an error (the `level` mode and the table
+are missing), while daily and free play are unaffected.

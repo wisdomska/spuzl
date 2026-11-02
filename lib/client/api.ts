@@ -125,9 +125,12 @@ export interface StartRes {
   hintsBanked?: number;
   date: string | null;
   difficulty: string;
+  /** level mode: the level started and the ladder size (null: endless) */
+  level?: number;
+  levels?: number | null;
 }
 
-export function startAttempt(input: { game: string; mode: string; date?: string; difficulty?: string }) {
+export function startAttempt(input: { game: string; mode: string; date?: string; difficulty?: string; level?: number }) {
   return api<StartRes>("/api/v1/attempts", { json: input });
 }
 export function saveAttempt(id: string, state: unknown, activeMs: number) {
@@ -153,6 +156,8 @@ export interface FinishRes {
     | { type: "quest"; id: string; title: string }
   )[];
   rank: { track: string; before: number; after: number } | null;
+  /** level mode: the level cleared, the highest clear now, and the next level (null when the ladder is done) */
+  ladder?: { level: number; top: number; next: number | null; bestMs: number; levels: number | null };
 }
 export function finishAttempt(
   id: string,

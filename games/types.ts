@@ -72,6 +72,11 @@ export interface GameLogic<P = unknown, S = unknown, St = unknown> {
    * for moderation instead of ranking it, like the speed checks in lib/game/service.ts finishAttempt.
    */
   suspect?(puzzle: P, solution: S, state: St): string | null;
+  /**
+   * Optional, pool ladders (lib/game/levels.ts): the puzzle for level n (1-based) of the game's hand-ordered
+   * level pool, or null past the last level. Games without it build levels from a seed with generate().
+   */
+  level?(n: number): Generated<P, S> | null;
 }
 
 /** Props the GameShell passes to every Board. */

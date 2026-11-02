@@ -3,22 +3,26 @@ import { body, handle, ok, rateLimit, requirePlayer, todayGmt, ApiError } from "
 import { startAttempt } from "@/lib/game/service";
 import { difficultyForDate } from "@/games/types";
 import { getGameSettings } from "@/lib/game-settings/server";
+import { MAX_LEVEL } from "@/lib/game/levels";
 
 const Start = z.object({
   game: z.string().min(2).max(24),
   // Challenges start through /api/v1/challenges/:code/accept, which serves the sender's puzzle.
-  mode: z.enum(["tutorial", "daily", "free", "archive"]),
+  mode: z.enum(["tutorial", "daily", "free", "archive", "level"]),
   date: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .optional(),
   difficulty: z.enum(["easy", "medium", "hard", "expert", "mega"]).optional(),
+  /** level mode: which level (default the player's next one); unlocked one at a time, checked on the server */
+  level: z.number().int().min(1).max(MAX_LEVEL).optional(),
 });
 
 /**
  * POST /api/v1/attempts: start (or resume) an attempt; returns puzzle data without the solution or the seed.
  * Free play's seed is made here and kept on the attempt (server only), so a client can neither pick a board
- * it has already solved nor rebuild the solution from what it was sent.
+ * it has already solved nor rebuild the solution from what it was sent. Level mode starts level `level` (or the
+ * player's next) only when it is unlocked: one past their highest verified clear at most.
  */
 export const POST = handle(async (req: Request) => {
   const { admin, player } = await requirePlayer();
@@ -27,7 +31,7 @@ export const POST = handle(async (req: Request) => {
   // Dailies switched off (admin "features.dailies"): free play is the only solo mode, enforced here.
   if ((input.mode === "daily" || input.mode === "archive") && !(await getGameSettings())["features.dailies"])
     throw new ApiError(404, "dailies_off", "Dailies are off. Free play is open.");
-  if (input.mode === "free")
+  if (input.mode === "free" || input.mode === "level")
     await rateLimit(admin, `practice:${player.id}`, 60, 3600); // 60 practice puzzles/hour
   else await rateLimit(admin, `attempt:${player.id}`, 120, 3600);
   let date = input.date;
@@ -42,6 +46,7 @@ export const POST = handle(async (req: Request) => {
   // Free play defaults to medium; Dailies follow the weekday curve (Mon easy ... Sun mega).
   const difficulty =
     input.difficulty ?? (input.mode === "tutorial" ? "easy" : input.mode === "free" ? "easy" : difficultyForDate(date ?? today));
-  const res = await startAttempt(admin, player.id, { gameId: input.game, mode: input.mode, date, seed, difficulty });
+  // Levels take no seed or difficulty from the client: the server builds level n from its own seed.
+  const res = await startAttempt(admin, player.id, { gameId: input.game, mode: input.mode, date, seed, difficulty, level: input.level });
   return ok({ ...res, date: date ?? null, difficulty });
 });

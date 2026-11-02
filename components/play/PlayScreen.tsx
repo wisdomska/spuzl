@@ -49,8 +49,10 @@ import { RaceLiveButton } from "@/components/multiplayer/GameChallenge";
 import { useTapToBoard } from "@/lib/analytics/tap-to-board";
 import { PLAY_NAV } from "@/lib/analytics/play-nav";
 import { gameMenuCopy } from "@/lib/copy/game-menu";
+import { LevelSheet } from "@/components/levels/LevelSheet";
+import { levelsCopy } from "@/lib/copy/levels";
 
-type Mode = "daily" | "free" | "archive";
+type Mode = "daily" | "free" | "archive" | "level";
 type Phase = "loading" | "playing" | "results" | "failed" | "error";
 type Difficulty = "easy" | "medium" | "hard" | "expert" | "mega";
 
@@ -63,12 +65,15 @@ export function PlayScreen({
   initialMode,
   date,
   difficulty,
+  level,
 }: {
   meta: GameMeta;
   initialMode: Mode;
   date?: string;
   /** Free play difficulty chosen in Practice; defaults to medium on the server */
   difficulty?: "easy" | "medium" | "hard" | "expert" | "mega";
+  /** Levels mode: the level to play (default: the player's next one, chosen by the server) */
+  level?: number;
 }) {
   const router = useRouter();
   const qc = useQueryClient();
@@ -87,6 +92,8 @@ export function PlayScreen({
   // Solved: hold the highlighted board (admin "play.solvedHoldMs") before results or the free-play bar.
   const [holding, setHolding] = useState(false);
   const [freeResult, setFreeResult] = useState<{ timeMs: number; xp: number; accuracy: number } | null>(null);
+  const [levelResult, setLevelResult] = useState<{ timeMs: number; xp: number; ladder: NonNullable<FinishRes["ladder"]> } | null>(null);
+  const [levelsOpen, setLevelsOpen] = useState(false);
   const moves = useRef(0);
   const [error, setError] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
@@ -106,13 +113,14 @@ export function PlayScreen({
     router.prefetch(`/world/${meta.world}`);
   }, [router, meta.world]);
 
-  const beginRef = useRef<(m: Mode, d?: Difficulty) => Promise<void>>(async () => {});
+  const beginRef = useRef<(m: Mode, d?: Difficulty, n?: number) => Promise<void>>(async () => {});
   const begin = useCallback(
-    async (m: Mode, d?: Difficulty): Promise<void> => {
+    async (m: Mode, d?: Difficulty, n?: number): Promise<void> => {
       setPhase("loading");
       setResult(null);
       setHolding(false);
       setFreeResult(null);
+      setLevelResult(null);
       moves.current = 0;
       try {
         // Started at the tap when possible (SPZ-01); otherwise start it now.
@@ -123,6 +131,8 @@ export function PlayScreen({
             date: m === "archive" ? date : undefined,
             // "Another <Game>" keeps the difficulty just played, so free play never drops abruptly after a Daily.
             difficulty: m === "free" ? (d ?? difficulty) : undefined,
+            // Levels: the server checks the level is unlocked and builds it from its own seed.
+            level: m === "level" ? n : undefined,
           });
         const primed = takePrimed(meta.id, m, m === "free" ? (d ?? difficulty) : undefined);
         // A primed start that failed (offline blip, a mode the server refuses) falls back to a fresh start.
@@ -172,7 +182,7 @@ export function PlayScreen({
         available: hasLogic(meta.id),
       });
       if (first) setGuided(true);
-      else void beginRef.current(initialMode);
+      else void beginRef.current(initialMode, undefined, level);
     }, 0);
     return () => clearTimeout(id);
   }, [playerId, meta.id, initialMode]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -235,6 +245,15 @@ export function PlayScreen({
       setResult(res);
       // Rage Ridge ghost games keep the run so friends can race it (Ghost Race).
       if (res.status === "cleared" && GHOST_GAMES.includes(meta.id)) saveGhostRun(attempt.attemptId).catch(() => {});
+      if (mode === "level" && res.ladder) {
+        // Levels: the same compact bar as free play, led by the next level.
+        void qc.invalidateQueries({ queryKey: ["levels"] });
+        const ladder = res.ladder;
+        afterHold(() => setLevelResult({ timeMs: res.timeMs, xp: res.reward.xp, ladder }));
+        const chips = celebrationChips(res);
+        if (chips.length) setNotice(chips.map((c) => c.label).join(" · "));
+        return;
+      }
       if (mode === "free") {
         // Free play: hold the solved board, then a compact result bar with named Next actions (never a blank screen).
         const accuracy = moves.current ? Math.round((100 * Math.max(0, moves.current - s.mistakes)) / moves.current) : 100;
@@ -317,13 +336,30 @@ export function PlayScreen({
           },
         }
       : undefined;
+  const playLevel = (n?: number) => {
+    setLevelsOpen(false);
+    void begin("level", undefined, n);
+  };
+  const levelBar = levelResult ? (
+    <LevelResultBar
+      timeMs={levelResult.timeMs}
+      xp={levelResult.xp}
+      ladder={levelResult.ladder}
+      relaxed={relaxed}
+      onNext={() => (levelResult.ladder.next ? playLevel(levelResult.ladder.next) : void begin("free"))}
+      onLevels={() => setLevelsOpen(true)}
+    />
+  ) : undefined;
+  const levelSheet = <LevelSheet meta={meta} open={levelsOpen} onClose={() => setLevelsOpen(false)} onPlay={(n) => playLevel(n)} />;
 
   const label =
-    mode === "daily" && attempt?.date
-      ? `Daily #${dailyNumber(attempt.date)}`
-      : mode === "archive" && attempt?.date
-        ? `Archive #${dailyNumber(attempt.date)}`
-        : `Free play ${freeN}`;
+    mode === "level" && attempt?.level
+      ? levelsCopy.level(attempt.level)
+      : mode === "daily" && attempt?.date
+        ? `Daily #${dailyNumber(attempt.date)}`
+        : mode === "archive" && attempt?.date
+          ? `Archive #${dailyNumber(attempt.date)}`
+          : `Free play ${freeN}`;
 
   if (phase === "results" && result) {
     return (
@@ -389,11 +425,35 @@ export function PlayScreen({
           onDone={() => {
             markLearned(meta.id);
             setGuided(false);
-            void beginRef.current(initialMode);
+            void beginRef.current(initialMode, undefined, level);
           }}
         />
       </>
     );
+
+  if ((phase === "failed" || phase === "error") && mode === "level") {
+    return (
+      <main className="mx-auto flex min-h-dvh max-w-[560px] flex-col items-center justify-center gap-4 px-6 text-center">
+        <Spuz mood={phase === "failed" ? "sad" : "shocked"} size={140} decorative />
+        <h1 className="font-display text-[24px] font-black">{phase === "failed" ? levelsCopy.failedTitle : levelsCopy.errorTitle}</h1>
+        {phase === "error" && <p className="text-muted text-[16px]">{error ?? levelsCopy.errorBody}</p>}
+        <div className="mt-4 flex w-full flex-col gap-3">
+          {phase === "failed" && attempt?.level ? (
+            <Button size="lg" onClick={() => playLevel(attempt.level)}>
+              {levelsCopy.tryAgain}
+            </Button>
+          ) : null}
+          <Button size="lg" variant={phase === "failed" ? "secondary" : "primary"} onClick={() => setLevelsOpen(true)}>
+            {levelsCopy.allLevels}
+          </Button>
+          <Button size="lg" variant="secondary" onClick={() => router.push("/")}>
+            {copy.play.backToGrid}
+          </Button>
+        </div>
+        {levelSheet}
+      </main>
+    );
+  }
 
   if (phase === "failed" || phase === "error") {
     return (
@@ -426,7 +486,7 @@ export function PlayScreen({
           meta={meta}
           Board={Board}
           puzzle={attempt.puzzle}
-          mode={mode === "archive" ? "archive" : mode}
+          mode={mode === "archive" ? "archive" : mode === "level" ? "free" : mode}
           label={label}
           initialState={attempt.state ?? undefined}
           hintsLeft={Math.max(0, 3 - (attempt.hints ?? 0)) + (attempt.hintsBanked ?? 0)}
@@ -446,7 +506,8 @@ export function PlayScreen({
           celebrate={holding}
           puzzleKey={attempt.attemptId}
           endBar={
-            freeResult ? (
+            levelBar ??
+            (freeResult ? (
               <div className="flex flex-col gap-2">
                 <SaveStreakPrompt />
                 <FreeResultBar
@@ -459,10 +520,11 @@ export function PlayScreen({
                   another={anotherAction}
                 />
               </div>
-            ) : undefined
+            ) : undefined)
           }
         />
       )}
+      {mode === "level" && levelSheet}
       <OfflineBanner floating />
       {notice && <Toast text={notice} onDone={() => setNotice(null)} />}
       <HowToSheet open={howTo} meta={meta} onClose={() => setHowTo(false)} />
@@ -549,6 +611,43 @@ function PlayLoading({ meta }: { meta: GameMeta }) {
       <main className="short:py-1 flex justify-center px-3 py-2">
         <BoardSkeleton />
       </main>
+    </div>
+  );
+}
+
+/** Levels mode's result bar: the level cleared, time and XP, then the next level and the level map. */
+function LevelResultBar({
+  timeMs,
+  xp,
+  ladder,
+  relaxed,
+  onNext,
+  onLevels,
+}: {
+  timeMs: number;
+  xp: number;
+  ladder: NonNullable<FinishRes["ladder"]>;
+  relaxed: boolean;
+  onNext: () => void;
+  onLevels: () => void;
+}) {
+  return (
+    <div className="bg-surface flex flex-col gap-3 rounded-[22px] p-3.5" role="status" aria-live="polite">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-1">
+        <span className="font-display text-accent text-[18px] font-black">{levelsCopy.levelCleared(ladder.level)}</span>
+        {!relaxed && <span className="num text-[15px] font-semibold">{formatClock(timeMs)}</span>}
+        {xp > 0 && <span className="num text-[15px] font-semibold">+{xp} XP</span>}
+        {!relaxed && ladder.bestMs < timeMs && (
+          <span className="text-muted text-[14px]">{levelsCopy.best(formatClock(ladder.bestMs))}</span>
+        )}
+      </div>
+      {ladder.next === null && <p className="text-muted px-1 text-[14px]">{levelsCopy.ladderDone}</p>}
+      <Button size="lg" icon="play" className="w-full" onClick={onNext} autoFocus>
+        {ladder.next !== null ? levelsCopy.nextLevel(ladder.next) : levelsCopy.freePlay}
+      </Button>
+      <Button size="md" variant="secondary" className="w-full" onClick={onLevels}>
+        {levelsCopy.allLevels}
+      </Button>
     </div>
   );
 }
