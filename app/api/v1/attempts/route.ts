@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { body, handle, ok, rateLimit, requirePlayer, todayGmt, ApiError } from "@/lib/api/server";
-import { startAttempt } from "@/lib/game/service";
+import { resumeAttempt, startAttempt } from "@/lib/game/service";
 import { difficultyForDate } from "@/games/types";
 import { getGameSettings } from "@/lib/game-settings/server";
 import { MAX_LEVEL } from "@/lib/game/levels";
@@ -16,6 +16,8 @@ const Start = z.object({
   difficulty: z.enum(["easy", "medium", "hard", "expert", "mega"]).optional(),
   /** level mode: which level (default the player's next one); unlocked one at a time, checked on the server */
   level: z.number().int().min(1).max(MAX_LEVEL).optional(),
+  /** free play and levels: an attempt of the player's they left part way; picked up when it is still open */
+  resume: z.string().uuid().optional(),
 });
 
 /**
@@ -40,6 +42,11 @@ export const POST = handle(async (req: Request) => {
     if (!date || date >= today) throw new ApiError(400, "archive_date");
     if (Date.parse(today) - Date.parse(date) > 7 * 86_400_000)
       throw new ApiError(403, "archive_locked", "Older Dailies arrive with SPUZL+.");
+  }
+  // A free-play or level attempt the player left part way: the same puzzle, state and time, if it is still open.
+  if (input.resume && (input.mode === "free" || input.mode === "level")) {
+    const res = await resumeAttempt(admin, player.id, input.resume, { gameId: input.game, mode: input.mode, level: input.level });
+    if (res) return ok({ ...res, date: null });
   }
   // Clients never choose a seed: the tutorial is the fixed public practice board, free play gets a fresh one.
   const seed = input.mode === "tutorial" ? `tutorial:${input.game}` : undefined;

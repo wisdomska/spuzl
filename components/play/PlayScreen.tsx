@@ -50,6 +50,7 @@ import { PLAY_NAV } from "@/lib/analytics/play-nav";
 import { gameMenuCopy } from "@/lib/copy/game-menu";
 import { LevelSheet } from "@/components/levels/LevelSheet";
 import { levelsCopy } from "@/lib/copy/levels";
+import { dropResume, keepResume, resumeIdFor } from "@/lib/client/resume";
 
 type Mode = "daily" | "free" | "archive" | "level";
 type Phase = "loading" | "playing" | "results" | "failed" | "error";
@@ -99,6 +100,8 @@ export function PlayScreen({
   const lastSave = useRef(0);
   const latestState = useRef<unknown>(undefined);
   const elapsedRef = useRef(0);
+  /** moves made since the last save reached the server */
+  const dirty = useRef(false);
   const Board = BOARDS[meta.id];
   useTapToBoard(phase === "playing" && !!attempt && !!Board, meta.id, mode);
 
@@ -112,9 +115,14 @@ export function PlayScreen({
     router.prefetch(`/world/${meta.world}`);
   }, [router, meta.world]);
 
-  const beginRef = useRef<(m: Mode, d?: Difficulty, n?: number) => Promise<void>>(async () => {});
+  const beginRef = useRef<(m: Mode, d?: Difficulty, n?: number, fresh?: boolean) => Promise<void>>(async () => {});
+  /**
+   * Starts (or resumes) an attempt. Free play and levels pick up the puzzle left part way on this device
+   * (lib/client/resume.ts) unless `fresh` (Another puzzle, another level of difficulty).
+   */
   const begin = useCallback(
-    async (m: Mode, d?: Difficulty, n?: number): Promise<void> => {
+    async (m: Mode, d?: Difficulty, n?: number, fresh = false): Promise<void> => {
+      if (fresh) dropResume(meta.id);
       setPhase("loading");
       setResult(null);
       setHolding(false);
@@ -123,7 +131,7 @@ export function PlayScreen({
       moves.current = 0;
       try {
         // Started at the tap when possible (SPZ-01); otherwise start it now.
-        const fresh = () =>
+        const start = () =>
           startAttempt({
             game: meta.id,
             mode: m,
@@ -132,11 +140,17 @@ export function PlayScreen({
             difficulty: m === "free" ? (d ?? difficulty) : undefined,
             // Levels: the server checks the level is unlocked and builds it from its own seed.
             level: m === "level" ? n : undefined,
+            resume:
+              m === "free" || m === "level"
+                ? resumeIdFor(meta.id, m, { difficulty: m === "free" ? (d ?? difficulty) : undefined, level: n })
+                : undefined,
           });
-        const primed = takePrimed(meta.id, m, m === "free" ? (d ?? difficulty) : undefined);
+        const primed = fresh ? null : takePrimed(meta.id, m, m === "free" ? (d ?? difficulty) : undefined);
         // A primed start that failed (offline blip, a mode the server refuses) falls back to a fresh start.
-        const a = await (primed ? primed.catch(fresh) : fresh());
+        const a = withLocalBackup(await (primed ? primed.catch(start) : start()));
         latestState.current = a.state ?? undefined;
+        elapsedRef.current = a.activeMs ?? 0;
+        dirty.current = false;
         setAttempt(a);
         setMode(m);
         setPhase("playing");
@@ -189,6 +203,10 @@ export function PlayScreen({
       elapsedRef.current = elapsedMs;
       moves.current++;
       if (!attempt) return;
+      dirty.current = true;
+      // Leaving any way keeps this puzzle for Resume (free play and levels; Dailies resume on the server).
+      if (mode === "free" || mode === "level")
+        keepResume(meta.id, { attemptId: attempt.attemptId, mode, difficulty: attempt.difficulty, level: attempt.level });
       try {
         localStorage.setItem(`spuzl.attempt.${attempt.attemptId}`, JSON.stringify({ state, elapsedMs }));
       } catch {
@@ -197,15 +215,35 @@ export function PlayScreen({
       const now = Date.now();
       if (now - lastSave.current > SAVE_EVERY_MS) {
         lastSave.current = now;
+        dirty.current = false;
         saveAttempt(attempt.attemptId, state, elapsedMs).catch(() => {});
       }
     },
-    [attempt],
+    [attempt, mode, meta.id],
   );
+
+  // Moves since the last autosave go to the server however the player leaves: Back (onExit), the back gesture or
+  // a link (unmount), closing the tab or the app going to the background (pagehide). keepalive lets the request
+  // finish after the page is gone.
+  const flush = useCallback(() => {
+    if (!attempt || !dirty.current || latestState.current === undefined) return;
+    dirty.current = false;
+    saveAttempt(attempt.attemptId, latestState.current, elapsedRef.current, { keepalive: true }).catch(() => {});
+  }, [attempt]);
+  useEffect(() => {
+    const onHide = () => flush();
+    window.addEventListener("pagehide", onHide);
+    return () => {
+      window.removeEventListener("pagehide", onHide);
+      flush();
+    };
+  }, [flush]);
 
   const onSolved = useCallback(
     async (state: unknown, elapsedMs: number, s: { hints: number; mistakes: number }) => {
       if (!attempt) return;
+      // The finish carries the final state; no autosave after it.
+      dirty.current = false;
       setStats(s);
       setHolding(true);
       const solvedAt = Date.now();
@@ -229,6 +267,7 @@ export function PlayScreen({
         setNotice("Could not reach the server. Your progress is saved; try again in a moment.");
         return;
       }
+      dropResume(meta.id, attempt.attemptId);
       try {
         localStorage.removeItem(`spuzl.attempt.${attempt.attemptId}`);
       } catch {}
@@ -266,10 +305,11 @@ export function PlayScreen({
   const onFailed = useCallback(
     async (state: unknown, _reason: string, elapsedMs: number) => {
       if (!attempt) return;
+      dropResume(meta.id, attempt.attemptId);
       await finishAttempt(attempt.attemptId, { state, activeMs: elapsedMs, mistakes: stats.mistakes }).catch(() => {});
       setPhase("failed");
     },
-    [attempt, stats.mistakes],
+    [attempt, stats.mistakes, meta.id],
   );
 
   const hint = useCallback(
@@ -307,7 +347,7 @@ export function PlayScreen({
     label: copy.play.another(meta.name),
     onClick: () => {
       setFreeN((n) => (mode === "free" ? n + 1 : 1));
-      void begin("free", (attempt?.difficulty as Difficulty | undefined) ?? difficulty);
+      void begin("free", (attempt?.difficulty as Difficulty | undefined) ?? difficulty, undefined, true);
     },
   };
   useEffect(() => {
@@ -328,7 +368,7 @@ export function PlayScreen({
             if (d === freeLevel) return;
             window.history.replaceState(null, "", `/play/${meta.id}?mode=free&difficulty=${d}`);
             setFreeN(1);
-            void begin("free", d as Difficulty);
+            void begin("free", d as Difficulty, undefined, true);
           },
         }
       : undefined;
@@ -485,14 +525,14 @@ export function PlayScreen({
           mode={mode === "archive" ? "archive" : mode === "level" ? "free" : mode}
           label={label}
           initialState={attempt.state ?? undefined}
+          initialElapsed={attempt.resumed ? attempt.activeMs : 0}
           hintsLeft={Math.max(0, 3 - (attempt.hints ?? 0)) + (attempt.hintsBanked ?? 0)}
           requestHint={hint}
           onMove={onMove}
           onSolved={onSolved}
           onFailed={onFailed}
           onExit={() => {
-            if (attempt && latestState.current !== undefined)
-              saveAttempt(attempt.attemptId, latestState.current, elapsedRef.current).catch(() => {});
+            flush();
             router.push(`/world/${meta.world}`);
           }}
           onHelp={() => setHowTo(true)}
@@ -526,6 +566,23 @@ export function PlayScreen({
       <HowToSheet open={howTo} meta={meta} onClose={() => setHowTo(false)} />
     </>
   );
+}
+
+/**
+ * A resumed attempt with a newer copy on this device (moves made after the last autosave reached the server,
+ * e.g. the app was closed offline): play on from the device's copy. The server checks the final state anyway.
+ */
+function withLocalBackup(a: StartRes): StartRes {
+  if (!a.resumed) return a;
+  try {
+    const raw = localStorage.getItem(`spuzl.attempt.${a.attemptId}`);
+    const local = raw ? (JSON.parse(raw) as { state: unknown; elapsedMs: number }) : null;
+    if (local && local.state != null && local.elapsedMs >= (a.activeMs ?? 0))
+      return { ...a, state: local.state, activeMs: local.elapsedMs };
+  } catch {
+    /* storage blocked or unreadable: the server's copy */
+  }
+  return a;
 }
 
 /**
@@ -578,12 +635,12 @@ function PlayLoading({ meta }: { meta: GameMeta }) {
   const world = colourOf(meta);
   return (
     <div
-      className="bg-bg relative mx-auto flex min-h-dvh w-full max-w-[560px] flex-col"
+      className="bg-bg wide:max-w-[1224px] wide:px-6 relative mx-auto flex min-h-dvh w-full max-w-[560px] flex-col"
       style={{ ["--world" as string]: world.color, ["--world-ink" as string]: world.ink }}
       data-world={meta.world}
       aria-busy
     >
-      <div className="safe-top short:pb-1.5 flex items-center gap-3 px-3 pb-2 lg:pt-6">
+      <div className="safe-top short:pb-1.5 wide:pt-5! flex items-center gap-3 px-3 pb-2">
         <Skeleton className="size-11 rounded-[14px]" />
         <div className="min-w-0 flex-1">
           <h1 className="font-display truncate text-[18px] leading-6 font-black text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]">
@@ -595,7 +652,8 @@ function PlayLoading({ meta }: { meta: GameMeta }) {
         <Skeleton className="size-11 rounded-[14px]" />
       </div>
       <p className="sr-only">{meta.rule}</p>
-      <main className="short:py-1 flex justify-center px-3 py-2">
+      {/* Wide: the board column, with the side panel's width kept free. */}
+      <main className="short:py-1 wide:mr-[392px] wide:p-3 flex justify-center px-3 py-2">
         <BoardSkeleton />
       </main>
     </div>

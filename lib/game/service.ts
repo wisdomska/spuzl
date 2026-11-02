@@ -230,6 +230,48 @@ export async function startAttempt(admin: SupabaseClient, playerId: string, ref:
   };
 }
 
+/** How long a left free-play or level attempt can be picked up again (housekeeping marks it abandoned after 2 days). */
+export const RESUME_WINDOW_MS = 36 * 3_600_000;
+
+/**
+ * Picks up one of the player's own free-play or level attempts that is still open (they left part way), for the
+ * same game and mode: the same puzzle (rebuilt from the attempt's server seed), the autosaved state, time and
+ * hints. Null when there is nothing to resume (finished, abandoned, too old, another player's, another game or
+ * mode, or another level than the one asked for), and the caller starts a fresh attempt instead.
+ */
+export async function resumeAttempt(
+  admin: SupabaseClient,
+  playerId: string,
+  id: string,
+  ref: Pick<PuzzleRef, "gameId" | "mode" | "level">,
+  nowMs = Date.now(),
+) {
+  if (ref.mode !== "free" && ref.mode !== "level") return null;
+  const { data } = await admin
+    .from("attempts")
+    .select("id, player_id, game_id, mode, daily_date, puzzle_id, free_seed, started_at, status, hints, mistakes, state, moves, active_ms")
+    .eq("id", id)
+    .maybeSingle();
+  const a = data as (AttemptRow & { active_ms: number | null }) | null;
+  if (!a || a.player_id !== playerId || a.game_id !== ref.gameId || a.mode !== ref.mode || a.status !== "in_progress") return null;
+  if (nowMs - Date.parse(a.started_at) > RESUME_WINDOW_MS) return null;
+  const level = a.mode === "level" ? levelOfSeed(a.free_seed) : undefined;
+  if (ref.level !== undefined && level !== ref.level) return null;
+  const loaded = await loadForAttempt(admin, a);
+  return {
+    attemptId: a.id,
+    puzzle: bindPuzzle(loaded.puzzle, playerId, { k: "a", a: a.id }),
+    state: a.state,
+    startedAt: a.started_at,
+    resumed: true,
+    activeMs: a.active_ms ?? 0,
+    hints: a.hints,
+    hintsBanked: await bankedHints(admin, playerId),
+    difficulty: loaded.difficulty,
+    ...(level !== undefined ? { level, levels: levelCount(a.game_id) } : {}),
+  };
+}
+
 /** Free hints per puzzle before banked (bought) hints are spent. */
 export const FREE_HINTS = 3;
 const usesBankedHints = (mode: Mode) => mode === "free" || mode === "archive" || mode === "level";

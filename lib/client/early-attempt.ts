@@ -1,6 +1,7 @@
 "use client";
 
 import { startAttempt, type StartRes } from "./api";
+import { resumeIdFor } from "./resume";
 
 /**
  * SPZ-01: start a game's attempt the moment it is tapped, in parallel with loading the Play route, so the board
@@ -34,7 +35,9 @@ export function primeAttempt(href: string) {
   const k = keyOf(t.game, t.mode, t.difficulty);
   const hit = primed.get(k);
   if (hit && Date.now() - hit.at < TTL_MS) return;
-  const p = startAttempt(t);
+  // A free-play puzzle left part way is picked up again (lib/client/resume.ts).
+  const resume = t.mode === "free" ? resumeIdFor(t.game, "free", { difficulty: t.difficulty }) : undefined;
+  const p = startAttempt({ ...t, resume });
   p.catch(() => primed.delete(k));
   primed.set(k, { at: Date.now(), p });
 }

@@ -19,6 +19,7 @@ import { isLadderGame } from "@/lib/game/levels";
 import { useLevels } from "@/lib/client/levels";
 import { ChallengeEntry } from "@/components/multiplayer/GameChallenge";
 import { PLAY_NAV } from "@/lib/analytics/play-nav";
+import { resumeNote, useResumeGames } from "@/lib/client/resume";
 
 /** Solo Screens 03 World view: island header in world colour, then each game with today's status. */
 export function WorldScreen({ id }: { id: WorldId }) {
@@ -36,6 +37,8 @@ export function WorldScreen({ id }: { id: WorldId }) {
   const rating = me.data?.ratings[id];
   const relaxed = useSettings((x) => x.relaxed);
   const levels = useLevels(games.some((g) => isLadderGame(g.id)));
+  // Solo puzzles left part way on this device (lib/client/resume.ts): their card says Resume.
+  const resumeGames = useResumeGames();
 
   return (
     <main
@@ -88,7 +91,10 @@ export function WorldScreen({ id }: { id: WorldId }) {
           const s = status(g.id);
           const done = isDone(g.id);
           const timeMs = dailiesOn ? (s?.timeMs ?? me.data?.today.cleared[g.id]) : undefined;
-          const inProgress = dailiesOn && s?.state === "in_progress";
+          // A free-play or level puzzle left part way leads (the card opens free play, which resumes it).
+          const resume = resumeGames.has(g.id);
+          const resumeLevel = resume && resumeNote(g.id)?.mode === "level";
+          const inProgress = resume || (dailiesOn && s?.state === "in_progress");
           const canChallenge = isRaceGame(g.id) && !relaxed;
           const hasActions = !!g.botPlay || canChallenge || hasLiveEntries(g.id) || isLadderGame(g.id);
           return (
@@ -100,7 +106,7 @@ export function WorldScreen({ id }: { id: WorldId }) {
               style={{ animationDelay: `${Math.min(i, 8) * 40}ms`, boxShadow: inProgress ? "inset 0 0 0 2px var(--world)" : undefined }}
             >
               <Link
-                href={done || !dailiesOn ? `/play/${g.id}?mode=free` : `/play/${g.id}`}
+                href={resumeLevel ? `/play/${g.id}?mode=level` : done || resume || !dailiesOn ? `/play/${g.id}?mode=free` : `/play/${g.id}`}
                 className="press flex items-center gap-3.5 p-3"
                 {...PLAY_NAV}
               >
@@ -109,7 +115,11 @@ export function WorldScreen({ id }: { id: WorldId }) {
                   <span className="font-display text-[18px] font-extrabold">{g.name}</span>
                   <span className="text-muted text-[14px] leading-[1.35]">{g.blurb}</span>
                 </span>
-                {done ? (
+                {resume ? (
+                  <Chip icon="hourglass-medium" bg="var(--surface-raised)" fg="var(--text)">
+                    {worldCopy.resume}
+                  </Chip>
+                ) : done ? (
                   <Chip icon="check-circle" bg="var(--success-tint)" fg="var(--accent)" num={timeMs !== undefined}>
                     {timeMs !== undefined ? formatClock(timeMs) : dailiesOn ? worldCopy.done : worldCopy.played}
                   </Chip>

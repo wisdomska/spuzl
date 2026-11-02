@@ -133,11 +133,19 @@ export interface StartRes {
   levels?: number | null;
 }
 
-export function startAttempt(input: { game: string; mode: string; date?: string; difficulty?: string; level?: number }) {
+export function startAttempt(input: {
+  game: string;
+  mode: string;
+  date?: string;
+  difficulty?: string;
+  level?: number;
+  /** free play and levels: pick up this attempt (left part way) when the server still has it open */
+  resume?: string;
+}) {
   return api<StartRes>("/api/v1/attempts", { json: input });
 }
-export function saveAttempt(id: string, state: unknown, activeMs: number) {
-  return api<{ ok: true }>(`/api/v1/attempts/${id}`, { method: "PATCH", json: { state, activeMs } });
+export function saveAttempt(id: string, state: unknown, activeMs: number, opts: { keepalive?: boolean } = {}) {
+  return api<{ ok: true }>(`/api/v1/attempts/${id}`, { method: "PATCH", json: { state, activeMs }, keepalive: opts.keepalive });
 }
 export function requestHint(id: string, state: unknown) {
   // `null`, not undefined: "no moves yet" must still send the key
