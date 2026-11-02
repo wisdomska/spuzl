@@ -143,6 +143,8 @@ export default function ChessBoard({ puzzle, initialState, hint, disabled, api }
       const pc = shown.b[sq];
       if (pc && colorOf(pc) === WHITE) {
         if (sel === sq) {
+          // putting the piece back down: the soft tap
+          play("tap", { gain: 0.55 });
           setSel(null);
           return;
         }
