@@ -13,6 +13,7 @@ import { Icon } from "@/components/ui/Icon";
 import { formatClock } from "@/lib/format";
 import { GameIcon3D } from "./GameIcon3D";
 import { BotEntry } from "./BotEntry";
+import { LiveEntries, hasLiveEntries } from "./LiveEntry";
 import { ChallengeEntry } from "@/components/multiplayer/GameChallenge";
 import { PLAY_NAV } from "@/lib/analytics/play-nav";
 
@@ -85,7 +86,7 @@ export function WorldScreen({ id }: { id: WorldId }) {
           const timeMs = dailiesOn ? (s?.timeMs ?? me.data?.today.cleared[g.id]) : undefined;
           const inProgress = dailiesOn && s?.state === "in_progress";
           const canChallenge = isRaceGame(g.id) && !relaxed;
-          const hasActions = !!g.botPlay || canChallenge;
+          const hasActions = !!g.botPlay || canChallenge || hasLiveEntries(g.id);
           return (
             // CSS stagger, not Motion: it plays while the route is still loading, and CSS keeps it off the main thread.
             // One card per game: the game itself, then its ways to play with others in a footer inside the same card.
@@ -125,6 +126,7 @@ export function WorldScreen({ id }: { id: WorldId }) {
                   aria-label={worldCopy.withOthers(g.name)}
                 >
                   <ChallengeEntry meta={g} inline />
+                  <LiveEntries meta={g} />
                   <BotEntry meta={g} inline />
                 </div>
               )}

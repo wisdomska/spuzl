@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { duelCopy } from "@/lib/copy/duel";
+import { bayLive } from "@/lib/copy/bay-live";
 import { AnimatePresence, motion } from "motion/react";
 import { Icon } from "@/components/ui/Icon";
 import { Spuz, type SpuzMood } from "@/components/brand/Spuz";
@@ -157,6 +159,15 @@ export function DuelEntrySheet({
           </span>
           <Icon name="caret-right" size={20} className="text-muted" />
         </button>
+        {/* Board games are played in Board Bay, not Duel: point there for live chess, draughts and the rest. */}
+        <Link href="/bay" className="press flex min-h-11 items-center gap-2.5 rounded-[14px] px-1 text-[15px] font-semibold">
+          <Icon name="horse" size={20} className="text-accent" />
+          <span className="flex min-w-0 flex-1 flex-col">
+            {bayLive.duelLink}
+            <span className="text-muted text-[13px] font-medium">{bayLive.duelLinkSub}</span>
+          </span>
+          <Icon name="caret-right" size={16} className="text-muted" />
+        </Link>
       </motion.section>
     </div>
   );

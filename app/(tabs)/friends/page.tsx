@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/Button";
 import { BADGES } from "@/lib/gamification/badges";
 import { REACTIONS, REACTION_GLYPH, REACTION_LABEL, agoShort, feedLine, isUnder16, type Reaction } from "@/lib/social";
 import { play } from "@/lib/audio";
+import { bayLive } from "@/lib/copy/bay-live";
 
 const badgeName = (id: string) => BADGES.find((b) => b.id === id)?.name;
 
@@ -265,6 +266,17 @@ function FriendsTab({ minor }: { minor: boolean }) {
             >
               <Icon name="graduation-cap" size={20} className="text-accent" />
               School Cup
+            </Link>
+            <Link
+              href="/bay"
+              className="press bg-surface col-span-2 flex min-h-14 items-center gap-2.5 rounded-[16px] px-3.5 py-2 text-[15px] font-semibold"
+            >
+              <Icon name="horse" size={20} className="text-accent" />
+              <span className="flex min-w-0 flex-1 flex-col">
+                {bayLive.duelLink}
+                <span className="text-muted text-[13px] font-medium">{bayLive.duelLinkSub}</span>
+              </span>
+              <Icon name="caret-right" size={16} className="text-muted" />
             </Link>
           </nav>
         </>

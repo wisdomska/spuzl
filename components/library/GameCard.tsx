@@ -10,6 +10,10 @@ import { Icon } from "@/components/ui/Icon";
 import { GameIcon3D } from "@/components/world/GameIcon3D";
 import { WORLD_BY_ID, type GameMeta } from "@/lib/catalog";
 import { isRaceGame } from "@/lib/multiplayer/games";
+import { isBayGame } from "@/lib/multiplayer/bay";
+import { bayLive } from "@/lib/copy/bay-live";
+import { useSettings } from "@/lib/settings/store";
+import { inviteHref, liveHref } from "@/components/world/LiveEntry";
 import { durationLabel } from "@/lib/games-meta";
 import { formatClock } from "@/lib/format";
 import { libraryCopy as T } from "@/lib/copy/library";
@@ -45,6 +49,9 @@ export function GameCard({
   };
   const world = meta ? WORLD_BY_ID[meta.world] : null;
   const race = meta ? isRaceGame(meta.id) : false;
+  // Board Bay games: play someone live (matchmaking) or invite a friend.
+  const bay = meta ? isBayGame(meta.id) : false;
+  const relaxed = useSettings((s) => s.relaxed);
   useSheetSound(!!meta);
   return (
     <Dialog.Root open={!!meta} onOpenChange={(o) => !o && onClose()}>
@@ -117,6 +124,36 @@ export function GameCard({
                   </Button>
                 )}
               </div>
+
+              {bay && (
+                <div className="flex flex-col gap-2">
+                  <span className="text-muted px-1 text-[13px] font-bold">{bayLive.liveGroup}</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      ...(relaxed
+                        ? []
+                        : [{ icon: "lightning", label: bayLive.playLive, aria: bayLive.playLiveAria(meta.name), href: liveHref(meta.id) }]),
+                      {
+                        icon: "user-plus",
+                        label: bayLive.challengeFriend,
+                        aria: bayLive.challengeFriendAria(meta.name),
+                        href: inviteHref(meta.id),
+                      },
+                    ].map((a) => (
+                      <button
+                        key={a.label}
+                        type="button"
+                        aria-label={a.aria}
+                        onClick={() => go(a.href)}
+                        className="press bg-surface-raised flex min-h-[72px] flex-col items-center justify-center gap-1.5 rounded-[16px] px-1.5 text-center text-[13px] leading-tight font-semibold"
+                      >
+                        <Icon name={a.icon} size={22} style={{ color: "var(--world)" }} />
+                        {a.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {race && (
                 <div className="flex flex-col gap-2">

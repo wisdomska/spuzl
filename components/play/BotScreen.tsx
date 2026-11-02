@@ -9,6 +9,10 @@ import { Button } from "@/components/ui/Button";
 import type { GameMeta } from "@/lib/catalog";
 import type { BotGame, BotLevel } from "@/lib/bot";
 import { boardGames } from "@/lib/copy/board-games";
+import { bayLive } from "@/lib/copy/bay-live";
+import { isBayGame } from "@/lib/multiplayer/bay";
+import { useSettings } from "@/lib/settings/store";
+import { liveHref } from "@/components/world/LiveEntry";
 import { HowToSheet, type HowToTip } from "./HowToSheet";
 import type { BotExtra, BotPuzzle } from "./BotBoard";
 
@@ -54,6 +58,9 @@ export function BotScreen({ meta, game, initialLevel }: { meta: GameMeta; game: 
   );
   const extra = useMemo<BotExtra>(() => ({ onLevel: changeLevel, onRestart: restart }), [changeLevel, restart]);
   const key = `${game}:${level}:${round}`;
+  // Board Bay games: after a game vs the bot, offer a live game against a person (not in relaxed mode: clocks).
+  const relaxed = useSettings((s) => s.relaxed);
+  const live = isBayGame(game) && !relaxed;
   const harder: BotLevel | null = outcome === "won" ? (level === "easy" ? "medium" : level === "medium" ? "hard" : null) : null;
 
   return (
@@ -91,6 +98,18 @@ export function BotScreen({ meta, game, initialLevel }: { meta: GameMeta; game: 
               {harder && (
                 <Button size="lg" variant="secondary" className="w-full" onClick={restart}>
                   {t.playAgain}
+                </Button>
+              )}
+              {live && (
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  icon="lightning"
+                  className="w-full"
+                  aria-label={bayLive.playLiveAria(meta.name)}
+                  onClick={() => router.push(liveHref(game))}
+                >
+                  {bayLive.playLive}
                 </Button>
               )}
               <Button size="lg" variant="secondary" className="w-full" onClick={() => router.push(`/world/${meta.world}`)}>
