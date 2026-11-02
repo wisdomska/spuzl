@@ -1,5 +1,30 @@
 # Changelog
 
+## Unreleased
+
+### For players
+
+- **Content games are harder to game:** a word or quiz puzzle no longer carries its content number. The server
+  sends an opaque token instead, good only for your own attempt, the race round you're in or the practice board,
+  for a limited time. Nobody can try words on a board outside their attempt, and Penalty King's keeper can't be
+  read ahead. Challenges on content games now check guesses on the challenge attempt itself.
+- **18+ party filter:** phone numbers spelled out ("zero two four ...", "o2four", "double five") and words or
+  contact details typed with look-alike letters (Cyrillic or Greek letters, full-width or styled letters, accents,
+  invisible characters, "$" and "!" for letters) are refused like the plain ones.
+
+### For admins
+
+- **Moderation:** reopening or dismissing an actioned 18+ party report lifts the 18+ block it caused, unless
+  another actioned party report still justifies one (the block then ends with that report's). The change is in the
+  audit log (`player.adult_party_unblock`), and the report page says what happened.
+
+### Operations
+
+- New server secret `GUESS_REF_SECRET` (any long random string) encrypts content-game tokens. Unset, a key derived
+  from `SUPABASE_SERVICE_ROLE_KEY` is used and production logs a warning. Clients on an older build get refused
+  content-game guesses until they reload.
+- Migration `20261114000001_adult_block_reopen.sql` (see `docs/MIGRATIONS.md`).
+
 ## 1.4.0 (1 November 2026)
 
 A real landing page, fairer free play, phones that fit, and many admin and multiplayer upgrades.
