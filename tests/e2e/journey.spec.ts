@@ -71,7 +71,7 @@ test("full journey: guest to clears, social and multiplayer, with no Daily anywh
   await page.goto("/library");
   await noDaily(page, "library");
   await page.getByRole("searchbox").fill("crownf");
-  await page.getByRole("button", { name: /^Crownfall Logic Lab/ }).click();
+  await page.getByRole("button", { name: /^Crownfall Puzzles/ }).click();
   const started = page.waitForResponse((r) => r.url().endsWith("/api/v1/attempts") && r.request().method() === "POST");
   await page.getByRole("dialog").getByRole("button", { name: "Play", exact: true }).click();
   const puzzle = (await (await started).json()).puzzle as CrownfallPuzzle;
