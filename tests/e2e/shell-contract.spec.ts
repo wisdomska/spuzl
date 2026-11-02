@@ -29,13 +29,15 @@ for (const g of ALL_GAMES) {
     await header.getByRole("button", { name: "Game menu" }).click();
     const menu = page.getByRole("menu");
     await expect(menu).toBeVisible();
-    for (const name of [/Sound/, /Haptics/, /Settings/, /Share/, /Report a problem/]) {
+    for (const name of [/Sound/, /Haptics/, /Settings/, /Share/, /Report a problem/, /Leave game/]) {
       const b = await menu.getByRole(/Sound|Haptics/.test(String(name)) ? "menuitemcheckbox" : "menuitem", { name }).boundingBox();
       expect(b!.height, `${name} height`).toBeGreaterThanOrEqual(44);
     }
     await page.keyboard.press("Escape");
     await expect(menu).toHaveCount(0);
     await expect(header.getByRole("button", { name: "Game menu" })).toBeFocused();
+    // That Escape only closed the menu: the game is still here (Escape leaves only when nothing is open).
+    await expect(page).toHaveURL(new RegExp(`/dev/board/${g.id}`));
     const boxes = await header.locator(":scope > *").evaluateAll((els) =>
       els
         .map((e) => e.getBoundingClientRect())
