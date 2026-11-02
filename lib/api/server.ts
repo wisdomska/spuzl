@@ -74,11 +74,11 @@ export async function requirePlayer(): Promise<PlayerCtx> {
   const user = await currentUser();
   if (!user) throw new ApiError(401, "unauthenticated");
   const admin = supabaseAdmin();
-  const { data: row } = await admin
-    .from("players")
-    .select("id, nickname, age_band, birth_year, birth_month, level, xp, sparks, banned_at, ranking_revoked, is_guest")
-    .eq("id", user.id)
-    .maybeSingle();
+  const cols = "id, nickname, age_band, level, xp, sparks, banned_at, ranking_revoked, is_guest";
+  let { data: row, error } = await admin.from("players").select(`${cols}, birth_year, birth_month`).eq("id", user.id).maybeSingle();
+  // Deployed ahead of migration 20261119000001 (no birth columns yet): the stored band still works.
+  if (error?.code === "42703") ({ data: row, error } = await admin.from("players").select(cols).eq("id", user.id).maybeSingle());
+  if (error) throw error;
   if (!row) throw new ApiError(409, "no_profile");
   if (row.banned_at) throw new ApiError(403, "banned");
   const { birth_year, birth_month, ...rest } = row;

@@ -20,6 +20,16 @@ export interface PlayerRow {
   is_guest: boolean;
 }
 
+const PROFILE_COLS = "nickname, avatar_color, skin, hat, title, age_band, country, city, settings, hide_activity, created_at";
+
+/** The profile row with birth month and year; without them while migration 20261119000001 is not applied yet. */
+async function profileRow(admin: SupabaseClient, id: string) {
+  type Row = Record<string, unknown> & { age_band?: string; birth_year?: number | null; birth_month?: number | null };
+  const r = await admin.from("players").select(`${PROFILE_COLS}, birth_year, birth_month`).eq("id", id).single();
+  if (r.error?.code !== "42703") return { data: r.data as Row | null };
+  return { data: (await admin.from("players").select(PROFILE_COLS).eq("id", id).single()).data as Row | null };
+}
+
 /**
  * The signed-in player's profile, progress and today's clears: the body of GET /api/v1/me. Shared by
  * the route and by server pages that hydrate React Query, so the first paint already has the data.
@@ -37,13 +47,7 @@ export async function loadMe(user: User, player: PlayerRow, admin: SupabaseClien
     { data: played },
     { data: learned },
   ] = await Promise.all([
-    admin
-      .from("players")
-      .select(
-        "nickname, avatar_color, skin, hat, title, age_band, birth_year, birth_month, country, city, settings, hide_activity, created_at",
-      )
-      .eq("id", player.id)
-      .single(),
+    profileRow(admin, player.id),
     admin
       .from("streaks")
       .select("current, best, last_clear_date, freezes_held, lost_value, lost_on")
@@ -87,7 +91,8 @@ export async function loadMe(user: User, player: PlayerRow, admin: SupabaseClien
     clears,
     ...shown,
     age_band: effectiveBand(profile ?? {}),
-    birthSet: birth_year != null && birth_month != null,
+    // Unknown (left out) until the migration lands, so nobody is asked before it can be saved.
+    birthSet: birth_year === undefined ? undefined : birth_year != null && birth_month != null,
     level: lv.level,
     xp: player.xp,
     xpInto: lv.into,
