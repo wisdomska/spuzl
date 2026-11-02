@@ -219,7 +219,15 @@ export default function Landing() {
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-3">
               <Wordmark size={22} />
-              <span className="text-muted text-[14px] font-medium">{T.credit}</span>
+              <a
+                href={T.creditUrl}
+                target="_blank"
+                rel="noopener"
+                className="text-muted hover:text-text inline-flex min-h-11 items-center gap-1 text-[14px] font-medium"
+              >
+                {T.credit}
+                <Icon name="arrow-square-out" size={14} />
+              </a>
             </div>
             <span className="text-muted text-[13px]">{T.made}</span>
           </div>

@@ -68,6 +68,7 @@ export const aboutCopy = {
   ctaTitle: "Your first puzzle takes 30 seconds.",
   ctaBody: "No sign-up, no download. Just tap and play.",
   credit: "Designed & Developed by Senya",
+  creditUrl: "https://wisdomska.site",
   made: "Made in Ghana for puzzle lovers everywhere.",
   footer: [
     ["/how-to-play", "How to play"],
