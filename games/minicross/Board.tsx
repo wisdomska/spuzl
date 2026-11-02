@@ -333,7 +333,6 @@ export default function MinicrossBoard({ puzzle, initialState, hint, disabled, m
                     data-i={i}
                     tabIndex={i === cur ? 0 : -1}
                     aria-selected={active}
-                    aria-label={`${nums[i] > 0 ? `${nums[i]} ` : ""}${(clueAt(puzzle, i, dir) ?? clueAt(puzzle, i, dir === "across" ? "down" : "across"))?.text ?? ""}. Row ${r + 1}, column ${c + 1}, ${cells[i] || "blank"}${isGiven ? ", given" : revealed.includes(i) ? ", revealed" : ""}`}
                     onClick={() => {
                       if (off) return;
                       if (i === cur) flip();
@@ -377,6 +376,8 @@ export default function MinicrossBoard({ puzzle, initialState, hint, disabled, m
                     <span aria-hidden className="relative">
                       {cells[i]}
                     </span>
+                    {/* The cell's name comes from this text (clue, place, letter), not an aria-label. */}
+                    <span className="sr-only">{`${nums[i] > 0 ? `${nums[i]} ` : ""}${(clueAt(puzzle, i, dir) ?? clueAt(puzzle, i, dir === "across" ? "down" : "across"))?.text ?? ""}. Row ${r + 1}, column ${c + 1}, ${cells[i] || "blank"}${isGiven ? ", given" : revealed.includes(i) ? ", revealed" : ""}`}</span>
                   </div>
                 );
               })}
