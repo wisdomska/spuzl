@@ -1,6 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useWide } from "@/components/game/useBoardSize";
+import { useLeave } from "@/components/game/useLeave";
+import { LeaveConfirm } from "@/components/game/LeaveConfirm";
+import { leavePolicy, type LeaveContext } from "@/lib/game/leave";
+import { sidePanel } from "@/lib/copy/side-panel";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Icon } from "@/components/ui/Icon";
@@ -200,6 +205,16 @@ export function BayMatch({ id }: { id: string }) {
   const [emoteOpen, setEmoteOpen] = useState(false);
   const meId = v && v.mySeat !== null ? v.players[v.mySeat]?.id : undefined;
   const emotes = useEmotes(channel, meId);
+  const wide = useWide();
+  // Leaving (lib/game/leave.ts): a live game against a person asks first and resigns, so they win at once;
+  // an async game or one against the Practice bot waits in Your move.
+  const leaveContext: LeaveContext = !v ? "bay-async" : v.bot ? "bay-bot" : v.mode === "live" ? "bay-live" : "bay-async";
+  const leavePlan = leavePolicy({ context: leaveContext, over: !v || v.status !== "active" || v.mySeat === null });
+  const leave = useLeave({
+    policy: leavePlan,
+    exit: () => router.push("/bay"),
+    forfeit: ({ keepalive }) => (v ? api(`/api/v1/bay/${v.id}/action`, { json: { action: "resign" }, keepalive }) : undefined),
+  });
 
   useEffect(() => {
     if (v?.game) void loadRules(v.game as BayRulesGame).then(setRules);
@@ -412,8 +427,111 @@ export function BayMatch({ id }: { id: string }) {
       : { l: "Emote", i: "smiley", c: "var(--accent)", on: () => setEmoteOpen((o) => !o) },
   ].filter(Boolean) as { l: string; i: string; c: string; on: () => void }[];
 
+  const oppRow = row(opp, false);
+  const meRow = row(me, true);
+  const board = (
+    <LiveBoard
+      game={v.game}
+      state={v.state}
+      seat={seat}
+      legal={legal}
+      disabled={!myTurn || busy}
+      lastMove={lastMove}
+      onMove={move}
+      announce={setLive}
+    />
+  );
+  const moves =
+    sans.length > 0 &&
+    (wide ? (
+      <MoveList sans={sans} />
+    ) : (
+      <div
+        className="bg-surface num text-muted mx-4 mt-3 flex items-center gap-2 overflow-hidden rounded-[14px] px-3 py-2 text-[14px] font-medium whitespace-nowrap"
+        aria-label="Moves"
+      >
+        {sans.slice(-6).map((s, i, a) => {
+          const ply = sans.length - a.length + i;
+          return (
+            <span key={ply} className="flex gap-2">
+              {ply % 2 === 0 && <span>{ply / 2 + 1}.</span>}
+              <span className={i === a.length - 1 ? "rounded-[6px] bg-[var(--w-board)] px-1.5 text-[var(--square-ink)]" : "text-text"}>
+                {s}
+              </span>
+            </span>
+          );
+        })}
+      </div>
+    ));
+  const gap = wide ? "" : "mx-4 mt-3";
+  const offer = (offerFromThem(v.drawOffer) || offerFromThem(v.takebackOffer)) && v.status === "active" && (
+    <div className={`bg-surface-raised flex items-center gap-2 rounded-[16px] p-3 ${gap}`} role="alert">
+      <span className="flex-1 text-[15px] font-medium">
+        {offerFromThem(v.drawOffer) ? `${opp?.nickname} offers a draw.` : `${opp?.nickname} asks for a takeback.`}
+      </span>
+      <button
+        type="button"
+        className="press bg-accent text-on-accent min-h-11 rounded-[12px] px-3 text-[14px] font-bold"
+        onClick={() => action(offerFromThem(v.drawOffer) ? "draw_accept" : "takeback_accept")}
+      >
+        Accept
+      </button>
+      <button
+        type="button"
+        className="press bg-surface min-h-11 rounded-[12px] px-3 text-[14px] font-bold"
+        onClick={() => action(offerFromThem(v.drawOffer) ? "draw_decline" : "takeback_decline")}
+      >
+        Decline
+      </button>
+    </div>
+  );
+  const finished = finishedLine && (
+    <div className={`bg-surface flex items-center gap-3 rounded-[18px] p-3.5 ${gap}`} role="status">
+      <Spuz mood={v.winnerId === me.id ? "party" : v.winnerId ? "sad" : "thinking"} size={56} decorative />
+      <span className="flex-1 text-[16px] font-semibold">{finishedLine}</span>
+    </div>
+  );
+  const emoteBar = emoteOpen && (
+    <div className={gap}>
+      <EmoteBar
+        onSend={(e) => {
+          if (emotes.send(e)) setEmoteOpen(false);
+        }}
+      />
+    </div>
+  );
+  const toolRow = (
+    <div
+      className={wide ? "grid gap-2 pt-1" : "mt-auto grid gap-2 px-4 pt-3 pb-[max(28px,env(safe-area-inset-bottom))]"}
+      style={{ gridTemplateColumns: `repeat(${v.status === "finished" ? 1 : tools.length}, minmax(0, 1fr))` }}
+    >
+      {v.status === "finished" ? (
+        <Cta icon="arrows-clockwise" onClick={() => action("rematch")}>
+          Rematch
+        </Cta>
+      ) : (
+        tools.map((t) => (
+          <button
+            key={t.l}
+            type="button"
+            onClick={t.on}
+            className="toy bg-surface-raised flex h-[60px] flex-col items-center justify-center gap-[3px] rounded-[18px] px-1 [--btn-depth:var(--depth)]"
+            style={{ boxShadow: "0 5px 0 var(--depth)", color: t.c }}
+          >
+            <Icon name={t.i} size={22} />
+            <span className="text-[13px] font-semibold">{t.l}</span>
+          </button>
+        ))
+      )}
+    </div>
+  );
+
   return (
-    <Screen label="B3 Bay match" style={{ ["--world" as string]: "var(--w-board)", ["--world-ink" as string]: "var(--w-board-ink)" }}>
+    <Screen
+      label="B3 Bay match"
+      wide={wide}
+      style={{ ["--world" as string]: "var(--w-board)", ["--world-ink" as string]: "var(--w-board-ink)" }}
+    >
       <MpToast toast={toast} />
       <div aria-live="polite" className="sr-only">
         {live ||
@@ -421,8 +539,14 @@ export function BayMatch({ id }: { id: string }) {
             ? `${v.players[lastSeat]?.nickname ?? "They"} moved. ${myTurn ? "Your move." : ""}`
             : "")}
       </div>
-      <div className="flex items-center gap-2 px-3 pt-[max(12px,env(safe-area-inset-top))]">
-        <TopButton icon="arrow-left" label="Back" href="/bay" />
+      <div
+        className={
+          wide
+            ? "flex items-center gap-2 px-9 pt-[max(20px,env(safe-area-inset-top))] pb-2"
+            : "flex items-center gap-2 px-3 pt-[max(12px,env(safe-area-inset-top))]"
+        }
+      >
+        <TopButton icon="arrow-left" label="Back" onClick={leave.request} />
         <h1 className="font-display flex-1 text-[22px] font-black text-[var(--w-board)] [[data-theme=light]_&]:text-[var(--w-board-ink)]">
           {meta?.name}
         </h1>
@@ -440,102 +564,78 @@ export function BayMatch({ id }: { id: string }) {
           </Cta>
         </div>
       ) : (
-        <>
-          <div className="pt-3">{row(opp, false)}</div>
-          <div className="flex justify-center px-3 py-3">
-            <LiveBoard
-              game={v.game}
-              state={v.state}
-              seat={seat}
-              legal={legal}
-              disabled={!myTurn || busy}
-              lastMove={lastMove}
-              onMove={move}
-              announce={setLive}
-            />
+        // Phone: one column (both wrappers are `display: contents`). Wide: the board fills the left column and
+        // the players, moves, offers and tools sit in the side panel. The board keeps its place either way.
+        <div className={wide ? "flex flex-1 items-start gap-8 px-6 pb-6" : "contents"}>
+          <div className={wide ? "flex min-w-0 flex-1 justify-center p-3 pb-0" : "contents"}>
+            {!wide && <div className="pt-3">{oppRow}</div>}
+            <div className={wide ? "flex justify-center" : "flex justify-center px-3 py-3"}>{board}</div>
+            {!wide && meRow}
+            {!wide && moves}
+            {!wide && offer}
+            {!wide && finished}
+            {!wide && emoteBar}
+            {!wide && toolRow}
           </div>
-          {row(me, true)}
-          {sans.length > 0 && (
-            <div
-              className="bg-surface num text-muted mx-4 mt-3 flex items-center gap-2 overflow-hidden rounded-[14px] px-3 py-2 text-[14px] font-medium whitespace-nowrap"
-              aria-label="Moves"
-            >
-              {sans.slice(-6).map((s, i, a) => {
-                const ply = sans.length - a.length + i;
-                return (
-                  <span key={ply} className="flex gap-2">
-                    {ply % 2 === 0 && <span>{ply / 2 + 1}.</span>}
-                    <span
-                      className={i === a.length - 1 ? "rounded-[6px] bg-[var(--w-board)] px-1.5 text-[var(--square-ink)]" : "text-text"}
-                    >
-                      {s}
-                    </span>
-                  </span>
-                );
-              })}
-            </div>
+          {wide && (
+            <aside className="flex w-[360px] shrink-0 flex-col gap-3 pt-3 pr-3" aria-label={sidePanel.players}>
+              <div className="bg-surface flex flex-col gap-2 rounded-[18px] py-2.5 [&>div]:px-2.5">
+                {oppRow}
+                {meRow}
+              </div>
+              {moves}
+              {offer}
+              {finished}
+              {emoteBar}
+              {toolRow}
+            </aside>
           )}
-          {(offerFromThem(v.drawOffer) || offerFromThem(v.takebackOffer)) && v.status === "active" && (
-            <div className="bg-surface-raised mx-4 mt-3 flex items-center gap-2 rounded-[16px] p-3" role="alert">
-              <span className="flex-1 text-[15px] font-medium">
-                {offerFromThem(v.drawOffer) ? `${opp?.nickname} offers a draw.` : `${opp?.nickname} asks for a takeback.`}
-              </span>
-              <button
-                type="button"
-                className="press bg-accent text-on-accent min-h-11 rounded-[12px] px-3 text-[14px] font-bold"
-                onClick={() => action(offerFromThem(v.drawOffer) ? "draw_accept" : "takeback_accept")}
-              >
-                Accept
-              </button>
-              <button
-                type="button"
-                className="press bg-surface min-h-11 rounded-[12px] px-3 text-[14px] font-bold"
-                onClick={() => action(offerFromThem(v.drawOffer) ? "draw_decline" : "takeback_decline")}
-              >
-                Decline
-              </button>
-            </div>
-          )}
-          {finishedLine && (
-            <div className="bg-surface mx-4 mt-3 flex items-center gap-3 rounded-[18px] p-3.5" role="status">
-              <Spuz mood={v.winnerId === me.id ? "party" : v.winnerId ? "sad" : "thinking"} size={56} decorative />
-              <span className="flex-1 text-[16px] font-semibold">{finishedLine}</span>
-            </div>
-          )}
-          {emoteOpen && (
-            <div className="mx-4 mt-3">
-              <EmoteBar
-                onSend={(e) => {
-                  if (emotes.send(e)) setEmoteOpen(false);
-                }}
-              />
-            </div>
-          )}
-          <div
-            className="mt-auto grid gap-2 px-4 pt-3 pb-[max(28px,env(safe-area-inset-bottom))]"
-            style={{ gridTemplateColumns: `repeat(${v.status === "finished" ? 1 : tools.length}, minmax(0, 1fr))` }}
-          >
-            {v.status === "finished" ? (
-              <Cta icon="arrows-clockwise" onClick={() => action("rematch")}>
-                Rematch
-              </Cta>
-            ) : (
-              tools.map((t) => (
-                <button
-                  key={t.l}
-                  type="button"
-                  onClick={t.on}
-                  className="toy bg-surface-raised flex h-[60px] flex-col items-center justify-center gap-[3px] rounded-[18px] px-1 [--btn-depth:var(--depth)]"
-                  style={{ boxShadow: "0 5px 0 var(--depth)", color: t.c }}
-                >
-                  <Icon name={t.i} size={22} />
-                  <span className="text-[13px] font-semibold">{t.l}</span>
-                </button>
-              ))
-            )}
-          </div>
-        </>
+        </div>
+      )}
+      {leavePlan.kind !== "none" && (
+        <LeaveConfirm
+          kind={leavePlan.kind}
+          open={leave.asking}
+          busy={leave.busy}
+          onKeep={leave.keep}
+          onLeave={() => void leave.confirm()}
+        />
       )}
     </Screen>
+  );
+}
+
+/** The whole move list (wide screens, in the side panel): numbered pairs, the last move marked, newest in view. */
+function MoveList({ sans }: { sans: string[] }) {
+  const box = useRef<HTMLOListElement>(null);
+  useEffect(() => {
+    const el = box.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [sans.length]);
+  const pairs = Array.from({ length: Math.ceil(sans.length / 2) }, (_, k) => [sans[k * 2], sans[k * 2 + 1]] as const);
+  return (
+    <section className="bg-surface flex flex-col gap-1 rounded-[18px] p-2.5" aria-label={sidePanel.moves}>
+      <h2 className="text-muted px-1 text-[13px] font-semibold tracking-[.04em] uppercase">{sidePanel.moves}</h2>
+      <ol ref={box} className="num grid max-h-[30dvh] grid-cols-[2.5rem_1fr_1fr] gap-x-2 gap-y-0.5 overflow-y-auto text-[15px] font-medium">
+        {pairs.map(([w, b], k) => (
+          <li key={k} className="contents">
+            <span className="text-muted px-1 py-1">{k + 1}.</span>
+            {[w, b].map((m, j) =>
+              m === undefined ? (
+                <span key={j} />
+              ) : (
+                <span
+                  key={j}
+                  aria-current={k * 2 + j === sans.length - 1 || undefined}
+                  className={`rounded-[8px] px-1.5 py-1 ${k * 2 + j === sans.length - 1 ? "bg-[var(--w-board)] text-[var(--square-ink)]" : ""}`}
+                >
+                  {m}
+                </span>
+              ),
+            )}
+          </li>
+        ))}
+      </ol>
+    </section>
   );
 }

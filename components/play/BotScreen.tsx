@@ -85,6 +85,7 @@ export function BotScreen({ meta, game, initialLevel }: { meta: GameMeta; game: 
         onSolved={() => setOutcome("won")}
         onFailed={(_s, reason) => setOutcome(reason === "draw" ? "draw" : "lost")}
         onExit={() => router.push(`/world/${meta.world}`)}
+        leaveContext="bot"
         onHelp={() => setHowTo(true)}
         difficulty={outcome ? undefined : levelMenu}
         pausedExternally={howTo}

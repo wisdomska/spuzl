@@ -23,6 +23,10 @@ import { isAdultMode, type PartyMode } from "@/lib/party-adult/modes";
 import { ADULT_REWARD_MIN_PLAYERS } from "@/lib/party-adult/rewards";
 import { adultPartyCopy } from "@/lib/copy/adult-party";
 import { MatchBoard } from "./MatchBoard";
+import { useWide } from "@/components/game/useBoardSize";
+import { useLeave } from "@/components/game/useLeave";
+import { LeaveConfirm } from "@/components/game/LeaveConfirm";
+import { leavePolicy } from "@/lib/game/leave";
 import { AdultNotice, AdultRound, KickConfirm, PlayersSheet, adultErrorText, adultLobbyLine, modeName } from "./adult-party";
 import {
   DifficultyPicker,
@@ -268,6 +272,16 @@ function Room({ id, code }: { id: string; code: string }) {
   useJoinToasts(view, show);
 
   const phase = view ? partyPhase({ status: view.status, roundStartedAt: view.roundStartedAt }, now) : "lobby";
+  // Leaving a race in progress (lib/game/leave.ts): Back, the game menu, Escape or the back gesture ask first,
+  // then the leave call takes the player out of the room so everyone else's race board updates at once.
+  const wide = useWide();
+  const racing = phase === "countdown" || phase === "race";
+  const spectating = !!view?.players.find((p) => p.id === view.me)?.spectator;
+  const leaveRace = useLeave({
+    policy: leavePolicy({ context: "party", over: !view || !racing || isAdultMode(view.mode) || spectating }),
+    exit: () => router.push("/party"),
+    forfeit: ({ keepalive }) => api(`/api/v1/matches/${id}/leave`, { json: {}, keepalive }),
+  });
   useEffect(() => {
     if (channel && view && phase === "lobby") void channel.track({ id: view.me });
   }, [channel, view?.me, phase]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -392,7 +406,7 @@ function Room({ id, code }: { id: string; code: string }) {
           strip={<RaceRail view={view} rows={rows} onToast={show} />}
           locked={phase !== "race" || iFinished}
           label={`Game ${view.round} of ${view.games.length}`}
-          onExit={leave}
+          onExit={leaveRace.request}
           onFinished={onFinished}
           onRejected={onRejected}
         />
@@ -414,9 +428,16 @@ function Room({ id, code }: { id: string; code: string }) {
   } else body = <LoadingScreen />;
 
   return (
-    <Screen label={`Party ${phase}`}>
+    <Screen label={`Party ${phase}`} wide={wide && racing && !!view.puzzle}>
       <MpToast toast={toast} />
       {body}
+      <LeaveConfirm
+        kind="party"
+        open={leaveRace.asking}
+        busy={leaveRace.busy}
+        onKeep={leaveRace.keep}
+        onLeave={() => void leaveRace.confirm()}
+      />
       {settings && (
         <RoomSettings
           view={view}

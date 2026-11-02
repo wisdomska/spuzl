@@ -99,6 +99,9 @@ export function MatchBoard({
       onMove={onMove}
       onSolved={onSolved}
       onExit={onExit}
+      // The Duel and Party screens own leaving for the whole match (confirm, back-gesture guard, Escape, the
+      // leave call), between rounds too; every way out of the shell asks them.
+      leaveContext="managed"
       strip={strip}
       locked={locked}
       puzzleKey={key}

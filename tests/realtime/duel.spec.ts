@@ -91,8 +91,18 @@ test("duel: leaving mid-match hands the win to the other device", async ({ brows
   await a.page.waitForURL(/\/duel\?m=/, { timeout: 20_000 });
   await b.page.waitForURL(/\/duel\?m=/, { timeout: 20_000 });
   await expect(b.page.getByText("Their board stays hidden")).toBeVisible({ timeout: 15_000 });
+  // The back gesture asks first (one history entry guards it) and Keep playing stays in the match.
+  await b.page.goBack();
+  const confirm = b.page.getByRole("alertdialog", { name: "Leave the match?" });
+  await expect(confirm).toBeVisible();
+  await expect(confirm.getByText("Your opponent wins this one.")).toBeVisible();
+  await expect(confirm.getByRole("button", { name: "Keep playing" })).toBeFocused();
+  await confirm.getByRole("button", { name: "Keep playing" }).click();
+  await expect(b.page.getByText("Their board stays hidden")).toBeVisible();
+  // Back asks again; Leave match hands the win over at once and takes B to Duels.
   await b.page.getByRole("button", { name: "Back" }).click();
-  await b.page.getByRole("button", { name: "Leave and lose" }).click();
+  await confirm.getByRole("button", { name: "Leave match" }).click();
+  await b.page.waitForURL((u) => u.pathname === "/duel" && !u.searchParams.get("m"), { timeout: 15_000 });
   await expect(a.page.getByRole("heading", { name: /You win/ })).toBeVisible({ timeout: 15_000 });
   await expect(a.page.getByText(`${b.nickname} left the duel. Win counts.`)).toBeVisible();
   await a.context.close();

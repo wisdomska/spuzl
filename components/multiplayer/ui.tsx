@@ -272,15 +272,18 @@ export function Screen({
   className = "",
   style,
   label,
+  wide,
 }: {
   children: ReactNode;
   className?: string;
   style?: CSSProperties;
   label?: string;
+  /** a game on a wide screen: the two-column width of the game shell (useBoardSize WIDE_SHELL_MAX) */
+  wide?: boolean;
 }) {
   return (
     <div
-      className={`bg-bg relative mx-auto flex min-h-dvh w-full max-w-[560px] flex-col overflow-hidden ${className}`}
+      className={`bg-bg relative mx-auto flex min-h-dvh w-full flex-col overflow-hidden ${wide ? "max-w-[1224px]" : "max-w-[560px]"} ${className}`}
       style={style}
       data-screen-label={label}
     >

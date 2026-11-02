@@ -22,8 +22,5 @@ export const duelCopy = {
   rulesMatchAuto: "Countdown starts on its own",
   rulesMatchReady: "Got it",
   rivalReading: (name: string) => `${name} is reading the rule for this game`,
-  leaveTitleBot: "Leave the practice?",
-  leaveBodyBot: "It's only practice. Nothing is lost.",
-  leaveConfirmBot: "Leave",
   leftBot: "You left the practice. Nothing lost.",
 } as const;

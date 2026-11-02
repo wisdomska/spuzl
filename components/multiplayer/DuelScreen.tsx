@@ -16,6 +16,10 @@ import { TIMING, type EmoteId } from "@/lib/multiplayer/constants";
 import type { MatchView } from "@/lib/multiplayer/types";
 import { GAME_BY_ID } from "@/lib/catalog";
 import { MatchBoard } from "./MatchBoard";
+import { useLeave } from "@/components/game/useLeave";
+import { useWide } from "@/components/game/useBoardSize";
+import { LeaveConfirm } from "@/components/game/LeaveConfirm";
+import { leavePolicy } from "@/lib/game/leave";
 import { DuelEntrySheet, EdgeCard, MatchEnd, Matchmaking, OppDisconnected, OpponentStrip, RematchWipe, RoundEnd, Versus } from "./duel";
 import { CountdownNumber, Cta, EmoteBar, LoadingScreen, MpToast, NeedProfile, Screen, TopButton, useToast } from "./ui";
 import { ShareCode } from "./party";
@@ -254,7 +258,6 @@ function DuelMatch({ id }: { id: string }) {
   const { toast, show } = useToast();
   const emotes = useEmotes(channel, view?.me);
   const [emoteOpen, setEmoteOpen] = useState(false);
-  const [confirmLeave, setConfirmLeave] = useState(false);
   const [rematchWaiting, setRematchWaiting] = useState(false);
   const [wipe, setWipe] = useState(0);
   // The round whose in-match rules card the player closed with "Got it".
@@ -300,6 +303,16 @@ function DuelMatch({ id }: { id: string }) {
   const theyFinished = view?.isBot ? !!view.bot?.finishMs && elapsed >= view.bot.finishMs : themP?.finishedMs != null;
   const iFinished = me?.finishedMs != null;
 
+  // Leaving (lib/game/leave.ts), from any phase of a live match: Back, the game menu, Escape or the back gesture
+  // ask first, then the leave call hands the win to the rival at once. Against the Practice bot nothing is lost,
+  // so there is no question, but the leave call still closes the match.
+  const wide = useWide();
+  const leave = useLeave({
+    policy: leavePolicy({ context: view?.isBot ? "duel-bot" : "duel", over: !view || view.status !== "playing" }),
+    exit: () => router.push("/duel"),
+    forfeit: ({ keepalive }) => api(`/api/v1/matches/${id}/leave`, { json: {}, keepalive }),
+  });
+
   useEffect(() => {
     if (phase !== "playing" || !view) return;
     const k = `${view.round}:${theyFinished}`;
@@ -343,11 +356,6 @@ function DuelMatch({ id }: { id: string }) {
   const rounds = outcomes(view, me.id, themP?.id ?? null);
   const myEmote = emotes.last && emotes.last.from === me.id ? emotes.last : null;
   const theirEmote = emotes.last && emotes.last.from !== me.id ? emotes.last : null;
-  const leave = async () => {
-    setConfirmLeave(false);
-    await matchAction(id, "leave").catch(() => {});
-    void qc.invalidateQueries({ queryKey: matchKey(id) });
-  };
   const rematch = async () => {
     setRematchWaiting(true);
     try {
@@ -384,6 +392,8 @@ function DuelMatch({ id }: { id: string }) {
   const pausedFor = view.pausedAt ? now - view.pausedAt : 0;
 
   let body: React.ReactNode;
+  // The board is up (the two-column game shell on a wide screen).
+  let onBoard = false;
   if (phase === "match_end")
     body = (
       <MatchEnd
@@ -449,6 +459,7 @@ function DuelMatch({ id }: { id: string }) {
       />
     );
   else if (view.puzzle) {
+    onBoard = true;
     const strip = (
       <div className="relative">
         <OpponentStrip
@@ -494,7 +505,7 @@ function DuelMatch({ id }: { id: string }) {
           strip={strip}
           locked={phase !== "playing" || theyFinished || iFinished}
           label="Their board stays hidden"
-          onExit={() => setConfirmLeave(true)}
+          onExit={leave.request}
           onFinished={onFinished}
           onRejected={onRejected}
         />
@@ -510,7 +521,7 @@ function DuelMatch({ id }: { id: string }) {
   } else body = <LoadingScreen />;
 
   return (
-    <Screen label={`Duel ${phase}`}>
+    <Screen label={`Duel ${phase}`} wide={wide && onBoard}>
       <MpToast toast={toast} />
       <RematchWipe n={view?.rematchId ? wipe + 1 : wipe} />
       {body}
@@ -525,25 +536,7 @@ function DuelMatch({ id }: { id: string }) {
           />
         </div>
       )}
-      {confirmLeave && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(6,7,13,.55)]"
-          role="dialog"
-          aria-modal
-          aria-label="Leave the duel"
-        >
-          <div className="bg-surface flex w-full max-w-[560px] flex-col gap-3 rounded-t-[32px] p-5 pb-[max(28px,env(safe-area-inset-bottom))]">
-            <h2 className="font-display text-[22px] font-black">{view.isBot ? duelCopy.leaveTitleBot : "Leave the duel?"}</h2>
-            <p className="text-muted text-[15px]">
-              {view.isBot ? duelCopy.leaveBodyBot : "Leaving counts as a loss. Your rival gets the win."}
-            </p>
-            <Cta onClick={() => setConfirmLeave(false)}>Keep playing</Cta>
-            <button type="button" onClick={leave} className="text-muted min-h-12 text-[16px] font-semibold">
-              {view.isBot ? duelCopy.leaveConfirmBot : "Leave and lose"}
-            </button>
-          </div>
-        </div>
-      )}
+      <LeaveConfirm kind="match" open={leave.asking} busy={leave.busy} onKeep={leave.keep} onLeave={() => void leave.confirm()} />
     </Screen>
   );
 }
