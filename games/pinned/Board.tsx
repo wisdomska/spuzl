@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import type { BoardProps } from "@/games/types";
 import { play } from "@/lib/audio";
+import { sfx } from "@/games/_shared/sfx";
 import { unseal } from "@/games/_shared/cluecave";
 import { LAND, ringPath, VIEWS, WATER, type MapView } from "./geo";
 import { distanceKm, pointsFor, sealKey, type LatLon, type PinnedPuzzle, type PinnedState } from "./logic";
@@ -79,7 +80,7 @@ export default function PinnedBoard({ puzzle, initialState, hint, disabled, mode
     (ll: LatLon) => {
       setPin(ll);
       setDropN((n) => n + 1);
-      play("pop", { step: 2 });
+      sfx.place(2);
       api.announce(`Pin at ${fmt(ll[0], ll[1])}`);
     },
     [api],
@@ -94,7 +95,10 @@ export default function PinnedBoard({ puzzle, initialState, hint, disabled, mode
     const d = distanceKm(pin, spots[next.length - 1]);
     const pts = pointsFor(d, round.map);
     api.onMove({ pins: next }, { correctStreak: pts > 500 ? 1 : 0 });
-    play(pts >= 700 ? "chime" : "tick", { step: Math.round(pts / 150) });
+    // The reveal sounds the score: a small win when close, a blip when near, a soft tap when far.
+    if (pts >= 700) play("success");
+    else if (pts >= 300) sfx.place(Math.round(pts / 150));
+    else sfx.remove();
     api.feedback(`${km(d)} away. ${pts} points.`, pts >= 500 ? "success" : "info", "map-pin");
     api.announce(`${round.name} was ${km(d)} from your pin. ${pts} points.`);
     // Frame both points
@@ -112,7 +116,6 @@ export default function PinnedBoard({ puzzle, initialState, hint, disabled, mode
     if (done) {
       setPhase("done");
       const totalPts = pinsRef.current.reduce((s, p, j) => s + (p ? pointsFor(distanceKm(p, spots[j]), puzzle.rounds[j].map) : 0), 0);
-      play("jingle");
       api.feedback(`All ${total} pinned. Score ${totalPts}.`, "success", "check-circle");
       api.onSolved({ pins: pinsRef.current });
       return;
@@ -182,7 +185,8 @@ export default function PinnedBoard({ puzzle, initialState, hint, disabled, mode
     if (!ll) return;
     if (!zoomed) {
       zoomAt(ll[0], ll[1], view.zoom);
-      play("tick");
+      sfx.select();
+
       api.feedback("Zoomed in. Tap to drop the pin, drag to look around.", "info", "map-pin");
       return;
     }

@@ -5,7 +5,7 @@ import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { useFitCell } from "@/games/_shared/useFitCell";
 import { useGridKeys } from "@/components/game/useGridKeys";
-import { play } from "@/lib/audio";
+import { sfx } from "@/games/_shared/sfx";
 import { BIT, DIR_NAME } from "@/games/_shared/grid";
 import { LineStyles } from "@/games/_shared/LineStyles";
 import { analyze, masksOf, type FlowlinePuzzle, type FlowlineState } from "./logic";
@@ -30,7 +30,6 @@ export default function FlowlineBoard({ puzzle, initialState, hint, disabled, mo
   const [spin, setSpin] = useState<number[]>(() => turns.slice());
   const [hist, setHist] = useState<number[]>([]);
   const [pulse, setPulse] = useState(0);
-  const [tapN, setTapN] = useState(0);
   const [last, setLast] = useState(puzzle.source);
   const turnsRef = useRef(turns);
   const streak = useRef(0);
@@ -41,7 +40,7 @@ export default function FlowlineBoard({ puzzle, initialState, hint, disabled, mo
   const th = Math.max(10, Math.round(cs * 0.27));
 
   const report = useCallback(
-    (next: FlowlineState, i: number, prevLit: number) => {
+    (next: FlowlineState, i: number, prevLit: number, prevPlants: number, undoing = false) => {
       const m = masksOf(puzzle, next);
       const after = analyze(puzzle, m);
       const r = Math.floor(i / cols) + 1,
@@ -54,16 +53,21 @@ export default function FlowlineBoard({ puzzle, initialState, hint, disabled, mo
         streak.current++;
         setPulse((p) => p + 1);
       }
+      // A turn clicks; water running further blips, climbing with each plant reached. Undo already tapped.
+      if (!undoing) {
+        if (after.plantsLit > prevPlants) sfx.place(after.plantsLit + 1);
+        else if (after.lit.size > prevLit) sfx.place(streak.current);
+        else sfx.select();
+      }
       if (after.solved) {
         setDone(true);
-        play("jingle");
         api.feedback("Every plant has water.", "success", "check-circle");
         api.announce("Board cleared.");
         api.onMove(next, { correctStreak: streak.current });
         api.onSolved(next);
         return;
       }
-      play("pop", { step: after.plantsLit });
+
       api.announce(
         `Row ${r}, column ${c}, opens ${opens}, ${after.lit.has(i) ? "wet" : "dry"}. ${after.plantsLit} of ${puzzle.plants.length} plants watered.`,
       );
@@ -82,7 +86,7 @@ export default function FlowlineBoard({ puzzle, initialState, hint, disabled, mo
         return;
       }
       const prev = turnsRef.current;
-      const prevLit = analyze(puzzle, masksOf(puzzle, prev)).lit.size;
+      const before = analyze(puzzle, masksOf(puzzle, prev));
       const next = prev.slice();
       next[i] = (next[i] + 1) % 4;
       turnsRef.current = next;
@@ -94,8 +98,7 @@ export default function FlowlineBoard({ puzzle, initialState, hint, disabled, mo
       });
       setHist((h) => [...h, i]);
       setLast(i);
-      setTapN((t) => t + 1);
-      report(next, i, prevLit);
+      report(next, i, before.lit.size, before.plantsLit);
     },
     [api, cols, disabled, done, locked, puzzle, report],
   );
@@ -104,7 +107,7 @@ export default function FlowlineBoard({ puzzle, initialState, hint, disabled, mo
     if (done || !hist.length) return;
     const i = hist[hist.length - 1];
     const prev = turnsRef.current;
-    const prevLit = analyze(puzzle, masksOf(puzzle, prev)).lit.size;
+    const before = analyze(puzzle, masksOf(puzzle, prev));
     const next = prev.slice();
     next[i] = (next[i] + 3) % 4;
     turnsRef.current = next;
@@ -116,7 +119,7 @@ export default function FlowlineBoard({ puzzle, initialState, hint, disabled, mo
     });
     setHist((h) => h.slice(0, -1));
     setLast(i);
-    report(next, i, prevLit);
+    report(next, i, before.lit.size, before.plantsLit, true);
   }, [done, hist, puzzle, report]);
 
   useEffect(() => {
@@ -191,7 +194,7 @@ export default function FlowlineBoard({ puzzle, initialState, hint, disabled, mo
               const glow = i === hintTarget;
               const color = isSource || done ? `color-mix(in srgb, var(--world) 45%, ${INK})` : wet ? "var(--world)" : DRY;
               const dist = Math.abs(r - lr) + Math.abs(c - lc);
-              const anim = i === last && !done ? (tapN % 2 ? "cell-pop-a" : "cell-pop-b") : "";
+              // The turn itself is the motion (a spring on the pipe); no pop on top of it.
               const opens = [0, 1, 2, 3]
                 .filter((d) => masks[i] & BIT[d])
                 .map((d) => DIR_NAME[d])
@@ -209,7 +212,7 @@ export default function FlowlineBoard({ puzzle, initialState, hint, disabled, mo
                     keys.setFocus(i);
                     turn(i);
                   }}
-                  className={`relative flex items-center justify-center rounded-[10px] outline-none focus-visible:z-10 focus-visible:shadow-[var(--focus-ring)] ${isLocked ? "" : "cursor-pointer"} ${anim} ${glow ? "hint-ring" : ""}`}
+                  className={`relative flex items-center justify-center rounded-[10px] outline-none focus-visible:z-10 focus-visible:shadow-[var(--focus-ring)] ${isLocked ? "" : "cursor-pointer"} ${glow ? "hint-ring" : ""}`}
                   style={{
                     width: cs,
                     height: cs,
@@ -230,7 +233,9 @@ export default function FlowlineBoard({ puzzle, initialState, hint, disabled, mo
                   <div aria-hidden className="ll-turn absolute inset-0" style={{ transform: `rotate(${spin[i] * 90}deg)` }}>
                     <div
                       key={wet ? `w${pulse}` : "dry"}
-                      className={`absolute inset-0 ${wet && !done ? "ll-flow" : ""}`}
+                      // Water pulses out from the source when a turn wets more pipe, never as the board first shows.
+                      className={`absolute inset-0 ${wet && !done && pulse > 0 ? "ll-flow" : ""}`}
+
                       style={{ animationDelay: `${(a.dist.get(i) ?? 0) * 40}ms` }}
                     >
                       {[0, 1, 2, 3].filter((d) => puzzle.tiles[i] & BIT[d]).map((d) => arm(d, color, done ? dist * 70 + 250 : 0))}

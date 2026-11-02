@@ -96,9 +96,13 @@ export type FeedbackTone = "info" | "danger" | "success";
 export interface BoardApi<St> {
   /** Report every move: state for autosave, local progress for the UI, feedback line content */
   onMove(state: St, info?: { correctStreak?: number; mistake?: boolean }): void;
-  /** Board believes it is solved. The shell submits to the server, which decides. */
-  onSolved(state: St): void;
-  /** Hard fail (out of lives, Hunch out of guesses...) */
+  /**
+   * Board believes it is solved. The shell submits to the server, which decides, and plays the clear sound
+   * (boards never play it themselves). `clearDelayMs` holds the clear back while the board's own closing
+   * phrase finishes (a found word's chimes, a check sting); default 100 ms.
+   */
+  onSolved(state: St, opts?: { clearDelayMs?: number }): void;
+  /** Hard fail (out of lives, Hunch out of guesses...). The shell plays the run-over sound. */
   onFailed?(state: St, reason: string): void;
   /** Feedback line under the board. Never overlays the board. */
   feedback(text: string, tone?: FeedbackTone, icon?: string): void;
@@ -133,6 +137,8 @@ export interface ControlSpec {
   disabled?: boolean;
   /** primary uses the world colour fill with ink text */
   tone?: "default" | "world" | "gold";
+  /** The board plays this control's sound itself (a step, a move), so the generic press tap stays off. */
+  quiet?: boolean;
 }
 
 /* ---------- Content games (Word Woods, Clue Cave) ---------- */

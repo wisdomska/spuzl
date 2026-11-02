@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent }
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { useGridKeys } from "@/components/game/useGridKeys";
-import { play } from "@/lib/audio";
+import { sfx } from "@/games/_shared/sfx";
 import { apply, BREAK_COPY, closest, OP_GLYPH, OPS, replay, type DeadOnPuzzle, type DeadOnState, type Op, type Step } from "./logic";
 
 const INK = "#0E0F1A";
@@ -62,14 +62,15 @@ export default function DeadOnBoard({ puzzle, initialState, hint, disabled, mode
       if (sel === null || op === null) {
         // first pick, or change the first pick before an operator is chosen
         setSel(sel === id && op === null ? null : id);
-        play("tick");
+        if (sel === id && op === null) sfx.remove();
+        else sfx.select();
         api.announce(sel === id ? `${v} deselected` : `${v} selected. Pick an operator.`);
         return;
       }
       if (id === sel) {
         setSel(null);
         setOp(null);
-        play("tick");
+        sfx.remove();
         api.announce(`${v} deselected`);
         return;
       }
@@ -92,14 +93,13 @@ export default function DeadOnBoard({ puzzle, initialState, hint, disabled, mode
       setPopN((p) => p + 1);
       const hit = res.value === puzzle.target;
       const said = `${expr} = ${res.value}`;
+      sfx.place(streak.current + 1);
       if (hit) {
         setDone(true);
-        play("jingle");
         api.feedback(`${puzzle.target}. Dead on.`, "success", "target");
         api.announce(`${said}. Dead on.`);
       } else {
         streak.current++;
-        play("pop", { step: streak.current });
         const nr = replay(puzzle, next);
         const d = Math.abs(closest(puzzle, nr) - puzzle.target);
         api.announce(`${said}. ${d} off.`);
@@ -123,7 +123,8 @@ export default function DeadOnBoard({ puzzle, initialState, hint, disabled, mode
         return;
       }
       setOp(op === o ? null : o);
-      play("tick");
+      if (op === o) sfx.remove();
+      else sfx.select();
       api.announce(`${r.values[sel]} ${OP_GLYPH[o]}`);
     },
     [api, disabled, op, over, r.values, sel],
@@ -134,6 +135,7 @@ export default function DeadOnBoard({ puzzle, initialState, hint, disabled, mode
     if (sel !== null) {
       setSel(null);
       setOp(null);
+      sfx.remove();
       return;
     }
     const prev = stepsRef.current;
@@ -141,7 +143,7 @@ export default function DeadOnBoard({ puzzle, initialState, hint, disabled, mode
     const next = prev.slice(0, -1);
     commit(next);
     setBad(null);
-    play("tick");
+    sfx.remove();
     api.announce("Step undone");
     api.onMove({ steps: next });
   }, [api, commit, disabled, over, sel]);
@@ -152,7 +154,6 @@ export default function DeadOnBoard({ puzzle, initialState, hint, disabled, mode
     setSel(null);
     setOp(null);
     setBad(null);
-    play("tick");
     api.announce("Tiles reset");
     api.onMove({ steps: [] });
     api.feedback(`Target ${puzzle.target}`, "info", "target");
@@ -160,8 +161,8 @@ export default function DeadOnBoard({ puzzle, initialState, hint, disabled, mode
 
   const lockIn = useCallback(() => {
     if (disabled || over) return;
+    // Locking in is the clear: the shell plays it once onSolved lands.
     setLocked(true);
-    play("chime");
     api.feedback(`Locked in at ${at}, ${off} off.`, "info", "target");
     api.announce(`Locked in at ${at}, ${off} off.`);
     api.onSolved({ steps: stepsRef.current });
@@ -300,7 +301,8 @@ export default function DeadOnBoard({ puzzle, initialState, hint, disabled, mode
         ))}
       </div>
 
-      <div className="grid grid-cols-5 gap-1.5" role="group" aria-label="Operators">
+      {/* Operators and Undo make their own sounds (pick, drop, take back), not the generic tap. */}
+      <div className="grid grid-cols-5 gap-1.5" role="group" aria-label="Operators" data-no-tick>
         {OPS.map((o) => {
           const on = op === o;
           const hinted = hintT?.op === o && !on;

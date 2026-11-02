@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { play } from "@/lib/audio";
+import { sfx } from "@/games/_shared/sfx";
+
 import { prefersReducedMotion, useSettings } from "@/lib/settings/store";
 import { PENALTY_COPY as t } from "@/lib/copy/penalty";
 import { HUMAN_FLOOR_MS } from "@/games/_shared/reflex";
@@ -126,7 +128,8 @@ export default function PenaltyBoard({ puzzle, initialState, disabled, mode, api
           api.feedback(t.feedback.goal(o.accuracy), "success", "soccer-ball");
         } else {
           api.onMove(state, { mistake: true });
-          play(o.result === "timeout" ? "fizzle" : "buzz");
+          if (o.result === "timeout") sfx.miss();
+          else play("error");
           const text =
             o.result === "saved"
               ? o.power! < puzzle.soft
@@ -143,7 +146,6 @@ export default function PenaltyBoard({ puzzle, initialState, disabled, mode, api
         const goals = got.filter((x) => x.result === "goal").length;
         const score = got.reduce((a, x) => a + x.points, 0);
         finishTimer.current = window.setTimeout(() => {
-          play("jingle");
           api.feedback(t.finished(goals, total, score), "success", "check-circle");
           api.onSolved(state);
         }, 900);
@@ -183,7 +185,7 @@ export default function PenaltyBoard({ puzzle, initialState, disabled, mode, api
     setPowerVal(0);
     setTimeLeft(1);
     setPhase("aim");
-    play("tick");
+    sfx.select();
     api.announce(t.armAnnounce(i + 1));
   }, [api, reduce, total]);
 
@@ -223,7 +225,7 @@ export default function PenaltyBoard({ puzzle, initialState, disabled, mode, api
         aimTap.current = at;
         setAimVal(meterAt(a, puzzle.kicks[kicksRef.current.length].aimPeriod, stepped.current));
         setPhase("power");
-        play("tick");
+        sfx.select();
         api.announce(t.aimAnnounce(meterAt(a, puzzle.kicks[kicksRef.current.length].aimPeriod, stepped.current)));
         return;
       }
@@ -231,6 +233,8 @@ export default function PenaltyBoard({ puzzle, initialState, disabled, mode, api
         const p = Math.round(at - aimTap.current);
         if (p < HUMAN_FLOOR_MS) return;
         if (aimAt.current + p > puzzle.kickMs) return record({ aimAt: aimAt.current, powerAt: null, stepped: stepped.current });
+        // the strike: a soft thump as the ball is struck, before the result comes back
+        play("impact", { gain: 0.55 });
         record({ aimAt: aimAt.current, powerAt: p, stepped: stepped.current });
       }
     },
@@ -414,6 +418,8 @@ export default function PenaltyBoard({ puzzle, initialState, disabled, mode, api
         aria-label={`${label}. ${phase === "ready" ? t.readySmall(kicks.length + 1, total) : ""}`}
         data-phase={phase}
         aria-busy={phase === "checking"}
+        // the pad's own sounds (set, aim, strike) are its press; no generic tap on top
+        data-no-tick
         disabled={disabled || phase === "over"}
         onPointerDown={(e) => {
           e.preventDefault();

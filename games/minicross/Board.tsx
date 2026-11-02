@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { useCellSize } from "@/components/game/useBoardSize";
-import { play } from "@/lib/audio";
+import { isKeyedInput } from "@/components/game/useGridKeys";
 import { sendGuess } from "@/games/_shared/guess";
 import { LetterKeyboard } from "@/games/_shared/LetterKeyboard";
 import { cellsOf, clueAt, numberGrid, type Clue, type Dir, type MinicrossCheck, type MinicrossPuzzle, type MinicrossState } from "./rules";
@@ -35,6 +35,8 @@ export default function MinicrossBoard({ puzzle, initialState, hint, disabled, m
   const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
   const [tapN, setTapN] = useState(0);
+  // Physical typing fills squares without the pop (fast, repeated entry).
+  const [quiet, setQuiet] = useState(false);
   const cellsRef = useRef(cells);
   const lastChecked = useRef("");
   const streak = useRef(0);
@@ -104,7 +106,6 @@ export default function MinicrossBoard({ puzzle, initialState, hint, disabled, m
       if (res.ok) {
         setDone(true);
         setCur(at);
-        play("jingle");
         api.feedback("Every square right. Grid cleared.", "success", "check-circle");
         api.announce("Grid cleared.");
         api.onSolved({ cells: next });
@@ -138,7 +139,9 @@ export default function MinicrossBoard({ puzzle, initialState, hint, disabled, m
       const next = cellsRef.current.slice();
       if (given[cur] === undefined) next[cur] = ch;
       setTapN((t) => t + 1);
-      play("pop", { step: ++streak.current });
+      setQuiet(isKeyedInput());
+      // The key's own press tap is the typing sound; a second blip per letter would double it.
+      ++streak.current;
       // advance: next empty square in this word, else the next square, else the next clue
       const pos = word.indexOf(cur);
       const after = word.slice(pos + 1);
@@ -336,7 +339,9 @@ export default function MinicrossBoard({ puzzle, initialState, hint, disabled, m
                       if (i === cur) flip();
                       else select(i, clueAt(puzzle, i, dir) ? dir : dir === "across" ? "down" : "across");
                     }}
-                    className={`relative flex cursor-pointer items-center justify-center rounded-[6px] outline-none ${active && cells[i] ? (tapN % 2 ? "cell-pop-a" : "cell-pop-b") : ""}`}
+                    className={`relative flex cursor-pointer items-center justify-center rounded-[6px] outline-none ${
+                      active && cells[i] && !quiet ? (tapN % 2 ? "cell-pop-a" : "cell-pop-b") : ""
+                    }`}
                     style={{
                       width: cell,
                       height: cell,

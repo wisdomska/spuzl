@@ -148,6 +148,7 @@ export default function Welcome() {
       onSolved(state) {
         clear.current = { state, ms: Math.round(performance.now() - (t0.current ?? performance.now())) };
         setClearMs(clear.current.ms);
+        play("clear", { delay: 0.1 });
         setTimeout(() => {
           setStep("nickname");
           duck(1200);

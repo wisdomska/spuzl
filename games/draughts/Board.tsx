@@ -119,7 +119,6 @@ export default function DraughtsBoard({ puzzle, initialState, hint, disabled, ap
           if (complete.caps.length === rivals) {
             setDone(true);
             setHop(-1);
-            play("jingle");
             api.feedback(COPY.cleared, "success", "check");
             api.announce(`${COPY.cleared} ${complete.caps.length} captures.`);
             api.onSolved({ path });

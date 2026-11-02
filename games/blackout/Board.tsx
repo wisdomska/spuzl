@@ -4,13 +4,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { useCellSize } from "@/components/game/useBoardSize";
-import { useGridKeys } from "@/components/game/useGridKeys";
-import { play } from "@/lib/audio";
+import { isKeyedInput, useGridKeys } from "@/components/game/useGridKeys";
+import { sfx } from "@/games/_shared/sfx";
 import { popClass, waveStyle } from "@/games/_shared/logiclab/fx";
 import { lit, neighbourhood, replay, type BlackoutPuzzle, type BlackoutState } from "./logic";
 
 const GAP = 4;
 const PAD = 6;
+/** The pressed tile pops first, its neighbours a beat later: the flip reads as spreading from your finger. */
+const RIPPLE_MS = 40;
 
 /**
  * Blackout board. Tap flips a tile and its four neighbours; every flipped tile pops together. Lit
@@ -44,20 +46,20 @@ export default function BlackoutBoard({ puzzle, initialState, hint, disabled, mo
       const next = [...pressesRef.current, i];
       pressesRef.current = next;
       setPresses(next);
-      setFlipped(neighbourhood(n, i));
+      // Keyboard presses flip without the pop (fast, repeated entry).
+      setFlipped(isKeyedInput() ? [] : neighbourhood(n, i));
       setLast(i);
       setTapN((t) => t + 1);
       const after = replay(puzzle, next);
       const left = lit(after);
       const state = { presses: next };
+      sfx.place(Math.max(1, n * n - left));
       if (!left) {
         setDone(true);
-        play("jingle");
         const par = next.length <= puzzle.par ? "On par." : `${next.length - puzzle.par} over par.`;
         api.feedback(`Lights out in ${next.length} moves. ${par}`, "success", "check-circle");
         api.announce(`Board cleared in ${next.length} moves. Par ${puzzle.par}.`);
       } else {
-        play("pop", { step: Math.max(1, n * n - left) });
         api.feedback(tally(next.length, left), "info", "lightbulb-filament");
         api.announce(`Row ${Math.floor(i / n) + 1}, column ${(i % n) + 1} flipped. ${left} lit.`);
       }
@@ -147,6 +149,7 @@ export default function BlackoutBoard({ puzzle, initialState, hint, disabled, mo
               const v = lights[i];
               const glow = i === hintTarget && !done;
               const anim = !done && flipped.includes(i) ? popClass(tapN) : "";
+              const ripple = anim && i !== last ? RIPPLE_MS : 0;
               const dist = Math.abs(r - lastR) + Math.abs(c - lastC);
               return (
                 <div
@@ -171,7 +174,9 @@ export default function BlackoutBoard({ puzzle, initialState, hint, disabled, mo
                       : v
                         ? "0 0 18px color-mix(in srgb, var(--world) 45%, transparent)"
                         : undefined,
-                    transition: "background-color 120ms var(--ease-out), box-shadow 120ms var(--ease-out)",
+                    // Colour only: the glow snaps with it (animating a blurred shadow repaints every lit tile).
+                    transition: "background-color 120ms var(--ease-out)",
+                    animationDelay: ripple ? `${ripple}ms` : undefined,
                   }}
                 >
                   {done && <span aria-hidden className="absolute inset-0" style={waveStyle(dist, "var(--world)", 12)} />}

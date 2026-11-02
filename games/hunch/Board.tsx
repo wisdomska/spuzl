@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { play } from "@/lib/audio";
+import { sfx } from "@/games/_shared/sfx";
 import { unseal } from "@/games/_shared/cluecave";
 import { CLUE_COST, CLUES, judge, scoreFor, sealKey, type HunchPuzzle, type HunchSealed, type HunchState } from "./logic";
 
@@ -63,7 +64,6 @@ export default function HunchBoard({ puzzle, initialState, disabled, mode, api }
       setWarm(false);
       commit(next);
       const n = next.opened;
-      play("jingle");
       api.feedback(`${secret.category}. Got it in ${n} ${n === 1 ? "clue" : "clues"}.`, "success", "check-circle");
       api.announce(`Correct. ${secret.category}. Score ${scoreFor(n, misses)}.`);
       api.onSolved(next);
@@ -79,7 +79,7 @@ export default function HunchBoard({ puzzle, initialState, disabled, mode, api }
     }
     if (r === "warm") {
       setWarm(true);
-      play("pop", { step: 2 });
+      sfx.place(2);
       api.feedback(`Warm. "${guess}" is close. ${left} ${left === 1 ? "guess" : "guesses"} left.`, "info", "thermometer-simple");
       api.announce(`Warm. ${left} guesses left.`);
     } else {

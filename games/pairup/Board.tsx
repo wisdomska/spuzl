@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
 import { useGridKeys } from "@/components/game/useGridKeys";
-import { play } from "@/lib/audio";
+import { sfx } from "@/games/_shared/sfx";
 import { adjacent } from "@/games/_shared/grid";
 import { LineStyles } from "@/games/_shared/LineStyles";
 import { useFitCell } from "@/games/_shared/useFitCell";
@@ -45,6 +45,8 @@ export default function PairupBoard({ puzzle, initialState, hint, disabled, mode
   const [shakeN, setShakeN] = useState(0);
   const [trail, setTrail] = useState<{ id: number; a: number; b: number; k: number }[]>([]);
   const trailId = useRef(0);
+  // Lines restored from a saved game are drawn, not grown, so the board appears at once.
+  const [seeded] = useState(() => new Set(lines.flatMap((l, k) => l.slice(1).map((q, s) => `${k}:${s}:${l[s]}-${q}`))));
   const drag = useRef<{ last: number; k: number } | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const a = analyze(puzzle, lines);
@@ -65,7 +67,7 @@ export default function PairupBoard({ puzzle, initialState, hint, disabled, mode
 
   /** Set new lines, report the move, play the line sound and check for a clear. */
   const commit = useCallback(
-    (next: PairupState, k: number, cell: number, record = true) => {
+    (next: PairupState, k: number, cell: number, record = true, fromTool = false) => {
       const prev = linesRef.current;
       if (record) setHist((h) => [...h.slice(-60), prev]);
       // trail for whatever got shorter
@@ -75,12 +77,18 @@ export default function PairupBoard({ puzzle, initialState, hint, disabled, mode
       setBad(-1);
       const after = analyze(puzzle, next);
       const joined = after.connected.has(k + 1) && !analyze(puzzle, prev).connected.has(k + 1);
-      play("synth", { step: after.filled - 2 * K + (joined ? 6 : 0), silentHaptic: true });
+      // Drawing hums higher as the board fills; joining a pair knocks like a placement; a cut is soft.
+      // Undo and Restart already tapped on press.
+      const shorter = next.some((l, j) => l.length < prev[j].length);
+      if (fromTool) {
+        /* the tool button made the sound */
+      } else if (joined) sfx.place(after.connected.size);
+      else if (shorter && !next.some((l, j) => l.length > prev[j].length)) sfx.remove();
+      else sfx.trace(after.filled - 2 * K);
       if (after.complete) {
         setDone(true);
         setActive(null);
         drag.current = null;
-        play("jingle");
         api.feedback("Every pair joined, every cell filled.", "success", "check-circle");
         api.announce("Board cleared.");
         api.onMove(next, { correctStreak: after.connected.size });
@@ -247,7 +255,7 @@ export default function PairupBoard({ puzzle, initialState, hint, disabled, mode
     if (done || !hist.length) return;
     const prev = hist[hist.length - 1];
     setHist((h) => h.slice(0, -1));
-    commit(prev, active ?? 0, prev[active ?? 0]?.[0] ?? 0, false);
+    commit(prev, active ?? 0, prev[active ?? 0]?.[0] ?? 0, false, true);
   }, [active, commit, done, hist]);
   const restart = useCallback(() => {
     if (done) return;
@@ -255,6 +263,8 @@ export default function PairupBoard({ puzzle, initialState, hint, disabled, mode
       ends.map(() => []),
       0,
       0,
+      true,
+      true,
     );
     setActive(null);
   }, [commit, done, ends]);
@@ -377,7 +387,13 @@ export default function PairupBoard({ puzzle, initialState, hint, disabled, mode
           className="pointer-events-none absolute inset-0"
           style={{ opacity: done ? 0 : 1, transition: "opacity 300ms var(--ease-out) 400ms" }}
         >
-          {lines.flatMap((l, k) => l.slice(1).map((q, s) => bar(l[s], q, pairColor(k), "ll-grow-@", `${k}:${s}:${l[s]}-${q}`)))}
+          {lines.flatMap((l, k) =>
+            l.slice(1).map((q, s) => {
+              const key = `${k}:${s}:${l[s]}-${q}`;
+              return bar(l[s], q, pairColor(k), seeded.has(key) ? "" : "ll-grow-@", key);
+            }),
+          )}
+
           {trail.map((t) => bar(t.a, t.b, pairColor(t.k), "ll-trail", `t${t.id}`))}
           {active !== null && !done && lines[active].length > 0 && !a.connected.has(active + 1) && (
             <div

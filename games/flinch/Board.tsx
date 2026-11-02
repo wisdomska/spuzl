@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
-import { play } from "@/lib/audio";
+import { sfx } from "@/games/_shared/sfx";
+
 import { useGameSettings } from "@/lib/game-settings/client";
 import { logicGames } from "@/lib/copy/logic-games";
 import { classify, FALSE_START_PENALTY, pointsFor, tally, type FlinchPuzzle, type FlinchRound, type FlinchState } from "./logic";
@@ -63,12 +64,13 @@ export default function FlinchBoard({ puzzle, initialState, disabled, mode, api 
         api.ruleBreak(t.falseStart(FALSE_START_PENALTY));
       } else if (kind === "timeout") {
         api.onMove(state, { mistake: true });
-        play("fizzle");
+        sfx.miss();
         api.feedback(t.timeout, "danger", "timer");
         api.announce(t.timeoutAnnounce);
       } else {
         api.onMove(state, { correctStreak: i });
-        play("pop", { step: Math.min(7, Math.max(0, Math.round((400 - r.reaction!) / 40))) });
+        // the faster the reaction, the higher the blip
+        sfx.place(Math.min(7, Math.max(0, Math.round((400 - r.reaction!) / 40))));
         api.feedback(t.reaction(r.reaction!, i, total), "info", "lightning");
         api.announce(t.reactionAnnounce(r.reaction!, i < total));
       }
@@ -77,7 +79,6 @@ export default function FlinchBoard({ puzzle, initialState, disabled, mode, api 
         const tl = tally(puzzle, state);
         timers.current.push(
           window.setTimeout(() => {
-            play("jingle");
             api.feedback(t.done(tl.best, tl.score), "success", "check-circle");
             api.onSolved(state);
           }, 700),
@@ -94,7 +95,7 @@ export default function FlinchBoard({ puzzle, initialState, disabled, mode, api 
     setPhase("armed");
     setLast(null);
     armedAt.current = performance.now();
-    play("tick");
+    sfx.select();
     api.announce(t.armAnnounce(i + 1));
     const delay = puzzle.delays[i];
     timers.current.push(
@@ -208,6 +209,8 @@ export default function FlinchBoard({ puzzle, initialState, disabled, mode, api 
         aria-label={`${look.big}. ${look.small}`}
         aria-live="off"
         data-phase={phase}
+        // the pad's own sounds (arm, reaction, false start) are its press; no generic tap on top
+        data-no-tick
         disabled={disabled || phase === "over"}
         onPointerDown={(e) => {
           e.preventDefault();

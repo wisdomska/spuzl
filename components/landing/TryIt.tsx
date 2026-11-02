@@ -10,6 +10,7 @@ import type { BoardApi } from "@/games/types";
 import { Spuz } from "@/components/brand/Spuz";
 import { Icon } from "@/components/ui/Icon";
 import { aboutCopy as T } from "@/lib/copy/about";
+import { play } from "@/lib/audio";
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
@@ -22,7 +23,10 @@ export function TryIt() {
   const api = useMemo<BoardApi<CrownfallState>>(
     () => ({
       onMove: (s) => setCells(s),
-      onSolved: () => setSolved(true),
+      onSolved: () => {
+        setSolved(true);
+        play("clear", { delay: 0.1 });
+      },
       feedback() {},
       ruleBreak() {},
       announce() {},

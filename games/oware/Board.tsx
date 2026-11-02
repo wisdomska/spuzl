@@ -95,11 +95,10 @@ export default function OwareBoard({ puzzle, initialState, hint, disabled, api }
         if (r.gain === best) {
           setDone(true);
           setSowing(false);
-          timers.current.push(setTimeout(() => play("jingle"), 250));
           api.feedback(`Biggest capture. You take ${r.gain}.`, "success", "check-circle");
           api.announce(`Sowed pit ${pick + 1}. You capture ${r.gain}. Puzzle cleared.`);
           api.onMove({ pit: pick }, { correctStreak: 1 });
-          api.onSolved({ pit: pick });
+          api.onSolved({ pit: pick }, { clearDelayMs: 250 });
         } else {
           api.ruleBreak(r.gain ? `Only ${r.gain}. Another pit captures more.` : "No capture. Another pit captures more.");
           api.onMove({ pit: pick }, { mistake: true });

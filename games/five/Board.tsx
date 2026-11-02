@@ -5,6 +5,8 @@ import type { BoardProps, Hint } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { useFitHeight, useViewportWidth } from "@/components/game/useBoardSize";
 import { play } from "@/lib/audio";
+import { sfx } from "@/games/_shared/sfx";
+import { isKeyedInput } from "@/components/game/useGridKeys";
 import { sendGuess } from "@/games/_shared/guess";
 import { reducedMotion } from "@/games/_shared/fly";
 import { LetterKeyboard, type KeyDecor } from "@/games/_shared/LetterKeyboard";
@@ -28,6 +30,10 @@ const LEGEND: [Mark, string][] = [
   [MISS, t.legendMiss],
 ];
 const CHECKING_AFTER_MS = 250;
+/** Reveal: each tile flips this long after the one before; its mark shows (and sounds) at the flip's midpoint. */
+const FLIP_STEP_MS = 90;
+const FLIP_MS = 420;
+const flipMid = (c: number) => c * FLIP_STEP_MS + FLIP_MS / 2;
 /** Tiles fit the width (up to 56 px), then step down (to 30 px) until the page fits the screen's height. */
 const MAX_CELL = 56;
 const MIN_CELL = 30;
@@ -54,6 +60,8 @@ export default function FiveBoard({ puzzle, initialState, hint, disabled, mode, 
   const [over, setOver] = useState(false);
   const [shakeN, setShakeN] = useState(0);
   const [flipRow, setFlipRow] = useState(-1);
+  // Physical typing fills tiles without the pop (fast, repeated entry).
+  const [quiet, setQuiet] = useState(false);
   const [reduce] = useState(() => reducedMotion());
   const rowsRef = useRef<Row[]>([]);
   const hintedRef = useRef<number[]>(initialState?.hinted?.slice() ?? []);
@@ -132,6 +140,7 @@ export default function FiveBoard({ puzzle, initialState, hint, disabled, mode, 
   const onLetter = useCallback(
     (ch: string) => {
       if (locked) return;
+      setQuiet(isKeyedInput());
       setTyped((w) => (w.length < len ? w + ch : w));
     },
     [len, locked],
@@ -152,12 +161,14 @@ export default function FiveBoard({ puzzle, initialState, hint, disabled, mode, 
     const word = typed;
     if (word.length < len) {
       shake();
+      sfx.miss();
       api.feedback(t.tooShort, "info", "info");
       api.announce(t.tooShort);
       return;
     }
     if (rowsRef.current.some((r) => r.word === word)) {
       shake();
+      sfx.miss();
       api.feedback(t.repeat(word), "info", "info");
       api.announce(t.repeat(word));
       return;
@@ -179,7 +190,7 @@ export default function FiveBoard({ puzzle, initialState, hint, disabled, mode, 
     if (!isMarks(res)) {
       // Not a word (or not five letters): the try is not spent, and it is not a slip.
       shake();
-      play("fizzle");
+      sfx.miss();
       const line = "invalid" in res && res.invalid === "length" ? t.tooShort : t.notWord(word);
       api.feedback(line, "info", "info");
       api.announce(line);
@@ -193,17 +204,23 @@ export default function FiveBoard({ puzzle, initialState, hint, disabled, mode, 
     const state = stateOf(list);
     const parts = [...res.word].map((ch, k) => `${ch}, ${MARK_SAY[res.marks[k]]}`);
     const say = t.guessSay(list.length, res.word, parts);
+    // Each tile sounds its mark as it turns (scheduled on the audio clock, in step with the flips): a rising
+    // chime for the right spot, a blip for in the word, a soft tap for not in it.
+    res.marks.forEach((m, k) => {
+      const delay = reduce ? 0 : flipMid(k) / 1000;
+      const quietHand = k > 0;
+      if (m === HIT) play("chime", { step: k, delay, silentHaptic: quietHand });
+      else if (m === NEAR) play("place", { step: k, delay, silentHaptic: quietHand });
+      else play("tap", { gain: 0.5, delay, silentHaptic: quietHand });
+    });
     if (res.ok) {
       setOver(true);
-      res.marks.forEach((_, k) => setTimeout(() => play("chime", { step: k }), reduce ? 0 : k * 60));
       api.onMove(state, { correctStreak: 1 });
       api.feedback(t.solved(list.length), "success", "check-circle");
       api.announce(`${say} ${t.solved(list.length)}`);
-      setTimeout(() => play("jingle"), 200);
-      api.onSolved(state);
+      api.onSolved(state, { clearDelayMs: reduce ? 200 : flipMid(len - 1) + 180 });
       return;
     }
-    play("pop", { step: list.length });
     api.onMove(state);
     const left = tries - list.length;
     if (left <= 0) {
@@ -257,33 +274,47 @@ export default function FiveBoard({ puzzle, initialState, hint, disabled, mode, 
                   const look = mark === undefined ? null : LOOK[mark];
                   const ghost = isCurrent && !typed[c] ? hinted.find((h) => h.pos === c) : undefined;
                   const letter = row ? row.word[c] : isCurrent ? (typed[c] ?? "") : "";
-                  const flip = row && r === flipRow && !reduce;
+                  const flip = !!row && r === flipRow && !reduce;
+                  // While a tile waits to flip it keeps the typed look; the mark appears at the flip's midpoint.
+                  const base = flip ? null : look;
                   return (
                     <div
                       key={c}
                       role="gridcell"
                       aria-label={t.cellSay(r + 1, c + 1, letter || ghost?.letter || "", look ? MARK_SAY[mark!] : null, !!ghost)}
-                      className={`relative flex items-center justify-center rounded-[10px] font-bold ${isCurrent && typed[c] && c === typed.length - 1 ? "cell-pop-a" : ""}`}
+                      className={`relative flex items-center justify-center rounded-[10px] font-bold ${isCurrent && typed[c] && c === typed.length - 1 && !quiet ? "cell-pop-a" : ""}`}
                       style={{
                         width: cell,
                         height: cell,
                         fontSize: Math.round(cell * 0.5),
-                        background: look ? look.bg : "var(--surface-raised)",
-                        color: look ? look.fg : ghost ? "var(--text-muted)" : "var(--text)",
-                        boxShadow: look
+                        background: base ? base.bg : "var(--surface-raised)",
+                        color: base ? base.fg : ghost ? "var(--text-muted)" : "var(--text)",
+                        boxShadow: base
                           ? "none"
                           : ghost
                             ? "inset 0 0 0 3px var(--gold)"
                             : letter
                               ? "inset 0 0 0 2px var(--text-muted)"
                               : "inset 0 0 0 2px var(--line)",
-                        animation: flip ? `cell-flip 420ms var(--ease-out) ${c * 90}ms both` : undefined,
+                        animation: flip ? `cell-flip ${FLIP_MS}ms var(--ease-out) ${c * FLIP_STEP_MS}ms both` : undefined,
                       }}
                     >
                       <span aria-hidden>{letter || ghost?.letter}</span>
-                      {look && (
+                      {flip && look && (
+                        <span
+                          aria-hidden
+                          className="absolute inset-0 flex items-center justify-center rounded-[10px]"
+                          style={{ background: look.bg, color: look.fg, animation: `fade-in 1ms linear ${flipMid(c)}ms both` }}
+                        >
+                          {letter}
+                          <span className="absolute top-1 right-1 flex leading-none opacity-80">
+                            <Icon name={look.icon} size={12} />
+                          </span>
+                        </span>
+                      )}
+                      {base && (
                         <span aria-hidden className="absolute top-1 right-1 flex leading-none opacity-80">
-                          <Icon name={look.icon} size={12} />
+                          <Icon name={base.icon} size={12} />
                         </span>
                       )}
                       {ghost && (

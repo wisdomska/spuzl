@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
 import { useFitCell } from "@/games/_shared/useFitCell";
 import { useGridKeys } from "@/components/game/useGridKeys";
-import { play } from "@/lib/audio";
+import { sfx } from "@/games/_shared/sfx";
 import { LineStyles } from "@/games/_shared/LineStyles";
 import { analyze, crossings, edgeCells, RULE_COPY, type IslesPuzzle, type IslesState } from "./logic";
 
@@ -34,6 +34,8 @@ export default function IslesBoard({ puzzle, initialState, hint, disabled, mode,
   const [tapN, setTapN] = useState(0);
   const [shakeN, setShakeN] = useState(0);
   const [badIsland, setBadIsland] = useState(-1);
+  // Bridges restored from a saved game are drawn, not grown, so the board appears at once.
+  const [seeded] = useState(() => new Set(state.flatMap((v, k) => (v === 1 ? [`${k}:1:0`] : v === 2 ? [`${k}:2:0`, `${k}:2:1`] : []))));
   const a = analyze(puzzle, state, cross);
   const [done, setDone] = useState(a.complete);
   const downAt = useRef<number | null>(null);
@@ -70,7 +72,6 @@ export default function IslesBoard({ puzzle, initialState, hint, disabled, mode,
       api.announce(`${words} between ${where(x)} and ${where(y)}.`);
       if (after.complete) {
         setDone(true);
-        play("jingle");
         api.feedback("Every island joined.", "success", "check-circle");
         api.announce("Board cleared.");
         api.onMove(next, { correctStreak: next.reduce((s, b) => s + b, 0) });
@@ -86,8 +87,10 @@ export default function IslesBoard({ puzzle, initialState, hint, disabled, mode,
         return;
       }
       setBadIsland(-1);
-      play("synth", { step: next.reduce((s, b) => s + b, 0), silentHaptic: true });
       const met = islands.filter((isl, i) => after.count[i] === isl.n).length;
+      // Taking a bridge away is soft; building one blips, higher as more islands are complete.
+      if (v === 0) sfx.remove();
+      else sfx.place(met);
       api.feedback(`${met} of ${islands.length} islands complete`, "info", "circles-three");
       api.onMove(next, { correctStreak: met });
     },
@@ -111,6 +114,8 @@ export default function IslesBoard({ puzzle, initialState, hint, disabled, mode,
       }
       if (sel === null || sel === i) {
         setSel(sel === i ? null : i);
+        if (sel === i) sfx.remove();
+        else sfx.select();
         if (sel !== i) {
           api.feedback("Now tap an island in line with it.", "info", "hand-pointing");
           api.announce(`Picked island ${where(i)}, number ${islands[i].n}.`);
@@ -212,7 +217,8 @@ export default function IslesBoard({ puzzle, initialState, hint, disabled, mode,
     return offs.map((o, n) => (
       <div
         key={`${k}:${v}:${n}`}
-        className={`absolute ${horiz ? "ll-grow-x" : "ll-grow-y"} ${a.crossed.has(k) ? "" : "ll-ink"}`}
+        className={`absolute ${seeded.has(`${k}:${v}:${n}`) ? "" : horiz ? "ll-grow-x" : "ll-grow-y"} ${a.crossed.has(k) ? "" : "ll-ink"}`}
+
         style={{
           left: horiz ? Math.min(A.x, B.x) + d / 2 : A.x - t / 2 + o,
           top: horiz ? A.y - t / 2 + o : Math.min(A.y, B.y) + d / 2,

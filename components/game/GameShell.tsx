@@ -68,6 +68,12 @@ interface FeedbackState {
 }
 
 const GUIDED_IDLE_MS = 6000;
+/** Gap between the board's last placement sound and the clear arpeggio. */
+const CLEAR_GAP_MS = 100;
+/** Gap between the last slip's buzz and the run-over sound. */
+const FAIL_GAP_MS = 320;
+/** Tool controls that take something back press with the soft tap (lib/audio/press.ts). */
+const SOFT_TOOLS = new Set(["undo", "erase", "clear", "delete", "reset", "restart", "deselect"]);
 
 export function GameShell<P, St>(props: GameShellProps<P, St>) {
   const {
@@ -120,6 +126,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
     lastMistakeAt.current = t;
   };
   const hintsUsed = useRef(0);
+  const clearPlayed = useRef(false);
   const clock = useRef({ base: 0, since: 0 });
   // A board with its own clock (fixed-step simulation) replaces the wall clock for display and scoring.
   const boardClock = useRef<(() => number) | null>(null);
@@ -168,9 +175,16 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
         setHint(null);
         onMove?.(state, now(), info);
       },
-      onSolved(state) {
+      onSolved(state, opts) {
         stateRef.current = state;
         setSolved(true);
+        // The clear sound lives here, once per puzzle, so no board doubles or forgets it. A short default
+        // gap lets the final placement's blip land before the arpeggio; boards with a closing phrase
+        // (a word's chimes, a check sting) pass a longer one.
+        if (!clearPlayed.current) {
+          clearPlayed.current = true;
+          play("clear", { delay: (opts?.clearDelayMs ?? CLEAR_GAP_MS) / 1000 });
+        }
         const t = now();
         clock.current.base = t;
         setElapsed(t);
@@ -179,6 +193,12 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
       onFailed(state, reason) {
         stateRef.current = state;
         setSolved(true);
+        // The end of a run that did not clear (out of tries, a lost bot game): a gentle falling pair,
+        // after the slip's own buzz has had its moment. Once, like the clear.
+        if (!clearPlayed.current) {
+          clearPlayed.current = true;
+          play("duelLose", { delay: FAIL_GAP_MS / 1000 });
+        }
         onFailed?.(state, reason, now());
       },
       feedback(text, tone = "info", icon) {
@@ -442,6 +462,8 @@ function ToolButton({ c }: { c: ControlSpec }) {
       onClick={c.onPress}
       disabled={c.disabled}
       aria-pressed={c.active ?? undefined}
+      data-press={c.active !== undefined ? "toggle" : SOFT_TOOLS.has(c.id) ? "soft" : undefined}
+      data-no-tick={c.quiet || undefined}
       className="toy short:h-12 short:gap-0.5 flex h-16 flex-col items-center justify-center gap-[3px] rounded-[18px]"
       style={
         c.disabled

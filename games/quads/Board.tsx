@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import type { BoardProps } from "@/games/types";
 import { useGridKeys } from "@/components/game/useGridKeys";
 import { play } from "@/lib/audio";
+import { sfx } from "@/games/_shared/sfx";
 import { sendGuess } from "@/games/_shared/guess";
 import { reducedMotion } from "@/games/_shared/fly";
 import { quick } from "@/lib/copy/quick";
@@ -96,16 +97,18 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
     (w: string) => {
       if (locked || !w) return;
       if (selected.includes(w)) {
+        sfx.remove();
         setSelected(selected.filter((x) => x !== w));
         api.announce(t.putDown(w, selected.length - 1));
         return;
       }
       if (selected.length >= 4) {
+        sfx.miss();
         api.announce(t.fourLifted);
         return;
       }
       setSelected([...selected, w]);
-      play("pop", { step: selected.length });
+      sfx.place(selected.length);
       api.announce(t.lifted(w, selected.length + 1));
     },
     [api, locked, selected],
@@ -147,7 +150,8 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
     if (res.ok) {
       streak.current++;
       apply(res, words, true);
-      res.group.words.forEach((_, k) => setTimeout(() => play("chime", { step: k + res.group.level }), k * 40));
+      sfx.cascade(res.group.words.length, res.group.level);
+
       const found = solved.length + 1;
       const level = t.levels[levelOf(res.group)];
       api.feedback(t.found(res.group.label, level, found), found === 4 ? "success" : "info", "check-circle");
@@ -156,8 +160,7 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
       const done = found === 4;
       if (done) {
         setOver(true);
-        setTimeout(() => play("jingle"), 200);
-        api.onSolved(state);
+        api.onSolved(state, { clearDelayMs: 200 });
       }
       return;
     }

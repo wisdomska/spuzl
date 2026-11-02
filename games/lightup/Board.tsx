@@ -4,8 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { fitCell, useViewportWidth } from "@/components/game/useBoardSize";
-import { useGridKeys } from "@/components/game/useGridKeys";
-import { play } from "@/lib/audio";
+import { isKeyedInput, useGridKeys } from "@/components/game/useGridKeys";
+import { sfx } from "@/games/_shared/sfx";
 import { popClass, shakeClass, waveStyle } from "@/games/_shared/logiclab/fx";
 import { LIGHTUP_COPY as T } from "@/lib/copy/lightup";
 import { analyze, BLACK, EMPTY, geometry, LAMP, MARK, WHITE, type LightUpPuzzle, type LightUpState } from "./logic";
@@ -17,6 +17,9 @@ const padFor = (n: number) => (n >= 10 ? 3 : 6);
 /** White cells sit clearly lighter than the board and the black cells in both themes; lit ones take a gold wash. */
 const WHITE_FILL = "color-mix(in srgb, var(--text) 16%, var(--surface))";
 const LIT_FILL = "color-mix(in srgb, var(--gold) 34%, var(--surface))";
+/** Light travels: cells along a placed (or lifted) lamp's beams change this much later per step away, capped. */
+const BEAM_STEP_MS = 18;
+const BEAM_CAP_MS = 160;
 
 /**
  * Light Up board. Tap a white cell: lamp, then X, then clear (or place the chosen tool's mark). Lit cells
@@ -33,6 +36,7 @@ export default function LightUpBoard({ puzzle, initialState, hint, disabled, mod
   const [tool, setTool] = useState<Tool | null>(null);
   const [last, setLast] = useState(-1);
   const [tapN, setTapN] = useState(0);
+  const [quiet, setQuiet] = useState(false);
   const [shakeN, setShakeN] = useState(0);
   const [done, setDone] = useState(false);
   const cellsRef = useRef(cells);
@@ -58,6 +62,7 @@ export default function LightUpBoard({ puzzle, initialState, hint, disabled, mod
       setHist((h) => [...h, prev]);
       setLast(i);
       setTapN((t) => t + 1);
+      setQuiet(isKeyedInput());
       const r = Math.floor(i / n),
         c = i % n;
       const what =
@@ -71,12 +76,13 @@ export default function LightUpBoard({ puzzle, initialState, hint, disabled, mod
         api.announce(`${T.cellLabel(r, c, what)}. ${msg}`);
       } else if (after.clear) {
         setDone(true);
-        play("jingle");
+        sfx.place(streak.current + 1);
         api.feedback(T.cleared, "success", "check-circle");
         api.announce(T.cleared);
       } else {
         if (value === LAMP) streak.current++;
-        play("pop", { step: Math.max(1, streak.current) });
+        if (value === EMPTY) sfx.remove();
+        else sfx.place(Math.max(1, streak.current));
         api.announce(`${T.cellLabel(r, c, what)}. ${T.count(after.lit.size, after.whites)}.`);
         if (!after.bad.size) api.feedback(T.count(after.lit.size, after.whites), "info", "lightbulb-filament");
       }
@@ -165,7 +171,7 @@ export default function LightUpBoard({ puzzle, initialState, hint, disabled, mod
               const bad = a.bad.has(i);
               const glow = i === hintTarget;
               const dist = Math.abs(r - lastR) + Math.abs(c - lastC);
-              const anim = done ? "" : i === last ? (bad ? shakeClass(shakeN) : popClass(tapN)) : "";
+              const anim = done ? "" : i === last ? (bad ? shakeClass(shakeN) : quiet ? "" : popClass(tapN)) : "";
               if (g !== WHITE) {
                 const num = g === BLACK ? null : g;
                 const lampsAround = num === null ? 0 : geo.adj[i].filter((j) => cells[j] === LAMP).length;
@@ -199,6 +205,8 @@ export default function LightUpBoard({ puzzle, initialState, hint, disabled, mod
                 );
               }
               const lit = a.lit.has(i);
+              // The last lamp's beam reaches farther cells a little later (on and off alike).
+              const beam = !quiet && !done && last >= 0 && geo.see[last]?.includes(i) ? Math.min(BEAM_CAP_MS, dist * BEAM_STEP_MS) : 0;
               const what =
                 v === LAMP
                   ? T.cellState.lamp
@@ -228,6 +236,7 @@ export default function LightUpBoard({ puzzle, initialState, hint, disabled, mod
                     color: v === LAMP ? "var(--square-ink)" : "var(--text-muted)",
                     boxShadow: glow ? "inset 0 0 0 3px var(--accent)" : bad ? "inset 0 0 0 3px var(--danger)" : undefined,
                     transition: "background-color 120ms var(--ease-out)",
+                    transitionDelay: beam ? `${beam}ms` : undefined,
                   }}
                 >
                   {done && <span aria-hidden className="absolute inset-0" style={waveStyle(dist, "var(--gold)", 6)} />}

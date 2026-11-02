@@ -55,7 +55,6 @@ export default function FlipBoard({ puzzle, initialState, hint, disabled, api }:
             if (flips.length === best) {
               setDone(true);
               setBusy(false);
-              play("jingle");
               api.feedback(`Biggest flip: ${flips.length} discs.`, "success", "check-circle");
               api.onMove({ sq }, { correctStreak: 1 });
               api.onSolved({ sq });

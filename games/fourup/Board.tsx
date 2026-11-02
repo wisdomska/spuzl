@@ -87,7 +87,6 @@ export default function FourUpBoard({ puzzle, initialState, hint, disabled, api 
         setCols(next);
         if (res.won) {
           setBusy(false);
-          play("jingle");
           api.feedback(COPY.win, "success", "check-circle");
           api.announce(COPY.win);
           api.onMove({ cols: next }, { correctStreak: streak.current });

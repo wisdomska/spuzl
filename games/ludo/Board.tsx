@@ -113,7 +113,6 @@ export default function LudoBoard({ puzzle, initialState, hint, disabled, api }:
         if (pick === best.step.piece) {
           setDone(true);
           setBusy(false);
-          play("jingle");
           api.feedback(`Best move. ${explain(best)}`, "success", "check-circle");
           api.announce(`Best move. ${explain(best)}`);
           api.onMove({ piece: pick }, { correctStreak: 1 });

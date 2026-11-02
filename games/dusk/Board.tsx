@@ -4,8 +4,8 @@ import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "re
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { useCellSize } from "@/components/game/useBoardSize";
-import { useGridKeys } from "@/components/game/useGridKeys";
-import { play } from "@/lib/audio";
+import { isKeyedInput, useGridKeys, viaKeys } from "@/components/game/useGridKeys";
+import { sfx } from "@/games/_shared/sfx";
 import { popClass, shakeClass, waveStyle } from "@/games/_shared/logiclab/fx";
 import { logicGames } from "@/lib/copy/logic-games";
 import { analyze, EMPTY, MOON, SUN, type DuskPuzzle, type DuskState } from "./logic";
@@ -44,6 +44,7 @@ export default function DuskBoard({ puzzle, initialState, hint, disabled, api }:
   const [tool, setTool] = useState<Tool>(null);
   const [last, setLast] = useState(-1);
   const [tapN, setTapN] = useState(0);
+  const [quiet, setQuiet] = useState(false);
   const [shakeN, setShakeN] = useState(0);
   const [done, setDone] = useState(false);
   const streak = useRef(0);
@@ -78,7 +79,6 @@ export default function DuskBoard({ puzzle, initialState, hint, disabled, api }:
       } else if (after.clear) {
         doneRef.current = true;
         setDone(true);
-        play("jingle");
         api.feedback(t.cleared, "success", "check-circle");
         api.announce(t.clearedAnnounce);
       } else {
@@ -110,7 +110,7 @@ export default function DuskBoard({ puzzle, initialState, hint, disabled, api }:
     if (disabled) settle();
   }, [disabled, settle]);
 
-  /** Show a mark right away (pop + sound); judging waits for `settle`. */
+  /** Show a mark right away (pop + sound, no pop for keyboard entry); judging waits for `settle`. */
   const show = useCallback((i: number, value: number) => {
     const next = cellsRef.current.slice();
     next[i] = value;
@@ -118,7 +118,9 @@ export default function DuskBoard({ puzzle, initialState, hint, disabled, api }:
     setCells(next);
     setLast(i);
     setTapN((k) => k + 1);
-    play("pop", { step: streak.current });
+    setQuiet(isKeyedInput());
+    if (value === EMPTY) sfx.remove();
+    else sfx.place(streak.current);
   }, []);
 
   const blocked = useCallback(
@@ -193,7 +195,7 @@ export default function DuskBoard({ puzzle, initialState, hint, disabled, api }:
     const v = k === "s" ? SUN : k === "m" ? MOON : k === "delete" || k === "backspace" ? EMPTY : -1;
     if (v < 0 || e.metaKey || e.ctrlKey || e.altKey) return keys.onKeyDown(e);
     e.preventDefault();
-    place(keys.focus, v);
+    viaKeys(() => place(keys.focus, v));
   };
   const lastR = Math.floor(last / n),
     lastC = last % n;
@@ -227,7 +229,7 @@ export default function DuskBoard({ puzzle, initialState, hint, disabled, api }:
               const fixed = given(i);
               const dist = Math.abs(r - lastR) + Math.abs(c - lastC);
               let anim = "";
-              if (!done && i === last) anim = bad ? shakeClass(shakeN) : popClass(tapN);
+              if (!done && i === last) anim = bad ? shakeClass(shakeN) : quiet ? "" : popClass(tapN);
               const glow = i === hintTarget && !done;
               const look = v === SUN ? LOOK.sun : v === MOON ? LOOK.moon : LOOK.empty;
               const rings = [

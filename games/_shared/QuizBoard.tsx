@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import type { BoardApi, Hint, PlayMode } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { play } from "@/lib/audio";
+import { sfx } from "@/games/_shared/sfx";
 import { quick } from "@/lib/copy/quick";
 import { READ_FLOOR_MS, timedMisses, timedScore, type TimedAnswer } from "./cluecave";
 
@@ -128,7 +129,6 @@ export function QuizBoard({ rounds, correct, limitMs, noun, initial, hint, disab
     if (next.length >= total) {
       setPhase("done");
       const { score, right } = timedScore(next, correct, limitMs);
-      play("jingle");
       api.feedback(t.summary(right, total, score), "info", "flag-checkered");
       api.announce(t.summarySay(right, total, score));
       api.onSolved({ answers: next });
@@ -162,7 +162,8 @@ export function QuizBoard({ rounds, correct, limitMs, noun, initial, hint, disab
       const answerText = rounds[q].choices[correct[q]];
       if (right) {
         streak.current++;
-        play("pop", { step: streak.current });
+        // a right answer is the palette's small win (the two-note lift)
+        play("success");
         api.onMove({ answers: next }, { correctStreak: streak.current });
         api.feedback(t.right(answerText), "success", "check-circle");
         api.announce(t.right(answerText));
@@ -172,7 +173,8 @@ export function QuizBoard({ rounds, correct, limitMs, noun, initial, hint, disab
         // The mistake flag also feeds race and duel mistake counts (MatchBoard), so it stays on every miss.
         api.onMove({ answers: next }, { mistake: true });
         if (pick === null) {
-          play("fizzle");
+          sfx.miss();
+
           api.feedback(t.time(answerText), "danger", "timer");
           api.announce(t.timeSay(answerText));
         } else api.ruleBreak(t.wrong(answerText));

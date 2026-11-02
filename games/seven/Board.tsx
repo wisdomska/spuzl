@@ -6,7 +6,8 @@ import type { BoardProps, ControlSpec } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { play } from "@/lib/audio";
 import { loadWords } from "@/games/_shared/words/lazy";
-import { flyLetters, FLY_STAGGER_MS } from "@/games/_shared/fly";
+import { flyLetters } from "@/games/_shared/fly";
+import { sfx } from "@/games/_shared/sfx";
 import {
   answersFrom,
   isPangram,
@@ -75,7 +76,7 @@ export default function SevenBoard({ puzzle, initialState, hint, disabled, mode,
       if (off || word.length >= 15) return;
       setWord((w) => w + l);
       setBad(false);
-      play("tick", { step: word.length + 1 });
+      sfx.select();
       api.announce(`${l}. ${word + l}`);
     },
     [off, word, api],
@@ -100,7 +101,6 @@ export default function SevenBoard({ puzzle, initialState, hint, disabled, mode,
   const finish = useCallback(
     (list: string[]) => {
       setDone(true);
-      play("jingle");
       api.feedback(
         `Finished with ${list.reduce((s, w) => s + wordScore(w, isPangram(w, centre, puzzle.letters)), 0)} points.`,
         "success",
@@ -120,6 +120,7 @@ export default function SevenBoard({ puzzle, initialState, hint, disabled, mode,
       setBad(true);
       setShakeN((n) => n + 1);
       if (reason === "dupe") {
+        sfx.miss();
         api.feedback(REASON_COPY.dupe, "info", "info");
         api.announce(REASON_COPY.dupe);
       } else api.ruleBreak(REASON_COPY[reason]);
@@ -139,7 +140,8 @@ export default function SevenBoard({ puzzle, initialState, hint, disabled, mode,
     const pangram = isPangram(w, centre, puzzle.letters);
     const pts = wordScore(w, pangram);
     const next = [...found, w];
-    w.split("").forEach((_, k) => setTimeout(() => play("chime", { step: k }), k * FLY_STAGGER_MS));
+    // letters chime as they lift (the flight's stagger), then knock as the word lands in the list
+    sfx.cascade(w.length);
     api.feedback(
       pangram ? `Spuzl word! ${w}, plus ${pts}.` : `${w}, plus ${pts}.`,
       pangram ? "success" : "info",
@@ -155,6 +157,7 @@ export default function SevenBoard({ puzzle, initialState, hint, disabled, mode,
     setFound(next);
     setPopKey(w);
     setWord("");
+    sfx.place(streak.current);
     if (next.length === answers.size) finish(next);
   }, [off, word, centre, puzzle.letters, answers, found, api, score, maxScore, finish]);
 
@@ -296,34 +299,38 @@ export default function SevenBoard({ puzzle, initialState, hint, disabled, mode,
       >
         <div role="row" className="contents">
           {tiles.map((l, k) => (
-            // keyed by letter (the seven are distinct) so Shuffle slides each hex to its new spot
-            <motion.button
+            // keyed by letter (the seven are distinct) so Shuffle springs each hex to its new spot. The slot
+            // moves by transform (compositor only, interruptible); the button inside keeps its press scale.
+            <motion.div
               key={l}
               initial={false}
-              animate={{ left: W / 2 - HEX_W / 2 + pos[k][0] * 1.06, top: H / 2 - HEX_H / 2 + pos[k][1] * 1.06 }}
+              animate={{ transform: `translate(${pos[k][0] * 1.06}px, ${pos[k][1] * 1.06}px)` }}
               transition={reduce ? { duration: 0 } : { type: "spring", duration: 0.32, bounce: 0.18 }}
-              type="button"
-              role="gridcell"
-              tabIndex={focus === k ? 0 : -1}
-              aria-label={`${l}${k === 0 ? ", centre letter, in every word" : ""}`}
-              onClick={() => {
-                setFocus(k);
-                add(l);
-              }}
-              disabled={off}
-              className="press font-display absolute flex items-center justify-center text-[28px] font-extrabold outline-none focus-visible:brightness-125"
-              style={{
-                width: HEX_W,
-                height: HEX_H,
-                clipPath: HEX,
-                background: k === 0 ? "var(--world)" : "var(--surface-raised)",
-                color: k === 0 ? INK : "var(--text)",
-                transition: "transform var(--dur-instant) var(--spring-press)",
-              }}
+              className="absolute"
+              style={{ left: W / 2 - HEX_W / 2, top: H / 2 - HEX_H / 2, width: HEX_W, height: HEX_H }}
             >
-              {l}
-              {k === 0 && <span className="sr-only"> (centre)</span>}
-            </motion.button>
+              <button
+                type="button"
+                role="gridcell"
+                tabIndex={focus === k ? 0 : -1}
+                aria-label={`${l}${k === 0 ? ", centre letter, in every word" : ""}`}
+                onClick={() => {
+                  setFocus(k);
+                  add(l);
+                }}
+                disabled={off}
+                className="press font-display flex h-full w-full items-center justify-center text-[28px] font-extrabold outline-none focus-visible:brightness-125"
+                style={{
+                  clipPath: HEX,
+                  background: k === 0 ? "var(--world)" : "var(--surface-raised)",
+                  color: k === 0 ? INK : "var(--text)",
+                  transition: "transform var(--dur-instant) var(--spring-press)",
+                }}
+              >
+                {l}
+                {k === 0 && <span className="sr-only"> (centre)</span>}
+              </button>
+            </motion.div>
           ))}
         </div>
       </div>

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { play } from "@/lib/audio";
+import { sfx } from "@/games/_shared/sfx";
 import { sendGuess } from "@/games/_shared/guess";
 import { LetterKeyboard } from "@/games/_shared/LetterKeyboard";
 import { changedAt, diffCount, LEN, RUNGS, type RungsCheck, type RungsGuess, type RungsPuzzle, type RungsState } from "./rules";
@@ -68,7 +69,8 @@ export default function RungsBoard({ puzzle, initialState, hint, disabled, mode,
       setLocked(true);
       setActive({ kind: "cap", c: 0 });
       setEntry("");
-      play("synth", { step: 5 });
+      // the ladder holds: the palette's small win, after the last move's clack
+      play("success", { delay: 0.12 });
       api.feedback("Ladder locked. Now crack the top and bottom.", "success", "check-circle");
       api.announce("Ladder locked. Top word clue: " + puzzle.caps[0]);
       api.onMove(state(a, fixed), { correctStreak: ++streak.current });
@@ -108,7 +110,7 @@ export default function RungsBoard({ puzzle, initialState, hint, disabled, mode,
         api.onMove(state(), { mistake: true });
         return;
       }
-      word.split("").forEach((_, i) => setTimeout(() => play("chime", { step: i }), i * 40));
+      sfx.cascade(word.length);
       setEntry("");
       if (active.kind === "rung") {
         const a = answers.slice();
@@ -133,11 +135,11 @@ export default function RungsBoard({ puzzle, initialState, hint, disabled, mode,
       if (c[0] && c[1]) {
         setDone(true);
         setActive(null);
-        play("jingle");
         api.feedback("Top to bottom. Ladder cleared.", "success", "check-circle");
         api.announce("Ladder cleared.");
         api.onMove(st, { correctStreak: ++streak.current });
-        api.onSolved(st);
+        // let the word's chimes run before the clear
+        api.onSolved(st, { clearDelayMs: word.length * 40 + 120 });
       } else {
         setActive({ kind: "cap", c: active.c === 0 ? 1 : 0 });
         api.announce(`${word}. Correct. ${active.c === 0 ? "Bottom" : "Top"} word next: ${puzzle.caps[active.c === 0 ? 1 : 0]}`);
@@ -151,9 +153,9 @@ export default function RungsBoard({ puzzle, initialState, hint, disabled, mode,
   const onLetter = useCallback(
     (ch: string) => {
       if (!active || off || entry.length >= LEN) return;
+      // The key's own press tap is the sound of typing (physical keys stay quiet, like the OS keyboard).
       const next = entry + ch;
       setEntry(next);
-      play("tick", { step: next.length });
       if (next.length === LEN) void submit(next);
     },
     [active, off, entry, submit],
@@ -168,7 +170,7 @@ export default function RungsBoard({ puzzle, initialState, hint, disabled, mode,
       o.splice(Math.max(0, Math.min(RUNGS - 1, to)), 0, id);
       if (o.join() === order.join()) return;
       setOrder(o);
-      play("clack");
+      sfx.move();
       api.announce(`Rung moved to position ${o.indexOf(id) + 1}. Order: ${o.map((k) => answers[k] || "blank").join(", ")}`);
       api.onMove(state(answers, o));
       void tryLock(answers, o);
@@ -204,6 +206,12 @@ export default function RungsBoard({ puzzle, initialState, hint, disabled, mode,
   const dragTarget = drag ? Math.max(0, Math.min(RUNGS - 1, drag.from + Math.round(drag.dy / PITCH))) : -1;
 
   const hintTarget = (hint?.target ?? null) as { rung?: number; cap?: number } | null;
+  /** Tap a blank rung to type into it. */
+  const pick = (id: number, word: string, isActive: boolean) => {
+    if (word || off || isActive) return;
+    sfx.select();
+    setActive({ kind: "rung", k: id });
+  };
 
   /* ---------- rendering ---------- */
   const cell = (ch: string, opts: { bg: string; fg?: string; ring?: string; placeholder?: string; key: string; mark?: boolean }) => (
@@ -234,7 +242,11 @@ export default function RungsBoard({ puzzle, initialState, hint, disabled, mode,
       <div
         role="row"
         key={key}
-        onClick={() => locked && !word && !off && setActive({ kind: "cap", c })}
+        onClick={() => {
+          if (!locked || word || off || isActive) return;
+          sfx.select();
+          setActive({ kind: "cap", c });
+        }}
         className={`flex items-center gap-2.5 ${shake?.key === key ? (shake.n % 2 ? "cell-shake-a" : "cell-shake-b") : ""} ${hinted ? "hint-ring" : ""}`}
       >
         <div
@@ -307,7 +319,7 @@ export default function RungsBoard({ puzzle, initialState, hint, disabled, mode,
                   role="gridcell"
                   tabIndex={-1}
                   aria-label={`Rung ${pos + 1}. ${puzzle.clues[id]}. ${word ? word : text ? `typed ${text}` : "blank"}${broken ? `. Changes ${diffCount(above, word)} letters from ${above}` : ""}`}
-                  onClick={() => !word && !off && setActive({ kind: "rung", k: id })}
+                  onClick={() => pick(id, word, isActive)}
                   className="flex cursor-pointer gap-1"
                 >
                   {Array.from({ length: LEN }, (_, i) =>
@@ -330,7 +342,7 @@ export default function RungsBoard({ puzzle, initialState, hint, disabled, mode,
                 </div>
                 <span
                   className="text-muted flex flex-1 items-center gap-1.5 text-[13px] leading-[1.3]"
-                  onClick={() => !word && !off && setActive({ kind: "rung", k: id })}
+                  onClick={() => pick(id, word, isActive)}
                 >
                   {broken && (
                     <Icon

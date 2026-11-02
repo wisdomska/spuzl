@@ -5,6 +5,8 @@ import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { useCellSize } from "@/components/game/useBoardSize";
 import { play } from "@/lib/audio";
+import { sfx } from "@/games/_shared/sfx";
+import { nudge } from "@/games/_shared/nudge";
 import { BIT, DIR_NAME, step } from "@/games/_shared/grid";
 import { LineStyles } from "@/games/_shared/LineStyles";
 import { canMove, distances, replay, visibleFrom, type LostPuzzle, type LostState } from "./logic";
@@ -48,7 +50,7 @@ export default function LostBoard({ puzzle, initialState, hint, disabled, mode, 
   const atRef = useRef(at);
   const [seen, setSeen] = useState<Set<number>>(() => new Set(restored.path.flatMap((c) => visibleFrom(puzzle, c))));
   const [visited, setVisited] = useState<Set<number>>(() => new Set(restored.path));
-  const [bumpN, setBumpN] = useState(0);
+  const playerRef = useRef<HTMLSpanElement>(null);
   const [done, setDone] = useState(at === puzzle.exit);
   const swipe = useRef<{ x: number; y: number; moved: boolean } | null>(null);
   const viewRef = useRef<HTMLDivElement>(null);
@@ -62,7 +64,8 @@ export default function LostBoard({ puzzle, initialState, hint, disabled, mode, 
       if (disabled || done) return;
       const cur = atRef.current;
       if (!canMove(puzzle, cur, d)) {
-        setBumpN((b) => b + 1);
+        // The walker leans into the wall and springs back: blocked, not wrong.
+        nudge(playerRef.current, d);
         play("bump");
         api.feedback("Wall. Try another way.", "info", "prohibit");
         api.announce(`Wall to the ${DIR_NAME[d]}.`);
@@ -81,11 +84,11 @@ export default function LostBoard({ puzzle, initialState, hint, disabled, mode, 
         return out;
       });
       const closer = 1 - toExit[next] / toExit[puzzle.start];
-      play("synth", { step: Math.round(Math.max(0, closer) * 24), silentHaptic: true });
+      // Each step hums higher the closer it gets to the exit.
+      sfx.trace(Math.round(Math.max(0, closer) * 24));
       const { r, c } = rc(next);
       if (next === puzzle.exit) {
         setDone(true);
-        play("jingle");
         api.feedback("Out of the fog. You found the exit.", "success", "check-circle");
         api.announce("Exit reached. Board cleared.");
         api.onMove({ moves: log }, { correctStreak: log.length });
@@ -102,10 +105,11 @@ export default function LostBoard({ puzzle, initialState, hint, disabled, mode, 
 
   useEffect(() => {
     api.setControls([
-      { id: "left", label: "Left", icon: "arrow-left", onPress: () => move(3), disabled: done },
-      { id: "up", label: "Up", icon: "arrow-up", onPress: () => move(0), disabled: done },
-      { id: "down", label: "Down", icon: "arrow-down", onPress: () => move(2), disabled: done },
-      { id: "right", label: "Right", icon: "arrow-right", onPress: () => move(1), disabled: done },
+      // The step (or the wall bump) is the sound of these controls.
+      { id: "left", label: "Left", icon: "arrow-left", onPress: () => move(3), disabled: done, quiet: true },
+      { id: "up", label: "Up", icon: "arrow-up", onPress: () => move(0), disabled: done, quiet: true },
+      { id: "down", label: "Down", icon: "arrow-down", onPress: () => move(2), disabled: done, quiet: true },
+      { id: "right", label: "Right", icon: "arrow-right", onPress: () => move(1), disabled: done, quiet: true },
       { id: "hint", label: "Hint", icon: "lightbulb", onPress: () => {}, tone: "gold" },
     ]);
   }, [api, move, done]);
@@ -282,8 +286,9 @@ export default function LostBoard({ puzzle, initialState, hint, disabled, mode, 
                 />
               )}
               <span
-                key={bumpN}
-                className={`relative flex items-center justify-center rounded-full ${bumpN ? (bumpN % 2 ? "cell-shake-a" : "cell-shake-b") : ""}`}
+                ref={playerRef}
+                className="relative flex items-center justify-center rounded-full"
+
                 style={{ width: cs * 0.56, height: cs * 0.56, background: "var(--world)", color: INK, boxShadow: "0 0 14px var(--world)" }}
               >
                 <Icon name="person-simple-walk" size={Math.round(cs * 0.36)} />

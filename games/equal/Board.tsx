@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import type { BoardProps } from "@/games/types";
-import { useGridKeys } from "@/components/game/useGridKeys";
-import { play } from "@/lib/audio";
+import { isKeyedInput, useGridKeys, viaKeys } from "@/components/game/useGridKeys";
+import { sfx } from "@/games/_shared/sfx";
 import { analyze, OP_GLYPH, type EqualPuzzle, type EqualState } from "./logic";
 
 const INK = "#0E0F1A";
@@ -21,10 +21,12 @@ export default function EqualBoard({ puzzle, initialState, hint, disabled, mode,
   const [sel, setSel] = useState(blanks[0] ?? 0);
   const [last, setLast] = useState(-1);
   const [tapN, setTapN] = useState(0);
+  const [quiet, setQuiet] = useState(false);
   const [done, setDone] = useState(false);
   const [drag, setDrag] = useState<{ v: number; x: number; y: number } | null>(null);
   const ref = useRef(cells);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const chipRef = useRef<HTMLDivElement>(null);
   const streak = useRef(0);
   const [width, setWidth] = useState(358);
   useEffect(() => {
@@ -68,6 +70,7 @@ export default function EqualBoard({ puzzle, initialState, hint, disabled, mode,
       setHist((h) => [...h, prev]);
       setLast(i);
       setTapN((t) => t + 1);
+      setQuiet(isKeyedInput());
       const before = analyze(puzzle, prev);
       const after = analyze(puzzle, next);
       const broke = v !== 0 && after.bad.has(i) && !before.bad.has(i);
@@ -79,12 +82,13 @@ export default function EqualBoard({ puzzle, initialState, hint, disabled, mode,
         api.announce(`Row ${r}, column ${c}, ${v}. ${after.message}`);
       } else if (after.clear) {
         setDone(true);
-        play("jingle");
+        sfx.place(streak.current + 1);
         api.feedback("Every equation is true. Board cleared.", "success", "check-circle");
         api.announce("Board cleared.");
       } else {
         if (v) streak.current++;
-        play(v ? "pop" : "tick", { step: streak.current });
+        if (v) sfx.place(streak.current);
+        else sfx.remove();
         api.announce(`Row ${r}, column ${c}, ${v || "empty"}`);
         api.feedback(
           mode === "tutorial" && after.filled === 1
@@ -115,7 +119,6 @@ export default function EqualBoard({ puzzle, initialState, hint, disabled, mode,
       const prev = h[h.length - 1];
       ref.current = prev;
       setCells(prev);
-      play("tick");
       api.onMove(prev);
       return h.slice(0, -1);
     });
@@ -128,7 +131,6 @@ export default function EqualBoard({ puzzle, initialState, hint, disabled, mode,
     ref.current = next;
     setCells(next);
     setHist((h) => [...h, prev]);
-    play("tick");
     api.onMove(next);
     api.feedback(`0 of ${blanks.length} placed`, "info", "equals");
   }, [api, blanks.length, done, n]);
@@ -160,8 +162,8 @@ export default function EqualBoard({ puzzle, initialState, hint, disabled, mode,
         set(i, 0);
         return;
       }
+      if (i !== sel) sfx.select();
       setSel(i);
-      play("tick");
     },
     [api, puzzle.given, sel, set],
   );
@@ -169,7 +171,7 @@ export default function EqualBoard({ puzzle, initialState, hint, disabled, mode,
   const onKey = (e: KeyboardEvent) => {
     if (e.key === "Backspace" || e.key === "Delete") {
       e.preventDefault();
-      set(keys.focus, 0);
+      viaKeys(() => set(keys.focus, 0));
       return;
     }
     keys.onKeyDown(e);
@@ -183,9 +185,10 @@ export default function EqualBoard({ puzzle, initialState, hint, disabled, mode,
     setDrag({ v, x: e.clientX - b.left, y: e.clientY - b.top });
   };
   const onChipMove = (e: PointerEvent) => {
-    if (!drag) return;
+    if (!drag || !chipRef.current) return;
+    // The chip follows the finger by its own transform: no re-render of the board per move.
     const b = wrapRef.current!.getBoundingClientRect();
-    setDrag({ ...drag, x: e.clientX - b.left, y: e.clientY - b.top });
+    chipRef.current.style.transform = chipAt(e.clientX - b.left, e.clientY - b.top);
   };
   const onChipUp = (v: number) => (e: PointerEvent) => {
     const d = drag;
@@ -206,6 +209,7 @@ export default function EqualBoard({ puzzle, initialState, hint, disabled, mode,
     placeFromTray(v);
   };
 
+  const chipAt = (x: number, y: number) => `translate(${x - 24}px, ${y - 60}px) scale(1.08)`;
   const hintTarget = typeof hint?.target === "number" ? hint.target : -1;
   const lastR = Math.floor(last / n),
     lastC = last % n;
@@ -243,7 +247,8 @@ export default function EqualBoard({ puzzle, initialState, hint, disabled, mode,
               const glow = i === hintTarget;
               const dist = Math.abs(r - lastR) + Math.abs(c - lastC);
               let anim = "";
-              if (!done && i === last) anim = bad ? (tapN % 2 ? "cell-shake-a" : "cell-shake-b") : tapN % 2 ? "cell-pop-a" : "cell-pop-b";
+              if (!done && i === last)
+                anim = bad ? (tapN % 2 ? "cell-shake-a" : "cell-shake-b") : quiet ? "" : tapN % 2 ? "cell-pop-a" : "cell-pop-b";
               return (
                 <div
                   key={i}
@@ -395,10 +400,12 @@ export default function EqualBoard({ puzzle, initialState, hint, disabled, mode,
 
       {drag && (
         <div
+          ref={chipRef}
           aria-hidden
           className="num pointer-events-none absolute top-0 left-0 z-40 flex h-12 min-w-12 items-center justify-center rounded-[14px] px-2 text-[22px] font-semibold"
           style={{
-            transform: `translate(${drag.x - 24}px, ${drag.y - 60}px) scale(1.08)`,
+            transform: chipAt(drag.x, drag.y),
+
             background: "var(--world)",
             color: INK,
             boxShadow: "var(--shadow-float)",
