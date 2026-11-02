@@ -20,8 +20,18 @@ import { PauseOverlay } from "./PauseOverlay";
 import { HintConfirm, hintConfirmed, rememberHintConfirmed } from "./HintConfirm";
 import { track } from "@/lib/analytics/track";
 import { copy } from "@/lib/copy";
+import { leaveCopy } from "@/lib/copy/leave";
+import { leavePolicy, type LeaveContext } from "@/lib/game/leave";
+import { useWide } from "./useBoardSize";
+import { ShellAsideProvider } from "./ShellAside";
+import { useLeave } from "./useLeave";
+import { LeaveConfirm } from "./LeaveConfirm";
 
 /**
+ * Wide screens (useBoardSize `isWide`: 900 × 600 and up) split the template into two columns: the board, grown to
+ * the height under the top bar, on the left; a side panel on the right with the strip, whatever the board puts
+ * in `<ShellAside>`, the feedback line and the tools. Phones keep the single column below.
+ *
  * The reusable board template (Game Boards file), slimmed so the board gets the room:
  * 1 slim top bar (Back, game name and label, timer, "⋯" menu), 2 optional strip, 3 board slot,
  * 4 feedback line, 5 compact tool row. The rule is read out with the board and lives in How to play.
@@ -75,6 +85,16 @@ export interface GameShellProps<P, St> {
    * where the opponent keeps playing and the server keeps time.
    */
   canPause?: boolean;
+  /**
+   * How leaving works here (lib/game/leave.ts). Default from the mode: guided practice, a Duel, a Party race,
+   * otherwise solo play. "managed": the parent owns leaving (its own confirm, guard and Escape), and every way
+   * out of the shell (Back, the menu's Leave game, Pause's Quit) simply calls `onExit`.
+   */
+  leaveContext?: LeaveContext | "managed";
+  /** the leave or resign call for a context that forfeits */
+  onForfeit?: (opts: { keepalive: boolean }) => Promise<unknown> | void;
+  /** a resumed attempt's time so far, so the clock carries on from there */
+  initialElapsed?: number;
 }
 
 /** Board tools that start the puzzle over move from the tool row to the menu's Restart. */
@@ -124,7 +144,12 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
     onNewPuzzle,
     difficulty,
     canPause = mode !== "duel" && mode !== "race",
+    leaveContext = mode === "tutorial" ? "guided" : mode === "duel" ? "duel" : mode === "race" ? "party" : "solo",
+    onForfeit,
+    initialElapsed = 0,
   } = props;
+  const wide = useWide();
+  const [aside, setAside] = useState<HTMLElement | null>(null);
   // The game's own colour (lib/catalog colourOf): moved games keep the hue they were designed in.
   const world = colourOf(meta);
   const relaxed = useSettings((s) => s.relaxed);
@@ -135,7 +160,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   const boardTheme = useMe().data?.boardTheme ?? null;
   const theme = boardTheme ? BOARD_THEMES[boardTheme] : undefined;
 
-  const [elapsed, setElapsed] = useState(0);
+  const [elapsed, setElapsed] = useState(initialElapsed);
   const [started, setStarted] = useState(false);
   const [paused, setPaused] = useState(false);
   const [solved, setSolved] = useState(false);
@@ -161,7 +186,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   };
   const hintsUsed = useRef(0);
   const clearPlayed = useRef(false);
-  const clock = useRef({ base: 0, since: 0 });
+  const clock = useRef({ base: initialElapsed, since: 0 });
   // A board with its own clock (fixed-step simulation) replaces the wall clock for display and scoring.
   const boardClock = useRef<(() => number) | null>(null);
   // A board whose view differs from the puzzle layout (Buried after Rotate) words the hint for that view.
@@ -169,8 +194,19 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
 
   // The open menu holds the game like Pause does (clock stopped, board hidden), where the mode can pause.
   const menuHold = menuOpen && canPause && !solved;
+
+  // Leaving (lib/game/leave.ts): Back, the menu's Leave game, Pause's Quit, Escape and the back gesture.
+  const managed = leaveContext === "managed";
+  const policy = managed
+    ? leavePolicy({ context: "solo" })
+    : leavePolicy({ context: leaveContext, game: meta.id, started: started || initialState != null, over: solved });
+  const leave = useLeave({ policy, exit: onExit, forfeit: onForfeit, escape: !managed });
+  const requestLeave = managed ? onExit : leave.request;
+  // The leave confirm holds the game like the menu does, where the mode can pause.
+  const leaveHold = leave.asking && canPause;
+
   // Timer: starts on first interaction, stops while paused or hidden (FR-GP-02).
-  const running = started && !paused && !solved && !pausedExternally && !confirmHint && !menuHold;
+  const running = started && !paused && !solved && !pausedExternally && !confirmHint && !menuHold && !leaveHold;
   useEffect(() => {
     if (!running) return;
     const c = clock.current; // one mutable clock for the shell's lifetime
@@ -401,6 +437,8 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
       { kind: "action", id: "share", label: M.share, icon: "share-network", onSelect: () => void share() },
       { kind: "action", id: "report", label: M.report, icon: "flag", onSelect: report },
     ],
+    // Last, on its own: the way out, whatever the mode (a confirm follows only where leaving costs something).
+    [{ kind: "action", id: "leave", label: leaveCopy.menu, icon: "sign-out", onSelect: requestLeave }],
   ];
 
   const style = {
@@ -409,127 +447,190 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
     "--world-depth": `color-mix(in srgb, ${world.color} 55%, #0E0F1A)`,
   } as CSSProperties;
 
-  return (
-    <div className="bg-bg relative mx-auto flex min-h-dvh w-full max-w-[560px] flex-col" style={style} data-world={meta.world} data-shell>
-      {/* 1 Slim top bar: Back, the game (name over its label), the clock and the menu. */}
-      <header className="safe-top short:pb-1.5 relative z-10 flex items-center gap-3 px-3 pb-2 lg:pt-6">
-        <IconButton icon="arrow-left" label="Back" onClick={onExit} />
-        <div className="min-w-0 flex-1">
-          <h1 className="font-display truncate text-[18px] leading-6 font-black text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]">
-            {meta.name}
-          </h1>
-          <p className="num text-muted truncate text-[12px] leading-4 font-medium">{label}</p>
-        </div>
-        {!relaxed && (
-          <div
-            className="num bg-surface flex h-11 shrink-0 items-center gap-1.5 rounded-[14px] px-3 text-[20px] font-semibold max-[359px]:px-2 max-[359px]:text-[18px]"
-            role="timer"
-            aria-label={`Time ${formatClock(elapsed)}`}
-          >
-            <Icon name="timer" size={16} className="text-muted max-[359px]:hidden" />
-            {formatClock(elapsed)}
-          </div>
-        )}
-        <GameMenu
-          open={menuOpen}
-          onOpenChange={setMenuOpen}
-          sections={menuSections}
-          note={solved ? undefined : canPause ? M.paused : M.livePaused}
-          shield={menuHold}
-          triggerRef={menuButton}
-          onCloseAutoFocus={(e) => {
-            // A sheet opened from the menu takes focus; it comes back to this button when the sheet closes.
-            if (returnFocus.current) e.preventDefault();
-          }}
-        />
-      </header>
-
-      {/* 2 Strip */}
-      {strip && !relaxed && <div className="relative z-20 px-3">{strip}</div>}
-
-      {/* 3 Board slot: 12 px each side (SLOT_PAD in useBoardSize), the rule read out with it. */}
-      <p id={`rule-${meta.id}`} className="sr-only">
-        {meta.rule}
-      </p>
-      <main
-        className={`short:py-1 relative z-0 flex justify-center px-3 py-2 ${theme ? "rounded-[26px]" : ""} ${celebrate || solved ? "shell-solved" : ""}`}
-        style={theme ? { background: theme.bg, boxShadow: `inset 0 0 0 2px ${theme.mark}` } : undefined}
-        data-board-theme={theme ? boardTheme! : undefined}
-        aria-label={`${meta.name} board`}
-        aria-describedby={`rule-${meta.id}`}
-      >
-        <Board
-          {...extra}
-          extra={extra}
-          key={puzzleKey}
-          puzzle={puzzle}
-          mode={mode}
-          initialState={initialState}
-          hint={hint}
-          disabled={locked || paused || solved || pausedExternally || menuHold}
-          api={api}
-        />
-      </main>
-
-      {/* 4 Feedback line: never overlays the board */}
-      {/* One status at a time: the old line leaves (120 ms) before the new one enters. */}
-      <div className="short:min-h-9 relative mx-3 min-h-11" data-shell-tail>
-        <AnimatePresence mode="wait" initial={false}>
-          {feedback.text && <FeedbackLine key={feedback.n} {...feedback} />}
-        </AnimatePresence>
+  const header = (
+    // 1 Slim top bar: Back, the game (name over its label), the clock and the menu.
+    <header
+      className={
+        wide
+          ? "relative z-10 flex items-center gap-3 px-3 pt-[max(20px,env(safe-area-inset-top))] pb-2"
+          : "safe-top short:pb-1.5 relative z-10 flex items-center gap-3 px-3 pb-2"
+      }
+    >
+      <IconButton icon="arrow-left" label="Back" onClick={requestLeave} />
+      <div className="min-w-0 flex-1">
+        <h1 className="font-display truncate text-[18px] leading-6 font-black text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]">
+          {meta.name}
+        </h1>
+        <p className="num text-muted truncate text-[12px] leading-4 font-medium">{label}</p>
       </div>
-
-      {/* 5 Compact tool row (or the end bar after a clear) */}
-      {endBar ? (
-        <div className="safe-bottom short:pt-1.5 mt-auto px-3 pt-2.5" data-shell-tail>
-          {endBar}
+      {!relaxed && (
+        <div
+          className="num bg-surface flex h-11 shrink-0 items-center gap-1.5 rounded-[14px] px-3 text-[20px] font-semibold max-[359px]:px-2 max-[359px]:text-[18px]"
+          role="timer"
+          aria-label={`Time ${formatClock(elapsed)}`}
+        >
+          <Icon name="timer" size={16} className="text-muted max-[359px]:hidden" />
+          {formatClock(elapsed)}
         </div>
-      ) : (
-        row.length > 0 && (
-          <div
-            className="safe-bottom short:pt-1.5 mt-auto grid gap-2 px-3 pt-2.5"
-            data-shell-tail
-            style={{ gridTemplateColumns: `repeat(${row.length}, minmax(0, 1fr))` }}
-          >
-            {row.map((c) =>
-              c.id === "hint" ? <ToolButton key={c.id} c={c} badge={hintBadge} extra={hintLeft} /> : <ToolButton key={c.id} c={c} />,
-            )}
-          </div>
-        )
       )}
-
-      <div aria-live="polite" className="sr-only">
-        {live}
-      </div>
-
-      <PauseOverlay
-        open={paused}
-        title={meta.name}
-        elapsed={elapsed}
-        onResume={() => setPaused(false)}
-        onRestart={undefined}
-        onQuit={onExit}
-        onHelp={
-          onHelp
-            ? () => {
-                setPaused(false);
-                onHelp();
-              }
-            : undefined
-        }
-      />
-      <HintConfirm
-        open={confirmHint}
-        daily={mode === "daily"}
-        onCancel={() => setConfirmHint(false)}
-        onConfirm={() => {
-          track("hint_use", { game: meta.id, mode, kind: "confirm" });
-          rememberHintConfirmed(meta.id);
-          setConfirmHint(false);
-          void spendHint();
+      <GameMenu
+        open={menuOpen}
+        onOpenChange={setMenuOpen}
+        sections={menuSections}
+        note={solved ? undefined : canPause ? M.paused : M.livePaused}
+        shield={menuHold}
+        triggerRef={menuButton}
+        onCloseAutoFocus={(e) => {
+          // A sheet opened from the menu takes focus; it comes back to this button when the sheet closes.
+          if (returnFocus.current) e.preventDefault();
         }}
       />
+    </header>
+  );
+
+  // 2 Strip: above the board on a phone, at the top of the side panel on a wide screen.
+  const stripZone = strip && !relaxed && <div className={wide ? "relative z-20" : "relative z-20 px-3"}>{strip}</div>;
+
+  // 3 Board slot: 12 px each side (SLOT_PAD in useBoardSize). On a wide screen it is only as tall as the board,
+  // so the height fit (shellContentBottom) measures the board, not the column.
+  const slot = (
+    <main
+      className={`relative z-0 flex justify-center ${wide ? "w-full self-start p-3 pb-0" : "short:py-1 px-3 py-2"} ${theme ? "rounded-[26px]" : ""} ${celebrate || solved ? "shell-solved" : ""}`}
+      style={theme ? { background: theme.bg, boxShadow: `inset 0 0 0 2px ${theme.mark}` } : undefined}
+      data-board-theme={theme ? boardTheme! : undefined}
+      data-shell-slot
+      aria-label={`${meta.name} board`}
+      aria-describedby={`rule-${meta.id}`}
+    >
+      <Board
+        {...extra}
+        extra={extra}
+        key={puzzleKey}
+        puzzle={puzzle}
+        mode={mode}
+        initialState={initialState}
+        hint={hint}
+        disabled={locked || paused || solved || pausedExternally || menuHold || leaveHold}
+        api={api}
+      />
+    </main>
+  );
+
+  // 4 Feedback line: never overlays the board. One status at a time: the old line leaves (120 ms) before the new one enters.
+  const feedbackZone = (
+    <div className={wide ? "relative min-h-11" : "short:min-h-9 relative mx-3 min-h-11"} data-shell-tail>
+      <AnimatePresence mode="wait" initial={false}>
+        {feedback.text && <FeedbackLine key={feedback.n} {...feedback} />}
+      </AnimatePresence>
     </div>
+  );
+
+  // 5 Compact tool row (or the end bar after a clear). In the side panel: at most 3 tools a row.
+  const toolCols = wide ? Math.min(row.length, row.length === 4 ? 2 : 3) : row.length;
+  const toolZone = endBar ? (
+    <div className={wide ? "" : "safe-bottom short:pt-1.5 mt-auto px-3 pt-2.5"} data-shell-tail>
+      {endBar}
+    </div>
+  ) : (
+    row.length > 0 && (
+      <div
+        className={wide ? "grid gap-2 pt-1" : "safe-bottom short:pt-1.5 mt-auto grid gap-2 px-3 pt-2.5"}
+        data-shell-tail
+        style={{ gridTemplateColumns: `repeat(${toolCols}, minmax(0, 1fr))` }}
+      >
+        {row.map((c) =>
+          c.id === "hint" ? <ToolButton key={c.id} c={c} badge={hintBadge} extra={hintLeft} /> : <ToolButton key={c.id} c={c} />,
+        )}
+      </div>
+    )
+  );
+
+  const rule = (
+    <p id={`rule-${meta.id}`} className="sr-only">
+      {meta.rule}
+    </p>
+  );
+
+  return (
+    <ShellAsideProvider value={{ wide, node: aside }}>
+      <div
+        className={`bg-bg relative mx-auto flex min-h-dvh w-full flex-col ${wide ? "max-w-[1224px] px-6" : "max-w-[560px]"}`}
+        style={style}
+        data-world={meta.world}
+        data-shell
+        data-wide={wide || undefined}
+      >
+        {header}
+        {/* Wide: two columns (useBoardSize `boardBox`), the board filling the left and the side panel holding the
+            rest. Phone: one column (the board column is `display: contents`). The board keeps its place in the
+            tree either way, so turning a tablet or resizing a window never restarts the game. */}
+        <div className={wide ? "flex flex-1 items-start gap-8 pb-6" : "flex flex-1 flex-col"}>
+          <div className={wide ? "flex min-w-0 flex-1 justify-center" : "contents"}>
+            {!wide && stripZone}
+            {rule}
+            {slot}
+            {!wide && feedbackZone}
+            {!wide && toolZone}
+          </div>
+          {wide && (
+            <aside className="flex w-[360px] shrink-0 flex-col gap-3 pt-3 pr-3" aria-label={M.panel}>
+              {stripZone}
+              <div ref={setAside} className="flex flex-col gap-3 empty:hidden" />
+              {feedbackZone}
+              {toolZone}
+            </aside>
+          )}
+        </div>
+
+        <div aria-live="polite" className="sr-only">
+          {live}
+        </div>
+
+        <PauseOverlay
+          open={paused}
+          title={meta.name}
+          elapsed={elapsed}
+          onResume={() => setPaused(false)}
+          onRestart={undefined}
+          onQuit={() => {
+            setPaused(false);
+            requestLeave();
+          }}
+          onHelp={
+            onHelp
+              ? () => {
+                  setPaused(false);
+                  onHelp();
+                }
+              : undefined
+          }
+        />
+        <HintConfirm
+          open={confirmHint}
+          daily={mode === "daily"}
+          onCancel={() => setConfirmHint(false)}
+          onConfirm={() => {
+            track("hint_use", { game: meta.id, mode, kind: "confirm" });
+            rememberHintConfirmed(meta.id);
+            setConfirmHint(false);
+            void spendHint();
+          }}
+        />
+        {policy.kind !== "none" && (
+          <LeaveConfirm
+            kind={policy.kind}
+            open={leave.asking}
+            busy={leave.busy}
+            onKeep={leave.keep}
+            onLeave={() => void leave.confirm()}
+            onCloseAutoFocus={(e) => {
+              e.preventDefault();
+              leave.restoreFocus(menuButton.current);
+            }}
+          />
+        )}
+      </div>
+    </ShellAsideProvider>
   );
 }
 
