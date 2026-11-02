@@ -123,6 +123,12 @@
         "file": "icons/squint.webp"
       },
       {
+        "id": "trotro",
+        "icon": "bus",
+        "world": "shape",
+        "file": "icons/trotro.webp"
+      },
+      {
         "id": "deadon",
         "icon": "target",
         "world": "number",
@@ -213,6 +219,12 @@
         "file": "icons/flagged.webp"
       },
       {
+        "id": "emojihits",
+        "icon": "smiley",
+        "world": "clue",
+        "file": "icons/emojihits.webp"
+      },
+      {
         "id": "echo",
         "icon": "music-notes",
         "world": "reflex",
@@ -229,6 +241,12 @@
         "icon": "hand-tap",
         "world": "reflex",
         "file": "icons/flinch.webp"
+      },
+      {
+        "id": "beattap",
+        "icon": "metronome",
+        "world": "reflex",
+        "file": "icons/beattap.webp"
       },
       {
         "id": "gotcha",
@@ -325,6 +343,36 @@
         "icon": "circle-half",
         "world": "board",
         "file": "icons/flip.webp"
+      },
+      {
+        "id": "penalty",
+        "icon": "soccer-ball",
+        "world": "reflex",
+        "file": "icons/penalty.webp"
+      },
+      {
+        "id": "hilo",
+        "icon": "arrows-down-up",
+        "world": "number",
+        "file": "icons/hilo.webp"
+      },
+      {
+        "id": "market",
+        "icon": "storefront",
+        "world": "number",
+        "file": "icons/market.webp"
+      },
+      {
+        "id": "five",
+        "icon": "text-aa",
+        "world": "word",
+        "file": "icons/five.webp"
+      },
+      {
+        "id": "lightup",
+        "icon": "lamp",
+        "world": "logic",
+        "file": "icons/lightup.webp"
       }
     ]
   }
