@@ -56,7 +56,7 @@ async function clearCrown(g: G, n: number) {
 
 describe("level ladders", () => {
   it("unlocks one level at a time, replays cleared levels and keeps the seed on the server", async () => {
-    const g = await guest(`lvl${Math.random().toString(36).slice(2, 7)}`);
+    const g = await guest(`lvl${String(Math.floor(Math.random() * 1e5)).padStart(5, "0")}`);
 
     // Nothing cleared: level 1 is next, level 2 is locked.
     const none = await g.api("/api/v1/levels?game=gotcha");
@@ -105,15 +105,15 @@ describe("level ladders", () => {
   }, 120_000);
 
   it("refuses levels for games without a ladder and levels past the end", async () => {
-    const g = await guest(`lvl${Math.random().toString(36).slice(2, 7)}`);
+    const g = await guest(`lvl${String(Math.floor(Math.random() * 1e5)).padStart(5, "0")}`);
     expect((await g.api("/api/v1/attempts", { json: { game: "chess", mode: "level", level: 1 } })).status).toBe(404);
     expect((await g.api("/api/v1/attempts", { json: { game: "gotcha", mode: "level", level: LEVELS.length + 1 } })).status).toBe(404);
     expect((await g.api("/api/v1/levels?game=chess")).status).toBe(404);
   });
 
   it("serves a seeded game's level as the same board for everyone", async () => {
-    const a = await guest(`lvl${Math.random().toString(36).slice(2, 7)}`);
-    const b = await guest(`lvl${Math.random().toString(36).slice(2, 7)}`);
+    const a = await guest(`lvl${String(Math.floor(Math.random() * 1e5)).padStart(5, "0")}`);
+    const b = await guest(`lvl${String(Math.floor(Math.random() * 1e5)).padStart(5, "0")}`);
     const sa = await a.api("/api/v1/attempts", { json: { game: "crownfall", mode: "level", level: 1 } });
     const sb = await b.api("/api/v1/attempts", { json: { game: "crownfall", mode: "level", level: 1 } });
     expect(sa.status).toBe(200);
