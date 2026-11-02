@@ -44,25 +44,27 @@ export function GuidedPlay({
 
   if (!puzzle || !Board) return <PageLoader message={T.loading} />;
 
+  // One slim line (in the top bar on a wide screen, under it on a phone): the board keeps the room. The full
+  // explainer is the hint count on the Hint tool and How to play in the menu.
   const coach = (
     <motion.div
-      className="bg-surface-raised mx-1 mb-2 flex items-center gap-2.5 rounded-[18px] py-2 pr-2 pl-1.5"
+      className="bg-surface-raised flex h-11 w-full min-w-0 items-center gap-2 overflow-hidden rounded-[14px] pl-1.5"
       initial={reduce ? false : { opacity: 0, transform: "translateY(-6px)" }}
       animate={{ opacity: 1, transform: "translateY(0px)" }}
       transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
       role="note"
     >
-      <Spuz mood={solved ? "cheer" : "wave"} size={48} decorative still />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <span className="text-[15px] leading-tight font-bold">{solved ? T.doneTitle : T.title(meta.name)}</span>
-        <span className="text-muted text-[13px] leading-snug">{solved ? T.doneBody : T.body}</span>
-      </div>
+      <Spuz mood={solved ? "cheer" : "wave"} size={32} decorative still />
+      <p className="m-0 min-w-0 flex-1 truncate text-[14px] leading-5">
+        <span className="font-bold">{solved ? T.doneTitle : T.title(meta.name)}</span>{" "}
+        <span className="text-muted">{solved ? T.doneBody : T.short}</span>
+      </p>
       {!solved && (
         <button
           type="button"
           onClick={() => onDone("skipped")}
           aria-label={T.skipAria(meta.name)}
-          className="press bg-surface h-11 shrink-0 rounded-[12px] px-3.5 text-[14px] font-bold"
+          className="press bg-surface h-11 shrink-0 rounded-[14px] px-4 text-[14px] font-bold"
         >
           {T.skip}
         </button>
@@ -83,7 +85,7 @@ export function GuidedPlay({
       requestHint={async (state) => (await api<{ hint: Hint | null }>(`/api/v1/guided/${meta.id}`, { json: { state } })).hint}
       onSolved={() => setSolved(true)}
       onExit={onExit}
-      strip={coach}
+      banner={coach}
       celebrate={solved}
       endBar={
         solved ? (

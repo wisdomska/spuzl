@@ -2,6 +2,8 @@
 export const guidedCopy = {
   title: (game: string) => `First time playing ${game}?`,
   body: "A quick practice round. Hints are free and pop up when you pause. Nothing counts yet.",
+  /** the one-line banner's note after the title */
+  short: "Free hints, nothing counts yet.",
   skip: "Skip",
   skipAria: (game: string) => `Skip the ${game} practice round`,
   doneTitle: "You've got it!",
