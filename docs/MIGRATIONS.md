@@ -156,3 +156,25 @@ transaction that was rolled back.
 
 Apply before the code deploys: until it lands, starting a level answers an error (the `level` mode and the table
 are missing), while daily and free play are unaffected.
+
+## Age from birth month and year
+
+Additive and reversible (rollback SQL in the header). Existing rows keep their `age_band`; nothing is backfilled.
+
+| Migration                             | What it adds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Rollback                                                                                                                            |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `20261119000001_birth_month_year.sql` | `players.birth_year` and `birth_month` (smallint, range-checked, both or neither); `age_band_of(year, month, today)` (the one age rule, mirrored by `lib/age`); trigger `players_age_band` (derives `age_band` from birth month and year, refuses under 13, locks them once set except inside the admin correction); `private.refresh_age_bands()` on pg_cron `spuzl-age-band-refresh` (00:03 GMT daily); `svc_admin_set_birth` (service role only, audited by band, never the date). RLS on `players` unchanged and still forced. | Unschedule the job, then drop the functions, the trigger, the pair check and both columns (see header). Bands stay as last derived. |
+
+How the band is derived and refreshed: a player turns a year older on the 1st of the month after their birth month
+(no day is kept, so the careful reading), so bands only change on the 1st of a month. The stored `age_band` is
+set by the trigger on every write and moved by the daily job, so views, leaderboards and filters that read it are
+right from 00:03 GMT on the 1st. The API also derives the band at read time for the signed-in player
+(`requirePlayer`) and for other players it reads with their birth month and year, so gates never wait for the job.
+
+pgTAP: `108_birth_month_year` (forced RLS, the rule at the 13/16/18 month boundaries, derived band, under 13
+refused, lock, legacy players adding theirs once, the refresh, the audited admin correction, deletion). The
+migration, every pgTAP file with it applied, and the rollback were run locally inside transactions that were
+rolled back.
+
+Apply before the code deploys. The signed-in player and Me fall back to the stored band while the columns are
+missing, but new profiles need the columns, and friends, crews, matches and status cards read them.

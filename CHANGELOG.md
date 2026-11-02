@@ -1,5 +1,35 @@
 # Changelog
 
+## Unreleased: age from birth month and year
+
+### For players
+
+- **When were you born?** Every new player (guest, Google or email) now gives their birth month and year (never
+  the day) straight after choosing how to start, instead of picking an age band. It sets what's on for their age
+  and can't be changed later. Under 13: no account is made and nothing is kept.
+- Your age group moves up on its own as you get older (from the 1st of the month after your birthday month), and
+  every age rule follows it: under-16 privacy (nickname and avatar only, city hidden, friends by invite link or QR),
+  Quick Match and Play live from 16, School Cup teachers and the 18+ party modes from 18.
+- **Settings** shows your age group (not your birth date), read-only, with "Contact us if this is wrong."
+- Players from before are asked once on Home (or from Settings) for their birth month and year. Their age group
+  keeps working either way; a birth month and year that would make them older than the group they chose when they
+  joined is refused (contact us), and nobody is locked out.
+
+### For admins
+
+- **Correct birth month/year** on a player's page (owner and moderators): a reason is required, the age group and
+  rules follow at once, and the audit log keeps the old and new group and the reason (never the date). Only roles
+  that can correct it see the birth month and year.
+
+### Operations
+
+- Migration `20261119000001_birth_month_year.sql`: `players.birth_year` and `birth_month`, `age_band_of(year,
+month, today)`, a trigger that derives and locks the band, a daily band refresh (`spuzl-age-band-refresh`, 00:03
+  GMT) and `svc_admin_set_birth`. See `docs/MIGRATIONS.md`. Apply it before the code deploys.
+- `POST /api/v1/profile` takes `birthYear` and `birthMonth` (`ageBand` is ignored); a change is refused with 409
+  `age_locked`, under 13 with 403 `too_young`, a profile without them with 422 `birth_required`. `PATCH` refuses
+  any age field with 409 `age_locked`.
+
 ## 1.6.0 (2 November 2026)
 
 A tighter Grid: 29 games across 8 worlds.
