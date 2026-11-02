@@ -1,5 +1,29 @@
 # Changelog
 
+## Unreleased
+
+### For players
+
+- **No on-screen keyboard on a computer.** When the device has a mouse or trackpad (a fine pointer that can hover),
+  Rungs and Minicross show one line naming the keys instead (A–Z, Enter, Backspace) and the physical keyboard
+  does the typing. **Show keyboard** brings the keys back (for touch laptops; a touch on the screen does it by
+  itself) and **Hide keyboard** puts them away; the choice is remembered. Seven, Remix and the quiz games show
+  their keys the same way, Emoji Hits puts the cursor in its guess box, and Rage Ridge (Gotcha, Dash, Gauntlet)
+  shows "← → to move · Space to jump" instead of the on-screen pad, so the course gets the height. Phones and
+  tablets keep their on-screen keys.
+- **The board is the hero on big screens.** Boards now fill the height under the top bar (up to 90 % of the screen,
+  960 px at most, was 80 % and 760 px) beside a slimmer side panel (320 px under 1280 px wide), with one-line tool
+  buttons. On a 1326 × 645 laptop the Rungs ladder grows from 44 px to 65 px rows with 18 px clues; at 1440 × 900
+  Chess squares go from 88 to 97 px (118 px on a 1920 × 1080 screen, a 944 px board); Remix tiles from 48 to 112 px; Seven's honeycomb, Echo's pads, Beat Tap,
+  Flinch and the Oware pits grow too. Quickfire and Emoji Hits read larger with the answers two by two.
+- **First-time practice note is one line.** "First time playing …? Free hints, nothing counts yet." with Skip sits in
+  the top bar on big screens and as one slim line on phones, instead of a card that took a panel slot.
+- **Phones fit without scrolling.** Rungs uses tighter rows and the compact keyboard under 860 px of height,
+  Minicross the compact keyboard (NEXT on the third row), and Minicross, Coil and Buried step their cells down
+  until the board, the keys and the tools fit a 375 × 667 screen. Buried's theme moves to the side panel on big
+  screens so its grid no longer runs off a laptop screen. Oware pits share the phone width (50 px on a 390 px
+  phone, was 48).
+
 ## 1.9.0 (2 November 2026)
 
 ### Fixes
