@@ -37,9 +37,7 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 
 ## 18+ party games (Draw It, Two Truths)
 
-- **Age band is self-declared:** the 18+ gate trusts `players.age_band`, which the player picks at sign-up and can
-  set again by posting the profile once more. Locking the band after sign-up (or an age check) would make the gate
-  stronger.
+- **Age:** fixed in 1.7.0. Birth month and year are asked at sign-up and locked; the 18+ gate uses the derived band.
 - **Live drawing:** strokes reach other players when each line is finished (pen up), through a refetch on the
   realtime "changed" event, not point by point. Streaming points would feel smoother.
 - **Round state in the database:** strokes, statements and guesses live in server-only tables for the round
@@ -47,10 +45,8 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   in memory only.
 - **No rewards:** the 18+ party games pay no XP or Sparks (only room points).
 
-## Content-game tokens and the 18+ fixes (Unreleased)
+## Content-game tokens and the 18+ fixes (1.5.0)
 
-- **API tests not run yet:** `tests/api/guess-tokens.test.ts`, the updated `lab-attempts`, `flow` and
-  `adult-party` tests need a dev server on this branch (and `20261114000001_adult_block_reopen.sql` applied).
 - **Sealed quiz boards** (Flagged, Hunch, Pinned, Quickfire) still carry their string `ref`: it is the salt their
   boards unseal answers with, and those answers are on the client by design (instant feedback, server verify).
 - **Brute force:** the generators are deterministic, so someone with the game code could still match a served
