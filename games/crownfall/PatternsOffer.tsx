@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
-import { Button } from "@/components/ui/Button";
 import { IconButton } from "@/components/ui/IconButton";
 import { Icon } from "@/components/ui/Icon";
 import { useSettings } from "@/lib/settings/store";
@@ -37,32 +36,29 @@ export function PatternsOffer({ onAccepted }: { onAccepted?: (text: string) => v
   // Players who already use a colour-blind mode have patterns on; nothing to offer.
   if (!first || closed || !hydrated || cb !== "off") return null;
   const T = CROWNFALL_COPY.patternsOffer;
+  // One slim line, so the board and its tools still fit a short phone on the first visit.
   return (
     <section
       aria-labelledby="cf-patterns-title"
-      className="bg-surface-raised flex w-full max-w-[420px] items-center gap-3 rounded-[16px] p-3"
+      className="bg-surface-raised flex w-full max-w-[420px] items-center gap-2 rounded-[14px] py-1 pr-1 pl-3"
     >
-      <Icon name="eye" size={24} className="text-muted shrink-0" />
-      <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <div>
-          <h2 id="cf-patterns-title" className="font-display text-[16px] font-extrabold">
-            {T.title}
-          </h2>
-          <p className="text-muted text-[14px] leading-snug">{T.body}</p>
-        </div>
-        <Button
-          variant="secondary"
-          className="self-start"
-          onClick={() => {
-            set("cb", "deutan");
-            setClosed(true);
-            onAccepted?.(T.accepted);
-          }}
-        >
-          {T.accept}
-        </Button>
-      </div>
-      <IconButton icon="x" label={T.dismiss} onClick={() => setClosed(true)} className="self-start" />
+      <Icon name="eye" size={18} className="text-muted shrink-0" />
+      <h2 id="cf-patterns-title" className="min-w-0 flex-1 text-[14px] leading-tight font-semibold">
+        {T.title}
+        <span className="sr-only"> {T.body}</span>
+      </h2>
+      <button
+        type="button"
+        className="text-accent h-11 shrink-0 px-2 text-[14px] font-bold"
+        onClick={() => {
+          set("cb", "deutan");
+          setClosed(true);
+          onAccepted?.(T.accepted);
+        }}
+      >
+        {T.acceptShort}
+      </button>
+      <IconButton icon="x" label={T.dismiss} onClick={() => setClosed(true)} className="shrink-0" />
     </section>
   );
 }

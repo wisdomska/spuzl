@@ -10,6 +10,7 @@ export const CROWNFALL_COPY = {
     title: "Colours hard to tell apart?",
     body: "Patterns give every colour region its own texture.",
     accept: "Turn on patterns",
+    acceptShort: "Use patterns",
     dismiss: "Dismiss",
     accepted: "Patterns on. Change it any time in Settings.",
   },
