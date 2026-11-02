@@ -1,5 +1,28 @@
 # Changelog
 
+## Unreleased
+
+### For players
+
+- **Levels.** Gotcha, Dash and Gauntlet now have a ladder of 60+ levels each, and Crownfall, Dusk, Sixer, Nine,
+  Weave, Flowline, Pairup, Lost and Trotro Jam have endless levels. Open a game and pick **Levels** next to free
+  play. Clear a level to open the next one; cleared levels replay any time. Levels start easy and climb to mega
+  (bigger boards where the game has them). Your level is on the game card ("Level 12 · Next: 13"), the level map
+  shows every level with your best time, and the result bar leads to the next level.
+- New Rage Ridge rooms: trolls you have met (fake floors, pop-up spikes, runaway doors) in new combinations,
+  plus crumbling bridges over spikes, moving slabs, hidden blocks you must hop under, and low tunnels whose
+  ceilings grow teeth. Later levels are longer with tighter timing, and every few tiers ends on a hand-made set
+  piece. Every lie still shows itself after your first death.
+- A level clear earns what a free-play clear does (same daily cap and settings). A replayed level earns nothing
+  extra, and levels don't move world ranks. Guests keep their levels with their account like everything else.
+
+### Under the hood
+
+- Daily and free-play courses still use the original hand-made rooms, so courses are unchanged.
+- Rage Ridge rooms are made offline by `scripts/rage-design.ts`, a seeded designer whose every room is proved
+  beatable by a bot over the real simulation; the tests replay each stored solution.
+- Migration `20261118000001_player_levels.sql` adds `player_levels` and the `level` attempt mode.
+
 ## 1.5.1 (2 November 2026)
 
 ### For admins

@@ -116,3 +116,18 @@ transaction that was rolled back. If the code ships first, reopening an actioned
 | `20261115000001_admin_email_code.sql` | `admin_verified_sessions` (forced RLS, service role only): sign-in sessions that passed the email code | `drop table if exists public.admin_verified_sessions;` |
 
 pgTAP: `104_admin_verified_sessions`. Apply before the code deploys, or admins see "aal2 required" until it lands.
+
+## Unreleased: level ladders
+
+Additive and reversible (rollback SQL in the header). No existing rows change.
+
+| Migration                          | What it adds                                                                                                                                                                                                                                                                                            | Rollback                                                                                                 |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `20261118000001_player_levels.sql` | `player_levels` (player, game, level, best time, first clear; forced RLS, players read their own, no client writes), `svc_record_level_clear` (keeps the best time, refuses a level more than one past the highest clear) and `svc_level_tops` (both service role only), and `level` in `attempts.mode` | Drop both functions and the table, delete `level` attempts, then restore the old mode check (see header) |
+
+pgTAP: `105_player_levels` (forced RLS and grants, the unlock rule, best time kept on replays, per game and per
+player, account deletion cascades). The migration, the pgTAP file and the rollback were each run locally inside a
+transaction that was rolled back.
+
+Apply before the code deploys: until it lands, starting a level answers an error (the `level` mode and the table
+are missing), while daily and free play are unaffected.
