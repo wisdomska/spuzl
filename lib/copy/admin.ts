@@ -158,6 +158,8 @@ export const adminCopy = {
       room: (code: string | null, round: number) => `Room ${code ?? "closed"}, round ${round}`,
       blockNote: (days: number) => `Mark actioned also keeps this player out of 18+ party rooms for ${days} days.`,
       blocked: (until: string) => `Blocked from 18+ party rooms until ${until}.`,
+      unblocked: "The 18+ party block from this report is lifted.",
+      stillBlocked: (until: string) => `Block shortened: another actioned report keeps this player out of 18+ party rooms until ${until}.`,
       drawingLabel: "Reported drawing",
     },
   },

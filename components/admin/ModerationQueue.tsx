@@ -368,10 +368,10 @@ function ReportCase({
     related: { ref: string; reason: string; status: string; created_at: string }[];
     blockDays: number | null;
   }>(["report", id], `/api/admin/moderation/reports/${id}`);
-  const decide = useAdminAction<{ decision: "dismiss" | "actioned" | "reopen"; note?: string }, { blockedUntil?: string | null }>(
-    "POST",
-    `/api/admin/moderation/reports/${id}`,
-  );
+  const decide = useAdminAction<
+    { decision: "dismiss" | "actioned" | "reopen"; note?: string },
+    { blockedUntil?: string | null; blockLifted?: boolean }
+  >("POST", `/api/admin/moderation/reports/${id}`);
   const player = useAdminAction<
     { action: string; days?: number | null; reason?: string; nickname?: string; pid: string },
     { nickname: string | null }
@@ -417,10 +417,16 @@ function ReportCase({
       {r.target_type === "party" && q.data.blockDays !== null && r.status === "open" && (
         <span className="text-muted text-[12px] font-medium">{C.party.blockNote(q.data.blockDays)}</span>
       )}
-      {decide.data?.blockedUntil && (
+      {decide.data?.blockLifted ? (
         <Notice tone="ok" icon="check-circle">
-          {C.party.blocked(decide.data.blockedUntil.slice(0, 10))}
+          {decide.data.blockedUntil ? C.party.stillBlocked(decide.data.blockedUntil.slice(0, 10)) : C.party.unblocked}
         </Notice>
+      ) : (
+        decide.data?.blockedUntil && (
+          <Notice tone="ok" icon="check-circle">
+            {C.party.blocked(decide.data.blockedUntil.slice(0, 10))}
+          </Notice>
+        )
       )}
       {err && <Notice tone="danger">{errorText(err)}</Notice>}
       {player.data?.nickname && (
