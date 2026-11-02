@@ -1,14 +1,11 @@
 "use client";
 
-import { useCellSize, useViewportWidth } from "@/components/game/useBoardSize";
-
-/** The GameShell board slot pads the board by 18 px on each side. */
-const SLOT_PAD = 18;
+import { SLOT_PAD, useCellSize, useViewportWidth } from "@/components/game/useBoardSize";
 
 /**
  * Cell size for Line Lane boards, plus a bleed. Drag-to-draw boards cannot pan (a horizontal drag
  * draws), so when 44 px cells make the board wider than the board slot, the board may grow into the
- * slot's side padding (up to 18 px each side). An 8 column board then fits a 390 px phone exactly.
+ * slot's side padding (up to SLOT_PAD, 12 px, each side).
  * Apply `bleed` as a negative inline margin on the board wrapper.
  */
 export function useFitCell(cols: number, gap: number, pad: number): { cs: number; bleed: number } {

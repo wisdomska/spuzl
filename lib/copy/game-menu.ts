@@ -1,0 +1,23 @@
+/** The game shell's "⋯" menu and its slim top bar (everything that is not needed while playing). */
+export const gameMenuCopy = {
+  trigger: "Game menu",
+  paused: "Paused while this menu is open.",
+  livePaused: "Live match: the clock keeps running.",
+  howToPlay: "How to play",
+  restart: "Restart",
+  newPuzzle: "New puzzle",
+  difficulty: "Difficulty",
+  levels: { easy: "Easy", medium: "Medium", hard: "Hard", expert: "Expert", mega: "Mega" } as Record<string, string>,
+  sound: "Sound",
+  haptics: "Haptics",
+  settings: "Settings",
+  share: "Share",
+  report: "Report a problem",
+  on: "On",
+  off: "Off",
+  shareTitle: (game: string) => `${game} on SPUZL`,
+  shareText: (game: string) => `Play ${game} with me on SPUZL`,
+  linkCopied: "Link copied. Send it to a friend.",
+  reportSubject: (game: string, label: string) => `Problem with ${game} (${label})`,
+  hint: (label: string, left: string) => `${label}. ${left}`,
+} as const;

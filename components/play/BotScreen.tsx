@@ -7,7 +7,7 @@ import { GameShell } from "@/components/game/GameShell";
 import { BoardSkeleton } from "@/components/game/BoardSkeleton";
 import { Button } from "@/components/ui/Button";
 import type { GameMeta } from "@/lib/catalog";
-import type { BotGame, BotLevel } from "@/lib/bot";
+import { BOT_LEVELS, type BotGame, type BotLevel } from "@/lib/bot";
 import { boardGames } from "@/lib/copy/board-games";
 import { bayLive } from "@/lib/copy/bay-live";
 import { isBayGame } from "@/lib/multiplayer/bay";
@@ -56,7 +56,16 @@ export function BotScreen({ meta, game, initialLevel }: { meta: GameMeta; game: 
     },
     [game, restart, router],
   );
-  const extra = useMemo<BotExtra>(() => ({ onLevel: changeLevel, onRestart: restart }), [changeLevel, restart]);
+  const extra = useMemo<BotExtra>(() => ({ onRestart: restart }), [restart]);
+  // The level lives in the game menu; picking another starts a new game at that level.
+  const levelMenu = useMemo(
+    () => ({
+      value: level,
+      options: BOT_LEVELS.map((l) => ({ id: l, label: t.levels[l] })),
+      onChange: (l: string) => l !== level && changeLevel(l as BotLevel),
+    }),
+    [level, changeLevel],
+  );
   const key = `${game}:${level}:${round}`;
   // Board Bay games: after a game vs the bot, offer a live game against a person (not in relaxed mode: clocks).
   const relaxed = useSettings((s) => s.relaxed);
@@ -77,6 +86,7 @@ export function BotScreen({ meta, game, initialLevel }: { meta: GameMeta; game: 
         onFailed={(_s, reason) => setOutcome(reason === "draw" ? "draw" : "lost")}
         onExit={() => router.push(`/world/${meta.world}`)}
         onHelp={() => setHowTo(true)}
+        difficulty={outcome ? undefined : levelMenu}
         pausedExternally={howTo}
         celebrate={outcome === "won"}
         extra={extra as unknown as Record<string, unknown>}

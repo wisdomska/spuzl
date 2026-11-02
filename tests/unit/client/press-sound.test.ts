@@ -45,6 +45,20 @@ describe("pressSound", () => {
     expect(pressSound($("#cell"))).toBeNull();
   });
 
+  it("taps on menu items and toggles on menu checkboxes (Radix items are not buttons)", () => {
+    const $ = dom(
+      `<div role="menu"><div id="i" role="menuitem"><span id="ic">Restart</span></div><div id="x" role="menuitem" aria-disabled="true">x</div>
+       <div id="s0" role="menuitemcheckbox" aria-checked="false">Sound</div><div id="s1" role="menuitemcheckbox" aria-checked="true">Haptics</div>
+       <div id="r0" role="menuitemradio" aria-checked="false">Hard</div><div id="r1" role="menuitemradio" aria-checked="true">Easy</div></div>`,
+    );
+    expect(pressSound($("#ic"))).toEqual({ event: "tap" });
+    expect(pressSound($("#x"))).toBeNull();
+    expect(pressSound($("#s0"))).toEqual({ event: "toggle", step: 1 });
+    expect(pressSound($("#s1"))).toEqual({ event: "toggle", step: 0 });
+    expect(pressSound($("#r0"))).toEqual({ event: "tap" });
+    expect(pressSound($("#r1"))).toBeNull();
+  });
+
   it("plays the nav sound for a new tab or nav item, nothing for the current one", () => {
     const $ = dom(
       `<div role="tablist"><button id="t1" role="tab" aria-selected="true"></button><button id="t2" role="tab" aria-selected="false"></button></div>
