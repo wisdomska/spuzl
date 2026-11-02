@@ -48,12 +48,15 @@ import { Button } from "@/components/ui/Button";
 import { RaceLiveButton } from "@/components/multiplayer/GameChallenge";
 import { useTapToBoard } from "@/lib/analytics/tap-to-board";
 import { PLAY_NAV } from "@/lib/analytics/play-nav";
+import { gameMenuCopy } from "@/lib/copy/game-menu";
 
 type Mode = "daily" | "free" | "archive";
 type Phase = "loading" | "playing" | "results" | "failed" | "error";
 type Difficulty = "easy" | "medium" | "hard" | "expert" | "mega";
 
 const SAVE_EVERY_MS = 10_000;
+/** Free play levels offered in the game menu (the same as Practice). */
+const FREE_LEVELS = ["easy", "medium", "hard", "expert"] as const;
 
 export function PlayScreen({
   meta,
@@ -296,6 +299,25 @@ export function PlayScreen({
     if (nextId && settings["perf.prefetch"]) router.prefetch(`/play/${nextId}`);
   }, [nextId, router, settings]);
 
+  // Game menu (free play): another puzzle, or the same game at another level. The address keeps the level.
+  const freeLevel = (attempt?.difficulty as Difficulty | undefined) ?? difficulty ?? "easy";
+  const levelMenu =
+    mode === "free"
+      ? {
+          value: freeLevel,
+          options: [...FREE_LEVELS, ...(FREE_LEVELS.includes(freeLevel as never) ? [] : [freeLevel])].map((d) => ({
+            id: d,
+            label: gameMenuCopy.levels[d] ?? d,
+          })),
+          onChange: (d: string) => {
+            if (d === freeLevel) return;
+            window.history.replaceState(null, "", `/play/${meta.id}?mode=free&difficulty=${d}`);
+            setFreeN(1);
+            void begin("free", d as Difficulty);
+          },
+        }
+      : undefined;
+
   const label =
     mode === "daily" && attempt?.date
       ? `Daily #${dailyNumber(attempt.date)}`
@@ -418,6 +440,8 @@ export function PlayScreen({
             router.push(`/world/${meta.world}`);
           }}
           onHelp={() => setHowTo(true)}
+          onNewPuzzle={mode === "free" && !holding ? anotherAction.onClick : undefined}
+          difficulty={holding ? undefined : levelMenu}
           pausedExternally={howTo}
           celebrate={holding}
           puzzleKey={attempt.attemptId}
@@ -510,21 +534,19 @@ function PlayLoading({ meta }: { meta: GameMeta }) {
       data-world={meta.world}
       aria-busy
     >
-      <div className="safe-top flex items-center gap-2 px-3 pb-2 lg:pt-6">
+      <div className="safe-top short:pb-1.5 flex items-center gap-3 px-3 pb-2 lg:pt-6">
         <Skeleton className="size-11 rounded-[14px]" />
-        <div className="flex min-w-0 flex-1 justify-center">
-          <Skeleton className="h-11 w-[116px] rounded-[14px] max-[359px]:w-[80px]" />
+        <div className="min-w-0 flex-1">
+          <h1 className="font-display truncate text-[18px] leading-6 font-black text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]">
+            {meta.name}
+          </h1>
+          <Skeleton className="mt-0.5 h-3 w-16 rounded-[6px]" />
         </div>
-        <Skeleton className="size-11 rounded-[14px]" />
+        <Skeleton className="h-11 w-[92px] rounded-[14px] max-[359px]:w-[72px]" />
         <Skeleton className="size-11 rounded-[14px]" />
       </div>
-      <div className="flex items-baseline justify-between gap-3 px-5 pt-1.5 pb-3.5">
-        <h1 className="font-display text-[24px] font-black text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]">
-          {meta.name}
-        </h1>
-      </div>
-      <p className="text-muted px-[18px] text-[15px] leading-[1.4]">{meta.rule}</p>
-      <main className="flex justify-center p-[18px]">
+      <p className="sr-only">{meta.rule}</p>
+      <main className="short:py-1 flex justify-center px-3 py-2">
         <BoardSkeleton />
       </main>
     </div>

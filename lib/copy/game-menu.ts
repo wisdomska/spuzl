@@ -1,13 +1,13 @@
 /** The game shell's "⋯" menu and its slim top bar (everything that is not needed while playing). */
 export const gameMenuCopy = {
   trigger: "Game menu",
-  title: "Game options",
   paused: "Paused while this menu is open.",
   livePaused: "Live match: the clock keeps running.",
   howToPlay: "How to play",
   restart: "Restart",
   newPuzzle: "New puzzle",
   difficulty: "Difficulty",
+  levels: { easy: "Easy", medium: "Medium", hard: "Hard", expert: "Expert", mega: "Mega" } as Record<string, string>,
   sound: "Sound",
   haptics: "Haptics",
   settings: "Settings",
