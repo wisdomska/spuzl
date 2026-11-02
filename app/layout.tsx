@@ -18,6 +18,13 @@ export const metadata: Metadata = {
   description: "Puzzles, skill games and classic board games across 9 worlds. Play anytime, duel your friends, keep your streak alive.",
   applicationName: "SPUZL",
   manifest: "/manifest.webmanifest",
+  // Plain files in /public (not generated routes), so hosts like the Vercel dashboard can find the site icon.
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "48x48" },
+      { url: "/icon.png", type: "image/png", sizes: "192x192" },
+    ],
+  },
   appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "SPUZL" },
   openGraph: { type: "website", siteName: "SPUZL", url: siteUrl },
   twitter: { card: "summary_large_image" },
