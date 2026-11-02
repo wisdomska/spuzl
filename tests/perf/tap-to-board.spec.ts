@@ -9,6 +9,7 @@ import { execSync } from "node:child_process";
 import { GAMES } from "@/lib/catalog";
 import { writeFileSync, mkdirSync } from "node:fs";
 import { test, type Page } from "@playwright/test";
+import { pickBirth } from "../e2e/harness";
 import { onboardGuest, throttle, waitForBoard, VIEWPORTS, tapCell } from "../e2e/harness";
 
 const RUNS = Number(process.env.RUNS ?? 10);
@@ -87,8 +88,7 @@ for (const profile of ["desktop", "4g-phone"] as const) {
           GAMES.map((g) => g.id),
         );
         await page.getByRole("button", { name: "Play as guest" }).click();
-        await page.getByRole("radio", { name: /18 or older/ }).click();
-        await page.getByRole("button", { name: "Continue" }).click();
+        await pickBirth(page);
         await page.getByRole("button", { name: /Jump straight in|Go to the map/ }).click();
         await page.locator("#nick").fill(`Pf${Date.now() % 1e7}`);
         await measure(

@@ -225,3 +225,9 @@ Found and fixed in this pass:
 - The Hint button's accessible name didn't start with its visible label; Minicross squares were named differently
   from what they show. Both now pass axe.
 - Crownfall's first-visit patterns offer pushed the tool row below the fold on a 375 × 667 phone; it is one line now.
+
+## 1.7.0 integration pass (2 November 2026)
+
+Local production build. Unit 142 files, 1382 tests; pgTAP all pass; API 15 files, 162 tests; E2E, realtime and
+visual (mobile and desktop) all pass after moving the visual and perf onboarding to the birth month and year step.
+Release order: the birth month/year migration is applied to preview and production before the code deploys.

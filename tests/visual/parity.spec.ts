@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { pickBirth } from "../e2e/harness";
 
 /**
  * Visual parity against the design handoff (tests/visual/reference, 390 × 844 frames).
@@ -50,8 +51,7 @@ test.beforeAll(async ({ browser }) => {
   // First run: age gate, the start choice (tutorial), the 4 × 4 tutorial board, nickname.
   await page.goto("/welcome");
   await page.getByRole("button", { name: "Play as guest" }).click();
-  await page.getByRole("radio", { name: /18 or older/ }).click();
-  await page.getByRole("button", { name: "Continue" }).click();
+  await pickBirth(page); // "When were you born?", an adult
   await page.getByRole("button", { name: /Learn a game in 30 seconds/ }).click();
   for (const [r, c] of [
     [0, 1],

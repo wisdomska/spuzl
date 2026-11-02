@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.7.0 (2 November 2026)
 
 ### For players
 
@@ -8,7 +8,7 @@
   rooms, not only the original 10 to 12: easy courses from the first 30% of the ladder, medium up to 45%, hard 15 to
   65%, expert 35 to 85% and mega from the hardest 45%, always ordered from easier to harder.
 
-## Unreleased: age from birth month and year
+### Age from birth month and year
 
 ### For players
 
