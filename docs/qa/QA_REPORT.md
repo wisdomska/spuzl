@@ -231,3 +231,10 @@ Found and fixed in this pass:
 Local production build. Unit 142 files, 1382 tests; pgTAP all pass; API 15 files, 162 tests; E2E, realtime and
 visual (mobile and desktop) all pass after moving the visual and perf onboarding to the birth month and year step.
 Release order: the birth month/year migration is applied to preview and production before the code deploys.
+
+## 1.8.0 integration pass (2 November 2026)
+
+Local production build. Unit 147 files, 1440+ tests; API 17 files, 172 tests; E2E, realtime and visual (mobile and
+desktop) all pass. pgTAP passes on a fresh database (CI); locally `085_league_min_group` is sensitive to hundreds of
+leftover test players and is not a product issue. Found and fixed: missing 3D tiles for the promoted games, and the
+"different worlds" quests that never counted.
