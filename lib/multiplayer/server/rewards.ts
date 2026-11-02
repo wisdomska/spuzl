@@ -5,7 +5,10 @@ import { DUEL } from "@/lib/rewards";
 import { BADGES } from "@/lib/gamification/badges";
 import { questsForDate, WEEKLY_CHAIN, type QuestDef } from "@/lib/gamification/quests";
 import { weekStart } from "@/lib/gamification/progress";
-import type { Loaded } from "./match";
+import { getGameSettings } from "@/lib/game-settings/server";
+import { ADULT_REWARD_SOURCE, adultRewardRef, adultRewards } from "@/lib/party-adult/rewards";
+import { TIMING } from "../constants";
+import type { Loaded, MatchRow } from "./match";
 import type { Placed } from "../race";
 
 /** Party Race XP: the winner 30, everyone who finished the set 10 (SRS lists no Party XP; see DECISIONS). */
@@ -161,4 +164,69 @@ export async function finalizeRace(admin: SupabaseClient, l: Loaded, lastGame: P
   // Photo finish: won a Party game by under a second.
   const [a, b] = lastGame;
   if (a?.timeMs != null && b?.timeMs != null && b.timeMs - a.timeMs < 1000) await badge(admin, a.id, "secret-photo");
+}
+
+/**
+ * After the last round of an 18+ party room (Draw It, Two Truths): XP and Sparks per round played and a bonus
+ * for first place (rules in lib/party-adult/rewards.ts). Only players still in the room at the end count, and
+ * a room where fewer than three did pays nothing. svc_grant_capped_reward applies the daily cap and pays each
+ * player once per room set, so running this twice changes nothing. No feed events, quests or badges: those are
+ * visible to friends of any age.
+ */
+export async function finalizeAdult(admin: SupabaseClient, l: Loaded) {
+  const { m, now } = l;
+  if (m.status !== "finished" || !m.party_mode || m.party_mode === "race") return;
+  const finishers = l.players.filter(
+    (p) =>
+      !p.spectator &&
+      !p.left_at &&
+      !p.kicked_at &&
+      m.party_leads.includes(p.player_id) &&
+      now - Date.parse(p.last_seen_at) <= TIMING.reconnectMs,
+  );
+  const { data: rounds, error } = await admin.from("party_rounds").select("played").eq("match_id", m.id).eq("set_no", m.set_no);
+  if (error) {
+    // Before the 20261120000001 migration there is no `played`: pay nothing rather than guess.
+    console.error("[party] rewards skipped", m.id, error.message);
+    return;
+  }
+  const played = new Map<string, number>();
+  for (const r of rounds ?? []) for (const id of (r.played as string[] | null) ?? []) played.set(id, (played.get(id) ?? 0) + 1);
+  const s = await getGameSettings();
+  const owed = adultRewards(
+    finishers.map((p) => ({ id: p.player_id, rounds: played.get(p.player_id) ?? 0, place: p.place })),
+    {
+      xpPerRound: s["adultParty.xpPerRound"],
+      sparksPerRound: s["adultParty.sparksPerRound"],
+      winXp: s["adultParty.winXp"],
+      winSparks: s["adultParty.winSparks"],
+      xpDailyCap: s["adultParty.xpDailyCap"],
+    },
+  );
+  const ref = adultRewardRef(m.id, m.set_no);
+  for (const o of owed) {
+    const { error: e } = await admin.rpc("svc_grant_capped_reward", {
+      p_player: o.id,
+      p_source: ADULT_REWARD_SOURCE,
+      p_ref: ref,
+      p_xp: o.xp,
+      p_sparks: o.sparks,
+      p_cap: s["adultParty.xpDailyCap"],
+    });
+    if (e) console.error("[party] reward failed", m.id, o.id, e.message);
+  }
+}
+
+/** What this player was paid for a finished 18+ party room, from the ledgers (null when nothing was paid). */
+export async function adultRewardFor(
+  admin: SupabaseClient,
+  m: Pick<MatchRow, "id" | "set_no">,
+  me: string,
+): Promise<{ xp: number; sparks: number } | null> {
+  const ref = adultRewardRef(m.id, m.set_no);
+  const read = (table: "xp_ledger" | "sparks_ledger") =>
+    admin.from(table).select("amount").eq("player_id", me).eq("source", ADULT_REWARD_SOURCE).eq("ref_id", ref).maybeSingle();
+  const [{ data: x }, { data: sp }] = await Promise.all([read("xp_ledger"), read("sparks_ledger")]);
+  if (!x && !sp) return null;
+  return { xp: Number(x?.amount ?? 0), sparks: Number(sp?.amount ?? 0) };
 }
