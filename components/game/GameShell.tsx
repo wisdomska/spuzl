@@ -492,7 +492,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
           >
             {row.map((c) =>
               c.id === "hint" ? (
-                <ToolButton key={c.id} c={c} badge={hintBadge} label={M.hint(c.label, hintLeft)} />
+                <ToolButton key={c.id} c={c} badge={hintBadge} extra={hintLeft} />
               ) : (
                 <ToolButton key={c.id} c={c} />
               ),
@@ -578,7 +578,8 @@ export function splitTools(controls: ControlSpec[]): { row: ControlSpec[]; overf
   return { row: hint ? [...keep, hint] : keep, overflow: others.slice(keep.length), restart };
 }
 
-function ToolButton({ c, badge, label }: { c: ControlSpec; badge?: string; label?: string }) {
+/** `extra` is read after the label by screen readers only (the hint count), so the spoken name starts with the visible label. */
+function ToolButton({ c, badge, extra }: { c: ControlSpec; badge?: string; extra?: string }) {
   // The active tool is always visible: filled accent, aria-pressed="true" (audit: tool mode was invisible).
   const tone = c.active ? "active" : c.tone === "world" ? "world" : c.tone === "gold" ? "gold" : "default";
   const look =
@@ -595,7 +596,6 @@ function ToolButton({ c, badge, label }: { c: ControlSpec; badge?: string; label
       aria-pressed={c.active ?? undefined}
       data-press={c.active !== undefined ? "toggle" : SOFT_TOOLS.has(c.id) ? "soft" : undefined}
       data-no-tick={c.quiet || undefined}
-      aria-label={label}
       className="toy short:h-12 relative flex h-14 flex-col items-center justify-center gap-0.5 rounded-[16px]"
       style={
         c.disabled
@@ -605,6 +605,7 @@ function ToolButton({ c, badge, label }: { c: ControlSpec; badge?: string; label
     >
       <Icon name={c.icon} size={22} />
       <span className="text-[13px] leading-4 font-semibold">{c.label}</span>
+      {extra && <span className="sr-only">, {extra}</span>}
       {badge !== undefined && (
         <span
           aria-hidden
