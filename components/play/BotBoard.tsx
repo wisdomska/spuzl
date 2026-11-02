@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
 import { LiveBoard } from "@/components/multiplayer/bay/boards";
-import { BOT_LEVELS, loadBot, type AnyBot, type BotGame, type BotLevel } from "@/lib/bot";
+import { loadBot, type AnyBot, type BotGame, type BotLevel } from "@/lib/bot";
 import { createRng, type Rng } from "@/lib/rng";
 import { play } from "@/lib/audio";
 import { boardGames } from "@/lib/copy/board-games";
@@ -18,8 +18,8 @@ export interface BotPuzzle {
 export interface BotState {
   plies: number;
 }
+/** The level is picked from the game menu (BotScreen); Restart there starts a new game. */
 export interface BotExtra {
-  onLevel: (l: BotLevel) => void;
   onRestart: () => void;
 }
 
@@ -35,12 +35,11 @@ const BOT_DELAY_MS = 450;
  * the game through the shell (a win is "solved", a loss or draw is "failed") and never talks to the server.
  */
 export default function BotBoard({ puzzle, disabled, api, extra }: BoardProps<BotPuzzle, BotState>) {
-  const { onLevel, onRestart } = (extra ?? {}) as unknown as BotExtra;
+  const { onRestart } = (extra ?? {}) as unknown as BotExtra;
   const [bot, setBot] = useState<AnyBot | null>(null);
   const [state, setState] = useState<unknown>(null);
   const [last, setLast] = useState<unknown>(null);
   const [history, setHistory] = useState<unknown[]>([]);
-  const [moved, setMoved] = useState(false);
   const rng = useRef<Rng | null>(null);
   const plies = useRef(0);
   const reported = useRef(false);
@@ -119,7 +118,6 @@ export default function BotBoard({ puzzle, disabled, api, extra }: BoardProps<Bo
       if (!rules || !state || !rng.current || disabled || over || turn !== ME || !rules.isLegal(state, ME, m)) return;
       const next = rules.apply(state, ME, m, rng.current);
       plies.current++;
-      setMoved(true);
       play(isRoll(m) ? "tick" : "clack");
       // Undo goes back to the start of the player's move (Ludo has dice, so no undo there).
       if (!ludo && !isRoll(m)) setHistory((h) => [...h, state]);
@@ -167,37 +165,8 @@ export default function BotBoard({ puzzle, disabled, api, extra }: BoardProps<Bo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const started = moved && !over;
-
   return (
-    <div className="flex w-full flex-col items-center gap-3" data-board="bot" data-game={puzzle.game}>
-      <div
-        role="radiogroup"
-        aria-label={t.levelGroup}
-        aria-describedby={started ? "bot-level-locked" : undefined}
-        className="bg-surface flex w-full gap-1 rounded-[16px] p-1"
-      >
-        {BOT_LEVELS.map((l) => {
-          const on = l === puzzle.level;
-          return (
-            <button
-              key={l}
-              type="button"
-              role="radio"
-              aria-checked={on}
-              disabled={started && !on}
-              onClick={() => !on && onLevel?.(l)}
-              className="press flex h-11 flex-1 items-center justify-center rounded-[12px] text-[15px] font-semibold disabled:opacity-50"
-              style={on ? { background: "var(--world)", color: "var(--square-ink)" } : { color: "var(--text-muted)" }}
-            >
-              {t.levels[l]}
-            </button>
-          );
-        })}
-      </div>
-      <p id="bot-level-locked" className="text-muted min-h-5 text-[13px]">
-        {started ? t.levelLocked : t.casual}
-      </p>
+    <div className="flex w-full flex-col items-center gap-3" data-board="bot" data-game={puzzle.game} data-level={puzzle.level}>
       <Seats game={puzzle.game} state={state} turn={over ? -1 : turn} thinking={thinking} />
       {bot && state ? (
         <LiveBoard

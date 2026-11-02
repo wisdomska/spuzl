@@ -31,7 +31,10 @@ test("new games: on, every lab game opens and plays in the shell; off, hidden an
       expect(overflow, `${g.id} scrolls sideways`).toBe(false);
     }
     await page.goto("/play/dara/bot");
-    await expect(page.getByRole("radiogroup", { name: "Bot level" })).toBeVisible({ timeout: 30_000 });
+    // The bot level lives in the game menu now.
+    await page.getByRole("button", { name: "Game menu" }).click({ timeout: 30_000 });
+    await expect(page.getByRole("menuitem", { name: /Difficulty.*Medium/ })).toBeVisible();
+    await page.keyboard.press("Escape");
     await page.getByRole("gridcell", { name: "Row 1, column 1, empty, drop here" }).click();
     await expect(page.getByText(/In hand: you 11/)).toBeVisible({ timeout: 15_000 });
   } finally {

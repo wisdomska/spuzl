@@ -21,8 +21,6 @@ export const boardGames = {
     entryShort: "Play vs bot",
     entryAria: (game: string) => `${game}: play a full game against the bot`,
     levels: LEVEL,
-    levelGroup: "Bot level",
-    levelLocked: "Restart to change the level.",
     /** title row label in the game header */
     label: (level: keyof typeof LEVEL) => `Vs bot · ${LEVEL[level]}`,
     casual: "Casual game. No XP, nothing ranked.",
@@ -52,7 +50,7 @@ export const boardGames = {
     /** Help sheet tips for a game vs the bot (in place of the solo puzzle tips: no hints or XP here) */
     help: {
       casual: "A casual game against the computer. No XP, nothing ranked.",
-      level: "Choose Easy, Medium or Hard before your first move. Restart to change it.",
+      level: "Pick Easy, Medium or Hard from the game menu (the three dots). A new level starts a new game.",
       undo: "Undo takes back your last move.",
     },
     /** rule line under the title, in place of the puzzle rule */
