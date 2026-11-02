@@ -333,7 +333,7 @@ export default function MinicrossBoard({ puzzle, initialState, hint, disabled, m
                     data-i={i}
                     tabIndex={i === cur ? 0 : -1}
                     aria-selected={active}
-                    aria-label={`${(clueAt(puzzle, i, dir) ?? clueAt(puzzle, i, dir === "across" ? "down" : "across"))?.text ?? ""}. Row ${r + 1}, column ${c + 1}, ${cells[i] || "blank"}${isGiven ? ", given" : revealed.includes(i) ? ", revealed" : ""}`}
+                    aria-label={`${nums[i] > 0 ? `${nums[i]} ` : ""}${(clueAt(puzzle, i, dir) ?? clueAt(puzzle, i, dir === "across" ? "down" : "across"))?.text ?? ""}. Row ${r + 1}, column ${c + 1}, ${cells[i] || "blank"}${isGiven ? ", given" : revealed.includes(i) ? ", revealed" : ""}`}
                     onClick={() => {
                       if (off) return;
                       if (i === cur) flip();
@@ -363,7 +363,7 @@ export default function MinicrossBoard({ puzzle, initialState, hint, disabled, m
                       />
                     )}
                     {nums[i] > 0 && (
-                      <span className="num absolute top-0.5 left-1 text-[11px] font-semibold" style={{ color: "#5A5E78" }}>
+                      <span aria-hidden className="num absolute top-0.5 left-1 text-[11px] font-semibold" style={{ color: "#5A5E78" }}>
                         {nums[i]}
                       </span>
                     )}
@@ -374,7 +374,9 @@ export default function MinicrossBoard({ puzzle, initialState, hint, disabled, m
                         style={{ borderTop: "10px solid var(--gold)", borderLeft: "10px solid transparent", borderTopRightRadius: 6 }}
                       />
                     )}
-                    <span className="relative">{cells[i]}</span>
+                    <span aria-hidden className="relative">
+                      {cells[i]}
+                    </span>
                   </div>
                 );
               })}
