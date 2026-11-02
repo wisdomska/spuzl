@@ -12,6 +12,10 @@ test("world: each game is one card with its own actions", async ({ page }, info)
   await expect(card.getByRole("group", { name: /More ways to play/ }).getByRole("button", { name: /Challenge/ })).toBeVisible();
   await page.screenshot({ path: `docs/qa/screens/after/world-line-${info.project.name}.png` });
   await page.goto("/world/board");
-  await expect(page.locator("main li").first().getByRole("link", { name: "Play vs bot" })).toBeVisible();
+  const chess = page.locator("main li").first();
+  await expect(chess.getByRole("link", { name: "Play vs bot" })).toBeVisible();
+  // Board Bay games: find someone to play live, or invite a friend, from the same card.
+  await expect(chess.getByRole("link", { name: "Chess: play live against another player" })).toHaveAttribute("href", "/bay?live=chess");
+  await expect(chess.getByRole("link", { name: "Chess: challenge a friend" })).toHaveAttribute("href", "/bay?new=chess");
   await page.screenshot({ path: `docs/qa/screens/after/world-board-${info.project.name}.png` });
 });

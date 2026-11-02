@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { inPage, player } from "./helpers";
+import { admin, inPage, player } from "./helpers";
 
 /**
  * Board Bay live chess between two devices: invite link, the shared board on both screens,
@@ -52,6 +52,46 @@ test("bay: live chess on two devices, illegal moves rejected by the server", asy
   await a.page.getByRole("button", { name: "Resign" }).click();
   await expect(b.page.getByText(/You won\. They resigned\./)).toBeVisible({ timeout: 15_000 });
   await expect(a.page.getByRole("button", { name: "Rematch" })).toBeVisible();
+
+  await a.context.close();
+  await b.context.close();
+});
+
+/**
+ * Board Bay Play live: two devices that don't know each other find each other through matchmaking (one from
+ * the Chess card on the World page, one from a link), land on the same live board at once, and a move made on
+ * one device shows up on the other.
+ */
+test("bay: play live finds an opponent and the first move arrives in real time", async ({ browser }) => {
+  // Only this test's players wait for live chess.
+  await admin().from("board_queue").delete().eq("game_id", "chess").is("match_id", null);
+  const a = await player(browser, "liveA_");
+  const b = await player(browser, "liveB_");
+
+  await a.page.goto("/world/board");
+  await a.page.getByRole("link", { name: "Chess: play live against another player" }).click();
+  await expect(a.page.getByRole("heading", { name: "Finding an opponent" })).toBeVisible();
+
+  await b.page.goto("/bay?live=chess");
+  await b.page.waitForURL(/\/bay\/[0-9a-f-]{36}$/, { timeout: 20_000 });
+  await a.page.waitForURL(/\/bay\/[0-9a-f-]{36}$/, { timeout: 20_000 });
+  const id = a.page.url().split("/").pop()!;
+  expect(b.page.url().split("/").pop()).toBe(id);
+  await expect(a.page.getByRole("grid", { name: "Chess board, live" })).toBeVisible();
+  await expect(b.page.getByRole("grid", { name: "Chess board, live" })).toBeVisible();
+
+  // A coin decides who has white; whoever it is moves first, and the other device sees it.
+  const v = (await inPage<{ rated: boolean; players: { id: string }[] }>(a.page, `/api/v1/bay/${id}`)).data;
+  expect(v.rated).toBe(true);
+  const [white, black] = v.players[0].id === a.id ? [a, b] : [b, a];
+  await expect(white.page.getByRole("timer", { name: /Your clock 0?5:00|Your clock 04:5\d/ })).toBeVisible();
+  await white.page.getByRole("gridcell", { name: "e2, white pawn" }).click();
+  await white.page.getByRole("gridcell", { name: "e4, legal move" }).click();
+  await expect(black.page.getByRole("gridcell", { name: "e4, white pawn" })).toBeVisible({ timeout: 15_000 });
+
+  // The search is over for both: polling the queue answers with the same match while it is on.
+  const q = await inPage<{ status: string; matchId?: string }>(black.page, "/api/v1/bay/queue");
+  expect(q.data).toMatchObject({ status: "matched", matchId: id });
 
   await a.context.close();
   await b.context.close();
