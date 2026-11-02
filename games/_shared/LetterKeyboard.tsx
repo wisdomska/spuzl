@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
+import { viaKeys } from "@/components/game/useGridKeys";
 
 const ROWS = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
 
@@ -57,12 +58,13 @@ export function LetterKeyboard({
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const t = e.target as HTMLElement | null;
       if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      // Physical keys count as keyboard entry (isKeyedInput): boards change the tile without the pop.
       if (/^[a-z]$/i.test(e.key)) {
         e.preventDefault();
-        onLetter(e.key.toUpperCase());
+        viaKeys(() => onLetter(e.key.toUpperCase()));
       } else if (e.key === "Backspace") {
         e.preventDefault();
-        onBackspace();
+        viaKeys(onBackspace);
       } else if (e.key === "Enter" && onEnter && !(t && t.getAttribute("role") === "gridcell")) {
         e.preventDefault();
         onEnter();
@@ -78,6 +80,9 @@ export function LetterKeyboard({
       type="button"
       disabled={disabled}
       aria-label={opts.aria ?? opts.decor?.say ?? id}
+      // Backspace and undo take a letter back: the soft tap (lib/audio/press.ts).
+      data-press={opts.wide ? "soft" : undefined}
+
       onPointerDown={() => setPressed(id)}
       onPointerUp={() => setPressed(null)}
       onPointerLeave={() => setPressed((p) => (p === id ? null : p))}

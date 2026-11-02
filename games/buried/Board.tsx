@@ -7,6 +7,7 @@ import { Icon } from "@/components/ui/Icon";
 import { useCellSize } from "@/components/game/useBoardSize";
 import { useGridKeys } from "@/components/game/useGridKeys";
 import { play } from "@/lib/audio";
+import { sfx } from "@/games/_shared/sfx";
 import { sendGuess } from "@/games/_shared/guess";
 import { fromView, toView, viewDims } from "@/games/_shared/rotate";
 import {
@@ -85,6 +86,7 @@ export default function BuriedBoard({ puzzle, initialState, hint, disabled, mode
         return;
       }
       if (!res.bonus) {
+        sfx.miss();
         api.feedback("No hidden word on that line.", "info", "info");
         api.announce("No hidden word on that line.");
         return;
@@ -97,7 +99,8 @@ export default function BuriedBoard({ puzzle, initialState, hint, disabled, mode
       const spelled = path.map((i) => letters[i]).join("");
       const next = [...bonus, { word: res.word, path: spelled === res.word ? path : path.slice().reverse() }];
       setBonus(next);
-      play("chime", { step: 0 });
+      // a bonus is a little unlock, not a hidden word: the glassy clink
+      play("unlock");
       api.feedback(`Bonus word! ${res.word} +1`, "success", "sparkle");
       api.announce(`Bonus word, ${res.word}. ${next.length} bonus ${next.length === 1 ? "word" : "words"}.`);
       api.onMove(
@@ -123,18 +126,20 @@ export default function BuriedBoard({ puzzle, initialState, hint, disabled, mode
           void tryBonus(path);
           return;
         }
+        sfx.miss();
         api.feedback("No hidden word on that line.", "info", "info");
         api.announce("No hidden word on that line.");
         return;
       }
       if (foundWords.includes(w)) {
+        sfx.select();
         api.feedback(`${w} is already found.`, "info", "info");
         return;
       }
       const next = [...found, path];
       setFound(next);
       setPop(w);
-      w.split("").forEach((_, k) => setTimeout(() => play("chime", { step: k }), k * 40));
+      sfx.cascade(w.length);
       api.announce(`Found ${w}. ${next.length} of ${puzzle.words.length}.`);
       api.onMove(stateOf(next), { correctStreak: ++streak.current });
       if (next.length === puzzle.words.length) {
@@ -170,7 +175,7 @@ export default function BuriedBoard({ puzzle, initialState, hint, disabled, mode
     }
     setAnchor(i);
     setLine([i]);
-    play("tick");
+    sfx.select();
     dragging.current = { id: e.pointerId, moved: false };
   };
   const onMove = (e: React.PointerEvent) => {
@@ -181,7 +186,10 @@ export default function BuriedBoard({ puzzle, initialState, hint, disabled, mode
     // straight lines stay straight under a quarter turn, so snapping in puzzle space is exact
     const l = snapLine(anchor, i, rows, cols);
     if (l.length !== line.length || l[l.length - 1] !== line[line.length - 1]) {
+      // the line hums up as it stretches, down as it shrinks
+      sfx.trace(l.length * 2);
       setLine(l);
+
       if (l.length > 1) d.moved = true;
     }
   };

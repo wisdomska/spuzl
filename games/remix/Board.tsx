@@ -5,6 +5,8 @@ import { motion, useReducedMotion } from "motion/react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { play } from "@/lib/audio";
+import { sfx } from "@/games/_shared/sfx";
+import { isKeyedInput, viaKeys } from "@/components/game/useGridKeys";
 import { sendGuess } from "@/games/_shared/guess";
 import { ROUNDS, type RemixCheck, type RemixPuzzle, type RemixState } from "./rules";
 
@@ -24,6 +26,8 @@ export default function RemixBoard({ puzzle, initialState, hint, disabled, mode,
   const [shakeN, setShakeN] = useState(0);
   const [flash, setFlash] = useState(false);
   const [tapN, setTapN] = useState(0);
+  // Typed letters fill slots without the pop (fast, repeated entry).
+  const [quiet, setQuiet] = useState(false);
   const streak = useRef(0);
   const reduce = useReducedMotion();
   const done = answers.length >= ROUNDS;
@@ -61,7 +65,7 @@ export default function RemixBoard({ puzzle, initialState, hint, disabled, mode,
         setTimeout(() => setPicks([]), 380);
         return;
       }
-      w.split("").forEach((_, k) => setTimeout(() => play("chime", { step: k }), k * 40));
+      sfx.cascade(w.length);
       const next = [...answers, w];
       setFlash(true);
       api.announce(`${w}. Round ${round + 1} solved.`);
@@ -89,7 +93,8 @@ export default function RemixBoard({ puzzle, initialState, hint, disabled, mode,
       const next = [...picks, i];
       setPicks(next);
       setTapN((t) => t + 1);
-      play("pop", { step: next.length });
+      setQuiet(isKeyedInput());
+      sfx.place(next.length);
       api.announce(`${letters[i]}. ${next.map((k) => letters[k]).join("")}`);
       if (next.length === letters.length) void submit(next.map((k) => letters[k]).join(""));
     },
@@ -112,7 +117,7 @@ export default function RemixBoard({ puzzle, initialState, hint, disabled, mode,
       const i = order.find((x) => letters[x] === k && !picks.includes(x));
       if (i !== undefined) {
         e.preventDefault();
-        pick(i);
+        viaKeys(() => pick(i));
       }
     };
     window.addEventListener("keydown", on);
@@ -181,8 +186,12 @@ export default function RemixBoard({ puzzle, initialState, hint, disabled, mode,
               key={`${round}-${k}`}
               type="button"
               onClick={() => unpick(k)}
+              // a filled slot gives its letter back (the soft tap); an empty one has nothing to say
+              data-press={ch ? "soft" : undefined}
+              data-no-tick={ch ? undefined : true}
               aria-label={ch ? `Slot ${k + 1}, ${ch}. Tap to remove.` : `Slot ${k + 1}, empty`}
-              className={`font-display flex items-center justify-center rounded-[12px] text-[22px] font-extrabold ${ch && k === picks.length - 1 ? (tapN % 2 ? "cell-pop-a" : "cell-pop-b") : ""}`}
+              className={`font-display flex items-center justify-center rounded-[12px] text-[22px] font-extrabold ${ch && k === picks.length - 1 && !quiet ? (tapN % 2 ? "cell-pop-a" : "cell-pop-b") : ""}`}
+
               style={{
                 width: tile - 4,
                 height: tile + 4,

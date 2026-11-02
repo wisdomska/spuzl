@@ -7,8 +7,9 @@ import { Icon } from "@/components/ui/Icon";
 import { useCellSize } from "@/components/game/useBoardSize";
 import { useGridKeys } from "@/components/game/useGridKeys";
 import { play } from "@/lib/audio";
+import { sfx } from "@/games/_shared/sfx";
 import { sendGuess } from "@/games/_shared/guess";
-import { flyLetters, FLY_STAGGER_MS } from "@/games/_shared/fly";
+import { flyLetters } from "@/games/_shared/fly";
 import { fromView, toView, viewDims } from "@/games/_shared/rotate";
 import { adjacent, MIN_LEN, REASON_COPY, spell, type CoilCheck, type CoilPuzzle, type CoilState } from "./rules";
 
@@ -84,7 +85,8 @@ export default function CoilBoard({ puzzle, initialState, hint, disabled, mode, 
       else if (viaDrag) return false;
       else next = [i];
       setP(next);
-      play("tick", { step: next.length });
+      // the trace hums up as the word grows and back down as you backtrack
+      sfx.trace(next.length * 2);
       api.announce(`${cellName(i)}. ${spell(letters, next)}`);
       return true;
     },
@@ -96,6 +98,7 @@ export default function CoilBoard({ puzzle, initialState, hint, disabled, mode, 
     const p = pathRef.current;
     if (locked || !p.length) return;
     if (p.length < MIN_LEN) {
+      sfx.miss();
       api.feedback(REASON_COPY.short, "info", "info");
       api.announce(REASON_COPY.short);
       setP([]);
@@ -117,7 +120,8 @@ export default function CoilBoard({ puzzle, initialState, hint, disabled, mode, 
       setP([]);
       streak.current++;
       const slot = next.length - 1;
-      res.word.split("").forEach((_, k) => setTimeout(() => play("chime", { step: k }), k * FLY_STAGGER_MS));
+      // letters chime as they lift (in step with the flight's stagger), then knock as they land in the list
+      sfx.cascade(res.word.length);
       const all = next.length === puzzle.count;
       api.feedback(`${res.word}. ${next.length} of ${puzzle.count} found.`, all ? "success" : "info", "check-circle");
       api.announce(`Found ${res.word}. ${next.length} of ${puzzle.count} words.`);
@@ -127,6 +131,7 @@ export default function CoilBoard({ puzzle, initialState, hint, disabled, mode, 
         res.word.split(""),
       );
       setLanded(next.length);
+      if (!all) sfx.place(streak.current);
       api.onMove(stateOf(next), { correctStreak: streak.current });
       setBusy(false);
       if (all) {
@@ -149,7 +154,9 @@ export default function CoilBoard({ puzzle, initialState, hint, disabled, mode, 
       const nextBonus = [...bonusRef.current, p];
       bonusRef.current = nextBonus;
       setBonus(nextBonus);
-      play("chime", { step: 0 });
+      // a bonus is a little unlock, not a theme word: the glassy clink
+      play("unlock");
+
       api.feedback(`Bonus word! ${res.word} +1`, "success", "sparkle");
       api.announce(`Bonus word, ${res.word}. ${nextBonus.length} bonus ${nextBonus.length === 1 ? "word" : "words"}.`);
       api.onMove(stateOf(foundRef.current));
