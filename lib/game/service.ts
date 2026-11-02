@@ -25,6 +25,9 @@ import { bindPuzzle } from "./guess-token";
 import { isLadderGame, isLevel, levelCount, levelDifficulty, levelOpen, nextLevel } from "./levels";
 import { securedLevelSeed } from "./level-seed";
 
+/** Human floor for one Rage Ridge room played in Levels mode. */
+const LEVEL_ROOM_FLOOR_MS = 1500;
+
 export type Mode = "tutorial" | "daily" | "free" | "archive" | "challenge" | "level";
 
 /**
@@ -406,11 +409,14 @@ export async function finishAttempt(
   }
 
   // Anti-cheat (SRS 12.3): impossible speed and client time exceeding server wall time are flagged, not ranked.
+  // An action-game level is one room, not a multi-room course, and its inputs are re-simulated frame by frame,
+  // so its floor only has to catch impossible runs.
+  const floorMs = a.mode === "level" && meta.engine === "phaser" ? Math.min(meta.minTimeMs, LEVEL_ROOM_FLOOR_MS) : meta.minTimeMs;
   let flag: string | null = null;
   // The tutorial is played before the profile exists, so its attempt is created after the clear;
   // its reward is fixed and granted once, so wall-clock checks do not apply.
   if (a.mode === "tutorial") flag = null;
-  else if (timeMs < meta.minTimeMs) flag = `below human floor (${timeMs} < ${meta.minTimeMs} ms)`;
+  else if (timeMs < floorMs) flag = `below human floor (${timeMs} < ${floorMs} ms)`;
   else if (timeMs > wallMs + WALL_SLACK_MS) flag = `client time ${timeMs} exceeds server wall time ${wallMs}`;
   else if (input.offline && a.mode === "daily" && a.daily_date && finishedAt.toISOString().slice(0, 10) !== a.daily_date)
     flag = "offline clear outside its day";

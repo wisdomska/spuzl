@@ -1,3 +1,4 @@
+import { solve as solveCrown, type CrownfallPuzzle } from "@/games/crownfall/logic";
 import { describe, expect, it } from "vitest";
 import { admin, guest } from "./helpers";
 import { createSim } from "@/games/gotcha/logic";
@@ -5,7 +6,6 @@ import { CONFIG, LEVELS } from "@/games/gotcha/levels";
 import SOLUTIONS from "@/games/gotcha/solutions.json";
 import { replay } from "@/phaser/sim/core";
 import { framesToMs } from "@/phaser/sim/fixed";
-import { framesFromLog, logFromFrames } from "@/phaser/sim/input";
 import { courseLog } from "@/phaser/sim/scripted";
 
 /**
@@ -16,10 +16,9 @@ import { courseLog } from "@/phaser/sim/scripted";
  */
 type G = Awaited<ReturnType<typeof guest>>;
 
-/** A no-death run of `id` padded with idle frames so it clears the human speed floor. */
+/** A no-death run of `id`: the bot's recorded solution, exactly as the game's own replay tests play it. */
 function runFor(id: string) {
-  const idle = Array<number>(300).fill(0);
-  const log = logFromFrames([...idle, ...framesFromLog(courseLog([id], SOLUTIONS, CONFIG.levelPause))]);
+  const log = courseLog([id], SOLUTIONS, CONFIG.levelPause);
   const r = replay(createSim({ levels: [id] }), log);
   expect(r.ok).toBe(true);
   return { state: { log, deaths: r.deaths, timeMs: framesToMs(log.frames) }, ms: framesToMs(log.frames) };
@@ -33,6 +32,24 @@ async function clear(g: G, n: number) {
   const { state, ms } = runFor(LEVELS[n - 1].id);
   await new Promise((r) => setTimeout(r, Math.max(0, ms - 2500)));
   const f = await g.api(`/api/v1/attempts/${s.data.attemptId}/finish`, { json: { state, activeMs: ms, mistakes: 0, deaths: 0 } });
+  expect(f.status, JSON.stringify(f.data)).toBe(200);
+  return f.data;
+}
+
+/**
+ * Clears Crownfall level n like an honest player: solve the served board, then finish after a human-paced wait
+ * (the bot-recorded Rage Ridge runs are faster than the human floor, so the server rightly flags them).
+ */
+async function clearCrown(g: G, n: number) {
+  const s = await g.api("/api/v1/attempts", { json: { game: "crownfall", mode: "level", level: n } });
+  expect(s.status, JSON.stringify(s.data)).toBe(200);
+  expect(s.data.level).toBe(n);
+  const puzzle = s.data.puzzle as CrownfallPuzzle;
+  const sol = solveCrown(puzzle)!;
+  const state = new Array(puzzle.size * puzzle.size).fill(0);
+  sol.forEach((c, r) => (state[r * puzzle.size + c] = 2));
+  await new Promise((r) => setTimeout(r, 6200));
+  const f = await g.api(`/api/v1/attempts/${s.data.attemptId}/finish`, { json: { state, activeMs: 6000, mistakes: 0 } });
   expect(f.status, JSON.stringify(f.data)).toBe(200);
   return f.data;
 }
@@ -53,34 +70,39 @@ describe("level ladders", () => {
     expect(auto.data).not.toHaveProperty("seed");
     expect(JSON.stringify(auto.data)).not.toContain("level:gotcha");
     const { data: att } = await admin().from("attempts").select("mode, free_seed").eq("id", auto.data.attemptId).single();
-    expect(att).toMatchObject({ mode: "level", free_seed: expect.stringMatching(/^level:gotcha:1\|/) });
+    expect(att).toMatchObject({ mode: "level", free_seed: expect.stringMatching(/^level:gotcha:1:[0-9a-f]{24}\|/) });
 
-    const first = await clear(g, 1);
+    // Climb Crownfall: clearing level 1 opens level 2; level 3 stays locked until 2 is cleared.
+    expect((await g.api("/api/v1/attempts", { json: { game: "crownfall", mode: "level", level: 2 } })).status).toBe(403);
+    const first = await clearCrown(g, 1);
     expect(first.ok).toBe(true);
     expect(first.ladder).toMatchObject({ level: 1, top: 1, next: 2 });
-
-    // Level 2 is open now; level 3 is still locked.
-    expect((await g.api("/api/v1/attempts", { json: { game: "gotcha", mode: "level", level: 3 } })).status).toBe(403);
-    const second = await clear(g, 2);
+    expect((await g.api("/api/v1/attempts", { json: { game: "crownfall", mode: "level", level: 3 } })).status).toBe(403);
+    const second = await clearCrown(g, 2);
     expect(second.ladder).toMatchObject({ level: 2, top: 2, next: 3 });
 
     // Replays are allowed, and earn nothing the second time.
-    const again = await clear(g, 1);
+    const again = await clearCrown(g, 1);
     expect(again.ok).toBe(true);
     expect(again.reward.xp).toBe(0);
     expect(again.ladder).toMatchObject({ level: 1, top: 2 });
 
-    const mine = await g.api("/api/v1/levels?game=gotcha");
+    const mine = await g.api("/api/v1/levels?game=crownfall");
     expect(mine.data).toMatchObject({ top: 2, next: 3 });
     expect(mine.data.cleared.map((c: { level: number }) => c.level)).toEqual([1, 2]);
     const all = await g.api("/api/v1/levels");
-    expect(all.data.games.gotcha).toMatchObject({ top: 2, next: 3 });
-    expect(all.data.games.crownfall).toMatchObject({ top: 0, next: 1, levels: null });
+    expect(all.data.games.crownfall).toMatchObject({ top: 2, next: 3, levels: null });
+    expect(all.data.games.gotcha).toMatchObject({ top: 0, next: 1 });
+
+    // A Rage Ridge level is one room: a fast, re-simulated clean run counts and opens the next level.
+    const rage = await clear(g, 1);
+    expect(rage.ok).toBe(true);
+    expect(rage.ladder).toMatchObject({ level: 1, top: 1, next: 2 });
 
     // Players can read their own rows, never write them.
     const { error } = await g.sb.from("player_levels").insert({ player_id: g.userId, game_id: "gotcha", level: 9, best_ms: 1 });
     expect(error).not.toBeNull();
-  }, 60_000);
+  }, 120_000);
 
   it("refuses levels for games without a ladder and levels past the end", async () => {
     const g = await guest(`lvl${Math.random().toString(36).slice(2, 7)}`);

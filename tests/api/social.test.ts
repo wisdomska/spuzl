@@ -1,3 +1,4 @@
+import { WORLDS } from "@/lib/catalog";
 import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
@@ -372,7 +373,7 @@ describe("api: profiles, archive, account", () => {
     expect(kid.data).toMatchObject({ nickname: kidName, minor: true, public: false, level: null, title: null });
     expect(kid.data.streak).toBeUndefined();
     const self = await a.api("/api/v1/me/profile");
-    expect(self.data.worlds).toHaveLength(9);
+    expect(self.data.worlds).toHaveLength(WORLDS.length); // live worlds only
     expect(self.data.calendar.days.length).toBeGreaterThanOrEqual(28);
     expect(self.data.badges.families[0].family).toBe("starter");
     expect(self.data.badges.families.some((f: { family: string }) => f.family === "secret")).toBe(false);

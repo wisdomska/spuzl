@@ -52,7 +52,9 @@ describe("api: retired games are refused like unknown ones", () => {
   it("answers 404 on the play page, the bot page and an empty world", async () => {
     for (const path of ["/play/quads", "/play/pixl?mode=free", "/play/flip/bot", "/play/dara/bot", "/world/number", "/ghost/flipside"]) {
       const r = await fetch(BASE + path, { redirect: "manual" });
-      expect([path, r.status]).toEqual([path, 404]);
+      // Streamed pages (with a loading state) send 200 before notFound() runs; the body is the not-found page.
+      const body = r.status === 404 ? "" : await r.text();
+      expect([path, r.status === 404 || body.includes("This page could not be found")]).toEqual([path, true]);
     }
   });
 
