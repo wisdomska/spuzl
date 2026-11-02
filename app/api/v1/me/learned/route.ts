@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ApiError, body, handle, ok, rateLimit, requirePlayer } from "@/lib/api/server";
-import { GAME_BY_ID } from "@/lib/catalog";
+import { playableGame } from "@/lib/catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -15,8 +15,8 @@ export const POST = handle(async (req: Request) => {
   const { admin, player } = await requirePlayer();
   await rateLimit(admin, `learned:${player.id}`, 30, 60);
   const { games } = await body(req, Learned);
-  // A device list can hold a game id the catalog no longer has: skip those, keep the rest.
-  const ids = [...new Set(games)].filter((id) => GAME_BY_ID[id]);
+  // A device list can hold a game id the catalog no longer has (or that is retired): skip those, keep the rest.
+  const ids = [...new Set(games)].filter((id) => playableGame(id));
   if (!ids.length) throw new ApiError(400, "unknown_game");
   const { error } = await admin.from("learned_games").upsert(
     ids.map((game_id) => ({ player_id: player.id, game_id })),

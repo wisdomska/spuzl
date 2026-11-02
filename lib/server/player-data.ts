@@ -3,7 +3,7 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { levelFromXp, flameTier } from "@/lib/rewards";
 import { rankFor } from "@/lib/rating/glicko2";
-import { GAMES, LAUNCH_IDS } from "@/lib/catalog";
+import { GAMES, LAUNCH_IDS, playableGame } from "@/lib/catalog";
 import { COSMETICS } from "@/lib/gamification/cosmetics";
 import { hasLogic } from "@/games/logic-registry";
 import { dailyNumber, msToReset } from "@/lib/format";
@@ -89,7 +89,8 @@ export async function loadMe(user: User, player: PlayerRow, admin: SupabaseClien
     streak: { current: 0, best: 0, freezes_held: 0, last_clear_date: null, ...streak, flame: flameTier(streak?.current ?? 0) },
     rank: { rating: overall, ...rankFor(overall) },
     boardTheme: theme ? String(theme.payload.theme) : null,
-    played: [...new Set((played ?? []).map((r) => r.game_id as string))],
+    // Retired games drop out: "Games tried x of N" and the guided first play only know games players can reach.
+    played: [...new Set((played ?? []).map((r) => r.game_id as string))].filter((id) => !!playableGame(id)),
     learned: (learned ?? []).map((r) => r.game_id as string),
     ratings: Object.fromEntries((ratings ?? []).map((r) => [r.track, Number(r.rating)])),
     today: {

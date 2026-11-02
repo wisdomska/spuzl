@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import { getGameSettings } from "@/lib/game-settings/server";
 import { notFound } from "next/navigation";
-import { GAME_BY_ID } from "@/lib/catalog";
+import { playableGame } from "@/lib/catalog";
 import { hasLogic } from "@/games/logic-registry";
 import { PlayScreen } from "@/components/play/PlayScreen";
 import { requireSessionPage } from "@/lib/auth/gate";
 
 export async function generateMetadata({ params }: PageProps<"/play/[game]">): Promise<Metadata> {
   const { game } = await params;
-  const meta = GAME_BY_ID[game];
+  const meta = playableGame(game);
   return meta ? { title: meta.name, description: meta.rule } : {};
 }
 
@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: PageProps<"/play/[game]">): P
 export default async function Play({ params, searchParams }: PageProps<"/play/[game]">) {
   const { game } = await params;
   const sp = await searchParams;
-  const meta = GAME_BY_ID[game];
+  const meta = playableGame(game);
   if (!meta || !hasLogic(game)) notFound();
   if (meta.lab && !(await getGameSettings())["features.newGames"]) notFound();
   // SPZ-01: only the session is checked here (a local JWT check). The player profile is already in the client

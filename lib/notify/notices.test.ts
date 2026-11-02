@@ -30,13 +30,15 @@ describe("notices", () => {
   });
 
   it("lists games new to this device, never on first run", () => {
-    const ready = ["crownfall", "pinned", "buried", "weave"];
+    const ready = ["crownfall", "quickfire", "buried", "weave"];
     expect(buildNotices({ readyGames: ready, seenGames: null }, morning)).toEqual([]);
     const [n] = buildNotices({ readyGames: ready, seenGames: ["crownfall"] }, morning);
-    expect(n).toMatchObject({ kind: "new_games", text: "3 new games: Pinned, Buried and 1 more.", href: "/play/pinned" });
-    const [one] = buildNotices({ readyGames: ["crownfall", "pinned"], seenGames: ["crownfall"] }, morning);
-    expect(one.text).toBe("New game: Pinned.");
+    expect(n).toMatchObject({ kind: "new_games", text: "3 new games: Quickfire, Buried and 1 more.", href: "/play/quickfire" });
+    const [one] = buildNotices({ readyGames: ["crownfall", "quickfire"], seenGames: ["crownfall"] }, morning);
+    expect(one.text).toBe("New game: Quickfire.");
     expect(buildNotices({ readyGames: ["ghost-game"], seenGames: [] }, morning)).toEqual([]);
+    // Retired games are never announced, even when an old client still lists them as ready.
+    expect(buildNotices({ readyGames: ["pinned", "quads"], seenGames: [] }, morning)).toEqual([]);
   });
 
   it("words league results for each outcome", () => {
@@ -54,7 +56,7 @@ describe("notices", () => {
     const all = buildNotices(
       {
         ...base,
-        readyGames: ["crownfall", "pinned"],
+        readyGames: ["crownfall", "quickfire"],
         seenGames: ["crownfall"],
         league: { week: "w", outcome: "promoted", tier: "Gold", place: 1, of: 30 },
       },
@@ -65,7 +67,7 @@ describe("notices", () => {
     const left = buildNotices(
       {
         ...base,
-        readyGames: ["crownfall", "pinned"],
+        readyGames: ["crownfall", "quickfire"],
         seenGames: ["crownfall"],
         dismissed: [all[0].id, all[2].id],
       },

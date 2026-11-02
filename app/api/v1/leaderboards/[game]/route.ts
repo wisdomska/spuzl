@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { getGameSettings } from "@/lib/game-settings/server";
 import { ApiError, handle, ok, requirePlayer, todayGmt } from "@/lib/api/server";
-import { GAME_BY_ID } from "@/lib/catalog";
+import { playableGame } from "@/lib/catalog";
 import { LAUNCH_DATE } from "@/lib/format";
 import { SCOPES, topPercent } from "@/lib/meta";
 import { isUnder16 } from "@/lib/social";
@@ -43,7 +43,7 @@ export const GET = handle(async (req: Request, ctx: RouteContext<"/api/v1/leader
   if (!(await getGameSettings())["features.dailies"]) throw new ApiError(404, "dailies_off");
   const { game } = await ctx.params;
   const overall = game === "overall";
-  if (!overall && !GAME_BY_ID[game]) throw new ApiError(404, "unknown_game");
+  if (!overall && !playableGame(game)) throw new ApiError(404, "unknown_game");
   const sp = new URL(req.url).searchParams;
   const q = Query.parse({ scope: sp.get("scope") ?? undefined, date: sp.get("date") ?? undefined });
   const today = todayGmt();
@@ -84,7 +84,7 @@ export const GET = handle(async (req: Request, ctx: RouteContext<"/api/v1/leader
   });
   if (error) throw error;
   const rows = (data ?? []) as Row[];
-  const scoring = overall ? "overall" : GAME_BY_ID[game].scoring === "score" ? "score" : "time";
+  const scoring = overall ? "overall" : playableGame(game)!.scoring === "score" ? "score" : "time";
   const shape = (r: Row) => {
     const minor = isUnder16(r.age_band);
     return {

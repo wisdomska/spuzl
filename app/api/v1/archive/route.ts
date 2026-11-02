@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { getGameSettings } from "@/lib/game-settings/server";
 import { ApiError, handle, ok, requirePlayer, todayGmt } from "@/lib/api/server";
-import { GAME_BY_ID } from "@/lib/catalog";
+import { playableGame } from "@/lib/catalog";
 import { LAUNCH_DATE } from "@/lib/format";
 import { archiveAccess } from "@/lib/meta";
 
@@ -17,7 +17,7 @@ export const GET = handle(async (req: Request) => {
   if (!(await getGameSettings())["features.dailies"]) throw new ApiError(404, "dailies_off");
   const sp = new URL(req.url).searchParams;
   const q = Query.parse({ game: sp.get("game") ?? "", month: sp.get("month") ?? todayGmt().slice(0, 7) });
-  if (!GAME_BY_ID[q.game]) throw new ApiError(404, "unknown_game");
+  if (!playableGame(q.game)) throw new ApiError(404, "unknown_game");
   const { admin, player } = await requirePlayer();
   const [y, m] = q.month.split("-").map(Number);
   const first = `${q.month}-01`;

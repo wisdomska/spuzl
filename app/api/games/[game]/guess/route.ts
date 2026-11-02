@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { GAME_BY_ID } from "@/lib/catalog";
+import { playableGame } from "@/lib/catalog";
 import { body, handle, ok, rateLimit, requirePlayer, ApiError } from "@/lib/api/server";
 import { LOGIC } from "@/games/logic-registry";
 import { PRACTICE, type GuessLogic } from "@/games/_shared/guess";
@@ -38,11 +38,11 @@ export const POST = handle(async (req: Request, ctx: RouteContext<"/api/games/[g
   const logicP = LOGIC[game]?.();
   logicP?.catch(() => {});
   await limited;
-  if (ref.game !== game || !LOGIC[game]) throw new ApiError(404, "unknown_game");
+  if (ref.game !== game || !LOGIC[game] || !playableGame(game)) throw new ApiError(404, "unknown_game");
   const tok = openGuessToken(ref.t);
   if (!tok || tok.g !== game) throw new ApiError(400, "bad_ref");
   if (tok.c.k !== "p" && tok.p !== player.id) throw new ApiError(403, "not_your_puzzle");
-  if (GAME_BY_ID[game]) await assertGameOpen(GAME_BY_ID[game]);
+  await assertGameOpen(playableGame(game)!);
   const logic = (await logicP!).default as unknown as Partial<GuessLogic>;
   if (typeof logic.checkGuess !== "function" || typeof logic.generateAt !== "function") throw new ApiError(400, "no_guess_check");
   const checker = { checkGuess: logic.checkGuess, record: logic.record };
@@ -66,7 +66,6 @@ export const POST = handle(async (req: Request, ctx: RouteContext<"/api/games/[g
   }
 
   // Practice: only the guided board was ever given a practice token; checked again against it all the same.
-  if (!GAME_BY_ID[game]) throw new ApiError(404, "unknown_game");
   const board = await loadFree(game, guidedSeed(game), "easy");
   if (!samePuzzleRef(board.puzzle, { game: tok.g, i: tok.i, d: tok.d })) throw new ApiError(400, "bad_ref");
   return ok(checker.checkGuess(board.puzzle, board.solution, guess, PRACTICE));

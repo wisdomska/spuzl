@@ -3,7 +3,7 @@ import { z } from "zod";
 import { body, handle, rateLimit } from "@/lib/api/server";
 import { currentUser } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { GAME_BY_ID } from "@/lib/catalog";
+import { playableGame } from "@/lib/catalog";
 import { isOnboardingStep } from "@/lib/analytics/onboarding";
 
 const label = z.string().regex(/^[a-z_]{1,16}$/);
@@ -13,7 +13,7 @@ const Metric = z
     name: z.enum(["tap_to_board", "hint_cancel", "hint_request", "hint_use", "share", "onboarding_step"]),
     game: z
       .string()
-      .refine((g) => g in GAME_BY_ID)
+      .refine((g) => !!playableGame(g))
       .optional(),
     mode: label.optional(),
     kind: label.optional(),
