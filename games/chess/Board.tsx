@@ -27,6 +27,7 @@ import {
 } from "./engine";
 import { COPY, replay, type ChessPuzzle, type ChessState } from "./logic";
 import { CH_N, Piece, useSprites } from "./Piece";
+import { ShellAside } from "@/components/game/ShellAside";
 
 const PROMOS = ["q", "r", "b", "n"] as const;
 const LETTER = " PNBRQK";
@@ -229,14 +230,17 @@ export default function ChessBoard({ puzzle, initialState, hint, disabled, api }
   return (
     <div className="flex w-full flex-col items-center gap-3.5" data-board="chess">
       <BayStyles />
-      <div className="flex w-full items-center gap-2.5 px-0.5 text-[16px] font-semibold">
-        <span
-          aria-hidden
-          className="size-3.5 flex-none rounded-[4px]"
-          style={{ background: startTurn === WHITE ? "#F4F5FB" : "#0E0F1A", boxShadow: "0 0 0 2px var(--line)" }}
-        />
-        {startTurn === WHITE ? "White" : "Black"} to move. Mate in {puzzle.mateIn}.
-      </div>
+      {/* Who moves and the mate depth: over the board on a phone, in the side panel on a wide screen. */}
+      <ShellAside>
+        <div className="flex w-full items-center gap-2.5 px-0.5 text-[16px] font-semibold">
+          <span
+            aria-hidden
+            className="size-3.5 flex-none rounded-[4px]"
+            style={{ background: startTurn === WHITE ? "#F4F5FB" : "#0E0F1A", boxShadow: "0 0 0 2px var(--line)" }}
+          />
+          {startTurn === WHITE ? "White" : "Black"} to move. Mate in {puzzle.mateIn}.
+        </div>
+      </ShellAside>
       <div
         role="grid"
         aria-label={`Chess board, ${flipped ? "black" : "white"} at the bottom`}

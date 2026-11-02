@@ -20,6 +20,8 @@ import {
   type SevenPuzzle,
   type SevenState,
 } from "./rules";
+import { useBoardBox } from "@/components/game/useBoardSize";
+import { ShellAside } from "@/components/game/ShellAside";
 
 const INK = "#0E0F1A";
 const HEX_W = 84;
@@ -213,6 +215,9 @@ export default function SevenBoard({ puzzle, initialState, hint, disabled, mode,
   ];
   const W = HEX_W * 2.6 + 8,
     H = HEX_H * 3.12 + 8;
+  // Wide screen: the honeycomb zooms (layout and hit areas too) to fill the board's height, up to 1.8 times.
+  const box = useBoardBox();
+  const zoom = box.wide ? Math.max(1, Math.min(1.8, Math.round(((box.side - 80) / H) * 10) / 10)) : 1;
   const hintT = hint?.target as { start?: string; len?: number } | undefined;
   const nextRank = RANKS.find((r) => Math.ceil(r.pct * maxScore) > score);
 
@@ -226,46 +231,50 @@ export default function SevenBoard({ puzzle, initialState, hint, disabled, mode,
   };
 
   return (
-    <div className="flex w-full max-w-[400px] flex-col items-center gap-4 [--hl:var(--world)] [[data-theme=light]_&]:[--hl:var(--world-ink)]">
-      {/* score + rank */}
-      <div className="flex w-full flex-col gap-2 rounded-[16px] p-3" style={{ background: "var(--surface)" }}>
-        <div className="flex items-baseline justify-between">
-          <span className="font-display text-[16px] font-extrabold">{rank.name}</span>
-          <span className="num text-muted text-[14px]">
-            <span className="text-[18px] font-semibold text-[var(--text)]">{score}</span> pts · finish at {target}
+    <div
+      className={`flex w-full flex-col items-center gap-4 [--hl:var(--world)] [[data-theme=light]_&]:[--hl:var(--world-ink)] ${box.wide ? "" : "max-w-[400px]"}`}
+    >
+      {/* Score and rank, then the words found: around the honeycomb on a phone, in the side panel on a wide screen. */}
+      <ShellAside>
+        <div className="flex w-full flex-col gap-2 rounded-[16px] p-3" style={{ background: "var(--surface)" }}>
+          <div className="flex items-baseline justify-between">
+            <span className="font-display text-[16px] font-extrabold">{rank.name}</span>
+            <span className="num text-muted text-[14px]">
+              <span className="text-[18px] font-semibold text-[var(--text)]">{score}</span> pts · finish at {target}
+            </span>
+          </div>
+          <div
+            className="relative h-2 rounded-full"
+            style={{ background: "var(--surface-raised)" }}
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={maxScore}
+            aria-valuenow={score}
+            aria-label={`Score ${score} of ${maxScore}, rank ${rank.name}`}
+          >
+            <div
+              className="absolute inset-y-0 left-0 w-full origin-left rounded-full"
+              style={{
+                background: "var(--world)",
+                transform: `scaleX(${Math.min(1, score / Math.max(1, maxScore))})`,
+                transition: "transform 320ms var(--ease-out)",
+              }}
+            />
+            <span
+              aria-hidden
+              className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full"
+              style={{
+                left: `${(target / Math.max(1, maxScore)) * 100}%`,
+                background: reached ? "var(--gold)" : "var(--bg)",
+                boxShadow: "0 0 0 2px var(--gold)",
+              }}
+            />
+          </div>
+          <span className="text-muted text-[13px]">
+            {found.length} of {puzzle.total} words{nextRank ? ` · ${Math.ceil(nextRank.pct * maxScore) - score} to ${nextRank.name}` : ""}
           </span>
         </div>
-        <div
-          className="relative h-2 rounded-full"
-          style={{ background: "var(--surface-raised)" }}
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={maxScore}
-          aria-valuenow={score}
-          aria-label={`Score ${score} of ${maxScore}, rank ${rank.name}`}
-        >
-          <div
-            className="absolute inset-y-0 left-0 w-full origin-left rounded-full"
-            style={{
-              background: "var(--world)",
-              transform: `scaleX(${Math.min(1, score / Math.max(1, maxScore))})`,
-              transition: "transform 320ms var(--ease-out)",
-            }}
-          />
-          <span
-            aria-hidden
-            className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full"
-            style={{
-              left: `${(target / Math.max(1, maxScore)) * 100}%`,
-              background: reached ? "var(--gold)" : "var(--bg)",
-              boxShadow: "0 0 0 2px var(--gold)",
-            }}
-          />
-        </div>
-        <span className="text-muted text-[13px]">
-          {found.length} of {puzzle.total} words{nextRank ? ` · ${Math.ceil(nextRank.pct * maxScore) - score} to ${nextRank.name}` : ""}
-        </span>
-      </div>
+      </ShellAside>
 
       {/* word being built */}
       <div className={`flex h-12 items-center justify-center ${bad ? (shakeN % 2 ? "cell-shake-a" : "cell-shake-b") : ""}`} aria-live="off">
@@ -295,7 +304,7 @@ export default function SevenBoard({ puzzle, initialState, hint, disabled, mode,
         aria-label={`Seven letters, centre ${centre}`}
         onKeyDown={onGridKey}
         className="relative"
-        style={{ width: W, height: H }}
+        style={{ width: W, height: H, zoom: zoom === 1 ? undefined : zoom }}
       >
         <div role="row" className="contents">
           {tiles.map((l, k) => (
@@ -336,36 +345,38 @@ export default function SevenBoard({ puzzle, initialState, hint, disabled, mode,
       </div>
 
       {/* found words */}
-      <div
-        ref={listRef}
-        className="flex min-h-11 w-full flex-wrap justify-center gap-1.5 rounded-[16px] p-2.5"
-        style={{ background: "var(--board-bg)" }}
-        aria-label="Words found"
-        role="list"
-      >
-        {found.length === 0 && <span className="text-muted self-center text-[13px]">Words you find land here.</span>}
-        {found
-          .slice()
-          .sort()
-          .map((w) => {
-            const pg = isPangram(w, centre, puzzle.letters);
-            return (
-              <span
-                role="listitem"
-                key={w}
-                className={`flex h-8 items-center gap-1 rounded-[10px] px-2.5 text-[13px] font-bold tracking-[0.03em] ${popKey === w ? "cell-pop-a" : ""}`}
-                style={{
-                  background: pg ? "var(--world)" : "var(--surface-raised)",
-                  color: pg ? INK : "var(--text)",
-                  animation: popKey === w ? "fade-in 160ms var(--ease-out), cell-pop-a 140ms var(--ease-out)" : undefined,
-                }}
-              >
-                {pg && <Icon name="star" size={12} label="Spuzl word" />}
-                {w}
-              </span>
-            );
-          })}
-      </div>
+      <ShellAside>
+        <div
+          ref={listRef}
+          className="flex min-h-11 w-full flex-wrap justify-center gap-1.5 rounded-[16px] p-2.5"
+          style={{ background: "var(--board-bg)" }}
+          aria-label="Words found"
+          role="list"
+        >
+          {found.length === 0 && <span className="text-muted self-center text-[13px]">Words you find land here.</span>}
+          {found
+            .slice()
+            .sort()
+            .map((w) => {
+              const pg = isPangram(w, centre, puzzle.letters);
+              return (
+                <span
+                  role="listitem"
+                  key={w}
+                  className={`flex h-8 items-center gap-1 rounded-[10px] px-2.5 text-[13px] font-bold tracking-[0.03em] ${popKey === w ? "cell-pop-a" : ""}`}
+                  style={{
+                    background: pg ? "var(--world)" : "var(--surface-raised)",
+                    color: pg ? INK : "var(--text)",
+                    animation: popKey === w ? "fade-in 160ms var(--ease-out), cell-pop-a 140ms var(--ease-out)" : undefined,
+                  }}
+                >
+                  {pg && <Icon name="star" size={12} label="Spuzl word" />}
+                  {w}
+                </span>
+              );
+            })}
+        </div>
+      </ShellAside>
     </div>
   );
 }

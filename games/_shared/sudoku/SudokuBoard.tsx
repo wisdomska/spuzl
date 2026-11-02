@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from "react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
-import { fitCell, useFitHeight, useViewportWidth } from "@/components/game/useBoardSize";
+import { fitCell, useFitHeight, useViewportHeight, useViewportWidth } from "@/components/game/useBoardSize";
 import { isKeyedInput, useGridKeys, viaKeys } from "@/components/game/useGridKeys";
 import { sfx } from "@/games/_shared/sfx";
 import { popClass, shakeClass, waveStyle } from "@/games/_shared/logiclab/fx";
@@ -27,8 +27,10 @@ const gapFor = (size: number) => (size > 6 ? 1 : 2);
  */
 function useSudokuCell(size: number, boxW: number, pad: RefObject<HTMLElement | null>) {
   const vw = useViewportWidth();
+  const vh = useViewportHeight();
   const overhead = gapTotal(size, boxW, gapFor(size), LINE) + PAD * 2;
-  const wide = fitCell(vw, size, overhead, size > 6 ? 40 : 44, 56);
+  // The two-column shell on a wide screen: the grid grows into its column, then steps down until the pad fits.
+  const wide = fitCell(vw, size, overhead, size > 6 ? 40 : 44, 56, 560, vh);
   return useFitHeight(wide, size > 6 ? 28 : 44, size, pad, "shell");
 }
 

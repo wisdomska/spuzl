@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
 import { LiveBoard } from "@/components/multiplayer/bay/boards";
+import { ShellAside } from "@/components/game/ShellAside";
 import { loadBot, type AnyBot, type BotGame, type BotLevel } from "@/lib/bot";
 import { createRng, type Rng } from "@/lib/rng";
 import { play } from "@/lib/audio";
@@ -167,7 +168,10 @@ export default function BotBoard({ puzzle, disabled, api, extra }: BoardProps<Bo
 
   return (
     <div className="flex w-full flex-col items-center gap-3" data-board="bot" data-game={puzzle.game} data-level={puzzle.level}>
-      <Seats game={puzzle.game} state={state} turn={over ? -1 : turn} thinking={thinking} />
+      {/* Whose turn it is: over the board on a phone, at the top of the side panel on a wide screen. */}
+      <ShellAside>
+        <Seats game={puzzle.game} state={state} turn={over ? -1 : turn} thinking={thinking} />
+      </ShellAside>
       {bot && state ? (
         <LiveBoard
           game={puzzle.game}

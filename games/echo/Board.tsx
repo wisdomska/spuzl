@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { useGridKeys } from "@/components/game/useGridKeys";
+import { useBoardBox } from "@/components/game/useBoardSize";
 import { play } from "@/lib/audio";
 import { IDLE_MS, padName, type EchoPuzzle, type EchoRound, type EchoState } from "./logic";
 
@@ -215,6 +216,9 @@ export default function EchoBoard({ puzzle, initialState, disabled, mode, api }:
   }, []);
 
   const keys = useGridKeys(2, 2, tap);
+  // Wide screen: the pads grow to fill the board's height (two pads, the dots, the status and the padding).
+  const box = useBoardBox();
+  const pad = box.wide ? Math.min(232, Math.floor((box.side - 142) / 2)) : 0;
   const done = current?.taps.length ?? 0;
   const dots = Array.from({ length: phase === "idle" && !rounds.length ? puzzle.start : len }, (_, i) => {
     if (phase === "watch") return i < pos || (i === pos && lit !== null) ? (i === pos ? "now" : "done") : "todo";
@@ -236,7 +240,7 @@ export default function EchoBoard({ puzzle, initialState, disabled, mode, api }:
   return (
     <div
       className="flex w-[min(358px,calc(100vw-36px))] flex-col items-center gap-3.5 rounded-[20px] p-4"
-      style={{ background: "var(--board-bg)" }}
+      style={{ background: "var(--board-bg)", ...(pad ? { width: pad * 2 + 12 + 32 } : null) }}
     >
       <div className="flex max-w-full flex-wrap justify-center gap-[5px]" role="img" aria-label={`Sequence of ${len}, round ${round + 1}`}>
         {dots.map((d, i) => (
@@ -258,7 +262,7 @@ export default function EchoBoard({ puzzle, initialState, disabled, mode, api }:
         aria-disabled={phase !== "input" || disabled}
         onKeyDown={keys.onKeyDown}
         className="grid gap-3"
-        style={{ gridTemplateColumns: "repeat(2, min(116px, calc((100vw - 104px) / 2)))" }}
+        style={{ gridTemplateColumns: pad ? `repeat(2, ${pad}px)` : "repeat(2, min(116px, calc((100vw - 104px) / 2)))" }}
       >
         {[0, 1].map((row) => (
           <div role="row" key={row} className="contents">
@@ -293,7 +297,7 @@ export default function EchoBoard({ puzzle, initialState, disabled, mode, api }:
                   }}
                 >
                   {bad && <span aria-hidden className="hatch absolute inset-0 rounded-[28px]" />}
-                  <Icon name={padName(i)} size={44} className="relative" />
+                  <Icon name={padName(i)} size={pad ? Math.round(pad * 0.38) : 44} className="relative" />
                 </div>
               );
             })}

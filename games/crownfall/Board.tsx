@@ -9,6 +9,7 @@ import { sfx } from "@/games/_shared/sfx";
 import { CROWNFALL_COPY } from "@/lib/copy/crownfall";
 import { analyze, CROWN, EMPTY, MARK, type CrownfallPuzzle, type CrownfallState } from "./logic";
 import { PatternsOffer } from "./PatternsOffer";
+import { ShellAside } from "@/components/game/ShellAside";
 
 type Tool = "crown" | "x";
 /** Region edge (each side of a boundary, so a boundary reads 4 px) and the hairline inside a region. */
@@ -276,7 +277,11 @@ export default function CrownfallBoard({ puzzle, initialState, hint, disabled, m
           ))}
         </div>
       </div>
-      {mode !== "tutorial" && <PatternsOffer onAccepted={(text) => api.announce(text)} />}
+      {mode !== "tutorial" && (
+        <ShellAside>
+          <PatternsOffer onAccepted={(text) => api.announce(text)} />
+        </ShellAside>
+      )}
     </div>
   );
 }

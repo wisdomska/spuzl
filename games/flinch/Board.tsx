@@ -8,6 +8,7 @@ import { sfx } from "@/games/_shared/sfx";
 import { useGameSettings } from "@/lib/game-settings/client";
 import { logicGames } from "@/lib/copy/logic-games";
 import { classify, FALSE_START_PENALTY, pointsFor, tally, type FlinchPuzzle, type FlinchRound, type FlinchState } from "./logic";
+import { useBoardBox } from "@/components/game/useBoardSize";
 
 const t = logicGames.flinch;
 const INK = "#0E0F1A";
@@ -199,8 +200,13 @@ export default function FlinchBoard({ puzzle, initialState, disabled, mode, api 
 
   // Frame: dashed while waiting, a thick solid ring on "Tap!" (shape cue on top of colour and text).
   const frame = go ? `inset 0 0 0 8px ${INK}` : "";
+  // Wide screen: the tap pad grows with the board's height (the progress and tally rows sit under it).
+  const box = useBoardBox();
   return (
-    <div className="flex w-[min(358px,calc(100vw-36px))] flex-col gap-3 rounded-[20px] p-3" style={{ background: "var(--board-bg)" }}>
+    <div
+      className="flex w-[min(358px,calc(100vw-36px))] flex-col gap-3 rounded-[20px] p-3"
+      style={{ background: "var(--board-bg)", ...(box.wide ? { width: Math.min(640, box.side - 90) } : null) }}
+    >
       <style href="spuzl-flinch" precedence="default">
         {CSS}
       </style>

@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { BoardProps } from "@/games/types";
 import { useGridKeys } from "@/components/game/useGridKeys";
+import { isWide, useViewportHeight, useViewportWidth, wideCell } from "@/components/game/useBoardSize";
+import { ShellAside } from "@/components/game/ShellAside";
 import { Icon } from "@/components/ui/Icon";
 import { play } from "@/lib/audio";
 import { BayStyles } from "@/games/_shared/BayStyles";
@@ -19,15 +21,15 @@ export const LUDO_LOOK = [
 const N = 15;
 const PIPS: Record<number, number[]> = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
 
+/** 14 one-px lines and 8 px of frame across the board. */
+const LUDO_OVERHEAD = 22;
+
+/** Ludo cells: the phone fit (20 to 30 px), or the board column on a wide screen (useBoardSize `wideCell`). */
 function useLudoCell() {
-  const [cell, setCell] = useState(22);
-  useEffect(() => {
-    const on = () => setCell(Math.max(20, Math.min(30, Math.floor((Math.min(window.innerWidth, 420) - 36 - 22) / N))));
-    on();
-    window.addEventListener("resize", on);
-    return () => window.removeEventListener("resize", on);
-  }, []);
-  return cell;
+  const vw = useViewportWidth();
+  const vh = useViewportHeight();
+  if (isWide(vw, vh)) return wideCell(vw, vh, N, LUDO_OVERHEAD, 30);
+  return Math.max(20, Math.min(30, Math.floor((Math.min(vw, 420) - 36 - LUDO_OVERHEAD) / N)));
 }
 
 export function Token({ colour, size, ring, glow }: { colour: number; size: number; ring?: string; glow?: boolean }) {
@@ -170,25 +172,28 @@ export default function LudoBoard({ puzzle, initialState, hint, disabled, api }:
   return (
     <div className="flex w-full flex-col gap-2.5" data-board="ludo">
       <BayStyles />
-      <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${t.colours.length}, minmax(0, 1fr))` }}>
-        {t.colours.map((col, seat) => (
-          <div
-            key={seat}
-            className="flex flex-col items-center gap-1 rounded-[14px] p-1.5"
-            style={
-              seat === 0
-                ? { background: "var(--success-tint)", boxShadow: "inset 0 0 0 2px var(--accent)" }
-                : { background: "var(--surface)" }
-            }
-          >
-            <div className="flex items-center gap-1.5">
-              <Token colour={col} size={14} ring="none" />
-              <span className="text-[13px] font-semibold">{puzzle.names[seat]}</span>
+      {/* Players, then the die: around the board on a phone, in the side panel on a wide screen. */}
+      <ShellAside>
+        <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${t.colours.length}, minmax(0, 1fr))` }}>
+          {t.colours.map((col, seat) => (
+            <div
+              key={seat}
+              className="flex flex-col items-center gap-1 rounded-[14px] p-1.5"
+              style={
+                seat === 0
+                  ? { background: "var(--success-tint)", boxShadow: "inset 0 0 0 2px var(--accent)" }
+                  : { background: "var(--surface)" }
+              }
+            >
+              <div className="flex items-center gap-1.5">
+                <Token colour={col} size={14} ring="none" />
+                <span className="text-[13px] font-semibold">{puzzle.names[seat]}</span>
+              </div>
+              <span className="num text-muted text-[11px] font-semibold">{homeCount(seat)} home</span>
             </div>
-            <span className="num text-muted text-[11px] font-semibold">{homeCount(seat)} home</span>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      </ShellAside>
 
       <div className="flex justify-center">
         <div
@@ -294,29 +299,31 @@ export default function LudoBoard({ puzzle, initialState, hint, disabled, api }:
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        <div
-          key={puzzle.roll}
-          className="grid size-[72px] flex-none grid-cols-3 grid-rows-3 gap-1 rounded-[20px] p-3"
-          style={{
-            background: "#F4F5FB",
-            boxShadow: "0 0 0 1px var(--line), 0 6px 0 #A2A6C2",
-            animation: "bay-punch 420ms var(--ease-out)",
-          }}
-          role="img"
-          aria-label={`Die showing ${puzzle.roll}`}
-        >
-          {Array.from({ length: 9 }, (_, k) => (
-            <span key={k} className="rounded-full" style={{ background: PIPS[puzzle.roll].includes(k) ? "#0E0F1A" : "transparent" }} />
-          ))}
+      <ShellAside>
+        <div className="flex items-center gap-3">
+          <div
+            key={puzzle.roll}
+            className="grid size-[72px] flex-none grid-cols-3 grid-rows-3 gap-1 rounded-[20px] p-3"
+            style={{
+              background: "#F4F5FB",
+              boxShadow: "0 0 0 1px var(--line), 0 6px 0 #A2A6C2",
+              animation: "bay-punch 420ms var(--ease-out)",
+            }}
+            role="img"
+            aria-label={`Die showing ${puzzle.roll}`}
+          >
+            {Array.from({ length: 9 }, (_, k) => (
+              <span key={k} className="rounded-full" style={{ background: PIPS[puzzle.roll].includes(k) ? "#0E0F1A" : "transparent" }} />
+            ))}
+          </div>
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <span className="font-display text-[18px] font-extrabold">You rolled a {puzzle.roll}</span>
+            <span className="text-muted text-[15px] leading-[1.4]">
+              {puzzle.roll === 6 ? "Bring a piece out or move 6." : `Move one piece ${puzzle.roll}.`} Glowing pieces can move.
+            </span>
+          </div>
         </div>
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="font-display text-[18px] font-extrabold">You rolled a {puzzle.roll}</span>
-          <span className="text-muted text-[15px] leading-[1.4]">
-            {puzzle.roll === 6 ? "Bring a piece out or move 6." : `Move one piece ${puzzle.roll}.`} Glowing pieces can move.
-          </span>
-        </div>
-      </div>
+      </ShellAside>
     </div>
   );
 }

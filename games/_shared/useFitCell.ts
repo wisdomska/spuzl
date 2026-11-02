@@ -1,6 +1,6 @@
 "use client";
 
-import { SLOT_PAD, useCellSize, useViewportWidth } from "@/components/game/useBoardSize";
+import { SLOT_PAD, useBoardBox, useCellSize } from "@/components/game/useBoardSize";
 
 /**
  * Cell size for Line Lane boards, plus a bleed. Drag-to-draw boards cannot pan (a horizontal drag
@@ -10,9 +10,9 @@ import { SLOT_PAD, useCellSize, useViewportWidth } from "@/components/game/useBo
  */
 export function useFitCell(cols: number, gap: number, pad: number): { cs: number; bleed: number } {
   const cs = useCellSize(cols, gap, pad * 2 + 4);
-  const vw = useViewportWidth();
   const board = cols * cs + (cols - 1) * gap + pad * 2;
-  const avail = Math.min(vw, 560) - SLOT_PAD * 2;
+  // The board slot's width inside its padding (the board column on a wide screen).
+  const avail = useBoardBox().w;
   const bleed = board > avail ? Math.min(SLOT_PAD, Math.ceil((board - avail) / 2)) : 0;
   return { cs, bleed };
 }

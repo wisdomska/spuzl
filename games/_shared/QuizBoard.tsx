@@ -360,7 +360,10 @@ export function QuizBoard({ rounds, judge, limitMs, noun, initial, hint, disable
   const secsLeft = Math.ceil((phase === "asking" ? left : limitMs) / 1000);
 
   return (
-    <div className="flex w-[min(358px,calc(100vw-36px))] flex-col gap-3 rounded-[20px] p-3.5" style={{ background: "var(--board-bg)" }}>
+    <div
+      className="wide:w-[560px] flex w-[min(358px,calc(100vw-36px))] flex-col gap-3 rounded-[20px] p-3.5"
+      style={{ background: "var(--board-bg)" }}
+    >
       <div className="flex items-center gap-2.5">
         <div className="flex gap-[5px]" role="img" aria-label={t.answered(answers.length, total)}>
           {Array.from({ length: total }, (_, k) => {

@@ -5,6 +5,7 @@ import { motion, useReducedMotion } from "motion/react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { useCellSize } from "@/components/game/useBoardSize";
+import { ShellAside } from "@/components/game/ShellAside";
 import { useGridKeys } from "@/components/game/useGridKeys";
 import { play } from "@/lib/audio";
 import { sfx } from "@/games/_shared/sfx";
@@ -39,7 +40,7 @@ export default function BuriedBoard({ puzzle, initialState, hint, disabled, mode
   const [turns, setTurns] = useState(0);
   const [vRows, vCols] = viewDims(rows, cols, turns);
   const reduce = useReducedMotion();
-  const cell = useCellSize(vCols, GAP, PAD, 52);
+  const cell = useCellSize(vCols, GAP, PAD, 52, vRows);
   const [found, setFound] = useState<number[][]>(() => initialState?.found?.map((p) => p.slice()) ?? []);
   // bonus paths are saved in reading order, so the word is just their letters
   const [bonus, setBonus] = useState<{ word: string; path: number[] }[]>(() =>
@@ -377,71 +378,77 @@ export default function BuriedBoard({ puzzle, initialState, hint, disabled, mode
         </motion.div>
       </div>
 
-      <ul className="flex w-full max-w-[400px] flex-wrap justify-center gap-1.5" aria-label="Words to find">
-        {puzzle.words.map((w) => {
-          const got = foundWords.includes(w);
-          return (
-            <li
-              key={w}
-              className={`flex h-8 items-center gap-1 rounded-[10px] px-2.5 text-[13px] font-bold tracking-[0.03em] ${pop === w ? "cell-pop-a" : ""}`}
-              style={{
-                background: got ? "var(--world)" : "var(--surface-raised)",
-                color: got ? INK : "var(--text)",
-                textDecoration: got ? "line-through" : undefined,
-              }}
-            >
-              {got && <Icon name="check" size={12} label="found" />}
-              {w}
-            </li>
-          );
-        })}
-      </ul>
-
-      {bonus.length > 0 && (
-        <div className="flex w-full max-w-[400px] flex-col items-center gap-1.5">
-          <span className="text-muted flex items-center gap-1 text-[13px] font-semibold">
-            <Icon name="sparkle" size={14} style={{ color: "var(--gold)" }} />
-            Bonus words · {bonus.length}
-          </span>
-          <ul className="flex flex-wrap justify-center gap-1.5" aria-label="Bonus words">
-            {bonus.map((b, k) => (
+      {/* Words, bonus words and the secret phrase: under the grid on a phone, in the side panel on a wide screen. */}
+      <ShellAside>
+        <ul className="flex w-full max-w-[400px] flex-wrap justify-center gap-1.5" aria-label="Words to find">
+          {puzzle.words.map((w) => {
+            const got = foundWords.includes(w);
+            return (
               <li
-                key={b.word}
-                className={`flex h-8 items-center rounded-[10px] px-2.5 text-[13px] font-bold tracking-[0.03em] ${k === bonus.length - 1 ? "cell-pop-a" : ""}`}
-                style={{ background: "var(--surface-raised)", color: "var(--text)", boxShadow: "inset 0 0 0 2px var(--gold)" }}
+                key={w}
+                className={`flex h-8 items-center gap-1 rounded-[10px] px-2.5 text-[13px] font-bold tracking-[0.03em] ${pop === w ? "cell-pop-a" : ""}`}
+                style={{
+                  background: got ? "var(--world)" : "var(--surface-raised)",
+                  color: got ? INK : "var(--text)",
+                  textDecoration: got ? "line-through" : undefined,
+                }}
               >
-                {b.word}
+                {got && <Icon name="check" size={12} label="found" />}
+                {w}
               </li>
-            ))}
-          </ul>
-        </div>
-      )}
+            );
+          })}
+        </ul>
 
-      <div className="flex w-full max-w-[400px] flex-col items-center gap-1.5 rounded-[16px] p-3" style={{ background: "var(--surface)" }}>
-        <span className="text-muted text-[13px] font-medium">Secret phrase</span>
-        <div
-          className="flex flex-wrap justify-center gap-x-3 gap-y-1.5"
-          aria-label={done ? phrase.join(" ") : "Hidden until every word is found"}
-        >
-          {phrase.map((wd, k) => (
-            <span key={k} className="flex gap-0.5">
-              {wd.split("").map((ch, j) => (
-                <span
-                  key={j}
-                  className="font-display flex h-7 w-5 items-end justify-center text-[16px] font-extrabold"
-                  style={{
-                    borderBottom: "2px solid var(--line)",
-                    color: "var(--gold)",
-                    animation: done ? `fade-in 160ms var(--ease-out) ${(phrase.slice(0, k).join("").length + j) * 70}ms both` : undefined,
-                  }}
-                >
-                  {ch.trim()}
-                </span>
-              ))}
+        {bonus.length > 0 && (
+          <div className="flex w-full max-w-[400px] flex-col items-center gap-1.5">
+            <span className="text-muted flex items-center gap-1 text-[13px] font-semibold">
+              <Icon name="sparkle" size={14} style={{ color: "var(--gold)" }} />
+              Bonus words · {bonus.length}
             </span>
-          ))}
+            <ul className="flex flex-wrap justify-center gap-1.5" aria-label="Bonus words">
+              {bonus.map((b, k) => (
+                <li
+                  key={b.word}
+                  className={`flex h-8 items-center rounded-[10px] px-2.5 text-[13px] font-bold tracking-[0.03em] ${k === bonus.length - 1 ? "cell-pop-a" : ""}`}
+                  style={{ background: "var(--surface-raised)", color: "var(--text)", boxShadow: "inset 0 0 0 2px var(--gold)" }}
+                >
+                  {b.word}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div
+          className="flex w-full max-w-[400px] flex-col items-center gap-1.5 rounded-[16px] p-3"
+          style={{ background: "var(--surface)" }}
+        >
+          <span className="text-muted text-[13px] font-medium">Secret phrase</span>
+          <div
+            className="flex flex-wrap justify-center gap-x-3 gap-y-1.5"
+            aria-label={done ? phrase.join(" ") : "Hidden until every word is found"}
+          >
+            {phrase.map((wd, k) => (
+              <span key={k} className="flex gap-0.5">
+                {wd.split("").map((ch, j) => (
+                  <span
+                    key={j}
+                    className="font-display flex h-7 w-5 items-end justify-center text-[16px] font-extrabold"
+                    style={{
+                      borderBottom: "2px solid var(--line)",
+                      color: "var(--gold)",
+                      animation: done ? `fade-in 160ms var(--ease-out) ${(phrase.slice(0, k).join("").length + j) * 70}ms both` : undefined,
+                    }}
+                  >
+                    {ch.trim()}
+                  </span>
+                ))}
+              </span>
+            ))}
+          </div>
         </div>
-      </div>
+      </ShellAside>
     </div>
   );
 }

@@ -149,7 +149,7 @@ export default function RemixBoard({ puzzle, initialState, hint, disabled, mode,
   const tile = 48;
 
   return (
-    <div className="flex w-full max-w-[400px] flex-col items-center gap-5">
+    <div className="wide:max-w-[560px] flex w-full max-w-[400px] flex-col items-center gap-5">
       {/* rounds */}
       <div
         className="flex items-center gap-2"

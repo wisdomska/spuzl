@@ -30,7 +30,7 @@ export default function TwinsBoard({ puzzle, initialState, hint, disabled, mode,
   const t0 = useRef<number | null>(null);
   const turnBack = useRef<number | null>(null);
   const streak = useRef(0);
-  const cell = useCellSize(puzzle.cols, GAP, 12, 76);
+  const cell = useCellSize(puzzle.cols, GAP, 12, 76, puzzle.rows);
 
   const r = replay(puzzle, state);
   const done = r.matched === pairs;

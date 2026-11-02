@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { useGridKeys } from "@/components/game/useGridKeys";
+import { useBoardBox } from "@/components/game/useBoardSize";
+import { ShellAside } from "@/components/game/ShellAside";
 import { play } from "@/lib/audio";
 import { BayStyles } from "@/games/_shared/BayStyles";
 import { BOTTOM_ROW, TOP_ROW, legalPits, sow } from "./engine";
@@ -142,6 +144,9 @@ export default function OwareBoard({ puzzle, initialState, hint, disabled, api }
   }, []);
 
   const keys = useGridKeys(2, 6, (i) => choose(ROWS[Math.floor(i / 6)][i % 6]));
+  // The board fills the slot's width; on a wide screen the pits grow with it, and so do the seeds (7 px on a phone).
+  const box = useBoardBox();
+  const seed = box.wide ? Math.max(7, Math.min(14, Math.round(((box.w - 50) / 6) * 0.11))) : 7;
   const hintPit = typeof hint?.target === "number" ? hint.target : -1;
   const fed = new Set(preview && !sowing && !done ? preview.path : []);
   const willTake = new Set(preview && !sowing && !done ? preview.captured : []);
@@ -150,7 +155,10 @@ export default function OwareBoard({ puzzle, initialState, hint, disabled, api }
   return (
     <div className="flex w-full flex-col gap-2.5" data-board="oware">
       <BayStyles />
-      <ScoreCard label="Rival" sub="Captured so far" score={puzzle.scores[1]} initial="R" tint="var(--w-shape)" />
+      {/* The two score cards: above and below the board on a phone, in the side panel on a wide screen. */}
+      <ShellAside>
+        <ScoreCard label="Rival" sub="Captured so far" score={puzzle.scores[1]} initial="R" tint="var(--w-shape)" />
+      </ShellAside>
       <div
         role="grid"
         aria-label="Oware board. Your row is the bottom one; sowing runs anticlockwise."
@@ -209,8 +217,10 @@ export default function OwareBoard({ puzzle, initialState, hint, disabled, api }
                       <span
                         key={k}
                         aria-hidden
-                        className="size-[7px] rounded-full"
+                        className="rounded-full"
                         style={{
+                          width: seed,
+                          height: seed,
                           background: SEED_C[k % 4],
                           animation: gone.includes(pit)
                             ? "bay-fade-out 220ms var(--ease-out) both"
@@ -249,15 +259,17 @@ export default function OwareBoard({ puzzle, initialState, hint, disabled, api }
           </div>
         ))}
       </div>
-      <ScoreCard
-        label="You"
-        sub={done ? "Biggest capture" : pick === null ? "Your move" : "Preview"}
-        score={puzzle.scores[0]}
-        plus={gainNow}
-        initial="Y"
-        tint="var(--w-line)"
-        accent
-      />
+      <ShellAside>
+        <ScoreCard
+          label="You"
+          sub={done ? "Biggest capture" : pick === null ? "Your move" : "Preview"}
+          score={puzzle.scores[0]}
+          plus={gainNow}
+          initial="Y"
+          tint="var(--w-line)"
+          accent
+        />
+      </ShellAside>
     </div>
   );
 }

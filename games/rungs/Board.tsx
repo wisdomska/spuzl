@@ -7,6 +7,7 @@ import { play } from "@/lib/audio";
 import { sfx } from "@/games/_shared/sfx";
 import { sendGuess } from "@/games/_shared/guess";
 import { LetterKeyboard } from "@/games/_shared/LetterKeyboard";
+import { ShellAside } from "@/components/game/ShellAside";
 import { changedAt, diffCount, LEN, RUNGS, type RungsCheck, type RungsGuess, type RungsPuzzle, type RungsState } from "./rules";
 
 const PITCH = 52; // 44 px row + 8 px gap
@@ -283,7 +284,7 @@ export default function RungsBoard({ puzzle, initialState, hint, disabled, mode,
       <div
         role="grid"
         aria-label="Rungs ladder"
-        className={`flex w-full max-w-[400px] flex-col gap-2 rounded-[20px] p-4 [--hl:var(--world)] [[data-theme=light]_&]:[--hl:var(--world-ink)] ${done ? "board-pulse" : ""}`}
+        className={`wide:max-w-[560px] flex w-full max-w-[400px] flex-col gap-2 rounded-[20px] p-4 [--hl:var(--world)] [[data-theme=light]_&]:[--hl:var(--world-ink)] ${done ? "board-pulse" : ""}`}
         style={{ background: "var(--board-bg)" }}
       >
         {capRow(0)}
@@ -379,15 +380,18 @@ export default function RungsBoard({ puzzle, initialState, hint, disabled, mode,
         </div>
         {capRow(1)}
       </div>
+      {/* The keyboard: under the ladder on a phone, in the side panel on a wide screen. */}
       {!done && (
-        <LetterKeyboard
-          onLetter={onLetter}
-          onBackspace={onBackspace}
-          onEnter={() => entry.length === LEN && void submit(entry)}
-          onUndo={() => setEntry("")}
-          undoLabel="Clear word"
-          disabled={off || !active}
-        />
+        <ShellAside>
+          <LetterKeyboard
+            onLetter={onLetter}
+            onBackspace={onBackspace}
+            onEnter={() => entry.length === LEN && void submit(entry)}
+            onUndo={() => setEntry("")}
+            undoLabel="Clear word"
+            disabled={off || !active}
+          />
+        </ShellAside>
       )}
     </div>
   );

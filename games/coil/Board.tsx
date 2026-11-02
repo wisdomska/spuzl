@@ -5,6 +5,7 @@ import { motion, useReducedMotion } from "motion/react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { useCellSize } from "@/components/game/useBoardSize";
+import { ShellAside, useShellWide } from "@/components/game/ShellAside";
 import { useGridKeys } from "@/components/game/useGridKeys";
 import { play } from "@/lib/audio";
 import { sfx } from "@/games/_shared/sfx";
@@ -32,7 +33,8 @@ export default function CoilBoard({ puzzle, initialState, hint, disabled, mode, 
   const [turns, setTurns] = useState(0);
   const [vRows, vCols] = viewDims(rows, cols, turns);
   const reduce = useReducedMotion();
-  const cell = useCellSize(vCols, GAP, PAD, 60);
+  const cell = useCellSize(vCols, GAP, PAD, 60, vRows);
+  const wide = useShellWide();
   const badge = Math.round(cell * 0.52);
   const [found, setFound] = useState<number[][]>(() => initialState?.found?.map((p) => p.slice()) ?? []);
   const [bonus, setBonus] = useState<number[][]>(() => initialState?.bonus?.map((p) => p.slice()) ?? []);
@@ -299,22 +301,61 @@ export default function CoilBoard({ puzzle, initialState, hint, disabled, mode, 
   const current = spell(letters, path);
   const tint = "color-mix(in srgb, var(--world) 22%, var(--surface-raised))";
   const bonusWords = bonus.map((b) => spell(letters, b));
+  // On a wide screen the side panel is narrower than the board, so the lists take its width.
+  const listW = wide ? undefined : W + 40;
+  const themeRow = () => (
+    <div className="flex w-full items-center justify-between gap-3" style={{ maxWidth: W }}>
+      <span
+        className="flex min-w-0 items-center gap-2 rounded-[12px] px-3 py-1.5 text-[14px] font-semibold"
+        style={{ background: "var(--surface)" }}
+      >
+        <Icon name="leaf" size={16} style={{ color: "var(--world)" }} />
+        <span className="truncate">Theme: {puzzle.theme}</span>
+      </span>
+      <span className="num text-muted text-[13px] font-semibold whitespace-nowrap">
+        {found.length} of {puzzle.count}
+      </span>
+    </div>
+  );
+  const wordList = () => (
+    <>
+      <ul className="flex w-full flex-wrap justify-center gap-2" style={{ maxWidth: listW }} aria-label="Words found">
+        {Array.from({ length: puzzle.count }, (_, k) => {
+          const p = found[k];
+          const shown = p && k < landed;
+          return (
+            <li key={k}>
+              <span
+                ref={(el) => {
+                  slotEls.current[k] = el;
+                }}
+                className={`flex h-9 min-w-12 items-center justify-center rounded-[12px] px-3 text-[13px] font-extrabold tracking-[0.04em] ${shown && k === landed - 1 ? "cell-pop-a" : ""}`}
+                style={{
+                  fontFamily: "var(--font-display)",
+                  background: shown ? "var(--world)" : "transparent",
+                  color: shown ? INK : "var(--text-muted)",
+                  boxShadow: shown ? `0 3px 0 var(--world-depth)` : "inset 0 0 0 2px var(--line)",
+                  animation: shown && k === landed - 1 ? `fade-in 160ms var(--ease-out), cell-pop-a 140ms var(--ease-out)` : undefined,
+                }}
+              >
+                {shown ? spell(letters, p) : <span className="sr-only">Not found yet</span>}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+
+      {bonusWords.length > 0 && <BonusList words={bonusWords} maxWidth={listW} />}
+    </>
+  );
 
   return (
     <div className="flex w-full flex-col items-center gap-3">
-      {/* theme + count */}
-      <div className="flex w-full items-center justify-between gap-3" style={{ maxWidth: W }}>
-        <span
-          className="flex min-w-0 items-center gap-2 rounded-[12px] px-3 py-1.5 text-[14px] font-semibold"
-          style={{ background: "var(--surface)" }}
-        >
-          <Icon name="leaf" size={16} style={{ color: "var(--world)" }} />
-          <span className="truncate">Theme: {puzzle.theme}</span>
-        </span>
-        <span className="num text-muted text-[13px] font-semibold whitespace-nowrap">
-          {found.length} of {puzzle.count}
-        </span>
-      </div>
+      {/* Phone: theme and count above the grid, words under it. Wide: all of it in the side panel. */}
+      <ShellAside phone={themeRow()}>
+        {themeRow()}
+        {wordList()}
+      </ShellAside>
 
       <div className={done ? "board-pulse" : ""}>
         {/* a fresh layer per turn: it starts a quarter turn back (the old view) and settles into the new one */}
@@ -451,38 +492,12 @@ export default function CoilBoard({ puzzle, initialState, hint, disabled, mode, 
           </span>
         )}
       </div>
-      <ul className="flex w-full flex-wrap justify-center gap-2" style={{ maxWidth: W + 40 }} aria-label="Words found">
-        {Array.from({ length: puzzle.count }, (_, k) => {
-          const p = found[k];
-          const shown = p && k < landed;
-          return (
-            <li key={k}>
-              <span
-                ref={(el) => {
-                  slotEls.current[k] = el;
-                }}
-                className={`flex h-9 min-w-12 items-center justify-center rounded-[12px] px-3 text-[13px] font-extrabold tracking-[0.04em] ${shown && k === landed - 1 ? "cell-pop-a" : ""}`}
-                style={{
-                  fontFamily: "var(--font-display)",
-                  background: shown ? "var(--world)" : "transparent",
-                  color: shown ? INK : "var(--text-muted)",
-                  boxShadow: shown ? `0 3px 0 var(--world-depth)` : "inset 0 0 0 2px var(--line)",
-                  animation: shown && k === landed - 1 ? `fade-in 160ms var(--ease-out), cell-pop-a 140ms var(--ease-out)` : undefined,
-                }}
-              >
-                {shown ? spell(letters, p) : <span className="sr-only">Not found yet</span>}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-
-      {bonusWords.length > 0 && <BonusList words={bonusWords} maxWidth={W + 40} />}
+      {!wide && wordList()}
     </div>
   );
 }
 
-function BonusList({ words, maxWidth }: { words: string[]; maxWidth: number }) {
+function BonusList({ words, maxWidth }: { words: string[]; maxWidth?: number }) {
   return (
     <div className="flex w-full flex-col items-center gap-1.5" style={{ maxWidth }}>
       <span className="text-muted flex items-center gap-1 text-[13px] font-semibold">

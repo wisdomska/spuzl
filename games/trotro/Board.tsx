@@ -6,6 +6,7 @@ import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { useCellSize } from "@/components/game/useBoardSize";
 import { useGridKeys } from "@/components/game/useGridKeys";
+import { ShellAside } from "@/components/game/ShellAside";
 import { play } from "@/lib/audio";
 import { sfx } from "@/games/_shared/sfx";
 import { nudge } from "@/games/_shared/nudge";
@@ -419,31 +420,34 @@ export default function TrotroBoard({ puzzle, initialState, hint, disabled, mode
           <Icon name="caret-right" size={EXIT_PAD + 4} />
         </div>
       </div>
-      <div
-        className="flex items-center gap-2"
-        style={{ width: Math.min(boardW + PAD * 2, 360) }}
-        role="group"
-        aria-label={T.moveGroup}
-        // The slide (or the blocked lean) is these buttons' sound.
-        data-no-tick
-      >
-        {DIRS.map(({ dir, icon, axis, step: s }) => {
-          const can = !!selV && selV.axis === axis && (s < 0 ? selRoom[0] < 0 : selRoom[1] > 0) && !locked;
-          return (
-            <button
-              key={dir}
-              type="button"
-              aria-label={T.moveLabel(dir)}
-              disabled={!can}
-              onClick={() => step(dir)}
-              className="flex h-11 min-w-11 flex-1 items-center justify-center rounded-[var(--r-control)] text-[var(--text)] disabled:opacity-40"
-              style={{ background: "var(--surface-raised)", boxShadow: "0 0 0 1px var(--line)" }}
-            >
-              <Icon name={icon} size={20} />
-            </button>
-          );
-        })}
-      </div>
+      {/* The slide pad: under the board on a phone, in the side panel on a wide screen. */}
+      <ShellAside>
+        <div
+          className="flex items-center gap-2"
+          style={{ width: Math.min(boardW + PAD * 2, 360) }}
+          role="group"
+          aria-label={T.moveGroup}
+          // The slide (or the blocked lean) is these buttons' sound.
+          data-no-tick
+        >
+          {DIRS.map(({ dir, icon, axis, step: s }) => {
+            const can = !!selV && selV.axis === axis && (s < 0 ? selRoom[0] < 0 : selRoom[1] > 0) && !locked;
+            return (
+              <button
+                key={dir}
+                type="button"
+                aria-label={T.moveLabel(dir)}
+                disabled={!can}
+                onClick={() => step(dir)}
+                className="flex h-11 min-w-11 flex-1 items-center justify-center rounded-[var(--r-control)] text-[var(--text)] disabled:opacity-40"
+                style={{ background: "var(--surface-raised)", boxShadow: "0 0 0 1px var(--line)" }}
+              >
+                <Icon name={icon} size={20} />
+              </button>
+            );
+          })}
+        </div>
+      </ShellAside>
     </div>
   );
 }

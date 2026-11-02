@@ -3,7 +3,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { boardGames } from "@/lib/copy/board-games";
-import { useCellSize } from "@/components/game/useBoardSize";
+import { isWide, useCellSize, useViewportHeight, useViewportWidth, wideCell } from "@/components/game/useBoardSize";
 import { BayStyles, BEVEL, SQUARE } from "@/games/_shared/BayStyles";
 import { parseFen, toRows, inCheck, kingSquare } from "@/games/chess/engine";
 import { CH_N, Piece, useSprites } from "@/games/chess/Piece";
@@ -54,6 +54,30 @@ export function LiveBoard(p: LiveBoardProps) {
       {p.game === "dara" && <DaraLive {...p} />}
     </>
   );
+}
+
+/** Four Up discs: the phone fit (up to 46 px), or the board column on a wide screen. 6 gaps of 4 and 16 px of frame. */
+function useFourUpCell() {
+  const vw = useViewportWidth();
+  const vh = useViewportHeight();
+  if (isWide(vw, vh)) return wideCell(vw, vh, FU_COLS, 6 * 4 + 16, 46, FU_ROWS, 5 * 4 + 16);
+  return Math.min(46, Math.floor((Math.min(vw, 420) - 56) / 7));
+}
+
+/** Ludo cells: the phone fit (up to 24 px), or the board column on a wide screen (8 px of frame). */
+function useLudoCell() {
+  const vw = useViewportWidth();
+  const vh = useViewportHeight();
+  // The die and Roll button (68 px) sit under the board.
+  if (isWide(vw, vh)) return wideCell(vw, vh, 15, 8, 24, 15, 8 + 68);
+  return Math.min(24, Math.floor((Math.min(vw, 420) - 40) / 15));
+}
+
+/** Oware pits: 48 px on a phone, bigger on a wide screen (6 pits, 5 gaps of 8, 24 px of frame). */
+function useOwarePit() {
+  const vw = useViewportWidth();
+  const vh = useViewportHeight();
+  return isWide(vw, vh) ? wideCell(vw, vh, 6, 5 * 8 + 24, 48, 2, 10 + 24 + 120) : 48;
 }
 
 const FILES = "abcdefgh";
@@ -292,6 +316,7 @@ function OwareLive({ state, seat, legal, disabled, onMove }: LiveBoardProps) {
   const pits = legal as number[];
   const rows = seat === 1 ? [BOTTOM_ROW, TOP_ROW].map((r) => [...r].reverse()) : [TOP_ROW, BOTTOM_ROW];
   const me = seat ?? 0;
+  const pitPx = useOwarePit();
   return (
     <div className="flex flex-col items-center gap-3">
       <ScorePill label="Them" n={s.scores[1 - me]} />
@@ -312,8 +337,11 @@ function OwareLive({ state, seat, legal, disabled, onMove }: LiveBoardProps) {
                   disabled={!can}
                   onClick={() => onMove(pit)}
                   aria-label={`Pit ${pit + 1}, ${s.pits[pit]} seeds${can ? ", sow" : ""}`}
-                  className="num flex size-[48px] flex-col items-center justify-center rounded-full text-[18px] font-semibold"
+                  className="num flex flex-col items-center justify-center rounded-full font-semibold"
                   style={{
+                    width: pitPx,
+                    height: pitPx,
+                    fontSize: Math.round(pitPx * 0.375),
                     background: "var(--bay-well)",
                     color: "var(--bay-pit-ink)",
                     boxShadow: can ? "inset 0 0 0 3px var(--w-board)" : "inset 0 4px 0 rgba(0,0,0,.35)",
@@ -345,7 +373,7 @@ function FourUpLive({ state, legal, disabled, onMove }: LiveBoardProps) {
   const s = state as FourUpMatch;
   const cols = legal as number[];
   const reduce = useReduce();
-  const cell = Math.min(46, Math.floor((Math.min(typeof window === "undefined" ? 390 : window.innerWidth, 420) - 56) / 7));
+  const cell = useFourUpCell();
   return (
     <div
       className="grid gap-1 rounded-[18px] p-2 shadow-[inset_0_-6px_0_rgba(0,0,0,.2)]"
@@ -527,7 +555,7 @@ function DaraLive({ state, seat, legal, disabled, lastMove, onMove, announce }: 
 function LudoLive({ state, seat, legal, disabled, onMove }: LiveBoardProps) {
   const s = state as LudoMatch;
   const moves = legal as LudoMove[];
-  const cell = Math.min(24, Math.floor((Math.min(typeof window === "undefined" ? 390 : window.innerWidth, 420) - 40) / 15));
+  const cell = useLudoCell();
   const canRoll = moves.some((m) => m.kind === "roll") && !disabled;
   const movable = new Set(moves.filter((m): m is { kind: "move"; piece: number } => m.kind === "move").map((m) => m.piece));
   const at = new Map<string, { colour: number; piece: number; seat: number }[]>();

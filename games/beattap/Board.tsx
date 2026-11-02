@@ -10,6 +10,7 @@ import { prefersReducedMotion, useSettings } from "@/lib/settings/store";
 import { BEATTAP_COPY as t } from "@/lib/copy/beattap";
 import { HUMAN_FLOOR_MS } from "@/games/_shared/reflex";
 import { judge, songEnd, STRAY_PENALTY, type BeatPuzzle, type BeatState, type Mark } from "./logic";
+import { useBoardBox } from "@/components/game/useBoardSize";
 
 type Phase = "ready" | "play" | "over";
 /** An approach ring starts this long before its beat. */
@@ -193,8 +194,13 @@ export default function BeatTapBoard({ puzzle, initialState, disabled, mode, api
           ? t.getReady
           : t.beatOf(Math.min(total, (nextBeat === -1 ? total : nextBeat) + 1), total);
 
+  // Wide screen: the tap pad grows with the board's height (the progress and tally rows sit under it).
+  const box = useBoardBox();
   return (
-    <div className="flex w-[min(358px,calc(100vw-36px))] flex-col gap-3 rounded-[20px] p-3" style={{ background: "var(--board-bg)" }}>
+    <div
+      className="flex w-[min(358px,calc(100vw-36px))] flex-col gap-3 rounded-[20px] p-3"
+      style={{ background: "var(--board-bg)", ...(box.wide ? { width: Math.min(640, box.side - 90) } : null) }}
+    >
       <button
         type="button"
         aria-label={t.padLabel(`${status}.${markText ? ` ${markText}.` : ""}`)}

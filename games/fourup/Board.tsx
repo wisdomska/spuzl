@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
-import { fitCell, useViewportWidth } from "@/components/game/useBoardSize";
+import { fitCell, isWide, useViewportHeight, useViewportWidth, wideCell } from "@/components/game/useBoardSize";
+import { ShellAside } from "@/components/game/ShellAside";
 import { play } from "@/lib/audio";
 import { BayStyles } from "@/games/_shared/BayStyles";
 import { logicGames } from "@/lib/copy/logic-games";
@@ -19,7 +20,8 @@ const SIDE = 8 - GAP / 2;
  * Column width (a column is its disc plus GAP each side). Up to 60 px; 50 px where the board can grow into the
  * shell's board padding, and on the narrowest phones the widest that fits edge to edge: 44 px at 320 wide.
  */
-export const columnWidth = (vw: number) => fitCell(vw, COLS, SIDE * 2, 50, 60);
+export const columnWidth = (vw: number, vh?: number) =>
+  vh !== undefined && isWide(vw, vh) ? wideCell(vw, vh, COLS, SIDE * 2, 60, ROWS, SIDE * 2) : fitCell(vw, COLS, SIDE * 2, 50, 60);
 /* Disc materials (Board Games B8), the same in both themes. */
 const STAR_BG = "#F4F5FB";
 const INK = "#0E0F1A";
@@ -46,7 +48,7 @@ export default function FourUpBoard({ puzzle, initialState, hint, disabled, api 
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const streak = useRef(0);
   const colsEl = useRef<(HTMLButtonElement | null)[]>([]);
-  const cell = columnWidth(useViewportWidth()) - GAP * 2;
+  const cell = columnWidth(useViewportWidth(), useViewportHeight()) - GAP * 2;
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
   const later = (fn: () => void, ms: number) => timers.current.push(setTimeout(fn, ms));
   const done = r.won;
@@ -157,16 +159,18 @@ export default function FourUpBoard({ puzzle, initialState, hint, disabled, api 
   return (
     <div className="flex flex-col items-center gap-3" data-board="fourup">
       <BayStyles />
-      <div className="flex w-full items-center gap-2.5 text-[16px] font-semibold">
-        <span
-          aria-hidden
-          className="flex size-5 items-center justify-center rounded-full"
-          style={{ background: STAR_BG, color: INK, boxShadow: "0 0 0 2px var(--line)" }}
-        >
-          <Icon name="star" size={12} />
-        </span>
-        {t.you(puzzle.winIn)}
-      </div>
+      <ShellAside>
+        <div className="flex w-full items-center gap-2.5 text-[16px] font-semibold">
+          <span
+            aria-hidden
+            className="flex size-5 items-center justify-center rounded-full"
+            style={{ background: STAR_BG, color: INK, boxShadow: "0 0 0 2px var(--line)" }}
+          >
+            <Icon name="star" size={12} />
+          </span>
+          {t.you(puzzle.winIn)}
+        </div>
+      </ShellAside>
       <div
         role="group"
         aria-label={t.boardLabel(COLS, ROWS)}

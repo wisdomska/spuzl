@@ -7,6 +7,8 @@ import { useCellSize } from "@/components/game/useBoardSize";
 import { isKeyedInput } from "@/components/game/useGridKeys";
 import { sendGuess } from "@/games/_shared/guess";
 import { LetterKeyboard } from "@/games/_shared/LetterKeyboard";
+import { ShellAside, useShellWide } from "@/components/game/ShellAside";
+import { ClueList } from "@/games/_shared/ClueList";
 import { cellsOf, clueAt, numberGrid, type Clue, type Dir, type MinicrossCheck, type MinicrossPuzzle, type MinicrossState } from "./rules";
 
 const GAP = 2;
@@ -15,7 +17,7 @@ const PAPER = "#F4F5FB";
 
 /**
  * Minicross board (Game Boards: Minicross). White squares on the dark board, clue bar above, SPUZL keyboard
- * below. The active word is tinted green and the active square ringed; tap the active square again to
+ * below (on a wide screen every clue and the keyboard sit in the shell's side panel instead). The active word is tinted green and the active square ringed; tap the active square again to
  * switch direction. Screen readers hear the clue, then the square.
  */
 export default function MinicrossBoard({ puzzle, initialState, hint, disabled, mode, api }: BoardProps<MinicrossPuzzle, MinicrossState>) {
@@ -42,6 +44,7 @@ export default function MinicrossBoard({ puzzle, initialState, hint, disabled, m
   const streak = useRef(0);
   const gridRef = useRef<HTMLDivElement>(null);
   const cell = useCellSize(size, GAP, 6, 64);
+  const wide = useShellWide();
   const { nums } = useMemo(() => numberGrid(blocks, size), [blocks, size]);
   const off = disabled || done || busy;
 
@@ -262,41 +265,60 @@ export default function MinicrossBoard({ puzzle, initialState, hint, disabled, m
   const lastR = Math.floor(cur / size),
     lastC = cur % size;
 
+  const clueBar = (
+    <div className="flex w-full max-w-[400px] items-center gap-1 rounded-[16px] px-1.5 py-1.5" style={{ background: "var(--surface)" }}>
+      <button
+        type="button"
+        aria-label="Previous clue"
+        className="press flex size-11 shrink-0 items-center justify-center rounded-[12px]"
+        onClick={() => {
+          if (!clue) return;
+          const nx = nextClueStart(clue, clueDir, cellsRef.current, -1);
+          select(nx.i, nx.d);
+        }}
+      >
+        <Icon name="caret-left" size={20} />
+      </button>
+      <p className="min-h-11 flex-1 py-1 text-[15px] leading-[1.35]" aria-live="off">
+        {clue && (
+          <>
+            <span className="font-semibold text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]">
+              {label(clue, clueDir)}:{" "}
+            </span>
+            {clue.text} ({clue.len})
+          </>
+        )}
+      </p>
+      <button
+        type="button"
+        aria-label="Next clue"
+        className="press flex size-11 shrink-0 items-center justify-center rounded-[12px]"
+        onClick={onEnter}
+      >
+        <Icon name="caret-right" size={20} />
+      </button>
+    </div>
+  );
+
+  const keyboard = !done && (
+    <LetterKeyboard onLetter={onLetter} onBackspace={onBackspace} onEnter={onEnter} enterLabel="NEXT" disabled={off} />
+  );
+
   return (
     <div className="flex w-full flex-col items-center gap-3">
-      {/* clue bar */}
-      <div className="flex w-full max-w-[400px] items-center gap-1 rounded-[16px] px-1.5 py-1.5" style={{ background: "var(--surface)" }}>
-        <button
-          type="button"
-          aria-label="Previous clue"
-          className="press flex size-11 shrink-0 items-center justify-center rounded-[12px]"
-          onClick={() => {
-            if (!clue) return;
-            const nx = nextClueStart(clue, clueDir, cellsRef.current, -1);
-            select(nx.i, nx.d);
-          }}
-        >
-          <Icon name="caret-left" size={20} />
-        </button>
-        <p className="min-h-11 flex-1 py-1 text-[15px] leading-[1.35]" aria-live="off">
-          {clue && (
-            <>
-              <span className="font-semibold text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]">
-                {label(clue, clueDir)}:{" "}
-              </span>
-              {clue.text} ({clue.len})
-            </>
-          )}
-        </p>
-        <button
-          type="button"
-          aria-label="Next clue"
-          className="press flex size-11 shrink-0 items-center justify-center rounded-[12px]"
-          onClick={onEnter}
-        >
-          <Icon name="caret-right" size={20} />
-        </button>
-      </div>
+      {/* Phone: the clue bar above the grid. Wide: every clue, then the keyboard, in the side panel. */}
+      <ShellAside phone={clueBar}>
+        <ClueList
+          groups={[
+            { d: "across", clues: puzzle.across },
+            { d: "down", clues: puzzle.down },
+          ]}
+          active={clue && { c: clue, d: clueDir }}
+          disabled={off}
+          onPick={(c, d) => select(c.r * size + c.c, d)}
+        />
+        {keyboard}
+      </ShellAside>
 
       <div className={done ? "board-pulse" : wrongN ? (wrongN % 2 ? "cell-shake-a" : "cell-shake-b") : ""}>
         <div
@@ -386,7 +408,7 @@ export default function MinicrossBoard({ puzzle, initialState, hint, disabled, m
         </div>
       </div>
 
-      {!done && <LetterKeyboard onLetter={onLetter} onBackspace={onBackspace} onEnter={onEnter} enterLabel="NEXT" disabled={off} />}
+      {!wide && keyboard}
     </div>
   );
 }
