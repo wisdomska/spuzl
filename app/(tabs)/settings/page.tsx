@@ -22,6 +22,8 @@ import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { configure, play } from "@/lib/audio";
 import { haptic, LEVELS, setHapticsEnabled } from "@/lib/haptics";
+import { BirthAskSheet } from "@/components/onboarding/BirthAsk";
+import { ageCopy } from "@/lib/copy/age";
 
 const THEME = { dark: "Dark", light: "Light", system: "System" } as const;
 const CB = { off: "Off", protan: "Protan", deutan: "Deutan", tritan: "Tritan" } as const;
@@ -39,7 +41,7 @@ const SYNCED: (keyof Settings)[] = [
   "lowData",
 ];
 
-type SheetId = "theme" | "cb" | "text" | "privacy" | "account" | "delete" | "nickname" | null;
+type SheetId = "theme" | "cb" | "text" | "privacy" | "account" | "delete" | "nickname" | "birth" | null;
 
 /** K1 Settings. Saved on this device right away (localStorage) and to your account (PATCH /api/v1/profile). */
 export default function SettingsPage() {
@@ -99,6 +101,7 @@ function SettingsScreen() {
       {d && (
         <Group title={settingsCopy.profile}>
           <Row icon="pencil-simple" label={settingsCopy.nickname.row} value={d.nickname} onClick={() => setOpen("nickname")} />
+          <AgeRow band={d.age_band} birthSet={d.birthSet !== false} onAdd={() => setOpen("birth")} />
         </Group>
       )}
       <Group title="Look and feel">
@@ -190,6 +193,7 @@ function SettingsScreen() {
       <PrivacySheet open={open === "privacy"} onClose={() => setOpen(null)} />
       <AccountSheet open={open === "account"} onClose={() => setOpen(null)} onDelete={() => setOpen("delete")} />
       <DeleteSheet open={open === "delete"} onClose={() => setOpen(null)} />
+      <BirthAskSheet open={open === "birth"} onOpenChange={(o) => !o && setOpen(null)} />
       {d && (
         <NicknameSheet
           open={open === "nickname"}
@@ -251,6 +255,37 @@ function Row({
     </button>
   ) : (
     <div className="flex min-h-[50px] items-center gap-3 py-1.5">{inner}</div>
+  );
+}
+
+/**
+ * The age group, read-only: it comes from the birth month and year given at sign-up (never shown here), which the
+ * player can't change. Players from before can add theirs once.
+ */
+function AgeRow({ band, birthSet, onAdd }: { band: string; birthSet: boolean; onAdd: () => void }) {
+  const C = ageCopy.settings;
+  return (
+    <div className="flex min-h-[50px] flex-col gap-1 py-2">
+      <div className="flex items-center gap-3">
+        <Icon name="calendar-blank" size={20} className="text-muted shrink-0" />
+        <span className="flex-1 text-[16px] font-medium">{C.row}</span>
+        <span className="text-muted text-[15px] font-medium">{ageCopy.bands[band] ?? band}</span>
+      </div>
+      <Link href="/contact" className="text-muted flex min-h-11 items-center self-start pl-8 text-[13px] underline underline-offset-4">
+        {C.contact}
+      </Link>
+      {!birthSet && (
+        <button
+          type="button"
+          onClick={onAdd}
+          aria-haspopup="dialog"
+          className="press bg-surface-raised mt-1 ml-8 flex min-h-11 items-center gap-2 self-start rounded-[12px] px-3 text-[14px] font-semibold"
+        >
+          <Icon name="plus" size={16} className="text-accent" />
+          {C.add}
+        </button>
+      )}
+    </div>
   );
 }
 

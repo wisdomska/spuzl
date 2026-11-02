@@ -25,6 +25,7 @@ import { OfflineBanner } from "@/components/pwa/OfflineBanner";
 import { BannerStack } from "@/components/notify/Banner";
 import { useNotices } from "@/lib/notify/notices";
 import { PLAY_NAV } from "@/lib/analytics/play-nav";
+import { BirthAskOnce } from "@/components/onboarding/BirthAsk";
 
 export function HomeScreen() {
   const router = useRouter();
@@ -185,6 +186,7 @@ export function HomeScreen() {
         </div>
       </main>
       <SidePanel />
+      <BirthAskOnce me={d} />
     </div>
   );
 }

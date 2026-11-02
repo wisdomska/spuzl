@@ -42,7 +42,6 @@ export const ageCopy = {
     title: "Age",
     row: "Age group",
     contact: "Contact us if this is wrong.",
-    contactLink: "Contact us",
     add: "Add your birth month and year",
   },
 } as const;
