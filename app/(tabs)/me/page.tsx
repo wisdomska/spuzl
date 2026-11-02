@@ -10,7 +10,7 @@ import { BadgeGrid, Medallion } from "@/components/meta/Badges";
 import { SpuzWear } from "@/components/meta/SpuzWear";
 import { StatusShare } from "@/components/share/StatusShare";
 import { Icon } from "@/components/ui/Icon";
-import { GAME_BY_ID, WORLDS, WORLD_BY_ID, type WorldId } from "@/lib/catalog";
+import { GAME_BY_ID, WORLD_BY_ID, type WorldId } from "@/lib/catalog";
 import { formatNumber, formatClock, gmtDate } from "@/lib/format";
 
 const CAL: Record<string, { bg: string; icon?: string; label: string }> = {
@@ -208,7 +208,7 @@ export default function MePage() {
                 <tbody>
                   {p!.games.slice(0, 12).map((g) => {
                     const meta = GAME_BY_ID[g.game];
-                    const w = WORLDS.find((x) => x.id === meta.world)!;
+                    const w = WORLD_BY_ID[meta.world];
                     const score = meta.scoring === "score";
                     return (
                       <tr key={g.game} className="h-[42px]">

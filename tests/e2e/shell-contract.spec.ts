@@ -1,16 +1,17 @@
 import { expect, test } from "@playwright/test";
-import { GAMES, LAB_GAMES } from "@/lib/catalog";
+import { ALL_GAMES } from "@/lib/catalog";
 
 /**
- * Phase 1 acceptance: every one of the 51 games renders inside GameShell, with the slim top bar contract
- * (Back, ONE timer, the game menu, all 44 px and at least 12 px apart) and no second clock on the board.
- * Help, Pause (Settings), Sound and the rest live in the menu, every item a 44 px target.
+ * Phase 1 acceptance: every game in code renders inside GameShell (live, lab and retired: the /dev/board fixture
+ * keeps retired boards reachable so their code stays proven), with the slim top bar contract (Back, ONE timer, the
+ * game menu, all 44 px and at least 12 px apart) and no second clock on the board. Help, Pause (Settings), Sound
+ * and the rest live in the menu, every item a 44 px target.
  */
 const CLOCK = /\b\d{1,2}:\d{2}\b/;
 
 test.describe.configure({ mode: "parallel" });
 
-for (const g of [...GAMES, ...LAB_GAMES]) {
+for (const g of ALL_GAMES) {
   test(`shell contract: ${g.id}`, async ({ page }) => {
     await page.goto(`/dev/board/${g.id}?seed=contract&d=easy`);
     // Photosensitive games show a one-time notice first.

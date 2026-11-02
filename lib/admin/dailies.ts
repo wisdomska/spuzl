@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ApiError } from "@/lib/api/server";
+import { isRetired } from "@/lib/catalog";
 import { checkAndStore, freshPuzzle, getPuzzle, insertPuzzle, type SolveReport } from "./puzzles";
 
 export interface DailyRow {
@@ -9,6 +10,11 @@ export interface DailyRow {
   puzzle_id: string;
   locked: boolean;
   swapped_from: string | null;
+}
+
+/** Retired games stay listed in the console but their Dailies are read-only: nothing new is scheduled for them. */
+export function assertSchedulable(game: string) {
+  if (isRetired(game)) throw new ApiError(409, "game_retired", "This game is retired. Its Dailies are read-only.");
 }
 
 export async function getDaily(db: SupabaseClient, date: string, game: string): Promise<DailyRow | null> {

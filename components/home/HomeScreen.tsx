@@ -12,7 +12,7 @@ import { motion } from "motion/react";
 import { useMe, useToday } from "@/lib/client/api";
 import { readOnboarding, writeOnboarding } from "@/lib/client/onboarding";
 import { track } from "@/lib/analytics/track";
-import { GAMES, GAME_BY_ID, LAUNCH_IDS, WORLD_BY_ID, gamesInWorld, type WorldId } from "@/lib/catalog";
+import { GAMES, GAME_BY_ID, LAUNCH_IDS, WORLD_BY_ID, gamesInWorld, isLiveGame, type WorldId } from "@/lib/catalog";
 import { HomeMap, nextDaily, worldProgress } from "./HomeMap";
 import { LevelRing, SparksChip, StreakChip } from "@/components/shell/Hud";
 import { Spuz } from "@/components/brand/Spuz";
@@ -162,7 +162,7 @@ export function HomeScreen() {
             sub={
               nextMeta ? T.where(WORLD_BY_ID[nextMeta.world].name, posInWorld, worldGames.length) : dailiesOn ? T.allDoneSub : T.allTriedSub
             }
-            done={dailiesOn ? counted : (d.played ?? []).length}
+            done={dailiesOn ? counted : (d.played ?? []).filter((id) => isLiveGame(id)).length}
             total={dailiesOn ? LAUNCH_IDS.length : GAMES.length}
             aria={dailiesOn ? T.todayAria : T.triedAria}
           />
@@ -206,7 +206,7 @@ function HomeSkeleton() {
   );
 }
 
-/** SPZ-16: the one Play card. The ring is "Today x of 15"; the label names exactly what opens. */
+/** SPZ-16: the one Play card. The ring is "Today x of N" (N = LAUNCH_IDS.length); the label names exactly what opens. */
 function PlayCard({
   href,
   playNav,

@@ -2,10 +2,16 @@ import { killer } from "@/lib/copy/killer";
 import { dara } from "@/lib/copy/dara";
 
 /**
- * The Grid: 9 worlds, 51 games. Source: design Game Boards (icon set + phases) and SRS section 5.
+ * The Grid. Source: design Game Boards (icon set + phases) and SRS section 5.
  * The design wins on the list (adds Board Bay); the SRS supplies rules text.
- * Every game is playable anytime: Daily + endless Free play. `phase` only orders the build and the
+ * Every live game is playable anytime: Daily + endless Free play. `phase` only orders the build and the
  * "new" badge, it never gates play.
+ *
+ * Retired games (RETIRED_IDS) keep their code, boards and tests so they can come back, but they are out of
+ * every player-facing list (GAMES, WORLDS, LAB_GAMES) and the server refuses them like an unknown game
+ * (`playableGame`, `lib/game/service.ts`). Counts on screens come from GAMES.length / WORLDS.length
+ * (GAME_COUNT, WORLD_COUNT), never typed by hand. To bring a game back, take its id out of RETIRED_IDS and
+ * set its `games.status` to 'live' in a migration.
  */
 export type WorldId = "logic" | "line" | "shape" | "number" | "word" | "clue" | "reflex" | "rage" | "board";
 
@@ -50,9 +56,12 @@ export interface GameMeta {
   botPlay?: boolean;
   /** Phase 5 game behind the admin setting "features.newGames": hidden and refused by the server while off */
   lab?: boolean;
+  /** Retired (RETIRED_IDS): kept in code, hidden from players and refused by the server. Set by the catalog. */
+  retired?: boolean;
 }
 
-export const WORLDS: World[] = [
+/** Every world the code knows, including ones with no live game left (admin, colours, old results). */
+export const ALL_WORLDS: World[] = [
   { id: "logic", name: "Logic Lab", color: "var(--w-logic)", ink: "var(--w-logic-ink)", tagline: "Rule grids", icon: "flask" },
   { id: "line", name: "Line Lane", color: "var(--w-line)", ink: "var(--w-line-ink)", tagline: "Paths and lines", icon: "path" },
   { id: "shape", name: "Shape Shed", color: "var(--w-shape)", ink: "var(--w-shape-ink)", tagline: "Shapes and space", icon: "cube" },
@@ -90,7 +99,8 @@ const g = (
   opts: Partial<Pick<GameMeta, "unique" | "scoring" | "minTimeMs" | "content" | "photosensitive" | "botPlay" | "lab">> = {},
 ): GameMeta => ({ id, name, world, icon, phase, engine, blurb, rule, unique: false, scoring: "time", minTimeMs: 4000, ...opts });
 
-export const GAMES: GameMeta[] = [
+/** Every game the code knows, before retirement is applied. Use GAMES / ALL_GAMES below. */
+const MAIN_GAMES: GameMeta[] = [
   // Logic Lab
   g(
     "crownfall",
@@ -251,6 +261,17 @@ export const GAMES: GameMeta[] = [
   g("squint", "Squint", "shape", "eye", "M3+", "custom", "Spot every difference", "Find every difference between the two pictures.", {
     minTimeMs: 4000,
   }),
+  g(
+    "trotro",
+    "Trotro Jam",
+    "shape",
+    "bus",
+    "M3+",
+    "grid",
+    "Free the trotro from the station",
+    "Slide cars and trucks along their lanes until the trotro can drive out of the exit.",
+    { minTimeMs: 5000 },
+  ),
   // Number Den
   g(
     "deadon",
@@ -413,6 +434,17 @@ export const GAMES: GameMeta[] = [
     "10 fast rounds of flags, capitals and currencies.",
     { content: "curated", scoring: "score", minTimeMs: 3000 },
   ),
+  g(
+    "emojihits",
+    "Emoji Hits",
+    "clue",
+    "smiley",
+    "M3+",
+    "custom",
+    "Name the hit from its emoji",
+    "Name the song, film or TV show from the emoji. 5 rounds, 3 tries each.",
+    { content: "curated", scoring: "score", minTimeMs: 4000 },
+  ),
   // Reflex Rink
   g(
     "echo",
@@ -439,6 +471,17 @@ export const GAMES: GameMeta[] = [
     "Tap the instant it changes",
     "Tap the instant the screen changes. Best of 5. Early taps cost you.",
     { scoring: "score", minTimeMs: 0, photosensitive: true },
+  ),
+  g(
+    "beattap",
+    "Beat Tap",
+    "reflex",
+    "metronome",
+    "M3+",
+    "custom",
+    "Tap on the beat",
+    "Tap on every beat of the pattern. Perfect and Good score; extra taps cost points.",
+    { scoring: "score", minTimeMs: 0 },
   ),
   // Rage Ridge
   g(
@@ -591,11 +634,12 @@ export const GAMES: GameMeta[] = [
 ];
 
 /**
- * Phase 5 games (lab: true). They are NOT in GAMES, so counts, paths, Duel/Party pickers and Dailies stay the 51
+ * Phase 5 games (lab: true). They are NOT in GAMES, so counts, paths, Duel/Party pickers and Dailies stay the
  * live games; screens add them with `labGamesInWorld` / `LAB_GAMES` only when "features.newGames" is on, and the
  * server refuses them while it is off. Add new games at the END of this list (one block per game).
+ * Trotro Jam, Emoji Hits and Beat Tap graduated to the live list (2026-11); the rest are retired.
  */
-export const LAB_GAMES: GameMeta[] = [
+const LAB_LIST: GameMeta[] = [
   g(
     "penalty",
     "Penalty King",
@@ -605,17 +649,6 @@ export const LAB_GAMES: GameMeta[] = [
     "custom",
     "Five kicks to beat the keeper",
     "Tap to set your aim, tap again to set your power. Five kicks: most goals wins, then accuracy.",
-    { scoring: "score", minTimeMs: 0, lab: true },
-  ),
-  g(
-    "beattap",
-    "Beat Tap",
-    "reflex",
-    "metronome",
-    "M3+",
-    "custom",
-    "Tap on the beat",
-    "Tap on every beat of the pattern. Perfect and Good score; extra taps cost points.",
     { scoring: "score", minTimeMs: 0, lab: true },
   ),
   g(
@@ -652,28 +685,6 @@ export const LAB_GAMES: GameMeta[] = [
     { content: "curated", minTimeMs: 4000, lab: true },
   ),
   g(
-    "emojihits",
-    "Emoji Hits",
-    "clue",
-    "smiley",
-    "M3+",
-    "custom",
-    "Name the hit from its emoji",
-    "Name the song, film or TV show from the emoji. 5 rounds, 3 tries each.",
-    { content: "curated", scoring: "score", minTimeMs: 4000, lab: true },
-  ),
-  g(
-    "trotro",
-    "Trotro Jam",
-    "shape",
-    "bus",
-    "M3+",
-    "grid",
-    "Free the trotro from the station",
-    "Slide cars and trucks along their lanes until the trotro can drive out of the exit.",
-    { minTimeMs: 5000, lab: true },
-  ),
-  g(
     "lightup",
     "Light Up",
     "logic",
@@ -699,12 +710,87 @@ export const LAB_GAMES: GameMeta[] = [
   }),
 ];
 
-export const GAME_BY_ID: Record<string, GameMeta> = Object.fromEntries([...GAMES, ...LAB_GAMES].map((x) => [x.id, x]));
+/**
+ * Retired by the owner (2026-11, 61 to 29 games). Code, boards and tests stay; players never see these and the
+ * server answers 404 unknown_game. The admin console lists them, marked retired, read-only for scheduling.
+ */
+export const RETIRED_IDS: ReadonlySet<string> = new Set([
+  // Logic Lab
+  "pixl",
+  "blackout",
+  "tripwire",
+  "lightup",
+  // Line Lane
+  "isles",
+  // Shape Shed
+  "quilt",
+  "snug",
+  "shuffle",
+  "reflect",
+  "squint",
+  // Number Den (the whole world)
+  "deadon",
+  "merge",
+  "sums",
+  "equal",
+  "hilo",
+  "market",
+  "killer",
+  // Word Woods
+  "quads",
+  "five",
+  // Clue Cave
+  "hunch",
+  "pinned",
+  "flagged",
+  // Reflex Rink
+  "penalty",
+  // Rage Ridge
+  "flipside",
+  "ricochet",
+  "stacked",
+  "wobble",
+  "grapple",
+  "ghosted",
+  "slip",
+  // Board Bay
+  "flip",
+  "dara",
+]);
+
+const mark = (x: GameMeta): GameMeta => (RETIRED_IDS.has(x.id) ? { ...x, retired: true } : x);
+
+/** Every game in code: live, lab and retired. Admin and old-result lookups only; never a player list. */
+export const ALL_GAMES: GameMeta[] = [...MAIN_GAMES, ...LAB_LIST].map(mark);
+/** The live games: every player-facing list, count, picker, Daily and path. */
+export const GAMES: GameMeta[] = ALL_GAMES.filter((x) => !x.retired && !x.lab);
+/** Lab games that are not retired (shown only while "features.newGames" is on). May be empty. */
+export const LAB_GAMES: GameMeta[] = ALL_GAMES.filter((x) => x.lab && !x.retired);
+export const RETIRED_GAMES: GameMeta[] = ALL_GAMES.filter((x) => x.retired);
+/** Worlds that still have a live game. Empty worlds are hidden everywhere players look. */
+export const WORLDS: World[] = ALL_WORLDS.filter((w) => GAMES.some((x) => x.world === w.id));
+export const GAME_COUNT = GAMES.length;
+export const WORLD_COUNT = WORLDS.length;
+
+/**
+ * Lookup by id for names, icons and colours, including retired games (old results, admin, Board Bay ids).
+ * It is NOT a "can this be played" check: gate on `playableGame` (or `isRetired`) for that.
+ */
+export const GAME_BY_ID: Record<string, GameMeta> = Object.fromEntries(ALL_GAMES.map((x) => [x.id, x]));
+export const isRetired = (id: string) => RETIRED_IDS.has(id);
+/** The game when players may reach it (live or lab), otherwise undefined: unknown and retired ids alike. */
+export const playableGame = (id: string | null | undefined): GameMeta | undefined =>
+  id && Object.hasOwn(GAME_BY_ID, id) && !RETIRED_IDS.has(id) ? GAME_BY_ID[id] : undefined;
+/** A live game (not lab, not retired). */
+export const isLiveGame = (id: string | null | undefined) => !!playableGame(id) && !GAME_BY_ID[id!].lab;
 export const labGamesInWorld = (w: WorldId) => LAB_GAMES.filter((x) => x.world === w);
-export const isLabGame = (id: string) => GAME_BY_ID[id]?.lab === true;
-export const WORLD_BY_ID: Record<WorldId, World> = Object.fromEntries(WORLDS.map((w) => [w.id, w])) as Record<WorldId, World>;
+export const isLabGame = (id: string) => playableGame(id)?.lab === true;
+/** Every world, including empty ones, so old results and CSS colours always resolve. */
+export const WORLD_BY_ID: Record<WorldId, World> = Object.fromEntries(ALL_WORLDS.map((w) => [w.id, w])) as Record<WorldId, World>;
+/** A world players may open: it has at least one live game. */
+export const isLiveWorld = (id: string | null | undefined) => !!id && WORLDS.some((w) => w.id === id);
 export const gamesInWorld = (w: WorldId) => GAMES.filter((x) => x.world === w);
 
-/** The 15 launch Dailies counted by "Today x of 15" (design Home) plus the 6 Board Bay boards. */
+/** The live launch Dailies counted by "Today x of N" (design Home), and the designed boards plus Board Bay. */
 export const LAUNCH_IDS = GAMES.filter((x) => x.phase === "L" && x.world !== "board").map((x) => x.id);
 export const DESIGNED_BOARD_IDS = GAMES.filter((x) => x.phase === "L" || x.world === "board").map((x) => x.id);

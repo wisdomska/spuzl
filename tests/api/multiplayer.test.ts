@@ -337,8 +337,8 @@ describe("api: ghost race track", () => {
     try {
       const g = await guest(uniq("gh_"));
       const h = await guest(uniq("gh_"));
-      const r1 = await g.api("/api/v1/ghosts/flipside", { json: {} });
-      const r2 = await h.api("/api/v1/ghosts/flipside", { json: {} });
+      const r1 = await g.api("/api/v1/ghosts/dash", { json: {} });
+      const r2 = await h.api("/api/v1/ghosts/dash", { json: {} });
       expect([r1.status, r2.status]).toEqual([200, 200]);
       const a1 = await puzzleOf(r1.data.attemptId);
       const a2 = await puzzleOf(r2.data.attemptId);
@@ -346,7 +346,7 @@ describe("api: ghost race track", () => {
       expect(a2.puzzle_id).toBe(a1.puzzle_id);
       expect(r2.data.puzzle).toEqual(r1.data.puzzle);
       const { data: pz } = await admin().from("puzzles").select("seed").eq("id", a1.puzzle_id!).single();
-      expect(pz!.seed).toBe(`ghost:flipside:${today()}`);
+      expect(pz!.seed).toBe(`ghost:dash:${today()}`);
       // Racing never publishes a Daily.
       const { data: daily } = await admin().from("dailies").select("date").eq("puzzle_id", a1.puzzle_id!);
       expect(daily).toEqual([]);

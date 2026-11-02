@@ -62,13 +62,15 @@ describe("share text", () => {
 
   it("matches the design's Full Spuzl format", () => {
     const t = fullSpuzlShareText({ number: 214, cleared: [...LAUNCH_IDS].reverse(), totalMs: 38 * 60_000 + 12_000, streak: 12 });
-    expect(t).toBe(["SPUZL #214 · FULL SPUZL 15/15 · 38:12 🔥12", "🟪🟪🟪🟦🟦🟧🟨🟩🟩🟩🟩🟥🔷🔴🔴", SHARE_DOMAIN].join("\n"));
+    // The live launch Dailies: Logic Lab ×3, Line Lane ×2, Word Woods ×3, Reflex Rink, Rage Ridge ×2.
+    expect(LAUNCH_IDS).toHaveLength(11);
+    expect(t).toBe(["SPUZL #214 · FULL SPUZL 11/11 · 38:12 🔥12", "🟪🟪🟪🟦🟦🟩🟩🟩🔷🔴🔴", SHARE_DOMAIN].join("\n"));
   });
 
   it("shows progress and dark squares on a partial day", () => {
     const t = fullSpuzlShareText({ number: 9, cleared: ["crownfall", "nope"], totalMs: 60_000 });
     const [head, strip] = t.split("\n");
-    expect(head).toBe("SPUZL #9 · 1/15 Dailies · 1:00");
+    expect(head).toBe(`SPUZL #9 · 1/${LAUNCH_IDS.length} Dailies · 1:00`);
     expect(strip.startsWith("🟪⬛")).toBe(true);
   });
 

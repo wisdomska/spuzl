@@ -1,7 +1,7 @@
 import "server-only";
 import { createHash } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { GAME_BY_ID } from "@/lib/catalog";
+import { GAME_BY_ID, isRetired } from "@/lib/catalog";
 import { LOGIC } from "@/games/logic-registry";
 import { createRng } from "@/lib/rng";
 import { difficultyForDate, type ContentLogic, type GameLogic } from "@/games/types";
@@ -11,6 +11,7 @@ import { encodeSolution } from "./solution-codec";
 /**
  * Keeps the Daily buffer full: fills every missing (date, game) up to `days` ahead, oldest gap first,
  * and stops when the time budget runs out (the next run continues). Logic Dailies are proven unique.
+ * Retired games (lib/catalog RETIRED_IDS) get no new Dailies.
  */
 export async function fillSchedule(db: SupabaseClient, { days = 60, budgetMs = 45_000 } = {}) {
   const started = Date.now();
@@ -23,7 +24,7 @@ export async function fillSchedule(db: SupabaseClient, { days = 60, budgetMs = 4
   let made = 0;
   let pending = 0;
   for (const date of dates) {
-    for (const game of Object.keys(LOGIC)) {
+    for (const game of Object.keys(LOGIC).filter((id) => !isRetired(id))) {
       if (have.has(`${date}|${game}`)) continue;
       if (Date.now() - started > budgetMs) {
         pending++;

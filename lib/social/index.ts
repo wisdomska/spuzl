@@ -2,7 +2,7 @@
  * Social rules shared by routes and screens: codes, presence, reactions, report reasons, privacy.
  * Pure functions only (unit tested in lib/social/social.test.ts).
  */
-import { GAME_BY_ID } from "@/lib/catalog";
+import { GAME_BY_ID, playableGame } from "@/lib/catalog";
 
 /** Room, crew and invite codes: no 0/O or 1/I (Components file, room code card). */
 export const CODE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
@@ -44,7 +44,7 @@ export interface Presence {
 export function presenceFor(lastSeen: string | null, playing: string | null, now: number = Date.now()): Presence {
   const seen = lastSeen ? Date.parse(lastSeen) : NaN;
   if (Number.isFinite(seen) && now - seen <= ONLINE_WINDOW_MS) {
-    const game = playing ? GAME_BY_ID[playing] : null;
+    const game = playableGame(playing);
     return { online: true, label: game ? `Playing ${game.name}` : "Online" };
   }
   if (!Number.isFinite(seen)) return { online: false, label: "Offline" };

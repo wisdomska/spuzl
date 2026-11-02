@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { GAME_BY_ID } from "@/lib/catalog";
+import { GAME_BY_ID, playableGame } from "@/lib/catalog";
 import { msToReset } from "@/lib/format";
 
 /**
@@ -100,7 +100,7 @@ export function buildNotices(input: NoticeInput, now: Date = new Date()): Notice
 
   if (input.seenGames && input.readyGames) {
     const seen = new Set(input.seenGames);
-    const fresh = input.readyGames.filter((id) => !seen.has(id) && GAME_BY_ID[id]);
+    const fresh = input.readyGames.filter((id) => !seen.has(id) && playableGame(id));
     if (fresh.length) {
       out.push({
         id: `games:${[...fresh].sort().join(",")}`,

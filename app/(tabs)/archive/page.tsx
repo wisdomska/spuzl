@@ -9,7 +9,7 @@ import { BackButton, ErrorState, Segmented } from "@/components/meta/ui";
 import { Sheet } from "@/components/meta/Sheet";
 import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { GAME_BY_ID, LAUNCH_IDS, WORLDS, WORLD_BY_ID, gamesInWorld } from "@/lib/catalog";
+import { GAME_BY_ID, LAUNCH_IDS, WORLDS, WORLD_BY_ID, gamesInWorld, playableGame } from "@/lib/catalog";
 import { LAUNCH_DATE, formatClock, gmtDate } from "@/lib/format";
 import { monthGrid, shortDate } from "@/lib/meta";
 import { difficultyForDate } from "@/games/types";
@@ -40,9 +40,7 @@ function Archive() {
   const params = useSearchParams();
   const today = gmtDate();
   const thisMonth = today.slice(0, 7);
-  const [game, setGame] = useState(
-    params.get("game") && GAME_BY_ID[params.get("game")!] ? params.get("game")! : (LAUNCH_IDS[0] ?? "crownfall"),
-  );
+  const [game, setGame] = useState(playableGame(params.get("game")) ? params.get("game")! : (LAUNCH_IDS[0] ?? "crownfall"));
   const [tab, setTab] = useState<"practice" | "archive">(params.get("tab") === "practice" ? "practice" : "archive");
   const [month, setMonth] = useState(thisMonth);
   const [sel, setSel] = useState<string | null>(null);

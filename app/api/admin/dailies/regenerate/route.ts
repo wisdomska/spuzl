@@ -3,7 +3,7 @@ import { body, handle, ok, ApiError } from "@/lib/api/server";
 import { audit, requireAdmin } from "@/lib/admin/auth";
 import { hasLogic } from "@/games/logic-registry";
 import { ISO_DATE, todayIso } from "@/lib/admin/dates";
-import { getDaily, retireIfUnused, verifiedFreshPuzzle } from "@/lib/admin/dailies";
+import { assertSchedulable, getDaily, retireIfUnused, verifiedFreshPuzzle } from "@/lib/admin/dailies";
 
 const Body = z.object({ date: z.string().regex(ISO_DATE), game: z.string().min(2).max(20) });
 
@@ -15,6 +15,7 @@ export const POST = handle(async (req: Request) => {
   const ctx = await requireAdmin("calendar.write");
   const { date, game } = await body(req, Body);
   if (!hasLogic(game)) throw new ApiError(404, "unknown_game");
+  assertSchedulable(game);
   if (date <= todayIso()) throw new ApiError(409, "past_or_today", "Today's Daily changes only through Swap Daily.");
   const current = await getDaily(ctx.db, date, game);
   if (current?.locked) throw new ApiError(409, "locked", "This Daily is locked. Use Swap Daily for emergencies.");

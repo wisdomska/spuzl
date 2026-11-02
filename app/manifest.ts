@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { siteCopy } from "@/lib/copy/site";
 
 /** Web app manifest (served at /manifest.webmanifest, already linked from the root layout metadata). */
 export default function manifest(): MetadataRoute.Manifest {
@@ -6,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     id: "/",
     name: "SPUZL",
     short_name: "SPUZL",
-    description: "Puzzles, skill games and classic board games across 9 worlds. Play anytime, duel your friends, keep your streak alive.",
+    description: siteCopy.description,
     start_url: "/?source=pwa",
     scope: "/",
     display: "standalone",

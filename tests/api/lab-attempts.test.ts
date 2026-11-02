@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { admin, guest, uniq } from "./helpers";
 import { setSetting } from "./setup";
+import { isRetired } from "@/lib/catalog";
 import { createRng } from "@/lib/rng";
 import type { Difficulty } from "@/games/types";
 import five from "@/games/five/logic";
@@ -9,7 +10,9 @@ import emojihits from "@/games/emojihits/logic";
 import penalty, { replayKick, type KickInput, type PenaltyPuzzle } from "@/games/penalty/logic";
 
 /**
- * Attempt-level checks for the guess-transport lab games (behind "features.newGames"), through the real API:
+ * Attempt-level checks for the guess-transport games that started in the lab, through the real API.
+ * Emoji Hits is live now; Five and Penalty King are retired (lib/catalog RETIRED_IDS), so the server refuses
+ * them and their blocks skip until a game comes back (their logic tests in games/<id> still run).
  * Five and Emoji Hits reveals answer only on the player's own open attempt and a shown answer can't then clear;
  * Penalty King answers each shot with the keeper's dive only once the shot is kept on the attempt, and finish
  * audits the final kicks against those shots. Medium boards, so an attempt is never the public practice board.
@@ -67,7 +70,7 @@ const backdate = (id: string, ms = 20_000) =>
     .update({ started_at: new Date(Date.now() - ms).toISOString() })
     .eq("id", id);
 
-describe("api: Five reveals", () => {
+describe.skipIf(isRetired("five"))("api: Five reveals", () => {
   it("shows the answer only on the player's own open attempt, after six counted misses, and it can't clear", async () => {
     const g = await guest(uniq("five_"));
     const other = await guest(uniq("five2_"));
@@ -150,7 +153,7 @@ describe("api: Emoji Hits reveals", () => {
   });
 });
 
-describe("api: Penalty King shots", () => {
+describe.skipIf(isRetired("penalty"))("api: Penalty King shots", () => {
   /** Taps that vary from kick to kick (a person's scatter, so the bot check stays quiet). */
   const kick = (k: number, nudge = 0): KickInput => ({ aimAt: 400 + 173 * k + nudge, powerAt: 600 + 89 * k, stepped: false });
   const shoot = (g: G, p: PenaltyPuzzle, id: string | undefined, k: number, input: KickInput) =>

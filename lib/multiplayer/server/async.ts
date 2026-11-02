@@ -7,7 +7,7 @@ import { decodeSolution, encodeSolution } from "@/lib/game/solution-codec";
 import { bindPuzzle } from "@/lib/game/guess-token";
 import { getGameSettings } from "@/lib/game-settings/server";
 import { loadLogic } from "@/games/logic-registry";
-import { GAME_BY_ID } from "@/lib/catalog";
+import { playableGame } from "@/lib/catalog";
 import { createRng } from "@/lib/rng";
 import { difficultyForDate, type Difficulty } from "@/games/types";
 import { dailyNumber } from "@/lib/format";
@@ -82,6 +82,7 @@ async function clearedAttempt(admin: SupabaseClient, me: string, attemptId: stri
 
 export async function createChallenge(admin: SupabaseClient, me: string, attemptId: string, timeline?: TimelineSample[]) {
   const a = await clearedAttempt(admin, me, attemptId);
+  if (!playableGame(a.game_id)) throw new ApiError(404, "unknown_game");
   const { data: existing } = await admin.from("challenges").select("code").eq("attempt_id", a.id).maybeSingle();
   if (existing) return { code: existing.code as string };
   const tl = await scoreTimeline(a, timeline, a.time_ms, admin);
@@ -115,6 +116,8 @@ export async function createChallenge(admin: SupabaseClient, me: string, attempt
 async function challengeByCode(admin: SupabaseClient, code: string) {
   const { data: c } = await admin.from("challenges").select("*").eq("code", code.toUpperCase()).maybeSingle();
   if (!c) throw new ApiError(404, "challenge_not_found");
+  // A challenge on a game that has since been retired is refused like an unknown game.
+  if (!playableGame(c.game_id)) throw new ApiError(404, "unknown_game");
   if (Date.parse(c.expires_at) < Date.now()) throw new ApiError(410, "challenge_expired", "This challenge ran out. Ask for a fresh link.");
   return c as PuzzleRef & {
     id: string;
@@ -214,8 +217,10 @@ export async function challengeResult(admin: SupabaseClient, me: string, code: s
 
 /* ---------------- Ghost Race (Overlays GR) ---------------- */
 
+/** Every Ghost Race track in code; retired ones (Flipside, Ghosted) are left out by `isGhostGame` and LIVE_GHOST_GAMES. */
 export const GHOST_GAMES = ["dash", "flipside", "ghosted"] as const;
-export const isGhostGame = (g: string) => (GHOST_GAMES as readonly string[]).includes(g);
+export const isGhostGame = (g: string) => (GHOST_GAMES as readonly string[]).includes(g) && !!playableGame(g);
+export const LIVE_GHOST_GAMES: string[] = GHOST_GAMES.filter((g) => isGhostGame(g));
 
 /** Seed of the day's Ghost Race track while Dailies are off. */
 export const ghostTrackSeed = (game: string, date: string) => `ghost:${game}:${date}`;
@@ -265,7 +270,7 @@ export async function ghostTrack(admin: SupabaseClient, game: string, date: stri
 }
 
 export async function startGhostRace(admin: SupabaseClient, me: string, game: string, runId?: string) {
-  if (!isGhostGame(game) || !GAME_BY_ID[game]) throw new ApiError(404, "unknown_game");
+  if (!isGhostGame(game)) throw new ApiError(404, "unknown_game");
   let puzzleId: string | null = null;
   let puzzle: unknown;
   let ghost: { name: string; log: unknown; timeMs: number; deaths: number; runId: string; mine: boolean } | null = null;

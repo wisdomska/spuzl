@@ -5,7 +5,7 @@ import { getGameSettings } from "@/lib/game-settings/server";
 const DAILY_ONLY_FAMILIES = ["speed", "fullspuzl"];
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { BADGES } from "@/lib/gamification/badges";
-import { GAME_BY_ID, WORLDS, type WorldId } from "@/lib/catalog";
+import { GAME_BY_ID, WORLDS, isLiveWorld, playableGame, type WorldId } from "@/lib/catalog";
 import { rankFor } from "@/lib/rating/glicko2";
 import { FAMILY_LABEL, badgeFamilies, badgeProgress, type BadgeStats } from "./index";
 import { friendIds } from "@/lib/social/server";
@@ -22,7 +22,7 @@ export async function gameStats(admin: SupabaseClient, playerId: string): Promis
   const { data, error } = await admin.rpc("svc_player_game_stats", { p: playerId });
   if (error) throw error;
   return ((data ?? []) as { game_id: string; clears: number; best_ms: number | null; avg_ms: number | null; best_score: number | null }[])
-    .filter((r) => GAME_BY_ID[r.game_id])
+    .filter((r) => playableGame(r.game_id))
     .map((r) => ({ game: r.game_id, clears: r.clears, bestMs: r.best_ms, avgMs: r.avg_ms, bestScore: r.best_score }))
     .sort((a, b) => b.clears - a.clears || a.game.localeCompare(b.game));
 }
@@ -57,7 +57,12 @@ export async function badgeOverview(admin: SupabaseClient, playerId: string, gam
   const earnedAt = new Map((owned ?? []).map((o) => [o.badge_id as string, o.earned_at as string]));
   // Dailies off: the families only Dailies can earn (median speed, Full Spuzl) are hidden unless already earned.
   const dailiesOn = (await getGameSettings())["features.dailies"];
-  const shownBadges = dailiesOn ? BADGES : BADGES.filter((b) => !DAILY_ONLY_FAMILIES.includes(b.family) || earnedAt.has(b.id));
+  // A world with no live game left (all its games retired) hides its Explorer badge unless already earned.
+  const shownBadges = BADGES.filter(
+    (b) =>
+      (dailiesOn || !DAILY_ONLY_FAMILIES.includes(b.family) || earnedAt.has(b.id)) &&
+      (b.rule.kind !== "world_all" || isLiveWorld(b.rule.world) || earnedAt.has(b.id)),
+  );
   const families = badgeFamilies(shownBadges, new Set(earnedAt.keys())).map((f) => ({
     family: f.family,
     label: FAMILY_LABEL[f.family] ?? f.family,

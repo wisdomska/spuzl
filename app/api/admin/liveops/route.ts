@@ -1,6 +1,6 @@
 import { handle, ok } from "@/lib/api/server";
 import { requireAdmin } from "@/lib/admin/auth";
-import { GAME_BY_ID } from "@/lib/catalog";
+import { GAME_BY_ID, isLiveGame } from "@/lib/catalog";
 import { addDays, todayIso } from "@/lib/admin/dates";
 
 interface Kpis {
@@ -42,7 +42,7 @@ export const GET = handle(async () => {
   const gaps: { game: string; date: string }[] = [];
   for (let i = 0; i < 7; i++) {
     const date = addDays(today, i);
-    for (const g of live ?? []) if (GAME_BY_ID[g.id] && !have.has(`${g.id}|${date}`)) gaps.push({ game: g.id, date });
+    for (const g of live ?? []) if (isLiveGame(g.id) && !have.has(`${g.id}|${date}`)) gaps.push({ game: g.id, date });
   }
 
   const games = (byGame.data as { game_id: string; clears: number; median_ms: number | null; free_clears: number }[])

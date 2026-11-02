@@ -157,17 +157,18 @@ test("content editor: draft with schema validation, second person approves", asy
   await payload.fill('{ "id": "x" }');
   await expect(editor.locator("#payload-issues li").first()).toBeVisible();
   const id = uniq("e2e-");
+  // The editor opens on Quickfire (a live game; Hunch, the old default, is retired).
   await payload.fill(
     JSON.stringify({
-      id,
-      category: "Things in an e2e test",
-      accept: ["test"],
-      warm: [],
-      clues: ["One", "Two", "Three", "Four", "Five"],
-      tier: 1,
+      cat: "world",
+      level: 1,
+      q: `Things in an e2e test ${id}`,
+      answer: "Yes",
+      wrong: ["No", "Maybe", "Later"],
+      source: "QA",
     }),
   );
-  await expect(editor.getByText("Matches the Hunch format.")).toBeVisible();
+  await expect(editor.getByText("Matches the Quickfire format.")).toBeVisible();
   await editor.getByRole("button", { name: "Save draft" }).click();
   await editor.getByRole("button", { name: "Submit for review" }).click();
   await expect(editor.getByText("Waiting for a second person to review.")).toBeVisible();
@@ -177,7 +178,10 @@ test("content editor: draft with schema validation, second person approves", asy
   const owner = await ownerCtx.newPage();
   await signedIn(owner, "owner");
   await owner.goto("/admin/content");
-  await owner.getByRole("button", { name: "Things in an e2e test" }).first().click();
+  await owner
+    .getByRole("button", { name: new RegExp(`Things in an e2e test ${id}`) })
+    .first()
+    .click();
   await owner.getByRole("button", { name: "Approve" }).click();
   await expect(owner.getByLabel("Schedule on")).toBeVisible();
   await editorCtx.close();

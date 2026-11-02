@@ -5,10 +5,11 @@ import { Icon } from "@/components/ui/Icon";
 import { FreePlayRewards } from "@/components/info/FreePlayRewards";
 import { freePlayCopy } from "@/lib/copy/free-play";
 import { PLAY_NAV } from "@/lib/analytics/play-nav";
+import { siteCopy } from "@/lib/copy/site";
 
 export const metadata: Metadata = {
   title: "How to play",
-  description: "The rules of all 51 SPUZL games, play, streaks and leagues.",
+  description: siteCopy.howToPlayDescription,
 };
 
 const CONTROLS: Record<GameMeta["engine"], string> = {
@@ -30,7 +31,7 @@ export default function HowToPlay() {
   return (
     <>
       <h1>How to play</h1>
-      <p className="lede">51 games in 9 worlds. Every game is playable any time, as often as you like.</p>
+      <p className="lede">{siteCopy.howToPlayLede}</p>
 
       <h2>The basics</h2>
       <ul>

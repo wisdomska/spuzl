@@ -139,7 +139,7 @@ function Items({
             <option value="">{common.allGames}</option>
             {CONTENT_GAMES.map((g) => (
               <option key={g} value={g}>
-                {GAME_BY_ID[g]?.name ?? g}
+                {GAME_BY_ID[g]?.retired ? adminCopy.retired.option(GAME_BY_ID[g].name) : (GAME_BY_ID[g]?.name ?? g)}
               </option>
             ))}
           </select>
@@ -230,8 +230,8 @@ function Editor({
   onCreated: (id: string) => void;
   onClose: () => void;
 }) {
-  const [game, setGame] = useState<ContentGame>((item?.game_id as ContentGame) ?? "hunch");
-  const [text, setText] = useState(() => JSON.stringify(item?.payload ?? TEMPLATES.hunch, null, 2));
+  const [game, setGame] = useState<ContentGame>((item?.game_id as ContentGame) ?? "quickfire");
+  const [text, setText] = useState(() => JSON.stringify(item?.payload ?? TEMPLATES.quickfire, null, 2));
   const [notes, setNotes] = useState(item?.notes ?? "");
   const [date, setDate] = useState(addDays(todayIso(), 8));
   const create = useAdminAction<{ game: string; payload: unknown; notes?: string }, Item>("POST", "/api/admin/content");
@@ -275,7 +275,7 @@ function Editor({
           >
             {CONTENT_GAMES.map((g) => (
               <option key={g} value={g}>
-                {GAME_BY_ID[g]?.name ?? g}
+                {GAME_BY_ID[g]?.retired ? adminCopy.retired.option(GAME_BY_ID[g].name) : (GAME_BY_ID[g]?.name ?? g)}
               </option>
             ))}
           </select>

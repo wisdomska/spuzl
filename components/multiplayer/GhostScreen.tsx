@@ -7,6 +7,8 @@ import { Spuz } from "@/components/brand/Spuz";
 import { BOARDS } from "@/games/board-registry";
 import { GAME_BY_ID } from "@/lib/catalog";
 import { api, finishAttempt, HttpError } from "@/lib/client/api";
+import { GHOST_GAMES } from "@/lib/client/challenge";
+import { challengeCopy } from "@/lib/copy/challenge";
 import { useProfileGate } from "@/lib/client/multiplayer";
 import type { InputLog } from "@/games/types";
 import { play } from "@/lib/audio";
@@ -28,7 +30,7 @@ interface Start {
 
 /**
  * Ghost Race (Overlays GR): today's Rage Ridge track against a friend's best replay. The board
- * (Dash, Flipside or Ghosted) gets the ghost through GameShell `extra` and draws the GR HUD itself.
+ * (Dash; Flipside and Ghosted are retired) gets the ghost through GameShell `extra` and draws the GR HUD itself.
  * Your verified run becomes a ghost others can race.
  */
 export function GhostScreen({ game }: { game: string }) {
@@ -52,7 +54,9 @@ export function GhostScreen({ game }: { game: string }) {
         (e) =>
           !dead &&
           setErr(
-            e instanceof HttpError && e.status === 404 ? "Ghost Races run on Dash, Flipside and Ghosted." : "Couldn't load today's track.",
+            e instanceof HttpError && e.status === 404
+              ? challengeCopy.ghostTracks(GHOST_GAMES.map((g) => GAME_BY_ID[g].name))
+              : "Couldn't load today's track.",
           ),
       );
     return () => {

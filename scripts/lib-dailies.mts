@@ -1,11 +1,12 @@
 /** Shared by generate-puzzles and validate-dailies: the deterministic Daily for (game, date). */
-import { GAME_BY_ID } from "../lib/catalog";
+import { GAME_BY_ID, isRetired } from "../lib/catalog";
 import { LOGIC } from "../games/logic-registry";
 import { createRng } from "../lib/rng";
 import { difficultyForDate, type ContentLogic, type GameLogic, type Generated } from "../games/types";
 import { dailyNumber, dailySeed } from "../lib/format";
 
-export const readyGames = () => Object.keys(LOGIC);
+/** Games that get Dailies: every game with logic, except retired ones. */
+export const readyGames = () => Object.keys(LOGIC).filter((id) => !isRetired(id));
 
 export async function dailyFor(
   gameId: string,

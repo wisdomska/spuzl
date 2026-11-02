@@ -5,11 +5,11 @@ import { errorText, useAdminAction, useAdminQuery } from "@/lib/client/admin";
 import { GAME_BY_ID } from "@/lib/catalog";
 import { TAGS, durationLabel, type GameMetaRow, type Tag } from "@/lib/games-meta";
 import { adminCopy } from "@/lib/copy/admin";
-import { Btn, Notice, PageTitle, RowsSkeleton, inputCls } from "./ui";
+import { Btn, Notice, PageTitle, Pill, RowsSkeleton, inputCls } from "./ui";
 
 const C = adminCopy.library;
 
-type Row = GameMetaRow & { id: string; default: GameMetaRow; overridden: boolean };
+type Row = GameMetaRow & { id: string; default: GameMetaRow; overridden: boolean; retired?: boolean };
 
 /** Admin: Library duration chip and filter tags per game (SPZ-14). Validated here and on the server. */
 export function LibraryMetaPage({ canWrite }: { canWrite: boolean }) {
@@ -28,7 +28,13 @@ export function LibraryMetaPage({ canWrite }: { canWrite: boolean }) {
       {q.data && (
         <section className="bg-surface flex flex-col rounded-[16px] p-4">
           {q.data.rows.map((r) => (
-            <MetaRow key={r.id} row={r} canWrite={canWrite} busy={patch.isPending} onSave={(p) => patch.mutate({ id: r.id, ...p })} />
+            <MetaRow
+              key={r.id}
+              row={r}
+              canWrite={canWrite && !r.retired}
+              busy={patch.isPending}
+              onSave={(p) => patch.mutate({ id: r.id, ...p })}
+            />
           ))}
         </section>
       )}
@@ -84,8 +90,13 @@ function MetaRow({
   return (
     <div className="flex flex-wrap items-center gap-3 border-t border-[var(--line)] py-2.5 first-of-type:border-0">
       <div className="min-w-[160px] flex-1">
-        <p className="text-[14px] font-semibold">{GAME_BY_ID[row.id]?.name ?? row.id}</p>
-        <p className="text-muted text-[12px]">{C.rowNote(row.overridden, durationLabel(row.default.typicalSec), row.default.tags)}</p>
+        <p className="flex items-center gap-2 text-[14px] font-semibold">
+          {GAME_BY_ID[row.id]?.name ?? row.id}
+          {row.retired && <Pill tone="neutral">{adminCopy.retired.pill}</Pill>}
+        </p>
+        <p className="text-muted text-[12px]">
+          {row.retired ? adminCopy.retired.libraryNote : C.rowNote(row.overridden, durationLabel(row.default.typicalSec), row.default.tags)}
+        </p>
       </div>
       <form
         className="flex items-center gap-2"

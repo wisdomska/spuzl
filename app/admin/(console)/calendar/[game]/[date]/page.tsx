@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { pageGate } from "@/lib/admin/page-gate";
 import { can } from "@/lib/admin/roles";
 import { ISO_DATE } from "@/lib/admin/dates";
-import { GAME_BY_ID } from "@/lib/catalog";
+import { GAME_BY_ID, isRetired } from "@/lib/catalog";
 import { hasLogic } from "@/games/logic-registry";
 import { Forbidden } from "@/components/admin/ui";
 import { DailySlot } from "@/components/admin/DailySlot";
@@ -19,5 +19,15 @@ export default async function Page({ params }: PageProps<"/admin/calendar/[game]
   if (!allowed) return <Forbidden what={P.dailySlot.what} />;
   const { game, date } = await params;
   if (!GAME_BY_ID[game] || !hasLogic(game) || !ISO_DATE.test(date)) notFound();
-  return <DailySlot game={game} date={date} canWrite={can(role, "calendar.write")} canSwap={can(role, "daily.swap")} />;
+  // Retired games: old Dailies stay viewable, but nothing can be generated, swapped or scheduled (the API refuses too).
+  const open = !isRetired(game);
+  return (
+    <DailySlot
+      game={game}
+      date={date}
+      canWrite={open && can(role, "calendar.write")}
+      canSwap={open && can(role, "daily.swap")}
+      retired={!open}
+    />
+  );
 }

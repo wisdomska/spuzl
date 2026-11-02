@@ -486,6 +486,14 @@ export const adminCopy = {
     },
   },
 
+  /** Retired games (lib/catalog RETIRED_IDS): still listed in the console, read-only for scheduling. */
+  retired: {
+    pill: "retired",
+    slotNote: "This game is retired. Players can't reach it and its Dailies are read-only.",
+    libraryNote: "Retired: hidden from players, read-only here.",
+    option: (name: string) => `${name} (retired)`,
+  },
+
   /** A calendar cell with no Daily yet. */
   dailySlot: {
     back: "Back to the calendar",
