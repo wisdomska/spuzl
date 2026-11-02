@@ -7,9 +7,18 @@ import type { BoardGameRules, MatchStatus } from "@/games/types";
 import { createRng } from "@/lib/rng";
 import { TIMING } from "./constants";
 
-export const BAY_GAMES = ["chess", "draughts", "oware", "ludo", "fourup", "flip"] as const;
+/** Games offered and accepted for new Board Bay matches (invites, the Practice bot and Play live). */
+export const BAY_GAMES = ["chess", "draughts", "oware", "ludo", "fourup"] as const;
 export type BayGame = (typeof BAY_GAMES)[number];
 export const isBayGame = (g: string): g is BayGame => (BAY_GAMES as readonly string[]).includes(g);
+
+/**
+ * Games retired from Board Bay: never offered or accepted for a new match, but a match that was
+ * already running keeps its rules so it can finish (and its history can be replayed).
+ */
+export const RETIRED_BAY_GAMES = ["flip"] as const;
+/** Any game a stored Board Bay match can hold: the current list plus the retired ones. */
+export type BayRulesGame = BayGame | (typeof RETIRED_BAY_GAMES)[number];
 
 /** Live clocks (B3 shows 5 minute games); async has none. */
 export const LIVE_CLOCK_MS = 5 * 60_000;
@@ -17,7 +26,7 @@ export const LIVE_CLOCK_MS = 5 * 60_000;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type AnyRules = BoardGameRules<any, any>;
 
-export async function loadRules(game: BayGame): Promise<AnyRules> {
+export async function loadRules(game: BayRulesGame): Promise<AnyRules> {
   switch (game) {
     case "chess":
       return (await import("@/games/chess/rules")).default;

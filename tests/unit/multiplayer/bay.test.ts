@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   BAY_GAMES,
+  RETIRED_BAY_GAMES,
   canNudge,
+  isBayGame,
   flagFallen,
   initialState,
   loadRules,
@@ -29,6 +31,16 @@ describe("board bay move validation", () => {
       expect(validateMove(rules, s, seat, { nonsense: true }, "seed", 0).reason, game).toBe("illegal");
       expect(validateMove(rules, s, seat, 999, "seed", 0).ok, game).toBe(false);
     }
+  });
+
+  it("no longer offers or accepts Flip for new games, but still loads its rules for running matches", async () => {
+    expect(BAY_GAMES).not.toContain("flip");
+    expect(isBayGame("flip")).toBe(false);
+    expect(isBayGame("nope")).toBe(false);
+    expect(RETIRED_BAY_GAMES).toContain("flip");
+    const rules = await loadRules("flip");
+    const s = initialState(rules, 2, "seed");
+    expect(rules.legalMoves(s, rules.turn(s)).length).toBeGreaterThan(0);
   });
 
   it("chess: a pawn can't jump three squares, and the game-over position takes no moves", async () => {

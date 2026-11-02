@@ -11,7 +11,7 @@ import { useBay, useEmotes, useProfileGate, useServerNow } from "@/lib/client/mu
 import { GAME_BY_ID } from "@/lib/catalog";
 import { formatClock, formatNumber } from "@/lib/format";
 import { play } from "@/lib/audio";
-import { BAY_GAMES, loadRules, type AnyRules, type BayGame } from "@/lib/multiplayer/bay";
+import { BAY_GAMES, loadRules, type AnyRules, type BayGame, type BayRulesGame } from "@/lib/multiplayer/bay";
 import type { BayView } from "@/lib/multiplayer/types";
 import { ShareCode } from "../party";
 import { Avatar, Cta, EmoteBar, EmoteBubble, LoadingScreen, MpToast, NeedProfile, Screen, TopButton, useToast } from "../ui";
@@ -170,7 +170,7 @@ export function BayMatch({ id }: { id: string }) {
   const emotes = useEmotes(channel, meId);
 
   useEffect(() => {
-    if (v?.game) void loadRules(v.game as BayGame).then(setRules);
+    if (v?.game) void loadRules(v.game as BayRulesGame).then(setRules);
   }, [v?.game]);
   useEffect(() => {
     if (v?.rematchId) router.replace(`/bay/${v.rematchId}`);

@@ -1,5 +1,5 @@
 /**
- * Player-facing copy for Board Bay (chess, draughts, oware, ludo, four up, flip). See lib/copy/index.ts
+ * Player-facing copy for Board Bay (chess, draughts, oware, ludo, four up; flip only for games already running). See lib/copy/index.ts
  * for the voice: short, warm, plain.
  */
 import { dara } from "./dara";

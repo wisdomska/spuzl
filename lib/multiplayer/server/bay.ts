@@ -17,7 +17,7 @@ import {
   spendClock,
   takebackPlies,
   validateMove,
-  type BayGame,
+  type BayRulesGame,
 } from "../bay";
 import { CODE_ALPHABET, makeRoomCode } from "../roomCode";
 import type { BayView } from "../types";
@@ -31,7 +31,7 @@ export const BOT_PLAYER = "00000000-0000-0000-0000-000000000000";
 
 interface BayRow {
   id: string;
-  game_id: BayGame;
+  game_id: BayRulesGame;
   mode: "live" | "async";
   status: BayView["status"];
   players: string[];
@@ -427,6 +427,8 @@ async function takeback(admin: SupabaseClient, b: BayRow, requester: number) {
 async function rematchBay(admin: SupabaseClient, me: string, b: BayRow) {
   if (b.status !== "finished") throw new ApiError(409, "not_finished");
   if (b.rematch_id) return getBay(admin, b.rematch_id, me);
+  // A retired game (Flip) can finish, but never starts again.
+  if (!isBayGame(b.game_id)) throw new ApiError(409, "game_retired", "This game has left Board Bay.");
   const rules = await loadRules(b.game_id);
   const seed = crypto.randomUUID();
   const state = initialState(rules, b.seats, seed);
