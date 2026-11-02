@@ -151,9 +151,22 @@ export const levelOfSeed = (freeSeed: string | null): number => Number((freeSeed
 
 /* ---------------- Attempts ---------------- */
 
+/** Marks the player as active now (admin "Last active", friends' presence). Never blocks or fails the game. */
+export function touchActive(admin: SupabaseClient, playerId: string): void {
+  void admin
+    .from("players")
+    .update({ last_seen_at: new Date().toISOString() })
+    .eq("id", playerId)
+    .then(
+      () => undefined,
+      () => undefined,
+    );
+}
+
 export async function startAttempt(admin: SupabaseClient, playerId: string, ref: PuzzleRef) {
   const meta = gameOr404(ref.gameId);
   await assertGameOpen(meta);
+  touchActive(admin, playerId);
   let loaded: Loaded;
   let seed: string | null = null;
   let level: number | undefined;
@@ -418,6 +431,7 @@ export async function finishAttempt(
   input: FinishInput,
   rankingRevoked: boolean,
 ): Promise<FinishResult> {
+  touchActive(admin, playerId);
   const a = await getAttempt(admin, playerId, id);
   if (a.status !== "in_progress") throw new ApiError(409, "attempt_closed");
   const meta = gameOr404(a.game_id);

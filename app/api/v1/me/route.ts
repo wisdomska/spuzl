@@ -2,6 +2,7 @@ import { handle, ok, requirePlayer } from "@/lib/api/server";
 import { currentUser } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { loadMe } from "@/lib/server/player-data";
+import { touchActive } from "@/lib/game/service";
 
 export const dynamic = "force-dynamic";
 
@@ -14,5 +15,6 @@ export const GET = handle(async (req: Request) => {
     if (!data) return ok(null);
   }
   const { admin, player, user } = await requirePlayer();
+  touchActive(admin, player.id); // opening the app counts as being active
   return ok(await loadMe(user, player, admin));
 });

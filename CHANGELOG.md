@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Fixes
+
+- **Last active is real now.** Opening the app, starting or finishing a game and the online heartbeat (which now also
+  runs during games, so friends see "Playing <game>") all update it. Existing players are backfilled from their latest
+  game or sign-in.
+
 ### For players
 
 - **Games use big screens.** On tablets in landscape, laptops and desktops (900 × 600 and up) every game splits

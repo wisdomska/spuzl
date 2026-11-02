@@ -21,6 +21,7 @@ import {
   type StartRes,
 } from "@/lib/client/api";
 import { readOnboarding } from "@/lib/client/onboarding";
+import { usePresence } from "@/lib/client/social";
 import { dailyNumber, formatClock } from "@/lib/format";
 import { nextInPath, nextLabel } from "@/lib/game/next";
 import { useGameSettings } from "@/lib/game-settings/client";
@@ -78,6 +79,8 @@ export function PlayScreen({
   const router = useRouter();
   const qc = useQueryClient();
   const me = useMe();
+  // Friends see "Playing <game>", and the admin's Last active stays current during long games.
+  usePresence(!!me.data, meta.id);
   const today = useToday();
   const settings = useGameSettings();
   const relaxed = useSettings((s) => s.relaxed);
