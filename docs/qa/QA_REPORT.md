@@ -211,3 +211,17 @@ Local production build, local Supabase. Typecheck and lint clean; unit 136 files
 Fixed in this pass: two pgTAP checks and one API count assumed no rows from other runs (or counted 18+ party reports
 the reports tab leaves out). Sound and motion were not judged by ear or eye in this pass; check the intro and a few
 boards on a real phone.
+
+## 1.6.0 integration pass (2 November 2026)
+
+Local production build, local Supabase. Typecheck and lint clean; unit 140 files and 1364+ tests; pgTAP all pass;
+API 14 files, 147 tests; E2E, realtime and visual (mobile and desktop) 185 passed, the usual skips.
+
+Found and fixed in this pass:
+
+- Single-room Rage Ridge levels used the multi-room course's 5 s human floor, so a fast honest clear was flagged and
+  never unlocked the next level. Levels mode now uses a 1.5 s floor; inputs are still re-simulated.
+- Level seeds were guessable from the client code; they are now keyed with `LEVEL_SEED_SECRET` (set in Vercel).
+- The Hint button's accessible name didn't start with its visible label; Minicross squares were named differently
+  from what they show. Both now pass axe.
+- Crownfall's first-visit patterns offer pushed the tool row below the fold on a 375 × 667 phone; it is one line now.

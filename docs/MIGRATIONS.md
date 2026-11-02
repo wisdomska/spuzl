@@ -109,7 +109,7 @@ pgTAP: `103_adult_block_reopen`. The migration, the pgTAP file and the rollback 
 transaction that was rolled back. If the code ships first, reopening an actioned party report works as before
 (the report reopens, the block stays).
 
-## Unreleased
+## 1.6.0
 
 Reversible (rollback SQL in the header). No rows are deleted and no player data changes: attempts, Dailies,
 puzzles and results for retired games stay where they are.
@@ -131,7 +131,7 @@ decides); the migration only lines up the database (gap alerts and the rollover'
 
 pgTAP: `104_admin_verified_sessions`. Apply before the code deploys, or admins see "aal2 required" until it lands.
 
-## Unreleased
+## 1.6.0
 
 Additive and reversible (rollback SQL in the header). No existing rows change.
 
@@ -142,7 +142,7 @@ Additive and reversible (rollback SQL in the header). No existing rows change.
 pgTAP: `106_board_queue`. Apply before the code deploys: until it lands, Play live answers with an error and
 everything else in Board Bay works as before.
 
-## Unreleased: level ladders
+## 1.6.0: level ladders
 
 Additive and reversible (rollback SQL in the header). No existing rows change.
 

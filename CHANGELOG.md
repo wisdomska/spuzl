@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.6.0 (2 November 2026)
 
 A tighter Grid: 29 games across 8 worlds.
 
