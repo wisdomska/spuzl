@@ -178,3 +178,28 @@ rolled back.
 
 Apply before the code deploys. The signed-in player and Me fall back to the stored band while the columns are
 missing, but new profiles need the columns, and friends, crews, matches and status cards read them.
+
+## Four worlds (Unreleased)
+
+Reversible (rollback SQL in the header). No rows are deleted and no earned badge or attempt changes. There is no
+real player data in production yet, but the migration is written as if there were.
+
+| Migration                         | What it does                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Rollback                                                                                                                                                                                                       |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `20261121000001_world_groups.sql` | `worlds`: `logic`, `word`, `reflex` and `board` are renamed Puzzles, Words & Quiz, Arcade and Board Games and sorted first; `line`, `shape`, `number`, `clue` and `rage` keep their rows (retired games, old results). `games.world_id`: weave, flowline, pairup, lost and trotro move to `logic`, quickfire and emojihits to `word`, gotcha, dash and gauntlet to `reflex`. `ratings`: a folded world's rating is copied into its group when the player has none there (most games wins); old tracks stay. `events`: bonus quests on a folded world point at its group. `badges`: the 4 Explorer badges take the group name and icon; the others stay; Untouched names the courses. `quests`: titles name the groups; `w-3` asks for 4 worlds. Copies and event changes are logged in `private.world_regroup_undo` (forced RLS, no policies, service role only). | Restore event worlds and delete the copied ratings from the undo log, drop it, move the 10 games back, and restore world, badge and quest names, sorts and goals (see header). Exact, checked by diff locally. |
+
+The ids stay, so `/world/logic` and friends, rating tracks, badge ids and quest ids do not change. `/world/line`,
+`/world/shape`, `/world/clue` and `/world/rage` answer a 308 to their group (`proxy.ts`, from `MERGED_WORLDS` in
+`lib/catalog.ts`); `/world/number` stays not found.
+
+`supabase/seed.sql` (from `scripts/gen-seed.ts`) writes the same names, sorts, world ids, badges and quests, so a
+fresh database matches. pgTAP: `109_world_groups` (live games in the 4 groups and their counts, the folded worlds
+kept and empty of live games, Explorer badges, the undo log's forced RLS, the weekly quest, and the rating copy on
+fixture rows: most games wins, an existing group rating is never overwritten, old tracks stay). The migration and
+the pgTAP file were run locally inside a transaction that was rolled back; the rollback was run after the
+migration in another rolled-back transaction and left worlds, games, badges, ratings, events and quests identical
+to before.
+
+Order: either way works. If the code ships first, players already see the 4 worlds (the catalogue decides) and
+moved games rate into their group's track; the migration lines up world names, carried-over ratings, badges and
+quests in the database.

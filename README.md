@@ -1,6 +1,6 @@
 # SPUZL
 
-29 puzzle, skill and classic board games across 8 worlds ("The Grid"; the live list is `GAMES` in `lib/catalog.ts`, retired games keep their code), with Spuz the mascot, daily puzzles, endless free play, live Duels, Party Races, leagues and crews.
+29 puzzle, skill and classic board games across 4 worlds (Puzzles, Words & Quiz, Arcade, Board Games) ("The Grid"; the live list is `GAMES` in `lib/catalog.ts`, retired games keep their code), with Spuz the mascot, daily puzzles, endless free play, live Duels, Party Races, leagues and crews.
 
 Production: https://spuzl.vercel.app · Admin: https://spuzl.vercel.app/admin
 

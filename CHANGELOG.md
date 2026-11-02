@@ -1,5 +1,35 @@
 # Changelog
 
+## Unreleased
+
+### Four worlds instead of eight
+
+#### For players
+
+- **The 29 games now live in 4 worlds.** Home shows 4 islands:
+  - **Puzzles** (9): Crownfall, Dusk, Sixer, Nine, Weave, Flowline, Pairup, Lost, Trotro Jam.
+  - **Words & Quiz** (8): Coil, Rungs, Seven, Minicross, Buried, Remix, Quickfire, Emoji Hits.
+  - **Arcade** (7): Echo, Twins, Flinch, Beat Tap, Gotcha, Dash, Gauntlet.
+  - **Board Games** (5): Chess, Draughts, Oware, Ludo, Four Up.
+- World pages, All games filters and search, How to play, the landing page, leaderboards, the archive, School
+  Cup, Duel and Party pickers all follow the 4 worlds. Counts come from the catalogue ("Four worlds to wander").
+- Games that changed world keep their look: Flowline's water stays cyan, the trotro stays orange, and Gotcha, Dash
+  and Gauntlet keep their red night scene inside Arcade.
+- Old links to Line Lane, Shape Shed, Clue Cave and Rage Ridge open the world that took their games.
+- **Ranks:** your rank in a world now covers its whole group. If you had a rating in a world that was folded in
+  (Line Lane, Shape Shed, Clue Cave or Rage Ridge) and none yet in its group, it carries over.
+- **Badges:** Puzzles, Words & Quiz, Arcade and Board Games Explorer replace the old per-world Explorer badges.
+  Explorer badges you already earned stay on your profile. Untouched (secret) still counts a Gotcha, Dash or
+  Gauntlet course with no deaths.
+- **Quests:** world quests name the new worlds, and the weekly "worlds" step asks for all 4 worlds (it asked for 5).
+- Classroom mode still hides Gotcha, Dash and Gauntlet.
+
+#### For admins
+
+- Calendar, events and every world filter show the 4 worlds. Seasonal bonus quests set on a folded world now count
+  clears in its group.
+- Migration `20261121000001_world_groups` (see `docs/MIGRATIONS.md`).
+
 ## 1.7.0 (2 November 2026)
 
 ### For players
