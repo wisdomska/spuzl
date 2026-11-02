@@ -5,7 +5,8 @@ import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { useCellSize } from "@/components/game/useBoardSize";
 import { useGridKeys } from "@/components/game/useGridKeys";
-import { play } from "@/lib/audio";
+import { sfx } from "@/games/_shared/sfx";
+
 import { FACES, pairsOf, replay, type TwinsPuzzle, type TwinsState } from "./logic";
 
 const INK = "#0E0F1A";
@@ -76,7 +77,7 @@ export default function TwinsBoard({ puzzle, initialState, hint, disabled, mode,
       if (open.length === 1) {
         upRef.current = open;
         setUp(open);
-        play("tick");
+        sfx.select();
         api.onMove(next);
         api.announce(`Row ${row}, column ${col}, ${face}`);
         return;
@@ -86,13 +87,13 @@ export default function TwinsBoard({ puzzle, initialState, hint, disabled, mode,
         streak.current++;
         upRef.current = [];
         setUp([]);
+        sfx.place(streak.current);
         api.onMove(next, { correctStreak: streak.current });
         if (after.matched === pairs) {
           api.feedback(`All ${pairs} pairs in ${next.flips.length} flips.`, "success", "check-circle");
           api.announce(`Row ${row}, column ${col}, ${face}. Pair. Board cleared in ${next.flips.length} flips.`);
           api.onSolved(next);
         } else {
-          play("pop", { step: streak.current });
           api.feedback(`Pair. ${after.matched} of ${pairs}, ${next.flips.length} flips.`, "info", "cards");
           api.announce(`Row ${row}, column ${col}, ${face}. Pair, ${after.matched} of ${pairs}.`);
         }
@@ -100,7 +101,8 @@ export default function TwinsBoard({ puzzle, initialState, hint, disabled, mode,
         streak.current = 0;
         upRef.current = open;
         setUp(open);
-        play("whoosh");
+        // no match: a soft tap, the cards turn back on their own
+        sfx.remove();
         api.onMove(next);
         api.feedback(`No match. ${after.matched} of ${pairs}, ${next.flips.length} flips.`, "info", "cards");
         api.announce(`Row ${row}, column ${col}, ${face}. No match.`);

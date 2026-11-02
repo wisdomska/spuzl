@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { play } from "@/lib/audio";
+import { sfx } from "@/games/_shared/sfx";
+
 import { prefersReducedMotion, useSettings } from "@/lib/settings/store";
 import { BEATTAP_COPY as t } from "@/lib/copy/beattap";
 import { HUMAN_FLOOR_MS } from "@/games/_shared/reflex";
@@ -74,7 +76,8 @@ export default function BeatTapBoard({ puzzle, initialState, disabled, mode, api
     const frame = () => {
       const el = performance.now() - startAt.current;
       while (ticked.current < total && puzzle.beats[ticked.current] <= el + 15) {
-        play("tick");
+        // the metronome: heard, never felt (a buzz on every beat would drown the taps' own)
+        play("tick", { gain: 0.7, silentHaptic: true });
         ticked.current++;
       }
       const jj = judge(puzzle.beats, tapsRef.current, puzzle.perfectMs, puzzle.goodMs);
@@ -117,7 +120,9 @@ export default function BeatTapBoard({ puzzle, initialState, disabled, mode, api
         const m = jj.marks[b];
         setLastMark(m);
         api.onMove(state, { correctStreak: jj.perfect + jj.good });
-        if (m === "perfect") play("pop", { step: Math.min(7, jj.perfect), silentHaptic: true });
+        // perfect climbs with the run of perfects; a good tap gets a plain tap so every hit answers
+        if (m === "perfect") sfx.place(Math.min(7, jj.perfect));
+        else if (m === "good") sfx.select();
         api.announce(t.mark[m]);
       }
     },
@@ -194,6 +199,8 @@ export default function BeatTapBoard({ puzzle, initialState, disabled, mode, api
         type="button"
         aria-label={t.padLabel(`${status}.${markText ? ` ${markText}.` : ""}`)}
         data-phase={phase}
+        // the pad's own judged sound is its press; no generic tap on top
+        data-no-tick
         disabled={disabled || phase === "over"}
         onPointerDown={(e) => {
           e.preventDefault();

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { play } from "@/lib/audio";
+import { sfx } from "@/games/_shared/sfx";
 import { sendGuess } from "@/games/_shared/guess";
 import { EMOJI_COPY as t } from "@/lib/copy/emojihits";
 import { READ_FLOOR_MS, roundScore, type EmojiCheck, type EmojiPuzzle, type EmojiState, type HitTry, type RoundLog } from "./rules";
@@ -157,7 +158,7 @@ export default function EmojiHitsBoard({ puzzle, initialState, hint, disabled, m
         // A wrong last try already counted its slip; time and skip are not slips.
         api.onMove(state);
         const line = shown ? (why === "time" ? t.time(shown) : why === "skip" ? t.skipped(shown) : t.out(shown)) : t.unknown;
-        if (why === "time") play("fizzle");
+        if (why === "time") sfx.miss();
         api.feedback(line, "danger", why === "time" ? "timer" : "x-circle");
         api.announce(line);
       }
@@ -205,7 +206,8 @@ export default function EmojiHitsBoard({ puzzle, initialState, hint, disabled, m
       triesRef.current = nextTries;
       setTries(nextTries);
       if (res.ok) {
-        play("pop", { step: streak.current + 1 });
+        // a right title is the palette's small win, like a right quiz answer
+        play("success");
         api.feedback(t.right(res.title), "success", "check-circle");
         api.announce(t.right(res.title));
         void finish("right", res.title);

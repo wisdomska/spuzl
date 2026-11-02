@@ -61,7 +61,8 @@ export default function EchoBoard({ puzzle, initialState, disabled, mode, api }:
         api.feedback(`${why} ${best} steps.`, "success", "check-circle");
       }
       api.announce(`Run over. Longest sequence ${best}.`);
-      api.onSolved(state);
+      // after a slip, let the buzz finish before the run's closing arpeggio
+      api.onSolved(state, tone === "danger" ? { clearDelayMs: 420 } : undefined);
     },
     [api],
   );
@@ -151,7 +152,9 @@ export default function EchoBoard({ puzzle, initialState, disabled, mode, api }:
         }
         if (idle.current) window.clearTimeout(idle.current);
         setPhase("watch");
-        play("pop", { step: Math.min(7, r + 1) });
+        // round repeated: the small win, after the last pad's note
+        play("success", { delay: 0.12 });
+
         api.feedback(`${n} ${n === 1 ? "step" : "steps"}. One more next round.`, "success", "check-circle");
         later(() => playRound(r + 1), 600);
       } else {
