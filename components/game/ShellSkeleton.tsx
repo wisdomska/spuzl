@@ -23,7 +23,7 @@ export function ShellSkeleton() {
       </div>
       <div className="wide:flex-row wide:items-start wide:gap-8 wide:pb-6 flex flex-1 flex-col">
         <div className="short:py-1 wide:flex-1 wide:p-3 wide:pb-0 flex justify-center px-3 py-2">
-          <Skeleton className="wide:w-[min(760px,calc(100vw_-_464px),calc(100dvh_-_108px),80dvh)] wide:max-w-none aspect-square w-full max-w-[396px] rounded-[20px]" />
+          <Skeleton className="wide:w-[min(960px,calc(100vw_-_464px),calc(100dvh_-_108px),90dvh)] wide:max-w-none aspect-square w-full max-w-[396px] rounded-[20px]" />
         </div>
         <div className="safe-bottom short:pt-1.5 wide:mt-0 wide:w-[320px] min-[1280px]:wide:w-[360px] wide:pt-3 wide:pr-3 wide:pl-0 mt-auto grid grid-cols-3 gap-2 px-3 pt-2.5">
           <Skeleton className="short:h-12 h-14 rounded-[16px]" />

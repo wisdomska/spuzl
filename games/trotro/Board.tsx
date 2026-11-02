@@ -424,7 +424,8 @@ export default function TrotroBoard({ puzzle, initialState, hint, disabled, mode
       <ShellAside>
         <div
           className="flex items-center gap-2"
-          style={{ width: Math.min(boardW + PAD * 2, 360) }}
+          // Never wider than its place (the 320 px side panel on a smaller wide screen).
+          style={{ width: Math.min(boardW + PAD * 2, 360), maxWidth: "100%" }}
           role="group"
           aria-label={T.moveGroup}
           // The slide (or the blocked lean) is these buttons' sound.
