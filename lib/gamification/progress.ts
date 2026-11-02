@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { BADGES, type BadgeDef } from "./badges";
 import { questsForDate, WEEKLY_CHAIN, type QuestDef } from "./quests";
 import { advanceEventQuest } from "@/lib/events/server";
+import { WORLD_COUNT_KINDS, worldsProgress } from "./worlds";
 
 /**
  * Solo clears that count for quests, badges and streak-style goals. Dailies are off for now, so a free-play clear
@@ -150,10 +151,30 @@ function questDelta(q: QuestDef, c: ClearContext): number {
   }
 }
 
+/** Game ids of the player's solo clears finished on or after `since` (a GMT date), plus this clear. */
+async function soloClearsSince(admin: SupabaseClient, playerId: string, since: string, c: ClearContext): Promise<string[]> {
+  const { data } = await admin
+    .from("attempts")
+    .select("game_id")
+    .eq("player_id", playerId)
+    .eq("status", "cleared")
+    .in("mode", SOLO_MODES)
+    .gte("finished_at", `${since}T00:00:00Z`);
+  const ids = (data ?? []).map((r) => r.game_id as string);
+  return isSolo(c.mode) ? [...ids, c.gameId] : ids;
+}
+
 async function advanceQuests(admin: SupabaseClient, playerId: string, c: ClearContext): Promise<Unlock[]> {
   const today = new Date().toISOString().slice(0, 10);
   const week = weekStart();
   const out: Unlock[] = [];
+  // Distinct-world quests set progress from the period's solo clears, fetched at most once per period.
+  const clearsSince = new Map<string, Promise<string[]>>();
+  const worldsIn = (period: string) => {
+    if (!clearsSince.has(period)) clearsSince.set(period, soloClearsSince(admin, playerId, period, c));
+    return clearsSince.get(period)!;
+  };
+  const absolute = (q: QuestDef) => q.goal.kind === "streak" || WORLD_COUNT_KINDS.includes(q.goal.kind);
   const list: [QuestDef, string][] = [
     ...questsForDate(today).map((q) => [q, today] as [QuestDef, string]),
     ...WEEKLY_CHAIN.map((q) => [q, week] as [QuestDef, string]),
@@ -161,6 +182,7 @@ async function advanceQuests(admin: SupabaseClient, playerId: string, c: ClearCo
   for (const [q, period] of list) {
     let delta = questDelta(q, c);
     if (q.goal.kind === "streak") delta = c.streak >= q.goal.n ? q.goal.n : 0;
+    else if (WORLD_COUNT_KINDS.includes(q.goal.kind)) delta = isSolo(c.mode) ? worldsProgress(await worldsIn(period), q.goal.n) : 0;
     if (!delta) continue;
     const { data: row } = await admin
       .from("player_quests")
@@ -182,7 +204,8 @@ async function advanceQuests(admin: SupabaseClient, playerId: string, c: ClearCo
         .maybeSingle();
       if (!p?.completed_at) continue;
     }
-    const progress = q.goal.kind === "streak" ? delta : Math.min(q.goal.n, (row?.progress ?? 0) + delta);
+    if (WORLD_COUNT_KINDS.includes(q.goal.kind) && delta <= (row?.progress ?? 0)) continue;
+    const progress = absolute(q) ? delta : Math.min(q.goal.n, (row?.progress ?? 0) + delta);
     const done = progress >= q.goal.n;
     await admin.from("player_quests").upsert({
       player_id: playerId,

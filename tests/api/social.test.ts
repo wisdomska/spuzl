@@ -1,4 +1,5 @@
-import { WORLDS } from "@/lib/catalog";
+import { WORLDS, gamesInWorld } from "@/lib/catalog";
+import { questsForDate } from "@/lib/gamification/quests";
 import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
@@ -6,6 +7,12 @@ import { ANON, BASE, SB_URL, admin, birthFor, guest, uniq } from "./helpers";
 
 /** Social and meta routes against the running dev server (API_BASE) and local Supabase. */
 const today = () => new Date().toISOString().slice(0, 10);
+/** Monday of this GMT week, as `weekStart()` in lib/gamification/progress.ts (server-only) computes it. */
+const weekStart = () => {
+  const x = new Date(today());
+  x.setUTCDate(x.getUTCDate() - ((x.getUTCDay() + 6) % 7));
+  return x.toISOString().slice(0, 10);
+};
 const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
 
 async function minor(nickname: string) {
@@ -245,6 +252,68 @@ describe("api: quests", () => {
     const after = await a.api("/api/v1/quests");
     expect(after.data.daily[0]).toMatchObject({ completed: true, claimed: true });
     expect((await a.api("/api/v1/quests/nope/claim", { method: "POST" })).status).toBe(404);
+  });
+});
+
+describe("api: distinct-world quests", () => {
+  it("counts solo clears in distinct live worlds this week, so the weekly chain reaches step 4", async () => {
+    const a = await guest(uniq("qw_"));
+    const week = weekStart();
+    const now = new Date().toISOString();
+    // Steps 1 and 2 done this week; step 3 needs clears in 5 worlds.
+    await admin()
+      .from("player_quests")
+      .insert(["w-1", "w-2"].map((id) => ({ player_id: a.userId, quest_id: id, period: week, progress: 1, target: 1, completed_at: now })));
+    // Solo clears in 4 live worlds other than Logic (crownfall), plus a duel clear that must not count.
+    const others = WORLDS.filter((w) => w.id !== "logic").slice(0, 5);
+    const rows = others.slice(0, 4).map((w) => ({
+      player_id: a.userId,
+      game_id: gamesInWorld(w.id)[0].id,
+      mode: "free",
+      status: "cleared",
+      finished_at: now,
+    }));
+    rows.push({ player_id: a.userId, game_id: gamesInWorld(others[4].id)[0].id, mode: "duel", status: "cleared", finished_at: now });
+    expect((await admin().from("attempts").insert(rows)).error).toBeNull();
+
+    // A real free-play clear in a fifth world (Logic) advances the quest.
+    const s = await a.api("/api/v1/attempts", { json: { game: "crownfall", mode: "free", difficulty: "easy" } });
+    const { data: att } = await admin().from("attempts").select("free_seed").eq("id", s.data.attemptId).single();
+    const { generate } = await import("@/games/crownfall/logic");
+    const { createRng } = await import("@/lib/rng");
+    const gen = generate(createRng(att!.free_seed!.split("|")[0]), "easy");
+    const n = gen.puzzle.size;
+    const state = new Array(n * n).fill(0);
+    gen.solution.forEach((c, r) => (state[r * n + c] = 2));
+    await new Promise((r) => setTimeout(r, 6500));
+    const fin = await a.api(`/api/v1/attempts/${s.data.attemptId}/finish`, { json: { state, activeMs: 6100, mistakes: 0 } });
+    expect(fin.data).toMatchObject({ ok: true, status: "cleared" });
+    expect(fin.data.unlocks.some((u: { id: string }) => u.id === "w-3")).toBe(true);
+
+    const { data: q } = await admin()
+      .from("player_quests")
+      .select("quest_id, progress, completed_at")
+      .eq("player_id", a.userId)
+      .eq("period", week)
+      .in("quest_id", ["w-3", "w-4"]);
+    const w3 = q!.find((r) => r.quest_id === "w-3");
+    expect(w3).toMatchObject({ progress: 5 });
+    expect(w3!.completed_at).not.toBeNull();
+    // Step 4 is now open: this same clear was its first.
+    expect(q!.find((r) => r.quest_id === "w-4")).toMatchObject({ progress: 1, completed_at: null });
+
+    // The daily world quest, when it is one of today's three, counts the same clears (capped at 3).
+    if (questsForDate(today()).some((d) => d.id === "d-new-world")) {
+      const { data: d } = await admin()
+        .from("player_quests")
+        .select("progress, completed_at")
+        .eq("player_id", a.userId)
+        .eq("quest_id", "d-new-world")
+        .eq("period", today())
+        .single();
+      expect(d!.progress).toBe(3);
+      expect(d!.completed_at).not.toBeNull();
+    }
   });
 });
 
