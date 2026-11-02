@@ -733,9 +733,12 @@ export function Podium({
   onNext,
   onLeave,
   subtitle,
+  rewardNote,
 }: {
   /** replaces the game line (18+ party games) */
   subtitle?: string;
+  /** shown under the title when the server paid you nothing (why) */
+  rewardNote?: string | null;
   view: MatchView;
   host: boolean;
   final: boolean;
@@ -792,6 +795,7 @@ export function Podium({
         {title}
       </h1>
       <p className="text-muted mt-1.5 text-center text-[15px] font-medium">{sub}</p>
+      <PodiumReward reward={final ? view.reward : null} note={final ? rewardNote : null} reduce={reduce || skip} />
       <div className="mt-7 flex items-end justify-center gap-2 px-4">
         {podium.map(([p, rank]) =>
           p ? (
@@ -858,6 +862,40 @@ export function Podium({
         )}
       </div>
     </div>
+  );
+}
+
+/** What the server paid you for the room (XP and Sparks), or why it paid nothing. */
+function PodiumReward({ reward, note, reduce }: { reward: MatchView["reward"]; note?: string | null; reduce: boolean }) {
+  const paid = !!reward && (reward.xp > 0 || reward.sparks > 0);
+  const text = paid ? null : reward ? partyCopy.podium.capped : note;
+  if (!paid && !text) return null;
+  return (
+    <motion.div
+      className="mt-3 flex justify-center px-4"
+      role="status"
+      initial={reduce ? { opacity: 0 } : { opacity: 0, transform: "translateY(8px)" }}
+      animate={{ opacity: 1, transform: "translateY(0px)" }}
+      transition={reduce ? { duration: 0.15 } : { duration: 0.3, ease: EASE_OUT, delay: 0.6 }}
+    >
+      {paid ? (
+        <div
+          className="bg-surface flex min-h-11 items-center gap-3 rounded-[14px] px-4"
+          aria-label={`${partyCopy.podium.reward}: ${[reward.xp > 0 ? partyCopy.podium.xp(reward.xp) : null, reward.sparks > 0 ? partyCopy.podium.sparks(reward.sparks) : null].filter(Boolean).join(", ")}`}
+        >
+          <span className="text-muted text-[14px] font-semibold">{partyCopy.podium.reward}</span>
+          {reward.xp > 0 && <span className="num text-accent text-[18px] font-bold">{partyCopy.podium.xp(reward.xp)}</span>}
+          {reward.sparks > 0 && (
+            <span className="num text-gold flex items-center gap-1 text-[18px] font-bold">
+              <Icon name="sparkle" size={16} />
+              {partyCopy.podium.sparks(reward.sparks)}
+            </span>
+          )}
+        </div>
+      ) : (
+        <p className="text-muted max-w-[340px] text-center text-[14px]">{text}</p>
+      )}
+    </motion.div>
   );
 }
 

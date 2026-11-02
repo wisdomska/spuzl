@@ -109,4 +109,9 @@ export const adultPartyCopy = {
     done: (name: string) => `${name} was removed.`,
   },
   podiumSub: (mode: string, rounds: number, players: number) => `${mode}, ${rounds} rounds, ${players} players`,
+  /** podium note when the room paid no XP or Sparks */
+  noReward: {
+    small: (min: number) => `XP and Sparks need ${min} or more players to the end.`,
+    idle: "Draw, write, guess or vote to earn XP and Sparks.",
+  },
 } as const;

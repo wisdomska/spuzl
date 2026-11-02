@@ -13,7 +13,9 @@ import { addAwards, checkGuess, drawAwards, placesOf, truthsAwards, wordShape, t
 import { STROKE_LIMITS, fitsDrawing, pointsIn, type Stroke } from "@/lib/party-adult/strokes";
 import { TIMING } from "../constants";
 import type { AdultRoundView } from "../types";
+import { playedIn } from "@/lib/party-adult/rewards";
 import { commit, loadMatch, matchTopic, type Loaded, type MatchRow, type PlayerRow } from "./match";
+import { finalizeAdult } from "./rewards";
 
 /**
  * Draw It and Two Truths on the server (18+ party modes). Rooms are ordinary Party rooms (matches with
@@ -258,9 +260,38 @@ async function advance(admin: SupabaseClient, l: Loaded, r: PartyRoundRow): Prom
     })),
   });
   if (!applied) return false;
+  // Who took part is read before the wipe (it needs the strokes and statements) and kept for the rewards.
+  const played = await playedInRound(admin, m, r);
   await wipeRound(admin, r);
+  await keepPlayed(admin, r, played);
   if (!last) await ensureRound(admin, { ...m, round: m.round + 1, status: "playing", round_started_at: iso(now) }, now);
+  else await finalizeAdult(admin, await loadMatch(admin, m.id));
   return true;
+}
+
+/** The round's lead if they drew or wrote, and everyone in the line-up who guessed or voted. */
+async function playedInRound(admin: SupabaseClient, m: MatchRow, r: PartyRoundRow): Promise<string[]> {
+  const table = r.mode === "draw" ? "party_guesses" : "party_votes";
+  const { data } = await admin.from(table).select("player_id").eq("match_id", r.match_id).eq("set_no", r.set_no).eq("round", r.round);
+  return playedIn({
+    leadId: r.lead_id,
+    mode: r.mode,
+    strokes: r.strokes?.length ?? 0,
+    wrote: r.statements !== null,
+    acted: (data ?? []).map((x) => x.player_id as string),
+    lineUp: m.party_leads,
+  });
+}
+
+/** Stored apart from the wipe, so a database without the `played` column (before 20261120000001) still wipes. */
+async function keepPlayed(admin: SupabaseClient, r: Pick<PartyRoundRow, "match_id" | "set_no" | "round">, played: string[]) {
+  const { error } = await admin
+    .from("party_rounds")
+    .update({ played })
+    .eq("match_id", r.match_id)
+    .eq("set_no", r.set_no)
+    .eq("round", r.round);
+  if (error) console.error("[party] played not kept", r.match_id, error.message);
 }
 
 /** No free text or drawing outlives its round (the word comes from our list and stays, so it isn't reused). */

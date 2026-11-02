@@ -9,7 +9,7 @@ import { validateProgress } from "../progress";
 import type { MatchPlayerView, MatchRoundView, MatchView } from "../types";
 import { roundPuzzle } from "./puzzles";
 import { getGameSettings } from "@/lib/game-settings/server";
-import { finalizeDuel, finalizeRace } from "./rewards";
+import { adultRewardFor, finalizeDuel, finalizeRace } from "./rewards";
 import { knownGames } from "./known";
 import { adultRoundView, isAdultRoom, modeOf, resolveAdult } from "./adult";
 import type { PartyMode } from "@/lib/party-adult/modes";
@@ -279,7 +279,8 @@ export async function viewOf(admin: SupabaseClient, l: Loaded, me: string, rewar
     puzzle,
     rulesFor,
     myState: mine && puzzle ? mine.state : null,
-    reward,
+    // 18+ party rooms: what this player was paid, read back from the ledgers once the room finished.
+    reward: reward ?? (adult && m.status === "finished" ? await adultRewardFor(admin, m, me) : null),
     mode: modeOf(m),
     party: adult ? await adultRoundView(admin, l, me) : null,
   };

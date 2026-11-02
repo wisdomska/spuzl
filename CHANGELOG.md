@@ -1,5 +1,29 @@
 # Changelog
 
+## Unreleased
+
+### For players
+
+- **Draw It is live.** Everyone now watches the drawer's line appear as it is drawn, smoothly, instead of the whole
+  line popping in at pen up. With reduced motion each bit of line shows at once. The finished line the server
+  keeps is still what everyone ends up seeing (and what a report captures).
+- **XP and Sparks in Draw It and Two Truths.** When a room finishes, everyone still in it earns 5 XP and 1 Spark
+  for each round they took part in (drew, wrote, guessed or voted), and first place gets 20 XP and 5 Sparks more.
+  The podium shows what you earned. Rooms need 3 or more players to the end, sitting out earns nothing, players
+  who leave or are removed get nothing, and 18+ party games pay up to 150 XP a day.
+
+### For admins
+
+- New settings under **18+ party games**: XP and Sparks per round played, the winner bonus XP and Sparks, and the
+  daily XP limit for 18+ party games.
+
+### Under the hood
+
+- Migration `20261120000001_adult_party_rewards` (see docs/MIGRATIONS.md): `party_rounds.played` and
+  `svc_grant_capped_reward` (service role only), pgTAP `109_adult_party_rewards`.
+- Live ink travels peer to peer on the room's realtime channel (event `ink`): batches every 50 ms, whole board
+  units with deltas, never stored. Viewers keep only the round drawer's batches.
+
 ## 1.7.0 (2 November 2026)
 
 ### For players

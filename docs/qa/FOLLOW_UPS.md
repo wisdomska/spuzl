@@ -38,12 +38,15 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 ## 18+ party games (Draw It, Two Truths)
 
 - **Age:** fixed in 1.7.0. Birth month and year are asked at sign-up and locked; the 18+ gate uses the derived band.
-- **Live drawing:** strokes reach other players when each line is finished (pen up), through a refetch on the
-  realtime "changed" event, not point by point. Streaming points would feel smoother.
 - **Round state in the database:** strokes, statements and guesses live in server-only tables for the round
   (needed on serverless hosts and for trustworthy report snapshots) and are wiped when it closes; nothing is kept
   in memory only.
-- **No rewards:** the 18+ party games pay no XP or Sparks (only room points).
+- **Live ink sender:** the realtime transport doesn't say who sent a broadcast, so viewers keep live ink only when
+  it names the round's drawer (from the server's view). A room member could still forge a line that shows for a
+  few seconds until it times out or the stored drawing replaces it; reports and the canonical drawing only ever
+  use stored strokes. Stamping the sender server side (a relay route, or Ably's clientId) would close it.
+- **Rewards and quests:** 18+ rooms pay XP and Sparks but don't count toward quests, badges or the friends feed
+  (those reach friends of any age). Party Race XP is still fixed in code with no daily cap.
 
 ## Content-game tokens and the 18+ fixes (1.5.0)
 
