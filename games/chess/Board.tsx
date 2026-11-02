@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
-import { useCellSize } from "@/components/game/useBoardSize";
+import { useCellSize, useFitHeight } from "@/components/game/useBoardSize";
 import { useGridKeys } from "@/components/game/useGridKeys";
 import { play } from "@/lib/audio";
 import { BayStyles, BEVEL, SQUARE } from "@/games/_shared/BayStyles";
@@ -58,7 +58,9 @@ export default function ChessBoard({ puzzle, initialState, hint, disabled, api }
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const streak = useRef(0);
   const sprites = useSprites();
-  const cell = useCellSize(8, 0, 0, 48);
+  // The move line under the board: the squares step down until it fits under the board (laptops, short phones).
+  const rootRef = useRef<HTMLDivElement>(null);
+  const cell = useFitHeight(useCellSize(8, 0, 0, 48), 36, 8, rootRef, "shell");
   const done = r.mated;
   const rows = toRows(shown.b);
 
@@ -228,7 +230,7 @@ export default function ChessBoard({ puzzle, initialState, hint, disabled, api }
   if (!done) chips.push({ t: `${r.good + 1}. ?`, mine: true, latest: false });
 
   return (
-    <div className="flex w-full flex-col items-center gap-3.5" data-board="chess">
+    <div ref={rootRef} className="flex w-full flex-col items-center gap-3.5" data-board="chess">
       <BayStyles />
       {/* Who moves and the mate depth: over the board on a phone, in the side panel on a wide screen. */}
       <ShellAside>

@@ -44,7 +44,17 @@ export function rungsLayout(box: Pick<BoardBox, "wide" | "w" | "h">, vh: number)
   if (!box.wide) {
     const row = vh <= SHORT_H ? SHORT_ROW : PHONE_ROW;
     const gap = 4;
-    return { row, tile: 40, letter: 20, clue: 13, gap, pad: 12, pitch: row + gap, maxW: 400, compactKeys: vh <= FULL_KEYS_H };
+    return {
+      row,
+      tile: 40,
+      letter: 20,
+      clue: 13,
+      gap,
+      pad: vh <= SHORT_H ? 10 : 12,
+      pitch: row + gap,
+      maxW: 400,
+      compactKeys: vh <= FULL_KEYS_H,
+    };
   }
   const gap = 8;
   const pad = 16;

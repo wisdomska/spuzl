@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { BoardProps } from "@/games/types";
 import { useGridKeys } from "@/components/game/useGridKeys";
-import { isWide, useViewportHeight, useViewportWidth, wideCell } from "@/components/game/useBoardSize";
+import { isWide, useFitHeight, useViewportHeight, useViewportWidth, wideCell } from "@/components/game/useBoardSize";
 import { ShellAside } from "@/components/game/ShellAside";
 import { Icon } from "@/components/ui/Icon";
 import { play } from "@/lib/audio";
@@ -60,7 +60,9 @@ export default function LudoBoard({ puzzle, initialState, hint, disabled, api }:
   const [done, setDone] = useState(false);
   const [moved, setMoved] = useState<number | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const cell = useLudoCell();
+  // Short phones: the cells step down (to 20 px) until the die, the tools and the board fit one screen.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const cell = useFitHeight(useLudoCell(), 20, N, rootRef, "shell");
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
   const movable = new Set(busy || done ? [] : steps.map((s) => s.piece));
@@ -170,7 +172,7 @@ export default function LudoBoard({ puzzle, initialState, hint, disabled, api }:
   for (let k = 0; k < 4; k++) if (!startCells.has(startOf(k))) startCells.set(startOf(k), k);
 
   return (
-    <div className="flex w-full flex-col gap-2.5" data-board="ludo">
+    <div ref={rootRef} className="flex w-full flex-col gap-2.5" data-board="ludo">
       <BayStyles />
       {/* Players, then the die: around the board on a phone, in the side panel on a wide screen. */}
       <ShellAside>

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
-import { useCellSize } from "@/components/game/useBoardSize";
+import { useCellSize, useFitHeight } from "@/components/game/useBoardSize";
 import { isKeyedInput, useGridKeys } from "@/components/game/useGridKeys";
 import { sfx } from "@/games/_shared/sfx";
 import { CROWNFALL_COPY } from "@/lib/copy/crownfall";
@@ -40,7 +40,9 @@ export default function CrownfallBoard({ puzzle, initialState, hint, disabled, m
   const streak = useRef(0);
   const cellsRef = useRef(cells);
   const painting = useRef<null | { value: number; n: number }>(null);
-  const cell = useCellSize(n, 0, 6, n <= 4 ? 72 : 64);
+  // Whatever sits under the grid fits too: the cells step down until the shell does (short laptops and phones).
+  const rootRef = useRef<HTMLDivElement>(null);
+  const cell = useFitHeight(useCellSize(n, 0, 6, n <= 4 ? 72 : 64), 36, n, rootRef, "shell");
   const a = analyze(puzzle, cells);
 
   const commit = useCallback(
@@ -168,7 +170,7 @@ export default function CrownfallBoard({ puzzle, initialState, hint, disabled, m
   };
 
   return (
-    <div className="flex w-full flex-col items-center gap-3">
+    <div ref={rootRef} className="flex w-full flex-col items-center gap-3">
       <div className={`max-w-full overflow-x-auto ${done ? "board-pulse" : ""}`}>
         <div
           role="grid"
