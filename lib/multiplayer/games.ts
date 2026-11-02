@@ -1,14 +1,14 @@
 /**
  * Which games can be raced head to head, and the seeds for each round's shared puzzle.
- * Puzzle Duels and Party Races use grid, word and clue games scored by time. Rage Ridge has its own
- * Ghost Race, Board Bay its own matches, and photosensitive or score-only games stay solo.
+ * Puzzle Duels and Party Races use grid and word games scored by time. The action courses (Phaser) have their own
+ * Ghost Race, Board Games their own matches, and photosensitive or score-only games stay solo.
  */
 import { GAMES, GAME_BY_ID, type GameMeta } from "@/lib/catalog";
 import { hasLogic } from "@/games/logic-registry";
 import type { Rng } from "@/lib/rng";
 
 export const RACE_GAMES: GameMeta[] = GAMES.filter(
-  (g) => g.world !== "rage" && g.world !== "board" && g.engine !== "phaser" && !g.photosensitive && g.scoring === "time" && hasLogic(g.id),
+  (g) => g.world !== "board" && g.engine !== "phaser" && !g.photosensitive && g.scoring === "time" && hasLogic(g.id),
 );
 const RACE_IDS = new Set(RACE_GAMES.map((g) => g.id));
 export const isRaceGame = (id: string) => RACE_IDS.has(id);

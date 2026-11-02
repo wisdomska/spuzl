@@ -10,7 +10,7 @@ import { advanceEventQuest } from "@/lib/events/server";
  */
 export const SOLO_MODES = ["daily", "free", "archive", "level"];
 const isSolo = (mode: string) => SOLO_MODES.includes(mode);
-import { gamesInWorld, type WorldId } from "@/lib/catalog";
+import { GAME_BY_ID, gamesInWorld, type WorldId } from "@/lib/catalog";
 
 export interface ClearContext {
   gameId: string;
@@ -94,7 +94,8 @@ async function badgeEarned(b: BadgeDef, c: ClearContext, s: Stats): Promise<bool
       return isSolo(c.mode) && now.getUTCHours() === 23 && now.getUTCMinutes() === 59;
     }
     case "zero_deaths":
-      return c.world === "rage" && c.deaths === 0;
+      // The action courses (Gotcha, Dash, Gauntlet) count deaths; they moved from Rage Ridge to Arcade in the regroup.
+      return GAME_BY_ID[c.gameId]?.scoring === "deaths" && c.deaths === 0;
     case "gauntlet_deaths":
       return c.gameId === "gauntlet" && c.deaths <= n;
     default:
