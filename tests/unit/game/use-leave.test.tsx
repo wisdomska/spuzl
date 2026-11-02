@@ -128,7 +128,9 @@ describe("useLeave", () => {
       const exit = vi.fn();
       const out: { api?: Api } = {};
       const view = render(<Harness input={{ context: "solo", game: "echo", started: true }} exit={exit} onApi={(a) => (out.api = a)} />);
-      view.rerender(<Harness input={{ context: "solo", game: "echo", started: true, over: true }} exit={exit} onApi={(a) => (out.api = a)} />);
+      view.rerender(
+        <Harness input={{ context: "solo", game: "echo", started: true, over: true }} exit={exit} onApi={(a) => (out.api = a)} />,
+      );
       await act(async () => void vi.runAllTimers());
       expect(back).toHaveBeenCalledTimes(1);
     } finally {
