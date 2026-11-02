@@ -329,6 +329,10 @@ export const adminCopy = {
     joinedOn: "Joined",
     lastSeen: "Last seen",
     ageBand: "Age band",
+    birth: "Birth month and year",
+    birthNotGiven: "Not given yet (joined before it was asked)",
+    birthMonth: "Birth month",
+    birthYear: "Birth year",
     stats: "Stats",
     statLabels: {
       level: "Level",
@@ -381,6 +385,7 @@ export const adminCopy = {
       revoke_ranking: "Revoke ranking",
       restore_ranking: "Restore ranking",
       signout: "Force sign-out",
+      birth: "Correct birth month/year",
       delete: "Delete account",
     },
     actionHelp: {
@@ -392,6 +397,8 @@ export const adminCopy = {
       revoke_ranking: "Keeps their times off every board until restored.",
       restore_ranking: "Puts their future times back on the boards.",
       signout: "Ends every session on every device. They can sign in again (a guest on a new device cannot get back in).",
+      birth:
+        "Sets the birth month and year (never the day); the age band and every age rule follow at once. The player can't change it. The audit log keeps the old and new band and your reason, not the date. Under 13: delete the account instead.",
       delete: "Deletes the account and everything about the player, through the same path as the player's own deletion.",
     },
     done: {
@@ -403,6 +410,7 @@ export const adminCopy = {
       revoke_ranking: "Ranking revoked. Logged.",
       restore_ranking: "Ranking restored. Logged.",
       signout: (n: number) => `Signed out of ${n} session${n === 1 ? "" : "s"}. Logged.`,
+      birth: (band: string) => `Birth month and year corrected. Age band is now ${band}. Logged.`,
       delete: "Account deleted. Logged.",
     },
     reason: "Reason (required, kept in the audit log)",

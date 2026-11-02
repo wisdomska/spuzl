@@ -176,6 +176,7 @@ export const PLAYER_ACTIONS = [
   "revoke_ranking",
   "restore_ranking",
   "signout",
+  "birth",
   "delete",
 ] as const;
 export type PlayerAction = (typeof PLAYER_ACTIONS)[number];
@@ -190,6 +191,7 @@ export const ACTION_PERMISSION: Record<PlayerAction, Permission> = {
   revoke_ranking: "players.moderate",
   restore_ranking: "players.moderate",
   signout: "players.moderate",
+  birth: "players.age",
   delete: "players.delete",
 };
 
@@ -222,6 +224,8 @@ export const ActionBody = z.discriminatedUnion("action", [
   z.object({ action: z.literal("revoke_ranking"), reason }),
   z.object({ action: z.literal("restore_ranking"), reason }),
   z.object({ action: z.literal("signout"), reason }),
+  /** Correct the birth month and year (no day); the band follows. Under 13 is refused: delete the account instead. */
+  z.object({ action: z.literal("birth"), reason, year: z.number().int().min(1900).max(2100), month: z.number().int().min(1).max(12) }),
   /** `confirm` must repeat the player's nickname (any case). */
   z.object({ action: z.literal("delete"), reason, confirm: z.string().trim().max(32) }),
 ]);

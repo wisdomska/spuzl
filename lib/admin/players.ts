@@ -7,6 +7,7 @@ import { rangeOf, type PageParams } from "./pagination";
 import { accountTypeOf, maskEmail, type AccountType, type PlayerRow, type PlayerSqlFilters } from "./player-filters";
 import { can } from "./roles";
 import { shortRef } from "./moderation";
+import { effectiveBand } from "@/lib/age";
 import type { SortState } from "./sorting";
 
 /** One page of the player list from `svc_admin_players`; the email is masked unless the role holds players.pii. */
@@ -61,7 +62,7 @@ export async function isAdminAccount(ctx: AdminCtx, id: string): Promise<boolean
 }
 
 /** Audit actions that count as moderation history on the detail page. */
-const MODERATION_ACTIONS = /^(player\.(ban|ban_void|unban|revoke_ranking|restore_ranking|reset|rename|signout)|flagged\.)/;
+const MODERATION_ACTIONS = /^(player\.(ban|ban_void|unban|revoke_ranking|restore_ranking|reset|rename|signout|birth_correct)|flagged\.)/;
 
 /**
  * Everything the player detail page shows. Location (city, country) and school are never read: under-16s keep them
@@ -74,7 +75,7 @@ export async function playerDetail(ctx: AdminCtx, id: string) {
   const { data: p, error } = await db
     .from("players")
     .select(
-      "id, nickname, age_band, avatar_color, title, level, xp, sparks, created_at, last_seen_at, banned_at, banned_until, ban_reason, ranking_revoked, is_test",
+      "id, nickname, age_band, birth_year, birth_month, avatar_color, title, level, xp, sparks, created_at, last_seen_at, banned_at, banned_until, ban_reason, ranking_revoked, is_test",
     )
     .eq("id", id)
     .maybeSingle();
@@ -169,7 +170,14 @@ export async function playerDetail(ctx: AdminCtx, id: string) {
     .slice(0, 6);
 
   return {
-    profile: { ...p, nickname: String(p.nickname) },
+    // Birth month and year only for roles that may correct it (players.age); everyone else sees the band.
+    profile: {
+      ...p,
+      nickname: String(p.nickname),
+      age_band: effectiveBand(p),
+      birth_year: can(ctx.role, "players.age") ? (p.birth_year as number | null) : null,
+      birth_month: can(ctx.role, "players.age") ? (p.birth_month as number | null) : null,
+    },
     account: {
       type: account,
       email,
