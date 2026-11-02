@@ -46,7 +46,9 @@ export async function player(
     headers: { authorization: `Bearer ${data.session!.access_token}`, "content-type": "application/json" },
     body: JSON.stringify({
       nickname,
-      ageBand: "18+",
+      // Born January 30 years ago: an adult (the band comes from birth month and year).
+      birthYear: new Date().getUTCFullYear() - 30,
+      birthMonth: 1,
       color: ["#2FD3E0", "#FF8A3D", "#8B7CFF", "#FFD23F", "#3DDC84", "#FF6B6B"][Math.floor(Math.random() * 6)],
     }),
   });

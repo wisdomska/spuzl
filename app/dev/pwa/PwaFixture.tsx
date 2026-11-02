@@ -49,7 +49,12 @@ export function PwaFixture() {
     try {
       await ensureSession();
       await api("/api/v1/profile", {
-        json: { nickname: `pwa_${Math.random().toString(36).slice(2, 8)}`, ageBand: "18+", color: "#2FD3E0" },
+        json: {
+          nickname: `pwa_${Math.random().toString(36).slice(2, 8)}`,
+          birthYear: new Date().getUTCFullYear() - 30,
+          birthMonth: 1,
+          color: "#2FD3E0",
+        },
       });
       const r = await api<{ attemptId: string }>("/api/v1/attempts", { json: { game: "crownfall", mode: "tutorial" } });
       setAttemptId(r.attemptId);

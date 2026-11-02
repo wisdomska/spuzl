@@ -17,7 +17,19 @@ export const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? env.NEXT_PUBLIC
 export const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY ?? env.SUPABASE_SERVICE_ROLE_KEY;
 export const admin = () => createClient(SB_URL, SERVICE, { auth: { persistSession: false } });
 
-export async function guest(nickname?: string) {
+export type Band = "13-15" | "16-17" | "18+";
+
+/** A birth month and year in the band today (December births are the youngest of their year). */
+export function birthFor(band: Band, today = new Date()): { birthYear: number; birthMonth: number } {
+  const y = today.getUTCFullYear();
+  return band === "18+"
+    ? { birthYear: y - 30, birthMonth: 1 }
+    : band === "16-17"
+      ? { birthYear: y - 17, birthMonth: 12 }
+      : { birthYear: y - 14, birthMonth: 12 };
+}
+
+export async function guest(nickname?: string, band: Band = "18+") {
   const sb = createClient(SB_URL, ANON, { auth: { persistSession: false } });
   const { data, error } = await sb.auth.signInAnonymously();
   if (error) throw error;
@@ -33,7 +45,7 @@ export async function guest(nickname?: string) {
     return { status: res.status, data: text ? JSON.parse(text) : null };
   };
   if (nickname) {
-    const r = await api("/api/v1/profile", { json: { nickname, ageBand: "18+", color: "#2FD3E0" } });
+    const r = await api("/api/v1/profile", { json: { nickname, ...birthFor(band), color: "#2FD3E0" } });
     if (r.status !== 200) throw new Error(`profile: ${r.status} ${JSON.stringify(r.data)}`);
   }
   return { sb, token, userId: data.user!.id, api };

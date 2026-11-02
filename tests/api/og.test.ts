@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, it } from "vitest";
-import { admin, BASE, guest, uniq } from "./helpers";
+import { admin, BASE, birthFor, guest, uniq } from "./helpers";
 import { setSetting } from "./setup";
 
 /** Share card images (FR-RS-03): sizes, content type, and that only server data reaches the card. */
@@ -154,7 +154,7 @@ describe("api: status share cards (features.statusCards)", () => {
   it("follows the privacy rules: no level under 16, no streak or world while activity is hidden, never the city", async () => {
     await setSetting("features.statusCards", true);
     const g = await guest();
-    await g.api("/api/v1/profile", { json: { nickname: uniq("sty_"), ageBand: "13-15", color: "#FF8A3D" } });
+    await g.api("/api/v1/profile", { json: { nickname: uniq("sty_"), ...birthFor("13-15"), color: "#FF8A3D" } });
     await admin().from("players").update({ city: "Kumasi", hide_activity: true }).eq("id", g.userId);
     await admin().from("streaks").update({ current: 9 }).eq("player_id", g.userId);
     const r = await g.api("/api/v1/me/status-card");

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { admin, guest, uniq } from "./helpers";
+import { admin, birthFor, guest, uniq } from "./helpers";
 import { setSetting } from "./setup";
 import { createRng } from "@/lib/rng";
 import crownfall from "@/games/crownfall/logic";
@@ -178,7 +178,7 @@ describe("api: duel", () => {
 
   it("keeps 13 to 15 year olds out of Quick Match", async () => {
     const g = await guest();
-    await g.api("/api/v1/profile", { json: { nickname: uniq("yg_"), ageBand: "13-15", color: "#2FD3E0" } });
+    await g.api("/api/v1/profile", { json: { nickname: uniq("yg_"), ...birthFor("13-15"), color: "#2FD3E0" } });
     expect((await g.api("/api/v1/duel/queue", { json: {} })).status).toBe(403);
   });
 });

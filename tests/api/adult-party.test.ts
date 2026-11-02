@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { ANON, BASE, SB_URL, admin, guest, uniq } from "./helpers";
+import { ANON, BASE, SB_URL, admin, birthFor, guest, uniq } from "./helpers";
 import { adminSession } from "./admin-helpers";
 import { setSetting } from "./setup";
 
@@ -40,7 +40,7 @@ async function member(ageBand: "13-15" | "16-17" | "18+"): Promise<Player> {
     const text = await res.text();
     return { status: res.status, data: text ? JSON.parse(text) : null };
   };
-  const p = await api("/api/v1/profile", { json: { nickname: uniq("ap_"), ageBand, color: "#2FD3E0" } });
+  const p = await api("/api/v1/profile", { json: { nickname: uniq("ap_"), ...birthFor(ageBand), color: "#2FD3E0" } });
   if (p.status !== 200) throw new Error(`profile: ${p.status} ${JSON.stringify(p.data)}`);
   return { userId: created.user.id, api };
 }

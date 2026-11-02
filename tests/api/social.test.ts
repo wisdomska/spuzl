@@ -2,7 +2,7 @@ import { WORLDS } from "@/lib/catalog";
 import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
-import { ANON, BASE, SB_URL, admin, guest, uniq } from "./helpers";
+import { ANON, BASE, SB_URL, admin, birthFor, guest, uniq } from "./helpers";
 
 /** Social and meta routes against the running dev server (API_BASE) and local Supabase. */
 const today = () => new Date().toISOString().slice(0, 10);
@@ -10,7 +10,7 @@ const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString
 
 async function minor(nickname: string) {
   const g = await guest();
-  const r = await g.api("/api/v1/profile", { json: { nickname, ageBand: "13-15", color: "#FF8A3D" } });
+  const r = await g.api("/api/v1/profile", { json: { nickname, ...birthFor("13-15"), color: "#FF8A3D" } });
   if (r.status !== 200) throw new Error(`profile ${r.status}`);
   return g;
 }
@@ -34,7 +34,7 @@ async function member(nickname: string) {
     const text = await res.text();
     return { status: res.status, data: text ? JSON.parse(text) : null };
   };
-  const r = await api("/api/v1/profile", { json: { nickname, ageBand: "18+", color: "#8B7CFF" } });
+  const r = await api("/api/v1/profile", { json: { nickname, ...birthFor("18+"), color: "#8B7CFF" } });
   if (r.status !== 200) throw new Error(`profile ${r.status} ${JSON.stringify(r.data)}`);
   return { api, userId: data.user.id };
 }

@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { beforeAll, describe, expect, it } from "vitest";
-import { ANON, BASE, SB_URL, admin, guest, uniq } from "./helpers";
+import { ANON, BASE, SB_URL, admin, birthFor, guest, uniq } from "./helpers";
 import { adminSession, type AdminSession, type Role } from "./admin-helpers";
 
 /**
@@ -28,7 +28,7 @@ async function emailPlayer(prefix: string) {
   const res = await fetch(`${BASE}/api/v1/profile`, {
     method: "POST",
     headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
-    body: JSON.stringify({ nickname, ageBand: "18+", color: "#2FD3E0" }),
+    body: JSON.stringify({ nickname, ...birthFor("18+"), color: "#2FD3E0" }),
   });
   if (res.status !== 200) throw new Error(`profile ${res.status}`);
   return { userId: data.user.id, email, nickname, token };
@@ -212,6 +212,44 @@ describe("players: every action writes an audit row", () => {
   });
 });
 
+describe("players: correct birth month and year", () => {
+  it("lets the owner and moderators correct it with a reason; analysts can't; audited by band, never the date", async () => {
+    const g = await guest(uniq("bc_"), "13-15");
+    const adult = birthFor("18+");
+    const body = { action: "birth", year: adult.birthYear, month: adult.birthMonth, reason: "parent sent proof of age" };
+    expect((await act("analyst", g.userId, body)).status).toBe(403);
+    expect((await act("content_editor", g.userId, body)).status).toBe(403);
+    const noReason = await act("moderator", g.userId, { ...body, reason: "" });
+    expect(noReason.status).toBe(400);
+    const r = await act("moderator", g.userId, body);
+    expect(r.status).toBe(200);
+    expect(r.data.age_band).toBe("18+");
+    const { data: p } = await admin().from("players").select("age_band, birth_year, birth_month").eq("id", g.userId).single();
+    expect(p).toEqual({ age_band: "18+", birth_year: adult.birthYear, birth_month: adult.birthMonth });
+    const row = await lastAudit("player.birth_correct", `player:${g.userId}`);
+    expect(row?.actor_id).toBe(S.moderator.userId);
+    expect(row?.detail).toEqual({ from_band: "13-15", to_band: "18+", reason: "parent sent proof of age" });
+    // The player sees the new band and still can't change it.
+    expect((await g.api("/api/v1/me")).data.age_band).toBe("18+");
+    const mine = await g.api("/api/v1/profile", { method: "PATCH", json: { birthYear: 2012, birthMonth: 1 } });
+    expect([mine.status, mine.data.error]).toEqual([409, "age_locked"]);
+    // The owner sees the birth month and year on the detail page; analysts only the band.
+    expect((await S.owner.aal2(`/api/admin/players/${g.userId}/detail`)).data.profile.birth_year).toBe(adult.birthYear);
+    const seen = (await S.analyst.aal2(`/api/admin/players/${g.userId}/detail`)).data.profile;
+    expect([seen.age_band, seen.birth_year, seen.birth_month]).toEqual(["18+", null, null]);
+  });
+
+  it("refuses a correction that makes the player under 13, or a month in the future", async () => {
+    const g = await guest(uniq("bd_"));
+    const y = new Date().getUTCFullYear();
+    const young = await act("owner", g.userId, { action: "birth", year: y - 8, month: 1, reason: "should not work" });
+    expect(young.status).toBe(400);
+    const future = await act("owner", g.userId, { action: "birth", year: y + 1, month: 1, reason: "should not work" });
+    expect(future.status).toBe(400);
+    expect((await admin().from("players").select("age_band").eq("id", g.userId).single()).data?.age_band).toBe("18+");
+  });
+});
+
 describe("players: delete", () => {
   it("requires the typed nickname, uses the account deletion path and is audited first", async () => {
     const p = await emailPlayer("pd_");
@@ -245,11 +283,12 @@ describe("players: list filters, sort and paging", () => {
   const made: string[] = [];
   beforeAll(async () => {
     for (let i = 0; i < 12; i++) {
-      const g = await guest(`${tag}${String(i).padStart(2, "0")}`);
+      // The band comes from the birth month and year given at sign-up (players can't set it afterwards).
+      const g = await guest(`${tag}${String(i).padStart(2, "0")}`, i % 3 === 0 ? "13-15" : "18+");
       made.push(g.userId);
       await admin()
         .from("players")
-        .update({ sparks: i * 10, age_band: i % 3 === 0 ? "13-15" : "18+" })
+        .update({ sparks: i * 10 })
         .eq("id", g.userId);
     }
   }, 120_000);

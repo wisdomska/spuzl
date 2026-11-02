@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { admin, guest, uniq } from "./helpers";
+import { admin, birthFor, guest, uniq } from "./helpers";
 
 /**
  * Board Bay "Play live" matchmaking through the real API: join, pair into a live match, cancel, one entry
@@ -124,7 +124,7 @@ describe("api: board bay play live", () => {
 
   it("keeps 13 to 15 year olds out, the same as Duel Quick Match", async () => {
     const g = await guest();
-    await g.api("/api/v1/profile", { json: { nickname: uniq("yb_"), ageBand: "13-15", color: "#2FD3E0" } });
+    await g.api("/api/v1/profile", { json: { nickname: uniq("yb_"), ...birthFor("13-15"), color: "#2FD3E0" } });
     const r = await join(g, "chess");
     expect(r.status).toBe(403);
     expect(r.data.error).toBe("age_restricted");
