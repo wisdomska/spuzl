@@ -22,7 +22,8 @@ import { decodeSolution, encodeSolution } from "./solution-codec";
 import { evaluateAfterClear, type Unlock } from "@/lib/gamification/progress";
 import { finalVerdict } from "./guess-check";
 import { bindPuzzle } from "./guess-token";
-import { isLadderGame, isLevel, levelCount, levelDifficulty, levelOpen, levelSeed, nextLevel } from "./levels";
+import { isLadderGame, isLevel, levelCount, levelDifficulty, levelOpen, nextLevel } from "./levels";
+import { securedLevelSeed } from "./level-seed";
 
 export type Mode = "tutorial" | "daily" | "free" | "archive" | "challenge" | "level";
 
@@ -123,7 +124,7 @@ export async function loadLevel(gameId: string, n: number): Promise<Loaded> {
   if (!isLadderGame(gameId) || !isLevel(gameId, n)) throw new ApiError(404, "no_such_level");
   const logic = await loadLogic(gameId);
   const difficulty = levelDifficulty(n);
-  const g = logic.level ? logic.level(n) : logic.generate(createRng(levelSeed(gameId, n)), difficulty);
+  const g = logic.level ? logic.level(n) : logic.generate(createRng(securedLevelSeed(gameId, n)), difficulty);
   if (!g) throw new ApiError(404, "no_such_level");
   return { puzzleId: null, puzzle: g.puzzle, solution: g.solution, difficulty };
 }
@@ -161,7 +162,7 @@ export async function startAttempt(admin: SupabaseClient, playerId: string, ref:
     if (!isLevel(meta.id, level)) throw new ApiError(404, "no_such_level");
     if (!levelOpen(meta.id, level, top)) throw new ApiError(403, "level_locked", "Clear the level before this one first.");
     loaded = await loadLevel(meta.id, level);
-    seed = levelSeed(meta.id, level);
+    seed = securedLevelSeed(meta.id, level);
   } else if (ref.mode === "daily" || ref.mode === "archive") {
     if (!ref.date) throw new ApiError(400, "date_required");
     loaded = await loadDaily(admin, meta.id, ref.date);

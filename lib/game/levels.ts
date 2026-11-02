@@ -4,7 +4,8 @@
  * Two kinds of ladder:
  * - pool: Rage Ridge course games (Gotcha, Dash, Gauntlet). Level n is the n-th room of the game's
  *   hand-ordered pool (games/<id>/levels.ts LEVELS), played as a one-room course. Finite.
- * - seeded: generated puzzle games. Level n is `generate(createRng("level:<game>:<n>"), levelDifficulty(n))`,
+ * - seeded: generated puzzle games. Level n is `generate(createRng(securedLevelSeed(game, n)), levelDifficulty(n))`
+ *   (the `level:<game>:<n>` base keyed with a server secret, lib/game/level-seed.ts),
  *   so it is the same board for everyone, harder (and bigger, where the game sizes boards by difficulty)
  *   as n grows. Endless.
  *
