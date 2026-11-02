@@ -2,7 +2,11 @@
 
 import { useGameSettings } from "@/lib/game-settings/client";
 import { primeAttempt } from "@/lib/client/early-attempt";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { LevelSheet } from "@/components/levels/LevelSheet";
+import { isLadderGame, ladderDone } from "@/lib/game/levels";
+import { levelHref, useLevels } from "@/lib/client/levels";
+import { levelsCopy as L } from "@/lib/copy/levels";
 import { useRouter } from "next/navigation";
 import { Dialog } from "radix-ui";
 import { Button } from "@/components/ui/Button";
@@ -18,7 +22,8 @@ import { useSheetSound } from "@/lib/audio/useSheetSound";
 
 /**
  * One game's card (SPZ-14): the rule, then one primary action (Play; with Dailies on, today's Daily then Free play
- * is done), Free play second, and the ways to play with others where the game supports them.
+ * is done), Free play second, Levels (with the player's current level) for games with a level ladder, and the
+ * ways to play with others where the game supports them.
  */
 export function GameCard({
   meta,
@@ -45,6 +50,11 @@ export function GameCard({
   };
   const world = meta ? WORLD_BY_ID[meta.world] : null;
   const race = meta ? isRaceGame(meta.id) : false;
+  const ladder = meta ? isLadderGame(meta.id) : false;
+  const levels = useLevels(ladder);
+  const progress = meta ? levels.data?.games[meta.id] : undefined;
+  const levelStatus = progress ? L.status(progress.top, progress.next, ladderDone(meta!.id, progress.top)) : null;
+  const [levelsOpen, setLevelsOpen] = useState(false);
   useSheetSound(!!meta);
   return (
     <Dialog.Root open={!!meta} onOpenChange={(o) => !o && onClose()}>
@@ -111,6 +121,21 @@ export function GameCard({
                     {T.freePlay}
                   </Button>
                 )}
+                {ladder && (
+                  <div className="flex flex-col gap-1.5">
+                    <Button variant="secondary" icon="mountains" onClick={() => go(levelHref(meta.id))} {...PLAY_NAV}>
+                      {L.mode}
+                    </Button>
+                    <button
+                      type="button"
+                      onClick={() => setLevelsOpen(true)}
+                      className="press text-muted flex min-h-11 items-center justify-center gap-1.5 rounded-[12px] px-2 text-[14px] font-semibold"
+                    >
+                      <Icon name="flag-checkered" size={16} />
+                      {levelStatus ? `${levelStatus} · ${L.allLevels}` : L.allLevels}
+                    </button>
+                  </div>
+                )}
                 {meta.botPlay && (
                   <Button variant="secondary" icon="robot" onClick={() => go(`/play/${meta.id}/bot`)}>
                     {T.vsBot}
@@ -139,6 +164,17 @@ export function GameCard({
                     ))}
                   </div>
                 </div>
+              )}
+              {ladder && (
+                <LevelSheet
+                  meta={meta}
+                  open={levelsOpen}
+                  onClose={() => setLevelsOpen(false)}
+                  onPlay={(n) => {
+                    setLevelsOpen(false);
+                    go(levelHref(meta.id, n));
+                  }}
+                />
               )}
             </>
           )}
