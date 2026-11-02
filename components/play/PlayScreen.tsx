@@ -7,7 +7,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { GameShell } from "@/components/game/GameShell";
 import { BoardSkeleton } from "@/components/game/BoardSkeleton";
 import { BOARDS } from "@/games/board-registry";
-import { setGuessAttempt } from "@/games/_shared/guess";
 import { WORLD_BY_ID, type GameMeta } from "@/lib/catalog";
 import { Skeleton } from "@/components/ui/Skeleton";
 import {
@@ -42,7 +41,7 @@ import { HowToSheet } from "./HowToSheet";
 import { GuidedPlay } from "./GuidedPlay";
 import { allLearned, learnedGames, needsGuided } from "@/lib/guided";
 import { useLearnedSync, useMarkLearned } from "@/lib/client/learned";
-import { hasLogic } from "@/games/logic-registry";
+import { hasLogic } from "@/games/logic-ids";
 import { Spuz } from "@/components/brand/Spuz";
 import { Button } from "@/components/ui/Button";
 import { RaceLiveButton } from "@/components/multiplayer/GameChallenge";
@@ -138,7 +137,6 @@ export function PlayScreen({
         // A primed start that failed (offline blip, a mode the server refuses) falls back to a fresh start.
         const a = await (primed ? primed.catch(fresh) : fresh());
         latestState.current = a.state ?? undefined;
-        setGuessAttempt(a.attemptId);
         setAttempt(a);
         setMode(m);
         setPhase("playing");
@@ -156,8 +154,6 @@ export function PlayScreen({
   useEffect(() => {
     beginRef.current = begin;
   }, [begin]);
-  // Content-game guesses resolve against this screen's attempt; forget it when the screen goes.
-  useEffect(() => () => setGuessAttempt(null), []);
 
   // Start (or resume) once the player is known. Runs from a timer callback so a StrictMode double effect
   // cancels the first start instead of creating two attempts.

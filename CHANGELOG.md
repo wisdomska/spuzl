@@ -24,6 +24,22 @@
 - Live ink travels peer to peer on the room's realtime channel (event `ink`): batches every 50 ms, whole board
   units with deltas, never stored. Viewers keep only the round drawer's batches.
 
+- **Quickfire answers are checked on our side.** Your board no longer carries the answers: each question's clock
+  starts with us when it appears, your tap is marked at once and the right answer shows a moment later. An answer
+  that reaches us after the 15 seconds (plus a little for the network) counts as out of time, and the clock keeps
+  running if you pause mid-question. If the connection drops, your answer is kept: tap Try again.
+
+### Under the hood
+
+- Quickfire moves to the content-game guess transport: the served board has questions and options only (no sealed
+  answer key, no salt), behind an attempt-bound token. The guess route opens and judges each question, keeps both
+  on the attempt's move log with the server's time, and finish audits the final state against that log, so a
+  forged score fails. The migration `20261120100001_quickfire_server_answers.sql` strips the sealed key from stored
+  boards and gives them a content reference. Guided practice, the admin preview and the dev board judge as practice.
+- Client code reads `hasLogic` from `games/logic-ids.ts`, and the dev board answers hints and guesses through
+  server actions, so the logic registry (and the Quickfire question bank) stays out of client bundles. A unit test
+  walks the client import graph to keep it that way.
+
 ## 1.7.0 (2 November 2026)
 
 ### For players

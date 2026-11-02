@@ -1,0 +1,75 @@
+/**
+ * Which games have a logic module, by id. Client-safe: it imports nothing, so client code can ask `hasLogic`
+ * without pulling games/logic-registry.ts (and through it every logic module and its content, such as the
+ * Quickfire question bank) into a client bundle. Keep in step with LOGIC in logic-registry.ts (a unit test
+ * checks).
+ */
+export const LOGIC_IDS: readonly string[] = [
+  "crownfall",
+  "dusk",
+  "sixer",
+  "nine",
+  "pixl",
+  "blackout",
+  "tripwire",
+  "chess",
+  "draughts",
+  "oware",
+  "fourup",
+  "flip",
+  "ludo",
+  "weave",
+  "flowline",
+  "isles",
+  "pairup",
+  "lost",
+  "hunch",
+  "echo",
+  "twins",
+  "flinch",
+  "quickfire",
+  "flagged",
+  "pinned",
+  "quilt",
+  "deadon",
+  "snug",
+  "shuffle",
+  "reflect",
+  "squint",
+  "merge",
+  "sums",
+  "equal",
+  "gotcha",
+  "dash",
+  "flipside",
+  "ricochet",
+  "stacked",
+  "wobble",
+  "grapple",
+  "ghosted",
+  "slip",
+  "gauntlet",
+  "coil",
+  "quads",
+  "rungs",
+  "minicross",
+  "seven",
+  "buried",
+  "remix",
+  "penalty",
+  "beattap",
+  "hilo",
+  "market",
+  "five",
+  "emojihits",
+  "trotro",
+  "lightup",
+  "killer",
+  "dara",
+];
+
+const IDS = new Set(LOGIC_IDS);
+
+export function hasLogic(id: string) {
+  return IDS.has(id);
+}

@@ -2,14 +2,14 @@
 
 import { useMemo } from "react";
 import type { BoardProps } from "@/games/types";
-import { QuizBoard, type QuizRound } from "@/games/_shared/QuizBoard";
+import { localJudge, QuizBoard, type QuizRound } from "@/games/_shared/QuizBoard";
 import { unseal } from "@/games/_shared/cluecave";
 import { Flag } from "./Flag";
 import { sealKey, type FlaggedPuzzle, type FlaggedState } from "./logic";
 
 /** Flagged: ten 10 second rounds on the shared timed quiz board. Flags are drawn as SVG. */
 export default function FlaggedBoard({ puzzle, initialState, hint, disabled, mode, api }: BoardProps<FlaggedPuzzle, FlaggedState>) {
-  const correct = useMemo(() => unseal<number[]>(puzzle.sealed, sealKey(puzzle.ref)), [puzzle]);
+  const judge = useMemo(() => localJudge(unseal<number[]>(puzzle.sealed, sealKey(puzzle.ref)), puzzle.limitMs), [puzzle]);
   const rounds = useMemo<QuizRound[]>(
     () =>
       puzzle.rounds.map((r) => {
@@ -33,7 +33,7 @@ export default function FlaggedBoard({ puzzle, initialState, hint, disabled, mod
   return (
     <QuizBoard
       rounds={rounds}
-      correct={correct}
+      judge={judge}
       limitMs={puzzle.limitMs}
       noun="Round"
       initial={initialState?.answers}

@@ -26,8 +26,17 @@ export const quick = {
     wrong: (answer: string) => `Not quite. It was ${answer}.`,
     time: (answer: string) => `Time. It was ${answer}.`,
     timeSay: (answer: string) => `Time is up. It was ${answer}.`,
+    /** the answer reached the server after the question's time ran out */
+    late: (answer: string) => `Too late to count. It was ${answer}.`,
+    /** shown when the server takes a moment to judge an answer */
+    checking: "Checking your answer…",
+    offline: "No connection. Your answer is kept; tap Try again.",
+    retry: "Try again",
+    /** before Start: the question clock is the server's, so pausing does not stop it */
+    clockRuns: "The clock keeps running if you pause mid-question.",
     rightAnswer: ", right answer",
     yourWrongAnswer: ", your answer, wrong",
+    yourAnswerChecking: ", your answer, checking",
     /** the end-of-run summary, e.g. "4 of 5 · 469 pts" */
     summary: (right: number, total: number, score: number) => `${right} of ${total} · ${formatNumber(score)} pts`,
     summarySay: (right: number, total: number, score: number) =>

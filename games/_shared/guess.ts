@@ -8,8 +8,8 @@
  * (lib/game/guess-token.ts). Boards call `sendGuess(puzzle.ref, guess)`; the server route opens the token,
  * resolves its context, then calls the game's pure `checkGuess(puzzle, solution, guess, ctx)` from logic.ts and
  * returns its result. A bare content reference is refused. The app (or a test) installs another transport
- * with `setGuessTransport` (the admin preview). In development, a board holding a bare content reference (the
- * /dev/board fixture) is checked locally, as practice, so it works on its own.
+ * with `setGuessTransport`: the admin preview, and the /dev/board fixture (a server action that checks its bare
+ * reference as practice). Nothing here loads game logic, so content stays out of client bundles.
  *
  * Requests that give something away (show the answer, the keeper's dive) are answered only with a context:
  * the caller's own open attempt, whose saved state and server move log the logic reads, or a practice board
@@ -41,12 +41,13 @@ export const isGuessToken = (r: unknown): r is GuessToken =>
 /**
  * Where a guess is checked from.
  * - `attempt`: the caller's own in-progress attempt, with its last autosaved state and the entries the server
- *   recorded on it (`record`), oldest first.
+ *   recorded on it (`record`), oldest first. Log entries carry the server time they were stored at (`t`, ms);
+ *   `now` is the server time of this request, for games that time answers on the server (Quickfire).
  * - `practice`: a board whose answers are public anyway (the guided practice round, the dev fixture).
  * - null: a bare puzzle reference, which could be anyone's scored puzzle; requests that give an answer away
  *   are refused.
  */
-export type GuessContext = { kind: "attempt"; state: unknown; log: unknown[] } | { kind: "practice" } | null;
+export type GuessContext = { kind: "attempt"; state: unknown; log: unknown[]; now?: number } | { kind: "practice" } | null;
 
 export const PRACTICE: GuessContext = { kind: "practice" };
 
@@ -68,28 +69,11 @@ export function setGuessTransport(t: GuessTransport | null) {
   transport = t;
 }
 
-let attemptId: string | null = null;
-
-/**
- * The open attempt the board belongs to (set by the Play screen; null in races, guided practice and dev
- * fixtures). The server reads the attempt from the token itself; this only keeps a dev Play screen from
- * checking a bare reference locally.
- */
-export function setGuessAttempt(id: string | null) {
-  attemptId = id;
-}
-
 /** Default route the server API is expected to expose. */
 export const GUESS_ROUTE = (game: string) => `/api/games/${encodeURIComponent(game)}/guess`;
 
 export async function sendGuess<R>(ref: PuzzleRef, guess: unknown): Promise<R> {
   if (transport) return (await transport(ref, guess)) as R;
-  if (!isGuessToken(ref) && process.env.NODE_ENV !== "production" && !attemptId) {
-    const { LOGIC } = await import("@/games/logic-registry");
-    const l = (await LOGIC[ref.game]()).default as unknown as GuessLogic;
-    const g = l.generateAt(ref.i, ref.d);
-    return l.checkGuess(g.puzzle, g.solution, guess, PRACTICE) as R;
-  }
   const res = await fetch(GUESS_ROUTE(ref.game), {
     method: "POST",
     headers: { "content-type": "application/json" },
