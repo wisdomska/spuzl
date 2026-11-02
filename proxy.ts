@@ -1,8 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { MERGED_WORLDS, type WorldId } from "@/lib/catalog";
 
 /** Refreshes the Supabase session cookie on navigation so Server Components see a valid player. Signed-out "/" shows About. */
 export async function proxy(request: NextRequest) {
+  // Worlds folded into a broader one in the 2026-11 regroup (Line Lane into Puzzles, Rage Ridge into Arcade...):
+  // old links get a real 308 to the group that took their games, before the page streams.
+  const folded = /^\/world\/([a-z]+)\/?$/.exec(request.nextUrl.pathname)?.[1];
+  const to = folded && Object.hasOwn(MERGED_WORLDS, folded) ? MERGED_WORLDS[folded as WorldId] : undefined;
+  if (to) return NextResponse.redirect(new URL(`/world/${to}${request.nextUrl.search}`, request.url), 308);
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   let response = NextResponse.next({ request });

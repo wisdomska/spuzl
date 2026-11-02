@@ -60,13 +60,43 @@ export interface GameMeta {
   retired?: boolean;
 }
 
-/** Every world the code knows, including ones with no live game left (admin, colours, old results). */
+/**
+ * Every world the code knows, including ones with no live game left (admin, colours, old results).
+ * The owner regrouped the live games into 4 broad worlds (2026-11): Puzzles, Words & Quiz, Arcade and Board Games.
+ * They reuse the ids of the worlds they grew from (logic, word, reflex, board), so /world URLs, ratings and badge
+ * ids stay put. The other five worlds now hold only retired games, so they stay hidden (WORLDS below).
+ * Order here is the order of the Home map and every world list.
+ */
 export const ALL_WORLDS: World[] = [
-  { id: "logic", name: "Logic Lab", color: "var(--w-logic)", ink: "var(--w-logic-ink)", tagline: "Rule grids", icon: "flask" },
+  {
+    id: "logic",
+    name: "Puzzles",
+    color: "var(--w-logic)",
+    ink: "var(--w-logic-ink)",
+    tagline: "Logic grids, paths and sliding jams",
+    icon: "puzzle-piece",
+  },
+  {
+    id: "word",
+    name: "Words & Quiz",
+    color: "var(--w-word)",
+    ink: "var(--w-word-ink)",
+    tagline: "Word games and quick trivia",
+    icon: "chat-circle-text",
+  },
+  {
+    id: "reflex",
+    name: "Arcade",
+    color: "var(--w-reflex)",
+    ink: "var(--w-reflex-ink)",
+    tagline: "Memory, rhythm, reflex and action",
+    icon: "game-controller",
+  },
+  { id: "board", name: "Board Games", color: "var(--w-board)", ink: "var(--w-board-ink)", tagline: "Classic board games", icon: "horse" },
+  // Retired worlds: no live game left, so hidden from players. Kept for old results, colours and earned badges.
   { id: "line", name: "Line Lane", color: "var(--w-line)", ink: "var(--w-line-ink)", tagline: "Paths and lines", icon: "path" },
   { id: "shape", name: "Shape Shed", color: "var(--w-shape)", ink: "var(--w-shape-ink)", tagline: "Shapes and space", icon: "cube" },
   { id: "number", name: "Number Den", color: "var(--w-number)", ink: "var(--w-number-ink)", tagline: "Numbers", icon: "hash" },
-  { id: "word", name: "Word Woods", color: "var(--w-word)", ink: "var(--w-word-ink)", tagline: "Words", icon: "tree" },
   {
     id: "clue",
     name: "Clue Cave",
@@ -75,16 +105,7 @@ export const ALL_WORLDS: World[] = [
     tagline: "Clues and knowledge",
     icon: "magnifying-glass",
   },
-  {
-    id: "reflex",
-    name: "Reflex Rink",
-    color: "var(--w-reflex)",
-    ink: "var(--w-reflex-ink)",
-    tagline: "Memory and reflex",
-    icon: "lightning",
-  },
   { id: "rage", name: "Rage Ridge", color: "var(--w-rage)", ink: "var(--w-rage-ink)", tagline: "Action and rage", icon: "fire" },
-  { id: "board", name: "Board Bay", color: "var(--w-board)", ink: "var(--w-board-ink)", tagline: "Classic board games", icon: "horse" },
 ];
 
 const g = (
@@ -101,7 +122,7 @@ const g = (
 
 /** Every game the code knows, before retirement is applied. Use GAMES / ALL_GAMES below. */
 const MAIN_GAMES: GameMeta[] = [
-  // Logic Lab
+  // Puzzles: logic grids (the old Logic Lab)
   g(
     "crownfall",
     "Crownfall",
@@ -172,11 +193,11 @@ const MAIN_GAMES: GameMeta[] = [
     "Reveal every safe tile. Numbers count the mines touching a tile.",
     { unique: true, minTimeMs: 8000 },
   ),
-  // Line Lane
+  // Puzzles: paths and mazes (from Line Lane; isles stays there, retired)
   g(
     "weave",
     "Weave",
-    "line",
+    "logic",
     "path",
     "L",
     "grid",
@@ -184,7 +205,7 @@ const MAIN_GAMES: GameMeta[] = [
     "One path through the numbers in order, filling every cell.",
     { unique: true, minTimeMs: 5000 },
   ),
-  g("flowline", "Flowline", "line", "drop", "L", "grid", "Rotate pipes, water every plant", "Rotate pipes so water reaches every plant.", {
+  g("flowline", "Flowline", "logic", "drop", "L", "grid", "Rotate pipes, water every plant", "Rotate pipes so water reaches every plant.", {
     unique: true,
     minTimeMs: 5000,
   }),
@@ -202,7 +223,7 @@ const MAIN_GAMES: GameMeta[] = [
   g(
     "pairup",
     "Pairup",
-    "line",
+    "logic",
     "link-simple",
     "M2",
     "grid",
@@ -210,10 +231,10 @@ const MAIN_GAMES: GameMeta[] = [
     "Join matching dots without crossing lines. Fill the whole grid.",
     { unique: true, minTimeMs: 4000 },
   ),
-  g("lost", "Lost", "line", "signpost", "M3+", "grid", "Escape the foggy maze", "Find the exit. The fog lifts as you move.", {
+  g("lost", "Lost", "logic", "signpost", "M3+", "grid", "Escape the foggy maze", "Find the exit. The fog lifts as you move.", {
     minTimeMs: 5000,
   }),
-  // Shape Shed
+  // Shape Shed (retired world); Trotro Jam is a Puzzle
   g(
     "quilt",
     "Quilt",
@@ -264,7 +285,7 @@ const MAIN_GAMES: GameMeta[] = [
   g(
     "trotro",
     "Trotro Jam",
-    "shape",
+    "logic",
     "bus",
     "M3+",
     "grid",
@@ -272,7 +293,7 @@ const MAIN_GAMES: GameMeta[] = [
     "Slide cars and trucks along their lanes until the trotro can drive out of the exit.",
     { minTimeMs: 5000 },
   ),
-  // Number Den
+  // Number Den (retired world)
   g(
     "deadon",
     "Dead On",
@@ -317,7 +338,7 @@ const MAIN_GAMES: GameMeta[] = [
     "Fill the blanks so every row and column equation is true.",
     { unique: true, minTimeMs: 8000 },
   ),
-  // Word Woods
+  // Words & Quiz: words (the old Word Woods)
   g(
     "coil",
     "Coil",
@@ -395,7 +416,7 @@ const MAIN_GAMES: GameMeta[] = [
     "Unscramble the word. Three rounds, against the clock.",
     { content: "curated", minTimeMs: 2000 },
   ),
-  // Clue Cave
+  // Words & Quiz: trivia (from Clue Cave; the rest stays there, retired)
   g(
     "hunch",
     "Hunch",
@@ -407,7 +428,7 @@ const MAIN_GAMES: GameMeta[] = [
     "Guess the hidden category. Fewer clues, better score.",
     { content: "human", scoring: "score", minTimeMs: 2000 },
   ),
-  g("quickfire", "Quickfire", "clue", "timer", "M2", "custom", "Five trivia questions, fast", "5 questions, 15 seconds each.", {
+  g("quickfire", "Quickfire", "word", "timer", "M2", "custom", "Five trivia questions, fast", "5 questions, 15 seconds each.", {
     content: "human",
     scoring: "score",
     minTimeMs: 2000,
@@ -437,7 +458,7 @@ const MAIN_GAMES: GameMeta[] = [
   g(
     "emojihits",
     "Emoji Hits",
-    "clue",
+    "word",
     "smiley",
     "M3+",
     "custom",
@@ -445,7 +466,7 @@ const MAIN_GAMES: GameMeta[] = [
     "Name the song, film or TV show from the emoji. 5 rounds, 3 tries each.",
     { content: "curated", scoring: "score", minTimeMs: 4000 },
   ),
-  // Reflex Rink
+  // Arcade: memory, rhythm and reflex (the old Reflex Rink)
   g(
     "echo",
     "Echo",
@@ -483,11 +504,11 @@ const MAIN_GAMES: GameMeta[] = [
     "Tap on every beat of the pattern. Perfect and Good score; extra taps cost points.",
     { scoring: "score", minTimeMs: 0 },
   ),
-  // Rage Ridge
+  // Arcade: action (from Rage Ridge; the rest stays there, retired)
   g(
     "gotcha",
     "Gotcha",
-    "rage",
+    "reflex",
     "skull",
     "L",
     "phaser",
@@ -495,7 +516,7 @@ const MAIN_GAMES: GameMeta[] = [
     "Reach the exit. Floors drop, spikes appear, the door runs.",
     { scoring: "deaths", minTimeMs: 5000, photosensitive: true },
   ),
-  g("dash", "Dash", "rage", "person-simple-run", "L", "phaser", "Tap to jump, do not stop", "Tap to jump. Clear today's course.", {
+  g("dash", "Dash", "reflex", "person-simple-run", "L", "phaser", "Tap to jump, do not stop", "Tap to jump. Clear today's course.", {
     scoring: "deaths",
     minTimeMs: 5000,
     photosensitive: true,
@@ -562,7 +583,7 @@ const MAIN_GAMES: GameMeta[] = [
   g(
     "gauntlet",
     "Gauntlet",
-    "rage",
+    "reflex",
     "flag-checkered",
     "M3+",
     "phaser",
@@ -570,7 +591,7 @@ const MAIN_GAMES: GameMeta[] = [
     "10 tiny troll levels in a row. Fewest deaths wins.",
     { scoring: "deaths", minTimeMs: 10000, photosensitive: true },
   ),
-  // Board Bay
+  // Board Games (the old Board Bay)
   g("chess", "Chess", "board", "horse", "L", "board", "Mates to find and live games", "Find the mate. White to move.", {
     unique: true,
     minTimeMs: 1500,
@@ -715,7 +736,7 @@ const LAB_LIST: GameMeta[] = [
  * server answers 404 unknown_game. The admin console lists them, marked retired, read-only for scheduling.
  */
 export const RETIRED_IDS: ReadonlySet<string> = new Set([
-  // Logic Lab
+  // Puzzles (was Logic Lab)
   "pixl",
   "blackout",
   "tripwire",
@@ -736,14 +757,14 @@ export const RETIRED_IDS: ReadonlySet<string> = new Set([
   "hilo",
   "market",
   "killer",
-  // Word Woods
+  // Words & Quiz (was Word Woods)
   "quads",
   "five",
   // Clue Cave
   "hunch",
   "pinned",
   "flagged",
-  // Reflex Rink
+  // Arcade (was Reflex Rink)
   "penalty",
   // Rage Ridge
   "flipside",
@@ -753,7 +774,7 @@ export const RETIRED_IDS: ReadonlySet<string> = new Set([
   "grapple",
   "ghosted",
   "slip",
-  // Board Bay
+  // Board Games (was Board Bay)
   "flip",
   "dara",
 ]);
@@ -790,6 +811,37 @@ export const WORLD_BY_ID: Record<WorldId, World> = Object.fromEntries(ALL_WORLDS
 /** A world players may open: it has at least one live game. */
 export const isLiveWorld = (id: string | null | undefined) => !!id && WORLDS.some((w) => w.id === id);
 export const gamesInWorld = (w: WorldId) => GAMES.filter((x) => x.world === w);
+
+/**
+ * Worlds folded into a broader one in the 2026-11 regroup. Their pages redirect to the world that took their live
+ * games (app/world/[id]/page.tsx), so old links and bookmarks still land somewhere useful.
+ */
+export const MERGED_WORLDS: Partial<Record<WorldId, WorldId>> = { line: "logic", shape: "logic", clue: "word", rage: "reflex" };
+
+/**
+ * A game's own colour family, when it differs from its world's. Games that moved in the 2026-11 regroup keep the
+ * colour they were designed in: Flowline's water stays cyan, the trotro stays orange, the Rage Ridge courses stay
+ * red. One line per entry: scripts/prerender-3d.mjs reads this block to colour the 3D tiles.
+ */
+const TONE: Partial<Record<string, WorldId>> = {
+  weave: "line",
+  flowline: "line",
+  pairup: "line",
+  lost: "line",
+  trotro: "shape",
+  quickfire: "clue",
+  emojihits: "clue",
+  gotcha: "rage",
+  dash: "rage",
+  gauntlet: "rage",
+};
+/** The colour family a game wears in play (shell, tiles, share cards): its tone, else its world. */
+export const toneOf = (g: GameMeta): WorldId => TONE[g.id] ?? g.world;
+/** A game's colours: `color` fill and `ink` for world-coloured text on the light theme. */
+export const colourOf = (g: GameMeta): Pick<World, "color" | "ink"> => {
+  const w = WORLD_BY_ID[toneOf(g)];
+  return { color: w.color, ink: w.ink };
+};
 
 /** The live launch Dailies counted by "Today x of N" (design Home), and the designed boards plus Board Bay. */
 export const LAUNCH_IDS = GAMES.filter((x) => x.phase === "L" && x.world !== "board").map((x) => x.id);

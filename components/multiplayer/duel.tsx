@@ -10,6 +10,7 @@ import { Spuz, type SpuzMood } from "@/components/brand/Spuz";
 import { play } from "@/lib/audio";
 import { formatClock, formatNumber } from "@/lib/format";
 import { gameName, RACE_GAMES } from "@/lib/multiplayer/games";
+import { WORLD_BY_ID } from "@/lib/catalog";
 import { TIMING, type EmoteId } from "@/lib/multiplayer/constants";
 import type { MatchPlayerView, MatchView } from "@/lib/multiplayer/types";
 import { useReduce } from "@/lib/client/multiplayer";
@@ -200,19 +201,7 @@ export function Matchmaking({
 }) {
   const reduce = useReduce();
   const meta = game ? RACE_GAMES.find((g) => g.id === game) : null;
-  const world = meta
-    ? {
-        logic: "Logic Lab",
-        line: "Line Lane",
-        shape: "Shape Shed",
-        number: "Number Den",
-        word: "Word Woods",
-        clue: "Clue Cave",
-        reflex: "Reflex Rink",
-        rage: "Rage Ridge",
-        board: "Board Bay",
-      }[meta.world]
-    : null;
+  const world = meta ? WORLD_BY_ID[meta.world].name : null;
   return (
     <div className="flex flex-1 flex-col items-center px-4 pb-[max(32px,env(safe-area-inset-bottom))]">
       <div className="bg-surface-raised mt-[60px] flex items-center gap-2 rounded-full px-3.5 py-2 text-[14px] font-semibold">

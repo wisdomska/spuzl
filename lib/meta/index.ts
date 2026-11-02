@@ -89,7 +89,7 @@ export const FAMILY_LABEL: Record<string, string> = {
   social: "Social",
   duel: "Duel",
   party: "Party",
-  board: "Board Bay",
+  board: "Board Games",
   time: "Night Owl and Early Bird",
   secret: "Secret",
 };
@@ -157,9 +157,12 @@ export function shortDate(date: string): string {
 }
 
 // ---------- School Cup ----------
-/** Classroom mode hides Rage Ridge and photosensitive games (T1: "Hidden in classroom mode"). */
+/**
+ * Classroom mode hides the action courses (the Phaser games, once Rage Ridge, now in Arcade) and photosensitive
+ * games (T1: "Hidden in classroom mode").
+ */
 export function classroomAllowed(g: GameMeta): boolean {
-  return g.world !== "rage" && !g.photosensitive;
+  return g.engine !== "phaser" && !g.photosensitive;
 }
 export const CLASSROOM_GAMES = GAMES.filter(classroomAllowed);
 export const MAX_CUP_GAMES = 5;

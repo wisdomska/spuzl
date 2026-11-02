@@ -82,7 +82,8 @@ export function defaultTags(id: string): Tag[] {
   if (!g) return [];
   const tags: Tag[] = [];
   if ((TYPICAL_SEC[id] ?? 180) < 120) tags.push("quick");
-  if (g.world !== "reflex" && g.world !== "rage" && !PRESSURE.has(id)) tags.push("calm");
+  // Arcade (memory, reflex and the action courses, wherever they sit) is never calm.
+  if (g.world !== "reflex" && g.engine !== "phaser" && !PRESSURE.has(id)) tags.push("calm");
   if (isRaceGame(id) || g.botPlay) tags.push("competitive");
   return tags;
 }

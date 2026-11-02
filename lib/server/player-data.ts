@@ -3,7 +3,7 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { levelFromXp, flameTier } from "@/lib/rewards";
 import { rankFor } from "@/lib/rating/glicko2";
-import { GAMES, LAUNCH_IDS, playableGame } from "@/lib/catalog";
+import { GAMES, LAUNCH_IDS, isLiveWorld, playableGame } from "@/lib/catalog";
 import { COSMETICS } from "@/lib/gamification/cosmetics";
 import { hasLogic } from "@/games/logic-registry";
 import { dailyNumber, msToReset } from "@/lib/format";
@@ -80,7 +80,9 @@ export async function loadMe(user: User, player: PlayerRow, admin: SupabaseClien
   }
   const theme = COSMETICS.find((c) => c.type === "board_theme" && (equipped ?? []).some((e) => e.cosmetic_id === c.id));
   const lv = levelFromXp(player.xp);
-  const worldRatings = (ratings ?? []).filter((r) => !r.track.startsWith("duel") && !r.track.startsWith("board:"));
+  // Overall rank: the live worlds only. Tracks of worlds folded in the regroup (line, rage...) stay in the table
+  // as history, but their ratings were carried into the world that took their games (migration 20261121000001).
+  const worldRatings = (ratings ?? []).filter((r) => isLiveWorld(r.track));
   // The band comes from birth month and year (never sent to the client); birthSet asks players from before once.
   const { birth_year, birth_month, ...shown } = profile ?? {};
   const overall = worldRatings.length ? worldRatings.reduce((s, r) => s + Number(r.rating), 0) / worldRatings.length : 1000;

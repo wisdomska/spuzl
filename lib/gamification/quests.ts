@@ -1,3 +1,5 @@
+import { WORLD_BY_ID } from "@/lib/catalog";
+
 /** Day (3, refresh 00:00 GMT) and weekly (5-step chain) quests. Always achievable in under 15 minutes. */
 export interface QuestDef {
   id: string;
@@ -13,7 +15,7 @@ export const DAILY_POOL: QuestDef[] = [
   {
     id: "d-clear-2-word",
     kind: "daily",
-    title: "Clear 2 Word Woods games",
+    title: `Clear 2 games in ${WORLD_BY_ID.word.name}`,
     goal: { kind: "world_clears", world: "word", n: 2 },
     xp: 40,
     sparks: 15,
@@ -21,7 +23,7 @@ export const DAILY_POOL: QuestDef[] = [
   {
     id: "d-clear-2-logic",
     kind: "daily",
-    title: "Clear 2 Logic Lab games",
+    title: `Clear 2 games in ${WORLD_BY_ID.logic.name}`,
     goal: { kind: "world_clears", world: "logic", n: 2 },
     xp: 40,
     sparks: 15,
@@ -42,7 +44,7 @@ export const DAILY_POOL: QuestDef[] = [
   {
     id: "d-board",
     kind: "daily",
-    title: "Clear a Board Bay puzzle",
+    title: `Clear a ${WORLD_BY_ID.board.name} puzzle`,
     goal: { kind: "world_clears", world: "board", n: 1 },
     xp: 40,
     sparks: 15,
@@ -52,7 +54,8 @@ export const DAILY_POOL: QuestDef[] = [
 export const WEEKLY_CHAIN: QuestDef[] = [
   { id: "w-1", kind: "weekly", step: 1, title: "Clear 5 puzzles", goal: { kind: "daily_clears", n: 5 }, xp: 60, sparks: 20 },
   { id: "w-2", kind: "weekly", step: 2, title: "Win 2 Duels or Races", goal: { kind: "mp_wins", n: 2 }, xp: 80, sparks: 25 },
-  { id: "w-3", kind: "weekly", step: 3, title: "Clear games in 5 worlds", goal: { kind: "worlds_week", n: 5 }, xp: 100, sparks: 30 },
+  // 4 worlds since the 2026-11 regroup (was 5 of 8): every world, still doable in a week.
+  { id: "w-3", kind: "weekly", step: 3, title: "Clear games in all 4 worlds", goal: { kind: "worlds_week", n: 4 }, xp: 100, sparks: 30 },
   { id: "w-4", kind: "weekly", step: 4, title: "Clear 25 puzzles", goal: { kind: "daily_clears", n: 25 }, xp: 150, sparks: 50 },
   { id: "w-5", kind: "weekly", step: 5, title: "Keep a 7 day streak", goal: { kind: "streak", n: 7 }, xp: 200, sparks: 100 },
 ];

@@ -12,6 +12,7 @@ import { Icon } from "@/components/ui/Icon";
 import { GAMES, LAUNCH_IDS, WORLD_BY_ID, type GameMeta } from "@/lib/catalog";
 import { CLASSROOM_GAMES, MAX_CUP_GAMES, addDays, nextMonday, shortDate } from "@/lib/meta";
 import { gmtDate } from "@/lib/format";
+import { worldCopy } from "@/lib/copy/world";
 
 const ordered = (gs: GameMeta[]) => [...gs].sort((a, b) => Number(LAUNCH_IDS.includes(b.id)) - Number(LAUNCH_IDS.includes(a.id)));
 
@@ -225,7 +226,7 @@ export default function NewCupPage() {
                 </span>
                 <span className="flex flex-1 flex-col">
                   <span className="text-[16px] font-semibold">{hiddenExample.name}</span>
-                  <span className="text-muted text-[13px] font-medium">Hidden in classroom mode, like all of Rage Ridge</span>
+                  <span className="text-muted text-[13px] font-medium">{worldCopy.classroomHidden}</span>
                 </span>
                 <span
                   aria-hidden

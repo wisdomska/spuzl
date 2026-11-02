@@ -54,7 +54,7 @@ const Create = z.object({
 
 /**
  * POST /api/v1/school-cup: a teacher sets up a class challenge for a verified school.
- * Teachers are signed-in adults (not guests). Classroom mode hides Rage Ridge and photosensitive games.
+ * Teachers are signed-in adults (not guests). Classroom mode hides the action courses and photosensitive games.
  */
 export const POST = handle(async (req: Request) => {
   const { admin, player, user } = await requirePlayer();

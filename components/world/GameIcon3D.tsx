@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { Icon } from "@/components/ui/Icon";
-import { WORLD_BY_ID, type GameMeta } from "@/lib/catalog";
+import { colourOf, type GameMeta } from "@/lib/catalog";
 
 /**
  * Pre-rendered 3D game tile (scripts/prerender-3d.mjs → public/3d/icons/<id>.webp). The design renders
@@ -24,7 +24,7 @@ export function GameIcon3D({ meta, size = 64, locked }: { meta: GameMeta; size?:
       width={size}
       height={size}
       className="shrink-0"
-      style={{ filter: `drop-shadow(0 4px 0 color-mix(in srgb, ${WORLD_BY_ID[meta.world].color} 35%, transparent))` }}
+      style={{ filter: `drop-shadow(0 4px 0 color-mix(in srgb, ${colourOf(meta).color} 35%, transparent))` }}
     />
   );
 }

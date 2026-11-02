@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { BADGES } from "@/lib/gamification/badges";
-import { GAME_BY_ID } from "@/lib/catalog";
+import { ALL_WORLDS, GAME_BY_ID, WORLDS, WORLD_BY_ID, gamesInWorld, isLiveWorld, type WorldId } from "@/lib/catalog";
+import { DAILY_POOL, WEEKLY_CHAIN } from "@/lib/gamification/quests";
 import {
   addDays,
   archiveAccess,
@@ -49,6 +50,33 @@ describe("badges", () => {
     expect(shown.find((f) => f.family === "secret")?.badges.map((b) => b.id)).toEqual(["secret-blink"]);
     expect(hidden[0].family).toBe("starter");
   });
+  it("has one Explorer badge per world, the 4 groups first, named and drawn after them", () => {
+    const explorers = BADGES.filter((b) => b.family === "explorer");
+    expect(explorers.map((b) => b.rule.world)).toEqual(ALL_WORLDS.map((w) => w.id));
+    for (const w of WORLDS) {
+      const b = explorers.find((x) => x.rule.world === w.id)!;
+      expect(b.id).toBe(`explorer-${w.id}`);
+      expect(b.name).toBe(`${w.name} Explorer`);
+      expect(b.icon).toBe(w.icon);
+      // Progress counts the group's live games: Puzzles is 9 now, not Logic Lab's 4.
+      expect(badgeProgress(b, stats)?.need, w.id).toBe(gamesInWorld(w.id).length);
+    }
+    expect(BADGES.find((b) => b.id === "explorer-logic")!.name).toBe("Puzzles Explorer");
+    // Folded worlds keep their badge (earned rows still show), under their old name.
+    expect(BADGES.find((b) => b.id === "explorer-rage")!.name).toBe("Rage Ridge Explorer");
+  });
+});
+
+describe("quests and the 4 groups", () => {
+  it("only asks for worlds players can open, and never more worlds than there are", () => {
+    for (const q of [...DAILY_POOL, ...WEEKLY_CHAIN]) {
+      if (q.goal.world) {
+        expect(isLiveWorld(q.goal.world), q.id).toBe(true);
+        expect(q.title, q.id).toContain(WORLD_BY_ID[q.goal.world as WorldId].name);
+      }
+      if (q.goal.kind.startsWith("worlds_")) expect(q.goal.n, q.id).toBeLessThanOrEqual(WORLDS.length);
+    }
+  });
 });
 
 describe("leaderboards", () => {
@@ -89,9 +117,11 @@ describe("archive", () => {
 });
 
 describe("School Cup", () => {
-  it("hides Rage Ridge and photosensitive games in classroom mode", () => {
+  it("hides the action courses and photosensitive games in classroom mode", () => {
     expect(classroomAllowed(GAME_BY_ID.crownfall)).toBe(true);
-    expect(classroomAllowed(GAME_BY_ID.gotcha)).toBe(false);
+    // The courses moved from Rage Ridge to Arcade; they stay hidden, and Arcade's calm games stay allowed.
+    for (const id of ["gotcha", "dash", "gauntlet"]) expect(classroomAllowed(GAME_BY_ID[id]), id).toBe(false);
+    expect(classroomAllowed(GAME_BY_ID.twins)).toBe(true);
   });
   it("validates the run", () => {
     expect(validRun("2026-11-02", "2026-11-06", "2026-10-31")).toBeNull();

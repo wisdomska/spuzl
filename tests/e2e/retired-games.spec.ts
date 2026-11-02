@@ -3,8 +3,8 @@ import { onboardGuest, waitForBoard } from "./harness";
 import { GAME_COUNT, WORLD_COUNT, WORLD_BY_ID } from "@/lib/catalog";
 
 /**
- * The 2026-11 catalogue change: 29 live games in 8 worlds. Retired games and the emptied Number Den are gone from
- * every list and their pages are not found; Trotro Jam, Emoji Hits and Beat Tap play like any live game, with no
+ * The 2026-11 catalogue change: 29 live games, since regrouped into 4 worlds. Retired games and the emptied Number
+ * Den are gone from every list and their pages are not found; Trotro Jam, Emoji Hits and Beat Tap play like any live game, with no
  * admin setting needed.
  */
 const NOT_FOUND = "This page could not be found.";
@@ -45,10 +45,11 @@ test("retired games are hidden and refused; the promoted games play", async ({ p
   });
   expect(start).toBe(404);
 
-  // A single-game world still reads right, and its game plays.
+  // Trotro Jam's old single-game world now leads to Puzzles, and the promoted games play.
   await page.goto("/world/shape");
-  await expect(page.getByRole("heading", { name: WORLD_BY_ID.shape.name })).toBeVisible();
-  await expect(page.getByText(/of 1 (cleared today|tried)\./)).toBeVisible();
+  await expect(page).toHaveURL(/\/world\/logic$/);
+  await expect(page.getByRole("heading", { name: WORLD_BY_ID.logic.name })).toBeVisible();
+  await expect(page.locator("main li").filter({ hasText: "Trotro Jam" })).toHaveCount(1);
 
   for (const id of ["trotro", "emojihits", "beattap"]) {
     await page.goto(`/play/${id}?mode=free`);

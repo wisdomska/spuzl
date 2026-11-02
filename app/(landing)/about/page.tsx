@@ -117,7 +117,7 @@ export default function Landing() {
         <section id="worlds" className="scroll-mt-24 pb-16 sm:pb-24">
           <p className={EYEBROW}>{T.worldsEyebrow}</p>
           <h2 className={`${H2} mt-3`}>{T.worldsTitle}</h2>
-          <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {WORLDS.map((w) => {
               const games = gamesInWorld(w.id);
               return (

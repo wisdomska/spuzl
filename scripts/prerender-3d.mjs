@@ -36,7 +36,10 @@ function catalogue() {
   const src = fs.readFileSync(path.join(ROOT, "lib/catalog.ts"), "utf8");
   const re = /\bg\(\s*"([a-z0-9-]+)",\s*"[^"]*",\s*"([a-z]+)",\s*"([a-z0-9-]+)"/g;
   const out = [];
-  for (const m of src.matchAll(re)) out.push({ id: m[1], world: m[2], icon: m[3] });
+  // A game's tone (lib/catalog TONE) overrides its world colour: games that changed world keep their tile colour.
+  const block = src.slice(src.indexOf("const TONE"), src.indexOf("};", src.indexOf("const TONE")));
+  const tone = Object.fromEntries([...block.matchAll(/^\s+([a-z0-9]+): "([a-z]+)",$/gm)].map((m) => [m[1], m[2]]));
+  for (const m of src.matchAll(re)) out.push({ id: m[1], world: tone[m[1]] ?? m[2], icon: m[3] });
   return out;
 }
 

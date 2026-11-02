@@ -3,7 +3,7 @@
 import { Dialog } from "radix-ui";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
-import { WORLD_BY_ID, type GameMeta } from "@/lib/catalog";
+import { colourOf, type GameMeta } from "@/lib/catalog";
 import { formatClock } from "@/lib/format";
 import { levelCount, levelDifficulty, nextLevel, SEEDED_LADDERS } from "@/lib/game/levels";
 import { useGameLevels } from "@/lib/client/levels";
@@ -30,7 +30,7 @@ export function LevelSheet({
 }) {
   const q = useGameLevels(meta.id, open);
   useSheetSound(open);
-  const world = WORLD_BY_ID[meta.world];
+  const world = colourOf(meta);
   const top = q.data?.top ?? 0;
   const count = levelCount(meta.id);
   const next = nextLevel(meta.id, top);

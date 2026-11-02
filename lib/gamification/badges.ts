@@ -1,3 +1,5 @@
+import { ALL_WORLDS } from "@/lib/catalog";
+
 /**
  * Badges (SRS 4.7): families with bronze, silver, gold and prism tiers, plus 6 secret badges.
  * `rule` is evaluated server-side in lib/gamification/evaluate.ts.
@@ -36,18 +38,6 @@ const ladder = (
     rule: { kind, n },
   }));
 
-const WORLD_NAMES: [string, string, string][] = [
-  ["logic", "Logic Lab", "flask"],
-  ["line", "Line Lane", "path"],
-  ["shape", "Shape Shed", "cube"],
-  ["number", "Number Den", "hash"],
-  ["word", "Word Woods", "tree"],
-  ["clue", "Clue Cave", "magnifying-glass"],
-  ["reflex", "Reflex Rink", "lightning"],
-  ["rage", "Rage Ridge", "fire"],
-  ["board", "Board Bay", "horse"],
-];
-
 export const BADGES: BadgeDef[] = [
   {
     id: "first-clear",
@@ -59,7 +49,9 @@ export const BADGES: BadgeDef[] = [
     icon: "seal-check",
     rule: { kind: "clears", n: 1 },
   },
-  ...WORLD_NAMES.map(([w, name, icon]) => ({
+  // One Explorer badge per world, named after it. Worlds left with only retired games keep their badge so earned
+  // rows still show; lib/meta/server.ts hides it from players who never earned it.
+  ...ALL_WORLDS.map(({ id: w, name, icon }) => ({
     id: `explorer-${w}`,
     family: "explorer",
     tier: "gold" as Tier,
@@ -252,7 +244,7 @@ export const BADGES: BadgeDef[] = [
     family: "secret",
     tier: "prism",
     name: "Untouched",
-    description: "Clear a Rage Ridge course with zero deaths.",
+    description: "Clear a Gotcha, Dash or Gauntlet course with zero deaths.",
     secret: true,
     sparks: 100,
     icon: "ghost",

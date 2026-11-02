@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BASE, guest, uniq } from "./helpers";
-import { GAMES, RETIRED_GAMES } from "@/lib/catalog";
+import { GAMES, MERGED_WORLDS, RETIRED_GAMES, WORLDS } from "@/lib/catalog";
 
 /**
  * Retired games (lib/catalog RETIRED_IDS) through the real API: the code is still there, but every way in answers
@@ -55,6 +55,17 @@ describe("api: retired games are refused like unknown ones", () => {
       // Streamed pages (with a loading state) send 200 before notFound() runs; the body is the not-found page.
       const body = r.status === 404 ? "" : await r.text();
       expect([path, r.status === 404 || body.includes("This page could not be found")]).toEqual([path, true]);
+    }
+  });
+
+  it("redirects the worlds folded in the regroup to their group, and keeps the 4 groups", async () => {
+    for (const [from, to] of Object.entries(MERGED_WORLDS)) {
+      const r = await fetch(`${BASE}/world/${from}`, { redirect: "manual" });
+      expect([from, r.status, new URL(r.headers.get("location") ?? "", BASE).pathname]).toEqual([from, 308, `/world/${to}`]);
+    }
+    for (const w of WORLDS) {
+      const r = await fetch(`${BASE}/world/${w.id}`, { redirect: "manual" });
+      expect([w.id, r.status]).toEqual([w.id, 200]);
     }
   });
 

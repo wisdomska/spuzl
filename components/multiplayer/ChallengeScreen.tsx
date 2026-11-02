@@ -9,7 +9,7 @@ import { GameShell } from "@/components/game/GameShell";
 import { Icon } from "@/components/ui/Icon";
 import { Spuz } from "@/components/brand/Spuz";
 import { BOARDS } from "@/games/board-registry";
-import { GAME_BY_ID, WORLD_BY_ID } from "@/lib/catalog";
+import { GAME_BY_ID, colourOf } from "@/lib/catalog";
 import { api, finishAttempt, HttpError } from "@/lib/client/api";
 import { useProfileGate, useReduce } from "@/lib/client/multiplayer";
 import { useBackOrHome } from "@/lib/client/nav";
@@ -37,7 +37,7 @@ const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one :
 
 export function ChallengeCard({ c, onAccept, onLater }: { c: ChallengeCardData; onAccept: () => void; onLater: () => void }) {
   const meta = GAME_BY_ID[c.game];
-  const world = meta ? WORLD_BY_ID[meta.world] : null;
+  const world = meta ? colourOf(meta) : null;
   return (
     <div
       className="flex flex-1 flex-col gap-4 px-5 pt-[max(70px,env(safe-area-inset-top))] pb-[max(28px,env(safe-area-inset-bottom))]"

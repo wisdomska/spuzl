@@ -1,6 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { GAME_BY_ID, LAUNCH_IDS } from "@/lib/catalog";
+import { GAME_BY_ID, LAUNCH_IDS, toneOf } from "@/lib/catalog";
 import { dailyNumber } from "@/lib/format";
 import { dailyCard, duelCard, fullCard, partyCard, type CardModel } from "./card-model";
 
@@ -74,7 +74,7 @@ export async function attemptCard(admin: SupabaseClient, id: string, kind: "dail
     percentile = pct === null || pct === undefined ? null : Number(pct);
   }
   return dailyCard({
-    world: meta.world,
+    world: toneOf(meta),
     gameName: meta.name,
     number: dailyNumber(a.daily_date),
     scoring: meta.scoring,

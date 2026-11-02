@@ -9,7 +9,7 @@ import { Icon } from "@/components/ui/Icon";
 import { formatClock, formatNumber } from "@/lib/format";
 import { play } from "@/lib/audio";
 import type { GameMeta } from "@/lib/catalog";
-import { WORLD_BY_ID } from "@/lib/catalog";
+import { colourOf } from "@/lib/catalog";
 import type { FinishRes } from "@/lib/client/api";
 import { RaceLiveButton } from "@/components/multiplayer/GameChallenge";
 import { SaveStreakPrompt } from "@/components/meta/SaveStreakPrompt";
@@ -42,7 +42,7 @@ export function ResultsScreen({
   mistakes: number;
   relaxed: boolean;
   color: string;
-  /** primary: the named next game on the Home path ("Next in Logic Lab: Dusk") */
+  /** primary: the named next game on the Home path ("Next in Puzzles: Dusk") */
   /** playNav: the action opens another game (tap-to-board metric). */
   next: { label: string; onClick: () => void; playNav?: boolean };
   /** secondary: another puzzle of this game, same difficulty */
@@ -67,7 +67,7 @@ export function ResultsScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once per results screen
   }, [instant]);
 
-  const world = WORLD_BY_ID[meta.world];
+  const world = colourOf(meta);
   const flagged = result.status === "flagged";
   const scoreGame = meta.scoring === "score" && result.score !== undefined;
   const line = flagged

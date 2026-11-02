@@ -6,7 +6,7 @@ import { BOARDS } from "@/games/board-registry";
 import { setGuessTransport } from "@/games/_shared/guess";
 import type { BoardApi, ControlSpec, FeedbackTone } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
-import { GAME_BY_ID, WORLD_BY_ID } from "@/lib/catalog";
+import { GAME_BY_ID, colourOf } from "@/lib/catalog";
 import { dayMonth } from "@/lib/admin/dates";
 import { SOLVED_STATE } from "@/lib/admin/solved-state";
 import { api } from "@/lib/client/api";
@@ -96,7 +96,7 @@ export function PuzzlePreview({
   const autoRan = useRef(false);
 
   const meta = GAME_BY_ID[game];
-  const world = WORLD_BY_ID[meta.world];
+  const world = colourOf(meta);
   const p = q.data?.puzzle;
   const report = check.data ?? p?.check_report ?? null;
 
