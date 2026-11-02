@@ -38,6 +38,13 @@ describe("the two-column shell on wide screens", () => {
     for (const [w, h] of SINGLE) expect(isWide(w, h), `${w}x${h}`).toBe(false);
   });
 
+  it("keeps the CSS copies of the shell width in step (multiplayer Screen, Board Bay, loading frames)", () => {
+    // max-w-[1384px] min-[1280px]:max-w-[1424px] and w-[320px] min-[1280px]:w-[360px] in the class names.
+    expect(WIDE_SHELL_MAX).toBe(1424);
+    expect(WIDE_GUTTER * 2 + WIDE_MAX + SLOT_PAD * 2 + WIDE_GAP + WIDE_ASIDE_NARROW).toBe(1384);
+    expect(WIDE_ASIDE_NARROW).toBe(320);
+  });
+
   it("narrows the side panel to 320 px under 1280 px wide, 360 px from there", () => {
     expect(wideAside(1024)).toBe(WIDE_ASIDE_NARROW);
     expect(wideAside(1279)).toBe(WIDE_ASIDE_NARROW);

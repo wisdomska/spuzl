@@ -638,7 +638,7 @@ function PlayLoading({ meta }: { meta: GameMeta }) {
   const world = colourOf(meta);
   return (
     <div
-      className="bg-bg wide:max-w-[1224px] wide:px-6 relative mx-auto flex min-h-dvh w-full max-w-[560px] flex-col"
+      className="bg-bg wide:max-w-[1384px] min-[1280px]:wide:max-w-[1424px] wide:px-6 relative mx-auto flex min-h-dvh w-full max-w-[560px] flex-col"
       style={{ ["--world" as string]: world.color, ["--world-ink" as string]: world.ink }}
       data-world={meta.world}
       aria-busy

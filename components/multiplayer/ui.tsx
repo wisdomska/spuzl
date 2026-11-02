@@ -283,7 +283,7 @@ export function Screen({
 }) {
   return (
     <div
-      className={`bg-bg relative mx-auto flex min-h-dvh w-full flex-col overflow-hidden ${wide ? "max-w-[1224px]" : "max-w-[560px]"} ${className}`}
+      className={`bg-bg relative mx-auto flex min-h-dvh w-full flex-col overflow-hidden ${wide ? "max-w-[1384px] min-[1280px]:max-w-[1424px]" : "max-w-[560px]"} ${className}`}
       style={style}
       data-screen-label={label}
     >

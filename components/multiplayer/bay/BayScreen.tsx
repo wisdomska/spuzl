@@ -578,7 +578,7 @@ export function BayMatch({ id }: { id: string }) {
             {!wide && toolRow}
           </div>
           {wide && (
-            <aside className="flex w-[360px] shrink-0 flex-col gap-3 pt-3 pr-3" aria-label={sidePanel.players}>
+            <aside className="flex w-[320px] shrink-0 flex-col gap-3 pt-3 pr-3 min-[1280px]:w-[360px]" aria-label={sidePanel.players}>
               <div className="bg-surface flex flex-col gap-2 rounded-[18px] py-2.5 [&>div]:px-2.5">
                 {oppRow}
                 {meRow}
