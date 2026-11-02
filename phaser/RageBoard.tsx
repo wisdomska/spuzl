@@ -224,7 +224,7 @@ export function RageBoard<S extends SimCore>({
         }
       },
       onFinish: () => {
-        play("jingle");
+        // the clear arpeggio comes from the shell's onSolved, once
         const st = stateNow();
         const copy = spec.finishCopy?.(ctl.sim, st.timeMs) ?? `Course cleared with ${st.deaths} ${st.deaths === 1 ? "death" : "deaths"}.`;
         apiRef.current.feedback(copy, "success", "flag-checkered");
@@ -556,7 +556,8 @@ export function RageBoard<S extends SimCore>({
       </div>
 
       {/* Controls under the board */}
-      <div className="flex items-center justify-between gap-2 select-none" style={{ WebkitTouchCallout: "none" }}>
+      {/* A controller, not a form: the game's own sounds (jump, land, flip) answer these, not the button tap. */}
+      <div className="flex items-center justify-between gap-2 select-none" style={{ WebkitTouchCallout: "none" }} data-no-tick>
         {spec.controls === "dpad" || spec.controls === "lr" || spec.controls === "drag" ? (
           <div className="flex flex-none gap-2">
             <PadButton label="Move left" icon="caret-left" small={size.short} {...holdProps("pl", BTN.LEFT)} />
