@@ -152,7 +152,7 @@ export default function RemixBoard({ puzzle, initialState, hint, disabled, mode,
     (hint?.target as { round?: number; prefix?: string } | undefined)?.round === round ? (hint!.target as { prefix: string }).prefix : "";
   // Phones: 48 px tiles. Wide: the tiles grow to fill the board column (up to 96 px), so the word is the hero.
   const box = useBoardBox();
-  const tile = box.wide ? fitRow(Math.min(box.w, 760), letters.length, 12, 24, 48, 112) : 48;
+  const tile = box.wide ? fitRow(Math.min(box.w, 760), letters.length, 12, 24, 48, 112) : fitRow(box.w, letters.length, 8, 24, 48, 60);
   const physical = usePhysicalKeyboard();
 
   return (

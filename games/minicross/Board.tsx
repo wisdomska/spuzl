@@ -304,14 +304,15 @@ export default function MinicrossBoard({ puzzle, initialState, hint, disabled, m
   );
 
   const keyboard = !done && (
-    // Phone: the compact keyboard (NEXT on the third row) so the grid, the keys and the tools fit one screen.
+    // The compact keyboard (NEXT on the third row): on a phone the grid, keys and tools fit one screen; on a
+    // touch tablet in landscape the clue list, keys and tools fit the side panel.
     <LetterKeyboard
       onLetter={onLetter}
       onBackspace={onBackspace}
       onEnter={onEnter}
       enterLabel="NEXT"
       enterDoes={keyboardCopy.next}
-      compact={!wide}
+      compact
       disabled={off}
     />
   );

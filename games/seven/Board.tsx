@@ -20,7 +20,7 @@ import {
   type SevenPuzzle,
   type SevenState,
 } from "./rules";
-import { useBoardBox } from "@/components/game/useBoardSize";
+import { useBoardBox, useViewportHeight } from "@/components/game/useBoardSize";
 import { ShellAside } from "@/components/game/ShellAside";
 import { usePhysicalKeyboard } from "@/components/game/useInputMode";
 import { TypingKeys } from "@/games/_shared/LetterKeyboard";
@@ -222,7 +222,13 @@ export default function SevenBoard({ puzzle, initialState, hint, disabled, mode,
   // line, up to 2.6 times (the score and words found sit in the side panel).
   const box = useBoardBox();
   const physical = usePhysicalKeyboard();
-  const zoom = box.wide ? Math.max(1, Math.min(2.6, Math.round(((Math.min(box.w, box.h) - 96) / H) * 10) / 10)) : 1;
+  const vh = useViewportHeight();
+  // Tall phones (800 px and up) have room under the honeycomb: it grows to 1.3 times there, never past the width.
+  const zoom = box.wide
+    ? Math.max(1, Math.min(2.6, Math.round(((Math.min(box.w, box.h) - 96) / H) * 10) / 10))
+    : vh >= 800
+      ? Math.max(1, Math.min(1.3, Math.floor(((box.w - 16) / W) * 10) / 10))
+      : 1;
   const hintT = hint?.target as { start?: string; len?: number } | undefined;
   const nextRank = RANKS.find((r) => Math.ceil(r.pct * maxScore) > score);
 
