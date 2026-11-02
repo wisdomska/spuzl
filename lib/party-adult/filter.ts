@@ -4,14 +4,18 @@
  *
  * Three checks, in order:
  *  1. shape: one line, not empty, within the length limit (statements 80, guesses 30);
- *  2. contact details: phone numbers, emails, links, @handles and "add me on ..." style asks;
+ *  2. contact details: phone numbers (also spelled out: "zero two four ...", "o2four", "double five"),
+ *     emails, links, @handles and "add me on ..." style asks;
  *  3. abuse: the nickname blocklist (`OFFENSIVE`) plus extra sexual and abusive terms, matched per word
  *     after the same leetspeak normalisation, so "sushi tea" or "Dickson" are not caught by accident.
+ * Checks 2 and 3 also run on the folded text (lib/party-adult/fold.ts): look-alike letters from other scripts,
+ * full-width and styled letters, accents and invisible characters can't slip a word or a number past them.
  *
  * It is a first line only: every statement, guess and drawing also has a Report button, and moderators
  * review reports (admin moderation, "Party content" tab).
  */
 import { normalise, OFFENSIVE } from "@/lib/validation/nickname";
+import { foldText, longestDigitRun } from "./fold";
 
 export type PartyTextKind = "statement" | "guess";
 export const TEXT_MAX: Record<PartyTextKind, number> = { statement: 80, guess: 30 };
@@ -94,6 +98,7 @@ const CONTACT: RegExp[] = [
   // @handles
   /(?:^|[^a-z0-9])@[a-z0-9_.]{2,}/i,
   // phone numbers: seven or more digits with only spaces, dashes, dots or brackets between them
+  // (spelled-out numbers are read by longestDigitRun)
   /(?:\+?\d[\s\-().]{0,2}){7,}/,
   // "add me", "dm me", "my snap", "ig: name"
   /\b(?:add|dm|text|call|message|msg|follow|find|hmu|hit|ping|whatsapp)\s+me\b/i,
@@ -103,12 +108,21 @@ const CONTACT: RegExp[] = [
 
 // Control, zero-width and bidi-override characters.
 const CONTROL = new RegExp("[\\u0000-\\u001f\\u007f-\\u009f\\u200b-\\u200f\\u2028-\\u202e\\u2066-\\u2069]", "g");
-// Combining accents left by NFKD ("é" becomes "e").
-const MARKS = new RegExp("[\\u0300-\\u036f]", "g");
+/** Phone numbers have at least this many digits (a Ghanaian local number has 10, the shortest we care about 7). */
+const PHONE_DIGITS = 7;
 
-/** Lower case, leetspeak undone, words split on anything that isn't a letter; runs of single letters joined ("f u c k"). */
+/** Symbols used as letters ("$hit", "@ss", "b!tch", "|ick"); digits are left to `normalise`. */
+const SYMBOL_LEET: Record<string, string> = { $: "s", "@": "a", "!": "i", "|": "l", "€": "e", "£": "l", "¢": "c" };
+
+/**
+ * Folded (look-alikes mapped, accents and invisibles dropped), lower case, leetspeak undone, words split on
+ * anything that isn't a letter; runs of single letters joined ("f u c k").
+ */
 export function textTokens(text: string): string[] {
-  const words = normalise(text.normalize("NFKD").replace(MARKS, ""))
+  // "$" and "@" count as letters next to a letter (or each other: "a$$"); "!", "|" and currency signs only
+  // before a letter, so a closing "!" stays punctuation.
+  const leet = foldText(text).replace(/[$@](?=[a-z$@])|(?<=[a-z$@])[$@]|[!|€£¢](?=[a-z])/g, (c) => SYMBOL_LEET[c]);
+  const words = normalise(leet)
     .replace(/[^a-z]+/g, " ")
     .trim()
     .split(" ")
@@ -138,8 +152,11 @@ export function partyTextProblem(raw: string, kind: PartyTextKind): TextProblem 
   const text = cleanText(raw);
   if (!text) return "empty";
   if ([...text].length > TEXT_MAX[kind]) return "too_long";
-  if (CONTACT.some((r) => r.test(text))) return "contact";
-  const tokens = textTokens(text);
+  // Folded from the raw text, so an invisible character inside a word joins it instead of splitting it.
+  const folded = cleanText(foldText(raw));
+  if (CONTACT.some((r) => r.test(text) || r.test(folded))) return "contact";
+  if (longestDigitRun(folded) >= PHONE_DIGITS) return "contact";
+  const tokens = textTokens(raw);
   if (tokens.some((t) => WORDS.has(t) || (t.endsWith("s") && WORDS.has(t.slice(0, -1))) || STEMS.some((s) => t.includes(s))))
     return "blocked";
   const spaced = ` ${tokens.join(" ")} `;
