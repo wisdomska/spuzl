@@ -20,6 +20,7 @@ import type { RealtimeChannel } from "@/lib/realtime/transport";
 import { useGameSettings } from "@/lib/game-settings/client";
 import { canSeeAdultParty } from "@/lib/party-adult/gate";
 import { isAdultMode, type PartyMode } from "@/lib/party-adult/modes";
+import { ADULT_REWARD_MIN_PLAYERS } from "@/lib/party-adult/rewards";
 import { adultPartyCopy } from "@/lib/copy/adult-party";
 import { MatchBoard } from "./MatchBoard";
 import { AdultNotice, AdultRound, KickConfirm, PlayersSheet, adultErrorText, adultLobbyLine, modeName } from "./adult-party";
@@ -561,6 +562,11 @@ function AdultRoom({
         host={host}
         final
         subtitle={adultPartyCopy.podiumSub(modeName(mode), view.games.length, view.players.filter((p) => !p.spectator && !p.left).length)}
+        rewardNote={
+          view.players.filter((p) => !p.spectator && !p.left).length < ADULT_REWARD_MIN_PLAYERS
+            ? adultPartyCopy.noReward.small(ADULT_REWARD_MIN_PLAYERS)
+            : adultPartyCopy.noReward.idle
+        }
         onRunItBack={() => act("reset").catch((e) => err(e, "Couldn't reset."))}
         onNext={() => undefined}
         onLeave={onLeave}

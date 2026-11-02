@@ -50,4 +50,11 @@ export const partyCopy = {
     beat: "Beat my time",
     beatHint: "Send this exact puzzle. They race your time.",
   },
+  /** the podium's reward line (shown when the server says what you were paid) */
+  podium: {
+    reward: "You earned",
+    xp: (n: number) => `+${n} XP`,
+    sparks: (n: number) => `+${n} Sparks`,
+    capped: "Daily XP limit reached. Back tomorrow.",
+  },
 } as const;
