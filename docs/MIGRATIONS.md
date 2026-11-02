@@ -178,3 +178,18 @@ rolled back.
 
 Apply before the code deploys. The signed-in player and Me fall back to the stored band while the columns are
 missing, but new profiles need the columns, and friends, crews, matches and status cards read them.
+
+## 18+ party rewards
+
+Additive and reversible (rollback SQL in the header). No existing rows change.
+
+| Migration                                | What it adds                                                                                                                                                                                                                                                                                                                                     | Rollback                                                                                                        |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| `20261120000001_adult_party_rewards.sql` | `party_rounds.played` (uuid[], at most 8, default empty; RLS still forced, no client access): who took part in each round, kept after the round's text and strokes are wiped; `svc_grant_capped_reward` (service role only): `svc_grant_reward` with XP clamped to a daily cap per source (GMT day), Sparks only under it, the player row locked | Drop both functions, then the column (see header). `party_adult` ledger rows stay (the ledgers are append-only) |
+
+pgTAP: `109_adult_party_rewards` (forced RLS and grants, the `played` limit, once per ref, the clamp, a capped
+grant marking its ref paid, per-source and per-day caps). The migration, `101_adult_party`, `103_adult_block_reopen`
+and `109` with it applied, and the rollback, were run locally inside one transaction that was rolled back.
+
+Apply before the code deploys. Until it lands, rounds still close and wipe as before (the `played` write is
+separate and only logs an error), and finished 18+ rooms pay nothing.
