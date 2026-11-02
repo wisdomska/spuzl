@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/Button";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { Spuz } from "@/components/brand/Spuz";
 import { BOARDS } from "@/games/board-registry";
-import { setGuessAttempt } from "@/games/_shared/guess";
 import type { Hint } from "@/games/types";
 import type { GameMeta } from "@/lib/catalog";
 import { api } from "@/lib/client/api";
@@ -35,7 +34,6 @@ export function GuidedPlay({
 
   useEffect(() => {
     let live = true;
-    setGuessAttempt(null); // content games check practice guesses by puzzle reference, not an attempt
     api<{ puzzle: unknown }>(`/api/v1/guided/${meta.id}`)
       .then((r) => live && setPuzzle(r.puzzle))
       .catch(() => live && onDone("skipped")); // no practice board: straight to the game

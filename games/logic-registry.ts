@@ -1,8 +1,13 @@
 /**
  * Game logic modules by id, loaded on demand. Server-safe (no React). Each entry is code-split.
- * Add a line here when a game's logic.ts lands; `hasLogic` lets the UI show games still in the build queue.
+ * Add a line here (and its id in logic-ids.ts) when a game's logic.ts lands; `hasLogic` lets the UI show games
+ * still in the build queue. Server only in practice: client code imports `hasLogic` from logic-ids.ts, so the
+ * logic modules and their content (the Quickfire question bank) stay out of client bundles.
  */
 import type { GameLogic } from "./types";
+import { hasLogic } from "./logic-ids";
+
+export { hasLogic };
 
 type Loader = () => Promise<{ default: GameLogic<any, any, any> }>; // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -69,10 +74,6 @@ export const LOGIC: Record<string, Loader> = {
   killer: () => import("./killer/logic"),
   dara: () => import("./dara/logic"),
 };
-
-export function hasLogic(id: string) {
-  return id in LOGIC;
-}
 
 export async function loadLogic(id: string): Promise<GameLogic<unknown, unknown, unknown>> {
   const l = LOGIC[id];

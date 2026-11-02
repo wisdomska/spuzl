@@ -4,7 +4,7 @@
  * Ghost Race, Board Bay its own matches, and photosensitive or score-only games stay solo.
  */
 import { GAMES, GAME_BY_ID, type GameMeta } from "@/lib/catalog";
-import { hasLogic } from "@/games/logic-registry";
+import { hasLogic } from "@/games/logic-ids";
 import type { Rng } from "@/lib/rng";
 
 export const RACE_GAMES: GameMeta[] = GAMES.filter(
