@@ -1,5 +1,25 @@
 # Changelog
 
+## Unreleased
+
+### For players
+
+- **Play live against someone new** in chess, draughts, oware, ludo and four up. Pick a game and tap Play live:
+  we find another player waiting for the same game (close to your rating once you have one, otherwise first
+  come, first served) and open a rated live game with 5 minute clocks on both phones at once. Cancel any time.
+  After a minute with nobody around you get "Nobody's free right now" with buttons to invite a friend or play
+  the bot. Players who block each other are never paired, and Play live opens at 16, like Duel Quick Match.
+  Only the preset emotes are shared during the game.
+- **Easier to find:** each board game's card (World page, Library sheet, and the game-over bar after a game vs the
+  bot) now has Play live and Challenge a friend next to Play vs bot. The Duel screen and Friends link to Board Bay.
+  Relaxed mode hides Play live, because it has clocks.
+- **Flip has left Board Bay:** it is no longer offered or accepted for new games. Games already running can finish.
+
+### Operations
+
+- Migration `20261117000001_board_queue.sql` adds the server-only `board_queue` table and `svc_bay_mm_claim`
+  (see `docs/MIGRATIONS.md`). New API: `POST`, `GET` and `DELETE /api/v1/bay/queue`.
+
 ## 1.5.1 (2 November 2026)
 
 ### For admins

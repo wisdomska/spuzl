@@ -116,3 +116,14 @@ transaction that was rolled back. If the code ships first, reopening an actioned
 | `20261115000001_admin_email_code.sql` | `admin_verified_sessions` (forced RLS, service role only): sign-in sessions that passed the email code | `drop table if exists public.admin_verified_sessions;` |
 
 pgTAP: `104_admin_verified_sessions`. Apply before the code deploys, or admins see "aal2 required" until it lands.
+
+## Unreleased
+
+Additive and reversible (rollback SQL in the header). No existing rows change.
+
+| Migration                        | What it adds                                                                                                                                                                                                                                                                                   | Rollback                                                                                                        |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `20261117000001_board_queue.sql` | `board_queue` (forced RLS, service role only): one Board Bay "Play live" search per player (game, rating, when they joined, last poll, the match it found); and `svc_bay_mm_claim(players, game, match)` (service role only), which pairs waiting entries atomically and refuses blocked pairs | `drop function if exists public.svc_bay_mm_claim(uuid[], text, uuid); drop table if exists public.board_queue;` |
+
+pgTAP: `105_board_queue`. Apply before the code deploys: until it lands, Play live answers with an error and
+everything else in Board Bay works as before.
