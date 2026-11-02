@@ -37,3 +37,25 @@ test("settings: back to Me, and change the nickname", async ({ page }, info) => 
   await page.goto("/me");
   await expect(page.getByRole("heading", { name: fresh })).toBeVisible();
 });
+
+/** Settings shows the age group read-only (never the birth month or year), with a way to report a mistake. */
+test("settings: age group is read-only, from the birth month and year", async ({ page }) => {
+  await onboardGuest(page, "16-17");
+  await page.goto("/settings");
+  const profile = page.getByRole("region", { name: "Profile" });
+  await expect(profile.getByText("Age group")).toBeVisible();
+  await expect(profile.getByText("16 to 17")).toBeVisible();
+  await expect(profile.getByRole("link", { name: "Contact us if this is wrong." })).toHaveAttribute("href", "/contact");
+  // Nothing to edit, and the birth year itself is never shown.
+  await expect(profile.getByRole("button", { name: /Age group/ })).toHaveCount(0);
+  await expect(profile.getByText(String(new Date().getUTCFullYear() - 17))).toHaveCount(0);
+  // The API refuses a change too.
+  const status = await page.evaluate(() =>
+    fetch("/api/v1/profile", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ birthYear: 1990, birthMonth: 1 }),
+    }).then((x) => x.status),
+  );
+  expect(status).toBe(409);
+});

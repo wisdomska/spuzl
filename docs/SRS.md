@@ -635,7 +635,7 @@ All "Must" items are required for the v1.0 launch. Each ID maps to tickets and t
 | ID       | Requirement                                                                                                    | Priority |
 |----------|----------------------------------------------------------------------------------------------------------------|----------|
 | FR-AC-01 | Players can play immediately as guests; an anonymous session is created on first clear.                        | Must     |
-| FR-AC-02 | First open asks only for age band (13–15, 16–17, 18+); under 13 cannot continue.                               | Must     |
+| FR-AC-02 | First open asks for birth month and year (no day); the age band (13–15, 16–17, 18+) is derived on the server and locked (admin correction only); under 13 cannot continue and nothing is kept. | Must     |
 | FR-AC-03 | Guests choose a nickname (3–16 chars, filtered) and a Spuz colour as avatar.                                   | Must     |
 | FR-AC-04 | Optional account (Google, Apple, email magic link, or username + password) merges guest progress without loss. | Must     |
 | FR-AC-05 | Players can export and delete all their data from settings.                                                    | Must     |
@@ -1014,7 +1014,7 @@ SPUZL serves players from age 13, so it collects the minimum data, has no open c
 
 | Data                            | Purpose                  | Retention                  |
 |---------------------------------|--------------------------|----------------------------|
-| Age band (not birthdate)        | Content and safety rules | Account lifetime           |
+| Birth month and year (no day); age band derived | Content and safety rules | Account lifetime           |
 | Nickname, avatar                | Profile, boards          | Account lifetime           |
 | Email (optional)                | Login, recovery          | Account lifetime           |
 | City, country (from IP, coarse) | Local boards             | Account lifetime, editable |

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BASE, admin, guest, uniq } from "./helpers";
+import { BASE, admin, birthFor, guest, uniq } from "./helpers";
 import { setSetting } from "./setup";
 import { TUTORIAL_PUZZLE, TUTORIAL_SOLUTION } from "@/games/crownfall/tutorial";
 
@@ -14,9 +14,9 @@ describe("api: daily clear flow", () => {
 
   it("rejects bad nicknames", async () => {
     const g = await guest();
-    const bad = await g.api("/api/v1/profile", { json: { nickname: "fuckface", ageBand: "18+", color: "#2FD3E0" } });
+    const bad = await g.api("/api/v1/profile", { json: { nickname: "fuckface", ...birthFor("18+"), color: "#2FD3E0" } });
     expect(bad.status).toBe(422);
-    const short = await g.api("/api/v1/profile", { json: { nickname: "ab", ageBand: "18+", color: "#2FD3E0" } });
+    const short = await g.api("/api/v1/profile", { json: { nickname: "ab", ...birthFor("18+"), color: "#2FD3E0" } });
     expect(short.status).toBe(422);
   });
 

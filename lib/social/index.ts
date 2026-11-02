@@ -70,7 +70,7 @@ export function agoShort(iso: string, now: number = Date.now()): string {
   return `${Math.floor(h / 24)}d`;
 }
 
-export type AgeBand = "13-15" | "16-17" | "18+";
+export type { AgeBand } from "@/lib/age";
 
 /** Under-16s show nickname and avatar only, and only add friends by invite link or QR (SRS 15.2). */
 export const isUnder16 = (band: string | null | undefined) => band === "13-15";

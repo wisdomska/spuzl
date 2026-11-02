@@ -13,13 +13,16 @@ export default function Privacy() {
     <>
       <h1>Privacy</h1>
       <p className="lede">
-        Last updated 31 October 2026. SPUZL is a free puzzle game for players aged 13 and up. We collect as little as we can.
+        Last updated 2 November 2026. SPUZL is a free puzzle game for players aged 13 and up. We collect as little as we can.
       </p>
 
       <h2>What we collect</h2>
       <ul>
         <li>
-          <strong>Age band</strong> (13 to 15, 16 to 17, or 18 and up), never your birthday. It decides which safety rules apply to you.
+          <strong>Birth month and year</strong>, never the day. We ask when you start, and use them only to work out your age group (13 to
+          15, 16 to 17, or 18 and up), which decides the age rules that apply to you. Your age group moves up on its own as you get older.
+          You can&apos;t change your birth month and year yourself once set; if they are wrong, <Link href="/contact">contact us</Link>
+          and our team can correct them. They are never shown to other players, and we delete them with your account.
         </li>
         <li>
           <strong>Nickname and Spuz look.</strong> These show on boards, leagues and your profile.
@@ -55,12 +58,12 @@ export default function Privacy() {
       <ul>
         <li>We don&apos;t sell your data or show ads, and there is no third-party ad tracking.</li>
         <li>We don&apos;t run open chat, so there are no private messages to store.</li>
-        <li>We don&apos;t collect precise location, contacts, photos or your birthday.</li>
+        <li>We don&apos;t collect precise location, contacts, photos or the day you were born.</li>
       </ul>
 
       <h2>How long we keep it</h2>
       <ul>
-        <li>Your profile, results and progress: for as long as you have an account.</li>
+        <li>Your profile (including your birth month and year), results and progress: for as long as you have an account.</li>
         <li>Move-by-move logs: 90 days, unless a result was flagged for review.</li>
         <li>Anonymous usage stats: up to 12 months.</li>
       </ul>
@@ -71,11 +74,12 @@ export default function Privacy() {
           <strong>Hide your activity</strong> from friends in <Link href="/settings#privacy">Settings, Privacy</Link>.
         </li>
         <li>
-          <strong>Download everything</strong> we hold about you as a file from <Link href="/settings#account">Settings, Account</Link>.
+          <strong>Download everything</strong> we hold about you, including your birth month and year, as a file from{" "}
+          <Link href="/settings#account">Settings, Account</Link>.
         </li>
         <li>
-          <strong>Delete your account</strong> from the same place. It is removed straight away, with your results, friends and Sparks. It
-          can&apos;t be undone.
+          <strong>Delete your account</strong> from the same place. It is removed straight away, with your birth month and year, results,
+          friends and Sparks. It can&apos;t be undone.
         </li>
       </ul>
 
@@ -83,7 +87,7 @@ export default function Privacy() {
       <p>
         Under-16 players appear on boards with nickname and avatar only. Friends can only be added with an invite link or QR code. If you
         are a parent or teacher and want a young player&apos;s account removed, <Link href="/contact">contact us</Link>. Players under 13
-        can&apos;t use SPUZL.
+        can&apos;t use SPUZL: if the birth month and year you enter make you under 13, we don&apos;t create an account and keep nothing.
       </p>
 
       <h2>Where your data lives</h2>

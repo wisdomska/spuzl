@@ -106,6 +106,7 @@ describe("action permissions", () => {
     expect(can("moderator", ACTION_PERMISSION.signout)).toBe(true);
     expect(can("moderator", ACTION_PERMISSION.sparks)).toBe(false);
     expect(can("moderator", ACTION_PERMISSION.delete)).toBe(false);
+    expect(can("moderator", ACTION_PERMISSION.birth)).toBe(true);
   });
 
   it("lets only the owner see emails or export, and every action role also reads the list", () => {
@@ -121,6 +122,15 @@ describe("action bodies", () => {
     for (const action of PLAYER_ACTIONS) expect(ActionBody.safeParse({ action, amount: 5, confirm: "x" }).success, action).toBe(false);
     expect(ActionBody.safeParse({ action: "freeze", reason: "  " }).success).toBe(false);
     expect(ActionBody.safeParse({ action: "freeze", reason: "outage" }).success).toBe(true);
+  });
+
+  it("takes a birth month and year (no day) with a reason", () => {
+    const ok = (b: object) => ActionBody.safeParse({ action: "birth", ...b }).success;
+    expect(ok({ reason: "typo at sign-up", year: 2008, month: 11 })).toBe(true);
+    expect(ok({ year: 2008, month: 11 })).toBe(false);
+    expect(ok({ reason: "typo at sign-up", year: 2008, month: 13 })).toBe(false);
+    expect(ok({ reason: "typo at sign-up", year: 2008 })).toBe(false);
+    expect(ok({ reason: "typo at sign-up", year: 1800, month: 1 })).toBe(false);
   });
 
   it("bounds Sparks and ban length", () => {

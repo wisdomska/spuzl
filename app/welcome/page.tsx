@@ -16,7 +16,10 @@ import { TUTORIAL_PUZZLE } from "@/games/crownfall/tutorial";
 import { analyze, type CrownfallState } from "@/games/crownfall/logic";
 import type { BoardApi } from "@/games/types";
 import { nicknameProblem } from "@/lib/validation/nickname";
-import { api, ensureSession, finishAttempt, startAttempt } from "@/lib/client/api";
+import { api, ensureSession, finishAttempt, HttpError, startAttempt } from "@/lib/client/api";
+import { BirthPicker, type Birth } from "@/components/onboarding/BirthPicker";
+import { ageBandOf, birthProblem } from "@/lib/age";
+import { ageCopy } from "@/lib/copy/age";
 import { writeOnboarding } from "@/lib/client/onboarding";
 import { onboardingStepOf } from "@/lib/analytics/onboarding";
 import { track } from "@/lib/analytics/track";
@@ -24,13 +27,6 @@ import { formatClock } from "@/lib/format";
 import { play, duck } from "@/lib/audio";
 
 type Step = "hello" | "signin" | "age" | "under13" | "start" | "tutorial" | "nickname";
-type Age = "13-15" | "16-17" | "18+";
-
-const AGES: { v: Age; t: string; d: string }[] = [
-  { v: "13-15", t: "13 to 15", d: "Friends and classmates only. No global chat." },
-  { v: "16-17", t: "16 to 17", d: "Leagues and Duels on. Friend requests by code." },
-  { v: "18+", t: "18 or older", d: "Everything on." },
-];
 const SKINS = [
   { n: "Lime", c: "#B8F23A" },
   { n: "Cyan", c: "#2FD3E0" },
@@ -74,7 +70,9 @@ export default function Welcome() {
   if (nav.step !== step) setNav({ step, dir: STEP_ORDER[step] >= STEP_ORDER[nav.step] ? 1 : -1 });
   // Signed in with email during onboarding: the profile then belongs to that account, not a guest.
   const [signedIn, setSignedIn] = useState(false);
-  const [age, setAge] = useState<Age | null>(null);
+  // Birth month and year: held in memory only until the profile is made (never on the device). Under 13 clears it.
+  const [birth, setBirth] = useState<Birth>({ year: null, month: null });
+  const [birthError, setBirthError] = useState<string | null>(null);
   const [color, setColor] = useState(SKINS[1].c);
   // Back from Google (or an email link) without a session: say so on the first screen.
   const authFailed = useSyncExternalStore(
@@ -171,12 +169,12 @@ export default function Welcome() {
   const problem = nick ? nicknameProblem(nick) : null;
 
   const enter = async () => {
-    if (!age || !nick || problem) return;
+    if (!birth.year || !birth.month || !nick || problem) return;
     setSaving(true);
     setError(null);
     try {
       await ensureSession();
-      await api("/api/v1/profile", { json: { nickname: nick, ageBand: age, color } });
+      await api("/api/v1/profile", { json: { nickname: nick, birthYear: birth.year, birthMonth: birth.month, color } });
       if (clear.current) {
         const s = await startAttempt({ game: "crownfall", mode: "tutorial" });
         await finishAttempt(s.attemptId, { state: clear.current.state, activeMs: clear.current.ms, mistakes: 0 });
@@ -188,6 +186,12 @@ export default function Welcome() {
       setLeaving(true);
       router.replace(dest);
     } catch (e) {
+      if (e instanceof HttpError && e.code === "too_young") {
+        setBirth({ year: null, month: null });
+        setSaving(false);
+        setStep("under13");
+        return;
+      }
       const msg = e instanceof Error ? e.message : "Something went wrong. Try again.";
       setError(msg === "nickname_taken" ? "That name is taken." : msg);
       setSaving(false);
@@ -280,60 +284,39 @@ export default function Welcome() {
                 <Spuz mood="wave" size={150} decorative />
               </div>
               <h1 className="font-display text-center text-[30px] leading-[1.1] font-black tracking-[-0.02em]">
-                Akwaaba, Spuzler.
+                {ageCopy.greeting}
                 <br />
-                How old are you?
+                {ageCopy.title}
               </h1>
-              <p className="text-muted text-center text-[16px] leading-normal">
-                So we can keep things safe and fair. We never show it to anyone.
+              <p className="text-muted text-center text-[16px] leading-normal">{ageCopy.why}</p>
+              <BirthPicker
+                value={birth}
+                error={birthError}
+                onChange={(b) => {
+                  setBirth(b);
+                  setBirthError(null);
+                }}
+              />
+              <p className="text-muted flex items-center justify-center gap-1.5 text-center text-[14px]">
+                <Icon name="lock-simple" size={16} />
+                {ageCopy.lockedNote}
               </p>
-              <div role="radiogroup" aria-label="Age band" className="mt-1.5 flex flex-col gap-2.5">
-                {AGES.map((o) => {
-                  const on = age === o.v;
-                  return (
-                    <button
-                      key={o.v}
-                      type="button"
-                      role="radio"
-                      aria-checked={on}
-                      onClick={() => setAge(o.v)}
-                      className="press flex h-16 items-center gap-3.5 rounded-[20px] px-[18px] text-left"
-                      style={{
-                        background: on ? "var(--success-tint)" : "var(--surface)",
-                        boxShadow: on ? "inset 0 0 0 2px var(--accent)" : undefined,
-                      }}
-                    >
-                      <span
-                        className="flex size-6 items-center justify-center rounded-full"
-                        style={{ boxShadow: `inset 0 0 0 2px ${on ? "var(--accent)" : "#5A5E78"}` }}
-                      >
-                        <span className="size-3 rounded-full" style={{ background: on ? "var(--accent)" : "transparent" }} />
-                      </span>
-                      <span className="flex flex-1 flex-col">
-                        <span className="text-[17px] font-semibold">{o.t}</span>
-                        <span className="text-muted text-[14px]">{o.d}</span>
-                      </span>
-                    </button>
-                  );
-                })}
-                <button
-                  type="button"
-                  onClick={() => setStep("under13")}
-                  className="text-muted self-center px-3 py-2 text-[14px] underline-offset-4 hover:underline"
-                >
-                  I am under 13
-                </button>
-              </div>
               <Button
                 size="lg"
                 className="mt-auto w-full text-[17px]"
-                disabled={!age}
+                disabled={!birth.year || !birth.month}
                 onClick={() => {
-                  writeOnboarding({ ageBand: age! });
+                  if (!birth.year || !birth.month) return;
+                  if (birthProblem(birth.year, birth.month)) return setBirthError(ageCopy.future);
+                  // Under 13: no profile and nothing kept, not even on this device.
+                  if (!ageBandOf(birth.year, birth.month)) {
+                    setBirth({ year: null, month: null });
+                    return setStep("under13");
+                  }
                   setStep("start");
                 }}
               >
-                Continue
+                {ageCopy.continue}
               </Button>
             </Screen>
           )}
@@ -343,12 +326,10 @@ export default function Welcome() {
               <div className="mt-16 flex justify-center">
                 <Spuz mood="sad" size={150} decorative />
               </div>
-              <h1 className="font-display text-center text-[28px] leading-[1.1] font-black">SPUZL is for 13 and up</h1>
-              <p className="text-muted text-center text-[16px] leading-normal">
-                Come back when you turn 13. Spuz will keep your seat warm.
-              </p>
-              <Button size="lg" variant="secondary" className="mt-auto w-full" onClick={() => setStep("age")}>
-                Back
+              <h1 className="font-display text-center text-[28px] leading-[1.1] font-black">{ageCopy.under13Title}</h1>
+              <p className="text-muted text-center text-[16px] leading-normal">{ageCopy.under13Body}</p>
+              <Button size="lg" variant="secondary" className="mt-auto w-full" onClick={() => setStep("hello")}>
+                {ageCopy.back}
               </Button>
             </Screen>
           )}

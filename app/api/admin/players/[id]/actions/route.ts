@@ -5,6 +5,7 @@ import { ACTION_PERMISSION, ActionBody, confirmMatches } from "@/lib/admin/playe
 import { isAdminAccount, safeNickname } from "@/lib/admin/players";
 import { can } from "@/lib/admin/roles";
 import { deleteAccount } from "@/lib/server/account-delete";
+import { ageBandOf, birthProblem } from "@/lib/age";
 
 const Id = z.string().uuid();
 
@@ -31,6 +32,8 @@ function fail(error: PgError): never {
  *   ban {days|null}         timed or permanent; unban lifts it
  *   revoke_ranking / restore_ranking
  *   signout                 ends every session (refresh tokens); access tokens lapse within the hour
+ *   birth {year, month}     corrects the birth month and year; the age band follows (owner, moderator). The audit row
+ *                           keeps the old and new band and the reason, never the birth date. Under 13 is refused.
  *   delete {confirm}        the player's own deletion path, irreversible, confirm repeats the nickname (owner)
  * Admin accounts cannot be signed out or deleted from here.
  */
@@ -105,6 +108,21 @@ export const POST = handle(async (req: Request, rc: RouteContext<"/api/admin/pla
     case "signout": {
       if (await isAdminAccount(ctx, id)) throw new ApiError(409, "is_admin", "This account is on the admin team. Manage it on Team.");
       const { data, error } = await ctx.db.rpc("svc_admin_revoke_sessions", { p_player: id, p_actor: ctx.user.id, p_reason: input.reason });
+      if (error) fail(error);
+      return ok(data);
+    }
+    case "birth": {
+      if (birthProblem(input.year, input.month))
+        throw new ApiError(400, "invalid_request", "That birth month is in the future or too far back.");
+      if (!ageBandOf(input.year, input.month))
+        throw new ApiError(400, "invalid_request", "That makes the player under 13. Delete the account instead.");
+      const { data, error } = await ctx.db.rpc("svc_admin_set_birth", {
+        p_player: id,
+        p_actor: ctx.user.id,
+        p_year: input.year,
+        p_month: input.month,
+        p_reason: input.reason,
+      });
       if (error) fail(error);
       return ok(data);
     }

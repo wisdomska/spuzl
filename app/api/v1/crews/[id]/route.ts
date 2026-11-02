@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { ApiError, handle, ok, requirePlayer } from "@/lib/api/server";
 import { cards } from "@/lib/social/server";
+import { isUnder16 } from "@/lib/social";
+import { effectiveBand } from "@/lib/age";
 import { CREW_MAX, memberWeekXp } from "@/lib/social/crews";
 import { isoWeek, msToLeagueReset, weekStartOf } from "@/lib/leagues";
 
@@ -20,7 +22,7 @@ export const GET = handle(async (_req: Request, ctx: RouteContext<"/api/v1/crews
   const [people, xp, { data: owner }] = await Promise.all([
     cards(admin, ids),
     memberWeekXp(admin, ids, week),
-    admin.from("players").select("city, age_band").eq("id", crew.owner_id).maybeSingle(),
+    admin.from("players").select("city, age_band, birth_year, birth_month").eq("id", crew.owner_id).maybeSingle(),
   ]);
 
   let clash = null;
@@ -56,7 +58,7 @@ export const GET = handle(async (_req: Request, ctx: RouteContext<"/api/v1/crews
     size: ids.length,
     max: CREW_MAX,
     // the owner's city, unless they're under 16
-    city: owner && owner.age_band !== "13-15" ? owner.city : null,
+    city: owner && !isUnder16(effectiveBand(owner)) ? owner.city : null,
     clash,
     carry,
   });

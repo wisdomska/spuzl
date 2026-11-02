@@ -50,6 +50,8 @@ export const PERMISSIONS = {
   "players.moderate": MOD,
   /** Grant or remove Sparks (bounded to ±10,000 per action). */
   "players.economy": ["owner"],
+  /** See and correct a player's birth month and year (the age rules follow it). Players can never change it. */
+  "players.age": MOD,
   /** Delete an account for good (the player's own deletion path). */
   "players.delete": ["owner"],
   /** CSV export of the player list. */

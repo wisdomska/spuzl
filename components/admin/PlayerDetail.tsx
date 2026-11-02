@@ -13,6 +13,8 @@ import { errorText, useAdminAction, useAdminQuery } from "@/lib/client/admin";
 import { adminCopy } from "@/lib/copy/admin";
 import { LEAGUE_TIERS } from "@/lib/rewards";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { ageBandOf, birthProblem, birthYears } from "@/lib/age";
+import { ageCopy } from "@/lib/copy/age";
 import { DaysField, STATUS_TONE } from "./PlayersPage";
 import { Btn, Empty, Field, Notice, PageTitle, Pill, ReadField, RowsSkeleton, inputCls, type PillTone } from "./ui";
 
@@ -30,6 +32,7 @@ const ORDER: PlayerAction[] = [
   "revoke_ranking",
   "restore_ranking",
   "signout",
+  "birth",
   "delete",
 ];
 const DANGER = new Set<PlayerAction>(["ban", "revoke_ranking", "signout", "delete"]);
@@ -94,6 +97,8 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
   const [open, setOpen] = useState<PlayerAction | null>(null);
   const [amount, setAmount] = useState("100");
   const [days, setDays] = useState("7");
+  const [birthYear, setBirthYear] = useState("");
+  const [birthMonth, setBirthMonth] = useState("");
   const [done, setDone] = useState<string | null>(null);
 
   if (q.isPending) return <RowsSkeleton rows={10} height={56} />;
@@ -121,6 +126,8 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
   });
   const amountN = Number(amount);
   const amountOk = Number.isInteger(amountN) && amountN !== 0 && Math.abs(amountN) <= SPARKS_LIMIT;
+  const birthOk = !!birthYear && !!birthMonth && !birthProblem(Number(birthYear), Number(birthMonth));
+  const birthBand = birthOk ? ageBandOf(Number(birthYear), Number(birthMonth)) : null;
 
   const confirm = ({ reason, confirm }: { reason: string; confirm: string }) => {
     if (!open) return;
@@ -128,6 +135,7 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
     if (open === "sparks") input.amount = amountN;
     if (open === "ban") input.days = days ? Number(days) : null;
     if (open === "delete") input.confirm = confirm;
+    if (open === "birth") Object.assign(input, { year: Number(birthYear), month: Number(birthMonth) });
     const action = open;
     act.mutate(input, {
       onSuccess: (r) => {
@@ -145,7 +153,9 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
                 ? C.done.freeze(Number(r.freezes))
                 : action === "signout"
                   ? C.done.signout(Number(r.sessions))
-                  : C.done[action],
+                  : action === "birth"
+                    ? C.done.birth(String(r.age_band))
+                    : C.done[action],
         );
       },
     });
@@ -187,6 +197,12 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <ReadField label={C.playerId} value={<span className="num truncate text-[13px]">{p.id}</span>} />
               <ReadField label={C.ageBand} value={p.age_band} />
+              {can(role, "players.age") && (
+                <ReadField
+                  label={C.birth}
+                  value={p.birth_year && p.birth_month ? `${ageCopy.months[p.birth_month - 1]} ${p.birth_year}` : C.birthNotGiven}
+                />
+              )}
               <ReadField label={C.joinedOn} value={when(p.created_at)} />
               <ReadField label={C.lastSeen} value={p.last_seen_at ? C.ago(age(p.last_seen_at)) : C.never} />
             </div>
@@ -357,7 +373,15 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
                     size="lg"
                     tone={a === "delete" ? "danger" : "secondary"}
                     className="justify-start"
-                    onClick={() => (act.reset(), setDone(null), setOpen(a))}
+                    onClick={() => {
+                      act.reset();
+                      setDone(null);
+                      if (a === "birth") {
+                        setBirthYear(p.birth_year ? String(p.birth_year) : "");
+                        setBirthMonth(p.birth_month ? String(p.birth_month) : "");
+                      }
+                      setOpen(a);
+                    }}
                   >
                     {C.actionLabels[a]}
                   </Btn>
@@ -377,7 +401,7 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
           danger={DANGER.has(open)}
           irreversible={open === "delete"}
           typed={open === "delete" ? p.nickname : undefined}
-          ready={open !== "sparks" || amountOk}
+          ready={(open !== "sparks" || amountOk) && (open !== "birth" || !!birthBand)}
           busy={act.isPending}
           error={act.error ? errorText(act.error) : null}
           onCancel={() => setOpen(null)}
@@ -400,6 +424,45 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
             </Field>
           )}
           {open === "ban" && <DaysField value={days} onChange={setDays} />}
+          {open === "birth" && (
+            <div className="grid grid-cols-2 gap-2">
+              <Field label={C.birthMonth} htmlFor="pd-birth-month">
+                <select
+                  id="pd-birth-month"
+                  value={birthMonth}
+                  onChange={(e) => setBirthMonth(e.target.value)}
+                  className={`${inputCls} h-11`}
+                >
+                  <option value="">{ageCopy.pickMonth}</option>
+                  {ageCopy.months.map((m, i) => (
+                    <option key={m} value={i + 1}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label={C.birthYear} htmlFor="pd-birth-year">
+                <select
+                  id="pd-birth-year"
+                  value={birthYear}
+                  onChange={(e) => setBirthYear(e.target.value)}
+                  className={`${inputCls} num h-11`}
+                >
+                  <option value="">{ageCopy.pickYear}</option>
+                  {birthYears().map((y) => (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              {birthOk && (
+                <p role="status" className="text-muted col-span-2 text-[13px]">
+                  {birthBand ? `${C.ageBand}: ${birthBand}` : ageCopy.under13Title}
+                </p>
+              )}
+            </div>
+          )}
         </ConfirmDialog>
       )}
     </div>

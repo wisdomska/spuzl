@@ -10,6 +10,7 @@ import { dailyNumber, msToReset } from "@/lib/format";
 import { todayGmt } from "@/lib/api/server";
 import { getGameSettings } from "@/lib/game-settings/server";
 import type { Me, Today } from "@/lib/client/api";
+import { effectiveBand } from "@/lib/age";
 
 /** The columns `loadMe` needs from the player row (the API's requirePlayer selects a superset). */
 export interface PlayerRow {
@@ -17,6 +18,16 @@ export interface PlayerRow {
   xp: number;
   sparks: number;
   is_guest: boolean;
+}
+
+const PROFILE_COLS = "nickname, avatar_color, skin, hat, title, age_band, country, city, settings, hide_activity, created_at";
+
+/** The profile row with birth month and year; without them while migration 20261119000001 is not applied yet. */
+async function profileRow(admin: SupabaseClient, id: string) {
+  type Row = Record<string, unknown> & { age_band?: string; birth_year?: number | null; birth_month?: number | null };
+  const r = await admin.from("players").select(`${PROFILE_COLS}, birth_year, birth_month`).eq("id", id).single();
+  if (r.error?.code !== "42703") return { data: r.data as Row | null };
+  return { data: (await admin.from("players").select(PROFILE_COLS).eq("id", id).single()).data as Row | null };
 }
 
 /**
@@ -36,11 +47,7 @@ export async function loadMe(user: User, player: PlayerRow, admin: SupabaseClien
     { data: played },
     { data: learned },
   ] = await Promise.all([
-    admin
-      .from("players")
-      .select("nickname, avatar_color, skin, hat, title, age_band, country, city, settings, hide_activity, created_at")
-      .eq("id", player.id)
-      .single(),
+    profileRow(admin, player.id),
     admin
       .from("streaks")
       .select("current, best, last_clear_date, freezes_held, lost_value, lost_on")
@@ -74,13 +81,18 @@ export async function loadMe(user: User, player: PlayerRow, admin: SupabaseClien
   const theme = COSMETICS.find((c) => c.type === "board_theme" && (equipped ?? []).some((e) => e.cosmetic_id === c.id));
   const lv = levelFromXp(player.xp);
   const worldRatings = (ratings ?? []).filter((r) => !r.track.startsWith("duel") && !r.track.startsWith("board:"));
+  // The band comes from birth month and year (never sent to the client); birthSet asks players from before once.
+  const { birth_year, birth_month, ...shown } = profile ?? {};
   const overall = worldRatings.length ? worldRatings.reduce((s, r) => s + Number(r.rating), 0) / worldRatings.length : 1000;
   return {
     id: player.id,
     guest,
     email,
     clears,
-    ...profile,
+    ...shown,
+    age_band: effectiveBand(profile ?? {}),
+    // Unknown (left out) until the migration lands, so nobody is asked before it can be saved.
+    birthSet: birth_year === undefined ? undefined : birth_year != null && birth_month != null,
     level: lv.level,
     xp: player.xp,
     xpInto: lv.into,

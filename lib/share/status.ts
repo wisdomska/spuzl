@@ -4,6 +4,7 @@ import { GAMES, LAB_GAMES, WORLDS } from "@/lib/catalog";
 import { getGameSettings } from "@/lib/game-settings/server";
 import { gameStats } from "@/lib/meta/server";
 import { rankFor } from "@/lib/rating/glicko2";
+import { effectiveBand } from "@/lib/age";
 import { isUnder16 } from "@/lib/social";
 import { favouriteWorld, statusCard, type StatusCardModel } from "./card-model";
 
@@ -14,7 +15,11 @@ import { favouriteWorld, statusCard, type StatusCardModel } from "./card-model";
  */
 export async function loadStatusCard(admin: SupabaseClient, playerId: string): Promise<StatusCardModel | null> {
   const [{ data: p }, { data: streak }, { data: ratings }, stats, settings] = await Promise.all([
-    admin.from("players").select("nickname, avatar_color, hat, level, age_band, hide_activity, banned_at").eq("id", playerId).maybeSingle(),
+    admin
+      .from("players")
+      .select("nickname, avatar_color, hat, level, age_band, birth_year, birth_month, hide_activity, banned_at")
+      .eq("id", playerId)
+      .maybeSingle(),
     admin.from("streaks").select("current").eq("player_id", playerId).maybeSingle(),
     admin.from("ratings").select("track, rating, games").eq("player_id", playerId),
     gameStats(admin, playerId),
@@ -37,7 +42,7 @@ export async function loadStatusCard(admin: SupabaseClient, playerId: string): P
     gamesTried: tried.length,
     totalGames: shown.length,
     rank: overall === null ? null : rankFor(overall),
-    minor: isUnder16(p.age_band),
+    minor: isUnder16(effectiveBand(p)),
     hideActivity: !!p.hide_activity,
   });
 }
