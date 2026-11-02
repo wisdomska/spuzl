@@ -11,90 +11,69 @@ insert into public.worlds (id, name, sort) values
   ('rage', 'Rage Ridge', 7),
   ('board', 'Board Bay', 8)
 on conflict (id) do update set name = excluded.name, sort = excluded.sort;
-insert into public.games (id, world_id, name, phase, engine, scoring, is_unique, min_time_ms, sort) values
-  ('crownfall', 'logic', 'Crownfall', 'L', 'grid', 'time', true, 6000, 0),
-  ('dusk', 'logic', 'Dusk', 'L', 'grid', 'time', true, 8000, 1),
-  ('sixer', 'logic', 'Sixer', 'L', 'grid', 'time', true, 15000, 2),
-  ('nine', 'logic', 'Nine', 'M3+', 'grid', 'time', true, 40000, 3),
-  ('pixl', 'logic', 'Pixl', 'M2', 'grid', 'time', true, 10000, 4),
-  ('blackout', 'logic', 'Blackout', 'M2', 'grid', 'time', false, 3000, 5),
-  ('tripwire', 'logic', 'Tripwire', 'M3+', 'grid', 'time', true, 8000, 6),
-  ('weave', 'line', 'Weave', 'L', 'grid', 'time', true, 5000, 7),
-  ('flowline', 'line', 'Flowline', 'L', 'grid', 'time', true, 5000, 8),
-  ('isles', 'line', 'Isles', 'M3+', 'grid', 'time', true, 10000, 9),
-  ('pairup', 'line', 'Pairup', 'M2', 'grid', 'time', true, 4000, 10),
-  ('lost', 'line', 'Lost', 'M3+', 'grid', 'time', false, 5000, 11),
-  ('quilt', 'shape', 'Quilt', 'L', 'grid', 'time', true, 6000, 12),
-  ('snug', 'shape', 'Snug', 'M2', 'grid', 'time', false, 6000, 13),
-  ('shuffle', 'shape', 'Shuffle', 'M3+', 'grid', 'time', false, 8000, 14),
-  ('reflect', 'shape', 'Reflect', 'M3+', 'grid', 'time', true, 4000, 15),
-  ('squint', 'shape', 'Squint', 'M3+', 'custom', 'time', false, 4000, 16),
-  ('deadon', 'number', 'Dead On', 'L', 'custom', 'score', false, 3000, 17),
-  ('merge', 'number', 'Merge', 'M3+', 'grid', 'score', false, 0, 18),
-  ('sums', 'number', 'Sums', 'M2', 'grid', 'time', true, 12000, 19),
-  ('equal', 'number', 'Equal', 'M3+', 'grid', 'time', true, 8000, 20),
-  ('coil', 'word', 'Coil', 'L', 'word', 'time', false, 8000, 21),
-  ('rungs', 'word', 'Rungs', 'L', 'word', 'time', false, 10000, 22),
-  ('quads', 'word', 'Quads', 'L', 'word', 'time', false, 8000, 23),
-  ('seven', 'word', 'Seven', 'M2', 'word', 'score', false, 0, 24),
-  ('minicross', 'word', 'Minicross', 'L', 'word', 'time', false, 8000, 25),
-  ('buried', 'word', 'Buried', 'M3+', 'word', 'time', false, 8000, 26),
-  ('remix', 'word', 'Remix', 'M3+', 'word', 'time', false, 2000, 27),
-  ('hunch', 'clue', 'Hunch', 'L', 'custom', 'score', false, 2000, 28),
-  ('quickfire', 'clue', 'Quickfire', 'M2', 'custom', 'score', false, 2000, 29),
-  ('pinned', 'clue', 'Pinned', 'M3+', 'custom', 'score', false, 1000, 30),
-  ('flagged', 'clue', 'Flagged', 'M3+', 'custom', 'score', false, 3000, 31),
-  ('echo', 'reflex', 'Echo', 'L', 'custom', 'score', false, 0, 32),
-  ('twins', 'reflex', 'Twins', 'M2', 'custom', 'score', false, 4000, 33),
-  ('flinch', 'reflex', 'Flinch', 'M3+', 'custom', 'score', false, 0, 34),
-  ('gotcha', 'rage', 'Gotcha', 'L', 'phaser', 'deaths', false, 5000, 35),
-  ('dash', 'rage', 'Dash', 'L', 'phaser', 'deaths', false, 5000, 36),
-  ('flipside', 'rage', 'Flipside', 'M2', 'phaser', 'deaths', false, 5000, 37),
-  ('ricochet', 'rage', 'Ricochet', 'M3+', 'phaser', 'score', false, 0, 38),
-  ('stacked', 'rage', 'Stacked', 'M3+', 'phaser', 'score', false, 0, 39),
-  ('wobble', 'rage', 'Wobble', 'M3+', 'phaser', 'deaths', false, 5000, 40),
-  ('grapple', 'rage', 'Grapple', 'M3+', 'phaser', 'deaths', false, 5000, 41),
-  ('ghosted', 'rage', 'Ghosted', 'M3+', 'phaser', 'deaths', false, 5000, 42),
-  ('slip', 'rage', 'Slip', 'M3+', 'phaser', 'deaths', false, 5000, 43),
-  ('gauntlet', 'rage', 'Gauntlet', 'M3+', 'phaser', 'deaths', false, 10000, 44),
-  ('chess', 'board', 'Chess', 'L', 'board', 'time', true, 1500, 45),
-  ('draughts', 'board', 'Draughts', 'L', 'board', 'time', true, 1500, 46),
-  ('oware', 'board', 'Oware', 'L', 'board', 'time', false, 1500, 47),
-  ('ludo', 'board', 'Ludo', 'M2', 'board', 'time', false, 1500, 48),
-  ('fourup', 'board', 'Four Up', 'M2', 'board', 'time', true, 1500, 49),
-  ('flip', 'board', 'Flip', 'M3+', 'board', 'time', false, 1500, 50)
-on conflict (id) do update set world_id = excluded.world_id, name = excluded.name, phase = excluded.phase, engine = excluded.engine, scoring = excluded.scoring, is_unique = excluded.is_unique, min_time_ms = excluded.min_time_ms, sort = excluded.sort;
--- Phase 5 lab game (lib/catalog.ts LAB_GAMES; hidden while features.newGames is off): migration 20261109300001
 insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
-  ('penalty', 'reflex', 'Penalty King', 'coming_soon', 'M3+', 'custom', 'score', false, 0, 51)
-on conflict (id) do nothing;
--- Phase 5 lab game: migration 20261109300002
-insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
-  ('beattap', 'reflex', 'Beat Tap', 'coming_soon', 'M3+', 'custom', 'score', false, 0, 52)
-on conflict (id) do nothing;
--- Phase 5 lab game: migration 20261109200001
-insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
-  ('hilo', 'number', 'Higher or Lower', 'coming_soon', 'M3+', 'custom', 'score', false, 6000, 53),
-  ('market', 'number', 'Market Run', 'coming_soon', 'M3+', 'custom', 'time', true, 8000, 54)
-on conflict (id) do nothing;
-insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
-  ('five', 'word', 'Five', 'coming_soon', 'M3+', 'word', 'time', false, 4000, 55)
-on conflict (id) do nothing;
-insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
-  ('emojihits', 'clue', 'Emoji Hits', 'coming_soon', 'M3+', 'custom', 'score', false, 4000, 56)
-on conflict (id) do nothing;
-insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
-  ('trotro', 'shape', 'Trotro Jam', 'coming_soon', 'M3+', 'grid', 'time', false, 5000, 57)
-on conflict (id) do nothing;
-insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
-  ('lightup', 'logic', 'Light Up', 'coming_soon', 'M3+', 'grid', 'time', true, 8000, 58)
-on conflict (id) do nothing;
-insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
-  ('killer', 'number', 'Killer Sums', 'coming_soon', 'M3+', 'grid', 'time', true, 15000, 59)
-on conflict (id) do nothing;
-insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
-  ('dara', 'board', 'Dara', 'coming_soon', 'M3+', 'board', 'time', true, 1500, 60)
-on conflict (id) do nothing;
+  ('crownfall', 'logic', 'Crownfall', 'live', 'L', 'grid', 'time', true, 6000, 0),
+  ('dusk', 'logic', 'Dusk', 'live', 'L', 'grid', 'time', true, 8000, 1),
+  ('sixer', 'logic', 'Sixer', 'live', 'L', 'grid', 'time', true, 15000, 2),
+  ('nine', 'logic', 'Nine', 'live', 'M3+', 'grid', 'time', true, 40000, 3),
+  ('weave', 'line', 'Weave', 'live', 'L', 'grid', 'time', true, 5000, 4),
+  ('flowline', 'line', 'Flowline', 'live', 'L', 'grid', 'time', true, 5000, 5),
+  ('pairup', 'line', 'Pairup', 'live', 'M2', 'grid', 'time', true, 4000, 6),
+  ('lost', 'line', 'Lost', 'live', 'M3+', 'grid', 'time', false, 5000, 7),
+  ('trotro', 'shape', 'Trotro Jam', 'live', 'M3+', 'grid', 'time', false, 5000, 8),
+  ('coil', 'word', 'Coil', 'live', 'L', 'word', 'time', false, 8000, 9),
+  ('rungs', 'word', 'Rungs', 'live', 'L', 'word', 'time', false, 10000, 10),
+  ('seven', 'word', 'Seven', 'live', 'M2', 'word', 'score', false, 0, 11),
+  ('minicross', 'word', 'Minicross', 'live', 'L', 'word', 'time', false, 8000, 12),
+  ('buried', 'word', 'Buried', 'live', 'M3+', 'word', 'time', false, 8000, 13),
+  ('remix', 'word', 'Remix', 'live', 'M3+', 'word', 'time', false, 2000, 14),
+  ('quickfire', 'clue', 'Quickfire', 'live', 'M2', 'custom', 'score', false, 2000, 15),
+  ('emojihits', 'clue', 'Emoji Hits', 'live', 'M3+', 'custom', 'score', false, 4000, 16),
+  ('echo', 'reflex', 'Echo', 'live', 'L', 'custom', 'score', false, 0, 17),
+  ('twins', 'reflex', 'Twins', 'live', 'M2', 'custom', 'score', false, 4000, 18),
+  ('flinch', 'reflex', 'Flinch', 'live', 'M3+', 'custom', 'score', false, 0, 19),
+  ('beattap', 'reflex', 'Beat Tap', 'live', 'M3+', 'custom', 'score', false, 0, 20),
+  ('gotcha', 'rage', 'Gotcha', 'live', 'L', 'phaser', 'deaths', false, 5000, 21),
+  ('dash', 'rage', 'Dash', 'live', 'L', 'phaser', 'deaths', false, 5000, 22),
+  ('gauntlet', 'rage', 'Gauntlet', 'live', 'M3+', 'phaser', 'deaths', false, 10000, 23),
+  ('chess', 'board', 'Chess', 'live', 'L', 'board', 'time', true, 1500, 24),
+  ('draughts', 'board', 'Draughts', 'live', 'L', 'board', 'time', true, 1500, 25),
+  ('oware', 'board', 'Oware', 'live', 'L', 'board', 'time', false, 1500, 26),
+  ('ludo', 'board', 'Ludo', 'live', 'M2', 'board', 'time', false, 1500, 27),
+  ('fourup', 'board', 'Four Up', 'live', 'M2', 'board', 'time', true, 1500, 28),
+  ('pixl', 'logic', 'Pixl', 'retired', 'M2', 'grid', 'time', true, 10000, 29),
+  ('blackout', 'logic', 'Blackout', 'retired', 'M2', 'grid', 'time', false, 3000, 30),
+  ('tripwire', 'logic', 'Tripwire', 'retired', 'M3+', 'grid', 'time', true, 8000, 31),
+  ('isles', 'line', 'Isles', 'retired', 'M3+', 'grid', 'time', true, 10000, 32),
+  ('quilt', 'shape', 'Quilt', 'retired', 'L', 'grid', 'time', true, 6000, 33),
+  ('snug', 'shape', 'Snug', 'retired', 'M2', 'grid', 'time', false, 6000, 34),
+  ('shuffle', 'shape', 'Shuffle', 'retired', 'M3+', 'grid', 'time', false, 8000, 35),
+  ('reflect', 'shape', 'Reflect', 'retired', 'M3+', 'grid', 'time', true, 4000, 36),
+  ('squint', 'shape', 'Squint', 'retired', 'M3+', 'custom', 'time', false, 4000, 37),
+  ('deadon', 'number', 'Dead On', 'retired', 'L', 'custom', 'score', false, 3000, 38),
+  ('merge', 'number', 'Merge', 'retired', 'M3+', 'grid', 'score', false, 0, 39),
+  ('sums', 'number', 'Sums', 'retired', 'M2', 'grid', 'time', true, 12000, 40),
+  ('equal', 'number', 'Equal', 'retired', 'M3+', 'grid', 'time', true, 8000, 41),
+  ('quads', 'word', 'Quads', 'retired', 'L', 'word', 'time', false, 8000, 42),
+  ('hunch', 'clue', 'Hunch', 'retired', 'L', 'custom', 'score', false, 2000, 43),
+  ('pinned', 'clue', 'Pinned', 'retired', 'M3+', 'custom', 'score', false, 1000, 44),
+  ('flagged', 'clue', 'Flagged', 'retired', 'M3+', 'custom', 'score', false, 3000, 45),
+  ('flipside', 'rage', 'Flipside', 'retired', 'M2', 'phaser', 'deaths', false, 5000, 46),
+  ('ricochet', 'rage', 'Ricochet', 'retired', 'M3+', 'phaser', 'score', false, 0, 47),
+  ('stacked', 'rage', 'Stacked', 'retired', 'M3+', 'phaser', 'score', false, 0, 48),
+  ('wobble', 'rage', 'Wobble', 'retired', 'M3+', 'phaser', 'deaths', false, 5000, 49),
+  ('grapple', 'rage', 'Grapple', 'retired', 'M3+', 'phaser', 'deaths', false, 5000, 50),
+  ('ghosted', 'rage', 'Ghosted', 'retired', 'M3+', 'phaser', 'deaths', false, 5000, 51),
+  ('slip', 'rage', 'Slip', 'retired', 'M3+', 'phaser', 'deaths', false, 5000, 52),
+  ('flip', 'board', 'Flip', 'retired', 'M3+', 'board', 'time', false, 1500, 53),
+  ('penalty', 'reflex', 'Penalty King', 'retired', 'M3+', 'custom', 'score', false, 0, 54),
+  ('hilo', 'number', 'Higher or Lower', 'retired', 'M3+', 'custom', 'score', false, 6000, 55),
+  ('market', 'number', 'Market Run', 'retired', 'M3+', 'custom', 'time', true, 8000, 56),
+  ('five', 'word', 'Five', 'retired', 'M3+', 'word', 'time', false, 4000, 57),
+  ('lightup', 'logic', 'Light Up', 'retired', 'M3+', 'grid', 'time', true, 8000, 58),
+  ('killer', 'number', 'Killer Sums', 'retired', 'M3+', 'grid', 'time', true, 15000, 59),
+  ('dara', 'board', 'Dara', 'retired', 'M3+', 'board', 'time', true, 1500, 60)
+on conflict (id) do update set world_id = excluded.world_id, name = excluded.name, status = excluded.status, phase = excluded.phase, engine = excluded.engine, scoring = excluded.scoring, is_unique = excluded.is_unique, min_time_ms = excluded.min_time_ms, sort = excluded.sort;
 insert into public.badges (id, family, tier, name, description, secret, sparks, rule, sort) values
   ('first-clear', 'starter', 'bronze', 'First Clear', 'Clear your first puzzle.', false, 10, '{"kind":"clears","n":1,"icon":"seal-check"}'::jsonb, 0),
   ('explorer-logic', 'explorer', 'gold', 'Logic Lab Explorer', 'Clear every game in Logic Lab.', false, 50, '{"kind":"world_all","world":"logic","icon":"flask"}'::jsonb, 1),
@@ -168,15 +147,15 @@ insert into public.cosmetics (id, type, name, price_sparks, rarity, payload, unl
   ('hat-party', 'hat', 'Party Hat', 300, 'rare', '{"hat":"party"}'::jsonb, null, 9),
   ('hat-crown', 'hat', 'Tiny Crown', 600, 'epic', '{"hat":"crown"}'::jsonb, null, 10),
   ('hat-kente', 'hat', 'Kente Cap', 500, 'epic', '{"hat":"kente"}'::jsonb, null, 11),
-  ('hat-shades', 'hat', 'Shades', 350, 'rare', '{"hat":"shades"}'::jsonb, null, 18),
-  ('hat-headphones', 'hat', 'Headphones', 400, 'rare', '{"hat":"headphones"}'::jsonb, null, 19),
-  ('hat-chef', 'hat', 'Chef Hat', 450, 'epic', '{"hat":"chef"}'::jsonb, null, 20),
-  ('theme-midnight', 'board_theme', 'Midnight board', 300, 'common', '{"theme":"midnight"}'::jsonb, null, 12),
-  ('theme-sand', 'board_theme', 'Sandstone board', 600, 'rare', '{"theme":"sand"}'::jsonb, null, 13),
-  ('theme-neon', 'board_theme', 'Neon board', 1000, 'epic', '{"theme":"neon"}'::jsonb, null, 14),
-  ('title-thinker', 'title', 'The Thinker', 0, 'common', '{}'::jsonb, 5, 15),
-  ('title-sparkplug', 'title', 'Spark Plug', 0, 'rare', '{}'::jsonb, 10, 16),
-  ('title-gridlord', 'title', 'Grid Lord', 0, 'epic', '{}'::jsonb, 25, 17),
+  ('hat-shades', 'hat', 'Shades', 350, 'rare', '{"hat":"shades"}'::jsonb, null, 12),
+  ('hat-headphones', 'hat', 'Headphones', 400, 'rare', '{"hat":"headphones"}'::jsonb, null, 13),
+  ('hat-chef', 'hat', 'Chef Hat', 450, 'epic', '{"hat":"chef"}'::jsonb, null, 14),
+  ('theme-midnight', 'board_theme', 'Midnight board', 300, 'common', '{"theme":"midnight"}'::jsonb, null, 15),
+  ('theme-sand', 'board_theme', 'Sandstone board', 600, 'rare', '{"theme":"sand"}'::jsonb, null, 16),
+  ('theme-neon', 'board_theme', 'Neon board', 1000, 'epic', '{"theme":"neon"}'::jsonb, null, 17),
+  ('title-thinker', 'title', 'The Thinker', 0, 'common', '{}'::jsonb, 5, 18),
+  ('title-sparkplug', 'title', 'Spark Plug', 0, 'rare', '{}'::jsonb, 10, 19),
+  ('title-gridlord', 'title', 'Grid Lord', 0, 'epic', '{}'::jsonb, 25, 20),
   ('hat-starter', 'hat', 'Sprout Beanie', 100, 'common', '{"hat":"beanie","starter":1}'::jsonb, null, 21)
 on conflict (id) do update set name = excluded.name, price_sparks = excluded.price_sparks, rarity = excluded.rarity, payload = excluded.payload, unlock_level = excluded.unlock_level, sort = excluded.sort;
 insert into public.feature_flags (key, enabled) values
