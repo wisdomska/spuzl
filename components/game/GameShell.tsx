@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, 
 import { AnimatePresence, motion } from "motion/react";
 import type { BoardApi, BoardProps, ControlSpec, FeedbackTone, Hint, PlayMode } from "@/games/types";
 import type { GameMeta } from "@/lib/catalog";
-import { WORLD_BY_ID } from "@/lib/catalog";
+import { colourOf } from "@/lib/catalog";
 import { IconButton } from "@/components/ui/IconButton";
 import { Icon } from "@/components/ui/Icon";
 import { GameMenu, type GameMenuEntry } from "./GameMenu";
@@ -125,7 +125,8 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
     difficulty,
     canPause = mode !== "duel" && mode !== "race",
   } = props;
-  const world = WORLD_BY_ID[meta.world];
+  // The game's own colour (lib/catalog colourOf): moved games keep the hue they were designed in.
+  const world = colourOf(meta);
   const relaxed = useSettings((s) => s.relaxed);
   const sfx = useSettings((s) => s.sfx);
   const haptics = useSettings((s) => s.haptics);

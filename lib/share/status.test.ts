@@ -27,7 +27,7 @@ describe("statusCard", () => {
       { id: "level", label: "Level", value: "Lv 15" },
       { id: "streak", label: "Streak", value: "🔥 12 days" },
       { id: "tried", label: "Games tried", value: "23 of 51" },
-      { id: "world", label: "Favourite world", value: "Word Woods" },
+      { id: "world", label: "Favourite world", value: "Words & Quiz" },
     ]);
     expect(c.rank).toEqual({ label: "Solver II", color: RANK_HEX.gear });
     expect(c.bg).toBe(worldCardColours("word").bg);
@@ -47,7 +47,7 @@ describe("statusCard", () => {
     expect(ids({ ...base, hideActivity: true })).toEqual(["level", "tried"]);
     expect(c.worldHex).toBeNull();
     expect(statusCard({ ...base, hat: null, hideActivity: true }).mood).toBe("proud");
-    expect(JSON.stringify(c)).not.toMatch(/Word Woods|12 days/);
+    expect(JSON.stringify(c)).not.toMatch(/Words & Quiz|12 days/);
   });
 
   it("never carries anything personal beyond the nickname", () => {
@@ -88,7 +88,7 @@ describe("favouriteWorld", () => {
 describe("statusShareText", () => {
   it("says what the card shows and nothing else", () => {
     expect(statusShareText(statusCard(base))).toBe(
-      ["SPUZL · Ama_K · Solver II", "Lv 15 · 🔥 12 days · 23 of 51 games tried", "Favourite world: Word Woods", SHARE_DOMAIN].join("\n"),
+      ["SPUZL · Ama_K · Solver II", "Lv 15 · 🔥 12 days · 23 of 51 games tried", "Favourite world: Words & Quiz", SHARE_DOMAIN].join("\n"),
     );
     expect(statusShareText(statusCard({ ...base, minor: true, hideActivity: true }))).toBe(
       ["SPUZL · Ama_K", "23 of 51 games tried", SHARE_DOMAIN].join("\n"),

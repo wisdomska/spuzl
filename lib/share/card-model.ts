@@ -97,6 +97,7 @@ export function streakFoot(streak: number, level?: number): string {
 }
 
 export interface DailyCardInput {
+  /** colour family of the card: the game's tone (lib/catalog toneOf) */
   world: WorldId;
   gameName: string;
   number: number;

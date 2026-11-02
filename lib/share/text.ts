@@ -1,4 +1,4 @@
-import { GAME_BY_ID, LAUNCH_IDS, type WorldId } from "@/lib/catalog";
+import { GAME_BY_ID, LAUNCH_IDS, toneOf, type WorldId } from "@/lib/catalog";
 import { formatNumber, formatShort } from "@/lib/format";
 import { ordinal, type StatusCardModel, type StatusStat } from "./card-model";
 
@@ -19,7 +19,7 @@ export const SHARE_DOMAIN = "spuzl.gg";
 
 export const CELL = { clean: "🟩", hint: "🟨", slip: "🟥", none: "⬛" } as const;
 
-/** One emoji per world for the Full Spuzl strip (design: 🟪🟪🟪🟦🟦🟧🟨🟩🟩🟩🟩🟥🔷🔴🔴). */
+/** One emoji per colour family (a game's tone, lib/catalog toneOf) for the Full Spuzl strip (design: 🟪🟪🟪🟦🟦🟧🟨🟩🟩🟩🟩🟥🔷🔴🔴). */
 export const WORLD_EMOJI: Record<WorldId, string> = {
   logic: "🟪",
   line: "🟦",
@@ -39,7 +39,7 @@ export interface Effort {
   /** active solve time */
   timeMs: number;
   hints?: number;
-  /** mistakes, or deaths for Rage Ridge games */
+  /** mistakes, or deaths for the action courses */
   slips?: number;
   /** when each hint was used (ms into the solve); without it hints are spread evenly */
   hintsAtMs?: number[];
@@ -103,7 +103,7 @@ export interface DayShare {
 /** The day's Dailies as a world-coloured strip in catalog order; ⬛ for any not yet cleared. */
 export function fullSpuzlShareText(d: DayShare): string {
   const done = new Set(d.cleared);
-  const strip = LAUNCH_IDS.map((id) => (done.has(id) ? WORLD_EMOJI[GAME_BY_ID[id].world] : CELL.none)).join("");
+  const strip = LAUNCH_IDS.map((id) => (done.has(id) ? WORLD_EMOJI[toneOf(GAME_BY_ID[id])] : CELL.none)).join("");
   const n = LAUNCH_IDS.filter((id) => done.has(id)).length;
   const head = n === LAUNCH_IDS.length ? `FULL SPUZL ${n}/${LAUNCH_IDS.length}` : `${n}/${LAUNCH_IDS.length} Dailies`;
   return [`SPUZL #${d.number} · ${head} · ${formatShort(d.totalMs)}${streakTag(d.streak)}`, strip, SHARE_DOMAIN].join("\n");

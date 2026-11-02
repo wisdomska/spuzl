@@ -62,7 +62,8 @@ describe("share text", () => {
 
   it("matches the design's Full Spuzl format", () => {
     const t = fullSpuzlShareText({ number: 214, cleared: [...LAUNCH_IDS].reverse(), totalMs: 38 * 60_000 + 12_000, streak: 12 });
-    // The live launch Dailies: Logic Lab ×3, Line Lane ×2, Word Woods ×3, Reflex Rink, Rage Ridge ×2.
+    // The live launch Dailies, by colour (each game keeps its tone after the regroup): Puzzles ×3 purple and
+    // ×2 cyan (Weave, Flowline), Words ×3, Arcade: Echo, then Gotcha and Dash in Rage Ridge red.
     expect(LAUNCH_IDS).toHaveLength(11);
     expect(t).toBe(["SPUZL #214 · FULL SPUZL 11/11 · 38:12 🔥12", "🟪🟪🟪🟦🟦🟩🟩🟩🔷🔴🔴", SHARE_DOMAIN].join("\n"));
   });

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { play, duck } from "@/lib/audio";
 import { formatClock } from "@/lib/format";
-import { GAMES, LAUNCH_IDS, WORLD_BY_ID } from "@/lib/catalog";
+import { GAMES, LAUNCH_IDS, colourOf } from "@/lib/catalog";
 
 /**
  * Reward overlays (Onboarding and Overlays R1 to R5, Solo Screens 06). Each sits on the celebration layer
@@ -320,7 +320,7 @@ function FullSpuzl({ c, instant }: { c: Extract<Celebration, { kind: "full" }>; 
           <motion.span
             key={g.id}
             className="flex size-12 items-center justify-center rounded-[12px] text-[#0E0F1A]"
-            style={{ background: WORLD_BY_ID[g.world].color }}
+            style={{ background: colourOf(g).color }}
             initial={instant ? false : { opacity: 0, transform: "scale(0.6)" }}
             animate={{ opacity: 1, transform: "scale(1)" }}
             transition={instant ? { duration: 0 } : { ...PARTY, delay: 0.1 + i * 0.05 }}

@@ -4,7 +4,7 @@ import { useGameSettings } from "@/lib/game-settings/client";
 import { Dialog } from "radix-ui";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
-import { WORLD_BY_ID, type GameMeta } from "@/lib/catalog";
+import { WORLD_BY_ID, colourOf, type GameMeta } from "@/lib/catalog";
 import { useSheetSound } from "@/lib/audio/useSheetSound";
 
 export interface HowToTip {
@@ -30,7 +30,10 @@ export function HowToSheet({ open, meta, onClose, tips }: { open: boolean; meta:
         >
           <div className="bg-line h-[5px] w-11 self-center rounded-[3px]" />
           <div className="flex items-center gap-3">
-            <span className="flex size-12 items-center justify-center rounded-[14px] text-[#0E0F1A]" style={{ background: world.color }}>
+            <span
+              className="flex size-12 items-center justify-center rounded-[14px] text-[#0E0F1A]"
+              style={{ background: colourOf(meta).color }}
+            >
               <Icon name={meta.icon} size={26} />
             </span>
             <div>

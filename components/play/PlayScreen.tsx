@@ -8,7 +8,7 @@ import { GameShell } from "@/components/game/GameShell";
 import { BoardSkeleton } from "@/components/game/BoardSkeleton";
 import { BOARDS } from "@/games/board-registry";
 import { setGuessAttempt } from "@/games/_shared/guess";
-import { WORLD_BY_ID, type GameMeta } from "@/lib/catalog";
+import { WORLD_BY_ID, colourOf, type GameMeta, type WorldId } from "@/lib/catalog";
 import { Skeleton } from "@/components/ui/Skeleton";
 import {
   finishAttempt,
@@ -552,19 +552,9 @@ export function celebrationChips(r: FinishRes): { icon: string; label: string }[
   return out;
 }
 
+/** A rating track's world name (lib/catalog), or the track itself for duel and board tracks. */
 function worldName(track: string) {
-  const names: Record<string, string> = {
-    logic: "Logic Lab",
-    line: "Line Lane",
-    shape: "Shape Shed",
-    number: "Number Den",
-    word: "Word Woods",
-    clue: "Clue Cave",
-    reflex: "Reflex Rink",
-    rage: "Rage Ridge",
-    board: "Board Bay",
-  };
-  return names[track] ?? track;
+  return Object.hasOwn(WORLD_BY_ID, track) ? WORLD_BY_ID[track as WorldId].name : track;
 }
 
 function Toast({ text, onDone }: { text: string; onDone: () => void }) {
@@ -588,7 +578,8 @@ function Toast({ text, onDone }: { text: string; onDone: () => void }) {
  * paint (they are the largest content), and only the timer, tools and board are placeholders.
  */
 function PlayLoading({ meta }: { meta: GameMeta }) {
-  const world = WORLD_BY_ID[meta.world];
+  // The game's own colour (lib/catalog colourOf), as GameShell paints it, so the frame does not change hue.
+  const world = colourOf(meta);
   return (
     <div
       className="bg-bg relative mx-auto flex min-h-dvh w-full max-w-[560px] flex-col"

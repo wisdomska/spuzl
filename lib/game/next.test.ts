@@ -15,6 +15,8 @@ describe("nextInPath", () => {
     expect(n).not.toBe(LAUNCH_IDS[0]);
   });
   it("names the destination", () => {
-    expect(nextLabel("dusk")).toBe("Next in Logic Lab: Dusk");
+    expect(nextLabel("dusk")).toBe("Next in Puzzles: Dusk");
+    // Moved games are named under their new group.
+    expect(nextLabel("gotcha")).toBe("Next in Arcade: Gotcha");
   });
 });

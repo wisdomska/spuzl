@@ -2,7 +2,7 @@
 
 /**
  * Vehicle colours: --reg-N palette indexes (app/globals.css) and their names, as in Crownfall's regions.
- * Orange (reg-4) is left out: it reads too close to the trotro, which wears the Shape Shed world colour.
+ * Orange (reg-4) is left out: it reads too close to the trotro, which keeps the Shape Shed orange (its tone in lib/catalog) inside Puzzles.
  */
 const palette = [
   [0, "purple"],

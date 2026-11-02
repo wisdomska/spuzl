@@ -16,7 +16,7 @@ export function nextInPath(current: string, cleared: Record<string, unknown>, re
   return world.length > 1 ? world[(i + 1) % world.length].id : null;
 }
 
-/** "Next in Logic Lab: Dusk" */
+/** "Next in Puzzles: Dusk" */
 export function nextLabel(id: string): string {
   const g = GAME_BY_ID[id];
   return `Next in ${WORLD_BY_ID[g.world].name}: ${g.name}`;
