@@ -2,8 +2,9 @@ import { expect, test } from "@playwright/test";
 import { GAMES, LAB_GAMES } from "@/lib/catalog";
 
 /**
- * Phase 1 acceptance: every one of the 51 games renders inside GameShell, with the shell header contract
- * (Back, ONE timer, Help, Pause, all 44 px and at least 12 px apart) and no second clock on the board.
+ * Phase 1 acceptance: every one of the 51 games renders inside GameShell, with the slim top bar contract
+ * (Back, ONE timer, the game menu, all 44 px and at least 12 px apart) and no second clock on the board.
+ * Help, Pause (Settings), Sound and the rest live in the menu, every item a 44 px target.
  */
 const CLOCK = /\b\d{1,2}:\d{2}\b/;
 
@@ -18,11 +19,22 @@ for (const g of [...GAMES, ...LAB_GAMES]) {
     const header = page.locator("header").first();
     await expect(header.getByRole("button", { name: "Back" })).toBeVisible({ timeout: 30_000 });
     await expect(page.getByRole("timer")).toHaveCount(1);
-    for (const name of ["Back", "Help", "Pause"]) {
+    for (const name of ["Back", "Game menu"]) {
       const b = await header.getByRole("button", { name }).boundingBox();
       expect(b!.width, `${name} width`).toBeGreaterThanOrEqual(44);
       expect(b!.height, `${name} height`).toBeGreaterThanOrEqual(44);
     }
+    // The menu holds the secondary actions; it opens, every item is a 44 px target, and Escape closes it.
+    await header.getByRole("button", { name: "Game menu" }).click();
+    const menu = page.getByRole("menu");
+    await expect(menu).toBeVisible();
+    for (const name of [/Sound/, /Haptics/, /Settings/, /Share/, /Report a problem/]) {
+      const b = await menu.getByRole(/Sound|Haptics/.test(String(name)) ? "menuitemcheckbox" : "menuitem", { name }).boundingBox();
+      expect(b!.height, `${name} height`).toBeGreaterThanOrEqual(44);
+    }
+    await page.keyboard.press("Escape");
+    await expect(menu).toHaveCount(0);
+    await expect(header.getByRole("button", { name: "Game menu" })).toBeFocused();
     const boxes = await header.locator(":scope > *").evaluateAll((els) =>
       els
         .map((e) => e.getBoundingClientRect())

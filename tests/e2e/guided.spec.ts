@@ -6,7 +6,8 @@ test("guided first play: hints by themselves, skip, then the real board", async 
   await onboardGuest(page, "18+", undefined, { guided: true });
   await page.goto("/play/dusk?mode=free");
   await expect(page.getByText("First time playing Dusk?")).toBeVisible();
-  await expect(page.getByRole("status", { name: "Hints are free in this guided round" })).toBeVisible();
+  // The hint count rides on the Hint tool (the top bar only has Back, the game, the clock and the menu).
+  await expect(page.getByRole("button", { name: /Hints are free in this guided round/ })).toBeVisible();
   // Stay still: a hint appears on its own.
   const before = await page.locator("main ~ div, main + div").allInnerTexts();
   await page.waitForTimeout(8000);
