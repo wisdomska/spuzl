@@ -490,34 +490,37 @@ export async function inbox(admin: SupabaseClient, me: string) {
   const name = (id: string) => (id === BOT_PLAYER ? "Practice bot" : (cards?.find((c) => c.id === id)?.nickname ?? "Spuzler"));
   const color = (id: string) => (id === BOT_PLAYER ? "#A2A6C2" : (cards?.find((c) => c.id === id)?.avatar_color ?? "#B8F23A"));
   const hours = (n: number) => Math.max(0, Math.floor(n / 3_600_000));
-  return rows
-    .filter((b) => b.status !== "abandoned" && !(b.status === "finished" && b.rematch_id))
-    .slice(0, 20)
-    .map((b) => {
-      const seat = b.players.indexOf(me);
-      const opp = b.players.find((p) => p !== me) ?? "";
-      const mine = b.status === "active" && b.turn === seat;
-      const turnAt = Date.parse(b.turn_started_at ?? b.updated_at);
-      let detail: string;
-      if (b.status === "waiting") detail = `Invite sent. Code ${b.invite_code}.`;
-      else if (b.status === "finished")
-        detail = b.winner_id === me ? "You won. Rematch?" : b.winner_id ? `${name(opp)} won. Rematch?` : "A draw. Rematch?";
-      else if (mine)
-        detail =
-          b.draw_offer !== null && b.draw_offer !== seat
-            ? `Move ${Math.floor(b.ply / 2) + 1}. ${name(opp)} offered a draw.`
-            : b.move_deadline
-              ? `Your move, ${hours(Date.parse(b.move_deadline) - now)} h left.`
-              : "Your move. Live now.";
-      else detail = `Their move, ${hours(now - turnAt)} h since you played`;
-      return {
-        id: b.id,
-        game: b.game_id,
-        opponent: { name: b.status === "waiting" ? "a friend" : name(opp), color: color(opp) },
-        detail,
-        status: b.status === "finished" ? ("finished" as const) : mine ? ("your-move" as const) : ("their-move" as const),
-        nudged: !!b.nudged_at,
-        canNudge: b.mode === "async" && b.status === "active" && !mine && !b.nudged_at && now - turnAt >= TIMING.nudgeAfterMs,
-      };
-    });
+  return (
+    rows
+      // A "waiting" row with no invite code is a Play live pairing being set up: not an invite to list.
+      .filter((b) => b.status !== "abandoned" && !(b.status === "finished" && b.rematch_id) && !(b.status === "waiting" && !b.invite_code))
+      .slice(0, 20)
+      .map((b) => {
+        const seat = b.players.indexOf(me);
+        const opp = b.players.find((p) => p !== me) ?? "";
+        const mine = b.status === "active" && b.turn === seat;
+        const turnAt = Date.parse(b.turn_started_at ?? b.updated_at);
+        let detail: string;
+        if (b.status === "waiting") detail = `Invite sent. Code ${b.invite_code}.`;
+        else if (b.status === "finished")
+          detail = b.winner_id === me ? "You won. Rematch?" : b.winner_id ? `${name(opp)} won. Rematch?` : "A draw. Rematch?";
+        else if (mine)
+          detail =
+            b.draw_offer !== null && b.draw_offer !== seat
+              ? `Move ${Math.floor(b.ply / 2) + 1}. ${name(opp)} offered a draw.`
+              : b.move_deadline
+                ? `Your move, ${hours(Date.parse(b.move_deadline) - now)} h left.`
+                : "Your move. Live now.";
+        else detail = `Their move, ${hours(now - turnAt)} h since you played`;
+        return {
+          id: b.id,
+          game: b.game_id,
+          opponent: { name: b.status === "waiting" ? "a friend" : name(opp), color: color(opp) },
+          detail,
+          status: b.status === "finished" ? ("finished" as const) : mine ? ("your-move" as const) : ("their-move" as const),
+          nudged: !!b.nudged_at,
+          canNudge: b.mode === "async" && b.status === "active" && !mine && !b.nudged_at && now - turnAt >= TIMING.nudgeAfterMs,
+        };
+      })
+  );
 }

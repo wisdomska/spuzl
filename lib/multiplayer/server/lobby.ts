@@ -51,6 +51,8 @@ export async function enqueue(admin: SupabaseClient, player: { id: string; age_b
   const [{ rating }, { data: me }] = await Promise.all([
     readRating(admin, player.id, "duel"),
     admin.from("players").select("country").eq("id", player.id).single(),
+    // One queue entry per player across modes: a Quick Match search ends a Board Bay "Play live" search.
+    admin.from("board_queue").delete().eq("player_id", player.id).is("match_id", null),
   ]);
   await admin.from("matchmaking_queue").upsert({
     player_id: player.id,
