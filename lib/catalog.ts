@@ -819,22 +819,11 @@ export const gamesInWorld = (w: WorldId) => GAMES.filter((x) => x.world === w);
 export const MERGED_WORLDS: Partial<Record<WorldId, WorldId>> = { line: "logic", shape: "logic", clue: "word", rage: "reflex" };
 
 /**
- * A game's own colour family, when it differs from its world's. Games that moved in the 2026-11 regroup keep the
- * colour they were designed in: Flowline's water stays cyan, the trotro stays orange, the Rage Ridge courses stay
- * red. One line per entry: scripts/prerender-3d.mjs reads this block to colour the 3D tiles.
+ * Every game wears its world's colour, so a category reads as one colour everywhere (tiles, shell, share cards).
+ * The block stays (empty) because scripts/prerender-3d.mjs reads it to colour the 3D tiles; add a line only for a
+ * deliberate exception.
  */
-const TONE: Partial<Record<string, WorldId>> = {
-  weave: "line",
-  flowline: "line",
-  pairup: "line",
-  lost: "line",
-  trotro: "shape",
-  quickfire: "clue",
-  emojihits: "clue",
-  gotcha: "rage",
-  dash: "rage",
-  gauntlet: "rage",
-};
+const TONE: Partial<Record<string, WorldId>> = {};
 /** The colour family a game wears in play (shell, tiles, share cards): its tone, else its world. */
 export const toneOf = (g: GameMeta): WorldId => TONE[g.id] ?? g.world;
 /** A game's colours: `color` fill and `ink` for world-coloured text on the light theme. */

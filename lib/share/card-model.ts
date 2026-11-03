@@ -51,7 +51,7 @@ export const WORLD_HEX: Record<WorldId, string> = {
   clue: "#FF6B6B",
   reflex: "#4D8BFF",
   rage: "#FF3B3B",
-  board: "#F27ADB",
+  board: "#B07443",
 };
 
 /** Linear mix of two #RRGGBB colours, t = share of `b`. */

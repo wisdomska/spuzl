@@ -65,13 +65,13 @@
       {
         "id": "weave",
         "icon": "path",
-        "world": "line",
+        "world": "logic",
         "file": "icons/weave.webp"
       },
       {
         "id": "flowline",
         "icon": "drop",
-        "world": "line",
+        "world": "logic",
         "file": "icons/flowline.webp"
       },
       {
@@ -83,13 +83,13 @@
       {
         "id": "pairup",
         "icon": "link-simple",
-        "world": "line",
+        "world": "logic",
         "file": "icons/pairup.webp"
       },
       {
         "id": "lost",
         "icon": "signpost",
-        "world": "line",
+        "world": "logic",
         "file": "icons/lost.webp"
       },
       {
@@ -125,7 +125,7 @@
       {
         "id": "trotro",
         "icon": "bus",
-        "world": "shape",
+        "world": "logic",
         "file": "icons/trotro.webp"
       },
       {
@@ -203,7 +203,7 @@
       {
         "id": "quickfire",
         "icon": "timer",
-        "world": "clue",
+        "world": "word",
         "file": "icons/quickfire.webp"
       },
       {
@@ -221,7 +221,7 @@
       {
         "id": "emojihits",
         "icon": "smiley",
-        "world": "clue",
+        "world": "word",
         "file": "icons/emojihits.webp"
       },
       {
@@ -251,13 +251,13 @@
       {
         "id": "gotcha",
         "icon": "skull",
-        "world": "rage",
+        "world": "reflex",
         "file": "icons/gotcha.webp"
       },
       {
         "id": "dash",
         "icon": "person-simple-run",
-        "world": "rage",
+        "world": "reflex",
         "file": "icons/dash.webp"
       },
       {
@@ -305,7 +305,7 @@
       {
         "id": "gauntlet",
         "icon": "flag-checkered",
-        "world": "rage",
+        "world": "reflex",
         "file": "icons/gauntlet.webp"
       },
       {

@@ -274,7 +274,7 @@ export default function ChessBoard({ puzzle, initialState, hint, disabled, api }
               const bg = mated
                 ? "var(--danger)"
                 : isSel
-                  ? "var(--world)"
+                  ? SQUARE.sel
                   : isLast
                     ? light
                       ? SQUARE.lastLight

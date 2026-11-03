@@ -11,7 +11,7 @@ import { BayStyles } from "@/games/_shared/BayStyles";
 import { BOTTOM_ROW, TOP_ROW, legalPits, sow } from "./engine";
 import { gains, type OwarePuzzle, type OwareState } from "./logic";
 
-const SEED_C = ["#F7C4EE", "#FFC93C", "#F4F5FB", "#F27ADB"];
+const SEED_C = ["#F6DDB5", "#FFC93C", "#F4F5FB", "#E08A4F"];
 const SEED_MS = 70;
 const ROWS = [TOP_ROW, BOTTOM_ROW];
 

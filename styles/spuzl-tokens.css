@@ -35,18 +35,18 @@
   --w-reflex-ink: #1f5bd6;
   --w-rage: #ff3b3b;
   --w-rage-ink: #b81e1e;
-  --w-board: #f27adb;
-  --w-board-ink: #a3348f; /* Board Bay: chess, draughts, oware, ludo, four up, flip */
-  /* Ink on chess and draughts squares (SQUARE in games/_shared/BayStyles) and on Board Bay pink: these are the same in
-     both themes, so this is not redefined for light. 6.2:1 on the dark square, 13:1 on the light one. */
+  --w-board: #b07443; /* walnut brown, to match the boxwood and ebony pieces */
+  --w-board-ink: #7a4a22; /* Board Bay: chess, draughts, oware, ludo, four up, flip */
+  /* Ink on chess and draughts squares (SQUARE in games/_shared/BayStyles) and on Board Bay brown: these are the same in
+     both themes, so this is not redefined for light. 4.2:1 on the dark square, 15.5:1 on the light one. */
   --square-ink: #0e0f1a;
   /* Board Bay live boards (components/multiplayer/bay/boards.tsx and BayScreen.tsx): board materials, the same in both themes like
-     the squares, so these are not redefined for light. Pink is var(--w-board), its depth var(--w-board-ink). */
-  --bay-well: #2a1630; /* oware pits, empty Four Up slots, Flip and Ludo board */
-  --bay-wood: #3a2232; /* oware board, Flip squares, Ludo track */
-  --bay-safe: #5a3a52; /* Ludo safe squares */
-  --bay-depth: #6a3c5e; /* drop shadow under the chess and draughts boards */
-  --bay-pit-ink: #f7c4ee; /* seed counts in oware pits */
+     the squares, so these are not redefined for light. Brown is var(--w-board), its depth var(--w-board-ink). */
+  --bay-well: #2a1a10; /* oware pits, empty Four Up slots, Flip and Ludo board */
+  --bay-wood: #4a2e1c; /* oware board, Flip squares, Ludo track */
+  --bay-safe: #6e4a2e; /* Ludo safe squares */
+  --bay-depth: #5a3a22; /* drop shadow under the chess and draughts boards */
+  --bay-pit-ink: #f6ddb5; /* seed counts in oware pits */
   --bay-check: #ff5a5f; /* the checked king's square */
   --bay-disc-light: #f4f5fb; /* Four Up stars and Flip light discs */
   --bay-disc-light-rim: #a2a6c2;

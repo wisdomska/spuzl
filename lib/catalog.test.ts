@@ -160,14 +160,13 @@ describe("catalog: four groups", () => {
     }
   });
 
-  it("lets moved games keep the colour they were designed in", () => {
-    expect(toneOf(GAME_BY_ID.flowline)).toBe("line");
-    expect(toneOf(GAME_BY_ID.trotro)).toBe("shape");
-    expect(toneOf(GAME_BY_ID.quickfire)).toBe("clue");
-    expect(toneOf(GAME_BY_ID.gotcha)).toBe("rage");
-    expect(colourOf(GAME_BY_ID.gauntlet).color).toBe("var(--w-rage)");
-    // Games that did not move wear their world.
-    expect(toneOf(GAME_BY_ID.crownfall)).toBe("logic");
+  it("gives every game in a world that world's colour", () => {
+    for (const g of GAMES) {
+      expect(toneOf(g), g.id).toBe(g.world);
+      expect(colourOf(g).color, g.id).toBe(WORLD_BY_ID[g.world].color);
+    }
+    expect(toneOf(GAME_BY_ID.flowline)).toBe("logic");
+    expect(toneOf(GAME_BY_ID.gotcha)).toBe("reflex");
     expect(colourOf(GAME_BY_ID.chess)).toEqual({ color: WORLD_BY_ID.board.color, ink: WORLD_BY_ID.board.ink });
   });
 });

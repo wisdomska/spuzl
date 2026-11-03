@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.11.0 (3 November 2026)
+
+### For players
+
+- **Board games are wooden now.** Board Games' colour is walnut brown (was pink) on its tiles, menus, live Board Bay
+  and share cards, and the chess and draughts boards are maple and walnut, so the boxwood and ebony pieces sit on a
+  wooden board. A picked-up piece's square is gold, and the last move is a soft gold, so both still stand out. The
+  oware board, Ludo track and Four Up frame are brown wood too.
+- **New draughts pieces.** Boxwood and ebony men with an inlaid ring, matching the chess set. Kings wear a crown and a
+  gold ring around the disc, so they stand out at a glance. Same on the puzzle board and in live games.
+- **One colour per category.** Every game now wears its category's colour: all Puzzles are purple (Weave, Flowline,
+  Pair Up, Lost and Trotro Jam were cyan or orange), all Words & Quiz green (Quickfire and Emoji Hits were red), all
+  Arcade blue (Gotcha, Dash and Gauntlet were red), all Board Games brown. The 3D game tiles are re-rendered to match,
+  and the Full Spuzl share strip reads 🟪🟪🟪🟪🟪🟩🟩🟩🔷🔷🔷.
+
+### Under the hood
+
+- `lib/catalog` `TONE` is empty (kept for deliberate exceptions; the prerender script reads it). `--w-board` is
+  `#b07443`, ink `#7a4a22`; the Board Bay materials (`--bay-well/wood/safe/depth/pit-ink`) are browns.
+  `SQUARE` gains `sel`; `draughtsDisc()` in `games/_shared/BayStyles` draws men for both boards.
+  `public/3d/icons` and `icons-sm` re-rendered.
+
 ## 1.10.3 (3 November 2026)
 
 ### For players

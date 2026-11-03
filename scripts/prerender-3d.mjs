@@ -28,7 +28,7 @@ const WORLD_HEX = {
   clue: "#FF6B6B",
   reflex: "#4D8BFF",
   rage: "#FF3B3B",
-  board: "#F27ADB",
+  board: "#B07443",
 };
 
 /** Reads id, world and icon for every game from lib/catalog.ts (plain node, no TS loader needed). */

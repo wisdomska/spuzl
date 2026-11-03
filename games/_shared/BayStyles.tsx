@@ -32,7 +32,37 @@ export function BayStyles() {
 }
 
 /** Design square colours shared by chess and draughts (board materials, same in both themes). */
-export const SQUARE = { light: "#E9D9E4", dark: "#B784A7", lastLight: "#F3C9E6", lastDark: "#D98CC2", draughtsDark: "#7A4B6E" } as const;
+/** Maple and walnut, to suit the boxwood and ebony pieces. `sel` is the picked-up piece's square, gold so it reads on wood. */
+export const SQUARE = {
+  light: "#F3E6CF",
+  dark: "#9C6B45",
+  lastLight: "#F1DC8E",
+  lastDark: "#C9A65A",
+  draughtsDark: "#7E5233",
+  sel: "#F2C14E",
+} as const;
+
+/**
+ * Draughts men in boxwood (light) and ebony (dark), matching the chess set: an inlaid ring near the edge, a turned
+ * rim and a drop shadow. Kings add a gold ring around the disc (and a crown, drawn by the board), so a king reads at
+ * a glance. Same in both themes, like the squares.
+ */
+export function draughtsDisc(light: boolean, king: boolean): { background: string; boxShadow: string; color: string } {
+  const gold = king ? "0 0 0 3px #F2C14E, " : "";
+  return light
+    ? {
+        background:
+          "radial-gradient(circle at 50% 50%,transparent 0 56%,rgba(110,64,20,.35) 57% 60%,transparent 61%),radial-gradient(circle at 38% 32%,#F4D9A6,#E2B577 55%,#B9864A)",
+        boxShadow: `inset 0 -4px 0 #9C6B35, inset 0 3px 0 #F8E4BC, ${gold}0 4px 0 #7A4F24, 0 7px 6px rgba(0,0,0,.45)`,
+        color: "#4A2C10",
+      }
+    : {
+        background:
+          "radial-gradient(circle at 50% 50%,transparent 0 56%,rgba(226,181,119,.35) 57% 60%,transparent 61%),radial-gradient(circle at 38% 32%,#5A4436,#2A1A12 60%,#140C08)",
+        boxShadow: `inset 0 -4px 0 #0A0604, inset 0 3px 0 #6A5446, ${gold}0 4px 0 #050302, 0 7px 6px rgba(0,0,0,.5)`,
+        color: "#F2C14E",
+      };
+}
 
 /** Square bevel from the design boards. */
 export const BEVEL = "inset 0 2px 0 rgba(255,255,255,.22), inset 0 -2px 0 rgba(0,0,0,.14)";

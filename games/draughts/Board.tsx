@@ -6,7 +6,7 @@ import { Icon } from "@/components/ui/Icon";
 import { useCellSize } from "@/components/game/useBoardSize";
 import { useGridKeys } from "@/components/game/useGridKeys";
 import { play } from "@/lib/audio";
-import { BayStyles, SQUARE } from "@/games/_shared/BayStyles";
+import { BayStyles, SQUARE, draughtsDisc } from "@/games/_shared/BayStyles";
 import { count, isKing, legalMoves, samePath, seatOf, squareNumber } from "./engine";
 import { COPY, type DraughtsPuzzle, type DraughtsState } from "./logic";
 
@@ -240,16 +240,10 @@ export default function DraughtsBoard({ puzzle, initialState, hint, disabled, ap
                         height: piece,
                         opacity: dimmed ? 0.45 : 1,
                         animation: gone ? "bay-fade-out 180ms var(--ease-out) both" : undefined,
-                        background: mine
-                          ? "radial-gradient(circle at 40% 35%,#FFFFFF,#DCDDEA 60%,#BFC1D4)"
-                          : "radial-gradient(circle at 40% 35%,#3A3550,#16131F 65%,#0E0F1A)",
-                        boxShadow: mine
-                          ? "inset 0 -4px 0 #A2A6C2, inset 0 3px 0 #FFFFFF, 0 4px 0 #7E8199, 0 7px 6px rgba(0,0,0,.45)"
-                          : "inset 0 -4px 0 #000, inset 0 3px 0 #3A3550, 0 0 0 2px var(--world), 0 5px 0 #6A3C5E, 0 8px 6px rgba(0,0,0,.45)",
-                        color: mine ? "#0E0F1A" : "var(--world)",
+                        ...draughtsDisc(mine, isKing(p)),
                       }}
                     >
-                      {isKing(p) ? <Icon name="crown-simple" size={18} /> : !mine && <Icon name="circle" size={16} />}
+                      {isKing(p) && <Icon name="crown-simple" size={Math.round(piece * 0.42)} />}
                     </span>
                   )}
                   {step > 0 && hop < 0 && !done && (

@@ -4,7 +4,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { boardGames } from "@/lib/copy/board-games";
 import { fitRow, isWide, useCellSize, useViewportHeight, useViewportWidth, wideCell } from "@/components/game/useBoardSize";
-import { BayStyles, BEVEL, SQUARE } from "@/games/_shared/BayStyles";
+import { BayStyles, BEVEL, SQUARE, draughtsDisc } from "@/games/_shared/BayStyles";
 import { parseFen, toRows, inCheck, kingSquare } from "@/games/chess/engine";
 import { CH_N, Piece, useSprites } from "@/games/chess/Piece";
 import { Token, LUDO_LOOK } from "@/games/ludo/Board";
@@ -178,7 +178,7 @@ function ChessLive({ state, seat, legal, disabled, lastMove, onMove, announce, c
           const target = targets.includes(name);
           const bg =
             sel === name
-              ? "var(--w-board)"
+              ? SQUARE.sel
               : checkSq === name
                 ? "var(--bay-check)"
                 : isLast
@@ -289,17 +289,11 @@ function DraughtsLive({ state, seat, legal, disabled, onMove }: LiveBoardProps) 
                 style={{
                   width: cell * 0.76,
                   height: cell * 0.76,
-                  background: mine
-                    ? "radial-gradient(circle at 40% 35%,var(--bay-man-light-hi),var(--bay-man-light-mid) 60%,var(--bay-man-light-lo))"
-                    : "radial-gradient(circle at 40% 35%,var(--bay-man-dark-hi),var(--bay-man-dark-mid) 65%,var(--bay-disc-dark))",
-                  boxShadow: mine
-                    ? "inset 0 -4px 0 var(--bay-disc-light-rim), 0 4px 0 var(--bay-man-light-depth)"
-                    : "inset 0 -4px 0 var(--bay-man-dark-rim), 0 0 0 2px var(--w-board), 0 4px 0 var(--bay-depth)",
-                  color: mine ? "var(--square-ink)" : "var(--w-board)",
+                  ...draughtsDisc(!!mine, !!king),
                   outline: movable && !disabled ? "2px solid var(--w-board)" : undefined,
                 }}
               >
-                {king ? <Icon name="crown-simple" size={18} /> : !mine ? <Icon name="circle" size={12} /> : null}
+                {king ? <Icon name="crown-simple" size={Math.round(cell * 0.32)} /> : null}
               </span>
             ) : null}
             {ends.includes(sq) && (
