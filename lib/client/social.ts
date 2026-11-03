@@ -278,6 +278,25 @@ function useAct<I, O>(fn: (input: I) => Promise<O>, invalidate: QueryKey[]) {
   });
 }
 
+export interface PlayerHit {
+  id: string;
+  nickname: string;
+  color: string;
+  level: number;
+  title: string | null;
+  status: "friends" | "requested" | "incoming" | "none";
+}
+/** Players matching what's typed in Add by username (2+ characters), refreshed as friendships change. */
+export function usePlayerSearch(q: string) {
+  return useQuery({
+    queryKey: ["friends", "search", q],
+    enabled: q.length >= 2,
+    queryFn: () => api<{ players: PlayerHit[] }>(`/api/v1/players/search?q=${encodeURIComponent(q)}`),
+    staleTime: 15_000,
+    placeholderData: (prev) => prev,
+  });
+}
+
 export const useAddFriend = () =>
   useAct((nickname: string) => api<{ status: "requested" | "friends" }>("/api/v1/friends", { json: { nickname } }), [["friends"]]);
 export const useAccept = () => useAct((id: string) => api(`/api/v1/friends/${id}/accept`, { method: "POST" }), [["friends"], ["feed"]]);

@@ -87,6 +87,13 @@ export interface FeedPayload {
   level?: number;
   days?: number;
   tier?: string;
+  /** duels: who it was against, the score from the winner's side, and whether the other player left */
+  opponent?: string;
+  score?: [number, number];
+  forfeit?: boolean;
+  /** party races: how many raced and how many games */
+  players?: number;
+  games?: number;
 }
 
 /** One-line feed copy ("Kofi cleared Crownfall in 1:05, no hints"). No dashes, no emoji. */
@@ -112,10 +119,18 @@ export function feedLine(
       return `${name} reached level ${p.level ?? ""}`.trim();
     case "streak":
       return `${name} hit a ${p.days ?? 0}-day streak`;
-    case "duel_win":
-      return `${name} won a Duel${g ? ` in ${g}` : ""}`;
-    case "party_win":
-      return `${name} won a Party Race`;
+    case "duel_win": {
+      const where = g ? ` in ${g}` : "";
+      if (!p.opponent) return `${name} won a Duel${where}`;
+      if (p.forfeit) return `${name} won a Duel against ${p.opponent}${where}. ${p.opponent} left early`;
+      const score = p.score ? ` ${p.score[0]}-${p.score[1]}` : "";
+      return `${name} beat ${p.opponent}${score} in a Duel${where}`;
+    }
+    case "party_win": {
+      if (!p.players) return `${name} won a Party Race`;
+      const games = p.games ? `, ${p.games} ${p.games === 1 ? "game" : "games"}` : "";
+      return `${name} won a Party Race against ${p.players - 1} ${p.players - 1 === 1 ? "player" : "players"}${games}`;
+    }
     case "promotion":
       return `${name} was promoted to ${p.tier ?? "a new league"}`;
     default:

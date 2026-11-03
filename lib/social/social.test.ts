@@ -69,6 +69,11 @@ describe("feed copy", () => {
     expect(feedLine("Ama", "promotion", null, { tier: "Gold Crown" })).toBe("Ama was promoted to Gold Crown");
     expect(feedLine("Ama", "duel_win", null, {})).toBe("Ama won a Duel");
     expect(feedLine("Ama", "party_win", null, {})).toBe("Ama won a Party Race");
+    expect(feedLine("You", "duel_win", "coil", { opponent: "Tracy", score: [2, 1] })).toBe("You beat Tracy 2-1 in a Duel in Coil");
+    expect(feedLine("You", "duel_win", "coil", { opponent: "Tracy", score: [0, 0], forfeit: true })).toBe(
+      "You won a Duel against Tracy in Coil. Tracy left early",
+    );
+    expect(feedLine("Kofi", "party_win", null, { players: 5, games: 3 })).toBe("Kofi won a Party Race against 4 players, 3 games");
     expect(feedLine("Ama", "other", null, {})).toBe("Ama played SPUZL");
     for (const k of ["clear", "badge", "level", "streak", "promotion"]) expect(feedLine("A", k, "crownfall", {})).not.toMatch(/[–—]/);
   });

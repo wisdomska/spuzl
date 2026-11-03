@@ -10,7 +10,8 @@ import { Spuz, type SpuzMood } from "@/components/brand/Spuz";
 import { play } from "@/lib/audio";
 import { formatClock, formatNumber } from "@/lib/format";
 import { gameName, RACE_GAMES } from "@/lib/multiplayer/games";
-import { WORLD_BY_ID } from "@/lib/catalog";
+import { GAME_BY_ID, WORLD_BY_ID } from "@/lib/catalog";
+import { GameIcon3D } from "@/components/world/GameIcon3D";
 import { TIMING, type EmoteId } from "@/lib/multiplayer/constants";
 import type { MatchPlayerView, MatchView } from "@/lib/multiplayer/types";
 import { useReduce } from "@/lib/client/multiplayer";
@@ -625,13 +626,17 @@ export function OppDisconnected({
   progress,
   msLeft,
   onClaim,
+  gameId,
 }: {
   name: string;
   color: string;
   progress: number;
   msLeft: number;
   onClaim: () => void;
+  /** the round's game: the paused board shows it (never a stand-in pattern from another game) */
+  gameId?: string | null;
 }) {
+  const meta = gameId ? GAME_BY_ID[gameId] : undefined;
   const secs = Math.max(0, Math.ceil(msLeft / 1000));
   const pct = Math.round((secs / 20) * 100);
   return (
@@ -664,15 +669,11 @@ export function OppDisconnected({
           Your clock is paused. If they&apos;re not back in 20&nbsp;s, the round is yours.
         </p>
       </div>
-      <div className="flex flex-1 items-start justify-center pt-1.5 opacity-40" aria-hidden>
-        <div className="grid grid-cols-6 gap-[3px]">
-          {Array.from({ length: 36 }, (_, i) => (
-            <div
-              key={i}
-              className="size-12 rounded-[9px]"
-              style={{ background: ["#4A3F8F", "#1F5468", "#6B3A6E", "#3F5A2E", "#7A4A2A", "#2B3F80"][(i * 7 + Math.floor(i / 6)) % 6] }}
-            />
-          ))}
+      <div className="flex flex-1 items-start justify-center px-4 pt-1.5">
+        <div className="bg-surface flex w-full max-w-[420px] flex-col items-center gap-2 rounded-[24px] px-5 py-6 text-center">
+          {meta && <GameIcon3D meta={meta} size={72} />}
+          <p className="font-display text-[17px] font-extrabold">{meta ? `Your ${meta.name} board is saved` : "Your board is saved"}</p>
+          <p className="text-muted text-[14px] leading-[1.45]">It comes back the moment they do, right where you left it.</p>
         </div>
       </div>
       <div className="px-4 pt-3 pb-[max(28px,env(safe-area-inset-bottom))]">

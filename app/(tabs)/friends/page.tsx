@@ -2,8 +2,19 @@
 
 import { InviteShare } from "@/components/share/InviteShare";
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
-import { useAccept, useAddFriend, useFeed, useFriends, useInvite, useReact, useRemoveFriend, type FeedItem } from "@/lib/client/social";
+import { useEffect, useState, type FormEvent } from "react";
+import {
+  useAccept,
+  useAddFriend,
+  useFeed,
+  useFriends,
+  useInvite,
+  usePlayerSearch,
+  useReact,
+  useRemoveFriend,
+  type FeedItem,
+  type PlayerHit,
+} from "@/lib/client/social";
 import { useMe, HttpError } from "@/lib/client/api";
 import { TabPage } from "@/components/meta/TabPage";
 import { AvatarChip, EmptyState, ErrorState, ListSkeleton, PageTitle, Segmented } from "@/components/meta/ui";
@@ -117,8 +128,15 @@ function InviteCard() {
 
 function AddByName({ minor }: { minor: boolean }) {
   const [name, setName] = useState("");
+  const [query, setQuery] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const add = useAddFriend();
+  // Search as you type, a beat after the last key.
+  useEffect(() => {
+    const t = setTimeout(() => setQuery(name.trim()), 250);
+    return () => clearTimeout(t);
+  }, [name]);
+  const hits = usePlayerSearch(minor ? "" : query);
   if (minor)
     return (
       <p className="bg-surface text-muted flex items-center gap-2.5 rounded-[14px] px-3.5 py-3 text-[14px]">
@@ -126,45 +144,94 @@ function AddByName({ minor }: { minor: boolean }) {
         Players under 16 add friends with an invite link or QR code. Share yours above.
       </p>
     );
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
-    const n = name.trim();
-    if (n.length < 3) return;
+  const addName = async (n: string) => {
     try {
       const r = await add.mutateAsync(n);
       setMsg({ ok: true, text: r.status === "friends" ? `You and ${n} are friends now.` : `Request sent to ${n}.` });
-      setName("");
     } catch (err) {
       setMsg({ ok: false, text: err instanceof HttpError && err.message !== err.code ? err.message : "That didn't work. Try again." });
     }
   };
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    const n = name.trim();
+    if (n.length < 3) return;
+    // Enter adds the exact name, or the only match.
+    const list = hits.data?.players ?? [];
+    const exact = list.find((p) => p.nickname.toLowerCase() === n.toLowerCase()) ?? (list.length === 1 ? list[0] : null);
+    await addName(exact?.nickname ?? n);
+  };
+  const list = query.length >= 2 ? (hits.data?.players ?? []) : [];
+  const action = (s: PlayerHit["status"]) =>
+    s === "friends" ? "Friends" : s === "requested" ? "Requested" : s === "incoming" ? "Accept" : "Add";
   return (
     <form onSubmit={submit} className="flex flex-col gap-1.5">
       <div className="bg-surface flex h-12 items-center gap-2.5 rounded-[14px] pr-1.5 pl-3.5">
         <Icon name="magnifying-glass" size={18} className="text-muted shrink-0" />
         <label htmlFor="add-name" className="sr-only">
-          Add by username
+          Find players by username
         </label>
         <input
           id="add-name"
           value={name}
-          onChange={(e) => setName(e.target.value.replace(/[^A-Za-z0-9_]/g, "").slice(0, 16))}
-          placeholder="Add by username"
+          onChange={(e) => {
+            setName(e.target.value.replace(/[^A-Za-z0-9_]/g, "").slice(0, 16));
+            setMsg(null);
+          }}
+          placeholder="Find players by username"
           autoComplete="off"
           autoCapitalize="none"
           spellCheck={false}
+          role="combobox"
+          aria-expanded={list.length > 0}
+          aria-controls="add-results"
           className="placeholder:text-muted min-w-0 flex-1 bg-transparent text-[15px] font-medium outline-none"
         />
-        {name.length >= 3 && (
+        {name && (
           <button
-            type="submit"
-            className="press bg-accent text-on-accent h-9 rounded-[10px] px-3 text-[14px] font-semibold"
-            disabled={add.isPending}
+            type="button"
+            aria-label="Clear"
+            onClick={() => setName("")}
+            className="press text-muted flex size-9 items-center justify-center"
           >
-            Add
+            <Icon name="x" size={16} />
           </button>
         )}
       </div>
+      {query.length >= 2 && (
+        <ul id="add-results" aria-label="Players found" className="bg-surface flex flex-col overflow-hidden rounded-[16px]">
+          {hits.isPending && !hits.data ? (
+            <li className="text-muted px-3.5 py-3 text-[14px]">Searching…</li>
+          ) : list.length === 0 ? (
+            <li className="text-muted px-3.5 py-3 text-[14px]">No Spuzlers match “{query}”.</li>
+          ) : (
+            list.map((p, i) => {
+              const done = p.status === "friends" || p.status === "requested";
+              return (
+                <li key={p.id} className={`flex h-14 items-center gap-2.5 px-2.5 ${i ? "border-line border-t" : ""}`}>
+                  <AvatarChip nickname={p.nickname} color={p.color} size={36} radius={11} />
+                  <Link href={`/u/${p.nickname}`} className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate text-[15px] font-semibold">{p.nickname}</span>
+                    <span className="text-muted truncate text-[12px] font-medium">
+                      Level {p.level}
+                      {p.title ? ` · ${p.title}` : ""}
+                    </span>
+                  </Link>
+                  <button
+                    type="button"
+                    disabled={done || add.isPending}
+                    onClick={() => void addName(p.nickname)}
+                    aria-label={`${action(p.status)} ${p.nickname}`}
+                    className={`press h-9 shrink-0 rounded-[10px] px-3.5 text-[14px] font-semibold ${done ? "bg-surface-raised text-muted" : "bg-accent text-on-accent"}`}
+                  >
+                    {action(p.status)}
+                  </button>
+                </li>
+              );
+            })
+          )}
+        </ul>
+      )}
       <p role="status" className="min-h-0 px-1 text-[14px]" style={{ color: msg?.ok ? "var(--accent)" : "var(--danger)" }}>
         {msg?.text}
       </p>

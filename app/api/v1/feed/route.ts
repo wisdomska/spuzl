@@ -25,6 +25,38 @@ export const GET = handle(async (req: Request) => {
   const { data: rx } = ids.length
     ? await admin.from("reactions").select("event_id, player_id, reaction").in("event_id", ids)
     : { data: [] as { event_id: number; player_id: string; reaction: Reaction }[] };
+  // Multiplayer entries carry the match id: fill in who it was against, the score and how it ended.
+  const matchIds = [
+    ...new Set(
+      (events ?? [])
+        .filter((e) => e.kind === "duel_win" || e.kind === "party_win")
+        .map((e) => (e.payload as { matchId?: string } | null)?.matchId)
+        .filter((x): x is string => typeof x === "string"),
+    ),
+  ];
+  const [{ data: seats }, { data: matches }] = matchIds.length
+    ? await Promise.all([
+        admin.from("match_players").select("match_id, player_id, rounds_won, spectator, players(nickname)").in("match_id", matchIds),
+        admin.from("matches").select("id, result, round").in("id", matchIds),
+      ])
+    : [{ data: [] }, { data: [] }];
+  type Seat = { match_id: string; player_id: string; rounds_won: number; spectator: boolean; players: { nickname: string } | null };
+  const seatRows = (seats ?? []) as unknown as Seat[];
+  const detail = (e: { player_id: string; kind: string; payload: unknown }) => {
+    const id = (e.payload as { matchId?: string } | null)?.matchId;
+    if (!id) return {};
+    const inMatch = seatRows.filter((s) => s.match_id === id && !s.spectator);
+    const m = (matches ?? []).find((x) => x.id === id);
+    const me = inMatch.find((s) => s.player_id === e.player_id);
+    if (e.kind === "party_win") return { players: inMatch.length, games: m?.round ?? undefined };
+    const opp = inMatch.find((s) => s.player_id !== e.player_id);
+    if (!me || !opp) return {};
+    return {
+      opponent: blocked.has(opp.player_id) ? "another player" : (opp.players?.nickname ?? "a Spuzler"),
+      score: [me.rounds_won, opp.rounds_won] as [number, number],
+      forfeit: m?.result === "abandon" || m?.result === "left",
+    };
+  };
   const items = (events ?? []).map((e) => {
     const mine = (rx ?? []).filter((r) => r.event_id === e.id);
     const counts = Object.fromEntries(REACTIONS.map((k) => [k, mine.filter((r) => r.reaction === k).length])) as Record<Reaction, number>;
@@ -33,7 +65,7 @@ export const GET = handle(async (req: Request) => {
       id: e.id,
       kind: e.kind,
       game: e.game_id,
-      payload: e.payload ?? {},
+      payload: { ...((e.payload as object | null) ?? {}), ...detail(e) },
       at: e.created_at,
       player: { id: c.id, nickname: c.nickname, color: c.color, me: c.id === player.id },
       counts,

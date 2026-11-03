@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.14.1 (3 November 2026)
+
+### For players
+
+- **Find friends by typing.** Friends' search box lists matching players as you type (names starting with what
+  you typed first), each with Add, or Accept when they already asked you, Requested or Friends. Under-16s never
+  appear (they add friends by invite link or QR).
+- **Activity says who you played.** "You beat Tracy 2-1 in a Duel in Coil", "You won a Duel against Tracy in Coil.
+  Tracy left early", "Kofi won a Party Race against 4 players, 3 games". Older entries fill in too.
+- **The paused duel board shows your game.** While the other player reconnects, the board area shows your round's
+  game ("Your Coil board is saved") instead of a coloured tile pattern from another game.
+
 ## 1.14.0 (3 November 2026)
 
 ### For players

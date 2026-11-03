@@ -460,6 +460,7 @@ function DuelMatch({ id }: { id: string }) {
         color={them.color}
         progress={themP?.progress ?? 0}
         msLeft={TIMING.reconnectMs - pausedFor}
+        gameId={view.games[view.round - 1] ?? view.gameId}
         onClaim={() => {
           void matchAction(id, "tick").then((v) => qc.setQueryData(matchKey(id), v));
           if (pausedFor < TIMING.reconnectMs)
