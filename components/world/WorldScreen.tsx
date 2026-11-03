@@ -42,7 +42,7 @@ export function WorldScreen({ id }: { id: WorldId }) {
 
   return (
     <main
-      className="bg-bg mx-auto min-h-dvh max-w-[560px]"
+      className="bg-bg mx-auto min-h-dvh max-w-[560px] lg:max-w-[1180px]"
       style={{ ["--world" as string]: world.color, ["--world-ink" as string]: world.ink }}
     >
       <header
@@ -86,7 +86,7 @@ export function WorldScreen({ id }: { id: WorldId }) {
           </p>
         </div>
       </header>
-      <ul className="flex flex-col gap-2.5 px-4 pt-4 pb-10">
+      <ul className="flex flex-col gap-2.5 px-4 pt-4 pb-10 lg:grid lg:grid-cols-2 lg:items-start lg:gap-3 lg:px-6 2xl:grid-cols-3">
         {games.map((g, i) => {
           const s = status(g.id);
           const done = isDone(g.id);

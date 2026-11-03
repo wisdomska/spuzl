@@ -64,7 +64,7 @@ export default function Library() {
   ];
 
   return (
-    <main className="bg-bg mx-auto flex min-h-dvh max-w-[560px] flex-col">
+    <main className="bg-bg mx-auto flex min-h-dvh max-w-[560px] flex-col lg:max-w-[1180px]">
       <header className="safe-top bg-bg sticky top-0 z-10 flex flex-col gap-3 px-4 pb-2">
         <div className="flex items-center gap-3">
           <Link
@@ -148,7 +148,7 @@ export default function Library() {
           </button>
         </div>
       ) : (
-        <ul className="flex flex-col gap-2 px-4 pt-1 pb-10">
+        <ul className="flex flex-col gap-2 px-4 pt-1 pb-10 lg:grid lg:grid-cols-2 lg:gap-2.5 xl:grid-cols-3">
           {list.map((g, i) => {
             const done = cleared[g.id] !== undefined;
             const time = durationLabel(meta[g.id]?.typicalSec ?? 180);

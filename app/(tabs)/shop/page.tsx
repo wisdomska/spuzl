@@ -193,7 +193,7 @@ export default function ShopPage() {
       <PillTabs label="Shop sections" items={SHOP_TABS} value={tab} onChange={setTab} />
 
       {q.isPending ? (
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-2 lg:grid-cols-4 2xl:grid-cols-5">
           {Array.from({ length: 6 }, (_, i) => (
             <Skeleton key={i} className="h-[132px] rounded-[18px]" />
           ))}
@@ -201,7 +201,7 @@ export default function ShopPage() {
       ) : q.isError ? (
         <ErrorState onRetry={() => q.refetch()} />
       ) : (
-        <div role="listbox" aria-label="Items" className="grid grid-cols-3 gap-2">
+        <div role="listbox" aria-label="Items" className="grid grid-cols-3 gap-2 lg:grid-cols-4 2xl:grid-cols-5">
           {items.map((i) => {
             const on = sel === i.id;
             const ic = itemIcon(i);

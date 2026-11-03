@@ -8,7 +8,7 @@ import { SETTINGS_KEY, defaultSettings, useSettings, type Settings } from "@/lib
 
 /**
  * Tabbed screen frame: phone column (390 first, 16 px gutters, room for the 80 px bottom nav) and, on
- * desktop, content + the 360 px right panel next to the 88 px rail. Sends the presence heartbeat.
+ * desktop, content (up to 760 px, 880 px on very wide screens) + the 360 px right panel next to the 88 px rail. Sends the presence heartbeat.
  */
 export function TabPage({ children, label, wide, panel = true }: { children: ReactNode; label: string; wide?: boolean; panel?: boolean }) {
   const me = useMe();
@@ -28,7 +28,11 @@ export function TabPage({ children, label, wide, panel = true }: { children: Rea
   return (
     <div className={panel ? "lg:grid lg:grid-cols-[1fr_360px]" : ""}>
       <main aria-label={label} className="safe-top min-h-dvh px-4 pt-14 pb-[112px] lg:pt-10 lg:pb-12">
-        <div className={`mx-auto flex w-full flex-col gap-3 ${wide ? "max-w-[880px]" : "max-w-[560px]"}`}>{children}</div>
+        <div
+          className={`mx-auto flex w-full flex-col gap-3 ${wide ? "max-w-[880px]" : "max-w-[560px] lg:max-w-[760px] 2xl:max-w-[880px]"}`}
+        >
+          {children}
+        </div>
       </main>
       {panel && <SidePanel />}
     </div>

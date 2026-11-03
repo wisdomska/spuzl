@@ -283,7 +283,7 @@ export function Screen({
 }) {
   return (
     <div
-      className={`bg-bg relative mx-auto flex min-h-dvh w-full flex-col overflow-hidden ${wide ? "max-w-[1384px] min-[1280px]:max-w-[1424px]" : "max-w-[560px]"} ${className}`}
+      className={`bg-bg relative mx-auto flex min-h-dvh w-full flex-col overflow-hidden ${wide ? "max-w-[1384px] min-[1280px]:max-w-[1424px]" : "max-w-[560px] lg:my-[max(24px,calc((100dvh-820px)/2))] lg:min-h-[min(calc(100dvh-48px),820px)] lg:max-w-[600px] lg:rounded-[32px] lg:border lg:border-[var(--line)]"} ${className}`}
       style={style}
       data-screen-label={label}
     >

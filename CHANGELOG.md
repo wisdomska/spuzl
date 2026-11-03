@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.11.3 (3 November 2026)
+
+### For players
+
+- **Big screens get the room.** After a sweep of every main screen at 390, 1326, 1440 and 1920 px wide:
+  - Category pages and All games show the games as cards in two columns (three on very wide screens) instead of
+    one phone-width list.
+  - Quests, Leagues, Profile, Shop, Friends, Crews and Settings use a 760 px column (880 px on very wide screens,
+    was 560 px), and the Shop shows four or five items per row.
+  - Duel, Party, Your move and sign-up open as a centred card on a computer, instead of a phone column with its
+    buttons at the very bottom of the screen.
+
 ## 1.11.2 (3 November 2026)
 
 ### For players
