@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.13.1 (3 November 2026)
+
+### Under the hood
+
+- **Sitemap and robots.txt for Google.** `/sitemap.xml` lists the public pages (landing, All games, the four game
+  groups, How to play, Fair play, Privacy, Terms, Contact) for Search Console; `/robots.txt` points to it and keeps
+  the admin console, the API and per-player or per-match pages (profiles, live games, rooms, invites) out of search.
+
 ## 1.13.0 (3 November 2026)
 
 ### For players
