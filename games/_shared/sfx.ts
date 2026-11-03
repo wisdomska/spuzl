@@ -2,12 +2,12 @@
  * Board feedback vocabulary: one call per kind of board action, so every board sounds (and buzzes) the same
  * for the same kind of move. Built on the palette in lib/audio/palette.ts; the haptic follows the voice.
  *
- *   place(streak)  a mark, tile, letter or piece put down: rounded blip climbing with the correct streak (medium)
+ *   place(streak)  a mark, tile, letter or piece put down: a small tuned wooden bar, climbing with the streak (medium)
  *   remove()       erase, take back, clear a cell: the tap at a soft level (light)
  *   select()       pick a cell, piece or card without committing anything yet: tap (light)
  *   trace(step)    one more cell on a dragged path or line: a quiet rising synth note, no haptic per cell
  *   cascade(n)     a run of n notes (word found, group solved): chimes 40 ms apart, rising (medium on the first)
- *   move()         a piece slides or a counter is sown, a board-game move: wooden clack (light)
+ *   move()         a piece slides or a counter is sown, a board-game move: wooden block knocking to a stop (light)
  *   capture()      a piece taken: capture knock (medium)
  *   miss()         a round lost to the clock or a fizzled try that is not a rule break (warning-free fizzle)
  *

@@ -56,7 +56,7 @@ export default function OwareBoard({ puzzle, initialState, hint, disabled, api }
         api.ruleBreak(puzzle.pits[pit] ? "You must feed their empty row." : "That pit is empty.");
         return;
       }
-      play("tick");
+      play("tap", { gain: 0.6 });
       setPick(pit);
       const text = describe(pit);
       api.feedback(text, "info", "hand-pointing");
@@ -80,7 +80,7 @@ export default function OwareBoard({ puzzle, initialState, hint, disabled, api }
           () => {
             step[p]++;
             setShown(step.slice());
-            play("tick");
+            play("seedDrop");
           },
           (k + 1) * SEED_MS,
         ),
@@ -90,7 +90,7 @@ export default function OwareBoard({ puzzle, initialState, hint, disabled, api }
     timers.current.push(
       setTimeout(() => {
         if (r.gain) {
-          play("capture");
+          play("seedScoop");
           setGone(r.captured);
           setShown(r.pits);
         }

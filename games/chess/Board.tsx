@@ -44,6 +44,15 @@ const DOT = (cell: number) => Math.max(12, Math.round(cell * 0.3));
  * A move that keeps the forced mate is answered by black's longest defence; any other move shows
  * "Not mate. The king slips out." and slides back. Mate turns the king's square red with a shake.
  */
+/** The physical sound of a move: capture knock, castling (king then rook), check, or a plain placement. */
+function moveSound(before: Position, m: Move, after: Position) {
+  const pc = before.b[m.from];
+  if (isCapture(before, m)) return "pieceCapture";
+  if (LETTER[typeOf(pc)] === "K" && Math.abs((m.from & 7) - (m.to & 7)) === 2) return "castle";
+  if (inCheck(after)) return "pieceCheck";
+  return "piecePlace";
+}
+
 export default function ChessBoard({ puzzle, initialState, hint, disabled, api }: BoardProps<ChessPuzzle, ChessState>) {
   const [moves, setMoves] = useState<string[]>(() => initialState?.moves?.slice() ?? []);
   const r = useMemo(() => replay(puzzle, moves), [puzzle, moves]);
@@ -84,7 +93,7 @@ export default function ChessBoard({ puzzle, initialState, hint, disabled, api }
       if (disabled || done || busy) return;
       const before = shown;
       const after = make(before, m);
-      play(isCapture(before, m) ? "capture" : "clack");
+      play(moveSound(before, m, after));
       setShown(after);
       setLast([m.from, m.to]);
       setSel(null);
@@ -113,7 +122,6 @@ export default function ChessBoard({ puzzle, initialState, hint, disabled, api }
         if (res.mated) {
           setShown(res.pos);
           setBusy(false);
-          later(() => play("check"), 150);
           const line = res.plies.map((p) => p.san).join(" ");
           api.feedback(`${COPY.mate} ${line}`, "success", "check-circle");
           api.announce(`${COPY.mate} ${line}`);
@@ -127,7 +135,7 @@ export default function ChessBoard({ puzzle, initialState, hint, disabled, api }
         later(() => {
           const reply = res.plies[res.plies.length - 1];
           const rm = fromUci(after, reply.uci)!;
-          play(isCapture(after, rm) ? "capture" : "clack");
+          play(moveSound(after, rm, res.pos));
           setShown(res.pos);
           setLast([rm.from, rm.to]);
           setBusy(false);
@@ -146,12 +154,12 @@ export default function ChessBoard({ puzzle, initialState, hint, disabled, api }
       const pc = shown.b[sq];
       if (pc && colorOf(pc) === WHITE) {
         if (sel === sq) {
-          // putting the piece back down: the soft tap
-          play("tap", { gain: 0.55 });
+          // putting the piece back down where it was
+          play("piecePlace", { gain: 0.6 });
           setSel(null);
           return;
         }
-        play("tick");
+        play("pieceLift");
         setSel(sq);
         setPromo(null);
         const n = legalMoves(shown, sq).length;

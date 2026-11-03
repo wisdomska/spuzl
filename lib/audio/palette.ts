@@ -57,6 +57,21 @@ export const VOICES = [
   "thump",
   "letter",
   "spuzpop",
+  // Physically modelled board-game sounds (lib/audio/physical.ts)
+  "piece_lift",
+  "piece_place",
+  "piece_capture",
+  "piece_castle",
+  "piece_check",
+  "disc_place",
+  "disc_capture",
+  "disc_crown",
+  "seed_drop",
+  "seed_scoop",
+  "dice_roll",
+  "token_step",
+  "column_drop",
+  "tile",
 ] as const;
 
 export type SfxName = (typeof VOICES)[number];
@@ -81,8 +96,34 @@ export const PALETTE = {
   tap: "tick",
   /** switch flipped: two tiny clicks, rising for on, falling for off (step 1 = on) */
   toggle: "toggle",
-  /** a cell, tile or piece placed: rounded blip that climbs with the correct-move streak */
-  place: "pop",
+  /** a cell or tile placed in a puzzle: a small wooden bar, tuned, climbing with the correct-move streak */
+  place: "tile",
+  /** chess: a piece picked up (felt leaving the board, barely there) */
+  pieceLift: "piece_lift",
+  /** chess: a piece set down on its square */
+  piecePlace: "piece_place",
+  /** chess: a capture (wood knocks wood, the taken piece topples, the move lands) */
+  pieceCapture: "piece_capture",
+  /** chess: castling (king, then rook) */
+  castle: "piece_castle",
+  /** chess: a move that gives check (firm placement plus a low wood-block knock) */
+  pieceCheck: "piece_check",
+  /** draughts: a disc set down (edge, then flat) */
+  discPlace: "disc_place",
+  /** draughts: a jump that takes a disc */
+  discCapture: "disc_capture",
+  /** draughts: a disc crowned (stacked) */
+  discCrown: "disc_crown",
+  /** oware: one seed sown into a pit */
+  seedDrop: "seed_drop",
+  /** oware: seeds captured (scooped out) */
+  seedScoop: "seed_scoop",
+  /** ludo: the die thrown */
+  diceRoll: "dice_roll",
+  /** ludo: a token hopping one square */
+  tokenStep: "token_step",
+  /** four up: a disc dropped down a column (step = rows it falls) */
+  columnDrop: "column_drop",
   /** small win (correct answer, quest claimed, purchase done): two-note lift */
   success: "success",
   /** puzzle cleared: four-note major arpeggio */
@@ -153,8 +194,8 @@ export const LENGTH_MS: Record<SfxName, number> = {
   emote: 140,
   sting: 560,
   bump: 420,
-  clack: 80,
-  capture: 130,
+  clack: 130,
+  capture: 280,
   check: 360,
   synth: 100,
   jump: 130,
@@ -175,6 +216,20 @@ export const LENGTH_MS: Record<SfxName, number> = {
   thump: 380,
   letter: 90,
   spuzpop: 160,
+  piece_lift: 90,
+  piece_place: 170,
+  piece_capture: 280,
+  piece_castle: 300,
+  piece_check: 300,
+  disc_place: 140,
+  disc_capture: 200,
+  disc_crown: 130,
+  seed_drop: 110,
+  seed_scoop: 260,
+  dice_roll: 520,
+  token_step: 80,
+  column_drop: 330,
+  tile: 240,
 };
 
 /**
@@ -200,6 +255,21 @@ export const VARIATION_CENTS: Partial<Record<SfxName, number>> = {
   hop: 30,
   emote: 30,
   spuzpop: 30,
+  // physical voices jitter their own modes; a little overall pitch spread on top (different pieces, squares)
+  piece_lift: 40,
+  piece_place: 35,
+  piece_capture: 30,
+  piece_castle: 30,
+  piece_check: 15,
+  disc_place: 35,
+  disc_capture: 30,
+  disc_crown: 25,
+  seed_drop: 60,
+  seed_scoop: 40,
+  dice_roll: 40,
+  token_step: 50,
+  column_drop: 30,
+  tile: 0,
 };
 const DEFAULT_CENTS = 8;
 

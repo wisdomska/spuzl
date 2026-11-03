@@ -57,6 +57,19 @@ export const HAPTIC_LEVEL: Partial<Record<SfxName, HapticLevel>> = {
   splat: "heavy",
   whoosh: "light",
   lose: "medium",
+  piece_place: "light",
+  piece_capture: "medium",
+  piece_castle: "light",
+  piece_check: "medium",
+  disc_place: "light",
+  disc_capture: "medium",
+  disc_crown: "medium",
+  seed_drop: "light",
+  seed_scoop: "medium",
+  dice_roll: "medium",
+  token_step: "light",
+  column_drop: "medium",
+  tile: "medium",
 };
 
 /** Pattern per voice, derived from the levels above. */

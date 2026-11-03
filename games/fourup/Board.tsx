@@ -64,7 +64,7 @@ export default function FourUpBoard({ puzzle, initialState, hint, disabled, api 
       }
       const at = row * COLS + c;
       const g = drop(shown, c, 1);
-      play("clack");
+      play("columnDrop", { step: row + 1 });
       setShown(g);
       setFresh(at);
       setBusy(true);
@@ -99,7 +99,7 @@ export default function FourUpBoard({ puzzle, initialState, hint, disabled, api 
         later(() => {
           const reply = res.plies[res.plies.length - 1].col;
           const rr = dropRow(g, reply);
-          play("clack");
+          play("columnDrop", { step: rr + 1 });
           setShown(res.grid);
           setFresh(rr * COLS + reply);
           setBusy(false);

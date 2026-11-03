@@ -21,7 +21,7 @@ describe("board sfx vocabulary", () => {
     sfx.select();
     sfx.move();
     sfx.capture();
-    expect(heard.map((h) => h.sound)).toEqual(["pop", "tick", "tick", "clack", "capture"]);
+    expect(heard.map((h) => h.sound)).toEqual(["tile", "tick", "tick", "clack", "capture"]);
     expect(heard[0].haptic).toEqual([16]); // placements knock (medium)
     expect(heard[1].haptic).toEqual([8]); // removals tick (light)
   });

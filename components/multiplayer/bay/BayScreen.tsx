@@ -18,6 +18,7 @@ import { formatClock, formatNumber } from "@/lib/format";
 import { play } from "@/lib/audio";
 import { BAY_GAMES, isBayGame, loadRules, type AnyRules, type BayGame, type BayRulesGame } from "@/lib/multiplayer/bay";
 import { bayLive } from "@/lib/copy/bay-live";
+import { playBayMove } from "@/lib/audio/boardMoves";
 import { useSettings } from "@/lib/settings/store";
 import { BaySearch } from "./BaySearch";
 import { TimePicker, useMinutes } from "./TimePicker";
@@ -226,11 +227,17 @@ export function BayMatch({ id }: { id: string }) {
   useEffect(() => {
     if (v?.rematchId) router.replace(`/bay/${v.rematchId}`);
   }, [v?.rematchId, router]);
-  // The other side moved: clack (the live region below announces it).
+  // The other side moved: the move's own sound, worked out from the board before and after (the live region below
+  // announces it). Our own moves sound as they are sent, in move() below.
   const lastPly = v?.ply ?? 0;
   const lastSeat = v?.moves[v.moves.length - 1]?.seat;
+  const prevBoard = useRef<{ ply: number; state: unknown } | null>(null);
   useEffect(() => {
-    if (lastPly && lastSeat !== undefined && lastSeat !== v?.mySeat) play("clack");
+    const prev = prevBoard.current;
+    if (v) prevBoard.current = { ply: v.ply, state: v.state };
+    if (!v || !prev || v.ply <= prev.ply) return;
+    const last = v.moves[v.moves.length - 1];
+    if (last && last.seat !== v.mySeat) playBayMove(v.game, prev.state, v.state, last.move);
   }, [lastPly]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const legal = useMemo(() => {
@@ -249,7 +256,7 @@ export function BayMatch({ id }: { id: string }) {
       try {
         const next = await api<BayView>(`/api/v1/bay/${v.id}/move`, { json: { ply: v.ply, move: m } });
         set(next);
-        play("clack");
+        playBayMove(v.game, v.state, next.state, m);
       } catch (e) {
         const code = e instanceof HttpError ? e.code : "";
         if (code === "illegal_move") {

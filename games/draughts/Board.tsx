@@ -59,7 +59,7 @@ export default function DraughtsBoard({ puzzle, initialState, hint, disabled, ap
       const startsHere = moves.some((m) => m.path[0] === sq);
       if (p && seatOf(p) === 0 && plan[0] !== sq) {
         if (!startsHere) return refuse(sq, COPY.compulsory);
-        play("tick");
+        play("pieceLift");
         setPlan([sq]);
         api.onMove({ path: [sq] });
         api.feedback("Piece picked. Tap each landing square in turn.", "info", "hand-pointing");
@@ -79,7 +79,7 @@ export default function DraughtsBoard({ puzzle, initialState, hint, disabled, ap
       }
       const next = [...plan, sq];
       setPlan(next);
-      play("pop", { step: next.length - 1 });
+      play("tap", { gain: 0.6 });
       api.onMove({ path: next }, { correctStreak: next.length - 1 });
       const full = moves.find((m) => samePath(m.path, next));
       const n = next.length - 1;
@@ -110,7 +110,8 @@ export default function DraughtsBoard({ puzzle, initialState, hint, disabled, ap
       timers.current.push(
         setTimeout(() => {
           setHop(k);
-          play("capture");
+          play("discCapture");
+          if (k === path.length - 1 && complete.crowns) play("discCrown", { delay: 0.16 });
         }, k * HOP_MS),
       );
     timers.current.push(

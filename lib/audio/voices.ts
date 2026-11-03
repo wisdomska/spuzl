@@ -9,6 +9,7 @@
  */
 import type { PlayOptions } from "./index";
 import type { SfxName } from "./palette";
+import * as P from "./physical";
 
 export interface Kit {
   a: AudioContext;
@@ -261,15 +262,9 @@ export const RECIPES: Record<SfxName, Recipe> = {
     tone(k, 240, t, 0.05, { type: "triangle", gain: 0.06, f2: 120 });
     noise(k, t + 0.1, 0.3, { freq: 800, f2: 4000, gain: 0.07, attack: 0.15 });
   },
-  clack: (k, t) => {
-    noise(k, t, 0.045, { freq: 1900, gain: 0.3, q: 3 });
-    tone(k, 230, t, 0.06, { gain: 0.16, f2: 140 });
-  },
-  capture: (k, t) => {
-    noise(k, t, 0.06, { freq: 1500, gain: 0.32, q: 2 });
-    noise(k, t + 0.05, 0.06, { freq: 950, gain: 0.22, q: 2 });
-    tone(k, 180, t, 0.08, { gain: 0.18 });
-  },
+  // board moves and captures are physically modelled now (physical.ts)
+  clack: (k, t) => P.blockKnock(k, t),
+  capture: (k, t) => P.pieceCapture(k, t),
   check: (k, t) => {
     tone(k, N(79), t, 0.1, { type: "square", gain: 0.05, lp: 3000 });
     tone(k, N(79), t + 0.25, 0.1, { type: "square", gain: 0.05, lp: 3000 });
@@ -283,6 +278,21 @@ export const RECIPES: Record<SfxName, Recipe> = {
     tone(k, 140, t, 0.07, { gain: 0.18, f2: 80 });
     tone(k, 280, t, 0.03, { type: "triangle", gain: 0.04 });
   },
+  /* ---------- Physically modelled board games (physical.ts) ---------- */
+  piece_lift: (k, t) => P.pieceLift(k, t),
+  piece_place: (k, t) => P.piecePlace(k, t),
+  piece_capture: (k, t) => P.pieceCapture(k, t),
+  piece_castle: (k, t) => P.castle(k, t),
+  piece_check: (k, t) => P.pieceCheck(k, t),
+  disc_place: (k, t) => P.discPlace(k, t),
+  disc_capture: (k, t) => P.discCapture(k, t),
+  disc_crown: (k, t) => P.discCrown(k, t),
+  seed_drop: (k, t) => P.seedDrop(k, t),
+  seed_scoop: (k, t) => P.seedScoop(k, t),
+  dice_roll: (k, t) => P.diceRoll(k, t),
+  token_step: (k, t) => P.tokenStep(k, t),
+  column_drop: (k, t, o) => P.columnDrop(k, t, o.step ?? 3),
+  tile: (k, t, o) => P.tile(k, t, step(o)),
   spike: (k, t) => {
     noise(k, t, 0.12, { freq: 3500, f2: 900, gain: 0.16, q: 2 });
     tone(k, N(58), t, 0.14, { type: "sawtooth", gain: 0.05, lp: 2500 });

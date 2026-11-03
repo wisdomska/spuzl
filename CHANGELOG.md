@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.13.0 (3 November 2026)
+
+### For players
+
+- **Board games sound like real boards.** Every piece sound is now physically modelled: a short contact transient
+  ringing the piece's own resonances (1 to 4 kHz) and the board's (150 to 1000 Hz), with real wood damping, and
+  slightly different every time.
+  - **Chess:** picking a piece up is a faint felt lift; setting it down is a muted wooden "tok"; a capture is wood
+    knocking wood, the taken piece toppling, then the move landing; castling is king then rook; check is a firmer
+    placement with a low wood-block knock (it replaces the two electronic beeps).
+  - **Draughts:** discs land edge first then slap flat; a jump drops the taken disc on the pile; crowning stacks a
+    disc with a small settling rattle.
+  - **Oware:** each seed drops into its pit with a real bounce; a capture is a handful of seeds scooped out.
+  - **Ludo:** the die bounces and settles (each bounce shorter and softer); tokens hop square by square.
+  - **Four Up:** the disc rattles down the column, faster as it falls, and clacks onto the stack.
+  - **Puzzles:** placing a tile is a small tuned wooden bar instead of a synth blip, still climbing with your streak;
+    sliding blocks (Trotro Jam) knock to a stop.
+  - Live Board Bay games play the same sounds for both players' moves.
+
+### Under the hood
+
+- `lib/audio/physical.ts` (modal synthesis: `ring()` modes with T60 decays, `contact()` transients) and
+  `lib/audio/boardMoves.ts` (`playBayMove` works out a live move's sound from the board before and after). New
+  voices and palette events (`pieceLift`, `piecePlace`, `pieceCapture`, `castle`, `pieceCheck`, `discPlace`,
+  `discCapture`, `discCrown`, `seedDrop`, `seedScoop`, `diceRoll`, `tokenStep`, `columnDrop`, `tile`); `clack` and
+  `capture` are physical too. Levels checked offline: chess placement centred near 750 Hz with a 35 ms tail, no
+  voice clips, the six game demos within 5 dB of each other.
+
 ## 1.12.0 (3 November 2026)
 
 ### For players

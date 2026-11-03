@@ -87,7 +87,7 @@ export default function LudoBoard({ puzzle, initialState, hint, disabled, api }:
         api.ruleBreak(puzzle.roll === 6 ? "That piece cannot move." : "Only a 6 brings a piece out.");
         return;
       }
-      play("tick");
+      play("tap", { gain: 0.6 });
       setPick(piece);
       const where =
         st.to === HOME
@@ -111,7 +111,7 @@ export default function LudoBoard({ puzzle, initialState, hint, disabled, api }:
     setBusy(true);
     setMoved(pick);
     setShown(applyStep(t, 0, st));
-    play(st.captures.length ? "capture" : "clack");
+    play(st.captures.length ? "pieceCapture" : "tokenStep");
     timers.current.push(
       setTimeout(() => {
         if (pick === best.step.piece) {
