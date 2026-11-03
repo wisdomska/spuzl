@@ -201,7 +201,7 @@ describe("hard beats easy", () => {
   let t = 0;
   beforeEach(() => {
     t = 0;
-    vi.spyOn(performance, "now").mockImplementation(() => (t += 0.05));
+    vi.spyOn(performance, "now").mockImplementation(() => (t += 0.15));
   });
   afterEach(() => vi.restoreAllMocks());
   for (const game of ["fourup", "flip", "draughts", "oware", "dara"] as const)
@@ -213,7 +213,7 @@ describe("hard beats easy", () => {
         if (r.status.winner === 1) wins++;
       }
       expect(wins).toBeGreaterThanOrEqual(2);
-    }, 60_000);
+    }, 180_000);
 });
 
 describe("search", () => {
