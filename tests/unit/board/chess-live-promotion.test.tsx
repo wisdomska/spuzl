@@ -33,10 +33,27 @@ describe("Live chess board (vs bot)", () => {
     fireEvent.click(square("a8"));
     expect(onMove).not.toHaveBeenCalled();
     const group = screen.getByRole("group", { name: "Promote to" });
-    expect(group.querySelectorAll("button")).toHaveLength(4);
+    // the four pieces, queen first, plus Cancel, drawn on the board over the promotion square
+    expect([...group.querySelectorAll("button")].map((b) => b.getAttribute("aria-label"))).toEqual([
+      "Promote to queen",
+      "Promote to knight",
+      "Promote to rook",
+      "Promote to bishop",
+      "Cancel promotion",
+    ]);
     fireEvent.click(screen.getByRole("button", { name: "Promote to knight" }));
     expect(onMove).toHaveBeenCalledWith("a7a8n");
     expect(screen.queryByRole("group", { name: "Promote to" })).toBeNull();
+  });
+
+  it("Cancel puts the pawn back", () => {
+    const onMove = setup();
+    fireEvent.click(square("a7"));
+    fireEvent.click(square("a8"));
+    const group = screen.getByRole("group", { name: "Promote to" });
+    fireEvent.click(group.querySelector('button[aria-label="Cancel promotion"]')!);
+    expect(screen.queryByRole("group", { name: "Promote to" })).toBeNull();
+    expect(onMove).not.toHaveBeenCalled();
   });
 
   it("tapping the board instead puts the pawn back", () => {

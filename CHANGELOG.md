@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.13.2 (3 November 2026)
+
+### For players
+
+- **Promotion picker on the board.** When a pawn reaches the last rank, the choice now opens right on the
+  promotion square (as on the big online boards): a column of Queen, Knight, Rook and Bishop running toward the
+  middle of the board, over a dimmed board, with a cancel button at the end. It used to sit under the board, where
+  it could be cut off the screen. Tapping the dimmed board or pressing Escape puts the pawn back. Same in chess
+  puzzles and live games, for both colours.
+- **Live chess: tall back-rank pieces are no longer clipped** at the top edge of the board.
+
 ## 1.13.1 (3 November 2026)
 
 ### Under the hood

@@ -5,8 +5,9 @@ import { Icon } from "@/components/ui/Icon";
 import { boardGames } from "@/lib/copy/board-games";
 import { fitRow, isWide, useCellSize, useViewportHeight, useViewportWidth, wideCell } from "@/components/game/useBoardSize";
 import { BayStyles, BEVEL, SQUARE, draughtsDisc } from "@/games/_shared/BayStyles";
-import { parseFen, toRows, inCheck, kingSquare } from "@/games/chess/engine";
+import { parseFen, parseSq, toRows, inCheck, kingSquare } from "@/games/chess/engine";
 import { CH_N, Piece, useSprites } from "@/games/chess/Piece";
+import { PromotionPicker, type PromotionPiece } from "@/games/chess/Promotion";
 import { Token, LUDO_LOOK } from "@/games/ludo/Board";
 import { cellOf, TRACK, baseOfCell, homeColOfCell, SAFE } from "@/games/ludo/engine";
 import { TOP_ROW, BOTTOM_ROW } from "@/games/oware/engine";
@@ -86,23 +87,42 @@ function useOwarePit() {
 const FILES = "abcdefgh";
 const sqName = (sq: number) => FILES[sq & 7] + String(8 - (sq >> 3));
 
-function Grid8({ flipped, cell, render, label }: { flipped: boolean; cell: number; render: (sq: number) => ReactNode; label: string }) {
+/**
+ * The 8 × 8 board. It does not clip (chess pieces rise into the square behind them, and the back rank above the
+ * board), so the four corner squares carry the rounding themselves. `overlay` sits on top (the promotion picker).
+ */
+function Grid8({
+  flipped,
+  cell,
+  render,
+  label,
+  overlay,
+  headroom = 0,
+}: {
+  flipped: boolean;
+  cell: number;
+  render: (sq: number) => ReactNode;
+  label: string;
+  overlay?: ReactNode;
+  /** space above the board for tall back-rank pieces, in px */
+  headroom?: number;
+}) {
   const order = Array.from({ length: 64 }, (_, i) => (flipped ? 63 - i : i));
   return (
     <div
       role="grid"
       aria-label={label}
-      className="grid overflow-hidden rounded-[14px] shadow-[0_8px_0_var(--bay-depth),0_14px_24px_rgba(0,0,0,.45)]"
-      style={{ gridTemplateColumns: `repeat(8, ${cell}px)`, gridTemplateRows: `repeat(8, ${cell}px)` }}
+      className="relative grid rounded-[14px] shadow-[0_8px_0_var(--bay-depth),0_14px_24px_rgba(0,0,0,.45)] [&>:nth-child(1)]:rounded-tl-[14px] [&>:nth-child(57)]:rounded-bl-[14px] [&>:nth-child(64)]:rounded-br-[14px] [&>:nth-child(8)]:rounded-tr-[14px]"
+      style={{ gridTemplateColumns: `repeat(8, ${cell}px)`, gridTemplateRows: `repeat(8, ${cell}px)`, marginTop: headroom }}
     >
       {order.map((sq) => render(sq))}
+      {overlay}
     </div>
   );
 }
 
 /* ---------------- Chess (B3) ---------------- */
 
-const PROMOS = ["q", "r", "b", "n"] as const;
 /** Board coordinates: 12 px in the square ink (6:1 or better on every square colour), above the pieces. */
 const COORD = "num pointer-events-none absolute z-[3] text-[12px] leading-[16px] font-bold text-[var(--square-ink)]";
 /** A soft ring in the square's own colour keeps a coordinate readable where a dark piece stands behind it. */
@@ -151,7 +171,7 @@ function ChessLive({ state, seat, legal, disabled, lastMove, onMove, announce, c
       announce(`${CH_N[ch.toUpperCase()]} ${name} picked up`);
     } else setSel(null);
   };
-  const promote = (p: (typeof PROMOS)[number]) => {
+  const promote = (p: PromotionPiece) => {
     const m = promo && moves.find((x) => x === promo + p);
     if (!m) return;
     setPromo(null);
@@ -164,6 +184,25 @@ function ChessLive({ state, seat, legal, disabled, lastMove, onMove, announce, c
       <Grid8
         flipped={flipped}
         cell={cell}
+        headroom={Math.round(cell * 0.4)}
+        overlay={
+          promo && (
+            <PromotionPicker
+              cell={cell}
+              column={flipped ? 7 - (parseSq(promo.slice(2, 4)) & 7) : parseSq(promo.slice(2, 4)) & 7}
+              top={(flipped ? 7 - (parseSq(promo.slice(2, 4)) >> 3) : parseSq(promo.slice(2, 4)) >> 3) === 0}
+              white={seat !== 1}
+              sprites={sprites}
+              label={tc.promoteGroup}
+              onPick={promote}
+              onCancel={() => {
+                setPromo(null);
+                setSel(null);
+                announce(tc.promotionCancelled);
+              }}
+            />
+          )
+        }
         label="Chess board, live"
         render={(sq) => {
           const r = sq >> 3,
@@ -222,24 +261,6 @@ function ChessLive({ state, seat, legal, disabled, lastMove, onMove, announce, c
           );
         }}
       />
-      {promo && (
-        <div className="flex gap-2" role="group" aria-label={tc.promoteGroup}>
-          {PROMOS.map((p) => (
-            <button
-              key={p}
-              type="button"
-              aria-label={tc.promoteTo(CH_N[p.toUpperCase()])}
-              onClick={() => promote(p)}
-              className="toy relative flex size-14 items-end justify-center overflow-visible rounded-[16px]"
-              style={{ background: SQUARE.light, boxShadow: "0 5px 0 var(--w-board-ink)" }}
-            >
-              <span className="relative block size-10">
-                <Piece ch={seat === 1 ? p : p.toUpperCase()} size={40} sprites={sprites} />
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

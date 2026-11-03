@@ -27,9 +27,9 @@ import {
 } from "./engine";
 import { COPY, replay, type ChessPuzzle, type ChessState } from "./logic";
 import { CH_N, Piece, useSprites } from "./Piece";
+import { PromotionPicker } from "./Promotion";
 import { ShellAside } from "@/components/game/ShellAside";
 
-const PROMOS = ["q", "r", "b", "n"] as const;
 const LETTER = " PNBRQK";
 /** Board coordinates: 12 px in the square ink (6:1 or better on every square colour), above the pieces. */
 const COORD = "num pointer-events-none absolute z-[3] text-[12px] leading-[16px] font-bold text-[var(--square-ink)]";
@@ -225,6 +225,7 @@ export default function ChessBoard({ puzzle, initialState, hint, disabled, api }
   }
 
   const toSq = (vi: number) => (flipped ? 63 - vi : vi);
+  const toVi = toSq; // the mapping is its own inverse
   const keys = useGridKeys(8, 8, (vi) => tapSquare(toSq(vi)));
   const matedK = done ? kingSquare(shown.b, BLACK) : -1;
   const checkK = !done && inCheck(shown) ? kingSquare(shown.b, shown.turn) : -1;
@@ -257,7 +258,7 @@ export default function ChessBoard({ puzzle, initialState, hint, disabled, api }
         aria-rowcount={8}
         aria-colcount={8}
         onKeyDown={keys.onKeyDown}
-        className="grid rounded-[14px]"
+        className="relative grid rounded-[14px]"
         style={{
           gridTemplateColumns: `repeat(8, ${cell}px)`,
           gridTemplateRows: `repeat(8, ${cell}px)`,
@@ -352,45 +353,41 @@ export default function ChessBoard({ puzzle, initialState, hint, disabled, api }
             })}
           </div>
         ))}
+        {promo && (
+          <PromotionPicker
+            cell={cell}
+            column={toVi(promo.to) & 7}
+            top={toVi(promo.to) >> 3 === 0}
+            white
+            sprites={sprites}
+            onCancel={() => {
+              setPromo(null);
+              setSel(null);
+              api.announce("Promotion cancelled. Pawn put back.");
+            }}
+            onPick={(p) => {
+              const m = legal.find((x) => x.from === promo.from && x.to === promo.to && " nbrq"[x.promo - 1] === p);
+              if (m) commit(m);
+            }}
+          />
+        )}
       </div>
 
-      {promo ? (
-        <div className="flex gap-2" role="group" aria-label="Promotion">
-          {PROMOS.map((p) => (
-            <button
-              key={p}
-              type="button"
-              aria-label={`Promote to ${CH_N[p.toUpperCase()]}`}
-              onClick={() => {
-                const m = legal.find((x) => x.from === promo.from && x.to === promo.to && " nbrq"[x.promo - 1] === p);
-                if (m) commit(m);
-              }}
-              className="toy relative flex size-14 items-end justify-center overflow-visible rounded-[16px]"
-              style={{ background: SQUARE.light, boxShadow: "0 5px 0 var(--world-depth)" }}
-            >
-              <span className="relative block size-10">
-                <Piece ch={p.toUpperCase()} size={40} sprites={sprites} />
-              </span>
-            </button>
-          ))}
-        </div>
-      ) : (
-        <ol className="flex w-full flex-wrap gap-1.5" aria-label="Moves">
-          {chips.map((c, k) => (
-            <li
-              key={k}
-              className="num rounded-[10px] px-2.5 py-1.5 text-[14px] font-semibold whitespace-nowrap"
-              style={
-                c.mine && (c.latest || c.t.endsWith("?"))
-                  ? { background: "var(--world)", color: "#0E0F1A" }
-                  : { background: "var(--surface)", color: "var(--text-muted)" }
-              }
-            >
-              {c.t}
-            </li>
-          ))}
-        </ol>
-      )}
+      <ol className="flex w-full flex-wrap gap-1.5" aria-label="Moves">
+        {chips.map((c, k) => (
+          <li
+            key={k}
+            className="num rounded-[10px] px-2.5 py-1.5 text-[14px] font-semibold whitespace-nowrap"
+            style={
+              c.mine && (c.latest || c.t.endsWith("?"))
+                ? { background: "var(--world)", color: "#0E0F1A" }
+                : { background: "var(--surface)", color: "var(--text-muted)" }
+            }
+          >
+            {c.t}
+          </li>
+        ))}
+      </ol>
     </div>
   );
 }
