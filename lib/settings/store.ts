@@ -12,6 +12,8 @@ export type ColourBlind = "off" | "protan" | "deutan" | "tritan";
 export interface AudioSettings {
   sfx: boolean;
   music: boolean;
+  /** the player chose Music on or off themselves (until then, music plays) */
+  musicTouched: boolean;
   haptics: boolean;
   /** true once the player has touched the haptics toggle, so reduced motion stops overriding it */
   hapticsTouched: boolean;
@@ -34,6 +36,7 @@ export const SETTINGS_KEY = "spuzl.settings";
 export const defaultSettings: Settings = {
   sfx: true,
   music: false,
+  musicTouched: false,
   haptics: true,
   hapticsTouched: false,
   theme: "dark",
@@ -44,7 +47,7 @@ export const defaultSettings: Settings = {
   lowData: false,
 };
 
-const AUDIO_FIELDS = ["sfx", "music", "haptics", "hapticsTouched"] as const;
+const AUDIO_FIELDS = ["sfx", "music", "musicTouched", "haptics", "hapticsTouched"] as const;
 
 function read(key: string): Record<string, unknown> {
   try {
@@ -79,6 +82,11 @@ export function prefersReducedMotion(s: Pick<Settings, "reducedMotion">): boolea
   if (s.reducedMotion === "on") return true;
   if (s.reducedMotion === "off") return false;
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+/** Music plays by default; once the player flips the switch, their choice holds. */
+export function musicEnabled(s: Settings): boolean {
+  return s.musicTouched ? s.music : true;
 }
 
 /** Haptics default off under reduced motion, unless the player turned them back on. */

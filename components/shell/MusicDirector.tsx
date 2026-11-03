@@ -1,0 +1,42 @@
+"use client";
+
+import { useEffect } from "react";
+import { usePathname } from "next/navigation";
+import { GAME_BY_ID } from "@/lib/catalog";
+import { playMusic, setMusicHidden, stopMusic } from "@/lib/audio";
+import type { StyleId } from "@/lib/audio/music";
+
+/** Games whose play is sound itself: music would get in the way. */
+const QUIET_GAMES = new Set(["beattap", "echo"]);
+const WORLD_STYLE: Record<string, StyleId> = { logic: "logic", word: "word", reflex: "reflex", board: "board" };
+
+/** Which track a page gets: a game's own tune while playing it, Versus in duels and parties, Home everywhere else. */
+export function musicFor(pathname: string): { id: string; style: StyleId } | null {
+  const parts = pathname.split("/").filter(Boolean);
+  const [first, second] = parts;
+  if (first === "intro" || first === "admin") return null;
+  if (first === "play" && second) {
+    if (QUIET_GAMES.has(second)) return null;
+    const meta = GAME_BY_ID[second];
+    return { id: second, style: (meta && WORLD_STYLE[meta.world]) || "home" };
+  }
+  if (first === "bay") return { id: "bay", style: "board" };
+  if (first === "duel" || first === "party" || first === "challenge" || first === "ghost") return { id: "versus", style: "versus" };
+  return { id: "home", style: "home" };
+}
+
+/** Follows the route and keeps the right music playing (settings decide whether any plays at all). */
+export function MusicDirector() {
+  const pathname = usePathname();
+  useEffect(() => {
+    const m = musicFor(pathname ?? "/");
+    if (m) playMusic(m.id, m.style);
+    else stopMusic();
+  }, [pathname]);
+  useEffect(() => {
+    const onVis = () => setMusicHidden(document.visibilityState === "hidden");
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
+  return null;
+}

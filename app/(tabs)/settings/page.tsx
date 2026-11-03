@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Suspense, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { useSettings, prefersReducedMotion, type Settings } from "@/lib/settings/store";
+import { useSettings, musicEnabled, prefersReducedMotion, type Settings } from "@/lib/settings/store";
 import { api, HttpError, useMe } from "@/lib/client/api";
 import { EmailCodeSignIn } from "@/components/onboarding/EmailCodeSignIn";
 import { GoogleButton } from "@/components/auth/GoogleButton";
@@ -124,7 +124,15 @@ function SettingsScreen() {
           />
         </Row>
         <Row icon="music-notes" label="Music">
-          <Switch checked={s.music && !s.lowData} disabled={s.lowData} onChange={(v) => save("music", v)} label="Music" />
+          <Switch
+            checked={musicEnabled(s) && !s.lowData}
+            disabled={s.lowData}
+            onChange={(v) => {
+              save("music", v);
+              save("musicTouched", true);
+            }}
+            label="Music"
+          />
         </Row>
         <Row icon="vibrate" label="Haptics">
           <Switch

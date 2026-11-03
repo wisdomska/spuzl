@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.16.0 (3 November 2026)
+
+### For players
+
+- **Background music, everywhere.** Home and the menus play a warm lo-fi track; every game has its own tune in
+  its category's sound: calm bells for Puzzles, a light jazzy marimba for Words & Quiz, upbeat chiptune for Arcade,
+  kora-style plucks over a West African bell pattern for Board Games, and a driving Versus track in duels and
+  parties. Each game's tune keeps its own key, tempo, chords and melody, and every fourth phrase drops back so it
+  never drones. It fades in, ducks under big celebrations, pauses when you leave the tab, and stays quiet in Beat
+  Tap and Echo (their play is sound) and on the intro.
+- **On by default.** Music now plays unless you switch it off in Settings (your choice holds from then on). Low-data
+  mode still turns it off.
+
+### Under the hood
+
+- `lib/audio/music.ts`: a generative sequencer (lookahead scheduling on the audio clock; pads built from diatonic
+  chords, bass, a lead per style, grooves), seeded per game. `MusicDirector` picks the track from the route.
+  Levels checked offline: no clipping, the six styles within 3 dB of each other, well under the sound effects.
+
 ## 1.15.1 (3 November 2026)
 
 ### For players

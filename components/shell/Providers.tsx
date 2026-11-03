@@ -1,10 +1,11 @@
 "use client";
 
 import { installAttemptPriming } from "@/lib/client/early-attempt";
+import { MusicDirector } from "./MusicDirector";
 import { useEffect, useState, type ReactNode } from "react";
 import { MotionConfig } from "motion/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useSettings, hapticsEnabled, prefersReducedMotion } from "@/lib/settings/store";
+import { useSettings, hapticsEnabled, musicEnabled, prefersReducedMotion } from "@/lib/settings/store";
 import { configure, unlock, play } from "@/lib/audio";
 import { pressSound } from "@/lib/audio/press";
 import { setHapticsEnabled } from "@/lib/haptics";
@@ -25,7 +26,7 @@ export function Providers({ children }: { children: ReactNode }) {
   }, [hydrate]);
 
   useEffect(() => {
-    configure({ sfx: settings.sfx, music: settings.music, haptics: settings.haptics, lowData: settings.lowData });
+    configure({ sfx: settings.sfx, music: musicEnabled(settings), haptics: settings.haptics, lowData: settings.lowData });
     setHapticsEnabled(hapticsEnabled(settings));
   }, [settings]);
 
@@ -54,6 +55,7 @@ export function Providers({ children }: { children: ReactNode }) {
       <MotionConfig reducedMotion={reduce ? "always" : "never"}>
         {children}
         <HapticFallback />
+        <MusicDirector />
       </MotionConfig>
     </QueryClientProvider>
   );

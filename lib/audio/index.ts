@@ -16,7 +16,11 @@
  */
 import { haptic, HAPTICS } from "@/lib/haptics";
 import { canStart, clampPan, LENGTH_MS, prune, resolve, variation, type Scheduled } from "./palette";
-import { N, RECIPES, tone, type Kit } from "./voices";
+import { RECIPES, type Kit } from "./voices";
+import { createPlayer, trackFor, type MusicPlayer, type StyleId } from "./music";
+
+/** Music sits well under the sound effects. */
+const MUSIC_LEVEL = 0.32;
 
 export { ALIASES, PALETTE, VOICES, resolve, type PaletteEvent, type SfxName } from "./palette";
 
@@ -49,7 +53,8 @@ const runtime: Runtime = { sfx: true, music: false, haptics: true, lowData: fals
 
 export function configure(next: Partial<Runtime>) {
   Object.assign(runtime, next);
-  if (!runtime.music || runtime.lowData) stopMusic();
+  if (!runtime.music || runtime.lowData) haltMusic();
+  else resumeMusic();
 }
 
 let ac: AudioContext | null = null;
@@ -91,7 +96,7 @@ function build(a: AudioContext) {
   sfxBus = a.createGain();
   sfxBus.connect(master);
   musicBus = a.createGain();
-  musicBus.gain.value = 0.18;
+  musicBus.gain.value = MUSIC_LEVEL;
   musicBus.connect(master);
   nbuf = a.createBuffer(1, a.sampleRate, a.sampleRate);
   const d = nbuf.getChannelData(0);
@@ -175,12 +180,15 @@ export function play(name: string, o: PlayOptions = {}) {
 
 /** Call from the first pointerdown/keydown. Browsers block audio until then. */
 export function unlock() {
+  const first = !unlocked;
   unlocked = true;
   try {
     ctx();
   } catch {
     /* ignore */
   }
+  // Music asked for before the first tap starts now.
+  if (first) resumeMusic();
 }
 
 export function isUnlocked() {
@@ -195,57 +203,56 @@ export function __resetForTests() {
   Object.assign(runtime, { sfx: true, music: false, haptics: true, lowData: false });
 }
 
-/* ---------- Music: short per-world loops, off by default ---------- */
+/* ---------- Music: generative tracks per area and per game (lib/audio/music.ts) ---------- */
 
 export type WorldId = "logic" | "line" | "shape" | "number" | "word" | "clue" | "reflex" | "rage" | "board";
 
-/** Each world gets a 4-bar pentatonic motif; tempo and timbre carry the world's personality. */
-const LOOPS: Record<WorldId, { bpm: number; type: OscillatorType; notes: number[] }> = {
-  logic: { bpm: 92, type: "triangle", notes: [60, 67, 64, 71, 62, 69, 67, 64] },
-  line: { bpm: 104, type: "sine", notes: [62, 69, 74, 69, 64, 71, 76, 71] },
-  shape: { bpm: 98, type: "triangle", notes: [57, 64, 60, 67, 59, 66, 62, 69] },
-  number: { bpm: 110, type: "square", notes: [60, 64, 67, 72, 67, 64, 62, 65] },
-  word: { bpm: 88, type: "sine", notes: [65, 69, 72, 69, 67, 70, 74, 70] },
-  clue: { bpm: 96, type: "triangle", notes: [57, 60, 64, 62, 59, 62, 66, 64] },
-  reflex: { bpm: 124, type: "square", notes: [64, 71, 76, 71, 66, 73, 78, 73] },
-  rage: { bpm: 140, type: "sawtooth", notes: [52, 55, 59, 55, 50, 53, 57, 53] },
-  board: { bpm: 84, type: "sine", notes: [62, 66, 69, 74, 64, 67, 71, 67] },
-};
+let player: MusicPlayer | null = null;
+/** what is playing (or wanted, before audio unlocks): "<style>:<id>" */
+let playing: string | null = null;
+let wanted: { id: string; style: StyleId } | null = null;
 
-let musicTimer: ReturnType<typeof setInterval> | null = null;
-let musicWorld: WorldId | null = null;
-
-export function startMusic(world: WorldId) {
-  if (!runtime.music || runtime.lowData) return;
-  if (musicWorld === world && musicTimer) return;
-  stopMusic();
-  const a = ctx();
-  if (!a) return;
-  musicWorld = world;
-  const loop = LOOPS[world];
-  const beat = 60 / loop.bpm / 2;
-  const kit: Kit = { a, out: musicBus, noise: nbuf, rate: 1 };
-  let i = 0;
-  const schedule = () => {
-    if (!ac) return;
-    const t = ac.currentTime + 0.05;
-    for (let k = 0; k < 4; k++) {
-      tone(kit, N(loop.notes[(i + k) % loop.notes.length]), t + k * beat, beat * 0.9, {
-        type: loop.type,
-        gain: 0.12,
-        lp: loop.type === "sine" || loop.type === "triangle" ? undefined : 1800,
-      });
-    }
-    i += 4;
-  };
-  schedule();
-  musicTimer = setInterval(schedule, beat * 4 * 1000);
+/**
+ * Plays the track for `id` in `style` ("home", "versus" or a game id). Remembers the request, so it starts as soon
+ * as audio unlocks or music is switched on; the same track asked for again keeps playing without a restart.
+ */
+export function playMusic(id: string, style: StyleId) {
+  wanted = { id, style };
+  resumeMusic();
 }
 
+/** Stops the music and forgets the request (a screen that wants silence: the intro, sound-based games). */
 export function stopMusic() {
-  if (musicTimer) clearInterval(musicTimer);
-  musicTimer = null;
-  musicWorld = null;
+  wanted = null;
+  haltMusic();
+}
+
+function haltMusic() {
+  player?.stop();
+  player = null;
+  playing = null;
+}
+
+function resumeMusic() {
+  if (!wanted || !runtime.music || runtime.lowData) return;
+  const key = `${wanted.style}:${wanted.id}`;
+  if (playing === key && player) return;
+  const a = ctx();
+  if (!a || a.state !== "running") return;
+  haltMusic();
+  // Fade the new track in rather than starting at full level.
+  const t = a.currentTime;
+  musicBus.gain.cancelScheduledValues(t);
+  musicBus.gain.setValueAtTime(0.0001, t);
+  musicBus.gain.exponentialRampToValueAtTime(MUSIC_LEVEL, t + 1.2);
+  player = createPlayer(a, musicBus, nbuf, trackFor(wanted.id, wanted.style));
+  playing = key;
+}
+
+/** Pauses music while the tab is hidden and picks it back up when it returns. */
+export function setMusicHidden(hidden: boolean) {
+  if (hidden) haltMusic();
+  else resumeMusic();
 }
 
 /** Ducks music under celebrations (Handoff sound map). */
@@ -254,5 +261,5 @@ export function duck(ms = 1200) {
   const t = ac.currentTime;
   musicBus.gain.cancelScheduledValues(t);
   musicBus.gain.setTargetAtTime(0.04, t, 0.05);
-  musicBus.gain.setTargetAtTime(0.18, t + ms / 1000, 0.2);
+  musicBus.gain.setTargetAtTime(MUSIC_LEVEL, t + ms / 1000, 0.2);
 }
