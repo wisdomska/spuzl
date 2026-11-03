@@ -7,7 +7,8 @@ import { Icon } from "@/components/ui/Icon";
 import { Spuz } from "@/components/brand/Spuz";
 import { api, HttpError, useMe } from "@/lib/client/api";
 import { useCrew } from "@/lib/client/social";
-import { matchAction, matchKey, useEmotes, useMatch, useProfileGate, useServerNow } from "@/lib/client/multiplayer";
+import { matchAction, matchKey, useEmotes, useMatch, useMatchChat, useProfileGate, useServerNow } from "@/lib/client/multiplayer";
+import { ChatPanel, ChatPopup } from "./chat";
 import { useSettings } from "@/lib/settings/store";
 import { useBackOrHome } from "@/lib/client/nav";
 import { normalizeRoomCode } from "@/lib/multiplayer/roomCode";
@@ -268,6 +269,13 @@ function Room({ id, code }: { id: string; code: string }) {
   const now = useServerNow(view?.serverNow, 100);
   const { toast, show } = useToast();
   const emotes = useEmotes(channel, view?.me);
+  const chat = useMatchChat(view?.id ?? null, channel, view?.me);
+  const chatUi = view && (
+    <>
+      <ChatPanel chat={chat} me={view.me} onEmote={(e) => emotes.send(e)} />
+      <ChatPopup chat={chat} />
+    </>
+  );
   const [settings, setSettings] = useState(false);
   useJoinToasts(view, show);
 
@@ -343,7 +351,10 @@ function Room({ id, code }: { id: string; code: string }) {
           onLeave={leave}
           onHome={leaveHome}
           channel={channel}
+          onChat={() => chat.setOpen(true)}
+          unread={chat.unread}
         />
+        {chatUi}
       </Screen>
     );
 
@@ -381,6 +392,8 @@ function Room({ id, code }: { id: string; code: string }) {
         present={present}
         emote={emotes.last}
         onEmote={(e) => emotes.send(e)}
+        onChat={() => chat.setOpen(true)}
+        unread={chat.unread}
         onReady={(r) => act("ready", { ready: r }).catch((e) => err(e, "Couldn't update."))}
         onStart={() => act("start").catch((e) => err(e, "Can't start yet."))}
         onLeave={leave}
@@ -434,6 +447,7 @@ function Room({ id, code }: { id: string; code: string }) {
     <Screen label={`Party ${phase}`} wide={wide && racing && !!view.puzzle}>
       <MpToast toast={toast} />
       {body}
+      {chatUi}
       <LeaveConfirm
         kind="party"
         open={leaveRace.asking}
@@ -531,6 +545,8 @@ function AdultRoom({
   show,
   onLeave,
   onHome,
+  onChat,
+  unread,
   channel,
 }: {
   view: MatchView;
@@ -547,6 +563,8 @@ function AdultRoom({
   show: (t: string, k?: "info" | "bad" | "pass") => void;
   onLeave: () => void;
   onHome: () => void;
+  onChat: () => void;
+  unread: number;
 }) {
   const qc = useQueryClient();
   const [players, setPlayers] = useState(false);
@@ -573,6 +591,8 @@ function AdultRoom({
         present={present}
         emote={emote}
         onEmote={onEmote}
+        onChat={onChat}
+        unread={unread}
         onReady={(r) => act("ready", { ready: r }).catch((e) => err(e, "Couldn't update."))}
         onStart={() => act("start").catch((e) => err(e, "Can't start yet."))}
         onLeave={onLeave}

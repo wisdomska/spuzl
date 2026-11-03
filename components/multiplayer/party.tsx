@@ -454,6 +454,8 @@ export function Lobby({
   present,
   emote,
   onEmote,
+  onChat,
+  unread = 0,
   onReady,
   onStart,
   onLeave,
@@ -467,6 +469,8 @@ export function Lobby({
   present: Set<string>;
   emote: { from: string; e: EmoteId; n: number } | null;
   onEmote: (e: EmoteId) => void;
+  onChat?: () => void;
+  unread?: number;
   onReady: (r: boolean) => void;
   onStart: () => void;
   onLeave: () => void;
@@ -568,7 +572,7 @@ export function Lobby({
         </button>
       )}
       <div className="mx-4 mt-3">
-        <EmoteBar onSend={onEmote} />
+        <EmoteBar onSend={onEmote} onChat={onChat} unread={unread} />
       </div>
       <div className="mx-4 mt-auto pt-4">
         {view.classroom && host ? (

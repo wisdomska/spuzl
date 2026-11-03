@@ -45,6 +45,8 @@ export const PARTY_MAX = 8;
 export const PARTY_MIN = 2;
 
 /** Preset emotes only (FR-SO-04: no free text). Clients send the index, never the text. */
-export const EMOTES = ["🔥", "😂", "😤", "GG"] as const;
-export type EmoteId = 0 | 1 | 2 | 3;
-export const isEmoteId = (x: unknown): x is EmoteId => x === 0 || x === 1 || x === 2 || x === 3;
+export const EMOTES = ["🔥", "😂", "😤", "GG", "👏", "😮", "😅", "🤝"] as const;
+export type EmoteId = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+export const isEmoteId = (x: unknown): x is EmoteId => typeof x === "number" && Number.isInteger(x) && x >= 0 && x < EMOTES.length;
+/** Spoken names for the emote buttons. */
+export const EMOTE_LABELS = ["fire", "laughing", "frustrated", "good game", "applause", "wow", "phew", "respect"] as const;

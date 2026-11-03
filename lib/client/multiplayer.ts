@@ -5,6 +5,7 @@
  * The server's view is the truth; realtime events only patch it early or trigger a refetch.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { ChatMessage } from "@/lib/multiplayer/chat";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ensureSession, HttpError } from "@/lib/client/api";
 import { getTransport, type ChannelStatus, type PresenceMember, type RealtimeChannel } from "@/lib/realtime/transport";
@@ -248,3 +249,90 @@ export function useProfileGate() {
 }
 
 export { TIMING };
+
+/* ---------------- Match chat (Duels and Parties) ---------------- */
+
+/**
+ * The room's chat: loads it, refetches on each realtime ping (the ping carries no text; everything shown comes
+ * from the server after its filter), counts unread messages from others while the panel is closed, and can be
+ * muted for this match (incoming messages stop popping up; the panel still shows them).
+ */
+export function useMatchChat(matchId: string | null, channel: RealtimeChannel | null, me: string | undefined) {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [typing, setTyping] = useState(false);
+  const [open, setOpenState] = useState(false);
+  const [unread, setUnread] = useState(0);
+  const [incoming, setIncoming] = useState<ChatMessage | null>(null);
+  const [muted, setMuted] = useState(false);
+  const lastId = useRef(0);
+  const openRef = useRef(false);
+  const mutedRef = useRef(false);
+
+  // Which match the loaded messages belong to: a new match starts the list (and the unread count) afresh.
+  const loadedFor = useRef<string | null>(null);
+  const pull = useCallback(async () => {
+    if (!matchId) return;
+    const fresh0 = loadedFor.current !== matchId;
+    if (fresh0) {
+      loadedFor.current = matchId;
+      lastId.current = 0;
+    }
+    try {
+      const r = await api<{ messages: ChatMessage[]; typing: boolean }>(`/api/v1/matches/${matchId}/chat?after=${lastId.current}`);
+      setTyping(r.typing);
+      const fresh = r.messages.filter((m) => m.id > lastId.current);
+      if (fresh0) {
+        setMessages(fresh.slice(-60));
+        setUnread(0);
+      }
+      if (!fresh.length) return;
+      lastId.current = fresh[fresh.length - 1].id;
+      if (fresh0) return;
+      setMessages((prev) => [...prev, ...fresh].slice(-60));
+      const theirs = fresh.filter((m) => m.from !== me);
+      if (theirs.length && !openRef.current) {
+        setUnread((n) => n + theirs.length);
+        if (!mutedRef.current) setIncoming(theirs[theirs.length - 1]);
+      }
+    } catch {
+      /* chat is a nicety: a failed fetch just waits for the next ping */
+    }
+  }, [matchId, me]);
+
+  useEffect(() => {
+    void pull();
+  }, [pull]);
+  useEffect(() => {
+    if (!channel) return;
+    return channel.onMessage("chat", () => void pull());
+  }, [channel, pull]);
+  // A popped-up message fades after a few seconds.
+  useEffect(() => {
+    if (!incoming) return;
+    const t = setTimeout(() => setIncoming(null), 4000);
+    return () => clearTimeout(t);
+  }, [incoming]);
+
+  const setOpen = useCallback((o: boolean) => {
+    openRef.current = o;
+    setOpenState(o);
+    if (o) {
+      setUnread(0);
+      setIncoming(null);
+    }
+  }, []);
+  const toggleMute = useCallback(() => {
+    mutedRef.current = !mutedRef.current;
+    setMuted(mutedRef.current);
+  }, []);
+  const send = useCallback(
+    async (input: { quick: number } | { text: string }) => {
+      if (!matchId) return;
+      await api(`/api/v1/matches/${matchId}/chat`, { json: input });
+      await pull();
+    },
+    [matchId, pull],
+  );
+  return { messages, typing, open, setOpen, unread, incoming, muted, toggleMute, send };
+}
+export type MatchChat = ReturnType<typeof useMatchChat>;

@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Icon } from "@/components/ui/Icon";
 import { api, HttpError, useMe } from "@/lib/client/api";
-import { matchAction, matchKey, useEmotes, useMatch, useProfileGate, useServerNow } from "@/lib/client/multiplayer";
+import { matchAction, matchKey, useEmotes, useMatch, useMatchChat, useProfileGate, useServerNow } from "@/lib/client/multiplayer";
+import { ChatPanel, ChatPopup } from "./chat";
 import { useSettings } from "@/lib/settings/store";
 import { useBackOrHome } from "@/lib/client/nav";
 import { useGameSettings } from "@/lib/game-settings/client";
@@ -260,6 +261,9 @@ function DuelMatch({ id }: { id: string }) {
   const now = useServerNow(view?.serverNow, 100);
   const { toast, show } = useToast();
   const emotes = useEmotes(channel, view?.me);
+  // Chat with the other player (not with the Practice bot).
+  const chat = useMatchChat(view && !view.isBot ? view.id : null, channel, view?.me);
+  const openChat = view && !view.isBot ? () => chat.setOpen(true) : undefined;
   const [emoteOpen, setEmoteOpen] = useState(false);
   const [rematchWaiting, setRematchWaiting] = useState(false);
   const [wipe, setWipe] = useState(0);
@@ -411,6 +415,8 @@ function DuelMatch({ id }: { id: string }) {
         them={them}
         onRematch={rematch}
         onShare={share}
+        onChat={openChat}
+        unread={chat.unread}
         onHome={() => router.push("/")}
         rematchWaiting={rematchWaiting && !themP?.rematch}
         theyWantRematch={!!themP?.rematch && !me.rematch}
@@ -450,6 +456,8 @@ function DuelMatch({ id }: { id: string }) {
         totalMs={roundResultMs + (rulesBreak ? TIMING.rulesMs : 0)}
         note={rivalReading}
         onEmote={sendEmote}
+        onChat={openChat}
+        unread={chat.unread}
         emote={theirEmote ?? myEmote}
       />
     );
@@ -497,10 +505,21 @@ function DuelMatch({ id }: { id: string }) {
           className="press bg-surface-raised text-accent absolute right-0 bottom-2.5 flex size-11 items-center justify-center rounded-[14px]"
         >
           <Icon name="smiley" size={22} />
+          {chat.unread > 0 && <span aria-hidden className="bg-accent absolute -top-1 -right-1 size-3 rounded-full" />}
         </button>
         {emoteOpen && (
-          <div className="bg-surface absolute top-full right-0 z-30 mt-1 rounded-[18px] p-2 shadow-[0_10px_30px_rgba(0,0,0,.4)]">
-            <EmoteBar onSend={sendEmote} />
+          <div className="bg-surface absolute top-full right-0 z-30 mt-1 w-[300px] rounded-[18px] p-2 shadow-[0_10px_30px_rgba(0,0,0,.4)]">
+            <EmoteBar
+              onSend={sendEmote}
+              onChat={
+                openChat &&
+                (() => {
+                  setEmoteOpen(false);
+                  openChat();
+                })
+              }
+              unread={chat.unread}
+            />
           </div>
         )}
       </div>
@@ -535,6 +554,12 @@ function DuelMatch({ id }: { id: string }) {
       <MpToast toast={toast} />
       <RematchWipe n={view?.rematchId ? wipe + 1 : wipe} />
       {body}
+      {view && !view.isBot && (
+        <>
+          <ChatPanel chat={chat} me={view.me} onEmote={sendEmote} />
+          <ChatPopup chat={chat} />
+        </>
+      )}
       {view && view.status === "finished" && !view.isBot && (
         <ShareSheet
           open={shareOpen}

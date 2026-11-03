@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.15.0 (3 November 2026)
+
+### For players
+
+- **Chat in Duels and Parties.** A Chat button sits under the reactions (in the duel's reaction menu, between
+  rounds, on the duel result and in the party lobby). The panel shows the room's messages, the reactions, quick
+  phrases (Good luck!, Nice one!, GG, Rematch? and more) and a text box. New messages pop up for a few seconds while
+  the panel is closed, with an unread count, and Mute pop-ups quiets them for the match.
+- **Kept safe.** Typed messages are checked on the server before anyone sees them: abuse, phone numbers, emails,
+  links and handles are refused with a friendly note. A room with any player under 16 uses quick phrases only. No
+  chat with the Practice bot. Chat is kept for 7 days.
+- **Twice the reactions.** 👏 😮 😅 and 🤝 join 🔥 😂 😤 and GG, everywhere reactions appear (duels, parties, live
+  board games).
+
+### Under the hood
+
+- `match_messages` (migration `20261124000001`, applied to preview and production before release), `GET/POST
+/api/v1/matches/:id/chat`, `useMatchChat`, `ChatPanel` and `ChatPopup`. Realtime only pings ("chat"); devices
+  read messages back from the server, so nothing unfiltered reaches anyone.
+
 ## 1.14.1 (3 November 2026)
 
 ### For players

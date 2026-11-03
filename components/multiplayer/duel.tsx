@@ -519,6 +519,8 @@ export function RoundEnd({
   msToNext,
   totalMs,
   onEmote,
+  onChat,
+  unread = 0,
   emote,
   note,
 }: {
@@ -536,6 +538,8 @@ export function RoundEnd({
   /** a line under the next-round label, e.g. the rival is reading a new game's rule */
   note?: string | null;
   onEmote: (e: EmoteId) => void;
+  onChat?: () => void;
+  unread?: number;
   emote: { e: EmoteId; n: number } | null;
 }) {
   const reduce = useReduce();
@@ -612,7 +616,7 @@ export function RoundEnd({
         />
       </div>
       <div className="mt-auto">
-        <EmoteBar onSend={onEmote} size="lg" />
+        <EmoteBar onSend={onEmote} size="lg" onChat={onChat} unread={unread} />
       </div>
     </motion.div>
   );
@@ -744,6 +748,8 @@ export function MatchEnd({
   onRematch,
   onShare,
   onHome,
+  onChat,
+  unread = 0,
   rematchWaiting,
   theyWantRematch,
 }: {
@@ -753,6 +759,8 @@ export function MatchEnd({
   onRematch: () => void;
   onShare: () => void;
   onHome: () => void;
+  onChat?: () => void;
+  unread?: number;
   rematchWaiting: boolean;
   theyWantRematch: boolean;
 }) {
@@ -911,7 +919,10 @@ export function MatchEnd({
           </span>
         </div>
       )}
-      <div className="absolute inset-x-4 bottom-[max(28px,env(safe-area-inset-bottom))] grid grid-cols-[1fr_60px] gap-2.5">
+      <div
+        className="absolute inset-x-4 bottom-[max(28px,env(safe-area-inset-bottom))] grid gap-2.5"
+        style={{ gridTemplateColumns: onChat ? "1fr 60px 60px" : "1fr 60px" }}
+      >
         <Cta icon="arrows-clockwise" onClick={onRematch} disabled={rematchWaiting}>
           Rematch
         </Cta>
@@ -924,6 +935,22 @@ export function MatchEnd({
         >
           <Icon name="share-fat" size={22} />
         </button>
+        {onChat && (
+          <button
+            type="button"
+            aria-label={unread ? `Chat, ${unread} new` : "Chat"}
+            onClick={onChat}
+            className="toy bg-surface-raised relative flex h-[60px] items-center justify-center rounded-[20px] [--btn-depth:var(--depth)]"
+            style={{ boxShadow: "0 6px 0 var(--depth)" }}
+          >
+            <Icon name="chat-circle-text" size={22} />
+            {unread > 0 && (
+              <span className="num bg-accent text-on-accent absolute -top-1.5 -right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[12px] font-bold">
+                {unread > 9 ? "9+" : unread}
+              </span>
+            )}
+          </button>
+        )}
       </div>
     </div>
   );

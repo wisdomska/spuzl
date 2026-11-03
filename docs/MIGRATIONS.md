@@ -230,3 +230,9 @@ quests in the database.
 | Migration                              | What it does                                                                                                                                                                                                 | Rollback           |
 | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------ |
 | `20261123000001_bay_time_controls.sql` | Board Bay live time controls: `board_matches.clock_base_ms`, `board_queue.clock_ms` (default 5 min) with an index, and `svc_bay_mm_claim_timed`, which only pairs players waiting for the same game and time | In the file header |
+
+## 1.15.0
+
+| Migration                       | What it does                                                                                                                                             | Rollback           |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| `20261124000001_match_chat.sql` | Duel and Party chat: `match_messages` (server-written only, forced RLS), `svc_prune_match_messages` and a nightly cron that drops chat older than 7 days | In the file header |

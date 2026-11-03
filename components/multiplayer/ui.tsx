@@ -7,7 +7,7 @@ import { Icon } from "@/components/ui/Icon";
 import { Spuz } from "@/components/brand/Spuz";
 import { play } from "@/lib/audio";
 import { haptic, LEVELS } from "@/lib/haptics";
-import { EMOTES, type EmoteId } from "@/lib/multiplayer/constants";
+import { EMOTES, EMOTE_LABELS, type EmoteId } from "@/lib/multiplayer/constants";
 import { countdownBeat } from "@/lib/multiplayer/duel";
 import { useReduce } from "@/lib/client/multiplayer";
 
@@ -199,21 +199,52 @@ export function useToast(ms = 1800) {
 }
 
 /** Preset emote buttons (🔥 😂 😤 GG). Emoji are allowed in emotes only. */
-export function EmoteBar({ onSend, size = "md" }: { onSend: (e: EmoteId) => void; size?: "md" | "lg" }) {
+/**
+ * Reactions (8) in two rows of four, and, when the screen has chat, a Chat button under them with the unread
+ * count. Chat opens the room's message panel (components/multiplayer/chat.tsx).
+ */
+export function EmoteBar({
+  onSend,
+  size = "md",
+  onChat,
+  unread = 0,
+}: {
+  onSend: (e: EmoteId) => void;
+  size?: "md" | "lg";
+  onChat?: () => void;
+  unread?: number;
+}) {
   return (
-    <div className="flex justify-center gap-2" role="group" aria-label="Emotes">
-      {EMOTES.map((e, i) => (
+    <div className="mx-auto flex w-full max-w-[360px] flex-col gap-2">
+      <div className="grid grid-cols-4 gap-2" role="group" aria-label="Reactions">
+        {EMOTES.map((e, i) => (
+          <button
+            key={e}
+            type="button"
+            onClick={() => onSend(i as EmoteId)}
+            aria-label={`Send ${EMOTE_LABELS[i]}`}
+            className="press bg-surface-raised font-display flex items-center justify-center rounded-[14px] text-[18px] font-black"
+            style={{ height: size === "lg" ? 48 : 44 }}
+          >
+            {e}
+          </button>
+        ))}
+      </div>
+      {onChat && (
         <button
-          key={e}
           type="button"
-          onClick={() => onSend(i as EmoteId)}
-          aria-label={`Send ${e === "GG" ? "good game" : e}`}
-          className="press bg-surface-raised font-display flex items-center justify-center rounded-[14px] text-[18px] font-black"
-          style={{ width: size === "lg" ? 64 : 56, height: size === "lg" ? 48 : 44 }}
+          onClick={onChat}
+          className="press bg-surface-raised flex h-11 items-center justify-center gap-2 rounded-[14px] text-[15px] font-semibold"
         >
-          {e}
+          <Icon name="chat-circle-text" size={20} />
+          Chat
+          {unread > 0 && (
+            <span className="num bg-accent text-on-accent flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[12px] font-bold">
+              {unread > 9 ? "9+" : unread}
+            </span>
+          )}
         </button>
-      ))}
+      )}
     </div>
   );
 }
