@@ -37,8 +37,12 @@ describe("share card urls", () => {
   it("only carries layout in the query string", () => {
     expect(cardUrl("daily", "a1")).toBe("/api/og/daily/a1");
     expect(cardUrl("full", "a1", { format: "square", small: true })).toBe("/api/og/full/a1?format=square&size=small");
-    expect(cardUrl("duel", "m1", { player: "p" })).toBe("/api/og/match/m1");
-    expect(cardUrl("party", "m1", { player: "p", origin: "https://spuzl.gg" })).toBe("https://spuzl.gg/api/og/match/m1?p=p");
+    // Duel cards are told from one player's side, and can hide both names.
+    expect(cardUrl("duel", "m1", { player: "p" })).toBe("/api/og/match/m1?p=p");
+    expect(cardUrl("duel", "m1", { player: "p", anon: true, format: "square" })).toBe("/api/og/match/m1?format=square&p=p&anon=1");
+    expect(cardUrl("party", "m1", { player: "p", origin: "https://spuzl.vercel.app" })).toBe(
+      "https://spuzl.vercel.app/api/og/match/m1?p=p",
+    );
   });
 });
 

@@ -141,7 +141,9 @@ describe("api: status share cards (features.statusCards)", () => {
     expect(r.data).toMatchObject({ width: 1080, height: 1350 });
     expect(r.data.image).toMatch(new RegExp(`^/api/og/status/${g.userId}\\.[A-Za-z0-9_-]+$`));
     expect(r.data.text).toContain("Lv 7");
-    expect(r.data.text).toContain("spuzl.gg");
+    // The last line is the live site's address (it used to be spuzl.gg, which never existed).
+    expect(r.data.text).not.toContain("spuzl.gg");
+    expect(r.data.text.split("\n").at(-1)).toMatch(/^[a-z0-9.-]+(:\d+)?$/);
     expect(await png(r.data.image)).toMatchObject({ status: 200, type: "image/png", width: 1080, height: 1350 });
     expect(await png(`${r.data.image}?size=small`)).toMatchObject({ width: 540, height: 675 });
     // A bare player id, or someone else's id under this signature, is not a card.
