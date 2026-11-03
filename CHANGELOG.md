@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.13.3 (3 November 2026)
+
+### For players
+
+- **Keep playing what you're playing.** After a clear, the big button now continues the same game: "Next level of
+  Trotro Jam" for games with levels (every Puzzles game, Gotcha, Dash and Gauntlet), "Another Coil" for the
+  rest. The next game in the same category comes second ("Next in Puzzles: Weave"), never a jump back to Crownfall.
+- **Continue picks up your latest game.** Home's Continue card (and Continue in the side panel on computers) opens
+  the game you played most recently, at your next level when it has levels, instead of always suggesting the
+  first Daily. Brand-new players still start on Crownfall.
+
+### Under the hood
+
+- `/api/v1/me` returns `recent` (the latest games started, newest first). `lib/game/next`: `nextInPath` walks
+  the current game's own category (it used to restart the Dailies list, which sent every non-Daily game to
+  Crownfall), plus `continueGame` and `continueHref`.
+
 ## 1.13.2 (3 November 2026)
 
 ### For players

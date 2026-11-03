@@ -46,6 +46,7 @@ export async function loadMe(user: User, player: PlayerRow, admin: SupabaseClien
     clears,
     { data: played },
     { data: learned },
+    { data: recentRows },
   ] = await Promise.all([
     profileRow(admin, player.id),
     admin
@@ -70,6 +71,14 @@ export async function loadMe(user: User, player: PlayerRow, admin: SupabaseClien
     admin.from("attempts").select("game_id").eq("player_id", player.id).eq("status", "cleared").limit(2000),
     // Games this player learned in a guided first play (any device): skipped too.
     admin.from("learned_games").select("game_id").eq("player_id", player.id).limit(500),
+    // The latest games started (any mode but the tutorial): Home's Continue and Next follow what the player plays.
+    admin
+      .from("attempts")
+      .select("game_id")
+      .eq("player_id", player.id)
+      .neq("mode", "tutorial")
+      .order("started_at", { ascending: false })
+      .limit(40),
   ]);
   // The request identity comes from JWT claims, which can lack the email (e.g. a token minted before an
   // email was linked). Signed-in players see who they are, so read it from the auth record when missing.
@@ -106,6 +115,8 @@ export async function loadMe(user: User, player: PlayerRow, admin: SupabaseClien
     // Retired games drop out: "Games tried x of N" and the guided first play only know games players can reach.
     played: [...new Set((played ?? []).map((r) => r.game_id as string))].filter((id) => !!playableGame(id)),
     learned: (learned ?? []).map((r) => r.game_id as string),
+    // Most recent first, one entry per game, live games only.
+    recent: [...new Set((recentRows ?? []).map((r) => r.game_id as string))].filter((id) => !!playableGame(id)).slice(0, 8),
     ratings: Object.fromEntries((ratings ?? []).map((r) => [r.track, Number(r.rating)])),
     today: {
       date: today,

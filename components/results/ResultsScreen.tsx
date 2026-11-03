@@ -42,11 +42,11 @@ export function ResultsScreen({
   mistakes: number;
   relaxed: boolean;
   color: string;
-  /** primary: the named next game on the Home path ("Next in Puzzles: Dusk") */
+  /** primary: keep playing this game ("Next level of Trotro Jam", or "Another Coil") */
   /** playNav: the action opens another game (tap-to-board metric). */
   next: { label: string; onClick: () => void; playNav?: boolean };
-  /** secondary: another puzzle of this game, same difficulty */
-  another: { label: string; onClick: () => void };
+  /** secondary: the next game in the same category ("Next in Puzzles: Dusk") */
+  another: { label: string; onClick: () => void; playNav?: boolean };
   /** rank ups, badges, streaks: inline chips, never interstitials */
   chips?: { icon: string; label: string }[];
   onShare: () => void;

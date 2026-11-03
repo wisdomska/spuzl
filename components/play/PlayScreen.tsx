@@ -51,6 +51,7 @@ import { PLAY_NAV } from "@/lib/analytics/play-nav";
 import { gameMenuCopy } from "@/lib/copy/game-menu";
 import { LevelSheet } from "@/components/levels/LevelSheet";
 import { levelsCopy } from "@/lib/copy/levels";
+import { isLadderGame } from "@/lib/game/levels";
 import { dropResume, keepResume, resumeIdFor } from "@/lib/client/resume";
 
 type Mode = "daily" | "free" | "archive" | "level";
@@ -353,6 +354,18 @@ export function PlayScreen({
       void begin("free", (attempt?.difficulty as Difficulty | undefined) ?? difficulty, undefined, true);
     },
   };
+  // First choice after a clear: keep playing this game. Games with levels go on to the player's next level (the
+  // server picks it); the others deal another puzzle. The next game in the category comes second.
+  const sameGameAction =
+    isLadderGame(meta.id) && mode !== "level"
+      ? {
+          label: copy.play.nextLevel(meta.name),
+          onClick: () => {
+            window.history.replaceState(null, "", `/play/${meta.id}?mode=level`);
+            void begin("level");
+          },
+        }
+      : anotherAction;
   useEffect(() => {
     if (nextId && settings["perf.prefetch"]) router.prefetch(`/play/${nextId}`);
   }, [nextId, router, settings]);
@@ -445,8 +458,8 @@ export function PlayScreen({
                 }
               : undefined
           }
-          next={nextAction}
-          another={anotherAction}
+          next={sameGameAction}
+          another={nextAction}
           chips={celebrationChips(result)}
         />
       </>
@@ -555,8 +568,8 @@ export function PlayScreen({
                   accuracy={freeResult.accuracy}
                   meta={meta}
                   relaxed={relaxed}
-                  next={nextAction}
-                  another={anotherAction}
+                  next={sameGameAction}
+                  another={nextAction}
                 />
               </div>
             ) : undefined)
@@ -716,7 +729,7 @@ function FreeResultBar({
   accuracy: number;
   relaxed: boolean;
   next: { label: string; onClick: () => void; playNav?: boolean };
-  another: { label: string; onClick: () => void };
+  another: { label: string; onClick: () => void; playNav?: boolean };
 }) {
   return (
     <div className="bg-surface flex flex-col gap-3 rounded-[22px] p-3.5" role="status" aria-live="polite">
@@ -729,7 +742,7 @@ function FreeResultBar({
       <Button size="lg" icon="play" className="w-full" onClick={next.onClick} autoFocus {...(next.playNav ? PLAY_NAV : {})}>
         {next.label}
       </Button>
-      <Button size="md" variant="secondary" className="w-full" onClick={another.onClick}>
+      <Button size="md" variant="secondary" className="w-full" onClick={another.onClick} {...(another.playNav ? PLAY_NAV : {})}>
         {another.label}
       </Button>
       <RaceLiveButton meta={meta} size="md" className="w-full" />

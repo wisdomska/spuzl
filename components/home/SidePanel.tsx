@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { AvatarChip } from "@/components/meta/ui";
 import { formatNumber } from "@/lib/format";
 import { nextDaily } from "./HomeMap";
+import { continueGame, continueHref } from "@/lib/game/next";
 import { PLAY_NAV } from "@/lib/analytics/play-nav";
 
 /**
@@ -38,7 +39,7 @@ export function SidePanel() {
   // Dailies off: the strip shows which featured games the player has tried, not today's Dailies.
   const cleared: Record<string, number> = dailiesOn ? (d?.today.cleared ?? {}) : Object.fromEntries((d?.played ?? []).map((id) => [id, 1]));
   const ready = (id: string) => today.data?.games.find((g) => g.id === id)?.ready ?? id === "crownfall";
-  const next = nextDaily(cleared, ready);
+  const next = continueGame(d?.recent, null) ?? nextDaily(cleared, ready);
   const nextMeta = next ? GAME_BY_ID[next] : null;
   const featured = LAUNCH_IDS.filter((id) => cleared[id] !== undefined).length;
   const done = dailiesOn ? Math.max(featured, d?.today.counted ?? 0) : featured;
@@ -121,13 +122,15 @@ export function SidePanel() {
             </ol>
           </div>
           <Link
-            href={nextMeta ? (dailiesOn ? `/play/${nextMeta.id}` : `/play/${nextMeta.id}?mode=free`) : "/library"}
+            href={nextMeta ? continueHref(nextMeta.id, { dailiesOn, clearedToday: cleared[nextMeta.id] !== undefined }) : "/library"}
             {...(nextMeta ? PLAY_NAV : {})}
             className="toy bg-accent text-on-accent flex h-16 items-center justify-center gap-2.5 rounded-[20px]"
             style={{ ["--btn-depth" as string]: "var(--accent-depth)" }}
           >
             <Icon name={nextMeta ? "play" : "infinity"} size={20} />
-            <span className="font-display text-[18px] font-black">{nextMeta ? `Play ${nextMeta.name}` : "Play anytime"}</span>
+            <span className="font-display text-[18px] font-black">
+              {nextMeta ? `${d?.recent?.length ? "Continue" : "Play"} ${nextMeta.name}` : "Play anytime"}
+            </span>
           </Link>
           <div className="grid grid-cols-2 gap-2">
             <Link

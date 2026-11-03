@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { onboardGuest, tapCell, waitForBoard } from "./harness";
 import { solve, type CrownfallPuzzle } from "@/games/crownfall/logic";
 
-/** Free play ends on the compact bar: header stays, named Next, Another and Challenge side by side. */
+/** Free play ends on the compact bar: header stays, the same game's next level first, then the next game, and Challenge. */
 test("free play: compact result bar with named next actions", async ({ page }, info) => {
   await onboardGuest(page);
   const started = page.waitForResponse((r) => r.url().endsWith("/api/v1/attempts") && r.request().method() === "POST");
@@ -17,8 +17,9 @@ test("free play: compact result bar with named next actions", async ({ page }, i
   }
   const bar = page.getByRole("status").filter({ hasText: "Cleared" });
   await expect(bar).toBeVisible({ timeout: 15_000 });
-  await expect(bar.getByRole("button", { name: /^Next in / })).toBeVisible();
-  await expect(bar.getByRole("button", { name: /^Another Crownfall/ })).toBeVisible();
+  // First the same game (Crownfall has levels: its next level), then the next game in Puzzles (never back to Crownfall).
+  await expect(bar.getByRole("button", { name: "Next level of Crownfall" })).toBeVisible();
+  await expect(bar.getByRole("button", { name: "Next in Puzzles: Dusk" })).toBeVisible();
   await expect(bar.getByRole("button", { name: "Challenge" })).toBeVisible();
   await expect(page.getByRole("timer")).toHaveCount(1);
   await page.screenshot({ path: `docs/qa/screens/after/free-result-${info.project.name}.png` });

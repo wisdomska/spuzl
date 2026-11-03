@@ -64,6 +64,7 @@ export const en = {
   },
   play: {
     another: (game: string) => `Another ${game}`,
+    nextLevel: (game: string) => `Next level of ${game}`,
     backToGrid: "Back to the Grid",
     cleared: "Cleared!",
     accuracy: (pct: number) => `${pct}% accuracy`,

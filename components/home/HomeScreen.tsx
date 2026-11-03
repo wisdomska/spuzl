@@ -14,6 +14,7 @@ import { readOnboarding, writeOnboarding } from "@/lib/client/onboarding";
 import { track } from "@/lib/analytics/track";
 import { GAMES, GAME_BY_ID, LAUNCH_IDS, WORLD_BY_ID, gamesInWorld, isLiveGame, type WorldId } from "@/lib/catalog";
 import { HomeMap, nextDaily, worldProgress } from "./HomeMap";
+import { continueGame, continueHref } from "@/lib/game/next";
 import { LevelRing, SparksChip, StreakChip } from "@/components/shell/Hud";
 import { Spuz } from "@/components/brand/Spuz";
 import { Icon } from "@/components/ui/Icon";
@@ -61,7 +62,9 @@ export function HomeScreen() {
     [me.data, dailiesOn],
   );
   const ready = (id: string) => today.data?.games.find((g) => g.id === id)?.ready ?? id === "crownfall";
-  const next = nextDaily(cleared, ready);
+  // Continue: the game played most recently (a brand-new player gets the first ready Daily).
+  const recentId = continueGame(me.data?.recent, null);
+  const next = recentId ?? nextDaily(cleared, ready);
   const nextMeta = next ? GAME_BY_ID[next] : null;
   const progress = worldProgress(cleared);
   const currentWorld: WorldId = nextMeta?.world ?? "logic";
@@ -149,11 +152,11 @@ export function HomeScreen() {
             </motion.div>
           )}
           <PlayCard
-            href={nextMeta ? (dailiesOn ? `/play/${nextMeta.id}` : `/play/${nextMeta.id}?mode=free`) : "/library"}
+            href={nextMeta ? continueHref(nextMeta.id, { dailiesOn, clearedToday: cleared[nextMeta.id] !== undefined }) : "/library"}
             playNav={!!nextMeta}
             title={
               nextMeta
-                ? posInWorld > 1 || counted > 0
+                ? recentId || posInWorld > 1 || counted > 0
                   ? T.continueGame(nextMeta.name)
                   : T.playGame(nextMeta.name)
                 : dailiesOn
