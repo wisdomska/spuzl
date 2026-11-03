@@ -12,8 +12,8 @@ const ROOT = path.resolve(import.meta.dirname, "..");
 const DESIGN = path.join(ROOT, "design/design_handoff_spuzl/design");
 const OUT_PIECES = path.join(ROOT, "public/3d/pieces");
 const OUT_ICONS = path.join(ROOT, "public/3d/icons");
-/** Board squares are 40 to 48 CSS px and sprites draw at 190% of a square, so 192 px covers 2x. */
-const PIECE_PX = Number(process.env.PIECE_PX || 192);
+/** Sprites fill their square (40 to 96 CSS px since the wide layout), so 256 px covers 2.5x at the largest. */
+const PIECE_PX = Number(process.env.PIECE_PX || 256);
 /** Icons display up to 76 CSS px with a 142% overflow box, so 216 px covers 2x. */
 const ICON_PX = Number(process.env.ICON_PX || 216);
 const QUALITY = 0.9;
@@ -110,7 +110,7 @@ console.log(`pieces: ${Object.keys(pieces).length} sprites at ${PIECE_PX}px`);
 if (Object.keys(pieces).length !== 12) throw new Error("expected 12 chess sprites");
 
 let n = 0;
-for (const g of games) {
+for (const g of process.env.ONLY_PIECES ? [] : games) {
   const color = WORLD_HEX[g.world];
   const url = await page.evaluate(
     async ({ icon, color, size, q }) => {
@@ -124,23 +124,24 @@ for (const g of games) {
 }
 console.log(`icons: ${n} at ${ICON_PX}px`);
 
-fs.writeFileSync(
-  path.join(ROOT, "public/3d/manifest.json"),
-  JSON.stringify(
-    {
-      source: "design/design_handoff_spuzl/design/spuzl3d.js (three@0.160.0)",
-      pieces: {
-        size: PIECE_PX,
-        files: Object.keys(pieces)
-          .sort()
-          .map((k) => `pieces/${k}.webp`),
+if (!process.env.ONLY_PIECES)
+  fs.writeFileSync(
+    path.join(ROOT, "public/3d/manifest.json"),
+    JSON.stringify(
+      {
+        source: "design/design_handoff_spuzl/design/spuzl3d.js (three@0.160.0)",
+        pieces: {
+          size: PIECE_PX,
+          files: Object.keys(pieces)
+            .sort()
+            .map((k) => `pieces/${k}.webp`),
+        },
+        icons: { size: ICON_PX, files: games.map((g) => ({ id: g.id, icon: g.icon, world: g.world, file: `icons/${g.id}.webp` })) },
       },
-      icons: { size: ICON_PX, files: games.map((g) => ({ id: g.id, icon: g.icon, world: g.world, file: `icons/${g.id}.webp` })) },
-    },
-    null,
-    2,
-  ) + "\n",
-);
+      null,
+      2,
+    ) + "\n",
+  );
 
 await browser.close();
 server.close();

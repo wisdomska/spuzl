@@ -15,7 +15,9 @@ export const B3D = {
 };
 
 const KEYS = ["K", "Q", "R", "B", "N", "P"].flatMap((t) => ["w" + t, "b" + t]);
-const spriteUrl = (key: string) => `/3d/pieces/${key}.webp`;
+/** Bump with every re-render of the sprites (scripts/prerender-3d.mjs) so browsers drop the old ones. */
+const SPRITE_V = 4;
+const spriteUrl = (key: string) => `/3d/pieces/${key}.webp?v=${SPRITE_V}`;
 let probe: Promise<Set<string>> | null = null;
 
 /** Pre-rendered 3D sprites (scripts/prerender-3d.mjs). Resolves the set of sprites that loaded; missing ones fall back to glyphs. */
@@ -47,9 +49,9 @@ export function useSprites(): Set<string> | null {
 
 /**
  * One chess piece standing on its square: the 3D sprite, or the CSS-gradient glyph with a contact shadow
- * when the sprite is missing. Pieces stay inside their square (the tallest sprite, the king, fills about
- * 92% of it), so a back-rank piece never spills over the board edge or covers the square above; boards
- * also clip each square as a backstop. Sprites are 192 px with the piece standing in the lower 80%.
+ * when the sprite is missing. Every sprite is rendered with one camera at one scale (256 px, square), so it
+ * simply fills its square: the base sits centred at 80% of the way down on a soft contact shadow and the
+ * king's cross just clears the top. White pieces get a hairline edge so ivory still reads on light squares.
  */
 export function Piece({
   ch,
@@ -70,19 +72,21 @@ export function Piece({
   const key = (white ? "w" : "b") + ch.toUpperCase();
   // The lift stays small enough to read inside a clipped square.
   const motion: CSSProperties = {
-    transform: lift ? "translateY(-6%) scale(1.06)" : "none",
-    transformOrigin: "50% 100%",
+    transform: lift ? "translateY(-2.5%) scale(1.03)" : "none",
+    transformOrigin: "50% 80%",
     transition: "transform 180ms cubic-bezier(.34,1.56,.64,1)",
   };
   if (sprites?.has(key)) {
     return (
-      <span
-        aria-hidden
-        className={`pointer-events-none absolute ${className ?? ""}`}
-        style={{ left: "-7.5%", bottom: 0, width: "115%", height: "115%", zIndex: 1, ...motion, ...style }}
-      >
+      <span aria-hidden className={`pointer-events-none absolute ${className ?? ""}`} style={{ inset: 0, zIndex: 1, ...motion, ...style }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={spriteUrl(key)} alt="" draggable={false} className="h-full w-full object-contain object-bottom" />
+        <img
+          src={spriteUrl(key)}
+          alt=""
+          draggable={false}
+          className="h-full w-full object-contain"
+          style={white ? { filter: "drop-shadow(0 0 0.6px rgb(60 40 20 / 0.45))" } : undefined}
+        />
       </span>
     );
   }

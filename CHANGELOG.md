@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.10.1 (3 November 2026)
+
+### For players
+
+- **New chess pieces.** The 3D set is rebuilt in the style of the big online boards: chunkier Staunton pieces in
+  glossy ivory and lacquered black, each standing in the middle of its square on a soft shadow straight below (they
+  sat on the bottom edge with a shadow off to the right before). Every piece is drawn with one camera at one scale,
+  so the king fills about 85 % of a square and a pawn reads at a glance, even on a phone. Both knights face left,
+  with a proper ear, snout and jaw; the queen has a coronet and the king a bevelled cross. White pieces get a
+  hairline edge so they stand out on light squares. Chess, live Board Bay games and the captured-pieces trays all
+  use the new set.
+
+### Under the hood
+
+- `design/.../spuzl3d.js` `pieces()` v4: a fixed camera with a view offset puts every base centre at 50 % × 80 % of
+  its sprite, instead of bottom-aligning each sprite on its own. Sprites are now 256 px (was 192) and fill the square
+  exactly (`inset: 0`, was 115 % and bottom-aligned). Sprite URLs carry `?v=4` so browsers fetch the new set.
+  `ONLY_PIECES=1 pnpm prerender:3d` re-renders just the pieces.
+
 ## 1.10.0 (2 November 2026)
 
 ### For players

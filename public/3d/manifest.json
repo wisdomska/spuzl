@@ -1,7 +1,7 @@
 {
   "source": "design/design_handoff_spuzl/design/spuzl3d.js (three@0.160.0)",
   "pieces": {
-    "size": 192,
+    "size": 256,
     "files": [
       "pieces/bB.webp",
       "pieces/bK.webp",
