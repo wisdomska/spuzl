@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.10.3 (3 November 2026)
+
+### For players
+
+- **Boxwood and ebony chess set.** White pieces are now warm boxwood with a soft brown edge and black pieces dark
+  ebony, so every piece is easy to tell apart on both square colours (the old white pieces were near-pure white and
+  pawns and bishops blurred together). Bishops have a cut in the mitre, so a bishop never reads as a pawn.
+
+### Under the hood
+
+- `spuzl3d.js` `pieces()` takes a set (`PIECE_SET`: material colour, roughness, environment, exposure, and an
+  optional soft outline drawn around the solid piece only). Sprite URLs carry `?v=6`.
+
 ## 1.10.2 (3 November 2026)
 
 ### For players

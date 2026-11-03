@@ -147,7 +147,7 @@ function solidBox(g, n) {
   return { x0, y0, x1, y1, w: x1 - x0 + 1, h: y1 - y0 + 1, baseX: (bx0 + bx1 + 1) / 2 };
 }
 /** A thin outline around the solid piece (not its soft shadow), so it reads on any square. */
-function outline(src, color, px) {
+function outline(src, color, px, blur = 0) {
   const n = src.width, h = src.height;
   const d = src.getContext('2d').getImageData(0, 0, n, h);
   const m = document.createElement('canvas'); m.width = n; m.height = h;
@@ -156,12 +156,18 @@ function outline(src, color, px) {
   for (let i = 0; i < d.data.length; i += 4) if (d.data[i + 3] > 150) { md.data[i] = r; md.data[i + 1] = g; md.data[i + 2] = b; md.data[i + 3] = 255; }
   mg.putImageData(md, 0, 0);
   const o = document.createElement('canvas'); o.width = n; o.height = h;
-  const og = o.getContext('2d'); og.globalAlpha = a;
+  const og = o.getContext('2d'); og.globalAlpha = a; if (blur) og.filter = `blur(${blur}px)`;
   for (let t = 0; t < 24; t++) { const q = t / 24 * Math.PI * 2; og.drawImage(m, Math.cos(q) * px, Math.sin(q) * px); }
-  og.globalAlpha = 1; og.drawImage(src, 0, 0);
+  og.globalAlpha = 1; og.filter = 'none'; og.drawImage(src, 0, 0);
   return o;
 }
-export function pieces(size = 256, opt = {}) {
+/** The live set: boxwood and ebony, with a soft brown edge on the light pieces so they read on light squares. */
+export const PIECE_SET = {
+  white: { color: 0xE2B577, env: .4, rough: .45, exposure: .95, coat: .3 },
+  black: { color: 0x2A1A12, env: .7, rough: .4, coat: .5 },
+  whiteLine: { color: [80, 45, 15, .32], px: 2, blur: 1.4 },
+};
+export function pieces(size = 256, opt = PIECE_SET) {
   const key = 'pieces-v6:' + size + JSON.stringify(opt); const hit = cacheGet(key);
   if (hit) return Promise.resolve(blobMap(JSON.parse(hit)));
   return enqueue(async () => {
@@ -201,7 +207,7 @@ export function pieces(size = 256, opt = {}) {
       g.setTransform(s, 0, 0, s, W / 2 - box.baseX * s, H - FOOT * size - (box.y1 + 1) * s);
       g.drawImage(c, 0, 0);
       const line = k[0] === 'w' ? opt.whiteLine : opt.blackLine;
-      out[k] = (line ? outline(o, line.color, line.px) : o).toDataURL('image/png');
+      out[k] = (line ? outline(o, line.color, line.px, line.blur) : o).toDataURL('image/png');
     }
     renderer.toneMappingExposure = 1.05;
     cacheSet(key, JSON.stringify(out));
