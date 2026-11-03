@@ -25,7 +25,34 @@ export const GET = handle(async (req: Request) => {
   const [badges, ranks, played, full, frozen, place] = await Promise.all([
     badgeOverview(admin, player.id, games),
     worldRanks(admin, player.id),
-    admin.from("daily_results").select("date").eq("player_id", player.id).gte("date", first).lte("date", last),
+    // A day counts as played for any clear (Daily, free play, levels, archive) or any game that earned XP (duels,
+    // parties); badges, quests and league rewards don't. Dates are GMT, like the streak.
+    Promise.all([
+      admin.from("daily_results").select("date").eq("player_id", player.id).gte("date", first).lte("date", last),
+      admin
+        .from("attempts")
+        .select("started_at")
+        .eq("player_id", player.id)
+        .eq("status", "cleared")
+        .neq("mode", "tutorial")
+        .gte("started_at", `${first}T00:00:00Z`)
+        .lte("started_at", `${last}T23:59:59.999Z`)
+        .limit(5000),
+      admin
+        .from("xp_ledger")
+        .select("created_at")
+        .eq("player_id", player.id)
+        .not("source", "in", "(badge,quest,streak_milestone,league,full_spuzl)")
+        .gte("created_at", `${first}T00:00:00Z`)
+        .lte("created_at", `${last}T23:59:59.999Z`)
+        .limit(5000),
+    ]).then(([d, a, x]) => ({
+      data: [
+        ...(d.data ?? []).map((r) => ({ date: r.date as string })),
+        ...(a.data ?? []).map((r) => ({ date: (r.started_at as string).slice(0, 10) })),
+        ...(x.data ?? []).map((r) => ({ date: (r.created_at as string).slice(0, 10) })),
+      ],
+    })),
     admin.from("xp_ledger").select("ref_id").eq("player_id", player.id).eq("source", "full_spuzl").gte("ref_id", first).lte("ref_id", last),
     admin.from("streak_frozen_days").select("day").eq("player_id", player.id).gte("day", first).lte("day", last),
     admin.from("players").select("city, country, schools(name, verified_by)").eq("id", player.id).single(),

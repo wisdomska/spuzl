@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.15.1 (3 November 2026)
+
+### For players
+
+- **The streak calendar shows every day you played.** It only counted Dailies, which are switched off, so free
+  play, levels, duels and parties left it empty even while the streak grew. Any cleared puzzle (free play, levels,
+  archive, Daily) or any game that earned XP (duels, parties) now marks the day as played. Badges, quests and
+  league rewards don't count as play.
+
 ## 1.15.0 (3 November 2026)
 
 ### For players
