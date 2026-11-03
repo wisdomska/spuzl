@@ -94,6 +94,12 @@ function buildPiece(L, type, mat, white) {
     geo.rotateX(-Math.PI / 2);
     const m = new THREE.Mesh(geo, mat); m.position.y = .84; g.add(m);
   }
+  if (type === 'B') {
+    // Mitre slit, cut on the diagonal so a bishop never reads as a pawn.
+    const groove = new THREE.MeshStandardMaterial({ color: white ? 0x6b5a48 : 0x050407, roughness: .7 });
+    const slit = new THREE.Mesh(new THREE.BoxGeometry(.03, .2, .4), groove);
+    slit.position.set(.03, .9, 0); slit.rotation.z = -.6; slit.rotation.y = -.3; g.add(slit);
+  }
   if (type === 'Q') {
     const top = new THREE.Mesh(new THREE.SphereGeometry(.065, 24, 16), mat); top.position.y = 1.27; g.add(top);
   }
@@ -140,16 +146,33 @@ function solidBox(g, n) {
   for (let y = y1 - band; y <= y1; y++) for (let x = x0; x <= x1; x++) if (A(x, y)) { if (x < bx0) bx0 = x; if (x > bx1) bx1 = x; }
   return { x0, y0, x1, y1, w: x1 - x0 + 1, h: y1 - y0 + 1, baseX: (bx0 + bx1 + 1) / 2 };
 }
-export function pieces(size = 256) {
-  const key = 'pieces-v5:' + size; const hit = cacheGet(key);
+/** A thin outline around the solid piece (not its soft shadow), so it reads on any square. */
+function outline(src, color, px) {
+  const n = src.width, h = src.height;
+  const d = src.getContext('2d').getImageData(0, 0, n, h);
+  const m = document.createElement('canvas'); m.width = n; m.height = h;
+  const mg = m.getContext('2d'); const md = mg.createImageData(n, h);
+  const [r, g, b, a] = color;
+  for (let i = 0; i < d.data.length; i += 4) if (d.data[i + 3] > 150) { md.data[i] = r; md.data[i + 1] = g; md.data[i + 2] = b; md.data[i + 3] = 255; }
+  mg.putImageData(md, 0, 0);
+  const o = document.createElement('canvas'); o.width = n; o.height = h;
+  const og = o.getContext('2d'); og.globalAlpha = a;
+  for (let t = 0; t < 24; t++) { const q = t / 24 * Math.PI * 2; og.drawImage(m, Math.cos(q) * px, Math.sin(q) * px); }
+  og.globalAlpha = 1; og.drawImage(src, 0, 0);
+  return o;
+}
+export function pieces(size = 256, opt = {}) {
+  const key = 'pieces-v6:' + size + JSON.stringify(opt); const hit = cacheGet(key);
   if (hit) return Promise.resolve(blobMap(JSON.parse(hit)));
   return enqueue(async () => {
     const C = await ctx(); const { THREE, renderer, canvas } = C;
     const R = size * 3; // render big, then scale down: sharper edges
     renderer.setSize(R, R, false);
     renderer.shadowMap.enabled = false;
-    const matW = new THREE.MeshPhysicalMaterial({ color: 0xF1EEE8, roughness: .58, envMapIntensity: .7, sheen: .3, sheenRoughness: .8, sheenColor: 0xffffff });
-    const matB = new THREE.MeshPhysicalMaterial({ color: 0x2B2931, roughness: .48, envMapIntensity: .8, clearcoat: .25, clearcoatRoughness: .4 });
+    const WO = { color: 0xF1EEE8, rough: .58, env: .7, exposure: 1.05, ...opt.white };
+    const Bk = { color: 0x2B2931, rough: .48, env: .8, exposure: 1.05, ...opt.black };
+    const matW = new THREE.MeshPhysicalMaterial({ color: WO.color, roughness: WO.rough, envMapIntensity: WO.env, clearcoat: WO.coat ?? 0, clearcoatRoughness: .3 });
+    const matB = new THREE.MeshPhysicalMaterial({ color: Bk.color, roughness: Bk.rough, envMapIntensity: Bk.env, clearcoat: Bk.coat ?? .25, clearcoatRoughness: .4 });
     const el = 40 * Math.PI / 180, dist = 5;
     const cam = new THREE.PerspectiveCamera(26, 1, .1, 50); cam.position.set(0, .65 + dist * Math.sin(el), dist * Math.cos(el)); cam.lookAt(0, .65, 0);
     const shadowTex = contactShadow(THREE);
@@ -163,6 +186,7 @@ export function pieces(size = 256) {
       blob.rotation.x = -Math.PI / 2; blob.position.y = .001; scene.add(blob);
       const pc = buildPiece(C, t, side === 'w' ? matW : matB, side === 'w'); pc.rotation.y = t === 'N' ? 0 : .3;
       scene.add(pc);
+      renderer.toneMappingExposure = side === 'w' ? WO.exposure : Bk.exposure;
       renderer.setClearColor(0x000000, 0); renderer.render(scene, cam);
       const c = document.createElement('canvas'); c.width = c.height = R;
       const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(canvas, 0, 0);
@@ -176,8 +200,10 @@ export function pieces(size = 256) {
       const g = o.getContext('2d'); g.imageSmoothingQuality = 'high';
       g.setTransform(s, 0, 0, s, W / 2 - box.baseX * s, H - FOOT * size - (box.y1 + 1) * s);
       g.drawImage(c, 0, 0);
-      out[k] = o.toDataURL('image/png');
+      const line = k[0] === 'w' ? opt.whiteLine : opt.blackLine;
+      out[k] = (line ? outline(o, line.color, line.px) : o).toDataURL('image/png');
     }
+    renderer.toneMappingExposure = 1.05;
     cacheSet(key, JSON.stringify(out));
     return blobMap(out);
   });
