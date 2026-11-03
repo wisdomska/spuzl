@@ -13,7 +13,7 @@
  */
 
 /** Games whose solo run is timed and scored, so leaving part way loses it. */
-export const TIMED_RUNS: ReadonlySet<string> = new Set(["quickfire", "echo", "flinch", "beattap", "gotcha", "dash", "gauntlet"]);
+export const TIMED_RUNS: ReadonlySet<string> = new Set(["quickfire", "echo", "flinch", "beattap", "gotcha", "dash"]);
 
 export type LeaveContext =
   /** free play, levels, a Daily or archive puzzle, a challenge or ghost race */

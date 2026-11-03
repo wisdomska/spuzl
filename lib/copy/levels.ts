@@ -26,6 +26,8 @@ export const levelsCopy = {
   freePlay: "Free play",
   endless: "New levels keep coming",
   difficulty: { easy: "Easy", medium: "Medium", hard: "Hard", expert: "Expert", mega: "Mega" },
+  /** every fifth level of a puzzle ladder (lib/game/levels.ts isBossLevel) */
+  boss: "Boss level",
   loading: "Loading levels…",
   loadFailed: "Couldn't load your levels. Try again in a moment.",
 } as const;

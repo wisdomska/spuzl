@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 select plan(12);
 
--- Migration 20261121000001 plus the seed: the 29 live games sit in 4 groups; the other worlds keep their rows and
+-- Migration 20261121000001 plus the seed: the 28 live games sit in 4 groups; the other worlds keep their rows and
 -- only retired games.
 select set_eq(
   $$select distinct world_id from public.games where status = 'live'$$,
@@ -12,7 +12,7 @@ select set_eq(
 select results_eq(
   $$select w.id, w.name, count(g.id)::int from public.worlds w join public.games g on g.world_id = w.id and g.status = 'live'
     group by w.id, w.name, w.sort order by w.sort$$,
-  $$values ('logic', 'Puzzles', 9), ('word', 'Words & Quiz', 8), ('reflex', 'Arcade', 7), ('board', 'Board Games', 5)$$,
+  $$values ('logic', 'Puzzles', 9), ('word', 'Words & Quiz', 8), ('reflex', 'Arcade', 6), ('board', 'Board Games', 5)$$,
   'groups in Home map order with their live game counts'
 );
 select is((select count(*)::int from public.worlds), 9, 'the folded worlds keep their rows');

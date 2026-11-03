@@ -98,10 +98,10 @@ export const BADGES: BadgeDef[] = [
     family: "rage",
     tier: T[i],
     name: `Rage Survivor ${n}`,
-    description: `Clear Gauntlet with ${n} deaths or fewer.`,
+    description: `Clear a Daily Gotcha or Dash with ${n} deaths or fewer.`,
     sparks: SPARKS[T[i]],
     icon: "skull",
-    rule: { kind: "gauntlet_deaths", n },
+    rule: { kind: "course_deaths", n },
   })),
   {
     id: "social-5",

@@ -3,7 +3,7 @@ import { onboardGuest, waitForBoard } from "./harness";
 import { GAME_COUNT, WORLD_COUNT, WORLD_BY_ID } from "@/lib/catalog";
 
 /**
- * The 2026-11 catalogue change: 29 live games, since regrouped into 4 worlds. Retired games and the emptied Number
+ * The 2026-11 catalogue change: 29 live games (28 once Gauntlet went), since regrouped into 4 worlds. Retired games and the emptied Number
  * Den are gone from every list and their pages are not found; Trotro Jam, Emoji Hits and Beat Tap play like any live game, with no
  * admin setting needed.
  */

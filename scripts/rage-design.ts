@@ -19,6 +19,7 @@ import { compileLevel, type LevelDef, type PlatformDef, type TrapDef, type Trigg
 import { BTN, logFromFrames, scriptFromLog } from "@/phaser/sim/input";
 import { PlatformerCourse, type PlatformerConfig } from "@/phaser/sim/platformer";
 import { solvePlatformer } from "@/phaser/sim/solver";
+import { curate } from "@/lib/game/rage-variety";
 
 type GameId = "gotcha" | "dash" | "gauntlet";
 
@@ -841,7 +842,14 @@ async function build(spec: GameSpec) {
     inTier.forEach((m, j) => keyed.push({ id: m.def.id, key: tier + (j + 0.5) / (inTier.length + 1) }));
   }
   keyed.sort((a, b) => a.key - b.key);
-  const ladder = keyed.map((x) => x.id);
+  // variety: no motif more than twice, never two alike in a row (lib/game/rage-variety.ts)
+  const byId = new Map([...mod.HAND_LEVELS, ...mod.SET_PIECES, ...made.map((m) => m.def)].map((l) => [l.id, l]));
+  const fixed = new Set([...mod.HAND_LEVELS, ...mod.SET_PIECES].map((l) => l.id));
+  const ladder = curate(
+    keyed.map((x) => x.id),
+    byId,
+    fixed,
+  );
 
   for (const m of made) solutions[m.def.id] = scriptFromLog(logFromFrames(m.frames));
   // drop scripts for rooms an earlier run made and this one did not

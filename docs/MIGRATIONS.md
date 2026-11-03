@@ -236,3 +236,9 @@ quests in the database.
 | Migration                       | What it does                                                                                                                                             | Rollback           |
 | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
 | `20261124000001_match_chat.sql` | Duel and Party chat: `match_messages` (server-written only, forced RLS), `svc_prune_match_messages` and a nightly cron that drops chat older than 7 days | In the file header |
+
+## 1.17.0
+
+| Migration                            | What it does                                                                                                                                  | Rollback           |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| `20261125000001_retire_gauntlet.sql` | Retires Gauntlet (`games.status = 'retired'`, no rows deleted) and moves the Rage Survivor badges to a Daily Gotcha or Dash (`course_deaths`) | In the file header |

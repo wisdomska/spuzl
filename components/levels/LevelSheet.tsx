@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { colourOf, type GameMeta } from "@/lib/catalog";
 import { formatClock } from "@/lib/format";
-import { levelCount, levelDifficulty, nextLevel, SEEDED_LADDERS } from "@/lib/game/levels";
+import { isBossLevel, levelCount, levelDifficulty, nextLevel, SEEDED_LADDERS } from "@/lib/game/levels";
 import { useGameLevels } from "@/lib/client/levels";
 import { levelsCopy as T } from "@/lib/copy/levels";
 import { useSheetSound } from "@/lib/audio/useSheetSound";
@@ -66,7 +66,13 @@ export function LevelSheet({
             <>
               <p className="text-[15px] font-semibold" aria-live="polite">
                 {q.isPending ? T.loading : T.status(top, next, done)}
-                {!q.isPending && seeded && !done && <span className="text-muted"> · {T.difficulty[levelDifficulty(next)]}</span>}
+                {!q.isPending && seeded && !done && (
+                  <span className="text-muted">
+                    {" "}
+                    · {T.difficulty[levelDifficulty(next)]}
+                    {isBossLevel(next) && ` · ${T.boss}`}
+                  </span>
+                )}
               </p>
               <Button size="lg" icon="play" onClick={() => onPlay(next)} disabled={q.isPending} autoFocus>
                 {T.play(next)}

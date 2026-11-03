@@ -2,12 +2,13 @@
  * Level ladders ("Levels" mode beside free play). Client-safe: no level data, only the rules.
  *
  * Two kinds of ladder:
- * - pool: Rage Ridge course games (Gotcha, Dash, Gauntlet). Level n is the n-th room of the game's
- *   hand-ordered pool (games/<id>/levels.ts LEVELS), played as a one-room course. Finite.
+ * - pool: the Arcade course games (Gotcha, Dash). Level n is the n-th room of the game's ladder
+ *   (games/<id>/levels.generated.ts LADDER, curated for variety by
+ *   scripts/rage-curate.ts), played as a one-room course. Finite.
  * - seeded: generated puzzle games. Level n is `generate(createRng(securedLevelSeed(game, n)), levelDifficulty(n))`
  *   (the `level:<game>:<n>` base keyed with a server secret, lib/game/level-seed.ts),
- *   so it is the same board for everyone, harder (and bigger, where the game sizes boards by difficulty)
- *   as n grows. Endless.
+ *   so it is the same board for everyone. Difficulty climbs in waves with a boss every fifth level (and boards
+ *   grow with it, where the game sizes boards by difficulty). Endless.
  *
  * Levels unlock one at a time: a player may start any level up to one past their highest verified clear,
  * and replay any cleared level. The server enforces this (lib/game/service.ts); the seed never leaves it.
@@ -15,7 +16,7 @@
 import type { Difficulty } from "@/games/types";
 
 /** Rooms in each pool ladder. A unit test keeps these equal to games/<id>/levels.ts LEVELS.length. */
-export const POOL_LADDERS = { gotcha: 64, dash: 64, gauntlet: 66 } as const;
+export const POOL_LADDERS = { gotcha: 52, dash: 41 } as const;
 
 /** Generated puzzle games with an endless seeded ladder. */
 export const SEEDED_LADDERS = ["crownfall", "dusk", "sixer", "nine", "weave", "flowline", "pairup", "lost", "trotro"] as const;
@@ -34,22 +35,30 @@ export function levelCount(id: string): number | null {
   return id in POOL_LADDERS ? POOL_LADDERS[id as keyof typeof POOL_LADDERS] : null;
 }
 
-/**
- * Difficulty for level n of a seeded ladder: five easy levels to learn on, then medium, hard and expert bands,
- * and mega from level 36 on.
- */
-export const LEVEL_BANDS: { from: number; difficulty: Difficulty }[] = [
-  { from: 1, difficulty: "easy" },
-  { from: 6, difficulty: "medium" },
-  { from: 13, difficulty: "hard" },
-  { from: 23, difficulty: "expert" },
-  { from: 36, difficulty: "mega" },
-];
+const TIERS: Difficulty[] = ["easy", "medium", "hard", "expert", "mega"];
 
+/**
+ * Base difficulty (index into easy..mega) for each block of five levels: one easy block to learn on, then two
+ * medium, two hard, two expert, and from level 36 mega and expert blocks in turn (its last two entries repeat).
+ */
+export const LEVEL_BLOCKS = [0, 1, 1, 2, 2, 3, 3, 4, 3, 4];
+
+/** How each level in a block of five moves from the base: the third is a breather, the fifth a boss. */
+export const LEVEL_WAVE = [0, 0, -1, 0, 1];
+
+/** True for every fifth level: a step harder (and on most games a bigger board) than the levels around it. */
+export const isBossLevel = (n: number) => n >= 1 && n % 5 === 0;
+
+/**
+ * Difficulty for level n of a seeded ladder. It climbs in blocks of five and moves inside each block (base,
+ * base, a breather, base, a boss), so neighbouring levels differ in size and feel instead of ten alike in a row.
+ */
 export function levelDifficulty(n: number): Difficulty {
-  let d: Difficulty = "easy";
-  for (const b of LEVEL_BANDS) if (n >= b.from) d = b.difficulty;
-  return d;
+  const i = Math.max(0, Math.floor(n) - 1);
+  const b = Math.floor(i / 5);
+  const L = LEVEL_BLOCKS.length;
+  const block = LEVEL_BLOCKS[b < L ? b : L - 2 + ((b - L) % 2)];
+  return TIERS[Math.max(0, Math.min(TIERS.length - 1, block + LEVEL_WAVE[i % 5]))];
 }
 
 /** The deterministic seed of level n (server only: never sent to a client). */

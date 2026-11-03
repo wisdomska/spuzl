@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.17.0 (3 November 2026)
+
+### For players
+
+- **Gauntlet is retired.** It was ten Gotcha rooms in a row, so Gotcha covers it. Arcade now has 6 games and SPUZL 28. Your Gauntlet results stay on your record. The four Rage Survivor badges move to a Daily Gotcha or Dash with
+  that many deaths or fewer; badges you already earned stay earned.
+- **Puzzle levels change from one to the next.** Levels used to sit on one difficulty for 7 to 13 levels at a time
+  (and on Crownfall, Dusk, Weave, Flowline, Pair Up and Lost, one board size), so a run of levels felt like the same
+  puzzle again. Difficulty now moves inside every block of five: two steady levels, a breather, another, then a
+  **Boss level** a step harder (and on most games a bigger board). It still climbs overall, and from level 36
+  expert and mega blocks take turns. The level sheet marks boss levels. Level numbers you've cleared stay cleared;
+  the boards behind uncleared levels are new.
+- **Gotcha and Dash levels are all different.** Too many rooms were the same idea again (on Dash, 22 of 64 were
+  just spikes on flat ground). Each room is now summed up by what it asks of you (its traps, spikes, gaps and
+  ledges) and no kind appears more than twice, never twice in a row. Gotcha has 52 levels and Dash 41; if you'd
+  gone past the new end, the ladder shows as finished.
+
 ## 1.16.1 (3 November 2026)
 
 ### For players

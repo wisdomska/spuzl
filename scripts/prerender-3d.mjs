@@ -70,7 +70,7 @@ function writeDataUrl(file, dataUrl) {
 }
 
 const games = catalogue();
-if (games.length < 29) throw new Error(`expected at least the 29 live games in lib/catalog.ts, found ${games.length}`);
+if (games.length < 28) throw new Error(`expected at least the 28 live games in lib/catalog.ts, found ${games.length}`);
 fs.mkdirSync(OUT_PIECES, { recursive: true });
 fs.mkdirSync(OUT_ICONS, { recursive: true });
 

@@ -57,7 +57,6 @@ const KEEP = [
   "beattap",
   "gotcha",
   "dash",
-  "gauntlet",
   "chess",
   "draughts",
   "oware",
@@ -66,15 +65,15 @@ const KEEP = [
 ];
 
 describe("catalog: retired games", () => {
-  it("keeps exactly the 29 owner-picked games live", () => {
+  it("keeps exactly the 28 owner-picked games live", () => {
     expect(GAMES.map((g) => g.id).sort()).toEqual([...KEEP].sort());
-    expect(GAME_COUNT).toBe(29);
+    expect(GAME_COUNT).toBe(28);
     expect(GAMES.every((g) => !g.retired && !g.lab)).toBe(true);
   });
 
-  it("retires the other 32 but keeps them in code", () => {
-    expect(RETIRED_IDS.size).toBe(32);
-    expect(RETIRED_GAMES).toHaveLength(32);
+  it("retires the other 33 but keeps them in code", () => {
+    expect(RETIRED_IDS.size).toBe(33);
+    expect(RETIRED_GAMES).toHaveLength(33);
     expect(ALL_GAMES).toHaveLength(61);
     for (const id of RETIRED_IDS) {
       expect(GAME_BY_ID[id], id).toBeDefined();
@@ -118,7 +117,7 @@ describe("catalog: four groups", () => {
   const GROUPS: [WorldId, string, string[]][] = [
     ["logic", "Puzzles", ["crownfall", "dusk", "sixer", "nine", "weave", "flowline", "pairup", "lost", "trotro"]],
     ["word", "Words & Quiz", ["coil", "rungs", "seven", "minicross", "buried", "remix", "quickfire", "emojihits"]],
-    ["reflex", "Arcade", ["echo", "twins", "flinch", "beattap", "gotcha", "dash", "gauntlet"]],
+    ["reflex", "Arcade", ["echo", "twins", "flinch", "beattap", "gotcha", "dash"]],
     ["board", "Board Games", ["chess", "draughts", "oware", "ludo", "fourup"]],
   ];
 

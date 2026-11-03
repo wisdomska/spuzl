@@ -776,6 +776,8 @@ export const RETIRED_IDS: ReadonlySet<string> = new Set([
   "grapple",
   "ghosted",
   "slip",
+  // Arcade: Gauntlet was ten Gotcha rooms in a row, so Gotcha covers it
+  "gauntlet",
   // Board Games (was Board Bay)
   "flip",
   "dara",

@@ -22,8 +22,8 @@ export interface LadderKitOptions {
 }
 
 export function ladderSuite(o: LadderKitOptions) {
-  it("has a ladder of at least 60 levels with unique ids and names", () => {
-    expect(o.levels.length).toBeGreaterThanOrEqual(60);
+  it("has a ladder of at least 40 varied levels with unique ids and names", () => {
+    expect(o.levels.length).toBeGreaterThanOrEqual(40);
     expect(new Set(o.levels.map((l) => l.id)).size).toBe(o.levels.length);
     expect(new Set(o.levels.map((l) => l.name)).size).toBe(o.levels.length);
     for (const l of o.levels) expect(() => compileLevel(l), l.id).not.toThrow();

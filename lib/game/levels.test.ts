@@ -4,12 +4,12 @@ import { LOGIC } from "@/games/logic-registry";
 import type { Difficulty } from "@/games/types";
 import { LEVELS as GOTCHA } from "@/games/gotcha/levels";
 import { LEVELS as DASH } from "@/games/dash/levels";
-import { LEVELS as GAUNTLET } from "@/games/gauntlet/levels";
 import {
   isLadderGame,
   isLevel,
   ladderDone,
-  LEVEL_BANDS,
+  isBossLevel,
+  LEVEL_BLOCKS,
   levelCount,
   levelDifficulty,
   levelOpen,
@@ -23,11 +23,27 @@ import {
 const ORDER: Difficulty[] = ["easy", "medium", "hard", "expert", "mega"];
 
 describe("level ladders", () => {
-  it("pool ladder sizes match the level pools, and every pool has at least 60 levels", () => {
+  it("pool ladder sizes match the level pools, and every pool has at least 40 levels", () => {
     expect(POOL_LADDERS.gotcha).toBe(GOTCHA.length);
     expect(POOL_LADDERS.dash).toBe(DASH.length);
-    expect(POOL_LADDERS.gauntlet).toBe(GAUNTLET.length);
-    for (const n of Object.values(POOL_LADDERS)) expect(n).toBeGreaterThanOrEqual(60);
+    for (const n of Object.values(POOL_LADDERS)) expect(n).toBeGreaterThanOrEqual(40);
+  });
+
+  it("pool ladders never put two rooms of the same kind in a row, nor use a kind more than twice", async () => {
+    const { motif } = await import("./rage-variety");
+    const { HAND_LEVELS: GH, SET_PIECES: GS } = await import("@/games/gotcha/levels");
+    const { HAND_LEVELS: DH, SET_PIECES: DS } = await import("@/games/dash/levels");
+    for (const [pool, fixed] of [
+      [GOTCHA, [...GH, ...GS]],
+      [DASH, [...DH, ...DS]],
+    ] as const) {
+      const hand = new Set(fixed.map((l) => l.id));
+      const kinds = pool.map(motif);
+      for (let i = 1; i < kinds.length; i++) expect(kinds[i] === kinds[i - 1] && !hand.has(pool[i].id), pool[i].id).toBe(false);
+      const counts = new Map<string, number>();
+      pool.filter((l) => !hand.has(l.id)).forEach((l) => counts.set(motif(l), (counts.get(motif(l)) ?? 0) + 1));
+      for (const [k, n] of counts) expect(n, k).toBeLessThanOrEqual(2);
+    }
   });
 
   it("knows which games have ladders", () => {
@@ -40,23 +56,30 @@ describe("level ladders", () => {
     expect(levelCount("crownfall")).toBeNull();
   });
 
-  it("ramps difficulty from easy to mega and never eases off", () => {
+  it("climbs from easy to mega in waves, with a boss every fifth level", () => {
     expect(levelDifficulty(1)).toBe("easy");
-    expect(levelDifficulty(5)).toBe("easy");
+    expect(levelDifficulty(5)).toBe("medium"); // the first boss
     expect(levelDifficulty(6)).toBe("medium");
-    expect(levelDifficulty(13)).toBe("hard");
-    expect(levelDifficulty(23)).toBe("expert");
-    expect(levelDifficulty(36)).toBe("mega");
+    expect(levelDifficulty(8)).toBe("easy"); // a breather
+    expect(levelDifficulty(10)).toBe("hard");
+    expect(levelDifficulty(30)).toBe("mega");
+    expect(levelDifficulty(61)).toBe("expert");
+    expect(levelDifficulty(63)).toBe("hard");
+    expect(levelDifficulty(66)).toBe("mega");
     expect(levelDifficulty(5000)).toBe("mega");
-    let prev = 0;
-    for (let n = 1; n <= 200; n++) {
-      const d = ORDER.indexOf(levelDifficulty(n));
-      expect(d).toBeGreaterThanOrEqual(prev);
-      prev = d;
+    // the base climbs, then expert and mega blocks take turns
+    for (let i = 1; i < LEVEL_BLOCKS.length; i++) expect(LEVEL_BLOCKS[i]).toBeGreaterThanOrEqual(LEVEL_BLOCKS[i - 1] - 1);
+    // every difficulty is used in the first 60 levels, bosses are the hardest of their block
+    expect(new Set(Array.from({ length: 60 }, (_, i) => levelDifficulty(i + 1)))).toEqual(new Set(ORDER));
+    for (let n = 5; n <= 200; n += 5) {
+      expect(isBossLevel(n)).toBe(true);
+      for (let k = n - 4; k < n; k++) expect(ORDER.indexOf(levelDifficulty(n))).toBeGreaterThanOrEqual(ORDER.indexOf(levelDifficulty(k)));
     }
-    // every band is used, in order, with a few levels each
-    expect(LEVEL_BANDS.map((b) => b.difficulty)).toEqual(ORDER);
-    for (let i = 1; i < LEVEL_BANDS.length; i++) expect(LEVEL_BANDS[i].from - LEVEL_BANDS[i - 1].from).toBeGreaterThanOrEqual(5);
+    // after the first block, never four alike in a row
+    for (let n = 8; n <= 200; n++) {
+      const run = [n, n - 1, n - 2, n - 3].map(levelDifficulty);
+      expect(new Set(run).size > 1, `${n}`).toBe(true);
+    }
   });
 
   it("unlocks one level at a time and lets cleared levels replay", () => {
@@ -114,7 +137,6 @@ describe("level ladders", () => {
     for (const [id, pool] of [
       ["gotcha", GOTCHA],
       ["dash", DASH],
-      ["gauntlet", GAUNTLET],
     ] as const) {
       const logic = (await LOGIC[id]()).default;
       expect(logic.level, id).toBeDefined();
