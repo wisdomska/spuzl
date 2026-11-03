@@ -137,7 +137,11 @@ describe("api: daily clear flow", () => {
     // A wrong board doesn't clear: the server rebuilt the solution itself.
     const other = await g.api("/api/v1/attempts", { json: { game: "crownfall", mode: "free", difficulty: "easy" } });
     await admin().from("attempts").update({ started_at: ago }).eq("id", other.data.attemptId);
-    const wrong = await g.api(`/api/v1/attempts/${other.data.attemptId}/finish`, { json: { state, activeMs: 9000, mistakes: 0 } });
+    // An empty board (no crowns) can never be a solution, whatever puzzle the second attempt was dealt. (Sending the
+    // first puzzle's solution used to pass now and then, when both attempts happened to get the same puzzle.)
+    const otherSize = (other.data.puzzle as { size?: number } | undefined)?.size ?? n;
+    const empty = new Array(otherSize * otherSize).fill(0);
+    const wrong = await g.api(`/api/v1/attempts/${other.data.attemptId}/finish`, { json: { state: empty, activeMs: 9000, mistakes: 0 } });
     expect(wrong.data.ok).toBe(false);
 
     const first = await g.api(`/api/v1/attempts/${s.data.attemptId}/finish`, { json: { state, activeMs: 9000, mistakes: 0 } });

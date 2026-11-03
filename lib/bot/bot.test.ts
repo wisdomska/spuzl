@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createRng } from "@/lib/rng";
 import { BOT_GAMES, BOT_LEVELS, HARD_BUDGET_MS, loadBot, type AnyBot, type BotLevel } from "./index";
 import { fourupBot, evaluateFourUp } from "./games/fourup";
@@ -196,6 +196,14 @@ describe("Dara bot", () => {
 });
 
 describe("hard beats easy", () => {
+  // The search stops on a wall-clock budget, so on a busy CI machine "hard" used to search less and sometimes lose.
+  // Here the clock is replaced by one that moves a fixed step per reading: every run searches exactly as much.
+  let t = 0;
+  beforeEach(() => {
+    t = 0;
+    vi.spyOn(performance, "now").mockImplementation(() => (t += 0.05));
+  });
+  afterEach(() => vi.restoreAllMocks());
   for (const game of ["fourup", "flip", "draughts", "oware", "dara"] as const)
     it(`${game}: hard wins most games against easy`, async () => {
       const bot = await loadBot(game);
