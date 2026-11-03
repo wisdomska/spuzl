@@ -17,6 +17,8 @@ describe("music director", () => {
     expect(musicFor("/play/beattap")).toBeNull();
     expect(musicFor("/play/echo")).toBeNull();
     expect(musicFor("/intro")).toBeNull();
+    expect(musicFor("/about")).toBeNull();
+    expect(musicFor("/privacy")).toBeNull();
   });
   it("gives each game its own tune, the same every time", () => {
     const a = trackFor("crownfall", "logic");

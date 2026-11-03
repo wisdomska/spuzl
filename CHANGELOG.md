@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.16.1 (3 November 2026)
+
+### For players
+
+- **The landing page demo fits its card again.** The Try it Crownfall board sized itself from the whole window
+  (since game boards grew to fill big screens in 1.10.0), so on a computer it spilled out of its card and on a
+  phone the fit-to-screen step shrank it to a postage stamp. It now sizes to the card on every screen.
+- **No music on the landing page.** The landing page and the info pages (How to play, Fair play, Privacy, Terms,
+  Contact) are quiet; music starts once you're in the app.
+
 ## 1.16.0 (3 November 2026)
 
 ### For players

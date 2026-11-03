@@ -5,6 +5,7 @@ import { Icon } from "@/components/ui/Icon";
 import { Spuz } from "@/components/brand/Spuz";
 import { Wordmark } from "@/components/brand/Wordmark";
 import { TryIt } from "@/components/landing/TryIt";
+import { NoMusic } from "@/components/landing/NoMusic";
 import { aboutCopy as T } from "@/lib/copy/about";
 
 export const metadata: Metadata = {
@@ -25,6 +26,7 @@ const H2 = "font-display text-[32px] leading-[1.05] font-black tracking-[-0.03em
 export default function Landing() {
   return (
     <div className="safe-top min-h-dvh overflow-x-clip">
+      <NoMusic />
       {/* Nav */}
       <header className="sticky top-0 z-20 px-4 pt-3">
         <nav className="bg-surface/85 border-line mx-auto flex h-16 max-w-[1160px] items-center justify-between rounded-full border px-4 backdrop-blur-md sm:px-6">

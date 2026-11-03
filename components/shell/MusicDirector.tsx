@@ -8,13 +8,16 @@ import type { StyleId } from "@/lib/audio/music";
 
 /** Games whose play is sound itself: music would get in the way. */
 const QUIET_GAMES = new Set(["beattap", "echo"]);
+/** Public pages without music: the landing page (/about, and "/" for visitors, which holds it) and the info pages. */
+const INFO_PAGES = new Set(["about", "how-to-play", "fair-play", "privacy", "terms", "contact"]);
 const WORLD_STYLE: Record<string, StyleId> = { logic: "logic", word: "word", reflex: "reflex", board: "board" };
 
 /** Which track a page gets: a game's own tune while playing it, Versus in duels and parties, Home everywhere else. */
 export function musicFor(pathname: string): { id: string; style: StyleId } | null {
   const parts = pathname.split("/").filter(Boolean);
   const [first, second] = parts;
-  if (first === "intro" || first === "admin") return null;
+  // The intro has its own sound; admin and the public pages (landing, help, legal) stay quiet.
+  if (first === "intro" || first === "admin" || (first && INFO_PAGES.has(first))) return null;
   if (first === "play" && second) {
     if (QUIET_GAMES.has(second)) return null;
     const meta = GAME_BY_ID[second];

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useLayoutEffect, useRef } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import CrownfallBoard from "@/games/crownfall/Board";
 import { TUTORIAL_PUZZLE } from "@/games/crownfall/tutorial";
@@ -11,6 +11,7 @@ import { Spuz } from "@/components/brand/Spuz";
 import { Icon } from "@/components/ui/Icon";
 import { aboutCopy as T } from "@/lib/copy/about";
 import { play } from "@/lib/audio";
+import { EmbeddedBoard } from "@/components/game/useBoardSize";
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
@@ -18,6 +19,17 @@ const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 export function TryIt() {
   const [cells, setCells] = useState<CrownfallState>(() => new Array(16).fill(0));
   const [solved, setSolved] = useState(false);
+  const boardBox = useRef<HTMLDivElement>(null);
+  const [boardWidth, setBoardWidth] = useState(0);
+  useLayoutEffect(() => {
+    const el = boardBox.current;
+    if (!el) return;
+    const measure = () => setBoardWidth(Math.min(320, Math.floor(el.clientWidth)));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const a = analyze(TUTORIAL_PUZZLE, cells);
   const ok = [a.crowns >= 2 && a.rule !== "row" && a.rule !== "column", a.crowns >= 2 && a.rule !== "region", a.clear];
   const api = useMemo<BoardApi<CrownfallState>>(
@@ -61,8 +73,17 @@ export function TryIt() {
             </li>
           ))}
         </ul>
-        <div className="mt-4 flex justify-center" style={{ ["--world" as string]: "var(--w-reflex)" }}>
-          <CrownfallBoard puzzle={TUTORIAL_PUZZLE} mode="tutorial" api={api} />
+        {/* Sized to the card (not the window): the board's own sizing is for a full game screen. */}
+        <div
+          ref={boardBox}
+          className="mt-4 flex justify-center"
+          style={{ ["--world" as string]: "var(--w-reflex)", minHeight: boardWidth ? undefined : 300 }}
+        >
+          {boardWidth > 0 && (
+            <EmbeddedBoard.Provider value={{ width: boardWidth }}>
+              <CrownfallBoard puzzle={TUTORIAL_PUZZLE} mode="tutorial" api={api} />
+            </EmbeddedBoard.Provider>
+          )}
         </div>
         <div className="mt-4 min-h-[52px]" aria-live="polite">
           <AnimatePresence mode="wait" initial={false}>

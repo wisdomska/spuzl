@@ -233,8 +233,16 @@ function haltMusic() {
   playing = null;
 }
 
+/** Screens that hold the music off while they're shown (the public landing page). */
+let holds = 0;
+export function holdMusic(on: boolean) {
+  holds = Math.max(0, holds + (on ? 1 : -1));
+  if (holds) haltMusic();
+  else resumeMusic();
+}
+
 function resumeMusic() {
-  if (!wanted || !runtime.music || runtime.lowData) return;
+  if (!wanted || !runtime.music || runtime.lowData || holds) return;
   const key = `${wanted.style}:${wanted.id}`;
   if (playing === key && player) return;
   const a = ctx();

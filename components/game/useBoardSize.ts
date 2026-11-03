@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useState, useSyncExternalStore, type RefObject } from "react";
+import { useContext, createContext, useLayoutEffect, useState, useSyncExternalStore, type RefObject } from "react";
 
 /** The game shell's board slot pads the board by this much on each side (GameShell's board `main`, px-3). */
 export const SLOT_PAD = 12;
@@ -112,8 +112,18 @@ export function useWide(): boolean {
  * (`boardBox`), with the cap raised to WIDE_GROW × `max`; `rows` (default `cols`) keeps a tall board inside
  * the height there.
  */
+/**
+ * A board shown inside a card instead of a game screen (the landing page demo, the welcome lesson): it sizes to
+ * the card's width and skips the fit-to-screen step, which would otherwise size it from the whole window.
+ */
+export const EmbeddedBoard = createContext<{ width: number } | null>(null);
+
 export function useCellSize(cols: number, gap: number, padding = 6, max = 64, rows = cols): number {
-  return cellSize(useViewportWidth(), useViewportHeight(), cols, gap, padding, max, rows);
+  const embedded = useContext(EmbeddedBoard);
+  const vw = useViewportWidth();
+  const vh = useViewportHeight();
+  if (embedded) return Math.max(24, Math.floor((embedded.width - (gap * (cols - 1) + padding)) / cols));
+  return cellSize(vw, vh, cols, gap, padding, max, rows);
 }
 
 /** The pure rule behind `useCellSize`. */
@@ -228,9 +238,11 @@ export function useFitHeight(
   target?: RefObject<HTMLElement | null>,
   margin: number | "shell" = 0,
 ): number {
+  const embedded = useContext(EmbeddedBoard);
   const [fit, setFit] = useState({ ideal, size: ideal });
-  const size = fit.ideal === ideal ? fit.size : ideal;
+  const size = embedded ? ideal : fit.ideal === ideal ? fit.size : ideal;
   useLayoutEffect(() => {
+    if (embedded) return;
     const measure = () => {
       const vh = window.innerHeight;
       let over: number;
@@ -259,6 +271,6 @@ export function useFitHeight(
       ro?.disconnect();
       window.removeEventListener("resize", restart);
     };
-  }, [ideal, min, unit, target, margin, size]);
+  }, [ideal, min, unit, target, margin, size, embedded]);
   return size;
 }
