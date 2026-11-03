@@ -3,6 +3,8 @@ import { CARD_SIZES, STATUS_CARD_SIZE, type CardFormat, type CardModel, type Sta
 import { ogFonts } from "./fonts";
 import { ShareCard } from "./ShareCard";
 import { StatusCard } from "./StatusCard";
+import { DuelCardOG } from "./DuelCard";
+import type { DuelShareModel } from "@/lib/share/duel-card";
 
 /** Only layout comes from the query string: which frame, and full or half size (low-data mode). */
 export function parseCardQuery(url: string): { format: CardFormat; scale: 1 | 0.5 } {
@@ -16,6 +18,25 @@ export function parseCardQuery(url: string): { format: CardFormat; scale: 1 | 0.
 export async function renderCard(card: CardModel, format: CardFormat, scale: 1 | 0.5 = 1, cacheSeconds = 300): Promise<ImageResponse> {
   const { width, height } = CARD_SIZES[format];
   return new ImageResponse(<ShareCard card={card} format={format} scale={scale} />, {
+    width: width * scale,
+    height: height * scale,
+    fonts: await ogFonts(),
+    headers: {
+      "cache-control": `public, max-age=${cacheSeconds}, s-maxage=${cacheSeconds * 12}, stale-while-revalidate=86400`,
+      "x-robots-tag": "noindex",
+    },
+  });
+}
+
+/** Duel card from one player's side (story or square, full or half size). */
+export async function renderDuelCard(
+  card: DuelShareModel,
+  format: CardFormat,
+  scale: 1 | 0.5 = 1,
+  cacheSeconds = 300,
+): Promise<ImageResponse> {
+  const { width, height } = CARD_SIZES[format];
+  return new ImageResponse(<DuelCardOG card={card} format={format} scale={scale} />, {
     width: width * scale,
     height: height * scale,
     fonts: await ogFonts(),

@@ -8,14 +8,21 @@ import { ordinal, type StatusCardModel, type StatusStat } from "./card-model";
  *   SPUZL #214 · Crownfall · 1:12 🔥12
  *   🟩🟩🟩🟩🟩
  *   🟩🟩🟨🟩🟩
- *   spuzl.gg
+ *   spuzl.vercel.app
  *
  * The effort grid is the solve time cut into ten equal slices, five per row: 🟩 clean, 🟨 hint used,
  * 🟥 slip (a mistake or death; it outranks a hint in the same slice), ⬛ not reached. It shows effort,
  * never the answer: no input to these functions carries board state or a solution.
  */
 
-export const SHARE_DOMAIN = "spuzl.gg";
+/** The address printed on share text and cards: the live site's host (spuzl.gg never resolved). */
+export const SHARE_DOMAIN = (() => {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://spuzl.vercel.app").host;
+  } catch {
+    return "spuzl.vercel.app";
+  }
+})();
 
 export const CELL = { clean: "🟩", hint: "🟨", slip: "🟥", none: "⬛" } as const;
 
@@ -152,7 +159,7 @@ export function partyShareText(p: PartyShare): string {
  *   SPUZL · Kofi · Solver II
  *   Lv 15 · 🔥 12 days · 17 of 29 games tried
  *   Favourite world: Puzzles
- *   spuzl.gg
+ *   spuzl.vercel.app
  */
 export function statusShareText(m: StatusCardModel): string {
   const by = (id: StatusStat["id"]) => m.stats.find((s) => s.id === id)?.value;

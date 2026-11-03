@@ -15,6 +15,9 @@ import { DUEL_DEFAULT_GAME, gameName, raceGameParam } from "@/lib/multiplayer/ga
 import { TIMING, type EmoteId } from "@/lib/multiplayer/constants";
 import type { MatchView } from "@/lib/multiplayer/types";
 import { GAME_BY_ID } from "@/lib/catalog";
+import { ShareSheet } from "@/components/share/ShareSheet";
+import { cardUrl } from "@/lib/share/urls";
+import { duelShareText } from "@/lib/share/text";
 import { MatchBoard } from "./MatchBoard";
 import { useLeave } from "@/components/game/useLeave";
 import { useWide } from "@/components/game/useBoardSize";
@@ -260,6 +263,10 @@ function DuelMatch({ id }: { id: string }) {
   const [emoteOpen, setEmoteOpen] = useState(false);
   const [rematchWaiting, setRematchWaiting] = useState(false);
   const [wipe, setWipe] = useState(0);
+  // The share sheet for the match-end card: story or square, names shown or hidden (as in SPIL).
+  const [shareOpen, setShareOpen] = useState(false);
+  const [cardFormat, setCardFormat] = useState<"story" | "square">("story");
+  const [hideNames, setHideNames] = useState(false);
   // The round whose in-match rules card the player closed with "Got it".
   const [rulesClosed, setRulesClosed] = useState(0);
   const toasted = useRef<string>("");
@@ -370,6 +377,8 @@ function DuelMatch({ id }: { id: string }) {
     }
   };
   const share = async () => {
+    // Duels with a person get the picture card; a bot duel shares a line of text.
+    if (!view.isBot) return setShareOpen(true);
     const text = `${view.winnerId === me.id ? "Won" : "Played"} a SPUZL Duel ${me.roundsWon}-${them.roundsWon} vs ${them.nickname} ⚔️`;
     try {
       if (navigator.share) await navigator.share({ text });
@@ -420,7 +429,7 @@ function DuelMatch({ id }: { id: string }) {
       />
     );
   else if (phase === "versus" || (phase === "countdown" && view.round === 1))
-    body = <Versus me={me} them={them} msToStart={start - now} round={view.round} note={rivalReading} />;
+    body = <Versus me={me} them={them} msToStart={start - now} round={view.round} note={rivalReading} h2h={view.h2h} />;
   else if (phase === "round_end") {
     const prev = view.round - 1;
     const mine = view.rounds.find((r) => r.round === prev && r.playerId === me.id);
@@ -525,6 +534,58 @@ function DuelMatch({ id }: { id: string }) {
       <MpToast toast={toast} />
       <RematchWipe n={view?.rematchId ? wipe + 1 : wipe} />
       {body}
+      {view && view.status === "finished" && !view.isBot && (
+        <ShareSheet
+          open={shareOpen}
+          onOpenChange={setShareOpen}
+          kind="duel"
+          title="Share your duel"
+          fileName={`spuzl-duel-${cardFormat}.png`}
+          image={cardUrl("duel", view.id, { player: view.me, format: cardFormat, anon: hideNames })}
+          preview={
+            cardFormat === "story" ? { width: 108, height: 192, alt: "Your duel card" } : { width: 150, height: 150, alt: "Your duel card" }
+          }
+          text={duelShareText({
+            gameId: view.games[0] ?? view.gameId ?? "",
+            me: hideNames ? "Me" : (view.players.find((p) => p.id === view.me)?.nickname ?? "Me"),
+            them: hideNames ? "Rival" : (view.players.find((p) => p.id !== view.me && !p.spectator)?.nickname ?? "Rival"),
+            rounds: outcomes(view, view.me, view.players.find((p) => p.id !== view.me && !p.spectator)?.id ?? null)
+              .filter((o) => o === "me" || o === "them")
+              .map((o) => (o === "me" ? "won" : "lost")),
+            rating: view.players.find((p) => p.id === view.me)?.ratingAfter ?? null,
+          })}
+          options={
+            <div className="flex gap-2">
+              <div className="bg-bg flex flex-1 gap-1 rounded-[14px] p-1" role="radiogroup" aria-label="Card size">
+                {(["story", "square"] as const).map((f) => (
+                  <button
+                    key={f}
+                    type="button"
+                    role="radio"
+                    aria-checked={cardFormat === f}
+                    onClick={() => setCardFormat(f)}
+                    className="flex h-10 flex-1 items-center justify-center rounded-[10px] text-[14px] font-semibold"
+                    style={cardFormat === f ? { background: "var(--surface)" } : { color: "var(--text-muted)" }}
+                  >
+                    {f === "story" ? "Story 9:16" : "Square 1:1"}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={hideNames}
+                onClick={() => setHideNames((h) => !h)}
+                className="bg-bg flex h-12 items-center gap-2 rounded-[14px] px-3 text-[14px] font-semibold"
+                style={hideNames ? { color: "var(--accent)" } : { color: "var(--text-muted)" }}
+              >
+                <Icon name={hideNames ? "eye-slash" : "eye"} size={18} />
+                Hide names
+              </button>
+            </div>
+          }
+        />
+      )}
       {offline && phase !== "match_end" && (
         <div className="fixed inset-x-4 bottom-[max(24px,env(safe-area-inset-bottom))] z-50 mx-auto max-w-[528px]">
           <EdgeCard

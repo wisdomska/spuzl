@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { SHARE_DOMAIN } from "@/lib/share/text";
 import type { CardFormat, CardModel } from "@/lib/share/card-model";
 import { SpuzOG } from "./SpuzOG";
 
@@ -114,7 +115,7 @@ export function ShareCard({ card: c, format, scale: s = 1 }: { card: CardModel; 
             {c.line}
           </div>
           <div style={{ display: "flex", marginTop: 30 * s, fontFamily: "Geist Mono", fontWeight: 600, fontSize: 36 * s, opacity: 0.8 }}>
-            spuzl.gg
+            {SHARE_DOMAIN}
           </div>
         </div>
         <div style={{ position: "relative", display: "flex", justifyContent: "center", width: 435 * s }}>
@@ -209,7 +210,7 @@ export function ShareCard({ card: c, format, scale: s = 1 }: { card: CardModel; 
           opacity: 0.8,
         }}
       >
-        spuzl.gg
+        {SHARE_DOMAIN}
       </div>
     </div>
   );

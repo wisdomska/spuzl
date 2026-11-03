@@ -256,6 +256,35 @@ export function Matchmaking({
   );
 }
 
+/** All-time record against this rival: "You 3 – 2 Tracy", the leader in lime. */
+export function HeadToHeadRow({
+  h2h,
+  them,
+  className = "",
+}: {
+  h2h: { me: number; them: number; draws: number; played: number };
+  them: string;
+  className?: string;
+}) {
+  const lead = h2h.me > h2h.them ? "me" : h2h.them > h2h.me ? "them" : null;
+  return (
+    <div className={`bg-surface flex items-center gap-3 rounded-[16px] px-4 py-3 ${className}`} role="group" aria-label="Head to head">
+      <span className="text-muted text-[13px] font-semibold whitespace-nowrap">Head to head</span>
+      <span className="num flex min-w-0 flex-1 items-baseline justify-center gap-2 text-[18px] font-semibold">
+        <span className={lead === "me" ? "text-accent" : undefined}>You {h2h.me}</span>
+        <span className="text-muted">–</span>
+        <span className="truncate" style={lead === "them" ? { color: "var(--danger)" } : undefined}>
+          {h2h.them} {them}
+        </span>
+      </span>
+      <span className="text-muted text-[13px] font-medium whitespace-nowrap">
+        {h2h.played} {h2h.played === 1 ? "duel" : "duels"}
+        {h2h.draws ? `, ${h2h.draws} drawn` : ""}
+      </span>
+    </div>
+  );
+}
+
 /* ---------------- D2 Versus intro + countdown ---------------- */
 
 export function placeOf(p: Pick<MatchPlayerView, "country" | "city">) {
@@ -268,6 +297,7 @@ export function Versus({
   msToStart,
   round,
   note,
+  h2h,
 }: {
   me: MatchPlayerView;
   them: { nickname: string; color: string; rating: number; country: string | null; city: string | null; bot?: boolean };
@@ -275,6 +305,8 @@ export function Versus({
   round: number;
   /** a line under the round, e.g. the rival is reading a new game's rule */
   note?: string | null;
+  /** your record against this rival before this duel */
+  h2h?: { me: number; them: number; draws: number; played: number } | null;
 }) {
   const reduce = useReduce();
   useEffect(() => {
@@ -332,6 +364,12 @@ export function Versus({
       </div>
       <div className="text-muted absolute inset-x-0 top-[500px] text-center text-[15px] font-semibold">
         Round {round} of 3
+        {round === 1 && h2h && h2h.played > 0 && (
+          <p className="num mt-1 px-6 font-medium">
+            Head to head: you {h2h.me}, {them.nickname} {h2h.them}
+            {h2h.draws ? `, ${h2h.draws} drawn` : ""}
+          </p>
+        )}
         {note && (
           <p className="mt-1 px-6 font-medium" aria-live="polite">
             {note}
@@ -860,6 +898,7 @@ export function MatchEnd({
           <span className="num text-[20px] font-semibold">{forfeit ? (won ? "Forfeit win" : "Forfeit") : score}</span>
         </div>
       </div>
+      {view.h2h && view.h2h.played > 0 && <HeadToHeadRow h2h={view.h2h} them={them.nickname} className="mt-3 w-[calc(100%-32px)]" />}
       {(theyWantRematch || rematchWaiting) && (
         <div
           className="bg-surface-raised absolute inset-x-4 bottom-[106px] flex items-center gap-2.5 rounded-[16px] px-3.5 py-2.5"

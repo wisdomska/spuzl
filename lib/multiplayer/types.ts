@@ -80,6 +80,8 @@ export interface MatchView {
   myState: unknown;
   /** rewards for you once the match is over */
   reward: { xp: number; sparks: number } | null;
+  /** Duels with a person: your all-time record against them (this duel included once it's over); null otherwise */
+  h2h?: { me: number; them: number; draws: number; played: number } | null;
   /** Party mode: "race" (puzzles) or an 18+ party game ("draw", "truths") */
   mode: PartyMode;
   /** the current 18+ party round as you may see it; null in races and outside a round */

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Dialog } from "radix-ui";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Button } from "@/components/ui/Button";
@@ -43,6 +43,8 @@ export interface ShareSheetProps {
   onShared?: (target: ShareTarget) => void;
   /** preview thumbnail size and alt text; defaults to the 9:16 story card */
   preview?: { width: number; height: number; alt?: string };
+  /** extra controls under the preview (the duel card's Story/Square and Hide names switches) */
+  options?: ReactNode;
 }
 
 type Nav = Navigator & { canShare?: (data: ShareData) => boolean };
@@ -112,6 +114,7 @@ export function ShareSheet({
   fileName = "spuzl.png",
   onShared,
   preview = { width: 108, height: 192 },
+  options,
 }: ShareSheetProps) {
   const reduce = useReducedMotion();
   const lowData = useSettings((s) => s.lowData);
@@ -267,6 +270,7 @@ export function ShareSheet({
                     {text}
                   </pre>
                 </div>
+                {options}
                 {canNative && (
                   <Button size="lg" icon="share-fat" className="w-full text-[17px]" onClick={() => void run("native")}>
                     Share

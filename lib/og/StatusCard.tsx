@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { SHARE_DOMAIN } from "@/lib/share/text";
 import { STATUS_CARD_SIZE, type StatusCardModel, type StatusStat } from "@/lib/share/card-model";
 import { Dots, Flame, Wordmark } from "./ShareCard";
 import { SpuzOG } from "./SpuzOG";
@@ -128,7 +129,7 @@ export function StatusCard({ card: c, scale: s = 1 }: { card: StatusCardModel; s
           opacity: 0.8,
         }}
       >
-        spuzl.gg
+        {SHARE_DOMAIN}
       </div>
     </div>
   );

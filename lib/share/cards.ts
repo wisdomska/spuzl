@@ -1,4 +1,6 @@
 import "server-only";
+import { duelShareModel, type DuelShareModel } from "./duel-card";
+import { headToHead } from "@/lib/multiplayer/server/h2h";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { GAME_BY_ID, LAUNCH_IDS, toneOf } from "@/lib/catalog";
 import { dailyNumber } from "@/lib/format";
@@ -148,4 +150,63 @@ export async function matchCard(admin: SupabaseClient, id: string, playerId?: st
     return partyCard({ players: seats.length, place, winner: nick(m.winner_id), games: m.round, code: m.code });
   }
   return null;
+}
+
+/**
+ * Duel card from one player's side (`playerId`, default the winner), SPIL style: banner, both players, score,
+ * rounds, award, rating change and the head-to-head. `anon` hides both names. Finished duels only.
+ */
+export async function duelShare(admin: SupabaseClient, id: string, playerId?: string | null, anon = false): Promise<DuelShareModel | null> {
+  if (!isUuid(id)) return null;
+  const { data: m } = await admin
+    .from("matches")
+    .select("id, kind, game_id, games, status, winner_id, result, set_no, is_bot")
+    .eq("id", id)
+    .maybeSingle();
+  if (!m || m.kind !== "duel" || m.status !== "finished" || m.is_bot) return null;
+  const { data: mp } = await admin
+    .from("match_players")
+    .select("player_id, rounds_won, rating_before, rating_after, spectator, players(nickname, avatar_color)")
+    .eq("match_id", id);
+  const seats = (
+    (mp ?? []) as unknown as {
+      player_id: string;
+      rounds_won: number;
+      rating_before: number | string | null;
+      rating_after: number | string | null;
+      spectator: boolean;
+      players: { nickname: string; avatar_color: string } | null;
+    }[]
+  ).filter((s) => !s.spectator);
+  if (seats.length !== 2) return null;
+  const meId = playerId && isUuid(playerId) && seats.some((s) => s.player_id === playerId) ? playerId : (m.winner_id ?? seats[0].player_id);
+  const me = seats.find((s) => s.player_id === meId)!;
+  const them = seats.find((s) => s.player_id !== meId)!;
+  const { data: rr } = await admin
+    .from("match_rounds")
+    .select("round, player_id, time_ms, won")
+    .eq("match_id", id)
+    .eq("set_no", m.set_no ?? 1)
+    .order("round");
+  const rows = (rr ?? []) as { round: number; player_id: string; time_ms: number | null; won: boolean }[];
+  const nums = [...new Set(rows.map((r) => r.round))].sort((a, b) => a - b);
+  const rounds = nums.map((n) => {
+    const a = rows.find((r) => r.round === n && r.player_id === me.player_id);
+    const b = rows.find((r) => r.round === n && r.player_id === them.player_id);
+    return { n, me: a?.time_ms ?? null, them: b?.time_ms ?? null, mine: a?.won ? true : b?.won ? false : null };
+  });
+  const h = await headToHead(admin, me.player_id, them.player_id);
+  const game = (m.game_id as string | null) ?? (m.games as string[] | null)?.[0] ?? null;
+  return duelShareModel({
+    me: { name: me.players?.nickname ?? "Spuzler", color: me.players?.avatar_color ?? "#B8F23A", rounds: me.rounds_won },
+    them: { name: them.players?.nickname ?? "Spuzler", color: them.players?.avatar_color ?? "#FF8A3D", rounds: them.rounds_won },
+    winner: m.winner_id === me.player_id ? "me" : m.winner_id === them.player_id ? "them" : null,
+    forfeit: m.result === "abandon" || m.result === "left",
+    gameName: game ? (GAME_BY_ID[game]?.name ?? "Mix") : "Mix",
+    rounds,
+    ratingBefore: num(me.rating_before),
+    ratingAfter: num(me.rating_after),
+    anon,
+    h2h: { me: h.me, them: h.them },
+  });
 }

@@ -11,13 +11,15 @@ import type { CardFormat, CardKind } from "./card-model";
 export function cardUrl(
   kind: CardKind,
   id: string,
-  opts: { format?: CardFormat; small?: boolean; player?: string; origin?: string } = {},
+  opts: { format?: CardFormat; small?: boolean; player?: string; anon?: boolean; origin?: string } = {},
 ): string {
   const path = kind === "duel" || kind === "party" ? "match" : kind;
   const sp = new URLSearchParams();
   if (opts.format === "square") sp.set("format", "square");
   if (opts.small) sp.set("size", "small");
-  if (kind === "party" && opts.player) sp.set("p", opts.player);
+  // Party: whose podium place; Duel: whose side the card is told from (each player gets their own card).
+  if ((kind === "party" || kind === "duel") && opts.player) sp.set("p", opts.player);
+  if (kind === "duel" && opts.anon) sp.set("anon", "1");
   const q = sp.toString();
   return `${opts.origin ?? ""}/api/og/${path}/${encodeURIComponent(id)}${q ? `?${q}` : ""}`;
 }

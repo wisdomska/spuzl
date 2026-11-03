@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.14.0 (3 November 2026)
+
+### For players
+
+- **A duel card worth sharing.** Share on a duel result now makes a picture card, SPIL style, from your own side:
+  a tilted banner (VICTORY!, SO CLOSE, DEAD HEAT, WALKOVER!), both players' Spuz face to face in their own
+  colours with a crown for the winner, the score, the three rounds with both times, one award (Clean sweep,
+  Comeback, Clutch, Won by forfeit, Dead heat, Pushed them all the way, Rematch incoming), the rating change, the
+  head-to-head record and a dare ("Think you can beat me?"). Pick Story (9:16, for Instagram and WhatsApp
+  Status) or Square, and Hide names if you'd rather. WhatsApp, X, Instagram, TikTok, Copy and Save as before.
+- **Head-to-head record.** Duels keep score between the two of you across every duel: "Head to head: you 3, Tracy
+  2" before round one, and a "You 3 – 2 Tracy" row on the result.
+- **Share links point at the real site.** Share text and cards said spuzl.gg, which never existed; they now say
+  spuzl.vercel.app.
+
 ## 1.13.4 (3 November 2026)
 
 ### For players

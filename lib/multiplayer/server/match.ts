@@ -1,4 +1,5 @@
 import "server-only";
+import { headToHead } from "./h2h";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ApiError } from "@/lib/api/server";
 import { serverBroadcast } from "@/lib/realtime/server";
@@ -245,7 +246,14 @@ export async function viewOf(admin: SupabaseClient, l: Loaded, me: string, rewar
     won: r.won,
   }));
   const mine = l.players.find((p) => p.player_id === me);
+  // Head-to-head, for duels between two people: shown at the start (versus) and the end, so read only then.
+  const rival = l.players.find((p) => p.player_id !== me && !p.spectator);
+  const h2h =
+    m.kind === "duel" && !m.is_bot && rival && mine && (m.status === "finished" || (m.round === 1 && m.status !== "playing"))
+      ? await headToHead(admin, me, rival.player_id)
+      : null;
   return {
+    h2h,
     id: m.id,
     kind: m.kind,
     status: m.status,
