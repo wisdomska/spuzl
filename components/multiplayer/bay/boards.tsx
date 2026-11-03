@@ -233,8 +233,8 @@ function ChessLive({ state, seat, legal, disabled, lastMove, onMove, announce, c
               className="toy relative flex size-14 items-end justify-center overflow-visible rounded-[16px]"
               style={{ background: SQUARE.light, boxShadow: "0 5px 0 var(--w-board-ink)" }}
             >
-              <span className="relative block size-11">
-                <Piece ch={seat === 1 ? p : p.toUpperCase()} size={44} sprites={sprites} />
+              <span className="relative block size-10">
+                <Piece ch={seat === 1 ? p : p.toUpperCase()} size={40} sprites={sprites} />
               </span>
             </button>
           ))}

@@ -254,6 +254,8 @@ export default function ChessBoard({ puzzle, initialState, hint, disabled, api }
           gridTemplateColumns: `repeat(8, ${cell}px)`,
           gridTemplateRows: `repeat(8, ${cell}px)`,
           boxShadow: "0 8px 0 var(--world-depth), 0 14px 24px rgba(0,0,0,.45)",
+          // Back-rank kings and queens rise about 0.4 of a square above the board; keep room for them past the gap.
+          marginTop: Math.max(0, Math.round(cell * 0.4) - 14),
         }}
       >
         {Array.from({ length: 8 }, (_, vr) => (
@@ -295,7 +297,7 @@ export default function ChessBoard({ puzzle, initialState, hint, disabled, api }
                     keys.setFocus(vi);
                     tapSquare(sq);
                   }}
-                  className="relative flex cursor-pointer items-center justify-center overflow-hidden outline-none focus-visible:z-20"
+                  className="relative flex cursor-pointer items-center justify-center outline-none focus-visible:z-20"
                   style={{ width: cell, height: cell, background: bg, boxShadow: BEVEL, borderRadius: corner }}
                 >
                   {sq === checkK && (
@@ -358,8 +360,8 @@ export default function ChessBoard({ puzzle, initialState, hint, disabled, api }
               className="toy relative flex size-14 items-end justify-center overflow-visible rounded-[16px]"
               style={{ background: SQUARE.light, boxShadow: "0 5px 0 var(--world-depth)" }}
             >
-              <span className="relative block size-11">
-                <Piece ch={p.toUpperCase()} size={44} sprites={sprites} />
+              <span className="relative block size-10">
+                <Piece ch={p.toUpperCase()} size={40} sprites={sprites} />
               </span>
             </button>
           ))}

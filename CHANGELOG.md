@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.10.2 (3 November 2026)
+
+### For players
+
+- **Chess pieces stand in the middle of their squares.** Laid out like the big online boards' 3D sets: the board is
+  seen from higher up, every piece's base sits centred in its square, a pawn fills about three quarters of the
+  square, and kings, queens and bishops rise into the square behind them as on a real board. The original 3D look
+  is back (the 1.10.1 restyle flattened it); only the size and placement changed. The shadow is a soft one straight
+  under the base, so it no longer pulls pieces to one side.
+
+### Under the hood
+
+- `spuzl3d.js` `pieces()` v5: renders at 3x with the original materials and lights, measures each piece's outline
+  and base, and places it on a shared scale in a 1 x 1.4 square sprite (base centre 50 % across, front rim 10 % above
+  the bottom). Board squares no longer clip (`overflow-hidden` removed), the sprite is 140 % of a square tall and
+  bottom-anchored, sprite URLs carry `?v=5`.
+
 ## 1.10.1 (3 November 2026)
 
 ### For players

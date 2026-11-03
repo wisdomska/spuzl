@@ -59,149 +59,125 @@ function snap(C, size, alignBottom) {
   return out.toDataURL('image/png');
 }
 
-/* ---------- Chess pieces (Staunton, lathe-turned, tournament style) ----------
- * Every piece shares one camera and one framing, so sizes stay true to each other and each sprite drops straight
- * into its square: the base centre sits at 50% across and FOOT of the way down, the king's cross just clears the top.
- * Chunky proportions, glossy lacquer and a soft contact shadow straight below, in the spirit of the big online
- * boards' 3D sets. Both knights face left. */
-const SQUAT = 1.3; // widen every piece so it reads at 40 px
-/** Small pieces grow a touch so a pawn still reads at a glance (the big online sets do the same). */
-const GROW = { P: 1.14, N: 1.04, B: 1.04, R: 1.02 };
-const base = (br) => [[0, 0], [br, 0], [br, .03], [br + .015, .05], [br + .01, .075], [br - .025, .095], [br - .03, .12], [br - .055, .135], [br - .1, .17]];
-const arc = (cy, r, a0, a1, n = 14) => Array.from({ length: n + 1 }, (_, i) => { const a = a0 + (a1 - a0) * i / n; return [Math.max(0, r * Math.cos(a)), cy + r * Math.sin(a)]; });
+/* ---------- Chess pieces (Staunton, lathe-turned) ---------- */
+const base = (br) => [[0, 0], [br, 0], [br, .035], [br + .012, .06], [br - .02, .09], [br - .02, .12], [br - .09, .16]];
+const arc = (cy, r, a0, a1, n = 12) => Array.from({ length: n + 1 }, (_, i) => { const a = a0 + (a1 - a0) * i / n; return [Math.max(0, r * Math.cos(a)), cy + r * Math.sin(a)]; });
 const PROFILES = {
-  P: [...base(.36), [.22, .2], [.16, .3], [.13, .42], [.125, .47], [.21, .5], [.22, .525], [.2, .55], [.12, .565], ...arc(.7, .155, -1.1, Math.PI / 2)],
-  R: [...base(.41), [.28, .21], [.245, .32], [.225, .52], [.235, .6], [.3, .63], [.31, .665], [.27, .69], [.275, .72], [.3, .76], [.305, .86], [.29, .87], [.2, .865], [.19, .82], [0, .81]],
-  N: [...base(.41), [.29, .2], [.3, .245], [.27, .27], [0, .275]],
-  B: [...base(.39), [.24, .2], [.17, .32], [.13, .5], [.12, .62], [.22, .655], [.23, .68], [.21, .705], [.12, .72], [.15, .77], [.185, .84], [.19, .9], [.17, .97], [.12, 1.03], [.06, 1.07], [.035, 1.085], ...arc(1.13, .055, -1.2, Math.PI / 2, 8)],
-  Q: [...base(.43), [.26, .2], [.18, .34], [.14, .55], [.13, .74], [.24, .775], [.25, .805], [.22, .83], [.14, .845], [.16, .92], [.21, 1.02], [.26, 1.1], [.265, 1.12], [.24, 1.135], [.17, 1.105], [.13, 1.115], [.11, 1.16], [.06, 1.19], [0, 1.2]],
-  K: [...base(.44), [.27, .2], [.19, .34], [.15, .55], [.14, .79], [.26, .825], [.27, .855], [.24, .88], [.15, .895], [.17, .96], [.23, 1.08], [.245, 1.11], [.22, 1.14], [.14, 1.16], [.11, 1.2], [0, 1.21]]
+  P: [...base(.38), [.19, .22], [.14, .34], [.12, .48], [.20, .52], [.21, .555], [.12, .58], ...arc(.72, .165, -1.15, Math.PI / 2)],
+  R: [...base(.42), [.27, .22], [.23, .36], [.22, .62], [.30, .66], [.30, .70], [.27, .72], [.29, .78], [.295, .84], [.27, .855], [.2, .85], [.19, .80], [0, .79]],
+  N: [...base(.42), [.26, .22], [.28, .26], [0, .27]],
+  B: [...base(.40), [.20, .22], [.14, .40], [.12, .60], [.21, .64], [.21, .68], [.11, .71], [.15, .76], [.18, .84], [.18, .92], [.15, 1.0], [.10, 1.06], [.05, 1.10], [.03, 1.11], ...arc(1.15, .05, -1.17, Math.PI / 2, 6)],
+  Q: [...base(.44), [.22, .22], [.15, .46], [.13, .74], [.23, .78], [.23, .82], [.14, .86], [.16, .95], [.21, 1.05], [.255, 1.13], [.235, 1.145], [.17, 1.10], [.13, 1.11], [.11, 1.16], [.06, 1.20], [0, 1.21]],
+  K: [...base(.45), [.23, .22], [.16, .48], [.14, .80], [.25, .84], [.25, .88], [.15, .92], [.18, 1.0], [.24, 1.12], [.22, 1.16], [.13, 1.19], [.10, 1.22], [0, 1.23]]
 };
-function buildPiece(L, type, mats, white) {
-  const { THREE, RoundedBoxGeometry } = L;
-  const mat = mats.body;
+function buildPiece(L, type, mat, white) {
+  const { THREE } = L;
   const g = new THREE.Group();
-  const sm = new THREE.SplineCurve(PROFILES[type].map(([r, y]) => new THREE.Vector2(r, y))).getPoints(type === 'N' ? 48 : 200);
+  const sm = new THREE.SplineCurve(PROFILES[type].map(([r, y]) => new THREE.Vector2(r, y))).getPoints(type === 'N' ? 40 : 160);
   sm.forEach(p => { p.x = Math.max(0, p.x); });
   sm[0].x = 0; sm[sm.length - 1].x = 0;
-  const lathe = new THREE.LatheGeometry(sm, 128);
+  const lathe = new THREE.LatheGeometry(sm, 96);
   if (type === 'Q') {
-    // Coronet points around the crown rim.
     const pa = lathe.attributes.position;
     for (let i = 0; i < pa.count; i++) {
       const x = pa.getX(i), y = pa.getY(i), z = pa.getZ(i), r = Math.hypot(x, z);
-      if (y > 1.0 && r > .16) { const w = Math.min(1, (y - 1.0) / .1); pa.setY(i, y + .06 * w * Math.max(0, Math.cos(9 * Math.atan2(z, x)))); }
+      if (y > 1.02 && r > .15) { const w = Math.min(1, (y - 1.02) / .1); pa.setY(i, y + .05 * w * Math.cos(8 * Math.atan2(z, x))); }
     }
     lathe.computeVertexNormals();
   }
-  g.add(new THREE.Mesh(lathe, mat));
-  // A felt pad under every piece.
-  const felt = new THREE.Mesh(new THREE.CylinderGeometry(PROFILES[type][1][0] - .01, PROFILES[type][1][0] - .01, .012, 64), mats.felt);
-  felt.position.y = .004; g.add(felt);
-  if (type === 'R') for (let i = 0; i < 6; i++) {
-    const a0 = i * Math.PI * 2 / 6 + .2, a1 = a0 + Math.PI * 2 / 6 * .64;
-    const sh = new THREE.Shape(); sh.absarc(0, 0, .305, a0, a1, false); sh.absarc(0, 0, .2, a1, a0, true);
-    const geo = new THREE.ExtrudeGeometry(sh, { depth: .1, bevelEnabled: true, bevelThickness: .014, bevelSize: .012, bevelSegments: 4, curveSegments: 20 });
+  const body = new THREE.Mesh(lathe, mat); body.castShadow = true;
+  g.add(body);
+  if (type === 'R') for (let i = 0; i < 5; i++) {
+    const a0 = i * Math.PI * 2 / 5, a1 = a0 + Math.PI * 2 / 5 * .62;
+    const sh = new THREE.Shape(); sh.absarc(0, 0, .29, a0, a1, false); sh.absarc(0, 0, .19, a1, a0, true);
+    const geo = new THREE.ExtrudeGeometry(sh, { depth: .11, bevelEnabled: true, bevelThickness: .012, bevelSize: .012, bevelSegments: 3, curveSegments: 16 });
     geo.rotateX(-Math.PI / 2);
-    const m = new THREE.Mesh(geo, mat); m.position.y = .855; g.add(m);
-  }
-  if (type === 'B') {
-    // Mitre slit, cut on the diagonal.
-    const slit = new THREE.Mesh(new THREE.BoxGeometry(.022, .16, .42), mats.groove);
-    slit.position.set(.04, .93, 0); slit.rotation.z = -.55; slit.rotation.y = -.5; g.add(slit);
+    const m = new THREE.Mesh(geo, mat); m.position.y = .84; g.add(m);
   }
   if (type === 'Q') {
-    const top = new THREE.Mesh(new THREE.SphereGeometry(.07, 32, 20), mat); top.position.y = 1.25; g.add(top);
-    const neck = new THREE.Mesh(new THREE.CylinderGeometry(.04, .06, .06, 24), mat); neck.position.y = 1.2; g.add(neck);
+    const top = new THREE.Mesh(new THREE.SphereGeometry(.065, 24, 16), mat); top.position.y = 1.27; g.add(top);
   }
   if (type === 'K') {
-    const v = new THREE.Mesh(new RoundedBoxGeometry(.085, .3, .085, 3, .02), mat); v.position.y = 1.35; g.add(v);
-    const h = new THREE.Mesh(new RoundedBoxGeometry(.23, .085, .085, 3, .02), mat); h.position.y = 1.39; g.add(h);
+    const v = new THREE.Mesh(new THREE.BoxGeometry(.07, .28, .07), mat); v.position.y = 1.36; g.add(v);
+    const h = new THREE.Mesh(new THREE.BoxGeometry(.21, .07, .07), mat); h.position.y = 1.40; g.add(h);
   }
   if (type === 'N') {
-    // Horse head in profile (muzzle on +x), extruded thick with a deep bevel, mane along the back, two ears.
     const s = new THREE.Shape();
-    const P = [[-.26, .27], [-.285, .45], [-.255, .62], [-.195, .78], [-.125, .92], [-.075, 1.05], [-.03, 1.17], [.025, 1.08], [.075, 1.02], [.16, .95],
-      [.25, .865], [.33, .775], [.4, .69], [.415, .635], [.385, .585], [.3, .572], [.235, .6], [.17, .6], [.115, .56], [.1, .48], [.14, .4], [.21, .33], [.25, .29], [.22, .27]];
-    s.moveTo(P[0][0], P[0][1]);
-    s.splineThru(P.slice(1).map(([x, y]) => new THREE.Vector2(x, y)));
-    s.lineTo(P[0][0], P[0][1]);
-    const geo = new THREE.ExtrudeGeometry(s, { depth: .17, bevelEnabled: true, bevelThickness: .06, bevelSize: .04, bevelSegments: 8, curveSegments: 64 });
-    geo.translate(0, 0, -.085);
-    const head = new THREE.Group();
-    head.add(new THREE.Mesh(geo, mat));
-    const mane = new THREE.Mesh(new THREE.CapsuleGeometry(.05, .5, 6, 16), mat);
-    mane.position.set(-.21, .72, 0); mane.rotation.z = -.4; mane.scale.set(1, 1, 1.9); head.add(mane);
-    const eye = new THREE.MeshPhysicalMaterial({ color: white ? 0x2a1d14 : 0x050507, roughness: .15, clearcoat: 1 });
-    [.17, -.17].forEach(z => { const e = new THREE.Mesh(new THREE.SphereGeometry(.03, 16, 12), eye); e.position.set(.16, .87, z * .95); head.add(e); });
-    [.16, -.16].forEach(z => { const n = new THREE.Mesh(new THREE.SphereGeometry(.022, 12, 8), mats.groove); n.position.set(.39, .655, z * .6); head.add(n); });
-    // Muzzle on the left of the picture, turned a little toward the viewer.
-    head.rotation.y = Math.PI - .45;
+    s.moveTo(-.22, .26);
+    s.splineThru([[-.25, .45], [-.22, .66], [-.14, .86], [-.06, .98], [-.01, 1.07], [.03, 1.11], [.06, 1.02], [.14, .96], [.24, .85], [.33, .72], [.36, .64], [.33, .58], [.24, .57], [.14, .60], [.08, .54], [.12, .42], [.22, .30], [.20, .26]].map(([x, y]) => new THREE.Vector2(x, y)));
+    s.lineTo(-.22, .26);
+    const geo = new THREE.ExtrudeGeometry(s, { depth: .2, bevelEnabled: true, bevelThickness: .045, bevelSize: .035, bevelSegments: 5, curveSegments: 32 });
+    geo.translate(0, 0, -.1);
+    const head = new THREE.Mesh(geo, mat);
+    const eyeMat = new THREE.MeshStandardMaterial({ color: white ? 0x3a2d22 : 0x0a090d, roughness: .3 });
+    [.15, -.15].forEach(z => { const e = new THREE.Mesh(new THREE.SphereGeometry(.028, 12, 8), eyeMat); e.position.set(.17, .84, z); head.add(e); });
+    head.rotation.y = white ? -2.6 : -0.52;
     g.add(head);
   }
-  const k = GROW[type] || 1;
-  g.scale.set(SQUAT * k, k, SQUAT * k);
   return g;
 }
-/** Where the base centre lands in every sprite (fraction of the height from the top). */
-export const PIECE_FOOT = .8;
+/**
+ * Sprite layout, after the big online boards' 3D sets: seen from about 40 degrees up, every piece stands in the
+ * middle of its square. Sprites are 1 square wide and TALL squares high and sit on the square's bottom edge; the base
+ * centre is at 50% across and its front rim FOOT of a square above the bottom, a pawn is PAWN of a square tall, and
+ * taller pieces rise into the square behind them, as they do on a real board. One scale for every piece.
+ */
+export const TALL = 1.4;
+const FOOT = .1, PAWN = .74;
 function contactShadow(THREE) {
   const c = document.createElement('canvas'); c.width = c.height = 128;
   const x = c.getContext('2d'); const gr = x.createRadialGradient(64, 64, 0, 64, 64, 64);
-  gr.addColorStop(0, 'rgba(0,0,0,.55)'); gr.addColorStop(.45, 'rgba(0,0,0,.3)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+  gr.addColorStop(0, 'rgba(0,0,0,.55)'); gr.addColorStop(.55, 'rgba(0,0,0,.22)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
   x.fillStyle = gr; x.fillRect(0, 0, 128, 128);
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
-  return t;
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+/** Solid outline of a piece (the soft shadow is left out), plus the middle of its base (the bottom rows). */
+function solidBox(g, n) {
+  const d = g.getImageData(0, 0, n, n).data; let x0 = n, y0 = n, x1 = -1, y1 = -1;
+  const A = (x, y) => d[(y * n + x) * 4 + 3] > 160;
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (A(x, y)) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  let bx0 = n, bx1 = -1; const band = Math.round((y1 - y0) * .06);
+  for (let y = y1 - band; y <= y1; y++) for (let x = x0; x <= x1; x++) if (A(x, y)) { if (x < bx0) bx0 = x; if (x > bx1) bx1 = x; }
+  return { x0, y0, x1, y1, w: x1 - x0 + 1, h: y1 - y0 + 1, baseX: (bx0 + bx1 + 1) / 2 };
 }
 export function pieces(size = 256) {
-  const key = 'pieces-v4:' + size; const hit = cacheGet(key);
+  const key = 'pieces-v5:' + size; const hit = cacheGet(key);
   if (hit) return Promise.resolve(blobMap(JSON.parse(hit)));
   return enqueue(async () => {
-    const C = await ctx(); const { THREE, renderer } = C;
-    renderer.setSize(size, size, false);
-    renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    const W = {
-      body: new THREE.MeshPhysicalMaterial({ color: 0xE2CFAE, roughness: .4, envMapIntensity: .75, clearcoat: .8, clearcoatRoughness: .18 }),
-      groove: new THREE.MeshStandardMaterial({ color: 0x8C7F6E, roughness: .6 }),
-      felt: new THREE.MeshStandardMaterial({ color: 0x2E5A3A, roughness: 1 }),
-    };
-    const B = {
-      body: new THREE.MeshPhysicalMaterial({ color: 0x1B171F, roughness: .34, envMapIntensity: .65, clearcoat: 1, clearcoatRoughness: .1 }),
-      groove: new THREE.MeshStandardMaterial({ color: 0x050407, roughness: .7 }),
-      felt: new THREE.MeshStandardMaterial({ color: 0x2E5A3A, roughness: 1 }),
-    };
+    const C = await ctx(); const { THREE, renderer, canvas } = C;
+    const R = size * 3; // render big, then scale down: sharper edges
+    renderer.setSize(R, R, false);
+    renderer.shadowMap.enabled = false;
+    const matW = new THREE.MeshPhysicalMaterial({ color: 0xF1EEE8, roughness: .58, envMapIntensity: .7, sheen: .3, sheenRoughness: .8, sheenColor: 0xffffff });
+    const matB = new THREE.MeshPhysicalMaterial({ color: 0x2B2931, roughness: .48, envMapIntensity: .8, clearcoat: .25, clearcoatRoughness: .4 });
+    const el = 40 * Math.PI / 180, dist = 5;
+    const cam = new THREE.PerspectiveCamera(26, 1, .1, 50); cam.position.set(0, .65 + dist * Math.sin(el), dist * Math.cos(el)); cam.lookAt(0, .65, 0);
     const shadowTex = contactShadow(THREE);
-    // One camera for every piece: about 24 degrees above the board, looking at the middle of a king.
-    const cam = new THREE.PerspectiveCamera(20.5, 1, .1, 50);
-    const el = 26 * Math.PI / 180, dist = 5.2;
-    cam.position.set(0, .7 + dist * Math.sin(el), dist * Math.cos(el)); cam.lookAt(0, .7, 0);
-    // Shift the view so the base centre lands at PIECE_FOOT of the height.
-    cam.updateMatrixWorld();
-    const v = new THREE.Vector3(0, 0, 0).project(cam);
-    cam.setViewOffset(size, size, 0, ((1 - v.y) / 2 - PIECE_FOOT) * size, size, size); cam.updateProjectionMatrix();
-    const out = {};
+    const raw = {};
     for (const side of ['w', 'b']) for (const t of ['K', 'Q', 'R', 'B', 'N', 'P']) {
-      const scene = new THREE.Scene(); scene.environment = C.env;
-      const sun = new THREE.DirectionalLight(0xfff6ea, 2.4); sun.position.set(-1.4, 6, 2.4); sun.castShadow = true;
-      sun.shadow.mapSize.set(2048, 2048); sun.shadow.radius = 8; sun.shadow.bias = -.0015; sun.shadow.normalBias = .01;
-      Object.assign(sun.shadow.camera, { left: -1, right: 1, top: 1.6, bottom: -.2, near: .5, far: 12 }); sun.shadow.camera.updateProjectionMatrix();
-      scene.add(sun);
-      const fill = new THREE.DirectionalLight(0xdfe6ff, .55); fill.position.set(3, 2, 2.5); scene.add(fill);
-      const rim = new THREE.DirectionalLight(0xffffff, side === 'b' ? 1.8 : 1.0); rim.position.set(1.5, 3, -3.5); scene.add(rim);
-      scene.add(new THREE.HemisphereLight(0xffffff, 0x5a5066, side === 'b' ? .6 : .25));
-      const ground = new THREE.Mesh(new THREE.PlaneGeometry(4, 4), new THREE.ShadowMaterial({ opacity: .16 }));
-      ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
-      const r = PROFILES[t][1][0] * SQUAT * (GROW[t] || 1) * 1.45;
+      const scene = new THREE.Scene(); lights(THREE, scene, C.env);
+      const sun = new THREE.DirectionalLight(0xffffff, .9); sun.position.set(-1.5, 4, 2); scene.add(sun);
+      scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8494, .55));
+      const r = PROFILES[t][1][0] * 1.5;
       const blob = new THREE.Mesh(new THREE.PlaneGeometry(r * 2, r * 2), new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false }));
       blob.rotation.x = -Math.PI / 2; blob.position.y = .001; scene.add(blob);
-      const pc = buildPiece(C, t, side === 'w' ? W : B, side === 'w');
-      pc.traverse(o => { if (o.isMesh) o.castShadow = true; });
-      pc.rotation.y = t === 'N' ? 0 : .35;
+      const pc = buildPiece(C, t, side === 'w' ? matW : matB, side === 'w'); pc.rotation.y = t === 'N' ? 0 : .3;
       scene.add(pc);
       renderer.setClearColor(0x000000, 0); renderer.render(scene, cam);
-      out[side + t] = snap(C, size, false);
+      const c = document.createElement('canvas'); c.width = c.height = R;
+      const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(canvas, 0, 0);
+      raw[side + t] = { c, box: solidBox(g, R) };
     }
-    cam.clearViewOffset();
+    const s = PAWN * size / raw.wP.box.h;
+    const W = size, H = Math.round(TALL * size);
+    const out = {};
+    for (const [k, { c, box }] of Object.entries(raw)) {
+      const o = document.createElement('canvas'); o.width = W; o.height = H;
+      const g = o.getContext('2d'); g.imageSmoothingQuality = 'high';
+      g.setTransform(s, 0, 0, s, W / 2 - box.baseX * s, H - FOOT * size - (box.y1 + 1) * s);
+      g.drawImage(c, 0, 0);
+      out[k] = o.toDataURL('image/png');
+    }
     cacheSet(key, JSON.stringify(out));
     return blobMap(out);
   });
