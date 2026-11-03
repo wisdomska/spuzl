@@ -7,6 +7,7 @@ import { createRng } from "@/lib/rng";
 import { TIMING } from "../constants";
 import {
   LIVE_CLOCK_MS,
+  clockMsFor,
   asyncDeadline,
   canNudge,
   flagFallen,
@@ -48,6 +49,8 @@ interface BayRow {
   ply: number;
   seed: string;
   clock_ms: number[] | null;
+  /** live: the time control each player started with (null on matches from before time controls: 5 min) */
+  clock_base_ms: number | null;
   turn_started_at: string | null;
   draw_offer: number | null;
   takeback_offer: number | null;
@@ -113,6 +116,7 @@ export async function bayView(admin: SupabaseClient, b: BayRow, me: string): Pro
     mySeat: seat >= 0 ? seat : null,
     inviteCode: seat >= 0 ? b.invite_code : null,
     clockMs: b.clock_ms,
+    clockBaseMs: b.mode === "live" ? (b.clock_base_ms ?? LIVE_CLOCK_MS) : null,
     turnStartedAt: ms(b.turn_started_at),
     moveDeadline: ms(b.move_deadline),
     nudgedAt: ms(b.nudged_at),
@@ -138,7 +142,7 @@ export async function getBay(admin: SupabaseClient, id: string, me: string) {
 export async function createBay(
   admin: SupabaseClient,
   me: string,
-  input: { game: string; mode: "live" | "async"; seats?: number; rated?: boolean; bot?: boolean },
+  input: { game: string; mode: "live" | "async"; seats?: number; rated?: boolean; bot?: boolean; minutes?: number },
 ) {
   if (!isBayGame(input.game)) throw new ApiError(400, "not_board_game");
   const rules = await loadRules(input.game);
@@ -147,6 +151,7 @@ export async function createBay(
   const seed = crypto.randomUUID();
   const state = initialState(rules, seats, seed);
   const bot = !!input.bot;
+  const clock = input.mode === "live" ? clockMsFor(input.game, input.minutes) : null;
   const players = bot ? [me, ...Array.from({ length: seats - 1 }, () => BOT_PLAYER)] : [me];
   const now = Date.now();
   for (let i = 0; i < 12; i++) {
@@ -166,7 +171,8 @@ export async function createBay(
         rated: !bot && !!input.rated,
         bot,
         created_by: me,
-        clock_ms: input.mode === "live" ? Array.from({ length: seats }, () => LIVE_CLOCK_MS) : null,
+        clock_ms: clock ? Array.from({ length: seats }, () => clock) : null,
+        clock_base_ms: clock,
         turn_started_at: bot ? iso(now) : null,
         move_deadline: bot && input.mode === "async" ? asyncDeadline(now) : null,
       })
@@ -449,7 +455,8 @@ async function rematchBay(admin: SupabaseClient, me: string, b: BayRow) {
       rated: b.rated,
       bot: b.bot,
       created_by: me,
-      clock_ms: b.mode === "live" ? Array.from({ length: b.seats }, () => LIVE_CLOCK_MS) : null,
+      clock_ms: b.mode === "live" ? Array.from({ length: b.seats }, () => b.clock_base_ms ?? LIVE_CLOCK_MS) : null,
+      clock_base_ms: b.mode === "live" ? (b.clock_base_ms ?? LIVE_CLOCK_MS) : null,
       turn_started_at: iso(now),
       move_deadline: b.mode === "async" ? asyncDeadline(now) : null,
     })

@@ -1,5 +1,5 @@
 /**
- * Board Bay "Play live" matchmaking. Two players waiting for the same game are paired into a live (5 min)
+ * Board Bay "Play live" matchmaking. Two players waiting for the same game are paired into a live (timed)
  * Board Bay match. When both already have a rating for that game, the closest rating wins, inside a window
  * that widens the longer either of them waits; otherwise it is first come, first served. Blocked players are
  * never paired, and an entry whose player stopped polling (left, closed the tab) is skipped.

@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.12.0 (3 November 2026)
+
+### For players
+
+- **Pick your time in live board games.** Play live and live friend games let you choose how long each player gets:
+  Chess and Draughts 3, 5, 10, 15 or 30 minutes; Oware 3 to 15; Four Up 3, 5 or 10; Ludo 5, 10 or 15. Play live
+  asks first (your last choice is remembered per game) and only pairs you with someone who picked the same time.
+  A rematch keeps the time, and the invite page says it ("Live, 10 minutes each"). 24 h per move games are
+  unchanged. Ratings stay one per game whatever the time.
+
+### Under the hood
+
+- `CLOCK_MINUTES` / `clockMinutes()` in `lib/multiplayer/bay`; `POST /api/v1/bay` and `/api/v1/bay/queue` take
+  `minutes` (anything a game does not offer falls back to its default). Migration `20261123000001` (applied to
+  preview and production before release) and pgTAP `111_bay_time_controls`.
+
 ## 1.11.3 (3 November 2026)
 
 ### For players

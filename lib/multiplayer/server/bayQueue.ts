@@ -4,12 +4,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { ApiError } from "@/lib/api/server";
 import { serverBroadcast } from "@/lib/realtime/server";
 import { bayLive } from "@/lib/copy/bay-live";
-import { LIVE_CLOCK_MS, initialState, isBayGame, loadRules, type BayGame } from "../bay";
+import { clockMinutes, initialState, isBayGame, loadRules, type BayGame } from "../bay";
 import { BAY_QUEUE, isLive, pickBayOpponent, searchTimedOut, seatOrder, type BayQueueEntry } from "../bayMatchmaking";
 import { readRating } from "./rewards";
 
 /**
- * Board Bay "Play live": a server-side queue per game (table board_queue, one entry per player).
+ * Board Bay "Play live": a server-side queue per game and time control (table board_queue, one entry per player);
+ * only players who picked the same minutes are paired.
  * Every join and poll tries to pair the caller; the pair is claimed atomically (svc_bay_mm_claim, which also
  * refuses blocked pairs), then both players are told on their own realtime topic and on their next poll.
  */
@@ -19,6 +20,7 @@ const iso = (n: number) => new Date(n).toISOString();
 interface QueueRow {
   player_id: string;
   game_id: BayGame;
+  clock_ms: number;
   rating: number | string;
   has_rating: boolean;
   enqueued_at: string;
@@ -37,7 +39,7 @@ const toEntry = (r: QueueRow): BayQueueEntry => ({
 
 export type BayQueueStatus =
   | { status: "idle" }
-  | { status: "searching"; game: BayGame; waitedMs: number; searching: number; timeoutMs: number }
+  | { status: "searching"; game: BayGame; minutes: number; waitedMs: number; searching: number; timeoutMs: number }
   | { status: "matched"; game: BayGame; matchId: string }
   | { status: "timeout"; game: BayGame };
 
@@ -46,9 +48,10 @@ export type BayQueueStatus =
  * A player has one search at a time: this replaces any Board Bay or Duel search they had. Rejoining the same
  * game within the reconnect window keeps their place in the line.
  */
-export async function joinBayQueue(admin: SupabaseClient, player: { id: string; age_band: string }, game: string) {
+export async function joinBayQueue(admin: SupabaseClient, player: { id: string; age_band: string }, game: string, minutes?: number) {
   if (player.age_band === "13-15") throw new ApiError(403, "age_restricted", bayLive.ageRestricted);
   if (!isBayGame(game)) throw new ApiError(400, "not_board_game");
+  const clock = clockMinutes(game, minutes) * 60_000;
   // One queue entry per player across modes: joining here ends a Duel Quick Match search.
   await admin.from("matchmaking_queue").delete().eq("player_id", player.id).is("match_id", null);
   const now = Date.now();
@@ -57,10 +60,11 @@ export async function joinBayQueue(admin: SupabaseClient, player: { id: string; 
     readRating(admin, player.id, `board:${game}`),
   ]);
   const prev = existing as QueueRow | null;
-  const resume = !!prev && !prev.match_id && prev.game_id === game && isLive(toEntry(prev), now);
+  const resume = !!prev && !prev.match_id && prev.game_id === game && prev.clock_ms === clock && isLive(toEntry(prev), now);
   const { error } = await admin.from("board_queue").upsert({
     player_id: player.id,
     game_id: game,
+    clock_ms: clock,
     rating: rating.rating.toFixed(2),
     has_rating: rating.games > 0,
     enqueued_at: resume ? prev!.enqueued_at : iso(now),
@@ -101,6 +105,7 @@ export async function pollBayQueue(admin: SupabaseClient, playerId: string): Pro
       .from("board_queue")
       .select("*")
       .eq("game_id", mine.game_id)
+      .eq("clock_ms", mine.clock_ms)
       .is("match_id", null)
       .neq("player_id", playerId)
       .gte("seen_at", iso(now - BAY_QUEUE.staleMs))
@@ -113,13 +118,14 @@ export async function pollBayQueue(admin: SupabaseClient, playerId: string): Pro
   const blocks = (blockRows ?? []).map((b) => [b.player_id as string, b.blocked_id as string] as const);
   const opp = pickBayOpponent(me, others, now, blocks);
   if (opp) {
-    const matchId = await createMatched(admin, [me.playerId, opp.playerId], mine.game_id);
+    const matchId = await createMatched(admin, [me.playerId, opp.playerId], mine.game_id, mine.clock_ms);
     if (matchId) return { status: "matched", game: mine.game_id, matchId };
   }
   const visible = others.filter((o) => !blocks.some(([x, y]) => x === o.playerId || y === o.playerId));
   return {
     status: "searching",
     game: mine.game_id,
+    minutes: Math.round(mine.clock_ms / 60_000),
     waitedMs: now - me.enqueuedAt,
     searching: visible.length,
     timeoutMs: BAY_QUEUE.timeoutMs,
@@ -135,7 +141,7 @@ export async function cancelBayQueue(admin: SupabaseClient, playerId: string) {
  * Creates the live match for a pair and claims both queue entries in one step. Returns null when either
  * player was taken by someone else first (or a block appeared): the caller just keeps searching.
  */
-async function createMatched(admin: SupabaseClient, pair: [string, string], game: BayGame): Promise<string | null> {
+async function createMatched(admin: SupabaseClient, pair: [string, string], game: BayGame, clock: number): Promise<string | null> {
   const rules = await loadRules(game);
   const seed = crypto.randomUUID();
   const state = initialState(rules, 2, seed);
@@ -156,13 +162,14 @@ async function createMatched(admin: SupabaseClient, pair: [string, string], game
       rated: true,
       bot: false,
       created_by: pair[0],
-      clock_ms: [LIVE_CLOCK_MS, LIVE_CLOCK_MS],
+      clock_ms: [clock, clock],
+      clock_base_ms: clock,
     })
     .select("id")
     .single();
   if (error) throw error;
   const id = row.id as string;
-  const { data: ok, error: e2 } = await admin.rpc("svc_bay_mm_claim", { p_players: pair, p_game: game, p_match: id });
+  const { data: ok, error: e2 } = await admin.rpc("svc_bay_mm_claim_timed", { p_players: pair, p_game: game, p_clock: clock, p_match: id });
   if (e2 || !ok) {
     await admin.from("board_matches").delete().eq("id", id);
     if (e2) throw e2;

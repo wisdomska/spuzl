@@ -14,7 +14,7 @@ export const inviteHref = (game: string) => `/bay?new=${game}`;
 /**
  * Entries under a board game's card for games Board Bay plays (World view): find someone to play live, or
  * invite a friend. Siblings of the card link (never nested in it), 44 px tall. Relaxed mode hides timers, so
- * it hides Play live (5 minute clocks); a friend game can still be 24 h per move.
+ * it hides Play live (timed); a friend game can still be 24 h per move.
  */
 export function LiveEntries({ meta }: { meta: GameMeta }) {
   const relaxed = useSettings((s) => s.relaxed);

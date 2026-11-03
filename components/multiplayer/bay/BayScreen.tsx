@@ -20,6 +20,7 @@ import { BAY_GAMES, isBayGame, loadRules, type AnyRules, type BayGame, type BayR
 import { bayLive } from "@/lib/copy/bay-live";
 import { useSettings } from "@/lib/settings/store";
 import { BaySearch } from "./BaySearch";
+import { TimePicker, useMinutes } from "./TimePicker";
 import type { BayView } from "@/lib/multiplayer/types";
 import { ShareCode } from "../party";
 import { Avatar, Cta, EmoteBar, EmoteBubble, LoadingScreen, MpToast, NeedProfile, Screen, TopButton, useToast } from "../ui";
@@ -34,6 +35,7 @@ export function BayInbox() {
   const liveParam = sp.get("live");
   const newParam = sp.get("new");
   const liveGame = liveParam && isBayGame(liveParam) ? liveParam : null;
+  const liveMinutes = Number(sp.get("t")) || null;
   const newGame = newParam && isBayGame(newParam) ? newParam : null;
   const { toast, show } = useToast();
   const [sheet, setSheet] = useState(!!newGame);
@@ -45,7 +47,7 @@ export function BayInbox() {
   });
   if (gate === "loading") return <LoadingScreen />;
   if (gate === "no_profile") return <NeedProfile />;
-  if (liveGame) return <BaySearch key={liveGame} game={liveGame} />;
+  if (liveGame) return <BaySearch key={`${liveGame}-${liveMinutes}`} game={liveGame} minutes={liveMinutes} />;
   const action = async (id: string, a: "nudge" | "rematch") => {
     try {
       const v = await api<BayView>(`/api/v1/bay/${id}/action`, { json: { action: a } });
@@ -80,7 +82,7 @@ export function BayInbox() {
           initialGame={newGame ?? "chess"}
           onClose={() => setSheet(false)}
           onCreated={(id) => router.push(`/bay/${id}`)}
-          onLive={(g) => router.push(`/bay?live=${g}`)}
+          onLive={(g, m) => router.push(m ? `/bay?live=${g}&t=${m}` : `/bay?live=${g}`)}
         />
       )}
     </Screen>
@@ -96,16 +98,17 @@ function NewBaySheet({
   initialGame: BayGame;
   onClose: () => void;
   onCreated: (id: string) => void;
-  onLive: (game: BayGame) => void;
+  onLive: (game: BayGame, minutes: number | null) => void;
 }) {
   const relaxed = useSettings((s) => s.relaxed);
   const [game, setGame] = useState<BayGame>(initialGame);
   const [mode, setMode] = useState<"live" | "async">("async");
+  const [minutes, setMinutes] = useMinutes(game);
   const [busy, setBusy] = useState(false);
   const create = async (bot: boolean) => {
     setBusy(true);
     try {
-      const v = await api<BayView>("/api/v1/bay", { json: { game, mode, bot } });
+      const v = await api<BayView>("/api/v1/bay", { json: { game, mode, bot, ...(mode === "live" ? { minutes } : {}) } });
       onCreated(v.id);
     } catch {
       setBusy(false);
@@ -152,15 +155,16 @@ function NewBaySheet({
               className="flex h-11 flex-1 items-center justify-center rounded-[12px] text-[15px] font-semibold"
               style={mode === m ? { background: "var(--surface-raised)" } : { color: "var(--text-muted)" }}
             >
-              {m === "async" ? "24 h per move" : "Live, 5 min clocks"}
+              {m === "async" ? "24 h per move" : "Live, timed"}
             </button>
           ))}
         </div>
+        {mode === "live" && <TimePicker game={game} value={minutes} onChange={setMinutes} />}
         <Cta onClick={() => create(false)} disabled={busy} icon="user-plus">
           Invite a friend
         </Cta>
         {!relaxed && (
-          <Cta tone="raised" onClick={() => onLive(game)} disabled={busy} icon="lightning">
+          <Cta tone="raised" onClick={() => onLive(game, mode === "live" ? minutes : null)} disabled={busy} icon="lightning">
             {bayLive.playLive}
           </Cta>
         )}
@@ -299,7 +303,11 @@ export function BayMatch({ id }: { id: string }) {
           <h1 className="font-display text-[26px] font-black">
             {v.players[0]?.nickname} wants a game of {meta?.name}
           </h1>
-          <p className="text-muted text-[16px]">{v.mode === "live" ? "Live, 5 minutes each." : "24 h per move. Nudge after 12."}</p>
+          <p className="text-muted text-[16px]">
+            {v.mode === "live"
+              ? `Live, ${Math.round((v.clockBaseMs ?? 300_000) / 60_000)} minutes each.`
+              : "24 h per move. Nudge after 12."}
+          </p>
           <Cta
             className="mt-auto w-full"
             disabled={!join || v.status !== "waiting"}

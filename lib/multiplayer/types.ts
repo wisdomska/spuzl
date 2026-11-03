@@ -149,6 +149,8 @@ export interface BayView {
   mySeat: number | null;
   inviteCode: string | null;
   clockMs: number[] | null;
+  /** live: each player's starting time (the time control); null for async */
+  clockBaseMs: number | null;
   turnStartedAt: number | null;
   moveDeadline: number | null;
   nudgedAt: number | null;

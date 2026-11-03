@@ -12,7 +12,8 @@ import { GAME_BY_ID } from "@/lib/catalog";
 import { formatClock } from "@/lib/format";
 import { bayLive as T } from "@/lib/copy/bay-live";
 import { BAY_QUEUE } from "@/lib/multiplayer/bayMatchmaking";
-import type { BayGame } from "@/lib/multiplayer/bay";
+import { CLOCK_MINUTES, type BayGame } from "@/lib/multiplayer/bay";
+import { TimePicker, useMinutes } from "./TimePicker";
 import type { BayView } from "@/lib/multiplayer/types";
 import { Cta, MpToast, Screen, TopButton, useToast } from "../ui";
 
@@ -22,19 +23,19 @@ type QueueReply =
   | { status: "matched"; matchId: string }
   | { status: "timeout" };
 
-type Phase = { kind: "searching" } | { kind: "matched" } | { kind: "timeout" } | { kind: "refused"; message: string };
+type Phase = { kind: "pick" } | { kind: "searching" } | { kind: "matched" } | { kind: "timeout" } | { kind: "refused"; message: string };
 
 const QUEUE = "/api/v1/bay/queue";
 /** Leaving the screen ends the search; keepalive lets the request finish while the page goes away. */
 const leaveQueue = () => void api(QUEUE, { method: "DELETE", keepalive: true }).catch(() => {});
 
 /**
- * /bay?live=<game>: Play live. Joins the server's queue for one board game (live, 5 min clocks), polls once a
- * second and also listens on the player's own realtime topic, then opens the match on both devices at once.
+ * /bay?live=<game>[&t=<minutes>]: Play live. The player picks a time control (skipped when `t` already names one
+ * the game offers), then this joins the server's queue for that game and time, polls once a second and also listens on the player's own realtime topic, then opens the match on both devices at once.
  * After a minute with nobody found it stops and offers a friend invite or the bot. Cancel, Back and leaving the
  * page end the search; a reload rejoins and keeps the place in line.
  */
-export function BaySearch({ game }: { game: BayGame }) {
+export function BaySearch({ game, minutes: asked }: { game: BayGame; minutes?: number | null }) {
   const router = useRouter();
   // Back where the player came from (a game card), or the Board Bay inbox on a fresh tab.
   const back = useBackOr("/bay");
@@ -42,7 +43,10 @@ export function BaySearch({ game }: { game: BayGame }) {
   const reduce = useReduce();
   const meta = GAME_BY_ID[game];
   const { toast, show } = useToast();
-  const [phase, setPhase] = useState<Phase>({ kind: "searching" });
+  const preset = asked != null && CLOCK_MINUTES[game].includes(asked);
+  const [minutes, setMinutes] = useMinutes(game);
+  const chosen = preset ? asked! : minutes;
+  const [phase, setPhase] = useState<Phase>(preset ? { kind: "searching" } : { kind: "pick" });
   const [waited, setWaited] = useState(0);
   const [others, setOthers] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -71,18 +75,20 @@ export function BaySearch({ game }: { game: BayGame }) {
         setOthers(r.searching);
       } else if (r.status === "idle") {
         // The entry went missing (a late cancel from an earlier visit, another tab): rejoin, keeping the screen.
-        void api<QueueReply>(QUEUE, { json: { game } }).catch(() => {});
+        void api<QueueReply>(QUEUE, { json: { game, minutes: chosen } }).catch(() => {});
       }
     },
-    [open, game],
+    [open, game, chosen],
   );
 
   // Join, then poll. A new attempt ("Search again") rejoins.
+  const picking = phase.kind === "pick";
   useEffect(() => {
+    if (picking) return;
     done.current = false;
     let stop = false;
     let since = Date.now();
-    void api<QueueReply>(QUEUE, { json: { game } })
+    void api<QueueReply>(QUEUE, { json: { game, minutes: chosen } })
       .then((r) => {
         if (stop) return;
         if (r.status === "searching") since = Date.now() - r.waitedMs;
@@ -123,7 +129,8 @@ export function BaySearch({ game }: { game: BayGame }) {
       window.removeEventListener("pagehide", onHide);
       if (!done.current) leaveQueue();
     };
-  }, [game, attempt, handle]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- a new search only on a new attempt, not while it runs
+  }, [game, attempt, picking]);
 
   // Real time: the server tells both players on their own topic the moment they are paired.
   const { channel } = useChannel(me.data?.id ? `user:${me.data.id}` : null);
@@ -143,7 +150,7 @@ export function BaySearch({ game }: { game: BayGame }) {
   const invite = async () => {
     setBusy(true);
     try {
-      const v = await api<BayView>("/api/v1/bay", { json: { game, mode: "live" } });
+      const v = await api<BayView>("/api/v1/bay", { json: { game, mode: "live", minutes: chosen } });
       router.replace(`/bay/${v.id}`);
     } catch {
       setBusy(false);
@@ -161,10 +168,26 @@ export function BaySearch({ game }: { game: BayGame }) {
       <div className="flex flex-1 flex-col items-center px-4 pt-[max(64px,env(safe-area-inset-top))] pb-[max(28px,env(safe-area-inset-bottom))]">
         <div className="bg-surface-raised flex items-center gap-2 rounded-full px-3.5 py-2 text-[14px] font-semibold">
           <Icon name="lightning" size={16} style={{ color: "var(--world)" }} />
-          {T.chip}
+          {picking ? T.chipPick : T.chip(chosen)}
         </div>
 
-        {searching ? (
+        {picking ? (
+          <>
+            <div className="mt-8">
+              <GameIcon3D meta={meta} size={96} />
+            </div>
+            <h1 className="font-display mt-5 text-center text-[26px] font-black">{T.pickTitle(meta.name)}</h1>
+            <p className="text-muted mt-2 max-w-[358px] text-center text-[15px]">{T.pickHint}</p>
+            <div className="mt-6 w-full max-w-[528px]">
+              <TimePicker game={game} value={minutes} onChange={setMinutes} />
+            </div>
+            <div className="mt-auto w-full max-w-[528px] pt-6">
+              <Cta icon="lightning" onClick={() => setPhase({ kind: "searching" })} className="w-full">
+                {T.findOpponent(minutes)}
+              </Cta>
+            </div>
+          </>
+        ) : searching ? (
           <>
             <div className="relative mt-8 flex size-[220px] max-w-full items-center justify-center" aria-hidden>
               <div className="absolute inset-0 rounded-full shadow-[inset_0_0_0_2px_var(--line)]" />
@@ -175,7 +198,7 @@ export function BaySearch({ game }: { game: BayGame }) {
             <h1 className="font-display mt-6 text-center text-[26px] font-black" aria-live="polite">
               {phase.kind === "matched" ? T.found : T.title}
             </h1>
-            <p className="text-muted mt-2 text-center text-[16px] font-medium">{T.sub(meta.name)}</p>
+            <p className="text-muted mt-2 text-center text-[16px] font-medium">{T.sub(meta.name, chosen)}</p>
             <div className="mt-5 flex flex-wrap justify-center gap-2.5">
               <div className="bg-surface flex flex-col items-center gap-0.5 rounded-[14px] px-4 py-2.5">
                 <span className="num text-[22px] font-semibold">{formatClock(waited).replace(/^0/, "")}</span>

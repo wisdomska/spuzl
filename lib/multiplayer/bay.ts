@@ -20,8 +20,27 @@ export const RETIRED_BAY_GAMES = ["flip"] as const;
 /** Any game a stored Board Bay match can hold: the current list plus the retired ones. */
 export type BayRulesGame = BayGame | (typeof RETIRED_BAY_GAMES)[number];
 
-/** Live clocks (B3 shows 5 minute games); async has none. */
+/** Default live clock per player; async has none. */
 export const LIVE_CLOCK_MS = 5 * 60_000;
+
+/**
+ * Live time controls a player can pick, in minutes per player (a short list on purpose). Chess and draughts get the
+ * full range; quick games (Four Up) stop at 10, and Ludo, with up to four players taking turns, starts at 5.
+ */
+export const CLOCK_MINUTES: Record<BayGame, readonly number[]> = {
+  chess: [3, 5, 10, 15, 30],
+  draughts: [3, 5, 10, 15, 30],
+  oware: [3, 5, 10, 15],
+  fourup: [3, 5, 10],
+  ludo: [5, 10, 15],
+};
+export const DEFAULT_MINUTES: Record<BayGame, number> = { chess: 5, draughts: 5, oware: 5, fourup: 5, ludo: 10 };
+
+/** The minutes to use: the asked-for value when the game offers it, else the game's default. */
+export function clockMinutes(game: BayGame, minutes?: number | null): number {
+  return minutes != null && CLOCK_MINUTES[game].includes(minutes) ? minutes : DEFAULT_MINUTES[game];
+}
+export const clockMsFor = (game: BayGame, minutes?: number | null) => clockMinutes(game, minutes) * 60_000;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type AnyRules = BoardGameRules<any, any>;

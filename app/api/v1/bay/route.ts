@@ -9,6 +9,8 @@ const Create = z.object({
   seats: z.number().int().min(2).max(4).optional(),
   rated: z.boolean().optional(),
   bot: z.boolean().optional(),
+  /** live time control, minutes per player; values a game does not offer fall back to its default */
+  minutes: z.number().int().min(1).max(60).optional(),
 });
 
 /** GET /api/v1/bay: the "Your move" inbox. */

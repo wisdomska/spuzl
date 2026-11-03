@@ -224,3 +224,9 @@ quests in the database.
 | Migration                                 | What it does                                                                                        | Rollback    |
 | ----------------------------------------- | --------------------------------------------------------------------------------------------------- | ----------- |
 | `20261122000001_last_active_backfill.sql` | Data only: fills `players.last_seen_at` from the latest game or sign-in where it was empty or older | None needed |
+
+## 1.12.0
+
+| Migration                              | What it does                                                                                                                                                                                                 | Rollback           |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------ |
+| `20261123000001_bay_time_controls.sql` | Board Bay live time controls: `board_matches.clock_base_ms`, `board_queue.clock_ms` (default 5 min) with an index, and `svc_bay_mm_claim_timed`, which only pairs players waiting for the same game and time | In the file header |
