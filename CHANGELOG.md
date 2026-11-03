@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.11.1 (3 November 2026)
+
+### For players
+
+- **Puzzles are blue, Arcade is red.** Every Puzzles game (tiles, menus, game screens, share cards) is now blue and
+  every Arcade game red, next to green Words & Quiz and brown Board Games. The 3D game tiles are re-rendered and the
+  Full Spuzl share strip reads 🟦🟦🟦🟦🟦🟩🟩🟩🟥🟥🟥. Colour-blind modes still swap these hues (tritan shows Puzzles
+  violet, protan shows Arcade amber).
+
+### Under the hood
+
+- `lib/catalog` maps Puzzles to `--w-reflex` and Arcade to `--w-rage`. The `--w-*` tokens keep their values because
+  games (Pair Up, Merge, Quads, party pens) use them as palette colours. Share card and prerender hex maps follow.
+
 ## 1.11.0 (3 November 2026)
 
 ### For players

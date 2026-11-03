@@ -43,13 +43,13 @@ const LIME = "#B8F23A";
 
 /** World fills (tokens/spuzl-tokens.css). OG images cannot read CSS variables, so the hex lives here. */
 export const WORLD_HEX: Record<WorldId, string> = {
-  logic: "#8B7CFF",
+  logic: "#4D8BFF",
   line: "#2FD3E0",
   shape: "#FF8A3D",
   number: "#FFD23F",
   word: "#3DDC84",
   clue: "#FF6B6B",
-  reflex: "#4D8BFF",
+  reflex: "#FF3B3B",
   rage: "#FF3B3B",
   board: "#B07443",
 };
@@ -67,11 +67,10 @@ export function mix(a: string, b: string, t: number): string {
 }
 
 /**
- * Daily card background: ink tinted with the world colour. The design's Crownfall card (#1B1835 with
- * #2E2858 dots) is Logic Lab purple at 10% and 25%; every world uses the same ratios.
+ * Daily card background: ink tinted with the world colour, 10% for the card and 25% for its dots (the ratios of
+ * the design's Crownfall card, #1B1835 and #2E2858 in the old Logic Lab purple).
  */
 export function worldCardColours(world: WorldId): { bg: string; dot: string } {
-  if (world === "logic") return { bg: "#1B1835", dot: "#2E2858" }; // exact design values
   const w = WORLD_HEX[world];
   return { bg: mix(INK, w, 0.1), dot: mix(INK, w, 0.25) };
 }

@@ -143,10 +143,17 @@ describe("catalog: four groups", () => {
     for (const w of WORLDS) {
       expect(w.tagline, w.id).toMatch(/^[A-Z][^.]+$/);
       expect(ICONS[w.icon], w.icon).toBeDefined();
-      expect(w.color).toBe(`var(--w-${w.id})`);
-      expect(w.ink).toBe(`var(--w-${w.id}-ink)`);
+      expect(w.color).toMatch(/^var\(--w-[a-z]+\)$/);
+      expect(w.ink).toBe(w.color.replace(")", "-ink)"));
     }
     expect(new Set(WORLDS.map((w) => w.icon)).size).toBe(WORLDS.length);
+    // Every group has its own colour: Puzzles blue, Words green, Arcade red, Board Games brown.
+    expect(WORLDS.map((w) => [w.id, w.color])).toEqual([
+      ["logic", "var(--w-reflex)"],
+      ["word", "var(--w-word)"],
+      ["reflex", "var(--w-rage)"],
+      ["board", "var(--w-board)"],
+    ]);
   });
 
   it("sends the folded worlds to the group that took their games", () => {

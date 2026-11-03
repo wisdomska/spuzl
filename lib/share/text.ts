@@ -21,13 +21,13 @@ export const CELL = { clean: "🟩", hint: "🟨", slip: "🟥", none: "⬛" } a
 
 /** One emoji per colour family (a game's tone, lib/catalog toneOf) for the Full Spuzl strip (design: 🟪🟪🟪🟦🟦🟧🟨🟩🟩🟩🟩🟥🔷🔴🔴). */
 export const WORLD_EMOJI: Record<WorldId, string> = {
-  logic: "🟪",
+  logic: "🟦",
   line: "🟦",
   shape: "🟧",
   number: "🟨",
   word: "🟩",
   clue: "🟥",
-  reflex: "🔷",
+  reflex: "🟥",
   rage: "🔴",
   board: "🟫",
 };

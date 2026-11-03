@@ -62,16 +62,16 @@ describe("share text", () => {
 
   it("matches the design's Full Spuzl format", () => {
     const t = fullSpuzlShareText({ number: 214, cleared: [...LAUNCH_IDS].reverse(), totalMs: 38 * 60_000 + 12_000, streak: 12 });
-    // The live launch Dailies, one colour per category: Puzzles ×5 purple, Words ×3 green, Arcade ×3 blue.
+    // The live launch Dailies, one colour per category: Puzzles ×5 blue, Words ×3 green, Arcade ×3 red.
     expect(LAUNCH_IDS).toHaveLength(11);
-    expect(t).toBe(["SPUZL #214 · FULL SPUZL 11/11 · 38:12 🔥12", "🟪🟪🟪🟪🟪🟩🟩🟩🔷🔷🔷", SHARE_DOMAIN].join("\n"));
+    expect(t).toBe(["SPUZL #214 · FULL SPUZL 11/11 · 38:12 🔥12", "🟦🟦🟦🟦🟦🟩🟩🟩🟥🟥🟥", SHARE_DOMAIN].join("\n"));
   });
 
   it("shows progress and dark squares on a partial day", () => {
     const t = fullSpuzlShareText({ number: 9, cleared: ["crownfall", "nope"], totalMs: 60_000 });
     const [head, strip] = t.split("\n");
     expect(head).toBe(`SPUZL #9 · 1/${LAUNCH_IDS.length} Dailies · 1:00`);
-    expect(strip.startsWith("🟪⬛")).toBe(true);
+    expect(strip.startsWith("🟦⬛")).toBe(true);
   });
 
   it("matches the design's Duel format", () => {
@@ -101,8 +101,8 @@ describe("share text", () => {
 describe("card model", () => {
   it("reproduces the design sample cards", () => {
     expect(SAMPLE_CARDS.daily).toMatchObject({
-      bg: "#1B1835",
-      dot: "#2E2858",
+      bg: "#141B31",
+      dot: "#1E2E53",
       kicker: "Crownfall #214",
       big: "1:12",
       line: "No hints. Faster than 82%.",

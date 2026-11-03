@@ -61,7 +61,7 @@ export function TryIt() {
             </li>
           ))}
         </ul>
-        <div className="mt-4 flex justify-center" style={{ ["--world" as string]: "var(--w-logic)" }}>
+        <div className="mt-4 flex justify-center" style={{ ["--world" as string]: "var(--w-reflex)" }}>
           <CrownfallBoard puzzle={TUTORIAL_PUZZLE} mode="tutorial" api={api} />
         </div>
         <div className="mt-4 min-h-[52px]" aria-live="polite">

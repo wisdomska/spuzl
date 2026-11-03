@@ -398,7 +398,7 @@ export default function Welcome() {
                   </li>
                 ))}
               </ul>
-              <div className="mt-2 flex justify-center" style={{ ["--world" as string]: "var(--w-logic)" }}>
+              <div className="mt-2 flex justify-center" style={{ ["--world" as string]: "var(--w-reflex)" }}>
                 <CrownfallBoard puzzle={TUTORIAL_PUZZLE} mode="tutorial" api={boardApi} />
               </div>
               <div className="mt-auto flex items-end gap-1">

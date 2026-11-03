@@ -71,8 +71,10 @@ export const ALL_WORLDS: World[] = [
   {
     id: "logic",
     name: "Puzzles",
-    color: "var(--w-logic)",
-    ink: "var(--w-logic-ink)",
+    // Puzzles are blue and Arcade red (owner's call, 2026-11). The --w-* tokens stay as they are because games also
+    // use them as palette colours, so only the world-to-token mapping moved.
+    color: "var(--w-reflex)",
+    ink: "var(--w-reflex-ink)",
     tagline: "Logic grids, paths and sliding jams",
     icon: "puzzle-piece",
   },
@@ -87,8 +89,8 @@ export const ALL_WORLDS: World[] = [
   {
     id: "reflex",
     name: "Arcade",
-    color: "var(--w-reflex)",
-    ink: "var(--w-reflex-ink)",
+    color: "var(--w-rage)",
+    ink: "var(--w-rage-ink)",
     tagline: "Memory, rhythm, reflex and action",
     icon: "game-controller",
   },

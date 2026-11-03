@@ -20,13 +20,13 @@ const QUALITY = 0.9;
 
 /** World fills from styles/spuzl-tokens.css (dark theme values the design renders with). */
 const WORLD_HEX = {
-  logic: "#8B7CFF",
+  logic: "#4D8BFF",
   line: "#2FD3E0",
   shape: "#FF8A3D",
   number: "#FFD23F",
   word: "#3DDC84",
   clue: "#FF6B6B",
-  reflex: "#4D8BFF",
+  reflex: "#FF3B3B",
   rage: "#FF3B3B",
   board: "#B07443",
 };
