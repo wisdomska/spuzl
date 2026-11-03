@@ -347,6 +347,19 @@ export function TopButton({ icon, label, onClick, href }: { icon: string; label:
   );
 }
 
+/**
+ * Home button for the top-left corner of an end-of-flow screen (match end, podium, results): every finished flow
+ * has a visible way back to The Grid. Put it inside a positioned container. `onClick` runs instead of a plain link
+ * when going home must first leave something (a party room).
+ */
+export function HomeCorner({ onClick }: { onClick?: () => void }) {
+  return (
+    <div className="absolute top-[max(12px,env(safe-area-inset-top))] left-4 z-20">
+      {onClick ? <TopButton icon="house" label="Home" onClick={onClick} /> : <TopButton icon="house" label="Home" href="/" />}
+    </div>
+  );
+}
+
 /** Lime toy CTA (60 px). */
 export function Cta({
   children,

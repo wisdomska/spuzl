@@ -15,7 +15,7 @@ import { useProfileGate, useReduce } from "@/lib/client/multiplayer";
 import { useBackOrHome } from "@/lib/client/nav";
 import { formatClock } from "@/lib/format";
 import { play } from "@/lib/audio";
-import { Avatar, Cta, EASE_OUT, LoadingScreen, MpToast, NeedProfile, Screen, TopButton, formatTenths, useToast } from "./ui";
+import { Avatar, Cta, EASE_OUT, HomeCorner, LoadingScreen, MpToast, NeedProfile, Screen, TopButton, formatTenths, useToast } from "./ui";
 
 export interface ChallengeCardData {
   code: string;
@@ -132,6 +132,7 @@ export function ChallengeResult({ c, onSendBack, onShare }: { c: ChallengeCardDa
       className="flex flex-1 flex-col gap-4 px-5 pt-[max(70px,env(safe-area-inset-top))] pb-[max(28px,env(safe-area-inset-bottom))]"
       data-screen-label="A2 Challenge result"
     >
+      <HomeCorner />
       <h1 className="font-display self-stretch text-center text-[30px] leading-[1.1] font-black tracking-[-0.02em]" aria-live="polite">
         {r.won ? `You beat ${c.sender.nickname}` : `${c.sender.nickname} holds on`}
         <br />

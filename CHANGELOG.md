@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.13.4 (3 November 2026)
+
+### For players
+
+- **Every finished flow has a way home.** A Home button sits in the top-left corner of the duel result, the
+  ghost race result, the challenge result and the party podium (going home from a party also leaves the room,
+  where Leave goes back to the party lobby), and a finished live board game has Home next to Rematch. The duel
+  result's way home used to be visible only to screen readers.
+- **Forfeit wins read properly.** A duel won because the other player dropped out or left says "You win" with
+  "Forfeit win" as the result, instead of "You win 0-0".
+
 ## 1.13.3 (3 November 2026)
 
 ### For players

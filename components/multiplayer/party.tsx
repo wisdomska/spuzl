@@ -17,7 +17,7 @@ import type { MatchPlayerView, MatchView } from "@/lib/multiplayer/types";
 import { useReduce } from "@/lib/client/multiplayer";
 import type { PartyMode } from "@/lib/party-adult/modes";
 import { ModePicker } from "./adult-party";
-import { Avatar, Cta, EASE_IN_OUT, EASE_OUT, EmoteBar, EmoteBubble, PODIUM, SPRING_PARTY, TopButton, placeLabel } from "./ui";
+import { Avatar, Cta, EASE_IN_OUT, EASE_OUT, EmoteBar, EmoteBubble, HomeCorner, PODIUM, SPRING_PARTY, TopButton, placeLabel } from "./ui";
 
 /* ---------------- Share: code tiles, share sheet, QR, link ---------------- */
 
@@ -732,6 +732,7 @@ export function Podium({
   onRunItBack,
   onNext,
   onLeave,
+  onHome,
   subtitle,
   rewardNote,
 }: {
@@ -745,6 +746,8 @@ export function Podium({
   onRunItBack: () => void;
   onNext: () => void;
   onLeave: () => void;
+  /** leave the room and go home (falls back to onLeave) */
+  onHome?: () => void;
 }) {
   const reduce = useReduce();
   const lowData = useSettings((s) => s.lowData);
@@ -780,6 +783,7 @@ export function Podium({
       onPointerDown={() => setSkip(true)}
       data-screen-label="P3 Podium"
     >
+      <HomeCorner onClick={onHome ?? onLeave} />
       {!reduce && !skip && (
         <div aria-hidden className="pointer-events-none absolute inset-0">
           {confetti.map((k, i) => (

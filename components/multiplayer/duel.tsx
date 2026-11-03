@@ -27,6 +27,7 @@ import {
   SPRING_PRESS,
   TopButton,
   formatTenths,
+  HomeCorner,
 } from "./ui";
 
 /* ---------------- M1 Duel entry sheet ---------------- */
@@ -743,7 +744,17 @@ export function MatchEnd({
   }, [me.ratingAfter, me.ratingBefore, reduce, skip]);
   const displayRating = reduce || skip ? (me.ratingAfter ?? me.rating) : shownRating;
   const score = `${me.roundsWon}-${them.roundsWon}`;
-  const title = draw ? `Draw ${score}` : won ? `You win ${score}` : `${them.nickname} wins ${them.roundsWon}-${me.roundsWon}`;
+  // A duel that ended by someone dropping out or leaving has no round score worth showing ("You win 0-0").
+  const forfeit = view.result === "abandon" || view.result === "left";
+  const title = forfeit
+    ? won
+      ? "You win"
+      : `${them.nickname} wins`
+    : draw
+      ? `Draw ${score}`
+      : won
+        ? `You win ${score}`
+        : `${them.nickname} wins ${them.roundsWon}-${me.roundsWon}`;
   const r1 = view.rounds.filter((r) => r.playerId === me.id);
   const lostRound = r1.find((r) => !r.won && view.rounds.some((x) => x.round === r.round && x.won));
   const line =
@@ -769,6 +780,7 @@ export function MatchEnd({
       onPointerDown={() => setSkip(true)}
       data-screen-label="D4 Match end"
     >
+      <HomeCorner onClick={onHome} />
       <div className="mt-[70px] w-full overflow-hidden py-3">
         <motion.div
           className="flex h-[84px] w-full items-center justify-center"
@@ -844,8 +856,8 @@ export function MatchEnd({
           <span className="num text-accent text-[20px] font-semibold">+{xp}</span>
         </div>
         <div className="bg-surface flex flex-col gap-0.5 rounded-[16px] p-3">
-          <span className="text-muted text-[13px] font-semibold">Score</span>
-          <span className="num text-[20px] font-semibold">{score}</span>
+          <span className="text-muted text-[13px] font-semibold">{forfeit ? "Result" : "Score"}</span>
+          <span className="num text-[20px] font-semibold">{forfeit ? (won ? "Forfeit win" : "Forfeit") : score}</span>
         </div>
       </div>
       {(theyWantRematch || rematchWaiting) && (
@@ -873,9 +885,6 @@ export function MatchEnd({
           <Icon name="share-fat" size={22} />
         </button>
       </div>
-      <button type="button" onClick={onHome} className="sr-only focus:not-sr-only">
-        Back to The Grid
-      </button>
     </div>
   );
 }

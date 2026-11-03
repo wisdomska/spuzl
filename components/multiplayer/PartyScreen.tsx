@@ -318,10 +318,11 @@ function Room({ id, code }: { id: string; code: string }) {
   const err = (e: unknown, fallback: string) => show(e instanceof HttpError && e.message !== e.code ? e.message : fallback, "bad");
   const act = (path: string, json: unknown = {}) =>
     api<unknown>(`/api/v1/rooms/${code}/${path}`, { json }).then(() => qc.invalidateQueries({ queryKey: matchKey(id) }));
-  const leave = async () => {
+  const leave = async (to = "/party") => {
     await matchAction(id, "leave").catch(() => {});
-    router.push("/party");
+    router.push(to as never);
   };
+  const leaveHome = () => void leave("/");
 
   // Draw It and Two Truths (18+): their own lobby card, rounds and podium; no TV mode or classroom.
   if (isAdultMode(view.mode))
@@ -340,6 +341,7 @@ function Room({ id, code }: { id: string; code: string }) {
           err={err}
           show={show}
           onLeave={leave}
+          onHome={leaveHome}
           channel={channel}
         />
       </Screen>
@@ -395,6 +397,7 @@ function Room({ id, code }: { id: string; code: string }) {
         onRunItBack={() => act("reset").catch((e) => err(e, "Couldn't reset."))}
         onNext={() => act("next").catch((e) => err(e, "Couldn't start the next game."))}
         onLeave={leave}
+        onHome={leaveHome}
       />
     );
   else if (view.puzzle) {
@@ -527,6 +530,7 @@ function AdultRoom({
   err,
   show,
   onLeave,
+  onHome,
   channel,
 }: {
   view: MatchView;
@@ -542,6 +546,7 @@ function AdultRoom({
   err: (e: unknown, fallback: string) => void;
   show: (t: string, k?: "info" | "bad" | "pass") => void;
   onLeave: () => void;
+  onHome: () => void;
 }) {
   const qc = useQueryClient();
   const [players, setPlayers] = useState(false);
@@ -591,6 +596,7 @@ function AdultRoom({
         onRunItBack={() => act("reset").catch((e) => err(e, "Couldn't reset."))}
         onNext={() => undefined}
         onLeave={onLeave}
+        onHome={onHome}
       />
     );
   else if (phase === "countdown")

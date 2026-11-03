@@ -12,7 +12,7 @@ import { challengeCopy } from "@/lib/copy/challenge";
 import { useProfileGate } from "@/lib/client/multiplayer";
 import type { InputLog } from "@/games/types";
 import { play } from "@/lib/audio";
-import { Cta, LoadingScreen, MpToast, NeedProfile, Screen, formatTenths, useToast } from "./ui";
+import { Cta, HomeCorner, LoadingScreen, MpToast, NeedProfile, Screen, formatTenths, useToast } from "./ui";
 
 interface Ghost {
   name: string;
@@ -172,6 +172,7 @@ function GhostResult({
       : `${ghost.mine ? "Your best" : `${ghost.name}'s ghost`} holds`;
   return (
     <Screen label="Ghost result">
+      <HomeCorner />
       <div className="flex flex-1 flex-col items-center gap-4 px-5 pt-[max(80px,env(safe-area-inset-top))] pb-[max(28px,env(safe-area-inset-bottom))] text-center">
         <Spuz mood={beat ? "party" : "shocked"} size={130} />
         <h1 className="font-display text-[30px] leading-[1.1] font-black" aria-live="polite">

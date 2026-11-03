@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useWide } from "@/components/game/useBoardSize";
 import { useLeave } from "@/components/game/useLeave";
@@ -518,12 +519,22 @@ export function BayMatch({ id }: { id: string }) {
   const toolRow = (
     <div
       className={wide ? "grid gap-2 pt-1" : "mt-auto grid gap-2 px-4 pt-3 pb-[max(28px,env(safe-area-inset-bottom))]"}
-      style={{ gridTemplateColumns: `repeat(${v.status === "finished" ? 1 : tools.length}, minmax(0, 1fr))` }}
+      style={{ gridTemplateColumns: v.status === "finished" ? "minmax(0, 1fr) auto" : `repeat(${tools.length}, minmax(0, 1fr))` }}
     >
       {v.status === "finished" ? (
-        <Cta icon="arrows-clockwise" onClick={() => action("rematch")}>
-          Rematch
-        </Cta>
+        <>
+          <Cta icon="arrows-clockwise" onClick={() => action("rematch")}>
+            Rematch
+          </Cta>
+          <Link
+            href="/"
+            aria-label="Home"
+            className="toy bg-surface-raised flex h-[60px] w-[60px] items-center justify-center rounded-[20px] [--btn-depth:var(--depth)]"
+            style={{ boxShadow: "0 6px 0 var(--depth)" }}
+          >
+            <Icon name="house" size={22} />
+          </Link>
+        </>
       ) : (
         tools.map((t) => (
           <button
