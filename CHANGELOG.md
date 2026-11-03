@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.11.2 (3 November 2026)
+
+### For players
+
+- **The home map fills the screen.** The category islands grow with the screen instead of staying phone-sized: on a
+  tablet or computer the map picks the arrangement that fits best (a 2 × 2 zigzag or a wide wave across the screen)
+  and scales the islands up to almost twice their size, keeping room for the Continue bar. Phones keep the zigzag.
+
 ## 1.11.1 (3 November 2026)
 
 ### For players

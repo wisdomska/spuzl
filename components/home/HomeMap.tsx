@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { WORLDS, gamesInWorld, LAUNCH_IDS, type WorldId } from "@/lib/catalog";
 import { Island } from "./Island";
@@ -20,8 +20,47 @@ const ALL_SLOTS = [
   { x: 35, y: 610 },
   { x: 200, y: 690 },
 ];
+/**
+ * Wider arrangements for tablets and computers, in the same 136 px island units. The map picks whichever layout
+ * fills the space best and scales it to fit (up to MAX_SCALE), so islands grow on big screens instead of sitting
+ * in a phone-sized column. Only used when the live worlds fit them (four groups today).
+ */
+const GRID_SLOTS = [
+  { x: 30, y: 40 },
+  { x: 330, y: 80 },
+  { x: 60, y: 230 },
+  { x: 360, y: 270 },
+];
+const WIDE_SLOTS = [
+  { x: 20, y: 90 },
+  { x: 230, y: 30 },
+  { x: 440, y: 110 },
+  { x: 650, y: 40 },
+];
+type Slot = { x: number; y: number };
+const ISLAND_W = 136;
+/** island plus its label, below the slot's y */
+const ISLAND_H = 150;
+const MAX_SCALE = 1.9;
+const bounds = (slots: Slot[]) => ({
+  w: Math.max(...slots.map((s) => s.x)) + ISLAND_W + 20,
+  h: Math.max(...slots.map((s) => s.y)) + ISLAND_H,
+});
 /** Empty worlds are hidden (lib/catalog WORLDS), so the path is as long as the live worlds. */
-const SLOTS = ALL_SLOTS.slice(0, WORLDS.length);
+const TALL = ALL_SLOTS.slice(0, WORLDS.length);
+const LAYOUTS: Slot[][] = WORLDS.length <= GRID_SLOTS.length ? [TALL, GRID_SLOTS, WIDE_SLOTS] : [TALL];
+
+/** The layout and scale that make the islands biggest inside `avail` (phones keep the tall zigzag). */
+function fit(availW: number, availH: number): { slots: Slot[]; scale: number } {
+  let best = { slots: TALL, scale: Math.min(availW / 390, 1.15) };
+  if (availW < 600) return best;
+  for (const slots of LAYOUTS) {
+    const b = bounds(slots);
+    const scale = Math.min(availW / Math.max(b.w, 390), availH / b.h, MAX_SCALE);
+    if (scale > best.scale + 0.02) best = { slots, scale };
+  }
+  return best;
+}
 const BOB = [5, 5.6, 4.8, 6, 5.3, 5.8, 4.9, 5.5, 5.1];
 
 export interface WorldProgress {
@@ -56,7 +95,33 @@ export function HomeMap({
   const [hopTo, setHopTo] = useState<{ x: number; y: number } | null>(null);
   const busy = useRef(false);
   const idx = (w: WorldId) => WORLDS.findIndex((x) => x.id === w);
-  const width = 390;
+  const box = useRef<HTMLDivElement>(null);
+  const [view, setView] = useState<{ slots: Slot[]; scale: number }>({ slots: TALL, scale: 1 });
+  // Size the map to the space between the header and the Continue bar (the section's bottom padding).
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const measure = () => {
+      const section = el.parentElement;
+      const reserve = section ? parseFloat(getComputedStyle(section).paddingBottom) || 0 : 0;
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      const availH = Math.max(320, window.innerHeight - top - reserve - 8);
+      const next = fit(el.clientWidth, availH);
+      setView((v) => (v.slots === next.slots && Math.abs(v.scale - next.scale) < 0.01 ? v : next));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, []);
+  const SLOTS = view.slots;
+  const b = bounds(SLOTS);
+  const width = Math.max(b.w, SLOTS === TALL ? 390 : 0);
+  const height = b.h;
 
   // Islands navigate in code (after Spuz's hop), so prefetch every world: the loading screen is then ready
   // the moment the hop ends, even on a slow connection.
@@ -85,72 +150,76 @@ export function HomeMap({
 
   const from = SLOTS[idx(spuzAt)];
   return (
-    <div className="relative mx-auto" style={{ width, height: SLOTS[SLOTS.length - 1].y + 150 }}>
-      {/* dotted path between islands */}
-      <svg className="pointer-events-none absolute inset-0" width={width} height={SLOTS[SLOTS.length - 1].y + 150} aria-hidden>
-        <path
-          d={SLOTS.map((s, i) => `${i ? "L" : "M"} ${s.x + 68} ${s.y + 56}`).join(" ")}
-          fill="none"
-          stroke="var(--line)"
-          strokeWidth={3}
-          strokeDasharray="0 9"
-          strokeLinecap="round"
-        />
-      </svg>
-      {WORLDS.map((w, i) => {
-        const s = SLOTS[i];
-        const p = progress[w.id] ?? { cleared: 0, total: 0 };
-        return (
-          <button
-            key={w.id}
-            type="button"
-            onClick={() => travel(w.id)}
-            data-world={w.id}
-            className="press absolute flex w-[136px] flex-col items-center gap-1.5 rounded-[24px] outline-none focus-visible:shadow-[var(--focus-ring)]"
-            style={{ left: s.x, top: s.y }}
+    <div ref={box} className="w-full">
+      <div className="relative mx-auto" style={{ width: width * view.scale, height: height * view.scale }}>
+        <div className="absolute top-0 left-0" style={{ width, height, transform: `scale(${view.scale})`, transformOrigin: "0 0" }}>
+          {/* dotted path between islands */}
+          <svg className="pointer-events-none absolute inset-0" width={width} height={height} aria-hidden>
+            <path
+              d={SLOTS.map((s, i) => `${i ? "L" : "M"} ${s.x + 68} ${s.y + 56}`).join(" ")}
+              fill="none"
+              stroke="var(--line)"
+              strokeWidth={3}
+              strokeDasharray="0 9"
+              strokeLinecap="round"
+            />
+          </svg>
+          {WORLDS.map((w, i) => {
+            const s = SLOTS[i];
+            const p = progress[w.id] ?? { cleared: 0, total: 0 };
+            return (
+              <button
+                key={w.id}
+                type="button"
+                onClick={() => travel(w.id)}
+                data-world={w.id}
+                className="press absolute flex w-[136px] flex-col items-center gap-1.5 rounded-[24px] outline-none focus-visible:shadow-[var(--focus-ring)]"
+                style={{ left: s.x, top: s.y }}
+              >
+                <Island color={w.color} icon={w.icon} landmarkLeft={w.id === spuzAt ? 78 : 46} bob={BOB[i]} />
+                <span className="bg-surface flex items-center gap-1.5 rounded-full px-2.5 py-1">
+                  <span className="font-display text-[13px] font-bold whitespace-nowrap">{w.name}</span>
+                  <span className="num text-muted text-[12px] font-semibold">
+                    {p.cleared}/{p.total}
+                  </span>
+                  <span className="sr-only">, {unit}</span>
+                </span>
+              </button>
+            );
+          })}
+          <motion.div
+            className="pointer-events-none absolute"
+            initial={false}
+            animate={
+              hopTo ? { transform: `translate(${hopTo.x}px, ${hopTo.y}px)` } : { transform: `translate(${from.x + 6}px, ${from.y - 8}px)` }
+            }
+            transition={{ duration: 0.7, ease: [0.77, 0, 0.175, 1] }}
+            style={{ left: 0, top: 0 }}
           >
-            <Island color={w.color} icon={w.icon} landmarkLeft={w.id === spuzAt ? 78 : 46} bob={BOB[i]} />
-            <span className="bg-surface flex items-center gap-1.5 rounded-full px-2.5 py-1">
-              <span className="font-display text-[13px] font-bold whitespace-nowrap">{w.name}</span>
-              <span className="num text-muted text-[12px] font-semibold">
-                {p.cleared}/{p.total}
-              </span>
-              <span className="sr-only">, {unit}</span>
-            </span>
-          </button>
-        );
-      })}
-      <motion.div
-        className="pointer-events-none absolute"
-        initial={false}
-        animate={
-          hopTo ? { transform: `translate(${hopTo.x}px, ${hopTo.y}px)` } : { transform: `translate(${from.x + 6}px, ${from.y - 8}px)` }
-        }
-        transition={{ duration: 0.7, ease: [0.77, 0, 0.175, 1] }}
-        style={{ left: 0, top: 0 }}
-      >
-        <motion.div
-          animate={
-            hopTo
-              ? {
-                  transform: [
-                    "translateY(0px)",
-                    "translateY(-22px)",
-                    "translateY(0px)",
-                    "translateY(-22px)",
-                    "translateY(0px)",
-                    "translateY(-22px)",
-                    "translateY(0px)",
-                  ],
-                }
-              : undefined
-          }
-          // Gravity: each arc decelerates up and accelerates down, so the three hops read as jumps.
-          transition={{ duration: 0.7, ease: [UP, DOWN, UP, DOWN, UP, DOWN] }}
-        >
-          <Spuz mood={hopTo ? "cheer" : mood} size={64} color={color} decorative />
-        </motion.div>
-      </motion.div>
+            <motion.div
+              animate={
+                hopTo
+                  ? {
+                      transform: [
+                        "translateY(0px)",
+                        "translateY(-22px)",
+                        "translateY(0px)",
+                        "translateY(-22px)",
+                        "translateY(0px)",
+                        "translateY(-22px)",
+                        "translateY(0px)",
+                      ],
+                    }
+                  : undefined
+              }
+              // Gravity: each arc decelerates up and accelerates down, so the three hops read as jumps.
+              transition={{ duration: 0.7, ease: [UP, DOWN, UP, DOWN, UP, DOWN] }}
+            >
+              <Spuz mood={hopTo ? "cheer" : mood} size={64} color={color} decorative />
+            </motion.div>
+          </motion.div>
+        </div>
+      </div>
     </div>
   );
 }
