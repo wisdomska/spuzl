@@ -144,12 +144,12 @@ describe("18+ party: Draw It round, text filter, reports and moderation", () => 
     });
     expect(img.status).toBe(400);
 
-    // Guesses: filtered and length-limited.
+    // Guesses: contact details refused and length-limited; no word filter in 18+ games.
     const contact = await guesser.api(`/api/v1/rooms/${code}/party/guess`, { json: { round: 1, text: "call 0244123456" } });
     expect(contact.status).toBe(422);
     expect(contact.data.message).toMatch(/phone|links/i);
     const rude = await guesser.api(`/api/v1/rooms/${code}/party/guess`, { json: { round: 1, text: "shit" } });
-    expect(rude.status).toBe(422);
+    expect(rude.status).toBe(200);
     const long = await guesser.api(`/api/v1/rooms/${code}/party/guess`, { json: { round: 1, text: "x".repeat(31) } });
     expect(long.status).toBe(422);
     const wrong = await guesser.api(`/api/v1/rooms/${code}/party/guess`, { json: { round: 1, text: "zebra crossing" } });

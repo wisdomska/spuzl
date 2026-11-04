@@ -11,7 +11,7 @@ export const adultPartyCopy = {
   notice: {
     title: "Adults only",
     body: "Adults only: players may type and draw freely. Report anything abusive.",
-    more: "Only signed-in players aged 18+ can join. Contact details, links and rude words are blocked. You can remove a player at any time.",
+    more: "Only signed-in players aged 18+ can join. Phone numbers, links and handles are blocked; words are not filtered. You can remove a player at any time.",
     confirm: "I understand",
     cancel: "Not now",
   },

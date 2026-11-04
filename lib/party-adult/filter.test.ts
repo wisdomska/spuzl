@@ -160,3 +160,15 @@ describe("Draw It words", () => {
     expect(DRAW_WORDS.length).toBeGreaterThanOrEqual(80);
   });
 });
+
+describe("18+ rooms: word filter off", () => {
+  it("lets every word through but still refuses contact details and bad shapes", () => {
+    expect(partyTextProblem("fuck this", "statement", { words: false })).toBeNull();
+    expect(partyTextProblem("big a$$", "guess", { words: false })).toBeNull();
+    expect(partyTextProblem("call me 0244 123 456", "statement", { words: false })).toBe("contact");
+    expect(partyTextProblem("add me on insta @someone", "statement", { words: false })).toBe("contact");
+    expect(partyTextProblem("", "guess", { words: false })).toBe("empty");
+    // the default still filters
+    expect(partyTextProblem("fuck this", "statement")).toBe("blocked");
+  });
+});

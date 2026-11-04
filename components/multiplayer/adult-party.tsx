@@ -43,7 +43,7 @@ export function adultErrorText(e: unknown): string {
 
 /** Client-side copy of the server's text check, so a refusal is explained before sending. */
 export function textProblemText(text: string, kind: PartyTextKind): string | null {
-  const p = partyTextProblem(text, kind);
+  const p = partyTextProblem(text, kind, { words: false });
   if (!p) return null;
   return p === "too_long" ? C.text.too_long(TEXT_MAX[kind]) : C.text[p];
 }

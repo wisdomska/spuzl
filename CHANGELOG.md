@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.23.0 (4 November 2026)
+
+### For players
+
+- **No word filter in 18+ games.** Two Truths statements, Draw It guesses and the chat in those 18+ rooms take any
+  words now. Phone numbers, links and social handles are still blocked (that keeps strangers from being pulled off
+  SPUZL), the Report button stays, and everything else (all-ages Parties, Duels, Board Games chat) keeps its filter.
+
 ## 1.22.2 (4 November 2026)
 
 ### For players

@@ -5,6 +5,7 @@ import { serverBroadcast } from "@/lib/realtime/server";
 import { effectiveBand } from "@/lib/age";
 import { isUnder16 } from "@/lib/social";
 import { partyTextProblem } from "@/lib/party-adult/filter";
+import { isAdultMode } from "@/lib/party-adult/modes";
 import { CHAT_BURST, CHAT_MAX, QUICK_PHRASES, type ChatMessage } from "../chat";
 import { matchTopic } from "./match";
 import { BOT_PLAYER, bayTopic } from "./bay";
@@ -41,6 +42,12 @@ async function seats(admin: SupabaseClient, room: ChatRoom): Promise<Seat[]> {
   if (!m) throw new ApiError(404, "match_not_found");
   const { data } = await admin.from("match_players").select(`player_id, players(${PLAYER_COLS})`).eq("match_id", room.id);
   return (data ?? []) as unknown as Seat[];
+}
+
+async function adultRoom(admin: SupabaseClient, room: ChatRoom): Promise<boolean> {
+  if (room.kind !== "match") return false;
+  const { data } = await admin.from("matches").select("kind, party_mode").eq("id", room.id).maybeSingle();
+  return data?.kind === "race" && isAdultMode(data.party_mode);
 }
 
 const roomCol = (room: ChatRoom) => (room.kind === "bay" ? "bay_id" : "match_id");
@@ -87,7 +94,8 @@ export async function postChat(admin: SupabaseClient, room: ChatRoom, me: string
   } else {
     if (!typingAllowed(all)) throw new ApiError(403, "quick_only", "This room uses quick messages only.");
     const text = (input.text ?? "").replace(/\s+/g, " ").trim();
-    const problem = partyTextProblem(text, "statement");
+    // 18+ party rooms (Two Truths, Draw It): no word filter, as in their games; contact details are still refused
+    const problem = partyTextProblem(text, "statement", { words: !(await adultRoom(admin, room)) });
     if (problem === "empty") throw new ApiError(400, "empty");
     if (problem === "too_long" || text.length > CHAT_MAX) throw new ApiError(400, "too_long", `Keep it under ${CHAT_MAX} characters.`);
     if (problem === "contact") throw new ApiError(400, "contact", "No numbers, links or handles in chat.");

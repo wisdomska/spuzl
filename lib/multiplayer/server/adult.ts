@@ -398,9 +398,9 @@ async function liveRound(admin: SupabaseClient, matchId: string, playerId: strin
 
 const open = (r: PartyRoundRow, phase: PartyRoundRow["phase"], now = Date.now()) => r.phase === phase && now < Date.parse(r.phase_ends_at);
 
-/** Filtered, cleaned text, or a 422 with the friendly reason. */
+/** Filtered, cleaned text, or a 422 with the friendly reason. 18+ rooms: no word filter, contact details still out. */
 export function checkedText(raw: string, kind: PartyTextKind): string {
-  const problem = partyTextProblem(raw, kind);
+  const problem = partyTextProblem(raw, kind, { words: false });
   if (problem) {
     const t = adultPartyCopy.text;
     throw new ApiError(422, `text_${problem}`, problem === "too_long" ? t.too_long(TEXT_MAX[kind]) : t[problem]);

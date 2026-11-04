@@ -8,6 +8,7 @@
  *     emails, links, @handles and "add me on ..." style asks;
  *  3. abuse: the nickname blocklist (`OFFENSIVE`) plus extra sexual and abusive terms, matched per word
  *     after the same leetspeak normalisation, so "sushi tea" or "Dickson" are not caught by accident.
+ *     Off in the 18+ party games (Two Truths, Draw It) and their room chat: adults only, and Report stays.
  * Checks 2 and 3 also run on the folded text (lib/party-adult/fold.ts): look-alike letters from other scripts,
  * full-width and styled letters, accents and invisible characters can't slip a word or a number past them.
  *
@@ -147,8 +148,11 @@ export function cleanText(text: string): string {
   return text.normalize("NFC").replace(CONTROL, " ").replace(/\s+/g, " ").trim();
 }
 
-/** The reason a line is refused, or null when it may be shown to the room. */
-export function partyTextProblem(raw: string, kind: PartyTextKind): TextProblem | null {
+/**
+ * The reason a line is refused, or null when it may be shown to the room. `words: false` (18+ rooms, where the
+ * owner turned word filtering off) skips the abuse word check; shape and contact details are always checked.
+ */
+export function partyTextProblem(raw: string, kind: PartyTextKind, opts: { words?: boolean } = {}): TextProblem | null {
   const text = cleanText(raw);
   if (!text) return "empty";
   if ([...text].length > TEXT_MAX[kind]) return "too_long";
@@ -156,6 +160,7 @@ export function partyTextProblem(raw: string, kind: PartyTextKind): TextProblem 
   const folded = cleanText(foldText(raw));
   if (CONTACT.some((r) => r.test(text) || r.test(folded))) return "contact";
   if (longestDigitRun(folded) >= PHONE_DIGITS) return "contact";
+  if (opts.words === false) return null;
   const tokens = textTokens(raw);
   if (tokens.some((t) => WORDS.has(t) || (t.endsWith("s") && WORDS.has(t.slice(0, -1))) || STEMS.some((s) => t.includes(s))))
     return "blocked";
