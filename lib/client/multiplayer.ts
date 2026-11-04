@@ -10,6 +10,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ensureSession, HttpError } from "@/lib/client/api";
 import { getTransport, type ChannelStatus, type PresenceMember, type RealtimeChannel } from "@/lib/realtime/transport";
 import { useSettings, prefersReducedMotion } from "@/lib/settings/store";
+import { play } from "@/lib/audio";
 import { TIMING, isEmoteId, type EmoteId } from "@/lib/multiplayer/constants";
 import type { BayView, MatchView } from "@/lib/multiplayer/types";
 
@@ -257,7 +258,14 @@ export { TIMING };
  * from the server after its filter), counts unread messages from others while the panel is closed, and can be
  * muted for this match (incoming messages stop popping up; the panel still shows them).
  */
-export function useMatchChat(matchId: string | null, channel: RealtimeChannel | null, me: string | undefined) {
+export function useMatchChat(
+  matchId: string | null,
+  channel: RealtimeChannel | null,
+  me: string | undefined,
+  /** "bay" for a Board Games match; Duels and Parties are "match" */
+  kind: "match" | "bay" = "match",
+) {
+  const base = kind === "bay" ? "/api/v1/bay" : "/api/v1/matches";
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [typing, setTyping] = useState(false);
   const [open, setOpenState] = useState(false);
@@ -278,7 +286,7 @@ export function useMatchChat(matchId: string | null, channel: RealtimeChannel | 
       lastId.current = 0;
     }
     try {
-      const r = await api<{ messages: ChatMessage[]; typing: boolean }>(`/api/v1/matches/${matchId}/chat?after=${lastId.current}`);
+      const r = await api<{ messages: ChatMessage[]; typing: boolean }>(`${base}/${matchId}/chat?after=${lastId.current}`);
       setTyping(r.typing);
       const fresh = r.messages.filter((m) => m.id > lastId.current);
       if (fresh0) {
@@ -297,7 +305,7 @@ export function useMatchChat(matchId: string | null, channel: RealtimeChannel | 
     } catch {
       /* chat is a nicety: a failed fetch just waits for the next ping */
     }
-  }, [matchId, me]);
+  }, [matchId, me, base]);
 
   useEffect(() => {
     void pull();
@@ -306,10 +314,20 @@ export function useMatchChat(matchId: string | null, channel: RealtimeChannel | 
     if (!channel) return;
     return channel.onMessage("chat", () => void pull());
   }, [channel, pull]);
-  // A popped-up message fades after a few seconds.
+  // A safety net under the realtime ping: check every few seconds while the tab is open, so a missed ping never
+  // leaves a message unseen.
+  useEffect(() => {
+    if (!matchId) return;
+    const t = setInterval(() => {
+      if (!document.hidden) void pull();
+    }, 5000);
+    return () => clearInterval(t);
+  }, [matchId, pull]);
+  // A popped-up message stays a few seconds (longer for longer lines), with a soft sound.
   useEffect(() => {
     if (!incoming) return;
-    const t = setTimeout(() => setIncoming(null), 4000);
+    play("notify", { gain: 0.5 });
+    const t = setTimeout(() => setIncoming(null), Math.min(9000, 5000 + incoming.body.length * 60));
     return () => clearTimeout(t);
   }, [incoming]);
 
@@ -328,10 +346,10 @@ export function useMatchChat(matchId: string | null, channel: RealtimeChannel | 
   const send = useCallback(
     async (input: { quick: number } | { text: string }) => {
       if (!matchId) return;
-      await api(`/api/v1/matches/${matchId}/chat`, { json: input });
+      await api(`${base}/${matchId}/chat`, { json: input });
       await pull();
     },
-    [matchId, pull],
+    [matchId, pull, base],
   );
   return { messages, typing, open, setOpen, unread, incoming, muted, toggleMute, send };
 }

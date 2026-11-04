@@ -78,6 +78,8 @@ export interface PlayerRow {
   rematch: boolean;
   joined_at: string;
   kicked_at?: string | null;
+  /** the Party round this player sat out, if any */
+  passed_round?: number | null;
   players: {
     nickname: string;
     avatar_color: string;
@@ -231,6 +233,7 @@ export async function viewOf(admin: SupabaseClient, l: Loaded, me: string, rewar
     spectator: p.spectator,
     left: !!p.left_at,
     stale: !p.left_at && isStale(p, now),
+    passed: p.passed_round === m.round,
     rematch: p.rematch,
     ratingBefore: p.rating_before === null ? null : Number(p.rating_before),
     ratingAfter: p.rating_after === null ? null : Number(p.rating_after),
@@ -340,6 +343,7 @@ export async function submitProgress(
   await touch(admin, l, playerId);
   requirePlaying(l, p, input.round);
   if (p.finished_ms !== null) return { progress: 1, mistakes: p.mistakes };
+  if (p.passed_round === input.round) return { progress: p.progress, mistakes: p.mistakes };
   if (l.m.paused_at) return { progress: p.progress, mistakes: p.mistakes, paused: true };
   const game = l.m.games[l.m.round - 1];
   const r = await roundPuzzle(l.m.id, l.m.set_no, l.m.round, game, l.m.difficulty);
@@ -368,6 +372,7 @@ export async function submitFinish(
   const p = member(l, playerId);
   await touch(admin, l, playerId);
   requirePlaying(l, p, input.round);
+  if (p.passed_round === input.round) throw new ApiError(409, "passed", "You skipped this round.");
   if (l.m.paused_at) throw new ApiError(409, "paused");
   const game = l.m.games[l.m.round - 1];
   const r = await roundPuzzle(l.m.id, l.m.set_no, l.m.round, game, l.m.difficulty);
@@ -392,6 +397,28 @@ export async function submitFinish(
   await serverBroadcast(matchTopic(id), "finish", { player: playerId, timeMs: row.time_ms, round: input.round });
   // Let near-simultaneous finishes land before deciding (same tenth of a second is a tie).
   await sleep(TIMING.settleMs);
+  await resolve(admin, id);
+  return viewOf(admin, await loadMatch(admin, id), playerId);
+}
+
+/**
+ * "Skip this round" in a Party Race: the player sits the current round out. The round stops waiting for them, they
+ * score 0 for it and place last, and they are back for the next round. Only while the round is running and only
+ * before they finish it; not in 18+ party rooms (their own rules) or Duels (leaving is the way out there).
+ */
+export async function passRound(admin: SupabaseClient, id: string, playerId: string, round: number) {
+  const l = await loadMatch(admin, id);
+  const p = member(l, playerId);
+  await touch(admin, l, playerId);
+  if (l.m.kind !== "race" || isAdultRoom(l.m)) throw new ApiError(409, "cannot_pass", "You can only skip rounds in a Party Race.");
+  requirePlaying(l, p, round);
+  if (l.rounds.some((r) => r.round === round && r.player_id === playerId && r.time_ms !== null))
+    throw new ApiError(409, "already_finished", "You already finished this round.");
+  if (p.passed_round !== round) {
+    const { error } = await admin.from("match_players").update({ passed_round: round }).eq("match_id", id).eq("player_id", playerId);
+    if (error) throw error;
+    await serverBroadcast(matchTopic(id), "changed", { reason: "pass", player: playerId });
+  }
   await resolve(admin, id);
   return viewOf(admin, await loadMatch(admin, id), playerId);
 }
@@ -510,6 +537,7 @@ async function resolveRace(admin: SupabaseClient, l: Loaded): Promise<boolean> {
         mistakes: r?.mistakes ?? p.mistakes,
         progress: r?.time_ms != null ? 1 : p.progress,
         gone: !!p.left_at || isStale(p, now, TIMING.reconnectMs),
+        passed: p.passed_round === m.round && r?.time_ms == null,
       };
     });
   if (!raceOver(racers, start, ms(m.round_first_at), now)) return false;

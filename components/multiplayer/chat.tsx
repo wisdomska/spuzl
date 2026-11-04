@@ -171,7 +171,7 @@ export function ChatPopup({ chat }: { chat: MatchChat }) {
           key={chat.incoming.id}
           type="button"
           onClick={() => chat.setOpen(true)}
-          className="bg-surface-raised fixed top-[max(64px,env(safe-area-inset-top))] left-1/2 z-40 flex max-w-[min(92vw,420px)] -translate-x-1/2 items-center gap-2 rounded-full py-1.5 pr-4 pl-1.5 text-left shadow-[0_10px_30px_rgba(0,0,0,.4)]"
+          className="bg-surface-raised fixed top-[max(64px,env(safe-area-inset-top))] left-1/2 z-[65] flex max-w-[min(92vw,420px)] -translate-x-1/2 items-center gap-2 rounded-full py-1.5 pr-4 pl-1.5 text-left shadow-[0_10px_30px_rgba(0,0,0,.4)]"
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -12 }}

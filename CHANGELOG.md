@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.22.0 (4 November 2026)
+
+### For players
+
+- **Skip a round in a Party.** Stuck on a game you don't fancy? Tap "Skip this round" under the race standings
+  (it asks once). You score 0 for that game and drop to the bottom of its podium, the round stops waiting for you,
+  and you're straight back in for the next game. Everyone sees "Skipped" by your name.
+- **Chat messages pop up on screen.** A message from the other players now pops up over the game with a soft
+  sound and stays a few seconds (longer for longer messages). Tap it to open the chat. If the instant delivery
+  misses one, the app picks it up within a few seconds anyway.
+- **Chat in Board Games.** Chess, Draughts, Oware, Ludo and Four Up against people now have the same chat as Duels
+  and Parties: quick messages for everyone, typing in 16+ games, the same friendly filter. Open it from Chat in the
+  tools or from the reactions.
+- **Rematch as often as you like.** After a rematch, the Rematch button now works again at the end of the next game
+  too, in Duels and Board Games, game after game.
+
 ## 1.21.0 (4 November 2026)
 
 ### For players

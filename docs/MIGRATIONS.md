@@ -242,3 +242,10 @@ quests in the database.
 | Migration                            | What it does                                                                                                                                  | Rollback           |
 | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
 | `20261125000001_retire_gauntlet.sql` | Retires Gauntlet (`games.status = 'retired'`, no rows deleted) and moves the Rage Survivor badges to a Daily Gotcha or Dash (`course_deaths`) | In the file header |
+
+## 1.22.0
+
+| Migration                             | What it does                                                                                                               | Rollback           |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| `20261126000001_party_pass_round.sql` | `match_players.passed_round`: the Party round a player skipped (0 points, the round stops waiting for them)                | In the file header |
+| `20261127000001_bay_chat.sql`         | Chat in Board Games: `match_messages.bay_id` (to `board_matches`), `match_id` now nullable, exactly one of the two per row | In the file header |

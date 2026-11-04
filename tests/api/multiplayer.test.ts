@@ -229,6 +229,43 @@ describe("api: party rooms", () => {
   });
 });
 
+describe("api: skipping a Party round", () => {
+  it("a skipped round scores 0, the round ends without waiting, and the skipper plays the next game", async () => {
+    const host = await guest(uniq("sh_"));
+    const room = await host.api("/api/v1/rooms", { json: { game: "crownfall", difficulty: "easy", maxPlayers: 3 } });
+    const code: string = room.data.code;
+    const id: string = room.data.matchId;
+    const p2 = await guest(uniq("s2_"));
+    const p3 = await guest(uniq("s3_"));
+    await p2.api(`/api/v1/rooms/${code}/join`, { json: {} });
+    await p3.api(`/api/v1/rooms/${code}/join`, { json: {} });
+    await p2.api(`/api/v1/rooms/${code}/ready`, { json: { ready: true } });
+    await p3.api(`/api/v1/rooms/${code}/ready`, { json: { ready: true } });
+    await host.api(`/api/v1/rooms/${code}/ready`, { json: { ready: true } });
+    expect((await host.api(`/api/v1/rooms/${code}/start`, { json: {} })).status).toBe(200);
+    expect((await p3.api(`/api/v1/matches/${id}/pass`, { json: { round: 1 } })).status).toBe(409); // too early
+    await startNow(id);
+    const live = (await host.api(`/api/v1/matches/${id}`)).data;
+
+    const skipped = await p3.api(`/api/v1/matches/${id}/pass`, { json: { round: 1 } });
+    expect(skipped.status).toBe(200);
+    expect(skipped.data.players.find((p: { id: string }) => p.id === p3.userId).passed).toBe(true);
+    const s = solve(id, live.setNo, 1, "easy").state;
+    // a skipped round can't be finished after all
+    expect((await p3.api(`/api/v1/matches/${id}/finish`, { json: { round: 1, state: s, mistakes: 0 } })).status).toBe(409);
+    await host.api(`/api/v1/matches/${id}/finish`, { json: { round: 1, state: s, mistakes: 0 } });
+    // the last racer still in finishes: the round ends at once, without waiting on the skipper
+    const f2 = await p2.api(`/api/v1/matches/${id}/finish`, { json: { round: 1, state: s, mistakes: 0 } });
+    expect(f2.data.status).toBe("round_end");
+    const r3 = f2.data.rounds.find((r: { round: number; playerId: string }) => r.round === 1 && r.playerId === p3.userId);
+    expect(r3).toMatchObject({ points: 0, place: 3 });
+    expect((await host.api(`/api/v1/rooms/${code}/next`, { json: {} })).status).toBe(200);
+    const next = (await p3.api(`/api/v1/matches/${id}`)).data;
+    expect(next.round).toBe(2);
+    expect(next.players.find((p: { id: string }) => p.id === p3.userId).passed).toBe(false);
+  });
+});
+
 describe("api: a friend's code", () => {
   it("sends any code where it leads: a Duel challenge, a Party room or a Board Games invite, and nothing else", async () => {
     const host = await guest(uniq("ch_"));
@@ -280,6 +317,33 @@ describe("api: inviting a friend", () => {
     // the duel starts: its invite is closed
     expect((await friend.api("/api/v1/duel/friend/join", { json: { code: duel.data.code } })).status).toBe(200);
     expect((await send(host, friendId, "duel", duel.data.matchId)).status).toBe(409);
+  });
+});
+
+describe("api: board games chat and rematches", () => {
+  it("players chat in a board game (not strangers), and can rematch again and again", async () => {
+    const a = await guest(uniq("ca_"));
+    const b = await guest(uniq("cb_"));
+    const c = await guest(uniq("cc_"));
+    const m = await a.api("/api/v1/bay", { json: { game: "fourup", mode: "live" } });
+    await b.api(`/api/v1/bay/${m.data.id}/join`, { json: { code: m.data.inviteCode } });
+    expect((await a.api(`/api/v1/bay/${m.data.id}/chat`, { json: { quick: 0 } })).status).toBe(200);
+    const seen = await b.api(`/api/v1/bay/${m.data.id}/chat`);
+    expect(seen.data.messages).toHaveLength(1);
+    expect(seen.data.messages[0].from).toBe(a.userId);
+    expect((await c.api(`/api/v1/bay/${m.data.id}/chat`)).status).toBe(403);
+    expect((await c.api(`/api/v1/bay/${m.data.id}/chat`, { json: { quick: 0 } })).status).toBe(403);
+
+    // resign, rematch; resign the rematch, rematch again
+    let id: string = m.data.id;
+    for (let i = 0; i < 2; i++) {
+      expect((await a.api(`/api/v1/bay/${id}/action`, { json: { action: "resign" } })).data.status).toBe("finished");
+      const r = await b.api(`/api/v1/bay/${id}/action`, { json: { action: "rematch" } });
+      expect(r.status).toBe(200);
+      expect(r.data.id).not.toBe(id);
+      expect(r.data.status).toBe("active");
+      id = r.data.id;
+    }
   });
 });
 

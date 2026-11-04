@@ -10,7 +10,7 @@ export default async function Page({ params }: PageProps<"/bay/[matchId]">) {
   const { matchId } = await params;
   return (
     <Suspense fallback={<LoadingScreen />}>
-      <BayMatch id={matchId} />
+      <BayMatch key={matchId} id={matchId} />
     </Suspense>
   );
 }

@@ -49,7 +49,8 @@ export function DuelScreen() {
   const invite = sp.get("invite") === "1";
   if (gate === "loading") return <LoadingScreen />;
   if (gate === "no_profile") return <NeedProfile />;
-  if (m) return <DuelMatch id={m} />;
+  // keyed by match: a rematch is a fresh screen (no "waiting for rematch" left over from the last one)
+  if (m) return <DuelMatch key={m} id={m} />;
   return <DuelLobby joinCode={code} friendName={friendName} initialGame={game} invite={invite} />;
 }
 

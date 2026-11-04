@@ -12,6 +12,8 @@ export interface Racer {
   progress: number;
   /** left the room or lost connection for good */
   gone?: boolean;
+  /** sat this round out ("Skip this round"): 0 points, placed last, and the round doesn't wait for them */
+  passed?: boolean;
 }
 
 export interface Placed extends Racer {
@@ -25,6 +27,7 @@ export function raceOrder<T extends Racer>(racers: T[]): T[] {
     if (a.timeMs !== null && b.timeMs !== null) return a.timeMs - b.timeMs || a.mistakes - b.mistakes || a.id.localeCompare(b.id);
     if (a.timeMs !== null) return -1;
     if (b.timeMs !== null) return 1;
+    if (!!a.passed !== !!b.passed) return a.passed ? 1 : -1;
     if (!!a.gone !== !!b.gone) return a.gone ? 1 : -1;
     return b.progress - a.progress || a.mistakes - b.mistakes || a.id.localeCompare(b.id);
   });
@@ -32,9 +35,10 @@ export function raceOrder<T extends Racer>(racers: T[]): T[] {
 
 /**
  * Points for one game: finishers get 500 + 100 per player beaten + a speed bonus (up to 300 for
- * finishing within 5 minutes); non-finishers get up to 300 for progress.
+ * finishing within 5 minutes); non-finishers get up to 300 for progress; a player who skipped the round gets 0.
  */
 export function racePoints(r: Racer, place: number, n: number): number {
+  if (r.passed && r.timeMs === null) return 0;
   if (r.timeMs === null) return Math.round(Math.max(0, Math.min(1, r.progress)) * 300);
   const speed = Math.max(0, 300 - Math.floor(r.timeMs / 1000));
   return 500 + 100 * (n - place) + speed;
@@ -47,7 +51,7 @@ export function placeRace(racers: Racer[]): Placed[] {
 
 /** The game ends when every racer still here has finished, 90 s after the first finish, or at the cap. */
 export function raceOver(racers: Racer[], startedAt: number, firstFinishAt: number | null, now: number): boolean {
-  const here = racers.filter((r) => !r.gone);
+  const here = racers.filter((r) => !r.gone && !r.passed);
   if (here.length && here.every((r) => r.timeMs !== null)) return true;
   if (!here.length) return true;
   if (firstFinishAt !== null && now - firstFinishAt >= TIMING.raceAfterFirstMs) return true;

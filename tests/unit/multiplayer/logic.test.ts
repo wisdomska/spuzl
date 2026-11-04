@@ -197,6 +197,14 @@ describe("party race", () => {
     expect(raceOver([r("a", 10), r("b", null)], 0, 10, 10 + TIMING.raceAfterFirstMs)).toBe(true);
     expect(raceOver([r("a", null), r("b", null)], 0, null, TIMING.raceCapMs)).toBe(true);
   });
+  it("a skipped round scores 0, places last, and the race stops waiting for that player", () => {
+    const passed = { ...r("p", null, 0.7), passed: true };
+    const placed = placeRace([passed, r("a", 60_000), r("b", null, 0.2)]);
+    expect(placed.map((x) => x.id)).toEqual(["a", "b", "p"]);
+    expect(placed[2].points).toBe(0);
+    expect(raceOver([r("a", 10), passed], 0, 10, 30)).toBe(true);
+    expect(raceOver([passed, { ...r("q", null), passed: true }], 0, null, 5)).toBe(true);
+  });
   it("spots overtakes that involve you (swoosh)", () => {
     expect(overtakes(["me", "kofi"], ["kofi", "me"], "me")).toEqual([{ passer: "kofi", passed: "me" }]);
     expect(overtakes(["kofi", "me"], ["me", "kofi"], "me")).toEqual([{ passer: "me", passed: "kofi" }]);

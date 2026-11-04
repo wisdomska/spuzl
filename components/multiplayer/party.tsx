@@ -636,6 +636,8 @@ export interface RailRow {
   progress: number;
   finished: boolean;
   gone: boolean;
+  /** sat this round out */
+  passed: boolean;
 }
 
 /** Racers in this set: everyone who isn't spectating, minus people who left before scoring anything. */
@@ -654,6 +656,7 @@ export function rowsOf(view: MatchView): RailRow[] {
       progress: timeMs !== null ? 1 : p.progress,
       finished: timeMs !== null,
       gone: p.left || p.stale,
+      passed: p.passed && timeMs === null,
       timeMs,
       mistakes: p.mistakes,
     };
@@ -709,12 +712,12 @@ export function RaceRail({
               className="absolute inset-x-0 top-0 flex h-[28px] items-center gap-2 rounded-[10px] px-1.5"
               style={{
                 background: me ? "color-mix(in srgb, var(--accent) 16%, var(--surface))" : "transparent",
-                opacity: r.gone ? 0.5 : 1,
+                opacity: r.gone || r.passed ? 0.5 : 1,
               }}
               initial={false}
               animate={{ transform: `translateY(${i * ROW}px)` }}
               transition={{ duration: reduce ? 0 : 0.5, ease: EASE_IN_OUT }}
-              aria-label={`${placeLabel(i + 1)}, ${me ? "you" : r.nickname}, ${Math.round(r.progress * 100)} percent${r.finished ? ", cleared" : ""}`}
+              aria-label={`${placeLabel(i + 1)}, ${me ? "you" : r.nickname}, ${r.passed ? "skipped this round" : `${Math.round(r.progress * 100)} percent${r.finished ? ", cleared" : ""}`}`}
             >
               <span
                 className="num flex h-[22px] w-[30px] items-center justify-center rounded-[7px] text-[12px] font-bold"
@@ -735,7 +738,11 @@ export function RaceRail({
                   transition={{ duration: reduce ? 0 : 0.5, ease: EASE_IN_OUT }}
                 />
               </div>
-              <span className="text-accent flex w-4 justify-center">{r.finished && <Icon name="check" size={14} />}</span>
+              {r.passed ? (
+                <span className="text-muted w-auto text-[12px] font-semibold">Skipped</span>
+              ) : (
+                <span className="text-accent flex w-4 justify-center">{r.finished && <Icon name="check" size={14} />}</span>
+              )}
             </motion.li>
           );
         })}

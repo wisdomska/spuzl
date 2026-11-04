@@ -13,7 +13,7 @@ import { Icon } from "@/components/ui/Icon";
 import { Spuz } from "@/components/brand/Spuz";
 import { YourMoveInbox, type InboxGame } from "@/components/board/YourMoveInbox";
 import { api, HttpError } from "@/lib/client/api";
-import { useBay, useEmotes, useProfileGate, useServerNow } from "@/lib/client/multiplayer";
+import { useBay, useEmotes, useMatchChat, useProfileGate, useServerNow } from "@/lib/client/multiplayer";
 import { GAME_BY_ID } from "@/lib/catalog";
 import { formatClock, formatNumber } from "@/lib/format";
 import { play } from "@/lib/audio";
@@ -26,6 +26,7 @@ import { TimePicker, useMinutes } from "./TimePicker";
 import type { BayView } from "@/lib/multiplayer/types";
 import { ShareCode } from "../party";
 import { InviteFriends } from "../InviteFriends";
+import { ChatPanel, ChatPopup } from "../chat";
 import { alertIfAway, alertsAllowed, alertsSupported, askAlerts } from "@/lib/client/alerts";
 import { Avatar, Cta, EmoteBar, EmoteBubble, LoadingScreen, MpToast, NeedProfile, Screen, TopButton, useToast } from "../ui";
 import { LiveBoard } from "./boards";
@@ -213,6 +214,8 @@ export function BayMatch({ id }: { id: string }) {
   const [emoteOpen, setEmoteOpen] = useState(false);
   const meId = v && v.mySeat !== null ? v.players[v.mySeat]?.id : undefined;
   const emotes = useEmotes(channel, meId);
+  // Chat with the other players (not with the Practice bot), from the moment the game starts.
+  const chat = useMatchChat(v && !v.bot && v.mySeat !== null && v.status !== "waiting" ? v.id : null, channel, meId, "bay");
   const wide = useWide();
   // Leaving (lib/game/leave.ts): a live game against a person asks first and resigns, so they win at once;
   // an async game or one against the Practice bot waits in Your move.
@@ -467,6 +470,9 @@ export function BayMatch({ id }: { id: string }) {
     v.mode === "async" && !myTurn
       ? { l: "Nudge", i: "bell-ringing", c: "var(--text)", on: () => action("nudge", "Nudged.") }
       : { l: "Emote", i: "smiley", c: "var(--accent)", on: () => setEmoteOpen((o) => !o) },
+    !v.bot
+      ? { l: chat.unread ? `Chat (${chat.unread})` : "Chat", i: "chat-circle-text", c: "var(--accent)", on: () => chat.setOpen(true) }
+      : null,
   ].filter(Boolean) as { l: string; i: string; c: string; on: () => void }[];
 
   const oppRow = row(opp, false);
@@ -539,6 +545,15 @@ export function BayMatch({ id }: { id: string }) {
         onSend={(e) => {
           if (emotes.send(e)) setEmoteOpen(false);
         }}
+        onChat={
+          v.bot
+            ? undefined
+            : () => {
+                setEmoteOpen(false);
+                chat.setOpen(true);
+              }
+        }
+        unread={chat.unread}
       />
     </div>
   );
@@ -667,6 +682,12 @@ export function BayMatch({ id }: { id: string }) {
           onKeep={leave.keep}
           onLeave={() => void leave.confirm()}
         />
+      )}
+      {!v.bot && v.mySeat !== null && (
+        <>
+          <ChatPanel chat={chat} me={meId ?? ""} onEmote={(e) => void emotes.send(e)} />
+          <ChatPopup chat={chat} />
+        </>
       )}
     </Screen>
   );

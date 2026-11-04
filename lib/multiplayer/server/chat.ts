@@ -7,6 +7,7 @@ import { isUnder16 } from "@/lib/social";
 import { partyTextProblem } from "@/lib/party-adult/filter";
 import { CHAT_BURST, CHAT_MAX, QUICK_PHRASES, type ChatMessage } from "../chat";
 import { matchTopic } from "./match";
+import { BOT_PLAYER, bayTopic } from "./bay";
 
 type Seat = {
   player_id: string;
@@ -19,28 +20,42 @@ type Seat = {
   } | null;
 };
 
-async function seats(admin: SupabaseClient, matchId: string): Promise<Seat[]> {
-  if (!/^[0-9a-f-]{36}$/i.test(matchId)) throw new ApiError(404, "match_not_found");
-  const { data: m } = await admin.from("matches").select("id, is_bot").eq("id", matchId).maybeSingle();
+/** A chat room: a Duel or Party match, or a Board Games match. */
+export type ChatRoom = { kind: "match" | "bay"; id: string };
+
+const PLAYER_COLS = "nickname, avatar_color, age_band, birth_year, birth_month";
+
+async function seats(admin: SupabaseClient, room: ChatRoom): Promise<Seat[]> {
+  if (!/^[0-9a-f-]{36}$/i.test(room.id)) throw new ApiError(404, "match_not_found");
+  if (room.kind === "bay") {
+    const { data: b } = await admin.from("board_matches").select("id, players").eq("id", room.id).maybeSingle();
+    if (!b) throw new ApiError(404, "match_not_found");
+    const ids = (b.players as string[]).filter((p) => p !== BOT_PLAYER);
+    const { data } = await admin
+      .from("players")
+      .select(`id, ${PLAYER_COLS}`)
+      .in("id", ids.length ? ids : [BOT_PLAYER]);
+    return (data ?? []).map((p) => ({ player_id: p.id as string, players: p as unknown as Seat["players"] }));
+  }
+  const { data: m } = await admin.from("matches").select("id, is_bot").eq("id", room.id).maybeSingle();
   if (!m) throw new ApiError(404, "match_not_found");
-  const { data } = await admin
-    .from("match_players")
-    .select("player_id, players(nickname, avatar_color, age_band, birth_year, birth_month)")
-    .eq("match_id", matchId);
+  const { data } = await admin.from("match_players").select(`player_id, players(${PLAYER_COLS})`).eq("match_id", room.id);
   return (data ?? []) as unknown as Seat[];
 }
+
+const roomCol = (room: ChatRoom) => (room.kind === "bay" ? "bay_id" : "match_id");
 
 /** Typing is for 16+ rooms: one player under 16 anywhere in the room means quick phrases for everyone. */
 const typingAllowed = (all: Seat[]) => !all.some((s) => !s.players || isUnder16(effectiveBand(s.players)));
 
 /** Messages after `after` (an id), oldest first, at most 50; plus whether this room may type. */
-export async function listChat(admin: SupabaseClient, matchId: string, me: string, after = 0) {
-  const all = await seats(admin, matchId);
+export async function listChat(admin: SupabaseClient, room: ChatRoom, me: string, after = 0) {
+  const all = await seats(admin, room);
   if (!all.some((s) => s.player_id === me)) throw new ApiError(403, "not_in_match");
   const { data } = await admin
     .from("match_messages")
     .select("id, player_id, kind, body, created_at")
-    .eq("match_id", matchId)
+    .eq(roomCol(room), room.id)
     .gt("id", after)
     .order("id", { ascending: true })
     .limit(50);
@@ -58,10 +73,10 @@ export async function listChat(admin: SupabaseClient, matchId: string, me: strin
 }
 
 /** Posts a quick phrase (by index) or, in a 16+ room, a typed line that passes the filter. */
-export async function postChat(admin: SupabaseClient, matchId: string, me: string, input: { quick?: number; text?: string }) {
-  const all = await seats(admin, matchId);
+export async function postChat(admin: SupabaseClient, room: ChatRoom, me: string, input: { quick?: number; text?: string }) {
+  const all = await seats(admin, room);
   if (!all.some((s) => s.player_id === me)) throw new ApiError(403, "not_in_match");
-  await rateLimit(admin, `chat:${matchId}:${me}`, CHAT_BURST, 30);
+  await rateLimit(admin, `chat:${room.id}:${me}`, CHAT_BURST, 30);
   let kind: "quick" | "text";
   let body: string;
   if (input.quick !== undefined) {
@@ -80,9 +95,13 @@ export async function postChat(admin: SupabaseClient, matchId: string, me: strin
     kind = "text";
     body = text;
   }
-  const { data, error } = await admin.from("match_messages").insert({ match_id: matchId, player_id: me, kind, body }).select("id").single();
+  const { data, error } = await admin
+    .from("match_messages")
+    .insert({ [roomCol(room)]: room.id, player_id: me, kind, body })
+    .select("id")
+    .single();
   if (error) throw error;
   // A ping only: devices fetch the message from the server, so nothing typed reaches anyone unfiltered.
-  await serverBroadcast(matchTopic(matchId), "chat", { id: Number(data.id) });
+  await serverBroadcast(room.kind === "bay" ? bayTopic(room.id) : matchTopic(room.id), "chat", { id: Number(data.id) });
   return { id: Number(data.id) };
 }

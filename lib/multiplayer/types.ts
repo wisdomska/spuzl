@@ -23,6 +23,8 @@ export interface MatchPlayerView {
   left: boolean;
   /** no heartbeat for a while: shown as disconnected */
   stale: boolean;
+  /** sat out the current Party round ("Skip this round") */
+  passed: boolean;
   rematch: boolean;
   ratingBefore: number | null;
   ratingAfter: number | null;

@@ -288,6 +288,7 @@ function Room({ id, code }: { id: string; code: string }) {
     </>
   );
   const [settings, setSettings] = useState(false);
+  const [passAsk, setPassAsk] = useState(false);
   useJoinToasts(view, show);
 
   const phase = view ? partyPhase({ status: view.status, roundStartedAt: view.roundStartedAt }, now) : "lobby";
@@ -426,17 +427,75 @@ function Room({ id, code }: { id: string; code: string }) {
     );
   else if (view.puzzle) {
     const iFinished = rows.find((r) => r.id === view.me)?.finished ?? false;
+    const iPassed = !!view.players.find((p) => p.id === view.me)?.passed && !iFinished;
+    const canPass = phase === "race" && !iFinished && !iPassed && !spectating && !isAdultMode(view.mode);
+    const pass = async () => {
+      setPassAsk(false);
+      try {
+        qc.setQueryData(matchKey(id), await api<MatchView>(`/api/v1/matches/${id}/pass`, { json: { round: view.round } }));
+      } catch (e) {
+        err(e, "Couldn't skip the round.");
+      }
+    };
     body = (
       <div className="relative flex flex-1 flex-col">
         <MatchBoard
           view={view}
-          strip={<RaceRail view={view} rows={rows} onToast={show} />}
-          locked={phase !== "race" || iFinished}
+          strip={
+            <div className="flex flex-col">
+              <RaceRail view={view} rows={rows} onToast={show} />
+              {canPass &&
+                (passAsk ? (
+                  <div className="bg-surface -mx-3 flex items-center gap-2 px-3 pb-2.5" role="group" aria-label="Skip this round?">
+                    <span className="text-muted min-w-0 flex-1 text-[13px]">Skip it? You score 0 for this game and play the next.</span>
+                    <button
+                      type="button"
+                      onClick={() => setPassAsk(false)}
+                      className="press bg-surface-raised h-9 flex-none rounded-[10px] px-3 text-[13px] font-semibold"
+                    >
+                      Keep playing
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void pass()}
+                      className="press bg-accent text-on-accent h-9 flex-none rounded-[10px] px-3 text-[13px] font-black"
+                    >
+                      Skip
+                    </button>
+                  </div>
+                ) : (
+                  <div className="bg-surface -mx-3 flex justify-end px-3 pb-2">
+                    <button
+                      type="button"
+                      onClick={() => setPassAsk(true)}
+                      className="press text-muted flex h-8 items-center gap-1.5 rounded-[10px] px-2 text-[13px] font-semibold"
+                    >
+                      <Icon name="fast-forward" size={15} />
+                      Skip this round
+                    </button>
+                  </div>
+                ))}
+            </div>
+          }
+          locked={phase !== "race" || iFinished || iPassed}
           label={`Game ${view.round} of ${view.games.length}`}
           onExit={leaveRace.request}
           onFinished={onFinished}
           onRejected={onRejected}
         />
+        {iPassed && phase === "race" && (
+          <div className="absolute inset-x-0 bottom-0 z-30 flex justify-center px-4 pb-[max(24px,env(safe-area-inset-bottom))]">
+            <div
+              role="status"
+              className="bg-surface-raised flex items-center gap-3 rounded-[18px] px-4 py-3 shadow-[0_10px_30px_rgba(0,0,0,.45)]"
+            >
+              <Icon name="fast-forward" size={22} className="text-accent" />
+              <span className="text-[15px] font-semibold">
+                You skipped this game. {view.round < view.games.length ? `Back in for game ${view.round + 1}.` : "Results are coming."}
+              </span>
+            </div>
+          </div>
+        )}
         {phase === "countdown" && (
           <div className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-6 bg-[rgba(6,7,13,.8)]">
             <div className="flex flex-wrap justify-center gap-2.5 px-4">

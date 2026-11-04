@@ -10,7 +10,7 @@ export const GET = handle(async (req: Request, ctx: { params: Promise<{ id: stri
   const { admin, player } = await requirePlayer();
   await rateLimit(admin, `chat-read:${player.id}`, 120, 60);
   const after = Number(new URL(req.url).searchParams.get("after") ?? 0) || 0;
-  return ok(await listChat(admin, id, player.id, after));
+  return ok(await listChat(admin, { kind: "match", id }, player.id, after));
 });
 
 const Post = z.union([z.object({ quick: z.number().int().min(0).max(30) }), z.object({ text: z.string().min(1).max(200) })]);
@@ -19,5 +19,5 @@ const Post = z.union([z.object({ quick: z.number().int().min(0).max(30) }), z.ob
 export const POST = handle(async (req: Request, ctx: { params: Promise<{ id: string }> }) => {
   const { id } = await ctx.params;
   const { admin, player } = await requirePlayer();
-  return ok(await postChat(admin, id, player.id, await body(req, Post)));
+  return ok(await postChat(admin, { kind: "match", id }, player.id, await body(req, Post)));
 });
