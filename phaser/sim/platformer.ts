@@ -597,13 +597,22 @@ export class PlatformerCourse implements SimCore {
   }
 
   /** Plain-language warning for the current room's first trap (hints). */
+  /** Warns about the first trick the runner meets in the room (the trap whose trigger comes first), without solving it. */
   static trapHint(lvl: CompiledLevel): string {
-    const kinds = new Set(lvl.traps.map((t) => t.kind));
-    if (kinds.has("drop")) return "A floor ahead is fake. The cracked tiles fall, so jump over them.";
-    if (kinds.has("spikes")) return "Spikes pop up ahead. The outlines show where, so land somewhere else.";
-    if (kinds.has("exit")) return "The door runs when you get close. The dotted line shows where it goes.";
-    if (kinds.has("block")) return "A hidden block waits in the air. The outline shows where.";
-    return "This room tells the truth. Just go.";
+    const firstX = (i: number) => Math.min(...lvl.triggers.filter((t) => t.fire.includes(i)).map((t) => t.x));
+    const first = lvl.traps.map((t, i) => ({ t, x: firstX(i) })).sort((a, b) => a.x - b.x)[0]?.t;
+    switch (first?.kind) {
+      case "drop":
+        return "A floor ahead is fake. The cracked tiles fall, so jump over them.";
+      case "spikes":
+        return "Spikes pop up ahead. The outlines show where, so land somewhere else.";
+      case "exit":
+        return "The door runs when you get close. The dotted line shows where it goes.";
+      case "block":
+        return "A block appears out of nowhere ahead. The outline shows where, so be ready to jump.";
+      default:
+        return "This room tells the truth. Just go.";
+    }
   }
 
   clone(): PlatformerCourse {

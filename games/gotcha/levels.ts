@@ -311,9 +311,12 @@ export const SET_PIECES: LevelDef[] = [
   },
 ];
 
-const BY_ID = new Map([...HAND_LEVELS, ...SET_PIECES, ...GENERATED].map((l) => [l.id, l]));
+/** Every room, in the ladder or not: old Daily and free-play courses may name any of them. */
+export const ROOMS: LevelDef[] = [...HAND_LEVELS, ...SET_PIECES, ...GENERATED];
 
-/** Every level in ladder order (Level 1 first): hand rooms, set pieces and generated rooms by difficulty. */
+const BY_ID = new Map(ROOMS.map((l) => [l.id, l]));
+
+/** Every level in ladder order (Level 1 first): long generated rooms by difficulty (hand rooms play in Dailies). */
 export const LEVELS: LevelDef[] = LADDER.length ? LADDER.map((id) => BY_ID.get(id)!) : [...HAND_LEVELS, ...SET_PIECES];
 
 /** Level ids Daily and free-play courses draw from, in difficulty order (unchanged by the ladder). */

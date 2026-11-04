@@ -16,7 +16,7 @@
 import type { Difficulty } from "@/games/types";
 
 /** Rooms in each pool ladder. A unit test keeps these equal to games/<id>/levels.ts LEVELS.length. */
-export const POOL_LADDERS = { gotcha: 52, dash: 41 } as const;
+export const POOL_LADDERS = { gotcha: 60, dash: 41 } as const;
 
 /** Generated puzzle games with an endless seeded ladder. */
 export const SEEDED_LADDERS = ["crownfall", "dusk", "sixer", "nine", "weave", "flowline", "pairup", "lost", "trotro"] as const;

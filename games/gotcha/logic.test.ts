@@ -7,7 +7,7 @@ import { framesToMs } from "@/phaser/sim/fixed";
 import { courseLog } from "@/phaser/sim/scripted";
 import { EV } from "@/phaser/sim/core";
 import logic, { createSim, generate, hint, progress, verify } from "./logic";
-import { CONFIG, DAILY_POOL, HAND_LEVELS, LEVELS } from "./levels";
+import { CONFIG, DAILY_POOL, HAND_LEVELS, LEVELS, SET_PIECES } from "./levels";
 import { ladderSuite } from "@/phaser/sim/ladderkit";
 import SOLUTIONS_JSON from "./solutions.json";
 
@@ -15,13 +15,14 @@ const SOLUTIONS: Record<string, number[][]> = SOLUTIONS_JSON;
 
 const state = (log: InputLog, deaths: number, frames: number) => ({ log, deaths, timeMs: framesToMs(frames) });
 
-/** Walks right into the first trap until one death, waits for the respawn, then plays the solution. */
+/** Runs right (jumping only at walls) into the first trap until one death, waits for the respawn, then plays the solution. */
 function logWithOneDeath(levels: string[]): { log: InputLog; frames: number } {
   const sim = createSim({ levels });
   const frames: number[] = [];
   while (sim.deaths === 0) {
-    sim.step(BTN.RIGHT);
-    frames.push(BTN.RIGHT);
+    const b = BTN.RIGHT | (frames.length > 5 && sim.world.body.vx === 0 ? BTN.JUMP : 0);
+    sim.step(b);
+    frames.push(b);
     if (frames.length > 3000) throw new Error("never died");
   }
   while (!(sim.ev & EV.RESPAWN)) {
@@ -89,7 +90,7 @@ describe("gotcha", () => {
   });
 
   it("counts deaths, scores fewer deaths higher, and rejects forged deaths or time", () => {
-    // The first three ladder rooms: running right meets their first trap (free-play courses now draw from the ladder).
+    // The first three ladder rooms: a careless run meets their first trap (free-play courses now draw from the ladder).
     const levels = LEVELS.slice(0, 3).map((l) => l.id);
     const g = { puzzle: { levels }, solution: { levels: levels.slice() } };
     const clean = courseLog(g.puzzle.levels, SOLUTIONS, CONFIG.levelPause);
@@ -181,5 +182,6 @@ describe("gotcha level ladder", () => {
     sim: createSim,
     solutions: SOLUTIONS,
     pause: CONFIG.levelPause,
+    offLadder: [...HAND_LEVELS, ...SET_PIECES],
   });
 });

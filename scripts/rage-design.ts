@@ -38,6 +38,8 @@ class Room {
   platforms: PlatformDef[] = [];
   private nextTrap = 1;
   hazards = 0;
+  /** chunks laid, with the column each starts at (for study, not saved) */
+  log: [string, number][] = [];
 
   constructor(maxW = 240) {
     this.grid = Array.from({ length: H }, () => Array<string>(maxW).fill("."));
@@ -267,6 +269,7 @@ const trollChunks: TrollChunk[] = [
     traps: 0,
     f: (r, rng, tier) => {
       const n = rng.int(2, tier < 4 ? 2 : 3);
+      if (n === 3) r.flat(1); // a full-speed run-up for the widest pit
       for (let i = 0; i < n; i++) pitBottom(r, r.x++);
       r.hazards += n;
     },
@@ -278,6 +281,7 @@ const trollChunks: TrollChunk[] = [
     traps: 0,
     f: (r, rng, tier) => {
       const n = rng.int(1, tier < 4 ? 2 : 3);
+      if (n === 3) r.flat(1); // a full-speed run-up for the widest row
       for (let i = 0; i < n; i++) {
         r.ground(r.x);
         r.set(r.x++, r.gy, "^");
@@ -472,6 +476,125 @@ const trollChunks: TrollChunk[] = [
   },
 ];
 
+/**
+ * Gotcha's Level Devil tricks, on top of the shared troll chunks: the room changes the moment you commit.
+ * Every one is beaten by the bot with humane timing slack before it ships (see build()).
+ */
+const devilChunks: TrollChunk[] = [
+  {
+    // a wall springs up in front of the runner: jump it
+    name: "pop-wall",
+    w: 3,
+    min: 1,
+    traps: 1,
+    f: (r, rng, tier) => {
+      const id = r.trap({ kind: "block", delay: lerp(6, 2, k(tier)) });
+      r.trigger(r.x, 0, 1, r.gy + 1, [id]);
+      r.flat(4);
+      r.ground(r.x);
+      for (let y = r.gy - rng.int(0, 1); y <= r.gy; y++) r.set(r.x, y, id);
+      r.x++;
+      if (rng.chance(0.5)) {
+        r.ground(r.x);
+        r.set(r.x++, r.gy, "^");
+      }
+      r.hazards += 3;
+    },
+  },
+  {
+    // jump a pit and the landing turns to spikes (or falls away) mid-air: jump long
+    name: "bad-landing",
+    w: 3,
+    min: 1,
+    traps: 1,
+    f: (r, rng) => {
+      const pit = 1;
+      const spiky = rng.chance(0.5);
+      const id = r.trap(spiky ? { kind: "spikes", delay: 0 } : { kind: "drop", delay: 0 });
+      const from = r.x;
+      for (let i = 0; i < pit; i++) pitBottom(r, r.x++);
+      r.trigger(from, 0, pit, r.gy + 1, [id]);
+      if (spiky) {
+        r.ground(r.x);
+        r.set(r.x++, r.gy, id);
+      } else {
+        r.set(r.x, r.gy + 1, id);
+        r.set(r.x++, H - 1, "^");
+      }
+      r.hazards += pit + 3;
+    },
+  },
+  {
+    // a gap, then a floor that gives way as you land: hop again at once
+    name: "double-hop",
+    w: 2,
+    min: 2,
+    traps: 1,
+    f: (r, rng, tier) => {
+      pitBottom(r, r.x++);
+      const id = r.trap({ kind: "drop", delay: lerp(10, 6, k(tier)) });
+      r.trigger(r.x, 0, 2, r.gy + 1, [id]);
+      for (let i = 0; i < 2; i++) {
+        r.set(r.x, r.gy + 1, id);
+        r.set(r.x++, H - 1, "^");
+      }
+      r.hazards += 4;
+    },
+  },
+];
+
+/**
+ * Gotcha rooms, Level Devil style: long from Level 1 (about 70 tiles, up to 150 on top tiers), hazards close
+ * together, every trick in the book from the start, and the exit often runs. Still fair: hazards never sit in
+ * the start runway, every lie is telegraphed after the first death, and the bot must clear each room with
+ * timing slack a person can hit.
+ */
+export function designDevil(rng: Rng, tier: number): Room {
+  const r = new Room();
+  r.flat(1);
+  r.set(1, r.gy, "S");
+  r.flat(3);
+  const target = lerp(70, 150, k(tier));
+  const trollShare = lerp(65, 85, k(tier)) / 100;
+  const all = [...trollChunks, ...devilChunks];
+  let last = "";
+  // keep a trap for the running exit on most rooms
+  const exitTroll = tier >= 6 || rng.chance(0.45 + 0.05 * tier);
+  while (r.x < target - 8) {
+    const spare = r.trapsLeft() - (exitTroll ? 1 : 0);
+    // spread the tricks over the whole room: the chance tracks the traps left against the room left
+    const chunksLeft = Math.max(1, (target - r.x) / 6);
+    const wantTroll = spare > 0 && rng.chance(Math.min(trollShare, Math.max(0.15, spare / chunksLeft)));
+    // the shared chunks open up three tiers early in Gotcha, so Level 1 already bites
+    // one moving slab per room: waiting on several drags a long room out
+    const pool = all.filter(
+      (c) =>
+        c.min <= tier + 3 &&
+        c.name !== last &&
+        c.traps > 0 === wantTroll &&
+        c.traps <= spare &&
+        !(c.name === "ferry" && r.platforms.length),
+    );
+    if (!pool.length) break;
+    const total = pool.reduce((sum, c) => sum + c.w, 0);
+    let roll = rng.next() * total;
+    const c = pool.find((p) => (roll -= p.w) < 0) ?? pool[0];
+    last = c.name;
+    r.log.push([c.name, r.x]);
+    // plain pits and spike rows stay at most two wide: three is at the edge of a jump, unfair in a long room
+    c.f(r, rng, c.traps ? tier : Math.min(tier, 3));
+    // at least two tiles to land and take off again between tricks
+    r.flat(rng.int(2, tier < 4 ? 3 : 2));
+  }
+  if (exitTroll && r.trapsLeft() >= 1) runningExit(r, rng, tier, 1);
+  else {
+    r.flat(2);
+    r.set(r.x, r.gy, "E");
+    r.flat(2);
+  }
+  return r;
+}
+
 /** The exit runs: back behind the runner, up onto a ledge, or across a pit. Ends the room. */
 function runningExit(r: Room, rng: Rng, tier: number, startX: number) {
   const style = rng.int(0, tier >= 4 ? 2 : 1);
@@ -482,8 +605,16 @@ function runningExit(r: Room, rng: Rng, tier: number, startX: number) {
   r.set(ex, r.gy, "E");
   r.flat(1);
   if (style === 0) {
-    // back to the start
-    const id = r.trap({ kind: "exit", delay: 0, to: [startX + 2, BASE_GY], frames: lerp(50, 35, k(tier)) });
+    // back behind the runner: to the start in a short room, about ten tiles back in a long one
+    let to: [number, number] = [startX + 2, BASE_GY];
+    for (let x = trigX - 10; x > startX + 2; x--) {
+      const y = r.grid.findIndex((row, yy) => yy > 0 && row[x] === "#" && r.grid[yy - 1][x] === ".") - 1;
+      if (y > 0 && r.get(x - 1, y + 1) === "#" && r.get(x + 1, y + 1) === "#") {
+        to = [x, y];
+        break;
+      }
+    }
+    const id = r.trap({ kind: "exit", delay: 0, to, frames: lerp(50, 35, k(tier)) });
     r.trigger(trigX, 0, 1, r.gy + 1, [id]);
   } else if (style === 1) {
     // up to a ledge over the end of the room
@@ -710,9 +841,10 @@ interface Made {
   score: number;
 }
 
-function solve(def: LevelDef, cfg: PlatformerConfig): number[] | null {
+export function solve(def: LevelDef, cfg: PlatformerConfig): number[] | null {
   const lvl = compileLevel(def);
-  const budget = Math.min(60 * 120, Math.round(lvl.w * 16 * (cfg.autorun ? 0.8 : 1.6)) + 900);
+  // moving slabs make the runner wait, so each one buys the solver more time
+  const budget = Math.min(60 * 120, Math.round(lvl.w * 16 * (cfg.autorun ? 0.8 : 1.6)) + 900 + 600 * (def.platforms?.length ?? 0));
   // 4-frame moves first; finer 2-frame moves find the short hops a tight room needs
   return (
     solvePlatformer(new PlatformerCourse([lvl], cfg), { maxFrames: budget }) ??
@@ -732,11 +864,13 @@ interface GameSpec {
   mustBite: boolean;
   /** must the room hold at least one troll */
   mustTroll: boolean;
+  /** put the hand rooms and set pieces in the Levels ladder (Gotcha keeps them for Dailies only: too short for Levels) */
+  handInLadder?: boolean;
 }
 
 const SPECS: Record<GameId, GameSpec> = {
   dash: { id: "dash", perTier: 5, design: designDash, maxW: 260, mustBite: true, mustTroll: false },
-  gotcha: { id: "gotcha", perTier: 5, design: (rng, t) => designTroll(rng, t, "gotcha"), maxW: 140, mustBite: false, mustTroll: true },
+  gotcha: { id: "gotcha", perTier: 6, design: designDevil, maxW: 220, mustBite: true, mustTroll: true, handInLadder: false },
   gauntlet: {
     id: "gauntlet",
     perTier: 5,
@@ -834,9 +968,11 @@ async function build(spec: GameSpec) {
   // Ladder: hand rooms spread over tiers 1-4 in their own order, set pieces close tiers 3, 6, 9 and 10,
   // generated rooms by tier and then by measured difficulty.
   const keyed: { id: string; key: number }[] = [];
-  mod.HAND_LEVELS.forEach((l, j) => keyed.push({ id: l.id, key: 1 + (3 * j) / mod.HAND_LEVELS.length + 0.001 }));
+  if (spec.handInLadder !== false)
+    mod.HAND_LEVELS.forEach((l, j) => keyed.push({ id: l.id, key: 1 + (3 * j) / mod.HAND_LEVELS.length + 0.001 }));
   const caps = [3.999, 6.999, 9.999, 10.999];
-  mod.SET_PIECES.forEach((l, j) => keyed.push({ id: l.id, key: caps[Math.min(j, caps.length - 1)] + j * 1e-6 }));
+  if (spec.handInLadder !== false)
+    mod.SET_PIECES.forEach((l, j) => keyed.push({ id: l.id, key: caps[Math.min(j, caps.length - 1)] + j * 1e-6 }));
   for (let tier = 1; tier <= 10; tier++) {
     const inTier = made.filter((m) => m.tier === tier).sort((a, b) => a.score - b.score);
     inTier.forEach((m, j) => keyed.push({ id: m.def.id, key: tier + (j + 0.5) / (inTier.length + 1) }));
@@ -853,7 +989,8 @@ async function build(spec: GameSpec) {
 
   for (const m of made) solutions[m.def.id] = scriptFromLog(logFromFrames(m.frames));
   // drop scripts for rooms an earlier run made and this one did not
-  const keep = new Set(ladder);
+  // hand rooms and set pieces keep their scripts even outside the ladder (Daily courses play them)
+  const keep = new Set([...ladder, ...mod.HAND_LEVELS.map((l) => l.id), ...mod.SET_PIECES.map((l) => l.id)]);
   for (const key of Object.keys(solutions)) if (!keep.has(key)) delete solutions[key];
   const body = Object.entries(solutions)
     .map(([key, v]) => `  ${JSON.stringify(key)}: ${JSON.stringify(v)}`)
@@ -885,4 +1022,5 @@ async function main() {
   for (const id of ids) await build(SPECS[id]);
 }
 
-void main();
+// run only as a script (scripts may import the designers to study rooms)
+if (process.argv[1]?.endsWith("rage-design.ts")) void main();

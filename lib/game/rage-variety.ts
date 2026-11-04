@@ -9,8 +9,25 @@ import type { LevelDef } from "@/phaser/sim/level";
 
 const bucket = (n: number, cuts: number[]) => cuts.filter((c) => n >= c).length;
 
-/** What a room asks of the player: its traps, static spikes, gaps, ledges and length, coarsely. */
+/**
+ * What a room asks of the player. A short room is summed up by its traps, static spikes, gaps and ledges,
+ * coarsely. A long room with four or more traps (Gotcha's Level Devil rooms) has all of those, so it is told
+ * apart by the order its tricks come in: "bdse" is a pop-up wall, a dropping floor, spikes, then a running exit.
+ */
 export function motif(l: LevelDef): string {
+  const traps = l.traps ?? {};
+  if (Object.keys(traps).length >= 4) {
+    const firstX = (id: string) => Math.min(...(l.triggers ?? []).filter((t) => t.fire.includes(id)).map((t) => t.zone[0]));
+    const letter = { drop: "d", spikes: "s", block: "b", exit: "e" } as const;
+    return Object.keys(traps)
+      .sort((a, b) => firstX(a) - firstX(b))
+      .map((id) => letter[traps[id].kind])
+      .join("");
+  }
+  return shortMotif(l);
+}
+
+function shortMotif(l: LevelDef): string {
   const rows = l.tiles;
   const h = rows.length;
   const w = Math.max(...rows.map((r) => r.length));

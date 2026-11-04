@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.18.0 (4 November 2026)
+
+### For players
+
+- **Gotcha is a Level Devil-style rage game now, from Level 1.** Every level is a brand-new room, about three times
+  longer than before from the start (around 70 tiles at Level 1, up to about 155 by Level 60, where Level 1 used to be
+  24), with hazards close together and six to nine lies spread through each room: floors that fall as you land,
+  spikes that pop where you were about to step, walls that spring up in front of you, landings that turn to spikes
+  mid-jump, and a door that runs away when you reach it.
+- **Tough, never impossible.** Our bot beats every room without dying before it ships, with timing a person can hit:
+  every jump in its run still works when pressed a few frames early or late. Pits and spike rows are never wider
+  than two tiles, there's always room to land and take off again, and after your first death every trap in the
+  room is outlined.
+- **60 Gotcha levels**, up from 52, and no two follow the same pattern of tricks.
+- Gotcha Dailies and free play use the new rooms too, three to five per course. The old short rooms stay for
+  replays of past Dailies.
+- The hint now warns about the first trick you'll meet in the room.
+
 ## 1.17.0 (3 November 2026)
 
 ### For players

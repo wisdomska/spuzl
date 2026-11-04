@@ -1,6 +1,7 @@
 /**
- * Shared Vitest checks for a Rage Ridge level ladder (Levels mode): at least 60 levels, unique ids and names,
- * every level compiles and has a bot-found no-death solution that replays, the hand rooms keep their order,
+ * Shared Vitest checks for a Rage Ridge level ladder (Levels mode): at least 40 levels, unique ids and names,
+ * every level compiles and has a bot-found no-death solution that replays, the hand rooms keep their order
+ * (or, with `offLadder`, stay out of the ladder but keep replaying),
  * and Daily or free-play courses still draw only from the hand rooms. Test-only module.
  */
 import { expect, it } from "vitest";
@@ -19,6 +20,8 @@ export interface LadderKitOptions {
   sim(p: CoursePuzzle): SimCore;
   solutions: Record<string, number[][]>;
   pause: number;
+  /** rooms kept out of the ladder but still played in Daily courses (Gotcha's short hand rooms and set pieces) */
+  offLadder?: LevelDef[];
 }
 
 export function ladderSuite(o: LadderKitOptions) {
@@ -33,8 +36,9 @@ export function ladderSuite(o: LadderKitOptions) {
   });
 
   it("stores exactly one solution per level, and every one clears its level without a death", () => {
-    expect(Object.keys(o.solutions).sort()).toEqual(o.levels.map((l) => l.id).sort());
-    for (const l of o.levels) {
+    const rooms = [...o.levels, ...(o.offLadder ?? [])];
+    expect(Object.keys(o.solutions).sort()).toEqual([...new Set(rooms.map((l) => l.id))].sort());
+    for (const l of rooms) {
       const r = replay(o.sim({ levels: [l.id] }), courseLog([l.id], o.solutions, o.pause));
       expect(r.ok, l.id).toBe(true);
       expect(r.deaths, l.id).toBe(0);
@@ -43,8 +47,11 @@ export function ladderSuite(o: LadderKitOptions) {
 
   it("keeps the hand rooms in their order, and free-play courses draw from the ladder window for their difficulty", () => {
     const at = o.hand.map((h) => o.levels.findIndex((l) => l.id === h.id));
-    expect(at.every((i) => i >= 0)).toBe(true);
-    expect(at).toEqual(at.slice().sort((a, b) => a - b));
+    if (o.offLadder) expect(at.every((i) => i < 0)).toBe(true);
+    else {
+      expect(at.every((i) => i >= 0)).toBe(true);
+      expect(at).toEqual(at.slice().sort((a, b) => a - b));
+    }
     const ids = o.levels.map((l) => l.id);
     for (let i = 0; i < 20; i++) {
       const d = (["easy", "medium", "hard", "expert", "mega"] as const)[i % 5];

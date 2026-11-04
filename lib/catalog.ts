@@ -515,7 +515,7 @@ const MAIN_GAMES: GameMeta[] = [
     "L",
     "phaser",
     "The level is lying to you",
-    "Reach the exit. Floors drop, spikes appear, the door runs.",
+    "Reach the exit. Floors drop, spikes pop, walls spring up, the door runs.",
     { scoring: "deaths", minTimeMs: 5000, photosensitive: true },
   ),
   g("dash", "Dash", "reflex", "person-simple-run", "L", "phaser", "Tap to jump, do not stop", "Tap to jump. Clear today's course.", {
