@@ -2,7 +2,7 @@
  * Re-curates a course ladder for variety (lib/game/rage-variety.ts) without re-solving any room: every generated
  * room keeps its bot-proved solution, the ladder only drops and reorders.
  *
- * Usage: pnpm tsx scripts/rage-curate.ts <gotcha|runner> [--all] [--dry]
+ * Usage: pnpm tsx scripts/rage-curate.ts <gotcha|runner> [--all] [--cap=N] [--dry]
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
@@ -28,7 +28,9 @@ async function main() {
   const fixed = new Set([...mod.HAND_LEVELS, ...mod.SET_PIECES].map((l) => l.id));
   // --all: curate every generated room again (in the designer's tier order), not only the current ladder
   const order = process.argv.includes("--all") ? gen.GENERATED.map((l) => l.id) : gen.LADDER;
-  const ladder = curate(order, byId, fixed);
+  // --cap=N: how many rooms may share a motif (Dash keeps one of each: no look-alike levels)
+  const cap = Number(process.argv.find((x) => x.startsWith("--cap="))?.slice(6) ?? (id === "dash" ? 1 : 2));
+  const ladder = curate(order, byId, fixed, cap);
   if (process.argv.includes("--dry")) {
     ladder.forEach((x, i) => console.log(i + 1, x, motif(byId.get(x)!)));
     return;

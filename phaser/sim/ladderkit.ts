@@ -1,5 +1,5 @@
 /**
- * Shared Vitest checks for a Rage Ridge level ladder (Levels mode): at least 40 levels, unique ids and names,
+ * Shared Vitest checks for a Rage Ridge level ladder (Levels mode): at least 30 levels, unique ids and names,
  * every level compiles and has a bot-found no-death solution that replays, the hand rooms keep their order
  * (or, with `offLadder`, stay out of the ladder but keep replaying),
  * and Daily or free-play courses still draw only from the hand rooms. Test-only module.
@@ -25,8 +25,8 @@ export interface LadderKitOptions {
 }
 
 export function ladderSuite(o: LadderKitOptions) {
-  it("has a ladder of at least 40 varied levels with unique ids and names", () => {
-    expect(o.levels.length).toBeGreaterThanOrEqual(40);
+  it("has a ladder of at least 30 varied levels with unique ids and names", () => {
+    expect(o.levels.length).toBeGreaterThanOrEqual(30);
     expect(new Set(o.levels.map((l) => l.id)).size).toBe(o.levels.length);
     expect(new Set(o.levels.map((l) => l.name)).size).toBe(o.levels.length);
     for (const l of o.levels) expect(() => compileLevel(l), l.id).not.toThrow();

@@ -50,7 +50,23 @@ function shortMotif(l: LevelDef): string {
     else if (prev >= 0 && top !== prev) steps++;
     if (top >= 0) prev = top;
   }
-  return [kinds.join("+") || "none", `s${bucket(spikes, [1, 4, 8])}`, `g${bucket(gaps, [1, 3])}`, `t${bucket(steps, [1, 3, 6])}`].join("|");
+  let roof = 0;
+  let slabs = 0;
+  for (const r of rows)
+    for (const c of r)
+      if (c === "v") roof++;
+      else if (c === "=") slabs++;
+  return [
+    kinds.join("+") || "none",
+    `s${bucket(spikes, [1, 4, 8])}`,
+    `g${bucket(gaps, [1, 3])}`,
+    `t${bucket(steps, [1, 3, 6])}`,
+    // length: a sprint and a marathon over the same ground are different rooms
+    `w${bucket(w, [60, 130])}`,
+    // a low spiked roof and floating slabs make a room play differently on their own
+    ...(roof ? ["roof"] : []),
+    ...(slabs ? ["slabs"] : []),
+  ].join("|");
 }
 
 /**
@@ -58,13 +74,15 @@ function shortMotif(l: LevelDef): string {
  * neighbours differ (a room may move a few places, never across far difficulty).
  */
 export function curate(ladder: string[], byId: Map<string, LevelDef>, fixed: Set<string>, cap = 2): string[] {
+  // hand rooms and set pieces always stay, so they claim their motifs first: a generated look-alike gives way
   const used = new Map<string, number>();
+  for (const id of ladder) if (fixed.has(id)) used.set(motif(byId.get(id)!), cap);
   const kept: string[] = [];
   for (const id of ladder) {
     const m = motif(byId.get(id)!);
     const n = used.get(m) ?? 0;
     if (!fixed.has(id) && n >= cap) continue;
-    used.set(m, n + 1);
+    if (!fixed.has(id)) used.set(m, n + 1);
     kept.push(id);
   }
   // no two neighbours alike: pull the next different room (within 4 places) forward

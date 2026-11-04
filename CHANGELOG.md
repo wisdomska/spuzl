@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.18.1 (4 November 2026)
+
+### For players
+
+- **No look-alike Dash levels.** Every Dash level is now a different kind of run: its spikes, gaps, steps, length,
+  and whether it has a low spiked roof or floating slabs. Rooms that only repeated an earlier one are gone (Rusty
+  Climb's twin Cheeky Hurdle among them), so Dash has 36 levels instead of 41. Nothing else about Dash changed. If
+  you'd gone past the new end, the ladder shows as finished.
+
 ## 1.18.0 (4 November 2026)
 
 ### For players

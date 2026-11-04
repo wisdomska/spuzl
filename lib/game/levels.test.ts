@@ -23,13 +23,13 @@ import {
 const ORDER: Difficulty[] = ["easy", "medium", "hard", "expert", "mega"];
 
 describe("level ladders", () => {
-  it("pool ladder sizes match the level pools, and every pool has at least 40 levels", () => {
+  it("pool ladder sizes match the level pools, and every pool has at least 30 levels", () => {
     expect(POOL_LADDERS.gotcha).toBe(GOTCHA.length);
     expect(POOL_LADDERS.dash).toBe(DASH.length);
-    for (const n of Object.values(POOL_LADDERS)) expect(n).toBeGreaterThanOrEqual(40);
+    for (const n of Object.values(POOL_LADDERS)) expect(n).toBeGreaterThanOrEqual(30);
   });
 
-  it("pool ladders never put two rooms of the same kind in a row, nor use a kind more than twice", async () => {
+  it("pool ladders never put two rooms of the same kind in a row; Gotcha uses a kind at most twice, Dash once", async () => {
     const { motif } = await import("./rage-variety");
     const { HAND_LEVELS: GH, SET_PIECES: GS } = await import("@/games/gotcha/levels");
     const { HAND_LEVELS: DH, SET_PIECES: DS } = await import("@/games/dash/levels");
@@ -42,7 +42,9 @@ describe("level ladders", () => {
       for (let i = 1; i < kinds.length; i++) expect(kinds[i] === kinds[i - 1] && !hand.has(pool[i].id), pool[i].id).toBe(false);
       const counts = new Map<string, number>();
       pool.filter((l) => !hand.has(l.id)).forEach((l) => counts.set(motif(l), (counts.get(motif(l)) ?? 0) + 1));
-      for (const [k, n] of counts) expect(n, k).toBeLessThanOrEqual(2);
+      for (const [k, n] of counts) expect(n, k).toBeLessThanOrEqual(pool === DASH ? 1 : 2);
+      // Dash: no look-alike levels at all, hand rooms and set pieces included
+      if (pool === DASH) expect(new Set(kinds).size).toBe(kinds.length);
     }
   });
 
