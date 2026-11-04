@@ -338,9 +338,10 @@ function Room({ id, code }: { id: string; code: string }) {
   const err = (e: unknown, fallback: string) => show(e instanceof HttpError && e.message !== e.code ? e.message : fallback, "bad");
   const act = (path: string, json: unknown = {}) =>
     api<unknown>(`/api/v1/rooms/${code}/${path}`, { json }).then(() => qc.invalidateQueries({ queryKey: matchKey(id) }));
-  const leave = async (to = "/party") => {
+  // Buttons hand their click event in as the first argument: only a string is a destination.
+  const leave = async (to?: unknown) => {
     await matchAction(id, "leave").catch(() => {});
-    router.push(to as never);
+    router.push((typeof to === "string" ? to : "/party") as never);
   };
   const leaveHome = () => void leave("/");
 

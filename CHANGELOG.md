@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.22.1 (4 November 2026)
+
+### For players
+
+- **The X in a Party room takes you out again.** It removed you from the room but left you looking at an empty
+  lobby ("0 of 8 in"). The X in the lobby and Leave on the results screens now take you back to Party, in every
+  kind of room (Party Race, Draw It and Two Truths).
+
 ## 1.22.0 (4 November 2026)
 
 ### For players
