@@ -25,6 +25,7 @@ import { BaySearch } from "./BaySearch";
 import { TimePicker, useMinutes } from "./TimePicker";
 import type { BayView } from "@/lib/multiplayer/types";
 import { ShareCode } from "../party";
+import { InviteFriends } from "../InviteFriends";
 import { alertIfAway, alertsAllowed, alertsSupported, askAlerts } from "@/lib/client/alerts";
 import { Avatar, Cta, EmoteBar, EmoteBubble, LoadingScreen, MpToast, NeedProfile, Screen, TopButton, useToast } from "../ui";
 import { LiveBoard } from "./boards";
@@ -624,6 +625,7 @@ export function BayMatch({ id }: { id: string }) {
         <div className="flex flex-1 flex-col gap-4 px-4 pt-4">
           <p className="text-muted text-[16px]">Send this to a friend. The game starts when they join.</p>
           <ShareCode code={v.inviteCode ?? ""} url={`/bay/${v.id}?join=${v.inviteCode}`} text={`Play ${meta?.name} with me on SPUZL.`} />
+          <InviteFriends kind="bay" target={v.id} />
           <Cta tone="raised" onClick={() => action("resign")} className="mt-auto mb-[max(28px,env(safe-area-inset-bottom))]">
             Cancel invite
           </Cta>

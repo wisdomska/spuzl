@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.21.0 (4 November 2026)
+
+### For players
+
+- **Invite the friends you already have.** When you challenge a friend to a Duel, open a Board Games invite (Ludo,
+  Chess and the rest) or wait in a Party room, your friends list is right there, online friends first, each with
+  an Invite button. One tap and a card pops up on their screen, wherever they are in SPUZL, with a Join button that
+  takes them straight in. The code and link are still there for everyone else.
+- Invites only go to accepted friends, never across a block, and only into a game that is yours and still open.
+
 ## 1.20.0 (4 November 2026)
 
 ### For players

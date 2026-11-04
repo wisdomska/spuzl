@@ -253,6 +253,36 @@ describe("api: a friend's code", () => {
   });
 });
 
+describe("api: inviting a friend", () => {
+  it("invites only friends, only into your own open game, and the invite stops when the game closes", async () => {
+    const hName = uniq("ih_");
+    const fName = uniq("if_");
+    const host = await guest(hName);
+    const friend = await guest(fName);
+    const stranger = await guest(uniq("is_"));
+    await host.api("/api/v1/friends", { json: { nickname: fName } });
+    expect((await friend.api("/api/v1/friends", { json: { nickname: hName } })).data.status).toBe("friends");
+    const friendId = friend.userId;
+    const strangerId = stranger.userId;
+
+    const duel = await host.api("/api/v1/duel/friend", { json: { game: "crownfall" } });
+    const send = (who: G, to: string, kind: string, target: string) => who.api("/api/v1/game-invites", { json: { to, kind, target } });
+    expect((await send(host, friendId, "duel", duel.data.matchId)).data).toEqual({ sent: true });
+    expect((await send(host, strangerId, "duel", duel.data.matchId)).status).toBe(403); // not a friend
+    expect((await send(friend, host.userId, "duel", duel.data.matchId)).status).toBe(409); // not yours
+
+    const bay = await host.api("/api/v1/bay", { json: { game: "ludo", mode: "async" } });
+    expect((await send(host, friendId, "bay", bay.data.id)).data).toEqual({ sent: true });
+
+    const room = await host.api("/api/v1/rooms", { json: { game: "crownfall", difficulty: "easy", maxPlayers: 3 } });
+    expect((await send(host, friendId, "party", room.data.code)).data).toEqual({ sent: true });
+
+    // the duel starts: its invite is closed
+    expect((await friend.api("/api/v1/duel/friend/join", { json: { code: duel.data.code } })).status).toBe(200);
+    expect((await send(host, friendId, "duel", duel.data.matchId)).status).toBe(409);
+  });
+});
+
 describe("api: board bay", () => {
   it("validates every move on the server and rejects illegal ones", async () => {
     const a = await guest(uniq("ba_"));

@@ -27,6 +27,7 @@ import { leavePolicy } from "@/lib/game/leave";
 import { DuelEntrySheet, EdgeCard, MatchEnd, Matchmaking, OppDisconnected, OpponentStrip, RematchWipe, RoundEnd, Versus } from "./duel";
 import { CountdownNumber, Cta, EmoteBar, LoadingScreen, MpToast, NeedProfile, Screen, TopButton, useToast } from "./ui";
 import { JoinRoom, ShareCode } from "./party";
+import { InviteFriends } from "./InviteFriends";
 import { codeHref } from "@/lib/client/codes";
 
 type Outcome = "me" | "them" | "draw";
@@ -236,6 +237,7 @@ function DuelLobby({
             Unranked. {game ? gameName(game) : "Any game"}, best of 3. The duel starts the moment they join.
           </p>
           <ShareCode code={friend.code} url={`/duel?code=${friend.code}`} text="Duel me on SPUZL. Best of 3." />
+          <InviteFriends kind="duel" target={friend.matchId} />
           <div className="text-muted mt-2 flex items-center gap-2 text-[15px]" aria-live="polite">
             <span className="bg-accent size-2 animate-pulse rounded-full" />
             Waiting for your friend

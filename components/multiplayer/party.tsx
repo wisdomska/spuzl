@@ -4,6 +4,7 @@ import { InviteShare } from "@/components/share/InviteShare";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Icon } from "@/components/ui/Icon";
+import { InviteFriends } from "./InviteFriends";
 import { Spuz, type SpuzMood } from "@/components/brand/Spuz";
 import { play } from "@/lib/audio";
 import { formatClock, formatNumber } from "@/lib/format";
@@ -552,6 +553,11 @@ export function Lobby({
           )}
         </AnimatePresence>
       </ul>
+      {!adult && !view.classroom && here.length < view.maxPlayers && view.code && (
+        <div className="mx-4 mt-3.5 flex flex-col">
+          <InviteFriends kind="party" target={view.code} collapsible />
+        </div>
+      )}
       {adult ? (
         <div className="bg-surface mx-4 mt-3.5 flex items-center gap-3 rounded-[18px] px-3.5 py-3">
           <span className="bg-surface-raised text-accent flex size-11 items-center justify-center rounded-[14px]">
