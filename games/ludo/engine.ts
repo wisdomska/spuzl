@@ -118,7 +118,8 @@ export const TRACK: [number, number][] = (() => {
   return t;
 })();
 
-const HOME_COL: [number, number][][] = [
+/** Each colour's home column, from the track inwards. */
+export const HOME_COL_CELLS: [number, number][][] = [
   [1, 2, 3, 4, 5].map((c) => [7, c] as [number, number]),
   [1, 2, 3, 4, 5].map((r) => [r, 7] as [number, number]),
   [13, 12, 11, 10, 9].map((c) => [7, c] as [number, number]),
@@ -144,7 +145,7 @@ export function cellOf(colour: number, piece: number, p: number): [number, numbe
     return [r0 + SLOTS[piece][0], c0 + SLOTS[piece][1]];
   }
   if (p <= LAST_TRACK) return TRACK[absOf(colour, p)];
-  if (p < HOME) return HOME_COL[colour][p - 51];
+  if (p < HOME) return HOME_COL_CELLS[colour][p - 51];
   return [7, 7];
 }
 
@@ -159,7 +160,7 @@ export function baseOfCell(r: number, c: number): number {
 
 /** Home column colour of a grid cell, or -1. */
 export function homeColOfCell(r: number, c: number): number {
-  for (let k = 0; k < 4; k++) if (HOME_COL[k].some(([a, b]) => a === r && b === c)) return k;
+  for (let k = 0; k < 4; k++) if (HOME_COL_CELLS[k].some(([a, b]) => a === r && b === c)) return k;
   return -1;
 }
 

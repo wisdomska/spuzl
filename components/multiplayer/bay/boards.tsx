@@ -8,8 +8,8 @@ import { BayStyles, BEVEL, SQUARE, draughtsDisc } from "@/games/_shared/BayStyle
 import { parseFen, parseSq, toRows, inCheck, kingSquare } from "@/games/chess/engine";
 import { CH_N, Piece, useSprites } from "@/games/chess/Piece";
 import { PromotionPicker, type PromotionPiece } from "@/games/chess/Promotion";
-import { Token, LUDO_LOOK } from "@/games/ludo/Board";
-import { cellOf, TRACK, baseOfCell, homeColOfCell, SAFE } from "@/games/ludo/engine";
+import { Die3D, LUDO_LOOK, LudoTable } from "@/games/ludo/look";
+import { cellOf, trackIndexOfCell, SAFE } from "@/games/ludo/engine";
 import { TOP_ROW, BOTTOM_ROW } from "@/games/oware/engine";
 import { COLS as FU_COLS, ROWS as FU_ROWS } from "@/games/fourup/engine";
 import { flipsFor } from "@/games/flip/engine";
@@ -69,9 +69,9 @@ function useFourUpCell() {
 function useLudoCell() {
   const vw = useViewportWidth();
   const vh = useViewportHeight();
-  // The die and Roll button (68 px) sit under the board.
-  if (isWide(vw, vh)) return wideCell(vw, vh, 15, 8, 24, 15, 8 + 68);
-  return Math.min(24, Math.floor((Math.min(vw, 420) - 40) / 15));
+  // The die and Roll button (96 px) sit under the board; the wooden frame takes 14 px.
+  if (isWide(vw, vh)) return wideCell(vw, vh, 15, 14, 30, 15, 14 + 96);
+  return Math.min(26, Math.floor((Math.min(vw, 420) - 46) / 15));
 }
 
 /**
@@ -576,101 +576,79 @@ function LudoLive({ state, seat, legal, disabled, onMove }: LiveBoardProps) {
   const cell = useLudoCell();
   const canRoll = moves.some((m) => m.kind === "roll") && !disabled;
   const movable = new Set(moves.filter((m): m is { kind: "move"; piece: number } => m.kind === "move").map((m) => m.piece));
-  const at = new Map<string, { colour: number; piece: number; seat: number }[]>();
-  s.pieces.forEach((pcs, st) =>
-    pcs.forEach((p, k) => {
+  const lastRoll = s.log[s.log.length - 1];
+  // Waiting for the server's roll after a tap: the die keeps tumbling until the new roll is in the log.
+  const [rollingAt, setRollingAt] = useState<number | null>(null);
+  const rolling = rollingAt !== null && rollingAt === s.log.length;
+  const roll = () => {
+    if (!canRoll || rolling) return;
+    setRollingAt(s.log.length);
+    onMove({ kind: "roll" });
+    // a roll that never comes back (offline, refused) stops the tumble and gives the button back
+    setTimeout(() => setRollingAt(null), 5000);
+  };
+  const at = new Map<number, { colour: number; piece: number; seat: number }[]>();
+  const pieces = s.pieces.flatMap((pcs, st) =>
+    pcs.map((p, k) => {
       const [r, c] = cellOf(s.colours[st], k, p);
-      const key = `${r},${c}`;
-      at.set(key, [...(at.get(key) ?? []), { colour: s.colours[st], piece: k, seat: st }]);
+      const i = r * 15 + c;
+      at.set(i, [...(at.get(i) ?? []), { colour: s.colours[st], piece: k, seat: st }]);
+      return { key: `${st}-${k}`, r, c, colour: s.colours[st], glow: st === seat && movable.has(k) && !disabled };
     }),
   );
-  const trackSet = new Set(TRACK.map(([r, c]) => `${r},${c}`));
-  const lastRoll = s.log[s.log.length - 1];
+  const mineAt = (i: number) => (at.get(i) ?? []).find((h) => h.seat === seat && movable.has(h.piece));
+  const shown = s.roll ?? lastRoll?.roll ?? null;
+  const whoRolled = lastRoll ? (lastRoll.seat === seat ? "You" : LUDO_LOOK[s.colours[lastRoll.seat]].name) : null;
   return (
-    <div className="flex flex-col items-center gap-3">
-      <div
-        className="grid rounded-[16px] bg-[var(--bay-well)] p-1"
-        style={{ gridTemplateColumns: `repeat(15, ${cell}px)` }}
-        role="grid"
-        aria-label="Ludo board"
-      >
-        {Array.from({ length: 225 }, (_, i) => {
-          const r = Math.floor(i / 15),
-            c = i % 15;
-          const key = `${r},${c}`;
-          const base = baseOfCell(r, c);
-          const homeCol = homeColOfCell(r, c);
-          const onTrack = trackSet.has(key);
-          const here = at.get(key) ?? [];
-          const tIdx = TRACK.findIndex(([a, b]) => a === r && b === c);
-          const bg =
-            base >= 0
-              ? `color-mix(in srgb, ${LUDO_LOOK[base].c} 28%, var(--bay-well))`
-              : homeCol >= 0
-                ? LUDO_LOOK[homeCol].c
-                : onTrack
-                  ? SAFE.has(tIdx)
-                    ? "var(--bay-safe)"
-                    : "var(--bay-wood)"
-                  : r === 7 && c === 7
-                    ? "var(--w-board)"
-                    : "transparent";
-          const mine = here.find((h) => h.seat === seat && movable.has(h.piece));
-          return (
-            <button
-              key={i}
-              type="button"
-              role="gridcell"
-              disabled={!mine || disabled}
-              onClick={() => mine && onMove({ kind: "move", piece: mine.piece })}
-              aria-label={
-                here.length
-                  ? here.map((h) => `${LUDO_LOOK[h.colour].shape} piece ${h.piece + 1}`).join(", ") + (mine ? ", can move" : "")
-                  : undefined
-              }
-              aria-hidden={!here.length || undefined}
-              className="relative flex items-center justify-center"
-              style={{
-                width: cell,
-                height: cell,
-                background: bg,
-                outline: onTrack || homeCol >= 0 ? "1px solid rgba(0,0,0,.25)" : undefined,
-              }}
-            >
-              {here.slice(0, 2).map((h, k) => (
-                <span
-                  key={k}
-                  className="absolute"
-                  style={{ transform: here.length > 1 ? `translate(${k ? 3 : -3}px, ${k ? 3 : -3}px)` : undefined }}
-                >
-                  <Token colour={h.colour} size={cell * 0.62} glow={h.seat === seat && movable.has(h.piece) && !disabled} />
-                </span>
-              ))}
-            </button>
-          );
-        })}
-      </div>
-      <div className="flex items-center gap-3">
-        <span
-          className="bg-surface num flex size-14 items-center justify-center rounded-[16px] text-[28px] font-black"
-          aria-label={s.roll !== null ? `Rolled ${s.roll}` : lastRoll ? `Last roll ${lastRoll.roll}` : "No roll yet"}
-        >
-          {s.roll ?? lastRoll?.roll ?? "?"}
-        </span>
-        <button
-          type="button"
-          disabled={!canRoll}
-          onClick={() => onMove({ kind: "roll" })}
-          className="toy font-display h-14 rounded-[18px] px-6 text-[17px] font-black disabled:opacity-50"
-          style={{
-            background: "var(--w-board)",
-            color: "var(--square-ink)",
-            ["--btn-depth" as string]: "var(--w-board-ink)",
-            boxShadow: "0 5px 0 var(--w-board-ink)",
-          }}
-        >
-          Roll
-        </button>
+    <div className="flex flex-col items-center gap-2">
+      <LudoTable
+        cell={cell}
+        label={`Ludo board${seat !== null ? `. You are ${LUDO_LOOK[s.colours[seat]].name}` : ""}. Glowing pawns can move.`}
+        pieces={pieces}
+        interactive={(i) => !disabled && !!mineAt(i)}
+        onCell={(i) => {
+          const mine = mineAt(i);
+          if (mine && !disabled) onMove({ kind: "move", piece: mine.piece });
+        }}
+        cellLabel={(i) => {
+          const here = at.get(i) ?? [];
+          const ti = trackIndexOfCell(Math.floor(i / 15), i % 15);
+          if (here.length)
+            return (
+              here.map((h) => `${LUDO_LOOK[h.colour].name} piece ${h.piece + 1}`).join(", ") + (mineAt(i) && !disabled ? ", can move" : "")
+            );
+          return ti >= 0 && SAFE.has(ti) && ti % 13 !== 0 ? "safe star square" : undefined;
+        }}
+      />
+      <div className="flex items-center gap-4">
+        <Die3D
+          value={shown}
+          rollKey={s.log.length}
+          rolling={rolling}
+          size={52}
+          onRoll={roll}
+          disabled={!canRoll || rolling}
+          label={canRoll ? "Roll the die" : shown !== null ? `${whoRolled} rolled ${shown}` : "No roll yet"}
+        />
+        <div className="flex min-w-0 flex-col items-start gap-1.5">
+          <span className="text-muted text-[14px] font-semibold" aria-live="polite">
+            {rolling ? "Rolling…" : canRoll ? "Your roll" : shown !== null && whoRolled ? `${whoRolled} rolled ${shown}` : "Waiting"}
+          </span>
+          <button
+            type="button"
+            disabled={!canRoll || rolling}
+            onClick={roll}
+            className="toy font-display h-12 rounded-[16px] px-6 text-[17px] font-black disabled:opacity-50"
+            style={{
+              background: "var(--w-board)",
+              color: "var(--square-ink)",
+              ["--btn-depth" as string]: "var(--w-board-ink)",
+              boxShadow: "0 5px 0 var(--w-board-ink)",
+            }}
+          >
+            Roll
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -25,6 +25,7 @@ import { BaySearch } from "./BaySearch";
 import { TimePicker, useMinutes } from "./TimePicker";
 import type { BayView } from "@/lib/multiplayer/types";
 import { ShareCode } from "../party";
+import { alertIfAway, alertsAllowed, alertsSupported, askAlerts } from "@/lib/client/alerts";
 import { Avatar, Cta, EmoteBar, EmoteBubble, LoadingScreen, MpToast, NeedProfile, Screen, TopButton, useToast } from "../ui";
 import { LiveBoard } from "./boards";
 
@@ -250,6 +251,20 @@ export function BayMatch({ id }: { id: string }) {
     }
   }, [v, rules]);
 
+  // Your turn came round: a chime and a buzz, and in a background tab a flashing title (and a system notification
+  // when allowed). The name row below lights up with "Your turn" too. The rest of the app hears it through the
+  // inbox (components/shell/Inbox.tsx); this is the screen you are already on.
+  const turnIsMine = !!v && v.status === "active" && v.mySeat !== null && v.turn === v.mySeat;
+  const wasMine = useRef<boolean | null>(null);
+  useEffect(() => {
+    const prev = wasMine.current;
+    wasMine.current = turnIsMine;
+    if (prev !== false || !turnIsMine || !v) return;
+    play("notify");
+    alertIfAway("Your turn", `Your move in ${GAME_BY_ID[v.game]?.name ?? "your game"}.`, `/bay/${v.id}`, `turn:${v.id}`);
+  }, [turnIsMine]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [alertsOn, setAlertsOn] = useState(() => alertsAllowed());
+
   const move = useCallback(
     async (m: unknown) => {
       if (!v || busy) return;
@@ -379,8 +394,18 @@ export function BayMatch({ id }: { id: string }) {
           )}
         </Avatar>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="truncate text-[15px] font-semibold">
-            {mine ? "You" : p.nickname} · <span className="num">{p.id.startsWith("00000000") ? "Bot" : formatNumber(p.rating)}</span>
+          <span className="flex min-w-0 items-center gap-2 text-[15px] font-semibold">
+            <span className="truncate">
+              {mine ? "You" : p.nickname} · <span className="num">{p.id.startsWith("00000000") ? "Bot" : formatNumber(p.rating)}</span>
+            </span>
+            {mine && active && (
+              <span
+                key={v.turnStartedAt ?? 0}
+                className="bay-your-turn bg-accent text-on-accent font-display flex-none rounded-full px-2.5 py-0.5 text-[13px] font-black"
+              >
+                Your turn
+              </span>
+            )}
           </span>
           {chess && (
             <span
@@ -580,6 +605,20 @@ export function BayMatch({ id }: { id: string }) {
           {v.mode === "live" ? "Live" : "24 h per move"}
           {v.bot ? " · Practice bot" : ""}
         </span>
+        {!v.bot && alertsSupported() && !alertsOn && v.status !== "finished" && (
+          <TopButton
+            icon="bell"
+            label="Alert me when it's my turn"
+            onClick={async () => {
+              const on = await askAlerts();
+              setAlertsOn(on);
+              show(
+                on ? "We'll let you know when it's your turn." : "Turn alerts are blocked in your browser settings.",
+                on ? undefined : "bad",
+              );
+            }}
+          />
+        )}
       </div>
       {v.status === "waiting" ? (
         <div className="flex flex-1 flex-col gap-4 px-4 pt-4">

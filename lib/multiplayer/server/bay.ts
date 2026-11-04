@@ -206,6 +206,12 @@ export async function joinBay(admin: SupabaseClient, me: string, id: string, cod
     .select("*");
   if (!data?.length) throw new ApiError(409, "invite_closed");
   await serverBroadcast(bayTopic(id), "changed", { reason: "join" });
+  // the game just started: the first mover may be waiting on another screen
+  if (full) {
+    const started = data[0] as BayRow;
+    const first = (await loadRules(started.game_id)).turn(started.state);
+    if (started.players[first] !== me) await alertTurn(started, first);
+  }
   return bayView(admin, data[0] as BayRow, me);
 }
 
@@ -263,6 +269,16 @@ async function commitMove(
   if (!ok) throw new ApiError(409, "stale_ply");
   if (status.over) await finishRating(admin, b, winner);
   await serverBroadcast(bayTopic(b.id), "move", { ply: b.ply, seat, move });
+  // The turn passed to someone else: tell them, wherever they are in the app (and in a background tab).
+  const nextSeat = rules.turn(next);
+  if (!status.over && nextSeat !== seat) await alertTurn(b, nextSeat);
+}
+
+/** "Your turn" on a player's own channel (user:<id>), never to the Practice bot. */
+async function alertTurn(b: BayRow, seat: number) {
+  const to = b.players[seat];
+  if (!to || to === BOT_PLAYER) return;
+  await serverBroadcast(`user:${to}`, "your_turn", { matchId: b.id, game: b.game_id, mode: b.mode });
 }
 
 /** Practice bot replies straight away (several plies for Ludo rolls and moves). */

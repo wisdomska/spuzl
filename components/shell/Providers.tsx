@@ -11,6 +11,7 @@ import { pressSound } from "@/lib/audio/press";
 import { setHapticsEnabled } from "@/lib/haptics";
 import { useNavTracker } from "@/lib/client/nav";
 import { HapticFallback } from "./HapticFallback";
+import { Inbox } from "./Inbox";
 
 export function Providers({ children }: { children: ReactNode }) {
   const [client] = useState(
@@ -56,6 +57,7 @@ export function Providers({ children }: { children: ReactNode }) {
         {children}
         <HapticFallback />
         <MusicDirector />
+        <Inbox />
       </MotionConfig>
     </QueryClientProvider>
   );

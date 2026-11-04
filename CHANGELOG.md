@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.20.0 (4 November 2026)
+
+### For players
+
+- **Ludo looks like a real board now.** The classic red, green, yellow and blue board, printed with stars on the
+  safe squares, arrows on the start squares and the coloured triangles in the middle, in a wooden frame, seen at a
+  slight angle. The pieces are turned wooden pawns that stand up off the board (each still carries its shape on top,
+  so you never need colour alone to tell players apart).
+- **A real die.** Tap the die (or Roll) and it tumbles, bounces and lands on your number. Your rival's rolls tumble
+  too, so you see every throw. Same die in the Ludo puzzle.
+- **It tells you when it's your turn.** In every board game (Chess, Draughts, Oware, Ludo, Four Up), when the turn
+  comes back to you there's a chime and a buzz, and "Your turn" lights up by your name. Anywhere else in SPUZL a card
+  pops up with a Play button. In a background tab the title flashes, and if you tap the bell on the game screen
+  your browser can send you a notification too.
+
 ## 1.19.0 (4 November 2026)
 
 ### For players

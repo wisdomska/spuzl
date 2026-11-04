@@ -1,28 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
 import { useGridKeys } from "@/components/game/useGridKeys";
 import { isWide, useFitHeight, useViewportHeight, useViewportWidth, wideCell } from "@/components/game/useBoardSize";
 import { ShellAside } from "@/components/game/ShellAside";
-import { Icon } from "@/components/ui/Icon";
 import { play } from "@/lib/audio";
 import { BayStyles } from "@/games/_shared/BayStyles";
-import { HOME, SAFE, applyStep, baseOfCell, cellOf, homeColOfCell, legalSteps, startOf, trackIndexOfCell } from "./engine";
+import { HOME, SAFE, applyStep, cellOf, legalSteps, trackIndexOfCell } from "./engine";
+import { ColourBadge, Die3D, LUDO_LOOK, LudoTable } from "./look";
 import { explain, ranked, type LudoPuzzle, type LudoState } from "./logic";
 
-/** Design B6 player look: every colour carries a shape (circle, square, diamond, drop). */
-export const LUDO_LOOK = [
-  { c: "var(--w-line)", radius: "50%", rot: "none", shape: "circle" },
-  { c: "var(--w-shape)", radius: "3px", rot: "none", shape: "square" },
-  { c: "var(--w-number)", radius: "3px", rot: "rotate(45deg)", shape: "diamond" },
-  { c: "#B8F23A", radius: "50% 50% 50% 0", rot: "rotate(-45deg)", shape: "drop" },
-] as const;
+export { LUDO_LOOK } from "./look";
 const N = 15;
-const PIPS: Record<number, number[]> = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
 
-/** 14 one-px lines and 8 px of frame across the board. */
-const LUDO_OVERHEAD = 22;
+/** 14 px of wooden frame across the board. */
+const LUDO_OVERHEAD = 16;
 
 /** Ludo cells: the phone fit (20 to 30 px), or the board column on a wide screen (useBoardSize `wideCell`). */
 function useLudoCell() {
@@ -30,19 +23,6 @@ function useLudoCell() {
   const vh = useViewportHeight();
   if (isWide(vw, vh)) return wideCell(vw, vh, N, LUDO_OVERHEAD, 30);
   return Math.max(20, Math.min(30, Math.floor((Math.min(vw, 420) - 36 - LUDO_OVERHEAD) / N)));
-}
-
-export function Token({ colour, size, ring, glow }: { colour: number; size: number; ring?: string; glow?: boolean }) {
-  const l = LUDO_LOOK[colour];
-  const s: CSSProperties = {
-    width: size,
-    height: size,
-    borderRadius: l.radius,
-    background: l.c,
-    transform: l.rot,
-    boxShadow: glow ? "0 0 0 2px #0E0F1A, 0 0 0 4px var(--world)" : (ring ?? "0 0 0 2px #0E0F1A"),
-  };
-  return <span aria-hidden className="block flex-none" style={s} />;
 }
 
 /**
@@ -168,8 +148,22 @@ export default function LudoBoard({ puzzle, initialState, hint, disabled, api }:
   });
   const hintPiece = typeof hint?.target === "number" ? hint.target : -1;
   const homeCount = (seat: number) => shown.pieces[seat].filter((p) => p === HOME).length;
-  const startCells = new Map(t.colours.map((col) => [startOf(col), col]));
-  for (let k = 0; k < 4; k++) if (!startCells.has(startOf(k))) startCells.set(startOf(k), k);
+  const pieces = shown.pieces.flatMap((ps, seat) =>
+    ps.map((p, piece) => {
+      const [r, c] = cellOf(shown.colours[seat], piece, p);
+      const mine = seat === 0;
+      return {
+        key: `${seat}-${piece}`,
+        r,
+        c,
+        colour: shown.colours[seat],
+        glow: mine && (movable.has(piece) || (pick === piece && !done)),
+        lifted: mine && pick === piece && !done,
+        className: mine && moved === piece ? "bay-pop" : undefined,
+      };
+    }),
+  );
+  const hintCell = hintPiece >= 0 ? (([r, c]) => r * N + c)(cellOf(t.colours[0], hintPiece, t.pieces[0][hintPiece])) : undefined;
 
   return (
     <div ref={rootRef} className="flex w-full flex-col gap-2.5" data-board="ludo">
@@ -188,7 +182,7 @@ export default function LudoBoard({ puzzle, initialState, hint, disabled, api }:
               }
             >
               <div className="flex items-center gap-1.5">
-                <Token colour={col} size={14} ring="none" />
+                <ColourBadge colour={col} size={16} />
                 <span className="text-[13px] font-semibold">{puzzle.names[seat]}</span>
               </div>
               <span className="num text-muted text-[11px] font-semibold">{homeCount(seat)} home</span>
@@ -198,130 +192,49 @@ export default function LudoBoard({ puzzle, initialState, hint, disabled, api }:
       </ShellAside>
 
       <div className="flex justify-center">
-        <div
-          role="grid"
-          aria-label={`Ludo board. You are ${LUDO_LOOK[t.colours[0]].shape}s. Glowing pieces can move.`}
-          aria-rowcount={N}
-          aria-colcount={N}
+        <LudoTable
+          cell={cell}
+          label={`Ludo board. You are ${LUDO_LOOK[t.colours[0]].name}, ${LUDO_LOOK[t.colours[0]].shape} on the pawn. Glowing pawns can move.`}
+          focus={keys.focus}
           onKeyDown={keys.onKeyDown}
-          className="grid rounded-[16px] p-1"
-          style={{
-            gridTemplateColumns: `repeat(${N}, ${cell}px)`,
-            gridTemplateRows: `repeat(${N}, ${cell}px)`,
-            gap: 1,
-            background: "var(--line)",
+          dest={dest}
+          pieces={pieces}
+          hintCell={hintCell}
+          interactive={(i) => (at.get(i) ?? []).some((x) => x.seat === 0 && movable.has(x.piece))}
+          cellLabel={(i) => {
+            const r = Math.floor(i / N),
+              c = i % N;
+            const ti = trackIndexOfCell(r, c);
+            const here = at.get(i) ?? [];
+            const label = here.length
+              ? here
+                  .map(
+                    (x) =>
+                      `${x.seat === 0 ? "your" : `${puzzle.names[x.seat]}'s`} piece ${x.piece + 1}${x.seat === 0 && movable.has(x.piece) ? ", can move" : ""}`,
+                  )
+                  .join(", ")
+              : ti >= 0 && SAFE.has(ti) && ti % 13 !== 0
+                ? "safe star square"
+                : ti >= 0
+                  ? "track"
+                  : "";
+            return `Row ${r + 1}, column ${c + 1}${label ? `, ${label}` : ""}`;
           }}
-        >
-          {Array.from({ length: N }, (_, r) => (
-            <div role="row" key={r} className="contents">
-              {Array.from({ length: N }, (_, c) => {
-                const i = r * N + c;
-                const base = baseOfCell(r, c);
-                const hc = homeColOfCell(r, c);
-                const ti = trackIndexOfCell(r, c);
-                let bg = "#F4F5FB",
-                  radius = "2px";
-                if (base >= 0) {
-                  const inner = r % 9 >= 1 && r % 9 <= 4 && c % 9 >= 1 && c % 9 <= 4;
-                  bg = inner ? "var(--surface)" : LUDO_LOOK[base].c;
-                  radius = "0";
-                } else if (r >= 6 && r <= 8 && c >= 6 && c <= 8) {
-                  bg =
-                    r === 7 && c === 7
-                      ? "var(--world)"
-                      : r < 7 && c === 7
-                        ? LUDO_LOOK[1].c
-                        : r > 7 && c === 7
-                          ? LUDO_LOOK[3].c
-                          : c < 7
-                            ? LUDO_LOOK[0].c
-                            : c > 7
-                              ? LUDO_LOOK[2].c
-                              : "#F4F5FB";
-                  radius = "0";
-                } else if (hc >= 0) bg = LUDO_LOOK[hc].c;
-                const startCol = ti >= 0 ? startCells.get(ti) : undefined;
-                if (startCol !== undefined && ti % 13 === 0) bg = LUDO_LOOK[startCol].c;
-                const star = ti >= 0 && SAFE.has(ti) && ti % 13 !== 0;
-                const here = at.get(i) ?? [];
-                const isDest = !!dest && dest[0] === r && dest[1] === c;
-                const label = here.length
-                  ? here
-                      .map(
-                        (x) =>
-                          `${x.seat === 0 ? "your" : `${puzzle.names[x.seat]}'s`} piece ${x.piece + 1}${x.seat === 0 && movable.has(x.piece) ? ", can move" : ""}`,
-                      )
-                      .join(", ")
-                  : star
-                    ? "safe star square"
-                    : ti >= 0
-                      ? "track"
-                      : "";
-                return (
-                  <div
-                    key={i}
-                    role="gridcell"
-                    data-i={i}
-                    tabIndex={keys.focus === i ? 0 : -1}
-                    aria-label={`Row ${r + 1}, column ${c + 1}${label ? `, ${label}` : ""}`}
-                    onClick={() => {
-                      keys.setFocus(i);
-                      const mine = here.find((x) => x.seat === 0);
-                      if (mine) choose(mine.piece);
-                    }}
-                    className="relative flex items-center justify-center outline-none"
-                    style={{ background: bg, borderRadius: radius, boxShadow: isDest ? "inset 0 0 0 2px var(--world)" : undefined }}
-                  >
-                    {star && <Icon name="star" size={Math.round(cell * 0.5)} style={{ color: "#5A5E78" }} />}
-                    {here.map((x, k) => {
-                      const mine = x.seat === 0;
-                      const glow = mine && movable.has(x.piece);
-                      const picked = mine && pick === x.piece && !done;
-                      return (
-                        <span
-                          key={`${x.seat}-${x.piece}`}
-                          className={`absolute flex items-center justify-center ${mine && moved === x.piece ? "bay-pop" : ""} ${mine && hintPiece === x.piece ? "hint-ring" : ""}`}
-                          style={{
-                            transform: `translate(${k * 3}px, ${-k * 3}px)${picked ? " translateY(-3px)" : ""}`,
-                            zIndex: 1 + k,
-                            cursor: glow ? "pointer" : undefined,
-                          }}
-                        >
-                          <Token colour={shown.colours[x.seat]} size={Math.round(cell * 0.74)} glow={glow || picked} />
-                          {/* a 44 px hit area around small tokens */}
-                          {glow && <span aria-hidden className="absolute size-11 rounded-full" />}
-                        </span>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-        </div>
+          onCell={(i) => {
+            keys.setFocus(i);
+            const mine = (at.get(i) ?? []).find((x) => x.seat === 0);
+            if (mine) choose(mine.piece);
+          }}
+        />
       </div>
 
       <ShellAside>
         <div className="flex items-center gap-3">
-          <div
-            key={puzzle.roll}
-            className="grid size-[72px] flex-none grid-cols-3 grid-rows-3 gap-1 rounded-[20px] p-3"
-            style={{
-              background: "#F4F5FB",
-              boxShadow: "0 0 0 1px var(--line), 0 6px 0 #A2A6C2",
-              animation: "bay-punch 420ms var(--ease-out)",
-            }}
-            role="img"
-            aria-label={`Die showing ${puzzle.roll}`}
-          >
-            {Array.from({ length: 9 }, (_, k) => (
-              <span key={k} className="rounded-full" style={{ background: PIPS[puzzle.roll].includes(k) ? "#0E0F1A" : "transparent" }} />
-            ))}
-          </div>
+          <Die3D value={puzzle.roll} rollKey={puzzle.roll} size={56} label={`Die showing ${puzzle.roll}`} />
           <div className="flex min-w-0 flex-1 flex-col gap-1">
             <span className="font-display text-[18px] font-extrabold">You rolled a {puzzle.roll}</span>
             <span className="text-muted text-[15px] leading-[1.4]">
-              {puzzle.roll === 6 ? "Bring a piece out or move 6." : `Move one piece ${puzzle.roll}.`} Glowing pieces can move.
+              {puzzle.roll === 6 ? "Bring a piece out or move 6." : `Move one piece ${puzzle.roll}.`} Glowing pawns can move.
             </span>
           </div>
         </div>

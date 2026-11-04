@@ -17,10 +17,12 @@ const CSS = `
 @keyframes bay-rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .bay-dot { animation: bay-dot 1.6s ease-in-out infinite; }
 .bay-pop { animation: bay-pop 180ms var(--ease-out); }
+@keyframes bay-your-turn { 0% { transform: scale(.6); opacity: 0; } 55% { transform: scale(1.12); opacity: 1; } 75% { transform: scale(.96); } 100% { transform: scale(1); } }
+.bay-your-turn { animation: bay-your-turn 520ms var(--ease-out); }
 .bay-shake { animation: bay-shake var(--dur-shake) var(--ease-in-out); }
 .bay-flash { animation: bay-flash 1s linear 1; }
 [data-motion="reduce"] .bay-dot, [data-low-data="true"] .bay-dot { animation: none; }
-[data-motion="reduce"] .bay-pop { animation: fade-in 80ms linear; }
+[data-motion="reduce"] .bay-pop, [data-motion="reduce"] .bay-your-turn { animation: fade-in 80ms linear; }
 `;
 
 export function BayStyles() {
