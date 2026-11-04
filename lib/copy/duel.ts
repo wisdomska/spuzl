@@ -2,6 +2,19 @@
 export const duelCopy = {
   // SPZ-25: /duel is a page with its own Back (to the Grid when opened from a link).
   entryTitle: "Duel",
+  /** entering a code a friend sent (any code: a Duel, a Party room or a Board Games invite) */
+  code: {
+    open: "Got a friend's code?",
+    openSub: "Type it in to join their duel.",
+    heading: "Got a friend's code?",
+    body: "Type the 4-character code from their screen or message.",
+    label: "Friend's code",
+    placeholder: "ABCD",
+    cta: "Join",
+    bad: "Codes are 4 letters and numbers, no 0, O, 1 or I.",
+    missing: "No open duel, room or game has that code. Check it with your friend.",
+    failed: "Couldn't check that code. Try again.",
+  },
   back: "Back",
   roundTitle: (round: number, who: "me" | "them" | "draw", them: string) =>
     who === "draw" ? `Round ${round}: dead level` : who === "me" ? `Round ${round}: you win` : `Round ${round}: ${them} wins`,

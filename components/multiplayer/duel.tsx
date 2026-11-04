@@ -39,6 +39,7 @@ export function DuelEntrySheet({
   rating,
   onQuick,
   onFriend,
+  onCode,
   onClose,
   youngster,
 }: {
@@ -47,6 +48,8 @@ export function DuelEntrySheet({
   rating: number;
   onQuick: () => void;
   onFriend: () => void;
+  /** open the friend's-code box */
+  onCode: () => void;
   onClose: () => void;
   youngster: boolean;
 }) {
@@ -159,6 +162,19 @@ export function DuelEntrySheet({
           <span className="flex flex-1 flex-col">
             <span className="font-display text-[19px] font-black">Challenge a friend</span>
             <span className="text-muted text-[15px] font-medium">Unranked. Send them a link.</span>
+          </span>
+          <Icon name="caret-right" size={20} className="text-muted" />
+        </button>
+        <button
+          type="button"
+          onClick={onCode}
+          className="toy bg-surface-raised flex items-center gap-3.5 rounded-[22px] p-[18px] text-left [--btn-depth:var(--depth)]"
+          style={{ boxShadow: "0 6px 0 var(--depth)" }}
+        >
+          <Icon name="keyboard" size={32} className="text-accent" />
+          <span className="flex flex-1 flex-col">
+            <span className="font-display text-[19px] font-black">{duelCopy.code.open}</span>
+            <span className="text-muted text-[15px] font-medium">{duelCopy.code.openSub}</span>
           </span>
           <Icon name="caret-right" size={20} className="text-muted" />
         </button>

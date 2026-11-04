@@ -26,12 +26,14 @@ import { LeaveConfirm } from "@/components/game/LeaveConfirm";
 import { leavePolicy } from "@/lib/game/leave";
 import { DuelEntrySheet, EdgeCard, MatchEnd, Matchmaking, OppDisconnected, OpponentStrip, RematchWipe, RoundEnd, Versus } from "./duel";
 import { CountdownNumber, Cta, EmoteBar, LoadingScreen, MpToast, NeedProfile, Screen, TopButton, useToast } from "./ui";
-import { ShareCode } from "./party";
+import { JoinRoom, ShareCode } from "./party";
+import { codeHref } from "@/lib/client/codes";
 
 type Outcome = "me" | "them" | "draw";
 
 /**
- * /duel: entry sheet, matchmaking and friend invites; /duel?m=<id>: the match; /duel?code=<code>: join a friend;
+ * /duel: entry sheet, matchmaking, friend invites and a friend's-code box; /duel?m=<id>: the match;
+ * /duel?code=<code>: join a friend;
  * /duel?friend=<nickname>: from a friend's card, opens straight on a challenge link to send them.
  * Game-first (SPZ-13): /duel?game=<id> preselects a race game on the entry sheet, and
  * /duel?game=<id>&invite=1 makes the challenge-a-friend link for that game at once.
@@ -68,7 +70,8 @@ function DuelLobby({
   const me = useMe();
   const relaxed = useSettings((s) => s.relaxed);
   const [game, setGame] = useState<string | null>(initialGame ?? DUEL_DEFAULT_GAME ?? null);
-  const [mode, setMode] = useState<"sheet" | "search" | "friend">("sheet");
+  const [mode, setMode] = useState<"sheet" | "search" | "friend" | "code">("sheet");
+  const [codeBusy, setCodeBusy] = useState(false);
   const [waited, setWaited] = useState(0);
   const [searching, setSearching] = useState<number | null>(null);
   const [rulesFor, setRulesFor] = useState<{ game: string; rule: string } | null>(null);
@@ -168,6 +171,20 @@ function DuelLobby({
     }
   };
 
+  // A friend's code, typed in: it may be a Duel, a Party room or a Board Games invite; go where it leads.
+  const enterCode = async (raw: string) => {
+    setCodeBusy(true);
+    try {
+      const href = await codeHref(raw);
+      if (!href) return show(duelCopy.code.bad, "bad");
+      router.push(href);
+    } catch (e) {
+      show(e instanceof HttpError && e.status === 404 ? duelCopy.code.missing : duelCopy.code.failed, "bad");
+    } finally {
+      setCodeBusy(false);
+    }
+  };
+
   // From a friend's card (/duel?friend=<nickname>) or a game card (/duel?game=<id>&invite=1): make the challenge link at once.
   const autoChallenged = useRef(false);
   useEffect(() => {
@@ -230,6 +247,14 @@ function DuelLobby({
           </div>
         </div>
       )}
+      {mode === "code" && (
+        <div className="flex flex-1 flex-col gap-2 px-4 pt-[max(56px,env(safe-area-inset-top))] pb-[max(28px,env(safe-area-inset-bottom))]">
+          <div className="flex items-center gap-3">
+            <TopButton icon="arrow-left" label="Back" onClick={() => setMode("sheet")} />
+          </div>
+          <JoinRoom onJoin={(c) => void enterCode(c)} copy={duelCopy.code} busy={codeBusy} />
+        </div>
+      )}
       {mode === "sheet" && rulesFor && (
         <QueueRulesCard game={rulesFor.game} rule={rulesFor.rule} onReady={() => quick(true)} onBack={() => setRulesFor(null)} />
       )}
@@ -240,6 +265,7 @@ function DuelLobby({
           rating={rating}
           onQuick={() => quick()}
           onFriend={challengeFriend}
+          onCode={() => setMode("code")}
           onClose={back}
           youngster={me.data?.age_band === "13-15"}
         />

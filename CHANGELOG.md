@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.19.0 (4 November 2026)
+
+### For players
+
+- **Type in a friend's code to join their Duel.** The Duel screen has a new "Got a friend's code?" button that
+  works like joining a Party: type the 4-character code your friend sees on their challenge screen (or got in a
+  message) and you're in their duel, no link needed.
+- **Any code, any box.** The code box on Duel and the Join tab on Party both take any friend's code, a Duel, a
+  Party room or a Board Games invite, and take you to the right place. A code that's closed or wrong says so.
+
 ## 1.18.2 (4 November 2026)
 
 ### For players

@@ -11,6 +11,7 @@ import { matchAction, matchKey, useEmotes, useMatch, useMatchChat, useProfileGat
 import { ChatPanel, ChatPopup } from "./chat";
 import { useSettings } from "@/lib/settings/store";
 import { useBackOrHome } from "@/lib/client/nav";
+import { codeHref } from "@/lib/client/codes";
 import { normalizeRoomCode } from "@/lib/multiplayer/roomCode";
 import { partyPhase } from "@/lib/multiplayer/race";
 import { raceGameParam, roomGamesName } from "@/lib/multiplayer/games";
@@ -83,10 +84,16 @@ export function PartyHome() {
       show(isAdultMode(r.mode) ? adultErrorText(e) : partyCopy.host.failed, "bad");
     }
   };
-  const join = (raw: string) => {
+  // Any friend's code works here: a Party room, or a Duel or Board Games invite someone typed into the wrong box.
+  const join = async (raw: string) => {
     const code = normalizeRoomCode(raw);
     if (!code) return show(partyCopy.join.badCode, "bad");
-    router.push(`/party/${code}`);
+    try {
+      router.push((await codeHref(code)) ?? `/party/${code}`);
+    } catch {
+      // unknown or expired: the room page says so in its own words
+      router.push(`/party/${code}`);
+    }
   };
   return (
     <Screen label={tab === "host" ? "P0 Host" : "P0 Join"}>
@@ -106,7 +113,11 @@ export function PartyHome() {
           </>
         }
       >
-        {tab === "host" ? <HostRoom initialGame={initialGame} busy={busy} onOpen={open} adult={adult} /> : <JoinRoom onJoin={join} />}
+        {tab === "host" ? (
+          <HostRoom initialGame={initialGame} busy={busy} onOpen={open} adult={adult} />
+        ) : (
+          <JoinRoom onJoin={(c) => void join(c)} />
+        )}
       </PartyStart>
       {notice && (
         <AdultNotice

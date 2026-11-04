@@ -1,6 +1,7 @@
 import "server-only";
 import { randomInt, randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { CodeTarget } from "../types";
 import { ApiError } from "@/lib/api/server";
 import { serverBroadcast } from "@/lib/realtime/server";
 import { createRng } from "@/lib/rng";
@@ -473,4 +474,24 @@ export async function runItBack(admin: SupabaseClient, playerId: string, code: s
     .select("id");
   if (data?.length) await serverBroadcast(matchTopic(l.m.id), "changed", { reason: "lobby" });
   return { ok: true };
+}
+
+/* ---------------- Any friend's code ---------------- */
+
+/**
+ * Where a friend's 4-character code leads: a Duel challenge waiting for its rival, a Party room, or a Board Games
+ * invite. One code box (Duel and Party) takes any of them. The join itself still happens where the code leads, with
+ * that flow's own checks. Open codes win over closed ones; 404 when nothing open has this code.
+ */
+export async function resolveCode(admin: SupabaseClient, code: string): Promise<CodeTarget> {
+  const [{ data: rows }, { data: bay }] = await Promise.all([
+    admin.from("matches").select("kind, status, emptied_at").eq("code", code),
+    admin.from("board_matches").select("id, status").eq("invite_code", code).maybeSingle(),
+  ]);
+  for (const m of rows ?? []) {
+    if (m.kind === "duel" && m.status === "lobby") return { kind: "duel", code };
+    if (m.kind === "race" && !roomExpired(m.emptied_at)) return { kind: "party", code };
+  }
+  if (bay && bay.status === "waiting") return { kind: "bay", id: bay.id as string, code };
+  throw new ApiError(404, "room_not_found");
 }

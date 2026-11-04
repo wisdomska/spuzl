@@ -395,10 +395,21 @@ export function HostRoom({
   );
 }
 
-/** Join tab: type the host's 4-character room code. */
-export function JoinRoom({ onJoin }: { onJoin: (code: string) => void }) {
+/**
+ * Type a friend's 4-character code: the Party Join tab, and Duel's "Got a friend's code?". Any code works in either
+ * place (lib/client/codes.ts sends it where it leads); `copy` changes the words, `busy` holds the button.
+ */
+export function JoinRoom({
+  onJoin,
+  copy = partyCopy.join,
+  busy = false,
+}: {
+  onJoin: (code: string) => void;
+  copy?: { heading: string; body: string; label: string; placeholder: string; cta: string };
+  busy?: boolean;
+}) {
   const [code, setCode] = useState("");
-  const ready = code.trim().length === 4;
+  const ready = code.trim().length === 4 && !busy;
   return (
     <form
       className="flex flex-1 flex-col gap-3.5"
@@ -409,17 +420,17 @@ export function JoinRoom({ onJoin }: { onJoin: (code: string) => void }) {
     >
       <div className="mt-4 flex flex-col items-center gap-2 text-center">
         <Spuz mood="wave" size={110} />
-        <h2 className="font-display text-[22px] font-black">{partyCopy.join.heading}</h2>
-        <p className="text-muted text-[15px]">{partyCopy.join.body}</p>
+        <h2 className="font-display text-[22px] font-black">{copy.heading}</h2>
+        <p className="text-muted text-[15px]">{copy.body}</p>
       </div>
       <label htmlFor="join-code" className="sr-only">
-        {partyCopy.join.label}
+        {copy.label}
       </label>
       <input
         id="join-code"
         value={code}
         onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 4))}
-        placeholder={partyCopy.join.placeholder}
+        placeholder={copy.placeholder}
         autoCapitalize="characters"
         autoComplete="off"
         autoCorrect="off"
@@ -440,7 +451,7 @@ export function JoinRoom({ onJoin }: { onJoin: (code: string) => void }) {
             boxShadow: `0 6px 0 ${ready ? "var(--accent-depth)" : "var(--depth)"}`,
           }}
         >
-          {partyCopy.join.cta}
+          {copy.cta}
         </button>
       </div>
     </form>

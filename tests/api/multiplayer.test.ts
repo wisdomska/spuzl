@@ -229,6 +229,30 @@ describe("api: party rooms", () => {
   });
 });
 
+describe("api: a friend's code", () => {
+  it("sends any code where it leads: a Duel challenge, a Party room or a Board Games invite, and nothing else", async () => {
+    const host = await guest(uniq("ch_"));
+    const friend = await guest(uniq("cf_"));
+    const duel = await host.api("/api/v1/duel/friend", { json: { game: "crownfall" } });
+    expect((await friend.api("/api/v1/codes", { json: { code: duel.data.code.toLowerCase() } })).data).toEqual({
+      kind: "duel",
+      code: duel.data.code,
+    });
+    const room = await host.api("/api/v1/rooms", { json: { game: "crownfall", difficulty: "easy", maxPlayers: 3 } });
+    expect((await friend.api("/api/v1/codes", { json: { code: room.data.code } })).data).toEqual({ kind: "party", code: room.data.code });
+    const bay = await host.api("/api/v1/bay", { json: { game: "chess", mode: "live" } });
+    expect((await friend.api("/api/v1/codes", { json: { code: ` ${bay.data.inviteCode} ` } })).data).toEqual({
+      kind: "bay",
+      id: bay.data.id,
+      code: bay.data.inviteCode,
+    });
+    // joining the duel by its code closes it: the code no longer leads anywhere
+    expect((await friend.api("/api/v1/duel/friend/join", { json: { code: duel.data.code } })).status).toBe(200);
+    expect((await friend.api("/api/v1/codes", { json: { code: duel.data.code } })).status).toBe(404);
+    expect((await friend.api("/api/v1/codes", { json: { code: "O0I1" } })).status).toBe(400);
+  });
+});
+
 describe("api: board bay", () => {
   it("validates every move on the server and rejects illegal ones", async () => {
     const a = await guest(uniq("ba_"));

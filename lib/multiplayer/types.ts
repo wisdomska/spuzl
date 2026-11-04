@@ -164,3 +164,6 @@ export interface BayView {
   moves: { ply: number; seat: number; move: unknown }[];
   serverNow: number;
 }
+
+/** Where a friend's code leads (POST /api/v1/codes): a Duel waiting for its rival, a Party room, a Board Games invite. */
+export type CodeTarget = { kind: "duel"; code: string } | { kind: "party"; code: string } | { kind: "bay"; id: string; code: string };
