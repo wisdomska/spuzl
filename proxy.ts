@@ -24,7 +24,14 @@ export async function proxy(request: NextRequest) {
       },
     },
   });
-  await sb.auth.getUser();
+  // Link prefetches skip the refresh: their responses (and any rotated token they carry) are often thrown away, and
+  // the old refresh token used later would then count as reused, which ends the whole session. Real navigations and
+  // the browser client keep the session fresh.
+  const prefetch =
+    request.headers.get("next-router-prefetch") === "1" ||
+    request.headers.get("purpose") === "prefetch" ||
+    request.headers.get("sec-purpose")?.includes("prefetch");
+  if (!prefetch) await sb.auth.getUser();
   // Visitors with no session cookie at all (first visit, Google's OAuth branding review) get the public About page
   // at "/", not a redirect into the intro: the homepage must name the app and say what it does without a login.
   // Keyed on the cookie, not on getUser(), so a slow or failed token refresh never hides Home from a player.

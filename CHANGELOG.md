@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.22.2 (4 November 2026)
+
+### For players
+
+- **You stay signed in.** Some players were signed out and quietly turned into a new guest. The cause was the
+  sign-in token being refreshed in the background by link prefetches whose answers the browser threw away; the
+  old token, used later, counted as stolen and ended the session. Prefetches no longer touch the session, and the
+  token now has a 2-minute grace window for a refresh that crosses another (set in Supabase Auth on preview and
+  production). Sessions themselves never time out: you stay signed in until you sign out.
+
 ## 1.22.1 (4 November 2026)
 
 ### For players
