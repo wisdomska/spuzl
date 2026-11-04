@@ -180,8 +180,17 @@ export default function FlowlineBoard({ puzzle, initialState, hint, disabled, mo
         aria-rowcount={rows}
         aria-colcount={cols}
         onKeyDown={keys.onKeyDown}
+        // clip: a turning pipe's arms reach past its tile; on an edge tile they would poke out of the board for a
+        // moment, flash scrollbars and jolt the board
         className="grid rounded-[16px] select-none"
-        style={{ gridTemplateColumns: `repeat(${cols}, ${cs}px)`, gap: GAP, padding: PAD, background: "var(--board-bg)", perspective: 600 }}
+        style={{
+          gridTemplateColumns: `repeat(${cols}, ${cs}px)`,
+          gap: GAP,
+          padding: PAD,
+          background: "var(--board-bg)",
+          perspective: 600,
+          overflow: "clip",
+        }}
       >
         {Array.from({ length: rows }, (_, r) => (
           <div role="row" key={r} className="contents">
@@ -194,7 +203,7 @@ export default function FlowlineBoard({ puzzle, initialState, hint, disabled, mo
               const glow = i === hintTarget;
               const color = isSource || done ? `color-mix(in srgb, var(--world) 45%, ${INK})` : wet ? "var(--world)" : DRY;
               const dist = Math.abs(r - lr) + Math.abs(c - lc);
-              // The turn itself is the motion (a spring on the pipe); no pop on top of it.
+              // The turn itself is the motion (a smooth quarter turn, no overshoot); no pop on top of it.
               const opens = [0, 1, 2, 3]
                 .filter((d) => masks[i] & BIT[d])
                 .map((d) => DIR_NAME[d])

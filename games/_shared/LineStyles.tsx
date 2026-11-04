@@ -20,7 +20,7 @@ const CSS = `
 [data-theme="light"] .ll-ink { background: var(--world-ink); }
 .ll-wall { background: color-mix(in srgb, var(--world) 75%, var(--surface)); }
 [data-theme="light"] .ll-wall { background: var(--world-ink); }
-.ll-turn { transition: transform var(--dur-fast) var(--spring-press); }
+.ll-turn { transition: transform var(--dur-fast) var(--ease-out); }
 .ll-fog { transition: opacity 260ms var(--ease-out); }
 .ll-cam { transition: transform var(--dur-ui) var(--ease-out); }
 [data-motion="reduce"] .ll-grow-x, [data-motion="reduce"] .ll-grow-y, [data-motion="reduce"] .ll-head, [data-motion="reduce"] .ll-flow { animation: none; }

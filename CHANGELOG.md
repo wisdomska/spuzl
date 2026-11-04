@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.18.2 (4 November 2026)
+
+### For players
+
+- **Flowline's board no longer shakes when you turn a pipe.** Turning a pipe on the edge of the board swung its
+  ends past the board's edge for a moment, which flashed scrollbars and jolted the whole board. The board now clips
+  at its edge, and a pipe makes a smooth quarter turn instead of overshooting and springing back.
+
 ## 1.18.1 (4 November 2026)
 
 ### For players
