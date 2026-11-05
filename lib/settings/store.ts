@@ -17,6 +17,8 @@ export interface AudioSettings {
   haptics: boolean;
   /** true once the player has touched the haptics toggle, so reduced motion stops overriding it */
   hapticsTouched: boolean;
+  /** audio defaults version: when it moves on, sound and music go back on once (the owner's call: on by default) */
+  audioVersion: number;
 }
 
 export interface DisplaySettings {
@@ -31,6 +33,8 @@ export interface DisplaySettings {
 export type Settings = AudioSettings & DisplaySettings;
 
 export const AUDIO_KEY = "spuzl.audio";
+/** 2: sound effects and music on by default for everyone (1.30.1) */
+export const AUDIO_VERSION = 2;
 export const SETTINGS_KEY = "spuzl.settings";
 
 export const defaultSettings: Settings = {
@@ -39,6 +43,7 @@ export const defaultSettings: Settings = {
   musicTouched: false,
   haptics: true,
   hapticsTouched: false,
+  audioVersion: AUDIO_VERSION,
   theme: "dark",
   cb: "off",
   reducedMotion: "system",
@@ -47,7 +52,7 @@ export const defaultSettings: Settings = {
   lowData: false,
 };
 
-const AUDIO_FIELDS = ["sfx", "music", "musicTouched", "haptics", "hapticsTouched"] as const;
+const AUDIO_FIELDS = ["sfx", "music", "musicTouched", "haptics", "hapticsTouched", "audioVersion"] as const;
 
 function read(key: string): Record<string, unknown> {
   try {
@@ -59,7 +64,17 @@ function read(key: string): Record<string, unknown> {
 
 export function loadSettings(): Settings {
   if (typeof window === "undefined") return defaultSettings;
-  return { ...defaultSettings, ...read(SETTINGS_KEY), ...read(AUDIO_KEY) } as Settings;
+  const audio = read(AUDIO_KEY);
+  // Older saved audio settings: sound effects and music back on, once; a later switch-off holds.
+  if (audio.audioVersion !== AUDIO_VERSION) {
+    Object.assign(audio, { sfx: true, music: false, musicTouched: false, audioVersion: AUDIO_VERSION });
+    try {
+      localStorage.setItem(AUDIO_KEY, JSON.stringify(audio));
+    } catch {
+      /* private mode */
+    }
+  }
+  return { ...defaultSettings, ...read(SETTINGS_KEY), ...audio } as Settings;
 }
 
 function persist(s: Settings) {

@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.30.1 (5 November 2026)
+
+### For players
+
+- **Sound is on by default.** Sound effects and music are switched back on for everyone once (you can still turn
+  them off in Settings or the game menu, and that choice holds). On iPhone, game sound now plays even with the silent
+  switch on.
+- **Alerts on by default.** Once you're signed in, SPUZL asks to turn on alerts on your first screen outside a game,
+  not just on Duel, Party and Friends. "Not now" asks again a few days later, three times at most.
+
 ## 1.30.0 (5 November 2026)
 
 ### For players

@@ -170,12 +170,34 @@ export function Inbox() {
 }
 
 const ASKED = "spuzl.alertsAsked";
-const SOCIAL = /^\/(duel|party|bay|friends)(\/|$|\?)/;
+/** Screens where the ask would get in the way of play or sign-in: a game in progress, the intro, welcome, admin. */
+const QUIET = /^\/(play|intro|welcome|admin)(\/|$)/;
+/** "Not now" asks again after 3 days, at most 3 times in all. */
+const AGAIN_MS = 3 * 24 * 3600_000;
+const MAX_ASKS = 3;
+
+function askedState(): { n: number; at: number } {
+  try {
+    const raw = localStorage.getItem(ASKED);
+    if (!raw) return { n: 0, at: 0 };
+    if (raw === "1") return { n: 1, at: 0 }; // the old one-time flag counts as one ask
+    const v = JSON.parse(raw) as { n?: number; at?: number };
+    return { n: v.n ?? 1, at: v.at ?? 0 };
+  } catch {
+    return { n: MAX_ASKS, at: Date.now() };
+  }
+}
+
+/** Whether it is time to ask (never asked, or Not now a few days ago and asks left). */
+function askDue(): boolean {
+  const st = askedState();
+  return st.n < MAX_ASKS && Date.now() - st.at >= AGAIN_MS;
+}
 
 /**
- * Alerts are on by default: a browser only allows notifications after the player says yes once, so the first time
- * they open a two-player screen (Duel, Party, Board Games, Friends) we ask, once, in our own words. Yes turns on
- * push for this device (and the Settings switch shows on); Not now never asks again (Settings can still turn it on).
+ * Alerts are on by default: a browser only allows notifications after the player says yes once, so once they are
+ * signed in we ask, in our own words, on the first screen that isn't a game in progress. Yes turns on push for this
+ * device; Not now asks again a few days later (three asks in all). Settings can turn it on any time.
  */
 function AlertsAsk({ signedIn, pathname }: { signedIn: boolean; pathname: string }) {
   const [asked, setAsked] = useState(true);
@@ -184,18 +206,13 @@ function AlertsAsk({ signedIn, pathname }: { signedIn: boolean; pathname: string
   const key = `${pathname}|${signedIn}`;
   if (seen !== key) {
     setSeen(key);
-    let done = true;
-    try {
-      done = !!localStorage.getItem(ASKED);
-    } catch {
-      done = true;
-    }
-    const want = signedIn && SOCIAL.test(pathname) && alertsSupported() && Notification.permission === "default" && !done;
+    const due = askDue();
+    const want = signedIn && !QUIET.test(pathname) && alertsSupported() && Notification.permission === "default" && due;
     if (want !== !asked) setAsked(!want);
   }
   const close = () => {
     try {
-      localStorage.setItem(ASKED, "1");
+      localStorage.setItem(ASKED, JSON.stringify({ n: askedState().n + 1, at: Date.now() }));
     } catch {
       /* private mode: may ask again next time */
     }

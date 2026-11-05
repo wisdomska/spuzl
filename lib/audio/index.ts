@@ -114,6 +114,13 @@ function ctx(): AudioContext | null {
   if (!ac) {
     const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     if (!AC) return null;
+    // iPhone: web audio follows the silent switch unless the page asks for playback; game sound is on by default
+    try {
+      const session = (navigator as Navigator & { audioSession?: { type: string } }).audioSession;
+      if (session) session.type = "playback";
+    } catch {
+      /* older browsers */
+    }
     ac = new AC();
     build(ac);
     if (!runtime.lowData) loadSamples(ac);
