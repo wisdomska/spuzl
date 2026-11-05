@@ -5,6 +5,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Icon } from "@/components/ui/Icon";
 import { InviteFriends } from "./InviteFriends";
+import { AddFriend } from "./AddFriend";
+import { useFriends } from "@/lib/client/social";
 import { Spuz, type SpuzMood } from "@/components/brand/Spuz";
 import { play } from "@/lib/audio";
 import { formatClock, formatNumber } from "@/lib/format";
@@ -753,6 +755,28 @@ export function RaceRail({
 
 /* ---------------- P3 Podium ---------------- */
 
+/** After the last game: everyone you played who isn't a friend yet, with Add friend (and Accept, or Cancel). */
+function PartyAddFriends({ view }: { view: MatchView }) {
+  const friends = useFriends();
+  const known = new Set((friends.data?.friends ?? []).map((f) => f.id));
+  const others = view.players.filter((p) => p.id !== view.me && !p.spectator && !known.has(p.id));
+  if (!friends.data || !others.length) return null;
+  return (
+    <section aria-label="Add players as friends" className="mt-3 flex flex-col gap-1.5 px-4">
+      <h2 className="text-muted text-[13px] font-semibold">Played well? Add them</h2>
+      <ul className="flex flex-col gap-1.5">
+        {others.map((p) => (
+          <li key={p.id} className="bg-surface flex items-center gap-2.5 rounded-[14px] p-2 pl-3">
+            <Avatar name={p.nickname} color={p.color} size={28} radius={9} />
+            <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">{p.nickname}</span>
+            <AddFriend id={p.id} nickname={p.nickname} />
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export function Podium({
   view,
   host,
@@ -868,6 +892,7 @@ export function Podium({
           </li>
         ))}
       </ol>
+      {final && <PartyAddFriends view={view} />}
       <div className="mt-auto grid grid-cols-2 gap-2.5 px-4 pt-3">
         {host ? (
           <>

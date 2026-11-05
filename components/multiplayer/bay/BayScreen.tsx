@@ -26,6 +26,7 @@ import { TimePicker, useMinutes } from "./TimePicker";
 import type { BayView } from "@/lib/multiplayer/types";
 import { ShareCode } from "../party";
 import { InviteFriends } from "../InviteFriends";
+import { AddFriend } from "../AddFriend";
 import { ChatPanel, ChatPopup } from "../chat";
 import { alertIfAway, alertsAllowed, alertsSupported, askAlerts } from "@/lib/client/alerts";
 import { Avatar, Cta, EmoteBar, EmoteBubble, LoadingScreen, MpToast, NeedProfile, Screen, TopButton, useToast } from "../ui";
@@ -539,6 +540,19 @@ export function BayMatch({ id }: { id: string }) {
       <span className="flex-1 text-[16px] font-semibold">{finishedLine}</span>
     </div>
   );
+  // After the game: add the people you played as friends (never the Practice bot)
+  const addFriends = v.status === "finished" && !v.bot && (
+    <div className={`flex flex-wrap items-center gap-2 ${gap}`}>
+      {v.players
+        .filter((p) => p.seat !== seat)
+        .map((p) => (
+          <span key={p.id} className="bg-surface flex items-center gap-2 rounded-[14px] p-1.5 pl-3">
+            <span className="max-w-[140px] truncate text-[14px] font-semibold">{p.nickname}</span>
+            <AddFriend id={p.id} nickname={p.nickname} onError={(t) => show(t, "bad")} />
+          </span>
+        ))}
+    </div>
+  );
   const emoteBar = emoteOpen && (
     <div className={gap}>
       <EmoteBar
@@ -656,6 +670,7 @@ export function BayMatch({ id }: { id: string }) {
             {!wide && moves}
             {!wide && offer}
             {!wide && finished}
+            {!wide && addFriends}
             {!wide && emoteBar}
             {!wide && toolRow}
           </div>
@@ -668,6 +683,7 @@ export function BayMatch({ id }: { id: string }) {
               {moves}
               {offer}
               {finished}
+              {addFriends}
               {emoteBar}
               {toolRow}
             </aside>

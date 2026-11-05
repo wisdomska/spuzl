@@ -47,8 +47,11 @@ export default function MePage() {
       ) : (
         <>
           <header className="flex items-center gap-3.5">
-            <div
-              className="bg-surface flex size-24 shrink-0 items-center justify-center rounded-[30px]"
+            {/* The avatar opens the shop, where its colour, hat and look are changed */}
+            <Link
+              href="/shop"
+              aria-label="Edit your Spuz in the shop"
+              className="press bg-surface relative flex size-24 shrink-0 items-center justify-center rounded-[30px]"
               style={{ boxShadow: `0 0 0 4px ${d.avatar_color}, 0 0 0 8px var(--bg), 0 0 0 10px var(--gold)` }}
             >
               <SpuzWear
@@ -59,7 +62,14 @@ export default function MePage() {
                 still
                 label={`${d.nickname}'s Spuz`}
               />
-            </div>
+              <span
+                aria-hidden
+                className="bg-accent text-on-accent absolute -right-2 -bottom-2 flex size-8 items-center justify-center rounded-full"
+                style={{ boxShadow: "0 0 0 3px var(--bg)" }}
+              >
+                <Icon name="pencil-simple" size={16} />
+              </span>
+            </Link>
             <div className="flex min-w-0 flex-1 flex-col gap-1">
               <h1 className="font-display truncate text-[20px] font-black">{d.nickname}</h1>
               {(sub || d.title) && (

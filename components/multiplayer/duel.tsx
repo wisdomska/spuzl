@@ -6,6 +6,7 @@ import { duelCopy } from "@/lib/copy/duel";
 import { bayLive } from "@/lib/copy/bay-live";
 import { AnimatePresence, motion } from "motion/react";
 import { Icon } from "@/components/ui/Icon";
+import { AddFriend } from "./AddFriend";
 import { Spuz, type SpuzMood } from "@/components/brand/Spuz";
 import { play } from "@/lib/audio";
 import { formatClock, formatNumber } from "@/lib/format";
@@ -924,6 +925,11 @@ export function MatchEnd({
         </div>
       </div>
       {view.h2h && view.h2h.played > 0 && <HeadToHeadRow h2h={view.h2h} them={them.nickname} className="mt-3 w-[calc(100%-32px)]" />}
+      {!them.bot && (
+        <div className="mt-3 flex w-[calc(100%-32px)] items-center justify-center">
+          <AddFriend id={them.id} nickname={them.nickname} />
+        </div>
+      )}
       {(theyWantRematch || rematchWaiting) && (
         <div
           className="bg-surface-raised absolute inset-x-4 bottom-[106px] flex items-center gap-2.5 rounded-[16px] px-3.5 py-2.5"

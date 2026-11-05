@@ -172,8 +172,15 @@ export default function PlayerPage({ params }: PageProps<"/u/[nickname]">) {
                 Accept friend request
               </Button>
             ) : p.relation === "requested" ? (
-              <Button size="lg" variant="secondary" className="col-span-2" disabled icon="hourglass">
-                Request sent
+              <Button
+                size="lg"
+                variant="secondary"
+                className="col-span-2"
+                icon="x"
+                loading={remove.isPending}
+                onClick={() => remove.mutate(p.id, { onSuccess: () => q.refetch() })}
+              >
+                Request sent · Cancel
               </Button>
             ) : p.minor ? (
               <p className="text-muted col-span-2 text-center text-[14px]">Players under 16 add friends with an invite link or QR code.</p>

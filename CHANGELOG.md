@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.26.0 (5 November 2026)
+
+### For players
+
+- **Alerts are on by default.** The first time you open Duels, Parties, Board Games or Friends, SPUZL asks once if
+  you'd like alerts for your turn, nudges and invites. Say yes and they're on, on this device and every device you
+  sign in on that already allowed them (browsers need that one yes; we can't switch them on silently). The Settings
+  switch shows on once they are.
+- **Take back a friend request.** Requests you sent are listed on the Friends page with a Cancel button, and the
+  player's profile shows "Request sent · Cancel".
+- **Add friends after a game.** At the end of a Duel, after the last game of a Party and when a board game
+  finishes, everyone you played who isn't a friend yet has an Add friend button (Accept if they already asked you,
+  Requested if you did; tap that to cancel).
+- **Edit your Spuz from your profile.** Your avatar on the profile has a pencil; tap it to change your look in
+  the shop.
+
 ## 1.25.2 (5 November 2026)
 
 ### For players

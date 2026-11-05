@@ -320,7 +320,32 @@ function FriendsTab({ minor }: { minor: boolean }) {
             </section>
           )}
           {d!.outgoing.length > 0 && (
-            <p className="text-muted px-1 text-[14px]">Waiting on {d!.outgoing.map((o) => o.nickname).join(", ")}.</p>
+            // Requests you sent, each with Cancel to take it back
+            <section aria-label="Requests you sent" className="flex flex-col">
+              <h2 className="pb-1 text-[15px] font-bold">Requests you sent</h2>
+              <ul className="flex flex-col">
+                {d!.outgoing.map((o) => (
+                  <li key={o.id} className="flex h-[52px] items-center gap-2.5 px-1">
+                    <Link href={`/u/${o.nickname}`} className="flex min-w-0 flex-1 items-center gap-2.5">
+                      <AvatarChip nickname={o.nickname} color={o.color} size={36} radius={11} />
+                      <span className="flex min-w-0 flex-col">
+                        <span className="truncate text-[15px] font-semibold">{o.nickname}</span>
+                        <span className="text-muted truncate text-[13px] font-medium">Waiting for them to accept</span>
+                      </span>
+                    </Link>
+                    <button
+                      type="button"
+                      disabled={remove.isPending}
+                      onClick={() => remove.mutate(o.id)}
+                      aria-label={`Cancel your request to ${o.nickname}`}
+                      className="press bg-surface-raised h-10 flex-none rounded-[12px] px-3.5 text-[14px] font-semibold disabled:opacity-60"
+                    >
+                      Cancel
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
           )}
           <nav aria-label="Groups" className="grid grid-cols-2 gap-2 pt-1">
             <Link href="/crews" className="press bg-surface flex h-14 items-center gap-2.5 rounded-[16px] px-3.5 text-[15px] font-semibold">
