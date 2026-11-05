@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.29.2 (5 November 2026)
+
+### For players
+
+- **Music everywhere.** Home and menus get a funky nu-disco loop, and Logic games a lo-fi hip hop loop with a proper
+  drum beat. Every area of SPUZL now has its own recorded track.
+
 ## 1.29.1 (5 November 2026)
 
 ### For players

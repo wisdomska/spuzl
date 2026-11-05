@@ -5,6 +5,8 @@ import type { MusicPlayer, StyleId } from "./music";
  * without a file yet plays nothing. Each file is fetched and decoded once, then looped seamlessly.
  */
 export const MUSIC_FILES: Partial<Record<StyleId, string>> = {
+  home: "/music/home.mp3",
+  logic: "/music/logic.mp3",
   versus: "/music/versus.mp3",
   word: "/music/word.mp3",
   reflex: "/music/reflex.mp3",
