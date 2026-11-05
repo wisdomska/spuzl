@@ -55,8 +55,8 @@ export const ludoRules: BoardGameRules<LudoMatch, LudoMove> = {
       const roll = rng.int(1, 6);
       const sixes = roll === 6 ? s.sixes + 1 : 0;
       const log = [...s.log, { seat, roll, piece: null }];
-      // third six in a row, or nothing can move: the turn passes
-      if (sixes === 3 || !legalSteps(s, seat, roll).length) return { ...s, roll: null, sixes: 0, turn: nextSeat(s), log };
+      // nothing can move: the turn passes. Sixes keep the turn however many come in a row (owner's rule).
+      if (!legalSteps(s, seat, roll).length) return { ...s, roll: null, sixes: 0, turn: nextSeat(s), log };
       return { ...s, roll, sixes, log };
     }
     const step = legalSteps(s, seat, s.roll!).find((st) => st.piece === move.piece)!;

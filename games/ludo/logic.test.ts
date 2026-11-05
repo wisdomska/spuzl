@@ -301,7 +301,7 @@ describe("ludo match rules", () => {
     expect(s.turn).toBe(2);
   });
 
-  it("ends the turn on a third 6", () => {
+  it("keeps the turn on a third 6 (and a fourth)", () => {
     const s: LudoMatch = {
       colours: [0, 2],
       pieces: [
@@ -314,8 +314,12 @@ describe("ludo match rules", () => {
       log: [],
     };
     const t = ludoRules.apply(s, 0, { kind: "roll" }, fixed([6]));
-    expect(t.turn).toBe(1);
-    expect(t.sixes).toBe(0);
+    expect(t.turn).toBe(0);
+    expect(t.roll).toBe(6);
+    expect(t.sixes).toBe(3);
+    const moved = ludoRules.apply(t, 0, { kind: "move", piece: 0 }, fixed([6]));
+    expect(moved.turn).toBe(0); // a 6 still earns another roll
+    expect(ludoRules.apply(moved, 0, { kind: "roll" }, fixed([6])).turn).toBe(0);
   });
 
   it("captures earn another roll, and four home wins", () => {

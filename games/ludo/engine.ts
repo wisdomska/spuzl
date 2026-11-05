@@ -11,7 +11,7 @@
  *   safe: pieces share them.
  * - Blocks (as in Ludo King): two or more pieces of one colour on a plain track square form a block. Rivals can't
  *   land on it or pass it; the owner's own pieces can. Safe squares never block.
- * - A 6, a capture or reaching home earns another roll; a third 6 in a row ends the turn.
+ * - A 6, a capture or reaching home earns another roll, every time: sixes in a row never cost the turn.
  * - First to bring all four pieces home wins.
  */
 export const TRACK_LEN = 52;

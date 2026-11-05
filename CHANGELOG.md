@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.25.1 (5 November 2026)
+
+### For players
+
+- **Ludo: sixes never cost you the turn.** A third 6 in a row (or a fourth) is just another 6 now: you move and
+  roll again, as many times as the dice give you sixes.
+
 ## 1.25.0 (5 November 2026)
 
 ### For players
