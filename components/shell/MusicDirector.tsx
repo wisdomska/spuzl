@@ -29,11 +29,8 @@ export function musicFor(pathname: string): { id: string; style: StyleId } | nul
 }
 
 /** Follows the route and keeps the right music playing (settings decide whether any plays at all). */
-/**
- * Background music is paused while the generated tunes are replaced with recorded tracks (owner's call): nothing plays
- * until this is switched back on. Sound effects are unaffected.
- */
-export const MUSIC_ON = false;
+/** Background music on (recorded loops, lib/audio/recorded.ts); false silences it everywhere and hides the Settings row. */
+export const MUSIC_ON = true;
 
 export function MusicDirector() {
   const pathname = usePathname();

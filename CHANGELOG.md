@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.29.1 (5 November 2026)
+
+### For players
+
+- **Music is back, with real recorded tracks.** Duels and Party, Word games, Reflex games and Board games each have
+  their own loop, made with ElevenLabs and picked by ear. Home and Logic games stay quiet until their new tracks are
+  ready. Settings > Music turns it off.
+
 ## 1.29.0 (5 November 2026)
 
 ### For players

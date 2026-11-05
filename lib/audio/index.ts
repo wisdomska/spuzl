@@ -17,7 +17,8 @@
 import { haptic, HAPTICS } from "@/lib/haptics";
 import { canStart, clampPan, LENGTH_MS, prune, resolve, variation, type Scheduled } from "./palette";
 import { RECIPES, type Kit } from "./voices";
-import { createPlayer, trackFor, type MusicPlayer, type StyleId } from "./music";
+import type { MusicPlayer, StyleId } from "./music";
+import { createRecordedPlayer } from "./recorded";
 
 /** Music sits well under the sound effects. */
 const MUSIC_LEVEL = 0.32;
@@ -203,7 +204,7 @@ export function __resetForTests() {
   Object.assign(runtime, { sfx: true, music: false, haptics: true, lowData: false });
 }
 
-/* ---------- Music: generative tracks per area and per game (lib/audio/music.ts) ---------- */
+/* ---------- Music: recorded loops per area (lib/audio/recorded.ts) ---------- */
 
 export type WorldId = "logic" | "line" | "shape" | "number" | "word" | "clue" | "reflex" | "rage" | "board";
 
@@ -243,7 +244,8 @@ export function holdMusic(on: boolean) {
 
 function resumeMusic() {
   if (!wanted || !runtime.music || runtime.lowData || holds) return;
-  const key = `${wanted.style}:${wanted.id}`;
+  // One recorded loop per area: moving between games of the same area keeps it playing
+  const key = wanted.style;
   if (playing === key && player) return;
   const a = ctx();
   if (!a || a.state !== "running") return;
@@ -253,7 +255,7 @@ function resumeMusic() {
   musicBus.gain.cancelScheduledValues(t);
   musicBus.gain.setValueAtTime(0.0001, t);
   musicBus.gain.exponentialRampToValueAtTime(MUSIC_LEVEL, t + 1.2);
-  player = createPlayer(a, musicBus, nbuf, trackFor(wanted.id, wanted.style));
+  player = createRecordedPlayer(a, musicBus, wanted.style);
   playing = key;
 }
 
