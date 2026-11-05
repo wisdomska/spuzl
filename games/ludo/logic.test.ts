@@ -92,6 +92,44 @@ describe("ludo engine", () => {
     expect(after.pieces[1][0]).toBe(-1);
   });
 
+  it("blocks: two rival pieces on a plain square can't be passed or landed on; your own pieces pass", () => {
+    // colour 2 pieces at progress 2 and 2 sit together on abs 28 (a plain square): a block
+    const t: Table = {
+      colours: [0, 2],
+      pieces: [
+        [24, 25, 30, -1],
+        [2, 2, -1, -1],
+      ],
+    };
+    expect(absOf(2, 2)).toBe(28);
+    const steps = legalSteps(t, 0, 4);
+    expect(steps.find((s) => s.piece === 0)).toBeUndefined(); // would land on the block
+    expect(steps.find((s) => s.piece === 1)).toBeUndefined(); // would pass it
+    expect(steps.find((s) => s.piece === 2)).toBeDefined(); // already past it
+    // the block's owner moves through and onto it freely
+    const own = legalSteps(
+      {
+        ...t,
+        pieces: [
+          [-1, -1, -1, -1],
+          [2, 2, 0, -1],
+        ],
+      },
+      1,
+      2,
+    );
+    expect(own.find((s) => s.piece === 2)!.to).toBe(2);
+    // two pieces on a safe square are not a block
+    const safe: Table = {
+      colours: [0, 2],
+      pieces: [
+        [22, -1, -1, -1],
+        [0, 0, -1, -1],
+      ],
+    };
+    expect(legalSteps(safe, 0, 6).find((s) => s.piece === 0)).toBeDefined();
+  });
+
   it("knows when a piece is in range of a rival", () => {
     const t: Table = {
       colours: [0, 2],

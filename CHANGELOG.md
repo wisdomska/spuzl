@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.25.0 (5 November 2026)
+
+### For players
+
+- **Ludo plays by Ludo King's rules.** We checked our rules against Ludo King (the most played Ludo) and added
+  the one that was missing: **blocks**. Two or more of your pieces on the same plain square form a block, and
+  rivals can't land on it or move past it (your own pieces can). Safe squares (the stars and start squares) never
+  block. Everything else already matched: a 6 to come out, another roll after a 6, a capture or a piece reaching
+  home, a third 6 in a row ends your turn, eight safe squares, and an exact roll to finish. The bot and the Ludo
+  puzzles follow the new rule too.
+
+### For the team
+
+- **The admin console stops asking you to sign in again.** A verified admin sign-in now lasts a week of inactivity
+  instead of 12 hours from sign-in (every use slides it forward), and the admin session is refreshed on admin page
+  loads like the player session, so a page render never has to refresh it without saving it. Current sign-ins
+  were extended to the new window.
+
 ## 1.24.0 (5 November 2026)
 
 ### For players

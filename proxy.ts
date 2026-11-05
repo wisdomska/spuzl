@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { MERGED_WORLDS, type WorldId } from "@/lib/catalog";
+import { ADMIN_COOKIE } from "@/lib/admin/session";
 
 /** Refreshes the Supabase session cookie on navigation so Server Components see a valid player. Signed-out "/" shows About. */
 export async function proxy(request: NextRequest) {
@@ -32,6 +33,25 @@ export async function proxy(request: NextRequest) {
     request.headers.get("purpose") === "prefetch" ||
     request.headers.get("sec-purpose")?.includes("prefetch");
   if (!prefetch) await sb.auth.getUser();
+  // The admin console signs in with its own cookie (lib/admin/session.ts): keep that session fresh the same way on
+  // admin pages and admin API calls, so a page render never has to refresh it without being able to save it.
+  const adminPath = request.nextUrl.pathname.startsWith("/admin") || request.nextUrl.pathname.startsWith("/api/admin");
+  if (!prefetch && adminPath && request.cookies.getAll().some((c) => c.name.startsWith(ADMIN_COOKIE))) {
+    const admin = createServerClient(url, key, {
+      cookieOptions: { name: ADMIN_COOKIE },
+      cookies: {
+        getAll: () => request.cookies.getAll(),
+        setAll: (list) => {
+          list.forEach(({ name, value }) => request.cookies.set(name, value));
+          const cookies = response.cookies.getAll();
+          response = NextResponse.next({ request });
+          cookies.forEach((c) => response.cookies.set(c));
+          list.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+        },
+      },
+    });
+    await admin.auth.getUser();
+  }
   // Visitors with no session cookie at all (first visit, Google's OAuth branding review) get the public About page
   // at "/", not a redirect into the intro: the homepage must name the app and say what it does without a login.
   // Keyed on the cookie, not on getUser(), so a slow or failed token refresh never hides Home from a player.

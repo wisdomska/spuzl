@@ -7,8 +7,10 @@
  * 51..55 up its home column and 56 home.
  * - Roll a 6 to bring a piece out onto its start square.
  * - Exact rolls only to reach home.
- * - Landing on a rival on a plain track square sends every rival piece there back to base. Start
- *   squares and star squares are safe: pieces share them.
+ * - Landing on a rival on a plain track square sends it back to base. Start squares and star squares are
+ *   safe: pieces share them.
+ * - Blocks (as in Ludo King): two or more pieces of one colour on a plain track square form a block. Rivals can't
+ *   land on it or pass it; the owner's own pieces can. Safe squares never block.
  * - A 6, a capture or reaching home earns another roll; a third 6 in a row ends the turn.
  * - First to bring all four pieces home wins.
  */
@@ -54,13 +56,32 @@ export function target(p: number, roll: number): number {
   return t > HOME ? -2 : t;
 }
 
+/** Plain track squares (absolute) held by a rival block: two or more pieces of one other seat. */
+export function rivalBlocks(t: Table, seat: number): Set<number> {
+  const out = new Set<number>();
+  t.pieces.forEach((ps, s) => {
+    if (s === seat) return;
+    const seen = new Set<number>();
+    for (const q of ps) {
+      const a = absOf(t.colours[s], q);
+      if (a < 0 || SAFE.has(a)) continue;
+      if (seen.has(a)) out.add(a);
+      seen.add(a);
+    }
+  });
+  return out;
+}
+
 export function legalSteps(t: Table, seat: number, roll: number): Step[] {
   const out: Step[] = [];
   const colour = t.colours[seat];
+  const blocks = rivalBlocks(t, seat);
   t.pieces[seat].forEach((p, i) => {
     if (p === HOME) return;
     const to = target(p, roll);
     if (to === -2) return;
+    // a rival block stops the piece: it can't pass it or land on it (coming out lands on the safe start square)
+    if (p >= 0 && blocks.size) for (let q = p + 1; q <= Math.min(to, LAST_TRACK); q++) if (blocks.has(absOf(colour, q))) return;
     const abs = absOf(colour, to);
     const captures: [number, number][] = [];
     if (abs >= 0 && !SAFE.has(abs))

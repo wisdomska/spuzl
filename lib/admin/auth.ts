@@ -76,17 +76,31 @@ export async function checkAdmin(permission?: Permission): Promise<GateResult> {
   return { ok: true, ctx: { user: who.user, role: row.role, email: row.email ?? who.user.email ?? null, db } };
 }
 
-/** True when this sign-in session passed the emailed code step and hasn't expired. */
+/** How long a verified admin sign-in lasts without use. Every admin request slides it forward. */
+export const ADMIN_IDLE_MS = 7 * 24 * 3600_000;
+
+/**
+ * True when this sign-in session passed the emailed code step and hasn't gone a week unused. Each check slides the
+ * expiry to a week from now (at most once an hour), so an admin who keeps using the console stays signed in.
+ */
 async function sessionVerified(db: SupabaseClient, userId: string, sessionId: string | null): Promise<boolean> {
   if (!sessionId) return false;
+  const now = Date.now();
   const { data } = await db
     .from("admin_verified_sessions")
-    .select("session_id")
+    .select("session_id, expires_at")
     .eq("session_id", sessionId)
     .eq("user_id", userId)
-    .gt("expires_at", new Date().toISOString())
+    .gt("expires_at", new Date(now).toISOString())
     .maybeSingle();
-  return !!data;
+  if (!data) return false;
+  if (Date.parse(data.expires_at as string) < now + ADMIN_IDLE_MS - 3600_000)
+    await db
+      .from("admin_verified_sessions")
+      .update({ expires_at: new Date(now + ADMIN_IDLE_MS).toISOString() })
+      .eq("session_id", sessionId)
+      .eq("user_id", userId);
+  return true;
 }
 
 /**

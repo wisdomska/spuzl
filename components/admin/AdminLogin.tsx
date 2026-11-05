@@ -15,7 +15,7 @@ const REASONS: Record<string, string> = C.reasons;
 
 /**
  * Admin sign-in: email and password, then a 6-digit code emailed to the admin (no authenticator app). The server
- * marks this sign-in session verified for 12 hours. A password-reset link lands here too and asks for a new password
+ * marks this sign-in session verified for a week of inactivity (each use slides it forward). A password-reset link lands here too and asks for a new password
  * first.
  */
 export function AdminLogin({ next, reason }: { next: string; reason: string | null }) {

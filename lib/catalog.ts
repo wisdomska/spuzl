@@ -629,7 +629,7 @@ const MAIN_GAMES: GameMeta[] = [
     "M2",
     "board",
     "Race four pieces home",
-    "Roll, move and race all four pieces home. Land on rivals to send them back.",
+    "Roll a 6 to come out and race all four pieces home. Land on rivals to send them back; two of yours on a square block them.",
     { minTimeMs: 1500, botPlay: true },
   ),
   g(

@@ -1,13 +1,13 @@
 import { z } from "zod";
 import { body, handle, ok, ApiError } from "@/lib/api/server";
-import { requirePasswordAdmin } from "@/lib/admin/auth";
+import { ADMIN_IDLE_MS, requirePasswordAdmin } from "@/lib/admin/auth";
 import { codeClient } from "@/lib/admin/email-code";
 
 const Body = z.object({ code: z.string().regex(/^\d{6}$/) });
 
 /**
  * POST /api/admin/login/verify {code}: checks the emailed code for this admin. A correct code marks this sign-in
- * session as verified for 12 hours (the admin gate reads it), removes any old authenticator-app factor (the email
+ * session as verified for a week of inactivity (the admin gate reads it and slides it forward on use), removes any old authenticator-app factor (the email
  * code replaces it) and writes the audit log. The check's own short-lived session is revoked at once.
  */
 export const POST = handle(async (req: Request) => {
@@ -22,7 +22,7 @@ export const POST = handle(async (req: Request) => {
     session_id: sessionId,
     user_id: user.id,
     verified_at: new Date().toISOString(),
-    expires_at: new Date(Date.now() + 12 * 3600_000).toISOString(),
+    expires_at: new Date(Date.now() + ADMIN_IDLE_MS).toISOString(),
   });
   if (e) throw e;
 
