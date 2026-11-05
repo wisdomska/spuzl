@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createRng, type Rng } from "@/lib/rng";
 import type { Difficulty } from "@/games/types";
 import {
+  PARTNER,
   HOME,
   SAFE,
   TRACK,
@@ -128,6 +129,49 @@ describe("ludo engine", () => {
       ],
     };
     expect(legalSteps(safe, 0, 6).find((s) => s.piece === 0)).toBeDefined();
+  });
+
+  it("house rules: back-kick, side-kick and home-kick only when switched on", () => {
+    // back-kick: colour 0 at 30, a lone colour 2 piece 3 behind (colour 0 progress 27 = abs 27; colour 2 progress 1 = abs 27)
+    const back: Table = {
+      colours: [0, 2],
+      pieces: [
+        [30, -1, -1, -1],
+        [1, -1, -1, -1],
+      ],
+    };
+    expect(absOf(2, 1)).toBe(absOf(0, 27));
+    expect(legalSteps(back, 0, 3).some((s) => s.alt === "back")).toBe(false);
+    const bk = legalSteps(back, 0, 3, { backKick: true }).find((s) => s.alt === "back")!;
+    expect(bk).toMatchObject({ piece: 0, from: 30, to: 27, captures: [[1, 0]] });
+    // side-kick: landing across the lane from a lone rival takes it too
+    const [a, b] = [...PARTNER.entries()].find(([x, y]) => !SAFE.has(x) && !SAFE.has(y))!;
+    const prog = (abs: number, colour: number) => (abs - colour * 13 + 52) % 52;
+    const side: Table = {
+      colours: [0, 2],
+      pieces: [
+        [prog(a, 0) - 2, -1, -1, -1],
+        [prog(b, 2), -1, -1, -1],
+      ],
+    };
+    if (prog(a, 0) - 2 >= 0) {
+      const plain = legalSteps(side, 0, 2).find((s) => s.piece === 0)!;
+      expect(plain.captures).toEqual([]);
+      expect(legalSteps(side, 0, 2, { sideKick: true }).find((s) => s.piece === 0)!.captures).toEqual([[1, 0]]);
+    }
+    // home-kick: colour 2's piece 2 deep in its home column (progress 52); colour 0 two squares before its mouth
+    const mouth = absOf(2, 50);
+    const home: Table = {
+      colours: [0, 2],
+      pieces: [
+        [prog(mouth, 0) - 2, -1, -1, -1],
+        [52, -1, -1, -1],
+      ],
+    };
+    expect(legalSteps(home, 0, 4).some((s) => s.alt === "home")).toBe(false);
+    const hk = legalSteps(home, 0, 4, { homeKick: true }).find((s) => s.alt === "home")!;
+    expect(hk).toMatchObject({ piece: 0, to: prog(mouth, 0), captures: [[1, 0]] });
+    expect(applyStep(home, 0, hk).pieces[1][0]).toBe(-1);
   });
 
   it("knows when a piece is in range of a rival", () => {

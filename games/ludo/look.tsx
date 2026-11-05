@@ -83,6 +83,9 @@ const FACE: Record<number, string> = {
 const SHOW: Record<number, [number, number]> = { 1: [0, 0], 6: [0, -180], 3: [0, -90], 4: [0, 90], 2: [-90, 0], 5: [90, 0] };
 
 const up = (from: number, to: number) => to + 360 * Math.ceil((from - to) / 360);
+/** A small lean so the die reads as a cube, small enough that the face that counts faces the player. */
+const TILT_X = 10;
+const TILT_Y = 12;
 
 /**
  * A real die: a cube with pipped faces. `value` is the face to land on; a new `rollKey` throws it (it tumbles and
@@ -108,7 +111,7 @@ export function Die3D({
   const reduce = useReduced();
   const [rot, setRot] = useState<{ x: number; y: number; ms: number; ease: string }>(() => {
     const [x, y] = SHOW[value ?? 1];
-    return { x: x - 20, y: y + 25, ms: 0, ease: "linear" };
+    return { x: x - TILT_X, y: y + TILT_Y, ms: 0, ease: "linear" };
   });
   const [hop, setHop] = useState(0);
   // React to a new throw, the start of a wait, or the value arriving: work out the next turn of the cube here,
@@ -125,8 +128,8 @@ export function Die3D({
       const [x, y] = SHOW[value];
       const spin = reduce ? 0 : 360;
       setRot((r) => ({
-        x: up(r.x + spin, x) - 20,
-        y: up(r.y + spin, y) + 25,
+        x: up(r.x + spin, x) - TILT_X,
+        y: up(r.y + spin, y) + TILT_Y,
         ms: reduce ? 0 : 750,
         ease: "cubic-bezier(.17,.84,.32,1.06)",
       }));
@@ -141,7 +144,11 @@ export function Die3D({
     transform: `${FACE[n]} translateZ(${half}px)`,
     background: "radial-gradient(circle at 30% 25%, #FFFFFF, #F1ECE2 60%, #DCD3C2)",
     borderRadius: size * 0.18,
-    boxShadow: "inset 0 0 0 1px rgba(0,0,0,.08), inset 0 -3px 6px rgba(0,0,0,.12)",
+    // the face that counts glows: the number read is never in doubt
+    boxShadow:
+      !rolling && value === n
+        ? `inset 0 0 0 ${Math.max(2, Math.round(size * 0.05))}px #F2C14E, 0 0 ${Math.round(size * 0.3)}px rgba(242,193,78,.7)`
+        : "inset 0 0 0 1px rgba(0,0,0,.08), inset 0 -3px 6px rgba(0,0,0,.12)",
     display: "grid",
     gridTemplateColumns: "repeat(3, 1fr)",
     gridTemplateRows: "repeat(3, 1fr)",

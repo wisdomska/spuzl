@@ -1,5 +1,5 @@
 import ludoRules, { type LudoMatch, type LudoMove } from "@/games/ludo/rules";
-import { HOME, LAST_TRACK, absOf, applyStep, legalSteps, threatened, type Table } from "@/games/ludo/engine";
+import { HOME, LAST_TRACK, absOf, applyStep, legalSteps, threatened, type Table, type LudoOpts } from "@/games/ludo/engine";
 import { scoreStep } from "@/games/ludo/logic";
 import type { Bot } from "../types";
 
@@ -14,8 +14,8 @@ function exposure(t: Table, seat: number): number {
  * the move, so it does not leave a far-travelled piece in range to save a short one, and it prefers
  * moving the piece that is most at risk.
  */
-export function ludoHardScore(t: Table, seat: number, roll: number, piece: number): number {
-  const step = legalSteps(t, seat, roll).find((s) => s.piece === piece);
+export function ludoHardScore(t: Table, seat: number, roll: number, piece: number, opts: LudoOpts = {}, alt?: "back" | "home"): number {
+  const step = legalSteps(t, seat, roll, opts).find((s) => s.piece === piece && (s.alt ?? null) === (alt ?? null));
   if (!step) return -Infinity;
   const base = scoreStep(t, seat, step).score;
   const after = applyStep(t, seat, step);
@@ -36,7 +36,7 @@ export const ludoBot: Bot<LudoMatch, LudoMove> = {
       bestV = -Infinity;
     for (const m of legal) {
       if (m.kind !== "move") continue;
-      const v = ludoHardScore(state, seat, state.roll!, m.piece) + rng.next() * 0.01;
+      const v = ludoHardScore(state, seat, state.roll!, m.piece, state.opts, m.alt) + rng.next() * 0.01;
       if (v > bestV) {
         bestV = v;
         best = m;

@@ -364,6 +364,20 @@ describe("api: push alerts", () => {
   });
 });
 
+describe("api: Ludo house rules", () => {
+  it("keeps the chosen house rules in the match and in its rematch", async () => {
+    const a = await guest(uniq("lh_"));
+    const m = await a.api("/api/v1/bay", { json: { game: "ludo", mode: "async", bot: true, ludo: { backKick: true, homeKick: true } } });
+    expect(m.status).toBe(200);
+    expect(m.data.state.opts).toEqual({ backKick: true, homeKick: true });
+    const plain = await a.api("/api/v1/bay", { json: { game: "ludo", mode: "async", bot: true } });
+    expect(plain.data.state.opts).toBeUndefined();
+    await a.api(`/api/v1/bay/${m.data.id}/action`, { json: { action: "resign" } });
+    const re = await a.api(`/api/v1/bay/${m.data.id}/action`, { json: { action: "rematch" } });
+    expect(re.data.state.opts).toEqual({ backKick: true, homeKick: true });
+  });
+});
+
 describe("api: board bay", () => {
   it("validates every move on the server and rejects illegal ones", async () => {
     const a = await guest(uniq("ba_"));

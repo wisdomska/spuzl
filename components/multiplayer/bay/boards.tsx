@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { boardGames } from "@/lib/copy/board-games";
 import { fitRow, isWide, useCellSize, useViewportHeight, useViewportWidth, wideCell } from "@/components/game/useBoardSize";
@@ -8,7 +8,7 @@ import { BayStyles, BEVEL, SQUARE, draughtsDisc } from "@/games/_shared/BayStyle
 import { parseFen, parseSq, toRows, inCheck, kingSquare } from "@/games/chess/engine";
 import { CH_N, Piece, useSprites } from "@/games/chess/Piece";
 import { PromotionPicker, type PromotionPiece } from "@/games/chess/Promotion";
-import { Die3D, LUDO_LOOK, LudoTable } from "@/games/ludo/look";
+import { ColourBadge, Die3D, LUDO_LOOK, LudoTable } from "@/games/ludo/look";
 import { cellOf, trackIndexOfCell, SAFE } from "@/games/ludo/engine";
 import { TOP_ROW, BOTTOM_ROW } from "@/games/oware/engine";
 import { COLS as FU_COLS, ROWS as FU_ROWS } from "@/games/fourup/engine";
@@ -40,6 +40,8 @@ export interface LiveBoardProps {
   announce: (t: string) => void;
   /** chess: show file and rank labels on the edge squares (vs bot) */
   coords?: boolean;
+  /** players' names by seat (Ludo says who rolled and whose turn it is) */
+  names?: string[];
 }
 
 export function LiveBoard(p: LiveBoardProps) {
@@ -570,16 +572,20 @@ function DaraLive({ state, seat, legal, disabled, lastMove, onMove, announce }: 
 
 /* ---------------- Ludo (B6) ---------------- */
 
-function LudoLive({ state, seat, legal, disabled, onMove }: LiveBoardProps) {
+function LudoLive({ state, seat, legal, disabled, onMove, names }: LiveBoardProps) {
   const s = state as LudoMatch;
   const moves = legal as LudoMove[];
   const cell = useLudoCell();
   const canRoll = moves.some((m) => m.kind === "roll") && !disabled;
-  const movable = new Set(moves.filter((m): m is { kind: "move"; piece: number } => m.kind === "move").map((m) => m.piece));
+  const stepMoves = moves.filter((m): m is { kind: "move"; piece: number; alt?: "back" | "home" } => m.kind === "move");
+  const movable = new Set(stepMoves.map((m) => m.piece));
   const lastRoll = s.log[s.log.length - 1];
+  const nameOf = (st: number) => (st === seat ? "You" : (names?.[st] ?? LUDO_LOOK[s.colours[st]].name));
   // Waiting for the server's roll after a tap: the die keeps tumbling until the new roll is in the log.
   const [rollingAt, setRollingAt] = useState<number | null>(null);
   const rolling = rollingAt !== null && rollingAt === s.log.length;
+  // A piece with more than one way to move on this roll (a house-rule kick): ask which.
+  const [choosing, setChoosing] = useState<number | null>(null);
   const roll = () => {
     if (!canRoll || rolling) return;
     setRollingAt(s.log.length);
@@ -587,69 +593,179 @@ function LudoLive({ state, seat, legal, disabled, onMove }: LiveBoardProps) {
     // a roll that never comes back (offline, refused) stops the tumble and gives the button back
     setTimeout(() => setRollingAt(null), 5000);
   };
+  useShakeToRoll(canRoll && !rolling, roll);
   const at = new Map<number, { colour: number; piece: number; seat: number }[]>();
   const pieces = s.pieces.flatMap((pcs, st) =>
     pcs.map((p, k) => {
       const [r, c] = cellOf(s.colours[st], k, p);
       const i = r * 15 + c;
       at.set(i, [...(at.get(i) ?? []), { colour: s.colours[st], piece: k, seat: st }]);
-      return { key: `${st}-${k}`, r, c, colour: s.colours[st], glow: st === seat && movable.has(k) && !disabled };
+      return {
+        key: `${st}-${k}`,
+        r,
+        c,
+        colour: s.colours[st],
+        glow: st === seat && movable.has(k) && !disabled,
+        lifted: choosing === k && st === seat,
+      };
     }),
   );
   const mineAt = (i: number) => (at.get(i) ?? []).find((h) => h.seat === seat && movable.has(h.piece));
+  const pick = (piece: number) => {
+    const options = stepMoves.filter((m) => m.piece === piece);
+    if (options.length > 1) return setChoosing(piece);
+    setChoosing(null);
+    if (options[0]) onMove(options[0]);
+  };
   const shown = s.roll ?? lastRoll?.roll ?? null;
-  const whoRolled = lastRoll ? (lastRoll.seat === seat ? "You" : LUDO_LOOK[s.colours[lastRoll.seat]].name) : null;
+  const whoRolled = lastRoll ? nameOf(lastRoll.seat) : null;
+  const mine = seat !== null ? LUDO_LOOK[s.colours[seat]] : null;
+  const house = [s.opts?.backKick && "Back-kick", s.opts?.sideKick && "Side-kick", s.opts?.homeKick && "Home-kick"]
+    .filter(Boolean)
+    .join(" · ");
+  const turnName = nameOf(s.turn);
   return (
     <div className="flex flex-col items-center gap-2">
-      <LudoTable
-        cell={cell}
-        label={`Ludo board${seat !== null ? `. You are ${LUDO_LOOK[s.colours[seat]].name}` : ""}. Glowing pawns can move.`}
-        pieces={pieces}
-        interactive={(i) => !disabled && !!mineAt(i)}
-        onCell={(i) => {
-          const mine = mineAt(i);
-          if (mine && !disabled) onMove({ kind: "move", piece: mine.piece });
-        }}
-        cellLabel={(i) => {
-          const here = at.get(i) ?? [];
-          const ti = trackIndexOfCell(Math.floor(i / 15), i % 15);
-          if (here.length)
-            return (
-              here.map((h) => `${LUDO_LOOK[h.colour].name} piece ${h.piece + 1}`).join(", ") + (mineAt(i) && !disabled ? ", can move" : "")
-            );
-          return ti >= 0 && SAFE.has(ti) && ti % 13 !== 0 ? "safe star square" : undefined;
-        }}
-      />
-      <div className="flex items-center gap-4">
-        <Die3D
-          value={shown}
-          rollKey={s.log.length}
-          rolling={rolling}
-          size={52}
-          onRoll={roll}
-          disabled={!canRoll || rolling}
-          label={canRoll ? "Roll the die" : shown !== null ? `${whoRolled} rolled ${shown}` : "No roll yet"}
-        />
-        <div className="flex min-w-0 flex-col items-start gap-1.5">
-          <span className="text-muted text-[14px] font-semibold" aria-live="polite">
-            {rolling ? "Rolling…" : canRoll ? "Your roll" : shown !== null && whoRolled ? `${whoRolled} rolled ${shown}` : "Waiting"}
-          </span>
-          <button
-            type="button"
-            disabled={!canRoll || rolling}
-            onClick={roll}
-            className="toy font-display h-12 rounded-[16px] px-6 text-[17px] font-black disabled:opacity-50"
-            style={{
-              background: "var(--w-board)",
-              color: "var(--square-ink)",
-              ["--btn-depth" as string]: "var(--w-board-ink)",
-              boxShadow: "0 5px 0 var(--w-board-ink)",
-            }}
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        {mine && seat !== null && (
+          <span
+            className="flex items-center gap-2 rounded-full py-1 pr-3 pl-1 text-[14px] font-bold"
+            style={{ background: `color-mix(in srgb, ${mine.c} 22%, var(--surface))`, boxShadow: `inset 0 0 0 2px ${mine.c}` }}
           >
-            Roll
+            <ColourBadge colour={s.colours[seat]} size={22} />
+            You are {mine.name[0].toUpperCase() + mine.name.slice(1)}
+          </span>
+        )}
+        <span className="text-muted text-[14px] font-semibold" aria-live="polite">
+          {s.turn === seat ? "Your turn" : `${turnName}'s turn`}
+        </span>
+        {house && <span className="text-muted text-[13px]">{house}</span>}
+      </div>
+      <div className="relative">
+        <LudoTable
+          cell={cell}
+          label={`Ludo board${mine ? `. You are ${mine.name}` : ""}. Glowing pawns can move.`}
+          pieces={pieces}
+          interactive={(i) => !disabled && !!mineAt(i)}
+          onCell={(i) => {
+            const m = mineAt(i);
+            if (m && !disabled) pick(m.piece);
+          }}
+          cellLabel={(i) => {
+            const here = at.get(i) ?? [];
+            const ti = trackIndexOfCell(Math.floor(i / 15), i % 15);
+            if (here.length)
+              return (
+                here.map((h) => `${nameOf(h.seat)}: ${LUDO_LOOK[h.colour].name} piece ${h.piece + 1}`).join(", ") +
+                (mineAt(i) && !disabled ? ", can move" : "")
+              );
+            return ti >= 0 && SAFE.has(ti) && ti % 13 !== 0 ? "safe star square" : undefined;
+          }}
+        />
+        {/* The die sits in the middle of the board, over the finish, where every player looks */}
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <div className="pointer-events-auto">
+            <Die3D
+              value={shown}
+              rollKey={s.log.length}
+              rolling={rolling}
+              size={Math.round(cell * 1.9)}
+              onRoll={roll}
+              disabled={!canRoll || rolling}
+              label={canRoll ? "Roll the die" : shown !== null ? `${whoRolled} rolled ${shown}` : "No roll yet"}
+            />
+          </div>
+        </div>
+      </div>
+      {choosing !== null && (
+        <div className="flex flex-wrap items-center justify-center gap-2" role="group" aria-label={`Move piece ${choosing + 1}`}>
+          {stepMoves
+            .filter((m) => m.piece === choosing)
+            .map((m) => (
+              <button
+                key={m.alt ?? "go"}
+                type="button"
+                onClick={() => {
+                  setChoosing(null);
+                  onMove(m);
+                }}
+                className="press bg-surface-raised h-11 rounded-[14px] px-4 text-[15px] font-semibold"
+              >
+                {m.alt === "back" ? `Back-kick ${s.roll}` : m.alt === "home" ? "Home-kick" : `Move ${s.roll}`}
+              </button>
+            ))}
+          <button type="button" onClick={() => setChoosing(null)} className="press text-muted h-11 px-3 text-[15px] font-semibold">
+            Cancel
           </button>
         </div>
+      )}
+      <div className="flex items-center gap-3">
+        <span className="text-muted text-[14px] font-semibold" aria-live="polite">
+          {rolling
+            ? "Rolling…"
+            : canRoll
+              ? "Tap the die, or shake your phone"
+              : shown !== null && whoRolled
+                ? `${whoRolled} rolled ${shown}`
+                : "Waiting"}
+        </span>
+        <button
+          type="button"
+          disabled={!canRoll || rolling}
+          onClick={roll}
+          className="toy font-display h-12 rounded-[16px] px-6 text-[17px] font-black disabled:opacity-50"
+          style={{
+            background: "var(--w-board)",
+            color: "var(--square-ink)",
+            ["--btn-depth" as string]: "var(--w-board-ink)",
+            boxShadow: "0 5px 0 var(--w-board-ink)",
+          }}
+        >
+          Roll
+        </button>
       </div>
     </div>
   );
+}
+
+/**
+ * Shake the phone to roll (while a roll is due). A sharp change in acceleration rolls once; iOS asks for motion
+ * access the first time (from a tap, which the Roll button and the die both are).
+ */
+function useShakeToRoll(active: boolean, onShake: () => void) {
+  const cb = useRef(onShake);
+  useEffect(() => {
+    cb.current = onShake;
+  }, [onShake]);
+  useEffect(() => {
+    if (!active || typeof window === "undefined" || !("DeviceMotionEvent" in window)) return;
+    let last: { x: number; y: number; z: number } | null = null;
+    let cool = 0;
+    const onMotion = (e: DeviceMotionEvent) => {
+      const a = e.accelerationIncludingGravity;
+      if (!a || a.x === null || a.y === null || a.z === null) return;
+      const now = { x: a.x, y: a.y, z: a.z };
+      if (last) {
+        const jolt = Math.abs(now.x - last.x) + Math.abs(now.y - last.y) + Math.abs(now.z - last.z);
+        if (jolt > 28 && performance.now() > cool) {
+          cool = performance.now() + 1500;
+          cb.current();
+        }
+      }
+      last = now;
+    };
+    window.addEventListener("devicemotion", onMotion);
+    return () => window.removeEventListener("devicemotion", onMotion);
+  }, [active]);
+  // iOS 13+: motion needs permission, asked once from a tap anywhere while a roll is due
+  useEffect(() => {
+    const D =
+      typeof window !== "undefined"
+        ? (window as unknown as { DeviceMotionEvent?: { requestPermission?: () => Promise<string> } }).DeviceMotionEvent
+        : undefined;
+    if (!active || !D?.requestPermission) return;
+    const ask = () => void D.requestPermission!().catch(() => undefined);
+    window.addEventListener("pointerdown", ask, { once: true });
+    return () => window.removeEventListener("pointerdown", ask);
+  }, [active]);
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { MUSIC_ON } from "@/components/shell/MusicDirector";
+
 import { alertsSupported, askAlerts, disablePush, pushOn } from "@/lib/client/alerts";
 
 import Link from "next/link";
@@ -125,17 +127,19 @@ function SettingsScreen() {
             label="Sound effects"
           />
         </Row>
-        <Row icon="music-notes" label="Music">
-          <Switch
-            checked={musicEnabled(s) && !s.lowData}
-            disabled={s.lowData}
-            onChange={(v) => {
-              save("music", v);
-              save("musicTouched", true);
-            }}
-            label="Music"
-          />
-        </Row>
+        {MUSIC_ON && (
+          <Row icon="music-notes" label="Music">
+            <Switch
+              checked={musicEnabled(s) && !s.lowData}
+              disabled={s.lowData}
+              onChange={(v) => {
+                save("music", v);
+                save("musicTouched", true);
+              }}
+              label="Music"
+            />
+          </Row>
+        )}
         <AlertsRow />
         <Row icon="vibrate" label="Haptics">
           <Switch

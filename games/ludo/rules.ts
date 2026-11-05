@@ -4,12 +4,14 @@
  */
 import type { BoardGameRules, MatchStatus } from "@/games/types";
 import type { Rng } from "@/lib/rng";
-import { HOME, applyStep, coloursFor, legalSteps, type Table } from "./engine";
+import { HOME, applyStep, coloursFor, legalSteps, type LudoOpts, type Step, type Table } from "./engine";
 import { scoreStep } from "./logic";
 
-export type LudoMove = { kind: "roll" } | { kind: "move"; piece: number };
+export type LudoMove = { kind: "roll" } | { kind: "move"; piece: number; alt?: "back" | "home" };
 
 export interface LudoMatch extends Table {
+  /** house rules chosen before the match (back-kick, side-kick, home-kick); none in Quick Match */
+  opts?: LudoOpts;
   turn: number;
   /** current roll waiting for a move, or null before rolling */
   roll: number | null;
@@ -33,10 +35,16 @@ const nextSeat = (s: LudoMatch) => (s.turn + 1) % s.colours.length;
 function legal(s: LudoMatch, seat: number): LudoMove[] {
   if (seat !== s.turn || statusOf(s).over) return [];
   if (s.roll === null) return [{ kind: "roll" }];
-  return legalSteps(s, seat, s.roll).map((st) => ({ kind: "move" as const, piece: st.piece }));
+  return legalSteps(s, seat, s.roll, s.opts).map((st) => ({ kind: "move" as const, piece: st.piece, ...(st.alt ? { alt: st.alt } : {}) }));
 }
 
-const same = (a: LudoMove, b: LudoMove) => a.kind === b.kind && (a.kind === "roll" || a.piece === (b as { piece: number }).piece);
+const same = (a: LudoMove, b: LudoMove) =>
+  a.kind === b.kind &&
+  (a.kind === "roll" || (a.piece === (b as { piece: number }).piece && (a.alt ?? null) === ((b as { alt?: string }).alt ?? null)));
+
+/** The engine step a move stands for (a piece can have a plain move and a house-rule kick on the same roll). */
+export const stepOf = (s: LudoMatch, seat: number, m: { piece: number; alt?: string }): Step | undefined =>
+  legalSteps(s, seat, s.roll!, s.opts).find((st) => st.piece === m.piece && (st.alt ?? null) === (m.alt ?? null));
 
 export const ludoRules: BoardGameRules<LudoMatch, LudoMove> = {
   id: "ludo",
@@ -56,10 +64,10 @@ export const ludoRules: BoardGameRules<LudoMatch, LudoMove> = {
       const sixes = roll === 6 ? s.sixes + 1 : 0;
       const log = [...s.log, { seat, roll, piece: null }];
       // nothing can move: the turn passes. Sixes keep the turn however many come in a row (owner's rule).
-      if (!legalSteps(s, seat, roll).length) return { ...s, roll: null, sixes: 0, turn: nextSeat(s), log };
+      if (!legalSteps(s, seat, roll, s.opts).length) return { ...s, roll: null, sixes: 0, turn: nextSeat(s), log };
       return { ...s, roll, sixes, log };
     }
-    const step = legalSteps(s, seat, s.roll!).find((st) => st.piece === move.piece)!;
+    const step = stepOf(s, seat, move)!;
     const t = applyStep(s, seat, step);
     const again = s.roll === 6 || step.captures.length > 0 || step.to === HOME;
     const log = s.log.slice();
@@ -74,9 +82,10 @@ export const ludoRules: BoardGameRules<LudoMatch, LudoMove> = {
     const moves = legal(s, seat);
     if (!moves.length) throw new Error("no legal moves");
     if (moves[0].kind === "roll") return moves[0];
-    const steps = legalSteps(s, seat, s.roll!).map((st) => scoreStep(s, seat, st));
+    const steps = legalSteps(s, seat, s.roll!, s.opts).map((st) => scoreStep(s, seat, st));
     steps.sort((a, b) => b.score - a.score + (rng.next() - 0.5) * 0.01);
-    return { kind: "move", piece: steps[0].step.piece };
+    const best = steps[0].step;
+    return { kind: "move", piece: best.piece, ...(best.alt ? { alt: best.alt } : {}) };
   },
 };
 

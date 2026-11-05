@@ -11,6 +11,8 @@ const Create = z.object({
   bot: z.boolean().optional(),
   /** live time control, minutes per player; values a game does not offer fall back to its default */
   minutes: z.number().int().min(1).max(60).optional(),
+  /** Ludo house rules (ignored for other games) */
+  ludo: z.object({ backKick: z.boolean().optional(), sideKick: z.boolean().optional(), homeKick: z.boolean().optional() }).optional(),
 });
 
 /** GET /api/v1/bay: the "Your move" inbox. */

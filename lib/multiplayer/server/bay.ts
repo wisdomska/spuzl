@@ -144,14 +144,26 @@ export async function getBay(admin: SupabaseClient, id: string, me: string) {
 export async function createBay(
   admin: SupabaseClient,
   me: string,
-  input: { game: string; mode: "live" | "async"; seats?: number; rated?: boolean; bot?: boolean; minutes?: number },
+  input: {
+    game: string;
+    mode: "live" | "async";
+    seats?: number;
+    rated?: boolean;
+    bot?: boolean;
+    minutes?: number;
+    /** Ludo house rules chosen before the match */
+    ludo?: { backKick?: boolean; sideKick?: boolean; homeKick?: boolean };
+  },
 ) {
   if (!isBayGame(input.game)) throw new ApiError(400, "not_board_game");
   const rules = await loadRules(input.game);
   const seats = Math.max(rules.seats.min, Math.min(rules.seats.max, input.seats ?? rules.seats.min));
   if (input.bot && !rules.botMove) throw new ApiError(400, "no_bot");
   const seed = crypto.randomUUID();
-  const state = initialState(rules, seats, seed);
+  const base = initialState(rules, seats, seed);
+  // Ludo house rules ride in the match state, so every move is checked against them on the server
+  const opts = input.game === "ludo" && input.ludo ? Object.fromEntries(Object.entries(input.ludo).filter(([, v]) => v)) : null;
+  const state = opts && Object.keys(opts).length ? { ...(base as object), opts } : base;
   const bot = !!input.bot;
   const clock = input.mode === "live" ? clockMsFor(input.game, input.minutes) : null;
   const players = bot ? [me, ...Array.from({ length: seats - 1 }, () => BOT_PLAYER)] : [me];
@@ -472,7 +484,10 @@ async function rematchBay(admin: SupabaseClient, me: string, b: BayRow) {
   if (!isBayGame(b.game_id)) throw new ApiError(409, "game_retired", "This game has left Board Bay.");
   const rules = await loadRules(b.game_id);
   const seed = crypto.randomUUID();
-  const state = initialState(rules, b.seats, seed);
+  const fresh = initialState(rules, b.seats, seed);
+  // a rematch keeps the house rules the players chose (Ludo)
+  const kept = (b.state as { opts?: object } | null)?.opts;
+  const state = kept ? { ...(fresh as object), opts: kept } : fresh;
   // Seats rotate so the other side moves first.
   const players = [...b.players.slice(1), b.players[0]];
   const now = Date.now();

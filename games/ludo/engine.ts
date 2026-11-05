@@ -48,6 +48,22 @@ export interface Step {
   to: number;
   /** [seat, piece] of rivals sent back to base */
   captures: [number, number][];
+  /** an option move (house rules): "back" a back-kick, "home" a home-kick; plain moves forward have none */
+  alt?: "back" | "home";
+}
+
+/**
+ * House rules a Ludo match can switch on before it starts (all off by default, and in Quick Match):
+ * - backKick: a piece may move back by the roll when that lands on a lone rival, and sends it home;
+ * - sideKick: landing straight across the lane from a lone rival (same line, other side of the arm) sends it home;
+ * - homeKick: a piece may run into a rival's home column on an exact count to take a piece there, then waits at
+ *   the column's mouth (it can't stay in another colour's column).
+ * Safe squares and blocks protect as always.
+ */
+export interface LudoOpts {
+  backKick?: boolean;
+  sideKick?: boolean;
+  homeKick?: boolean;
 }
 
 export function target(p: number, roll: number): number {
@@ -72,10 +88,48 @@ export function rivalBlocks(t: Table, seat: number): Set<number> {
   return out;
 }
 
-export function legalSteps(t: Table, seat: number, roll: number): Step[] {
+/** Lone rival pieces (no block, not on a safe square) on a track square, as [seat, piece]. */
+function loneRivals(t: Table, seat: number, abs: number, blocks: Set<number>): [number, number][] {
+  if (abs < 0 || SAFE.has(abs) || blocks.has(abs)) return [];
+  const out: [number, number][] = [];
+  t.pieces.forEach((ps, s) => {
+    if (s === seat) return;
+    ps.forEach((q, j) => {
+      if (absOf(t.colours[s], q) === abs) out.push([s, j]);
+    });
+  });
+  return out;
+}
+
+export function legalSteps(t: Table, seat: number, roll: number, opts: LudoOpts = {}): Step[] {
   const out: Step[] = [];
   const colour = t.colours[seat];
   const blocks = rivalBlocks(t, seat);
+  // no rival block strictly between two of this piece's track positions
+  const clear = (a: number, b: number) => {
+    for (let q = Math.min(a, b) + 1; q < Math.max(a, b); q++) if (q <= LAST_TRACK && blocks.has(absOf(colour, q))) return false;
+    return true;
+  };
+  t.pieces[seat].forEach((p, i) => {
+    if (p < 0 || p > LAST_TRACK) return;
+    // back-kick: back by the roll onto a lone rival
+    if (opts.backKick && p - roll >= 0 && clear(p, p - roll)) {
+      const caps = loneRivals(t, seat, absOf(colour, p - roll), blocks);
+      if (caps.length) out.push({ piece: i, from: p, to: p - roll, captures: caps, alt: "back" });
+    }
+    // home-kick: up a rival's home column on an exact count, onto one of its pieces
+    if (opts.homeKick)
+      t.pieces.forEach((ps, s) => {
+        if (s === seat) return;
+        const mouth = absOf(t.colours[s], LAST_TRACK);
+        const k = (mouth - absOf(colour, p) + TRACK_LEN) % TRACK_LEN;
+        if (p + k > LAST_TRACK || !clear(p, p + k + 1) || blocks.has(mouth)) return;
+        ps.forEach((q, j) => {
+          if (q > LAST_TRACK && q < HOME && k + (q - LAST_TRACK) === roll)
+            out.push({ piece: i, from: p, to: p + k, captures: [[s, j]], alt: "home" });
+        });
+      });
+  });
   t.pieces[seat].forEach((p, i) => {
     if (p === HOME) return;
     const to = target(p, roll);
@@ -91,6 +145,8 @@ export function legalSteps(t: Table, seat: number, roll: number): Step[] {
           if (absOf(t.colours[s], q) === abs) captures.push([s, j]);
         });
       });
+    // side-kick: also take a lone rival straight across the lane
+    if (opts.sideKick && abs >= 0 && PARTNER.has(abs)) captures.push(...loneRivals(t, seat, PARTNER.get(abs)!, blocks));
     out.push({ piece: i, from: p, to, captures });
   });
   return out;
@@ -137,6 +193,21 @@ export const TRACK: [number, number][] = (() => {
   t.push([7, 0]);
   t.push([6, 0]);
   return t;
+})();
+
+/**
+ * The square straight across the lane from each track square (absolute index to absolute index): the two outer
+ * lanes of an arm face each other across its home column, row for row. The arm tips have no partner.
+ */
+export const PARTNER: Map<number, number> = (() => {
+  const at = new Map(TRACK.map(([r, c], k) => [`${r},${c}`, k]));
+  const m = new Map<number, number>();
+  TRACK.forEach(([r, c], k) => {
+    const across = (r === 6 || r === 8) && (c < 6 || c > 8) ? [14 - r, c] : (c === 6 || c === 8) && (r < 6 || r > 8) ? [r, 14 - c] : null;
+    const j = across ? at.get(`${across[0]},${across[1]}`) : undefined;
+    if (j !== undefined) m.set(k, j);
+  });
+  return m;
 })();
 
 /** Each colour's home column, from the track inwards. */

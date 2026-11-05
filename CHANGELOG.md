@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.28.0 (5 November 2026)
+
+### For players
+
+- **Ludo house rules.** Starting a Ludo game with friends or the Practice bot, switch on any of:
+  - **Back-kick:** move back by your roll to take a rival right behind you.
+  - **Side-kick:** land straight across the lane from a rival (same line, other side) and take it.
+  - **Home-kick:** on an exact roll, run up a rival's home column and take a piece there (your piece then waits at
+    the mouth of that column).
+    The rules show above the board and carry over to rematches. Safe squares and blocks still protect. When a piece
+    can move two ways, you pick which. Quick Match stays standard.
+- **Shake to roll.** Shake your phone to roll the die when it's your turn (or tap the die, or Roll).
+- **The die sits in the middle of the board,** turns to face you when it lands, and the face that counts is
+  ringed in gold.
+- **Names, not colours.** "Ama rolled 4", "Kofi's turn": Ludo says who, not "red".
+- **Know your colour.** A chip above the board says "You are Red" (or your colour).
+- **Background music is off for now** while the generated tunes are replaced with properly produced tracks.
+  Sound effects are unchanged.
+
 ## 1.27.1 (5 November 2026)
 
 ### For players

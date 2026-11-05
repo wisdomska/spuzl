@@ -111,10 +111,14 @@ function NewBaySheet({
   const [mode, setMode] = useState<"live" | "async">("async");
   const [minutes, setMinutes] = useMinutes(game);
   const [busy, setBusy] = useState(false);
+  // Ludo house rules, chosen before the match (games with friends and the Practice bot; Quick Match stays standard)
+  const [kicks, setKicks] = useState({ backKick: false, sideKick: false, homeKick: false });
   const create = async (bot: boolean) => {
     setBusy(true);
     try {
-      const v = await api<BayView>("/api/v1/bay", { json: { game, mode, bot, ...(mode === "live" ? { minutes } : {}) } });
+      const v = await api<BayView>("/api/v1/bay", {
+        json: { game, mode, bot, ...(mode === "live" ? { minutes } : {}), ...(game === "ludo" ? { ludo: kicks } : {}) },
+      });
       onCreated(v.id);
     } catch {
       setBusy(false);
@@ -166,6 +170,31 @@ function NewBaySheet({
           ))}
         </div>
         {mode === "live" && <TimePicker game={game} value={minutes} onChange={setMinutes} />}
+        {game === "ludo" && (
+          <fieldset className="flex flex-col gap-1.5">
+            <legend className="text-muted pb-1 text-[13px] font-semibold">House rules (with friends and the bot)</legend>
+            {(
+              [
+                ["backKick", "Back-kick", "Move back by your roll to take a rival behind you"],
+                ["sideKick", "Side-kick", "Take a rival straight across the lane from where you land"],
+                ["homeKick", "Home-kick", "Run up a rival's home column on an exact roll to take a piece there"],
+              ] as const
+            ).map(([k, label, hint]) => (
+              <label key={k} className="bg-surface-raised flex min-h-12 cursor-pointer items-center gap-3 rounded-[14px] px-3 py-2">
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="text-[15px] font-semibold">{label}</span>
+                  <span className="text-muted text-[13px]">{hint}</span>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={kicks[k]}
+                  onChange={(e) => setKicks((x) => ({ ...x, [k]: e.target.checked }))}
+                  className="size-5 flex-none accent-[var(--w-board)]"
+                />
+              </label>
+            ))}
+          </fieldset>
+        )}
         <Cta onClick={() => create(false)} disabled={busy} icon="user-plus">
           Invite a friend
         </Cta>
@@ -488,6 +517,7 @@ export function BayMatch({ id }: { id: string }) {
       lastMove={lastMove}
       onMove={move}
       announce={setLive}
+      names={[...v.players].sort((a, b) => a.seat - b.seat).map((p) => p.nickname)}
     />
   );
   const moves =
