@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.25.2 (5 November 2026)
+
+### For players
+
+- **Ludo pieces are discs now, on a board that faces you.** The pieces are turned discs like the draughts ones (each
+  with its shape in the middle), and the board sits flat facing you like the draughts board instead of leaning
+  away. Tapping a piece works anywhere on it again: the standing pawns rose over the square behind them, so a tap
+  on a pawn's head missed.
+- **Hints only when you ask.** In real games a hint appears only when you tap Hint. Only the practice round (your
+  first try of a game) offers a free hint by itself, and now after 15 seconds without a move instead of 6.
+
 ## 1.25.1 (5 November 2026)
 
 ### For players

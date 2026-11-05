@@ -114,7 +114,8 @@ interface FeedbackState {
   n: number;
 }
 
-const GUIDED_IDLE_MS = 6000;
+/** Practice round only: a free hint after this long without a move (never in real games, where Hint is a tap). */
+const GUIDED_IDLE_MS = 15_000;
 /** Gap between the board's last placement sound and the clear arpeggio. */
 const CLEAR_GAP_MS = 100;
 /** Gap between the last slip's buzz and the run-over sound. */

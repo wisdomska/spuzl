@@ -6,7 +6,7 @@ import { prefersReducedMotion, useSettings } from "@/lib/settings/store";
 import { HOME_COL_CELLS, SAFE, TRACK, baseOfCell, cellOf, startOf } from "./engine";
 
 /**
- * The Ludo look, shared by the Ludo puzzle and live Board Games matches: a printed board seen at a slight angle
+ * The Ludo look, shared by the Ludo puzzle and live Board Games matches: a printed board facing the player (like the draughts board)
  * (classic red, green, yellow and blue, a white track with stars, the coloured centre triangles), pawns that stand
  * up off it, and a real die that tumbles and lands on the roll. Every colour still carries a shape on its pawn's
  * head, so the colours are never the only way to tell players apart.
@@ -19,8 +19,8 @@ export const LUDO_LOOK = [
 ] as const;
 
 const N = 15;
-/** The board leans back by this much (deg); pawns lean forward by the same so they stand upright. */
-export const LUDO_TILT = 24;
+/** The board faces the player straight on, like the draughts board (no lean). Kept as a knob. */
+export const LUDO_TILT = 0;
 
 function useReduced() {
   const hydrated = useSettings((s) => s.hydrated);
@@ -30,47 +30,40 @@ function useReduced() {
 
 /* ---------------- Pawn ---------------- */
 
-/** A turned wooden pawn: base, waisted body, collar and ball head, lit from the top left, with its shape on top. */
+/**
+ * A Ludo piece as a turned disc, the same make as the draughts pieces (games/_shared/BayStyles draughtsDisc): a
+ * raised rim, a groove, a domed centre lit from the top left, its edge showing below, and the player's shape in the
+ * middle so colour is never the only clue.
+ */
 export function Pawn({ colour, size, glow }: { colour: number; size: number; glow?: boolean }) {
   const l = LUDO_LOOK[colour];
-  const id = `pawn-${colour}`;
-  const mark =
-    l.shape === "circle" ? (
-      <circle cx="20" cy="13" r="3.2" fill="#fff" fillOpacity=".9" />
-    ) : l.shape === "square" ? (
-      <rect x="17" y="10" width="6" height="6" rx="1" fill="#fff" fillOpacity=".9" />
-    ) : l.shape === "diamond" ? (
-      <rect x="17.2" y="10.2" width="5.6" height="5.6" rx=".8" fill="#fff" fillOpacity=".9" transform="rotate(45 20 13)" />
-    ) : (
-      <path d="M20 9.2c2.4 2.7 3.6 4.4 3.6 5.6a3.6 3.6 0 0 1-7.2 0c0-1.2 1.2-2.9 3.6-5.6Z" fill="#fff" fillOpacity=".9" />
-    );
+  const edge = Math.max(2, Math.round(size * 0.09));
+  const mark = Math.round(size * 0.34);
   return (
-    <svg aria-hidden width={size} height={size * 1.4} viewBox="0 0 40 56" style={{ overflow: "visible", display: "block" }}>
-      <defs>
-        <linearGradient id={`${id}-b`} x1="0" x2="1">
-          <stop offset="0" stopColor={l.light} />
-          <stop offset=".45" stopColor={l.c} />
-          <stop offset="1" stopColor={l.dark} />
-        </linearGradient>
-        <radialGradient id={`${id}-h`} cx=".35" cy=".3" r=".75">
-          <stop offset="0" stopColor="#fff" stopOpacity=".85" />
-          <stop offset=".25" stopColor={l.light} />
-          <stop offset=".7" stopColor={l.c} />
-          <stop offset="1" stopColor={l.dark} />
-        </radialGradient>
-      </defs>
-      {glow && <ellipse cx="20" cy="50" rx="19" ry="7.5" fill="none" stroke="#fff" strokeWidth="2.5" opacity=".95" />}
-      <ellipse cx="21" cy="51.5" rx="15" ry="5" fill="#000" opacity=".35" />
-      <ellipse cx="20" cy="48" rx="14" ry="5.2" fill={l.dark} />
-      <path
-        d="M6 47.5c0-2.6 4.5-4.2 6-4.6 1.6-5 3.7-12.6 3.9-19.2h8.2c.2 6.6 2.3 14.2 3.9 19.2 1.5.4 6 2 6 4.6 0 2.8-6.3 4.6-14 4.6S6 50.3 6 47.5Z"
-        fill={`url(#${id}-b)`}
+    <span
+      aria-hidden
+      className="flex items-center justify-center rounded-full"
+      style={{
+        width: size,
+        height: size,
+        background: `radial-gradient(circle at 50% 50%, transparent 0 56%, rgba(0,0,0,.22) 57% 60%, transparent 61%), radial-gradient(circle at 38% 32%, ${l.light}, ${l.c} 55%, ${l.dark})`,
+        boxShadow: [
+          `inset 0 -${edge}px 0 ${l.dark}`,
+          `inset 0 ${Math.max(1, edge - 1)}px 0 rgba(255,255,255,.35)`,
+          glow ? "0 0 0 2px #fff, 0 0 0 4px rgba(0,0,0,.35)" : null,
+          `0 ${edge}px 0 color-mix(in srgb, ${l.dark} 75%, #000)`,
+          `0 ${edge + 3}px ${edge + 2}px rgba(0,0,0,.45)`,
+        ]
+          .filter(Boolean)
+          .join(", "),
+      }}
+    >
+      <Icon
+        name={l.shape === "circle" ? "circle" : l.shape === "square" ? "square" : l.shape === "diamond" ? "diamond" : "drop"}
+        size={mark}
+        style={{ color: "rgba(255,255,255,.88)", filter: "drop-shadow(0 1px 0 rgba(0,0,0,.25))" }}
       />
-      <ellipse cx="20" cy="24" rx="7.6" ry="2.6" fill={l.dark} />
-      <ellipse cx="20" cy="23.2" rx="7.6" ry="2.4" fill={`url(#${id}-b)`} />
-      <circle cx="20" cy="13" r="9.6" fill={`url(#${id}-h)`} />
-      {mark}
-    </svg>
+    </span>
   );
 }
 
@@ -452,22 +445,21 @@ export function LudoTable({
                   >
                     {here.map((p, k) => {
                       const n = here.length;
-                      const dx = n > 1 ? (k - (n - 1) / 2) * cell * 0.28 : 0;
+                      const off = n > 1 ? (k - (n - 1) / 2) * cell * 0.16 : 0;
+                      const size = Math.round(cell * (n > 1 ? 0.7 : 0.8));
                       return (
                         <span
                           key={p.key}
                           className={`absolute ${p.className ?? ""}`}
                           style={{
-                            left: cell * 0.09 + dx,
-                            bottom: cell * 0.12,
+                            left: (cell - size) / 2 + off,
+                            top: (cell - size) / 2 - off - (p.lifted ? cell * 0.12 : 0),
                             zIndex: 2 + k,
-                            transformOrigin: "50% 100%",
-                            transform: `rotateX(${-tilt}deg)${p.lifted ? " translateY(-14%)" : ""}`,
-                            transition: "transform 160ms var(--ease-out)",
+                            transition: "top 160ms var(--ease-out)",
                             pointerEvents: "none",
                           }}
                         >
-                          <Pawn colour={p.colour} size={cell * 0.82} glow={p.glow} />
+                          <Pawn colour={p.colour} size={size} glow={p.glow} />
                         </span>
                       );
                     })}
