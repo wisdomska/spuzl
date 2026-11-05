@@ -42,8 +42,8 @@ const MAJOR = [0, 2, 4, 5, 7, 9, 11];
 const AEOLIAN = [0, 2, 3, 5, 7, 8, 10];
 
 export const STYLES: Record<StyleId, Style> = {
-  // Home, worlds, library, tabs: upbeat and bright, a cheerful marimba groove over shakers (major key, the
-  // I-V-vi-IV and I-IV-V-IV progressions everyone hums along to).
+  // Home, worlds, library, tabs: upbeat and bright, a cheerful electric-piano groove over shakers (major key, the
+  // I-V-vi-IV and I-IV-V-IV progressions everyone hums along to). No mallets anywhere (owner's call).
   home: {
     bpm: [106, 114],
     scale: MAJ_PENTA,
@@ -54,13 +54,13 @@ export const STYLES: Record<StyleId, Style> = {
     harmony: MAJOR,
     voices: 3,
     root: [53, 5],
-    lead: "marimba",
+    lead: "keys",
     drums: "shaker",
     density: 0.58,
     swing: 0.08,
     padGain: 0.04,
   },
-  // Puzzles: calm and spacious so thinking comes first.
+  // Puzzles: calm and spacious so thinking comes first, soft electric piano.
   logic: {
     bpm: [70, 84],
     scale: MAJ_PENTA,
@@ -72,13 +72,13 @@ export const STYLES: Record<StyleId, Style> = {
     harmony: MAJOR,
     voices: 4,
     root: [48, 8],
-    lead: "bell",
+    lead: "keys",
     drums: "none",
     density: 0.3,
     swing: 0,
     padGain: 0.055,
   },
-  // Words & Quiz: light and a little jazzy.
+  // Words & Quiz: light and a little jazzy, on electric piano.
   word: {
     bpm: [90, 104],
     scale: DORIAN,
@@ -89,7 +89,7 @@ export const STYLES: Record<StyleId, Style> = {
     harmony: DORIAN,
     voices: 4,
     root: [50, 7],
-    lead: "marimba",
+    lead: "keys",
     drums: "shaker",
     density: 0.45,
     swing: 0.22,

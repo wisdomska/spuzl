@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.27.1 (5 November 2026)
+
+### For players
+
+- **No more xylophones.** Home, Words & Quiz and Puzzles music play on a warm electric piano instead of marimba
+  and bells.
+
 ## 1.27.0 (5 November 2026)
 
 ### For players
