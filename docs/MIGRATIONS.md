@@ -259,3 +259,10 @@ quests in the database.
 After applying it to a new project, insert a VAPID key pair (generate with `web-push generate-vapid-keys`):
 `insert into public.server_secrets (key, value) values ('vapid_public', '<public>'), ('vapid_private', '<private>');`
 Without it push stays off and everything else works.
+
+## 1.29.0
+
+| Migration                              | What it does                                                                                                                                  | Rollback           |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| `20261129000001_rank_from_matches.sql` | `rank_contributions`: one row per player per Duel or Party round that counted towards their rank (so a round never counts twice); server-only | In the file header |
+| `20261129000002_board_queue_rules.sql` | `board_queue.rules`: the Ludo house rules a player picked before Play live; only the same rules are paired                                    | In the file header |

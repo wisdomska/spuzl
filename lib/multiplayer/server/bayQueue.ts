@@ -26,7 +26,22 @@ interface QueueRow {
   enqueued_at: string;
   seen_at: string;
   match_id: string | null;
+  /** Ludo house rules picked before searching ("back,side"; "" for standard): only the same rules are paired */
+  rules: string;
 }
+
+type Kicks = { backKick?: boolean; sideKick?: boolean; homeKick?: boolean };
+const KICKS = ["backKick", "sideKick", "homeKick"] as const;
+const rulesKey = (game: string, k?: Kicks) =>
+  game === "ludo" && k
+    ? KICKS.filter((x) => k[x])
+        .map((x) => x.replace("Kick", ""))
+        .join(",")
+    : "";
+const rulesOpts = (key: string) => {
+  const on = new Set(key.split(",").filter(Boolean));
+  return on.size ? Object.fromEntries(KICKS.filter((x) => on.has(x.replace("Kick", ""))).map((x) => [x, true])) : null;
+};
 
 const toEntry = (r: QueueRow): BayQueueEntry => ({
   playerId: r.player_id,
@@ -48,10 +63,17 @@ export type BayQueueStatus =
  * A player has one search at a time: this replaces any Board Bay or Duel search they had. Rejoining the same
  * game within the reconnect window keeps their place in the line.
  */
-export async function joinBayQueue(admin: SupabaseClient, player: { id: string; age_band: string }, game: string, minutes?: number) {
+export async function joinBayQueue(
+  admin: SupabaseClient,
+  player: { id: string; age_band: string },
+  game: string,
+  minutes?: number,
+  ludo?: Kicks,
+) {
   if (player.age_band === "13-15") throw new ApiError(403, "age_restricted", bayLive.ageRestricted);
   if (!isBayGame(game)) throw new ApiError(400, "not_board_game");
   const clock = clockMinutes(game, minutes) * 60_000;
+  const rules = rulesKey(game, ludo);
   // One queue entry per player across modes: joining here ends a Duel Quick Match search.
   await admin.from("matchmaking_queue").delete().eq("player_id", player.id).is("match_id", null);
   const now = Date.now();
@@ -60,11 +82,18 @@ export async function joinBayQueue(admin: SupabaseClient, player: { id: string; 
     readRating(admin, player.id, `board:${game}`),
   ]);
   const prev = existing as QueueRow | null;
-  const resume = !!prev && !prev.match_id && prev.game_id === game && prev.clock_ms === clock && isLive(toEntry(prev), now);
+  const resume =
+    !!prev &&
+    !prev.match_id &&
+    prev.game_id === game &&
+    prev.clock_ms === clock &&
+    (prev.rules ?? "") === rules &&
+    isLive(toEntry(prev), now);
   const { error } = await admin.from("board_queue").upsert({
     player_id: player.id,
     game_id: game,
     clock_ms: clock,
+    rules,
     rating: rating.rating.toFixed(2),
     has_rating: rating.games > 0,
     enqueued_at: resume ? prev!.enqueued_at : iso(now),
@@ -106,6 +135,7 @@ export async function pollBayQueue(admin: SupabaseClient, playerId: string): Pro
       .select("*")
       .eq("game_id", mine.game_id)
       .eq("clock_ms", mine.clock_ms)
+      .eq("rules", mine.rules ?? "")
       .is("match_id", null)
       .neq("player_id", playerId)
       .gte("seen_at", iso(now - BAY_QUEUE.staleMs))
@@ -118,7 +148,7 @@ export async function pollBayQueue(admin: SupabaseClient, playerId: string): Pro
   const blocks = (blockRows ?? []).map((b) => [b.player_id as string, b.blocked_id as string] as const);
   const opp = pickBayOpponent(me, others, now, blocks);
   if (opp) {
-    const matchId = await createMatched(admin, [me.playerId, opp.playerId], mine.game_id, mine.clock_ms);
+    const matchId = await createMatched(admin, [me.playerId, opp.playerId], mine.game_id, mine.clock_ms, mine.rules ?? "");
     if (matchId) return { status: "matched", game: mine.game_id, matchId };
   }
   const visible = others.filter((o) => !blocks.some(([x, y]) => x === o.playerId || y === o.playerId));
@@ -141,10 +171,19 @@ export async function cancelBayQueue(admin: SupabaseClient, playerId: string) {
  * Creates the live match for a pair and claims both queue entries in one step. Returns null when either
  * player was taken by someone else first (or a block appeared): the caller just keeps searching.
  */
-async function createMatched(admin: SupabaseClient, pair: [string, string], game: BayGame, clock: number): Promise<string | null> {
+async function createMatched(
+  admin: SupabaseClient,
+  pair: [string, string],
+  game: BayGame,
+  clock: number,
+  house: string,
+): Promise<string | null> {
   const rules = await loadRules(game);
   const seed = crypto.randomUUID();
-  const state = initialState(rules, 2, seed);
+  const base = initialState(rules, 2, seed);
+  // Ludo house rules both players chose ride in the match state, like a friend game
+  const opts = game === "ludo" ? rulesOpts(house) : null;
+  const state = opts ? { ...(base as object), opts } : base;
   const players = seatOrder(pair[0], pair[1], randomInt(0, 1_000_000) / 1_000_000);
   // Created as "waiting" with no invite code (nobody can join it by link), then started once the claim holds.
   const { data: row, error } = await admin

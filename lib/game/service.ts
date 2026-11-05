@@ -734,7 +734,8 @@ export async function finishAttempt(
   };
 }
 
-async function updateRating(
+/** Moves a player's rating on a track (a game category) by one result: percentile 0..100, weighted. */
+export async function updateRating(
   admin: SupabaseClient,
   playerId: string,
   track: string,

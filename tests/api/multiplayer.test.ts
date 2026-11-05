@@ -111,6 +111,26 @@ describe("api: duel", () => {
     expect(total).toBe(winners.length);
   });
 
+  it("counts every round played against a person towards that game's category rank, once", async () => {
+    const { a, b, id } = await pairDuel();
+    await startNow(id, 4000);
+    const v = await a.api(`/api/v1/matches/${id}`);
+    const { state } = solve(id, 1, 1, v.data.difficulty);
+    expect((await a.api(`/api/v1/matches/${id}/finish`, { json: { round: 1, state, mistakes: 0 } })).status).toBe(200);
+    await startNow(id, 4000);
+    await a.api(`/api/v1/matches/${id}/tick`, { json: {} });
+    // b walks out: the match ends and its rounds count
+    await b.api(`/api/v1/matches/${id}/leave`, { json: {} });
+    const rows = async (who: string) =>
+      (await admin().from("ratings").select("rating, games").eq("player_id", who).eq("track", "logic").maybeSingle()).data;
+    const [ra, rb] = [await rows(a.userId), await rows(b.userId)];
+    expect(ra?.games).toBeGreaterThanOrEqual(1);
+    expect(rb?.games).toBeGreaterThanOrEqual(1);
+    expect(Number(ra!.rating)).toBeGreaterThan(Number(rb!.rating));
+    const { data: refs } = await admin().from("rank_contributions").select("ref").eq("player_id", a.userId);
+    expect(new Set((refs ?? []).map((r) => r.ref)).size).toBe((refs ?? []).length);
+  });
+
   it("pauses for a dropped player and gives the win after 20 s (abandoning is a loss), with ratings", async () => {
     const { a, b, id } = await pairDuel();
     await startNow(id, 2000);

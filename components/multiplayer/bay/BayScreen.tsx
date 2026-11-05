@@ -22,6 +22,7 @@ import { bayLive } from "@/lib/copy/bay-live";
 import { playBayMove } from "@/lib/audio/boardMoves";
 import { useSettings } from "@/lib/settings/store";
 import { BaySearch } from "./BaySearch";
+import { LudoSetup, NO_KICKS, kicksFromParam, kicksToParam, type LudoKicks } from "./LudoSetup";
 import { TimePicker, useMinutes } from "./TimePicker";
 import type { BayView } from "@/lib/multiplayer/types";
 import { ShareCode } from "../party";
@@ -53,7 +54,8 @@ export function BayInbox() {
   });
   if (gate === "loading") return <LoadingScreen />;
   if (gate === "no_profile") return <NeedProfile />;
-  if (liveGame) return <BaySearch key={`${liveGame}-${liveMinutes}`} game={liveGame} minutes={liveMinutes} />;
+  if (liveGame)
+    return <BaySearch key={`${liveGame}-${liveMinutes}`} game={liveGame} minutes={liveMinutes} rules={kicksFromParam(sp.get("rules"))} />;
   const action = async (id: string, a: "nudge" | "rematch") => {
     try {
       const v = await api<BayView>(`/api/v1/bay/${id}/action`, { json: { action: a } });
@@ -88,7 +90,7 @@ export function BayInbox() {
           initialGame={newGame ?? "chess"}
           onClose={() => setSheet(false)}
           onCreated={(id) => router.push(`/bay/${id}`)}
-          onLive={(g, m) => router.push(m ? `/bay?live=${g}&t=${m}` : `/bay?live=${g}`)}
+          onLive={(g, m, r) => router.push(`/bay?live=${g}${m ? `&t=${m}` : ""}${r ? `&rules=${r}` : ""}`)}
         />
       )}
     </Screen>
@@ -104,7 +106,7 @@ function NewBaySheet({
   initialGame: BayGame;
   onClose: () => void;
   onCreated: (id: string) => void;
-  onLive: (game: BayGame, minutes: number | null) => void;
+  onLive: (game: BayGame, minutes: number | null, rules: string) => void;
 }) {
   const relaxed = useSettings((s) => s.relaxed);
   const [game, setGame] = useState<BayGame>(initialGame);
@@ -112,12 +114,14 @@ function NewBaySheet({
   const [minutes, setMinutes] = useMinutes(game);
   const [busy, setBusy] = useState(false);
   // Ludo house rules, chosen before the match (games with friends and the Practice bot; Quick Match stays standard)
-  const [kicks, setKicks] = useState({ backKick: false, sideKick: false, homeKick: false });
+  const [kicks, setKicks] = useState<LudoKicks>(NO_KICKS);
+  // Ludo seats 2 to 4: with the bot the other seats are bots; with friends the game starts when that many joined
+  const [seats, setSeats] = useState(2);
   const create = async (bot: boolean) => {
     setBusy(true);
     try {
       const v = await api<BayView>("/api/v1/bay", {
-        json: { game, mode, bot, ...(mode === "live" ? { minutes } : {}), ...(game === "ludo" ? { ludo: kicks } : {}) },
+        json: { game, mode, bot, ...(mode === "live" ? { minutes } : {}), ...(game === "ludo" ? { ludo: kicks, seats } : {}) },
       });
       onCreated(v.id);
     } catch {
@@ -131,7 +135,7 @@ function NewBaySheet({
         role="dialog"
         aria-modal
         aria-label="New game with a friend"
-        className="bg-surface relative flex w-full max-w-[560px] flex-col gap-3.5 rounded-t-[32px] px-5 pt-3.5 pb-[max(28px,env(safe-area-inset-bottom))]"
+        className="bg-surface relative flex max-h-[92dvh] w-full max-w-[560px] flex-col gap-3.5 overflow-y-auto overscroll-contain rounded-t-[32px] px-5 pt-3.5 pb-[max(28px,env(safe-area-inset-bottom))]"
       >
         <div className="bg-line h-[5px] w-11 self-center rounded-[3px]" />
         <h2 className="font-display text-[22px] font-black">New game</h2>
@@ -170,36 +174,17 @@ function NewBaySheet({
           ))}
         </div>
         {mode === "live" && <TimePicker game={game} value={minutes} onChange={setMinutes} />}
-        {game === "ludo" && (
-          <fieldset className="flex flex-col gap-1.5">
-            <legend className="text-muted pb-1 text-[13px] font-semibold">House rules (with friends and the bot)</legend>
-            {(
-              [
-                ["backKick", "Back-kick", "Move back by your roll to take a rival behind you"],
-                ["sideKick", "Side-kick", "Take a rival straight across the lane from where you land"],
-                ["homeKick", "Home-kick", "Run up a rival's home column on an exact roll to take a piece there"],
-              ] as const
-            ).map(([k, label, hint]) => (
-              <label key={k} className="bg-surface-raised flex min-h-12 cursor-pointer items-center gap-3 rounded-[14px] px-3 py-2">
-                <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="text-[15px] font-semibold">{label}</span>
-                  <span className="text-muted text-[13px]">{hint}</span>
-                </span>
-                <input
-                  type="checkbox"
-                  checked={kicks[k]}
-                  onChange={(e) => setKicks((x) => ({ ...x, [k]: e.target.checked }))}
-                  className="size-5 flex-none accent-[var(--w-board)]"
-                />
-              </label>
-            ))}
-          </fieldset>
-        )}
+        {game === "ludo" && <LudoSetup kicks={kicks} onKicks={setKicks} seats={seats} onSeats={setSeats} />}
         <Cta onClick={() => create(false)} disabled={busy} icon="user-plus">
           Invite a friend
         </Cta>
         {!relaxed && (
-          <Cta tone="raised" onClick={() => onLive(game, mode === "live" ? minutes : null)} disabled={busy} icon="lightning">
+          <Cta
+            tone="raised"
+            onClick={() => onLive(game, mode === "live" ? minutes : null, game === "ludo" ? kicksToParam(kicks) : "")}
+            disabled={busy}
+            icon="lightning"
+          >
             {bayLive.playLive}
           </Cta>
         )}

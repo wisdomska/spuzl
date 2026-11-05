@@ -8,7 +8,9 @@ import { weekStart } from "@/lib/gamification/progress";
 import { getGameSettings } from "@/lib/game-settings/server";
 import { ADULT_REWARD_SOURCE, adultRewardRef, adultRewards } from "@/lib/party-adult/rewards";
 import { TIMING } from "../constants";
-import type { Loaded, MatchRow } from "./match";
+import type { Loaded, MatchRow, RoundRow } from "./match";
+import { GAME_BY_ID, isLiveWorld } from "@/lib/catalog";
+import { updateRating } from "@/lib/game/service";
 import type { Placed } from "../race";
 
 /** Party Race XP: the winner 30, everyone who finished the set 10 (SRS lists no Party XP; see DECISIONS). */
@@ -108,6 +110,7 @@ export async function bumpQuests(admin: SupabaseClient, player: string, kinds: s
 export async function finalizeDuel(admin: SupabaseClient, l: Loaded) {
   const { m } = l;
   if (m.status !== "finished") return;
+  await countRounds(admin, l);
   const humans = l.players.filter((p) => !p.spectator);
   const winner = m.winner_id;
   // Ledger refs make XP idempotent; ratings are guarded by rating_after being unset.
@@ -147,9 +150,50 @@ export async function finalizeDuel(admin: SupabaseClient, l: Loaded) {
   }
 }
 
+/** How much a round against people moves a category rating, against a solo game's 1 (lib/game/service.ts). */
+export const ROUND_RANK_WEIGHT = 0.5;
+
+/**
+ * Duels and Parties count towards the rank: every round each person played moves the rating of that round's game
+ * category, like a solo result at half weight. Duels: the round's winner counts as a top result, the loser as a
+ * bottom one, a tie as the middle. Parties: the place sets the result (first is the top; a skipped round is the
+ * bottom). Never against the Practice bot. rank_contributions makes it count once per player and round.
+ */
+async function countRounds(admin: SupabaseClient, l: Loaded) {
+  const { m } = l;
+  if (m.is_bot) return;
+  const humans = new Set(l.players.filter((p) => !p.spectator).map((p) => p.player_id));
+  const byRound = new Map<number, RoundRow[]>();
+  for (const r of l.rounds) if (humans.has(r.player_id)) byRound.set(r.round, [...(byRound.get(r.round) ?? []), r]);
+  for (const [round, rows] of byRound) {
+    if (rows.length < 2) continue;
+    const world = GAME_BY_ID[rows[0].game_id ?? ""]?.world;
+    if (!isLiveWorld(world)) continue;
+    const anyWon = rows.some((r) => r.won);
+    for (const r of rows) {
+      const pct =
+        m.kind === "duel"
+          ? anyWon
+            ? r.won
+              ? 100
+              : 0
+            : 50
+          : r.place
+            ? Math.round((100 * (rows.length - r.place)) / (rows.length - 1))
+            : 0;
+      const { error } = await admin.from("rank_contributions").insert({ player_id: r.player_id, ref: `${m.id}:${m.set_no}:${round}` });
+      if (error) continue; // already counted (or the table is missing): never twice
+      await updateRating(admin, r.player_id, world!, pct, 0, r.mistakes, ROUND_RANK_WEIGHT).catch((e: unknown) =>
+        console.error("[rank] round not counted", m.id, round, e),
+      );
+    }
+  }
+}
+
 /** After the last game of a Party set: XP, feed, badges and quests for everyone who played. */
 export async function finalizeRace(admin: SupabaseClient, l: Loaded, lastGame: Placed[]) {
   const { m } = l;
+  await countRounds(admin, l);
   const ref = `${m.id}:${m.set_no}`;
   for (const p of l.players.filter((x) => !x.spectator && !x.left_at)) {
     const won = m.winner_id === p.player_id;

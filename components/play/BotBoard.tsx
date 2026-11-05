@@ -8,12 +8,16 @@ import { loadBot, type AnyBot, type BotGame, type BotLevel } from "@/lib/bot";
 import { createRng, type Rng } from "@/lib/rng";
 import { play } from "@/lib/audio";
 import { boardGames } from "@/lib/copy/board-games";
+import type { LudoOpts } from "@/games/ludo/engine";
 
 const t = boardGames.bot;
 
 export interface BotPuzzle {
   game: BotGame;
   level: BotLevel;
+  /** Ludo: 2 to 4 at the table (you and bots), and the house rules chosen before the game */
+  seats?: number;
+  opts?: LudoOpts;
 }
 /** Not saved anywhere: a casual game lives only on this screen. */
 export interface BotState {
@@ -24,7 +28,7 @@ export interface BotExtra {
   onRestart: () => void;
 }
 
-/** The player is seat 0 (moves first); the bot is seat 1. */
+/** The player is seat 0 (moves first); every other seat is the bot (seat 1, and in Ludo up to seat 3). */
 const ME = 0,
   BOT = 1;
 /** A beat before the bot moves so the player sees their own move land. */
@@ -52,12 +56,15 @@ export default function BotBoard({ puzzle, disabled, api, extra }: BoardProps<Bo
       // A fresh game every time (Ludo dice included); casual games are never replayed or checked.
       rng.current = createRng(`${Date.now()}:${Math.random()}`);
       setBot(b);
-      setState(b.rules.initial(2, rng.current));
+      const first = b.rules.initial(puzzle.seats ?? 2, rng.current);
+      // Ludo house rules ride in the state, so the bots play by them too
+      const opts = puzzle.opts && Object.values(puzzle.opts).some(Boolean) ? puzzle.opts : null;
+      setState(opts ? { ...(first as object), opts } : first);
     });
     return () => {
       live = false;
     };
-  }, [puzzle.game]);
+  }, [puzzle.game, puzzle.seats, puzzle.opts]);
 
   const rules = bot?.rules;
   const status = useMemo(() => (rules && state ? rules.status(state) : null), [rules, state]);
@@ -84,18 +91,18 @@ export default function BotBoard({ puzzle, disabled, api, extra }: BoardProps<Bo
 
   // The bot's turn: think after a beat, then move. Waits while paused; Undo or Restart cancels it.
   useEffect(() => {
-    if (!bot || !state || !rng.current || over || turn !== BOT || disabled) return;
+    if (!bot || !state || !rng.current || over || turn === ME || disabled) return;
     const r = rng.current;
     const id = setTimeout(() => {
-      const m = bot.choose(state, BOT, puzzle.level, r);
-      const next = bot.rules.apply(state, BOT, m, r);
+      const m = bot.choose(state, turn, puzzle.level, r);
+      const next = bot.rules.apply(state, turn, m, r);
       plies.current++;
       play(isRoll(m) ? "tick" : "clack");
       setLast(m);
       setState(next);
       const st = bot.rules.status(next);
       if (st.over) return;
-      if (bot.rules.turn(next) === BOT) {
+      if (bot.rules.turn(next) !== ME) {
         const roll = ludo ? (next as { log: { roll: number }[] }).log.at(-1)?.roll : undefined;
         api.feedback(isRoll(m) && roll ? t.botRolled(roll) : t.botAgain, "info", "robot");
       } else {
@@ -107,7 +114,7 @@ export default function BotBoard({ puzzle, disabled, api, extra }: BoardProps<Bo
     return () => clearTimeout(id);
   }, [bot, state, over, turn, disabled, puzzle.level, api, ludo]);
 
-  const thinking = !!bot && !!state && !over && turn === BOT && !disabled;
+  const thinking = !!bot && !!state && !over && turn !== ME && !disabled;
 
   const legal = useMemo(() => {
     if (!rules || !state || over || turn !== ME) return [];
@@ -126,7 +133,7 @@ export default function BotBoard({ puzzle, disabled, api, extra }: BoardProps<Bo
       setState(next);
       api.onMove({ plies: plies.current });
       if (rules.status(next).over) return;
-      if (rules.turn(next) === BOT) {
+      if (rules.turn(next) !== ME) {
         if (ludo && isRoll(m) && (next as { roll: number | null }).roll === null) {
           const roll = (next as { log: { roll: number }[] }).log.at(-1)?.roll ?? 0;
           api.feedback(t.noMove(roll), "info", "dice-six");
@@ -170,7 +177,7 @@ export default function BotBoard({ puzzle, disabled, api, extra }: BoardProps<Bo
     <div className="flex w-full flex-col items-center gap-3" data-board="bot" data-game={puzzle.game} data-level={puzzle.level}>
       {/* Whose turn it is: over the board on a phone, at the top of the side panel on a wide screen. */}
       <ShellAside>
-        <Seats game={puzzle.game} state={state} turn={over ? -1 : turn} thinking={thinking} />
+        <Seats game={puzzle.game} state={state} turn={over ? -1 : turn} thinking={thinking} seats={puzzle.seats ?? 2} />
       </ShellAside>
       {bot && state ? (
         <LiveBoard
@@ -196,7 +203,7 @@ export default function BotBoard({ puzzle, disabled, api, extra }: BoardProps<Bo
 const isRoll = (m: unknown) => !!m && typeof m === "object" && (m as { kind?: string }).kind === "roll";
 
 /** Whose turn it is (not by colour alone: the active side is bold, outlined and says so), plus disc counts in Flip and stones left in Dara. */
-function Seats({ game, state, turn, thinking }: { game: BotGame; state: unknown; turn: number; thinking: boolean }) {
+function Seats({ game, state, turn, thinking, seats }: { game: BotGame; state: unknown; turn: number; thinking: boolean; seats: number }) {
   const count = (who: number) =>
     !state
       ? null
@@ -210,6 +217,7 @@ function Seats({ game, state, turn, thinking }: { game: BotGame; state: unknown;
     const n = count(s + 1);
     return (
       <span
+        key={s}
         className="flex h-9 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[12px] text-[14px]"
         style={{
           background: active ? "color-mix(in srgb, var(--world) 18%, var(--surface))" : "var(--surface)",
@@ -224,9 +232,9 @@ function Seats({ game, state, turn, thinking }: { game: BotGame; state: unknown;
     );
   };
   return (
-    <div className="flex w-full gap-2" aria-label={turn === BOT && thinking ? t.thinking : undefined}>
+    <div className="flex w-full gap-2" aria-label={turn !== ME && thinking ? t.thinking : undefined}>
       {seat(ME, t.you)}
-      {seat(BOT, t.bot)}
+      {seats > 2 ? Array.from({ length: seats - 1 }, (_, i) => seat(i + 1, `${t.bot} ${i + 1}`)) : seat(BOT, t.bot)}
     </div>
   );
 }

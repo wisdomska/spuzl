@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.29.0 (5 November 2026)
+
+### For players
+
+- **Duels and Parties count towards your rank.** Every round you play against people moves your rating in that
+  game's category (Logic, Word, Reflex or Board), at half the weight of a solo puzzle. Winning a round helps, losing
+  one costs a little, and rounds against bots never count.
+- **Ludo setup before every match.** Playing Ludo against the bot now opens a setup screen first: bot level, 2 to 4
+  players, and the house rules (Back-kick, Side-kick, Home-kick). The bots play by the same rules. "Change players or
+  rules" is there after each game.
+- **Play live Ludo with house rules.** The Play live screen for Ludo shows the house rules too, and pairs you only with
+  someone who picked the same rules.
+- **Ludo with friends: 2, 3 or 4 players.** Pick how many before you invite; the game starts when that many have
+  joined. The new-game sheet now scrolls on short phones so nothing is cut off.
+
 ## 1.28.1 (5 November 2026)
 
 ### For players

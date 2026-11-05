@@ -5,14 +5,18 @@ import { cancelBayQueue, joinBayQueue, pollBayQueue } from "@/lib/multiplayer/se
 export const dynamic = "force-dynamic";
 
 // Any string here: the server answers an unknown or retired game (Flip) with 400 not_board_game.
-const Join = z.object({ game: z.string().min(2).max(24), minutes: z.number().int().min(1).max(60).optional() });
+const Join = z.object({
+  game: z.string().min(2).max(24),
+  minutes: z.number().int().min(1).max(60).optional(),
+  ludo: z.object({ backKick: z.boolean().optional(), sideKick: z.boolean().optional(), homeKick: z.boolean().optional() }).optional(),
+});
 
 /** POST /api/v1/bay/queue: Play live. Joins the queue for one board game and time control (minutes per player) and tries to pair at once. */
 export const POST = handle(async (req: Request) => {
   const { admin, player } = await requirePlayer();
   await rateLimit(admin, `bay-queue:${player.id}`, 30, 60);
-  const { game, minutes } = await body(req, Join);
-  return ok(await joinBayQueue(admin, player, game, minutes));
+  const { game, minutes, ludo } = await body(req, Join);
+  return ok(await joinBayQueue(admin, player, game, minutes, ludo));
 });
 
 /** GET /api/v1/bay/queue: poll while searching (about once a second). Pairs as soon as someone fits. */

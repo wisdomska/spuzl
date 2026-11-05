@@ -49,6 +49,23 @@ describe("api: board bay play live", () => {
     expect((await poll(a)).data.status).toBe("idle");
   });
 
+  it("pairs Ludo players only with the same house rules, and starts the match with them", async () => {
+    await clearGame("ludo");
+    const a = await guest(uniq("ql_"));
+    const b = await guest(uniq("qm_"));
+    const c = await guest(uniq("qn_"));
+    const kicks = { backKick: true, sideKick: true };
+    expect((await a.api("/api/v1/bay/queue", { json: { game: "ludo", ludo: kicks } })).data.status).toBe("searching");
+    // Standard rules: not paired with a
+    expect((await b.api("/api/v1/bay/queue", { json: { game: "ludo" } })).data.status).toBe("searching");
+    const qc = await c.api("/api/v1/bay/queue", { json: { game: "ludo", ludo: { sideKick: true, backKick: true } } });
+    expect(qc.data.status).toBe("matched");
+    const { data: m } = await admin().from("board_matches").select("players, state").eq("id", qc.data.matchId).single();
+    expect((m!.players as string[]).sort()).toEqual([a.userId, c.userId].sort());
+    expect((m!.state as { opts?: unknown }).opts).toEqual({ backKick: true, sideKick: true });
+    await cancel(b);
+  });
+
   it("cancels, keeps one entry per player, and keeps the place in line on a reconnect", async () => {
     await clearGame("draughts");
     await clearGame("fourup");
