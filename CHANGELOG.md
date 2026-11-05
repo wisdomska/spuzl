@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.28.1 (5 November 2026)
+
+### For players
+
+- **You choose the game for every Duel.** The Duel screen starts on "Select game" instead of picking Sixer for you;
+  Quick Match and Challenge wait until you pick a game (or Any game).
+- **Challenging a friend from your friends list asks which game first.** The sword next to a friend opens
+  "Challenge <name>" with the game picker; once you send it, your friend gets the invite on their screen (or as a
+  notification) straight away.
+
 ## 1.28.0 (5 November 2026)
 
 ### For players

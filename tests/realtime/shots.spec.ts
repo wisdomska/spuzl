@@ -46,7 +46,7 @@ test("capture multiplayer screens", async ({ browser }) => {
   await tv.close();
 
   // Duel vs a friend: versus, in match, round end, match end.
-  await a.page.goto("/duel");
+  await a.page.goto("/duel?game=sixer");
   await a.page.waitForTimeout(1500);
   await snap(a.page, "m1-entry");
   await a.page.getByRole("button", { name: /Challenge a friend/ }).click();

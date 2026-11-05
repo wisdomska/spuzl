@@ -84,7 +84,7 @@ test("duel: two devices play a best of 3 in real time", async ({ browser }) => {
 test("duel: leaving mid-match hands the win to the other device", async ({ browser }) => {
   const a = await player(browser, "lvA_");
   const b = await player(browser, "lvB_");
-  await a.page.goto("/duel");
+  await a.page.goto("/duel?game=sixer");
   await a.page.getByRole("button", { name: /Challenge a friend/ }).click();
   const code = (await a.page.getByRole("img", { name: /Room code/ }).getAttribute("aria-label"))!.replace(/Room code |\s/g, "");
   await b.page.goto(`/duel?code=${code.toLowerCase()}`);

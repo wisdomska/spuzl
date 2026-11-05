@@ -155,7 +155,8 @@ export async function solveTestBoard(page: Page, slug: string, seed = "qa", d: D
 }
 
 export async function duelVsBot(page: Page) {
-  await page.goto("/duel");
+  // no game is picked by default any more: come in with one chosen
+  await page.goto("/duel?game=sixer");
   // Quick Match, past the rules card for a game never cleared (SPZ-12), then the Practice bot (offered at once).
   await page
     .getByRole("button", { name: /Quick Match/ })

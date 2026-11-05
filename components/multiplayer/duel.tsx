@@ -43,12 +43,16 @@ export function DuelEntrySheet({
   onCode,
   onClose,
   youngster,
+  friendName,
 }: {
-  game: string | null;
+  /** a race game, null for Any game, undefined until the player picks (no game is chosen for them) */
+  game: string | null | undefined;
   setGame: (g: string | null) => void;
   rating: number;
   onQuick: () => void;
   onFriend: () => void;
+  /** opened from a friend's card: the sheet challenges them by name */
+  friendName?: string | null;
   /** open the friend's-code box */
   onCode: () => void;
   onClose: () => void;
@@ -56,7 +60,8 @@ export function DuelEntrySheet({
 }) {
   const reduce = useReduce();
   const [picking, setPicking] = useState(false);
-  const named = game ? gameName(game) : "Sixer";
+  const named = game ? gameName(game) : "Select game";
+  const chosen = game !== undefined;
   // A page, not a modal: /duel is often opened straight from a shared link or the home screen, so
   // there is nothing behind it to dim. The app background, a Back header and the panel docked below.
   return (
@@ -77,17 +82,23 @@ export function DuelEntrySheet({
         <div className="flex items-center gap-3">
           <Icon name="sword" size={28} className="text-accent" />
           <h1 id="duel-title" className="font-display text-[26px] font-black">
-            {duelCopy.entryTitle}
+            {friendName ? `Challenge ${friendName}` : duelCopy.entryTitle}
           </h1>
         </div>
         <div className="bg-bg flex gap-2 rounded-[16px] p-1" role="radiogroup" aria-label="Game">
           <button
             type="button"
             role="radio"
-            aria-checked={game !== null}
-            onClick={() => (game === null ? setPicking(true) : setPicking((p) => !p))}
+            aria-checked={typeof game === "string"}
+            onClick={() => (typeof game === "string" ? setPicking((p) => !p) : setPicking(true))}
             className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-[12px] text-[15px] font-semibold"
-            style={game !== null ? { background: "var(--surface-raised)" } : { color: "var(--text-muted)" }}
+            style={
+              typeof game === "string"
+                ? { background: "var(--surface-raised)" }
+                : game === undefined
+                  ? { boxShadow: "inset 0 0 0 2px var(--accent)", color: "var(--accent)" }
+                  : { color: "var(--text-muted)" }
+            }
           >
             {named}
             <Icon name="caret-down" size={14} />
@@ -126,42 +137,50 @@ export function DuelEntrySheet({
             ))}
           </div>
         )}
-        <button
-          type="button"
-          onClick={onQuick}
-          disabled={youngster}
-          className="toy flex items-center gap-3.5 rounded-[22px] p-[18px] text-left"
-          style={{
-            background: "var(--accent)",
-            color: "var(--on-accent)",
-            ["--btn-depth" as string]: "var(--accent-depth)",
-            boxShadow: "0 6px 0 var(--accent-depth)",
-          }}
-        >
-          <Icon name="lightning" size={32} />
-          <span className="flex flex-1 flex-col">
-            <span className="font-display text-[19px] font-black">Quick Match</span>
-            <span className="text-[15px] font-medium">
-              {youngster ? (
-                "Opens at 16. Challenge a friend."
-              ) : (
-                <>
-                  Ranked. Rating <span className="num">{formatNumber(rating)}</span>. Best of 3.
-                </>
-              )}
+        {!chosen && (
+          <p className="text-muted text-[14px]" role="status">
+            Pick a game (or Any game) to start.
+          </p>
+        )}
+        {!friendName && (
+          <button
+            type="button"
+            onClick={onQuick}
+            disabled={youngster || !chosen}
+            className="toy flex items-center gap-3.5 rounded-[22px] p-[18px] text-left"
+            style={{
+              background: "var(--accent)",
+              color: "var(--on-accent)",
+              ["--btn-depth" as string]: "var(--accent-depth)",
+              boxShadow: "0 6px 0 var(--accent-depth)",
+            }}
+          >
+            <Icon name="lightning" size={32} />
+            <span className="flex flex-1 flex-col">
+              <span className="font-display text-[19px] font-black">Quick Match</span>
+              <span className="text-[15px] font-medium">
+                {youngster ? (
+                  "Opens at 16. Challenge a friend."
+                ) : (
+                  <>
+                    Ranked. Rating <span className="num">{formatNumber(rating)}</span>. Best of 3.
+                  </>
+                )}
+              </span>
             </span>
-          </span>
-          <Icon name="caret-right" size={20} />
-        </button>
+            <Icon name="caret-right" size={20} />
+          </button>
+        )}
         <button
           type="button"
           onClick={onFriend}
+          disabled={!chosen}
           className="toy bg-surface-raised flex items-center gap-3.5 rounded-[22px] p-[18px] text-left [--btn-depth:var(--depth)]"
           style={{ boxShadow: "0 6px 0 var(--depth)" }}
         >
           <Icon name="user-plus" size={32} className="text-accent" />
           <span className="flex flex-1 flex-col">
-            <span className="font-display text-[19px] font-black">Challenge a friend</span>
+            <span className="font-display text-[19px] font-black">{friendName ? `Challenge ${friendName}` : "Challenge a friend"}</span>
             <span className="text-muted text-[15px] font-medium">Unranked. Send them a link.</span>
           </span>
           <Icon name="caret-right" size={20} className="text-muted" />

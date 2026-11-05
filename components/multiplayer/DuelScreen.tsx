@@ -12,7 +12,7 @@ import { useBackOrHome } from "@/lib/client/nav";
 import { useGameSettings } from "@/lib/game-settings/client";
 import { duelCopy } from "@/lib/copy/duel";
 import { botProgress, duelPhase, inRulesBreak, roundOutcomes, BOT_ID } from "@/lib/multiplayer/duel";
-import { DUEL_DEFAULT_GAME, gameName, raceGameParam } from "@/lib/multiplayer/games";
+import { gameName, raceGameParam } from "@/lib/multiplayer/games";
 import { TIMING, type EmoteId } from "@/lib/multiplayer/constants";
 import type { MatchView } from "@/lib/multiplayer/types";
 import { GAME_BY_ID } from "@/lib/catalog";
@@ -28,6 +28,7 @@ import { DuelEntrySheet, EdgeCard, MatchEnd, Matchmaking, OppDisconnected, Oppon
 import { CountdownNumber, Cta, EmoteBar, LoadingScreen, MpToast, NeedProfile, Screen, TopButton, useToast } from "./ui";
 import { JoinRoom, ShareCode } from "./party";
 import { InviteFriends } from "./InviteFriends";
+import { useFriends } from "@/lib/client/social";
 import { codeHref } from "@/lib/client/codes";
 
 type Outcome = "me" | "them" | "draw";
@@ -71,7 +72,8 @@ function DuelLobby({
   const back = useBackOrHome();
   const me = useMe();
   const relaxed = useSettings((s) => s.relaxed);
-  const [game, setGame] = useState<string | null>(initialGame ?? DUEL_DEFAULT_GAME ?? null);
+  // No game is picked for the player: "Select game" until they choose one (or Any game).
+  const [game, setGame] = useState<string | null | undefined>(initialGame ?? undefined);
   const [mode, setMode] = useState<"sheet" | "search" | "friend" | "code">("sheet");
   const [codeBusy, setCodeBusy] = useState(false);
   const [waited, setWaited] = useState(0);
@@ -129,6 +131,7 @@ function DuelLobby({
   }, [mode, friend, router]);
 
   const quick = async (rulesSeen = false) => {
+    if (game === undefined) return;
     try {
       since.current = Date.now();
       setWaited(0);
@@ -163,11 +166,16 @@ function DuelLobby({
       show("Couldn't start the Practice bot.", "bad");
     }
   };
+  const friends = useFriends(!!friendName);
   const challengeFriend = async () => {
+    if (game === undefined) return;
     try {
       const r = await api<{ matchId: string; code: string }>("/api/v1/duel/friend", { json: { game } });
       setFriend(r);
       setMode("friend");
+      // challenged from a friend's card: their invite goes out at once (a card on their screen, or a push)
+      const to = friends.data?.friends.find((f) => f.nickname.toLowerCase() === friendName?.toLowerCase());
+      if (to) void api("/api/v1/game-invites", { json: { to: to.id, kind: "duel", target: r.matchId } }).catch(() => {});
     } catch {
       show("Couldn't make a link. Try again.", "bad");
     }
@@ -187,13 +195,14 @@ function DuelLobby({
     }
   };
 
-  // From a friend's card (/duel?friend=<nickname>) or a game card (/duel?game=<id>&invite=1): make the challenge link at once.
+  // From a game card (/duel?game=<id>&invite=1) the game is already chosen: make the challenge link at once. From a
+  // friend's card (/duel?friend=<nickname>) the sheet opens first so the player picks the game.
   const autoChallenged = useRef(false);
   useEffect(() => {
-    if ((!friendName && !invite) || joinCode || relaxed || autoChallenged.current) return;
+    if (!invite || !initialGame || friendName || joinCode || relaxed || autoChallenged.current) return;
     autoChallenged.current = true;
     void challengeFriend();
-  }, [friendName, invite, joinCode, relaxed]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [invite, initialGame, friendName, joinCode, relaxed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (relaxed)
     return (
@@ -217,7 +226,7 @@ function DuelLobby({
       {mode === "search" && (
         <Matchmaking
           rating={rating}
-          game={game}
+          game={game ?? null}
           waitedMs={waited}
           searching={searching}
           color={me.data?.avatar_color ?? "#B8F23A"}
@@ -270,6 +279,7 @@ function DuelLobby({
           onFriend={challengeFriend}
           onCode={() => setMode("code")}
           onClose={back}
+          friendName={friendName}
           youngster={me.data?.age_band === "13-15"}
         />
       )}
