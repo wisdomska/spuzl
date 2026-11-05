@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.27.0 (5 November 2026)
+
+### For players
+
+- **New, brighter music for Home and for Duels and Parties.** Home and the menus play a cheerful marimba groove
+  over shakers in a major key; Duels and Parties (their lobbies included) play a livelier, bright plucked tune over
+  a punchy beat. Game tunes are unchanged.
+
 ## 1.26.1 (5 November 2026)
 
 ### For players

@@ -1,6 +1,6 @@
 /**
  * Background music: a small generative sequencer. Every track is made, not stored: a style (per category, plus
- * Home and Versus) sets the tempo range, scale, chords, instruments and groove; a seed (the game id) picks the key,
+ * Home and Versus, both upbeat and bright) sets the tempo range, scale, chords, instruments and groove; a seed (the game id) picks the key,
  * tempo, progression and melody, so each game has its own tune in its category's sound. Notes are scheduled a
  * little ahead on the audio clock (the usual Web Audio lookahead pattern), so timing holds when the page is busy.
  *
@@ -42,22 +42,23 @@ const MAJOR = [0, 2, 4, 5, 7, 9, 11];
 const AEOLIAN = [0, 2, 3, 5, 7, 8, 10];
 
 export const STYLES: Record<StyleId, Style> = {
-  // Home, worlds, library, tabs: warm lo-fi, unhurried.
+  // Home, worlds, library, tabs: upbeat and bright, a cheerful marimba groove over shakers (major key, the
+  // I-V-vi-IV and I-IV-V-IV progressions everyone hums along to).
   home: {
-    bpm: [80, 86],
+    bpm: [106, 114],
     scale: MAJ_PENTA,
     progressions: [
-      [0, 5, 3, 4],
-      [0, 3, 5, 4],
+      [0, 4, 5, 3],
+      [0, 3, 4, 3],
     ],
     harmony: MAJOR,
-    voices: 4,
-    root: [50, 6],
-    lead: "keys",
-    drums: "lofi",
-    density: 0.42,
-    swing: 0.18,
-    padGain: 0.05,
+    voices: 3,
+    root: [53, 5],
+    lead: "marimba",
+    drums: "shaker",
+    density: 0.58,
+    swing: 0.08,
+    padGain: 0.04,
   },
   // Puzzles: calm and spacious so thinking comes first.
   logic: {
@@ -128,19 +129,23 @@ export const STYLES: Record<StyleId, Style> = {
     swing: 0.1,
     padGain: 0.035,
   },
-  // Duels and parties: a driving minor groove.
+  // Duels and parties (and their lobbies): upbeat and bright too, livelier than Home: a plucked major-key lead
+  // over a punchy kick.
   versus: {
-    bpm: [116, 124],
-    scale: MIN_PENTA,
-    progressions: [[0, 3, 4, 3]],
-    harmony: AEOLIAN,
+    bpm: [124, 132],
+    scale: MAJ_PENTA,
+    progressions: [
+      [0, 4, 5, 3],
+      [5, 3, 0, 4],
+    ],
+    harmony: MAJOR,
     voices: 3,
-    root: [45, 5],
+    root: [50, 5],
     lead: "pluck",
     drums: "drive",
-    density: 0.5,
+    density: 0.6,
     swing: 0,
-    padGain: 0.035,
+    padGain: 0.03,
   },
 };
 
