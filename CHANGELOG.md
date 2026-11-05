@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.24.0 (5 November 2026)
+
+### For players
+
+- **Alerts even with SPUZL closed.** Turn on "Turn and invite alerts" in Settings (or tap the bell on a board game)
+  and your phone or computer shows a notification when it's your turn in a board game, when your rival nudges you,
+  and when a friend invites you to a Duel, a Party or a board game, even if SPUZL isn't open. Tap it to go straight
+  there. With SPUZL open on screen you get the in-app card instead, never both. Switch it off any time in Settings.
+  (On iPhone this needs SPUZL added to the Home Screen; that's Apple's rule for web apps.)
+
 ## 1.23.0 (4 November 2026)
 
 ### For players

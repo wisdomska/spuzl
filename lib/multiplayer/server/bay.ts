@@ -3,6 +3,8 @@ import { randomInt } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ApiError } from "@/lib/api/server";
 import { serverBroadcast } from "@/lib/realtime/server";
+import { pushTo } from "@/lib/push/server";
+import { GAME_BY_ID } from "@/lib/catalog";
 import { createRng } from "@/lib/rng";
 import { TIMING } from "../constants";
 import {
@@ -210,7 +212,7 @@ export async function joinBay(admin: SupabaseClient, me: string, id: string, cod
   if (full) {
     const started = data[0] as BayRow;
     const first = (await loadRules(started.game_id)).turn(started.state);
-    if (started.players[first] !== me) await alertTurn(started, first);
+    if (started.players[first] !== me) await alertTurn(admin, started, first);
   }
   return bayView(admin, data[0] as BayRow, me);
 }
@@ -271,14 +273,23 @@ async function commitMove(
   await serverBroadcast(bayTopic(b.id), "move", { ply: b.ply, seat, move });
   // The turn passed to someone else: tell them, wherever they are in the app (and in a background tab).
   const nextSeat = rules.turn(next);
-  if (!status.over && nextSeat !== seat) await alertTurn(b, nextSeat);
+  if (!status.over && nextSeat !== seat) await alertTurn(admin, b, nextSeat);
 }
 
-/** "Your turn" on a player's own channel (user:<id>), never to the Practice bot. */
-async function alertTurn(b: BayRow, seat: number) {
+/**
+ * "Your turn" on a player's own channel (user:<id>, for an open app) and as a push notification (for a closed one;
+ * the service worker drops it when SPUZL is on screen). Never to the Practice bot.
+ */
+async function alertTurn(admin: SupabaseClient, b: BayRow, seat: number) {
   const to = b.players[seat];
   if (!to || to === BOT_PLAYER) return;
   await serverBroadcast(`user:${to}`, "your_turn", { matchId: b.id, game: b.game_id, mode: b.mode });
+  await pushTo(admin, to, {
+    title: "Your turn",
+    body: `It's your move in ${GAME_BY_ID[b.game_id]?.name ?? "your game"}.`,
+    url: `/bay/${b.id}`,
+    tag: `turn:${b.id}`,
+  });
 }
 
 /** Practice bot replies straight away (several plies for Ludo rolls and moves). */
@@ -418,7 +429,15 @@ export async function bayAction(admin: SupabaseClient, me: string, id: string, a
         .update({ nudged_at: iso(now) })
         .eq("id", id);
       const other = b.players[b.turn];
-      if (other && other !== BOT_PLAYER) await serverBroadcast(`user:${other}`, "nudge", { matchId: id, game: b.game_id });
+      if (other && other !== BOT_PLAYER) {
+        await serverBroadcast(`user:${other}`, "nudge", { matchId: id, game: b.game_id });
+        await pushTo(admin, other, {
+          title: "Nudge",
+          body: `Your rival is waiting on your move in ${GAME_BY_ID[b.game_id]?.name ?? "your game"}.`,
+          url: `/bay/${id}`,
+          tag: `turn:${id}`,
+        });
+      }
       break;
     }
     case "rematch":

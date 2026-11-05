@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { Icon } from "@/components/ui/Icon";
 import { useMe } from "@/lib/client/api";
 import { useChannel } from "@/lib/client/multiplayer";
-import { alertIfAway } from "@/lib/client/alerts";
+import { alertIfAway, enablePush } from "@/lib/client/alerts";
 import { GAME_BY_ID } from "@/lib/catalog";
 import { play } from "@/lib/audio";
 
@@ -53,6 +53,11 @@ export function Inbox() {
   }, [pathname]);
   const router = useRouter();
   const [card, setCard] = useState<Card | null>(null);
+  // Alerts already allowed on this device: make sure its push subscription is saved for this player (a new
+  // sign-in, a renewed subscription). Quiet; does nothing without permission.
+  useEffect(() => {
+    if (id) void enablePush();
+  }, [id]);
 
   useEffect(() => {
     if (!channel) return;

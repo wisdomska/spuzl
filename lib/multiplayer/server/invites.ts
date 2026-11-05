@@ -3,6 +3,8 @@ import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ApiError } from "@/lib/api/server";
 import { serverBroadcast } from "@/lib/realtime/server";
+import { pushTo } from "@/lib/push/server";
+import { GAME_BY_ID } from "@/lib/catalog";
 import { friendshipBetween, isBlockedPair } from "@/lib/social/server";
 import type { InviteKind } from "../types";
 
@@ -66,5 +68,13 @@ export async function sendGameInvite(
     game,
     href,
   });
+  const who = card?.nickname ?? "A friend";
+  const what =
+    input.kind === "duel"
+      ? "a Duel"
+      : input.kind === "party"
+        ? "a Party Race"
+        : `a game of ${GAME_BY_ID[game ?? ""]?.name ?? "a board game"}`;
+  await pushTo(admin, input.to, { title: `${who} invited you`, body: `Join ${what} on SPUZL.`, url: href, tag: `invite:${href}` });
   return { sent: true };
 }

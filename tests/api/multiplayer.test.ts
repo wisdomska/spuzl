@@ -347,6 +347,23 @@ describe("api: board games chat and rematches", () => {
   });
 });
 
+describe("api: push alerts", () => {
+  it("saves a device for push, keeps it to the player, and turns it off", async () => {
+    const a = await guest(uniq("pa_"));
+    const key = await a.api("/api/v1/push");
+    expect(key.status).toBe(200);
+    expect(key.data.publicKey === null || typeof key.data.publicKey === "string").toBe(true);
+    const sub = { endpoint: `https://push.example.test/${uniq("ep_")}`, keys: { p256dh: "B".repeat(87), auth: "A".repeat(22) } };
+    expect((await a.api("/api/v1/push", { json: sub })).data).toEqual({ on: true });
+    const { data: row } = await admin().from("push_subscriptions").select("player_id").eq("endpoint", sub.endpoint).single();
+    expect(row!.player_id).toBe(a.userId);
+    expect((await a.api("/api/v1/push", { json: { ...sub, endpoint: "http://insecure.test/x" } })).status).toBe(400);
+    expect((await a.api("/api/v1/push", { method: "DELETE", json: { endpoint: sub.endpoint } })).data).toEqual({ on: false });
+    const { data: gone } = await admin().from("push_subscriptions").select("endpoint").eq("endpoint", sub.endpoint);
+    expect(gone).toHaveLength(0);
+  });
+});
+
 describe("api: board bay", () => {
   it("validates every move on the server and rejects illegal ones", async () => {
     const a = await guest(uniq("ba_"));

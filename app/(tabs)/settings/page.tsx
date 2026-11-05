@@ -1,7 +1,9 @@
 "use client";
 
+import { alertsSupported, askAlerts, disablePush, pushOn } from "@/lib/client/alerts";
+
 import Link from "next/link";
-import { Suspense, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { Suspense, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSettings, musicEnabled, prefersReducedMotion, type Settings } from "@/lib/settings/store";
@@ -134,6 +136,7 @@ function SettingsScreen() {
             label="Music"
           />
         </Row>
+        <AlertsRow />
         <Row icon="vibrate" label="Haptics">
           <Switch
             checked={s.haptics}
@@ -223,6 +226,46 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
       <h2 className="text-muted px-1 py-1.5 text-[14px] font-semibold">{title}</h2>
       <div className="bg-surface divide-line divide-y rounded-[18px] px-3.5">{children}</div>
     </section>
+  );
+}
+
+/**
+ * Alerts on this device: your turn in a board game, a nudge, a friend's invite, as a notification even when SPUZL
+ * is closed (where the browser supports push). Turning it on asks the browser once.
+ */
+function AlertsRow() {
+  const [on, setOn] = useState<boolean | null>(null);
+  const [blocked, setBlocked] = useState(false);
+  useEffect(() => {
+    let live = true;
+    void pushOn().then((v) => live && setOn(v));
+    return () => {
+      live = false;
+    };
+  }, []);
+  // Nothing until the device has been checked (after the first paint), so the server and first client render agree.
+  if (on === null || !alertsSupported()) return null;
+  return (
+    <Row
+      icon="bell-ringing"
+      label="Turn and invite alerts"
+      hint={blocked ? "Blocked in your browser settings" : "Your turn, nudges and invites, even with SPUZL closed"}
+    >
+      <Switch
+        checked={on}
+        onChange={async (v) => {
+          if (v) {
+            const ok = await askAlerts();
+            setBlocked(!ok);
+            setOn(ok && (await pushOn()));
+          } else {
+            await disablePush();
+            setOn(false);
+          }
+        }}
+        label="Turn and invite alerts"
+      />
+    </Row>
   );
 }
 

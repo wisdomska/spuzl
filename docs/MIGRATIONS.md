@@ -249,3 +249,13 @@ quests in the database.
 | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------ |
 | `20261126000001_party_pass_round.sql` | `match_players.passed_round`: the Party round a player skipped (0 points, the round stops waiting for them)                | In the file header |
 | `20261127000001_bay_chat.sql`         | Chat in Board Games: `match_messages.bay_id` (to `board_matches`), `match_id` now nullable, exactly one of the two per row | In the file header |
+
+## 1.24.0
+
+| Migration                     | What it does                                                                                                                                                                                   | Rollback           |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| `20261128000001_web_push.sql` | Web Push: `push_subscriptions` (one row per device with alerts on) and `server_secrets` (the VAPID key pair, inserted once per project by an operator, never in a migration); both server-only | In the file header |
+
+After applying it to a new project, insert a VAPID key pair (generate with `web-push generate-vapid-keys`):
+`insert into public.server_secrets (key, value) values ('vapid_public', '<public>'), ('vapid_private', '<private>');`
+Without it push stays off and everything else works.

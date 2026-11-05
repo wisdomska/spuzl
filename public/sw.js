@@ -11,8 +11,10 @@
  *   the worker starts and caches today's pack itself, once per GMT day, unless the page said low-data
  *   mode is on. Only ever today's: the server does not serve a Daily before its day (docs/qa/LOW_DATA.md).
  * - Never cached: other API writes, share images, Supabase and anything cross-origin.
+ * - Push (lib/push/server.ts): your turn, a nudge, a friend's invite. Shown only when no SPUZL window is on screen
+ *   (an open app shows its own card); tapping it focuses SPUZL on that page, or opens it.
  */
-const VERSION = "2026-11-01.2";
+const VERSION = "2026-11-05.1";
 const SHELL = `spuzl-shell-${VERSION}`;
 const STATIC = `spuzl-static-${VERSION}`;
 const DATA = `spuzl-data-${VERSION}`;
@@ -262,3 +264,42 @@ self.addEventListener("fetch", (event) => {
     return event.respondWith(cacheFirst(event, STATIC));
   }
 });
+
+/* ---------------- Push notifications ---------------- */
+
+self.addEventListener("push", (event) => {
+  let msg = null;
+  try {
+    msg = event.data ? event.data.json() : null;
+  } catch {
+    msg = null;
+  }
+  if (!msg || !msg.title) return;
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((wins) => {
+      // SPUZL open and on screen: the in-app card already says it
+      if (wins.some((w) => w.visibilityState === "visible")) return undefined;
+      return self.registration.showNotification(msg.title, {
+        body: msg.body || "",
+        tag: msg.tag || undefined,
+        renotify: !!msg.tag,
+        icon: "/icons/icon-192.png",
+        badge: "/icons/icon-192.png",
+        data: { url: msg.url || "/" },
+      });
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = new URL((event.notification.data && event.notification.data.url) || "/", self.location.origin).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((wins) => {
+      const here = wins.find((w) => w.url === url) || wins[0];
+      if (here) return here.focus().then((w) => (w && w.url !== url && "navigate" in w ? w.navigate(url) : w));
+      return self.clients.openWindow(url);
+    }),
+  );
+});
+

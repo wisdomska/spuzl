@@ -31,12 +31,75 @@ function flashTitle(text: string) {
 export const alertsSupported = () => typeof window !== "undefined" && "Notification" in window;
 export const alertsAllowed = () => alertsSupported() && Notification.permission === "granted";
 
-/** Asks once for system notifications (from a press). True when they are on. */
+/** Asks once for system notifications (from a press), then turns on push for this device. True when they are on. */
 export async function askAlerts(): Promise<boolean> {
   if (!alertsSupported()) return false;
-  if (Notification.permission === "granted") return true;
   if (Notification.permission === "denied") return false;
-  return (await Notification.requestPermission()) === "granted";
+  if (Notification.permission !== "granted" && (await Notification.requestPermission()) !== "granted") return false;
+  await enablePush();
+  return true;
+}
+
+const pushSupported = () => typeof navigator !== "undefined" && "serviceWorker" in navigator && "PushManager" in window;
+
+function keyBytes(base64url: string): Uint8Array<ArrayBuffer> {
+  const b64 = (base64url + "=".repeat((4 - (base64url.length % 4)) % 4)).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(b64);
+  const out = new Uint8Array(new ArrayBuffer(raw.length));
+  for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+  return out;
+}
+
+/**
+ * Push for this device (alerts while SPUZL is closed): subscribes with the server's key and saves the
+ * subscription. Quiet when push isn't available here or isn't set up on the server. Safe to call on every start.
+ */
+export async function enablePush(): Promise<boolean> {
+  try {
+    if (!pushSupported() || !alertsAllowed()) return false;
+    const reg = await navigator.serviceWorker.ready;
+    const { publicKey } = await (await fetch("/api/v1/push", { credentials: "include" })).json();
+    if (!publicKey) return false;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(publicKey) });
+    const res = await fetch("/api/v1/push", {
+      method: "POST",
+      credentials: "include",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(sub.toJSON()),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+/** Stops push on this device (Settings). */
+export async function disablePush(): Promise<void> {
+  try {
+    if (!pushSupported()) return;
+    const sub = await (await navigator.serviceWorker.ready).pushManager.getSubscription();
+    if (!sub) return;
+    await fetch("/api/v1/push", {
+      method: "DELETE",
+      credentials: "include",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ endpoint: sub.endpoint }),
+    });
+    await sub.unsubscribe();
+  } catch {
+    // nothing to undo
+  }
+}
+
+/** Whether this device has push on right now. */
+export async function pushOn(): Promise<boolean> {
+  try {
+    if (!pushSupported() || !alertsAllowed()) return false;
+    return !!(await (await navigator.serviceWorker.ready).pushManager.getSubscription());
+  } catch {
+    return false;
+  }
 }
 
 /** Only when the tab is hidden: flash the title and, if allowed, show a system notification that opens `href`. */
