@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.30.0 (5 November 2026)
+
+### For players
+
+- **New sound effects.** Taps, tiles, wins, chess and draughts pieces, Ludo dice, Oware seeds and the rest are now
+  recorded sounds made with ElevenLabs, trimmed and levelled to sit together. They load quietly in the background; until
+  they have (and in low-data mode) the old sounds play, so nothing ever waits.
+
 ## 1.29.2 (5 November 2026)
 
 ### For players

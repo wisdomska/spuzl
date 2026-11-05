@@ -1,5 +1,6 @@
 /**
- * SPUZL sound kit. Every SFX is synthesised with WebAudio (0 KB of files): recipes in voices.ts,
+ * SPUZL sound kit. Recorded effects (public/sfx, lib/audio/samples.ts) once loaded, with the WebAudio synth recipes
+ * in voices.ts as the instant fallback;
  * the palette (event → voice, lengths, variation) in palette.ts.
  * play(name, opts) plays the sound and fires the paired haptic, respecting settings.
  *
@@ -19,6 +20,7 @@ import { canStart, clampPan, LENGTH_MS, prune, resolve, variation, type Schedule
 import { RECIPES, type Kit } from "./voices";
 import type { MusicPlayer, StyleId } from "./music";
 import { createRecordedPlayer } from "./recorded";
+import { loadSamples, sampleFor, sampleRate } from "./samples";
 
 /** Music sits well under the sound effects. */
 const MUSIC_LEVEL = 0.32;
@@ -114,6 +116,7 @@ function ctx(): AudioContext | null {
     if (!AC) return null;
     ac = new AC();
     build(ac);
+    if (!runtime.lowData) loadSamples(ac);
   }
   if (ac.state !== "running") void ac.resume().catch(() => {});
   return ac;
@@ -150,9 +153,21 @@ export function play(name: string, o: PlayOptions = {}) {
         out.connect(p);
         p.connect(sfxBus);
       } else out.connect(sfxBus);
-      const kit: Kit = { a, out, noise: nbuf, rate: v.rate };
-      RECIPES[key](kit, t, o);
-      const length = Math.max(LENGTH_MS[key], (o.duration ?? 0) * 1000 + 60);
+      // A recorded sample when it has loaded; the synth recipe otherwise (and in low-data mode)
+      const buf = runtime.lowData ? null : sampleFor(key);
+      let sampleMs = 0;
+      if (buf) {
+        const src = a.createBufferSource();
+        src.buffer = buf;
+        src.playbackRate.value = sampleRate(key, buf, v.rate, o);
+        src.connect(out);
+        src.start(t);
+        sampleMs = (buf.duration / src.playbackRate.value) * 1000;
+      } else {
+        const kit: Kit = { a, out, noise: nbuf, rate: v.rate };
+        RECIPES[key](kit, t, o);
+      }
+      const length = Math.max(LENGTH_MS[key], sampleMs, (o.duration ?? 0) * 1000 + 60);
       scheduled.push({ name: key, start, end: start + length });
       played = true;
       setTimeout(
