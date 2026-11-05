@@ -179,9 +179,11 @@ const SOCIAL = /^\/(duel|party|bay|friends)(\/|$|\?)/;
  */
 function AlertsAsk({ signedIn, pathname }: { signedIn: boolean; pathname: string }) {
   const [asked, setAsked] = useState(true);
-  const [seenPath, setSeenPath] = useState("");
-  if (seenPath !== pathname) {
-    setSeenPath(pathname);
+  // checked again when the page changes and once the player has loaded (signed in arrives after the first render)
+  const [seen, setSeen] = useState("");
+  const key = `${pathname}|${signedIn}`;
+  if (seen !== key) {
+    setSeen(key);
     let done = true;
     try {
       done = !!localStorage.getItem(ASKED);

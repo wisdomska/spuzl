@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.26.1 (5 November 2026)
+
+### For players
+
+- The one-time "Know when it's your turn" alerts question now shows up as intended (it checked before your
+  account had loaded and then never looked again).
+
 ## 1.26.0 (5 November 2026)
 
 ### For players
