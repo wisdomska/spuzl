@@ -1,87 +1,151 @@
 # Architecture notes
 
-A map of the SPUZL codebase for the frictionless-play pass (audit: `docs/SPUZL_UX_Game_Audit.md`).
-Paths are relative to the repository root.
+A map of the SPUZL codebase, refreshed for round 2 (audit: `docs/SPUZL_UX_Game_Audit_Round2.docx`, converted to
+`docs/audit-r2.md`; round 1 audit: `docs/SPUZL_UX_Game_Audit.md`). Paths are relative to the repository root.
+Facts checked against the code on 6 Nov 2026 (release 1.33.0).
 
 ## Stack
 
 - Next.js 16 App Router (`proxy.ts` replaces middleware; `params` and `searchParams` are Promises; route types
   come from `next typegen`), React 19, TypeScript strict, Tailwind v4 via the Turbopack loader.
-- Motion (`motion/react`) for animation; Phaser 3 (lazy chunk) for the Rage Ridge action games only.
-- TanStack Query for client data, Zustand for settings, Zod for every request body.
-- Supabase: Postgres with forced RLS, Auth (anonymous guests, email code), Realtime (match channels).
-- Vercel (region lhr1, cron) and Supabase eu-west-2. Free tiers.
+- Motion (`motion/react`) for animation; Phaser 3 (lazy chunk) for the action games.
+- TanStack Query for client data (default staleTime 30 s, `components/shell/Providers.tsx:18`), Zustand for
+  settings, Zod for every request body.
+- Supabase: Postgres with forced RLS, Auth (anonymous guests, email code, Google), Realtime (match channels).
+- Vercel (region lhr1, cron) and Supabase eu-west-2. Production project `xwpllzwnhrrhybezkbxz`, preview
+  `cbwkrkftkkdgagambmfn`.
 
-## Routing (51 pages)
+## Size
 
-| Area              | Routes                                                                                                                               | Notes                                                                                       |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
-| First run         | `/intro`, `/welcome`                                                                                                                 | Logo intro, then sign-in or guest, age, start choice, lesson, nickname.                     |
-| Tabs (bottom nav) | `/` (Home map), `/leagues`, `/leaderboards`, `/quests`, `/friends`, `/crews`, `/shop`, `/me`, `/settings`, `/archive`, `/school-cup` | `app/(tabs)/layout.tsx` adds the nav. Home and Play are server-gated by `lib/auth/gate.ts`. |
-| Play              | `/library`, `/world/[id]`, `/play/[game]?mode=daily\|free\|archive&difficulty=`                                                      | One Play route for all 51 games.                                                            |
-| Multiplayer       | `/duel`, `/party`, `/party/[code]`, `/bay`, `/bay/[matchId]`, `/ghost/[game]`, `/challenge/[code]`                                   |                                                                                             |
-| Info              | `/(info)/…` privacy, terms, fair play, how to play, contact                                                                          |                                                                                             |
-| Admin             | `/admin/login`, `/admin/(console)/…` calendar, puzzles, content, moderation, liveops, flags, shop, schools, team, audit              | TOTP + roles (`lib/admin/roles.ts`).                                                        |
-| Dev fixtures      | `/dev/board/[game]`, `/dev/spuz`, `/dev/pwa`                                                                                         | Hidden in production unless `ENABLE_DEV_ROUTES=1`.                                          |
+| Thing                                  | Count | Where                                                                               |
+| -------------------------------------- | ----- | ----------------------------------------------------------------------------------- |
+| Pages (`app/**/page.tsx`)              | 59    |                                                                                     |
+| API route handlers (`app/**/route.ts`) | 141   | `/api/v1/*` player, `/api/admin/*`, `/api/cron/*`, `/api/og/*`                      |
+| Migrations                             | 60    | `supabase/migrations/*.sql`, indexed with rollback notes in `docs/MIGRATIONS.md`    |
+| Live games                             | 28    | `GAMES` in `lib/catalog.ts:797`; `LAB_GAMES` 0, `RETIRED_GAMES` 33                  |
+| Visible worlds                         | 4     | Puzzles 9, Words & Quiz 8, Arcade 6, Board Games 5 (`WORLDS`, `lib/catalog.ts:802`) |
 
-Loading screens: `app/loading.tsx`, `app/(tabs)/loading.tsx`, `app/play/[game]/loading.tsx`, `app/world/[id]/loading.tsx` (`components/ui/PageLoader.tsx`).
+## Routing
+
+| Area              | Routes                                                                                                      | Notes                                                                                                     |
+| ----------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Landing           | `/` for visitors (`components/landing/*`, playable demo `TryIt.tsx`)                                        | "Play now" → `/intro` → `/welcome`.                                                                       |
+| First run         | `/intro`, `/welcome`                                                                                        | Guest / Google / email, birth month + year, "How do you want to start?", lesson, nickname.                |
+| Tabs (bottom nav) | `/` (Home map), `/library`, `/leagues`, `/friends`, `/crews`, `/shop`, `/me`, `/settings`, `/u/[nickname]`… | `app/(tabs)/layout.tsx` adds the nav, `LowDataSuggest` and the Inbox. Server-gated by `lib/auth/gate.ts`. |
+| Play              | `/play/[game]?mode=daily\|free\|archive\|level`, `/play/[game]/bot`, `/world/[id]`                          | One Play route for every game; Ludo free play redirects to `/play/ludo/bot`.                              |
+| Multiplayer       | `/duel`, `/party`, `/party/[code]`, `/bay`, `/bay/[matchId]`, `/ghost/[game]`, `/challenge/[code]`          | Board Games ("Bay") is turn-based with Play live matchmaking.                                             |
+| Admin             | `/admin/login`, `/admin/(console)/…`                                                                        | Overview, players, puzzles, content, moderation, liveops, flags, settings, metrics, audit.                |
+| Dev fixtures      | `/dev/board/[game]?seed=&d=&state=`, `/dev/spuz`, `/dev/pwa`                                                | Only with `ENABLE_DEV_ROUTES=1` or outside production. Seeded, server-free boards for every game.         |
+
+## The first-game load path (R2-01)
+
+1. **Home** (`app/(tabs)/page.tsx:13-20`): `requirePlayerPage`, then `loadMe` and `loadToday` on the server, seeded
+   into React Query (`["me"]`, `["today"]`) through `HydrationBoundary`.
+2. **Continue card** (`components/home/HomeScreen.tsx:66-67,155`, `SidePanel.tsx:42,125`) links to
+   `continueHref` (`lib/game/next.ts:33`): ladder games → `?mode=level`, launch games not yet cleared → Daily,
+   others → `?mode=free`.
+3. **Tap priming** (`lib/client/early-attempt.ts:54`, installed in `Providers.tsx:23`): POSTs `/api/v1/attempts`
+   on the click for daily and free links only. `mode=level` links (most Continue taps) are not primed.
+4. **Route** `app/play/[game]/page.tsx`: `requireSessionPage` (JWT check only) and `getGameSettings()` (twice,
+   30 s in-memory cache). `loading.tsx` shows `ShellSkeleton`. No server data hydration on this route.
+5. **Client** `components/play/PlayScreen.tsx`: `useMe` (`/api/v1/me?optional=1`), `usePresence` (POST
+   `/api/v1/presence`, then every 60 s), `useToday` (staleTime 15 s), `useGameSettings` (`/api/v1/settings/game`,
+   5 min), `useLearnedSync`, then once `me` is in: guided play (`GET /api/v1/guided/<id>`) or `begin()` (primed
+   attempt or `startAttempt`). `useTapToBoard` reports `tap_to_board` to `/api/v1/metrics`.
+6. **Board** chunk: `next/dynamic` with `ssr: false` per game (`games/board-registry.tsx`), inside
+   `components/game/GameShell.tsx`.
+
+`/api/v1/today` call sites: `useToday` in `HomeScreen`, `SidePanel`, `WorldScreen`, `PlayScreen` (one shared key,
+so React Query de-duplicates them), plus a direct `fetch` in `lib/offline/register.ts:48` (`prefetchDailies`, 10 s
+after load on idle) that bypasses the cache. A cold `/play` load can therefore fetch `/today` twice.
+
+Existing prefetches: `PlayScreen.tsx:119` (world page), `:370` (next game, `perf.prefetch`), `HomeMap.tsx:129`
+(worlds), `GameCard.tsx:48`, `app/library/page.tsx:54` (idle), `app/welcome/page.tsx:130`.
 
 ## Games
 
-- Catalogue: `lib/catalog.ts` (51 games: id, name, world, engine `dom|phaser|custom`, rule, scoring, `minTimeMs`).
-- Per game `games/<id>/`: `logic.ts` (pure `GameLogic`: generate, countSolutions, verify, progress, hint, grade;
-  guess games add `checkGuess`), `Board.tsx` (client), optional `content.ts`, `logic.test.ts`.
-- Registries: `games/logic-registry.ts` (lazy logic imports) and `games/board-registry.tsx` (lazy boards).
-- Shared: `games/_shared/` (guess transport, rotation helper, word list, Clue Cave sealing), `games/types.ts`
-  (contracts, `difficultyForDate`).
-- Shell: `components/game/GameShell.tsx` is the 6-zone template every board renders inside (header with timer,
-  hints, help, pause; title and rule; board slot; feedback line; tool bar; pause overlay). Boards talk to it
-  through `BoardApi` (`onMove`, `onSolved`, `feedback`, `ruleBreak`, `announce`, `setControls`, `setClock`).
-- Screen around the shell: `components/play/PlayScreen.tsx` (start or resume attempt, autosave, hints, finish,
-  results, celebrations, free-play loop, share, challenge links). Results: `components/results/ResultsScreen.tsx`;
-  celebrations: `components/celebrate/Celebrations.tsx` (currently full-screen interstitials).
-- Rage Ridge: `phaser/RageBoard.tsx` + fixed-step sims in `phaser/sim/` (server replays the input log).
-- Board sizing: `components/game/useBoardSize.ts` (`useCellSize`, always fits the viewport).
+- Catalogue `lib/catalog.ts`: id, name, world, engine, rule, scoring, `minTimeMs` (default 4000 ms, the
+  fast-solve floor). `UI_ACCENT` is the one interface colour (lemon green, `var(--accent)`).
+- Per game `games/<id>/`: `logic.ts` (pure: generate, countSolutions, verify, progress, hint, grade), `Board.tsx`,
+  optional `content.ts`, `logic.test.ts`; board games add `rules.ts` (turn-based rules shared by client and server).
+- Registries: `games/logic-registry.ts`, `games/board-registry.tsx`. Bots: `lib/bot/*`.
+- Shell: `components/game/GameShell.tsx` (header with one timer, title + level, menu, board slot, feedback line,
+  toolbar, pause overlay with Comfort settings). Boards talk to it through `BoardApi`.
+- Guided first play (practice rounds): `lib/guided.ts` `needsGuided` = mode daily/free/archive, never played, not
+  in `localStorage` `spuzl.learned` or `me.learned`, no Daily in progress. **Skipped** by `mode=level` (so Continue
+  to any ladder game, e.g. Dusk: R2-07), `/bot`, and anything opened before `played` loads.
+- Levels: `lib/game/levels.ts`, `lib/client/levels.ts`; "Next level of <game>" on the compact result bar.
+
+## Prompts and banners (R2-04)
+
+| Prompt                    | Where                                                                 | Trigger today                                                                                                                                                                 |
+| ------------------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Notifications ("Turn on") | `components/shell/Inbox.tsx` `AlertsAsk`                              | Signed in, any page but `/play`, `/intro`, `/welcome`, `/admin`; permission "default"; Not now → again in 3 days, max 3 (`spuzl.alertsAsked`). Shows on the first Home visit. |
+| Low-data suggestion       | `components/shell/LowDataSuggest.tsx`, `lib/lowdata/suggest.ts:12-33` | After load, low data off, never answered; slow = `saveData`, 2g/3g, or navigation > 4000 ms.                                                                                  |
+| Save your streak (guests) | `PlayScreen.tsx:564`, `ResultsScreen.tsx:187`                         | After `guest.signInPromptAfterClears` clears (default 3).                                                                                                                     |
+| Event banner              | `components/home/EventBanner.tsx`                                     | `features.seasonal`.                                                                                                                                                          |
+| Photosensitivity notice   | `PlayScreen.tsx:470`                                                  | Flagged games.                                                                                                                                                                |
+
+There is no shared prompt queue: two prompts can appear in the same screen visit.
+
+## Multiplayer
+
+- Duel: `components/multiplayer/DuelScreen.tsx`, `duel.tsx`. Under-16 check client side at `DuelScreen.tsx:283`,
+  `GameChallenge.tsx:38`; `DuelEntrySheet` disables Quick Match (`duel.tsx:150,163`). Game picker is a 3-column
+  grid in an inner scroll box `max-h-[180px]` (`duel.tsx:122`). Server: 403 `age_restricted` in
+  `lib/multiplayer/server/lobby.ts:47` and `bayQueue.ts:76` (raw `age_band`), while `match.ts:215` uses
+  `effectiveBand`: the two should agree (R2-02).
+- Party: `components/multiplayer/PartyScreen.tsx`, `party.tsx`. Start → `POST /api/v1/rooms/<code>/start`, which
+  sets `round_started_at` 4 s ahead (`lobby.ts:415`, `lib/multiplayer/constants.ts:9`); a countdown number is shown
+  (`PartyScreen.tsx:500-509`). Sheets that can be open at round start: `ChatPanel`/`ChatPopup`, `EmoteBar`,
+  `RoomSettings`, 18+ `PlayersSheet`. Podium (`party.tsx:899-909`): host sees "Run it back" first, then "Next game".
+- Server: `lib/multiplayer/server/*` (lobby, match, duel, bay, bayQueue, rewards incl. rank from rounds, chat,
+  invites, adult); realtime `lib/realtime/*`; push `lib/push/server.ts` + `public/sw.js`.
 
 ## Server and data
 
-- API: 107 route handlers under `app/api` (`/api/v1/*` player API, `/api/admin/*`, `/api/cron/*`, `/api/og/*`,
-  `/api/games/[game]/guess`). Helpers in `lib/api/server.ts` (`handle`, `requirePlayer`, `body`, `rateLimit`).
-- Identity: `lib/supabase/server.ts` `currentUser()` verifies the JWT locally with `getClaims()` (ES256 JWKS),
-  cached per request. Service-role client: `lib/supabase/admin.ts`.
-- Game service: `lib/game/service.ts` (startAttempt, saveAttempt, hintFor, finishAttempt with anti-cheat
-  floor and wall-clock check, rewards, streaks, ratings, badges and quests via `evaluateAfterClear`).
-- Server-rendered player data: `lib/server/player-data.ts` (`loadMe`, `loadToday`) hydrates React Query on Home
-  and Play.
-- Database: `supabase/migrations/*.sql` (14 files). RLS forced everywhere; clients have SELECT only; writes go
-  through the API with the service role and `svc_*` security-definer functions. pg_cron jobs: daily rollover,
-  league rollover, crew clash settle, Board Bay expiry, admin housekeeping. Tests: `supabase/tests/*.sql` (pgTAP).
-- Multiplayer: `lib/multiplayer/server/*` (lobby, match, duel), realtime transport `lib/realtime/*`
-  (Supabase Realtime by default; PartyKit/Ably adapters).
-- Daily schedule: `lib/game/schedule.ts` + Vercel cron `/api/cron/generate` keeps 60 days ahead.
+- API helpers `lib/api/server.ts` (`handle`, `requirePlayer`, `body`, `rateLimit`). Identity: `currentUser()`
+  verifies the JWT locally (`getClaims`).
+- Game service `lib/game/service.ts`: start/save/finish attempts, anti-cheat (`:467-486` flags under
+  `minTimeMs`, client time > wall clock, offline Daily outside its day, game self-checks), rewards, streaks,
+  ratings (`updateRating`), badges, quests.
+- Account deletion: `lib/server/account-delete.ts` (the one path for players and admins).
+- Daily schedule: `features.dailies` is **off** by default (`lib/game-settings/schema.ts:12-17`) and the Play
+  page forces free play when off; `lib/game/schedule.ts` `fillSchedule` still fills `dailies` 60 days ahead.
+  No "Daily Five" code exists yet (R2-05); `LAUNCH_IDS` (`catalog.ts:846`) is the nearest.
 
-## Client state and settings
+## Client state, settings, copy, tokens
 
-- Settings store: `lib/settings/store.ts` (Zustand + localStorage + account copy): theme, colour-blind mode
-  (`cb`, adds patterns), text scale, reduced motion, sound, music, haptics, low data, relaxed (hides timers).
-  A boot script applies them before first paint.
-- Client API: `lib/client/api.ts` (`useMe`, `useToday`, attempt calls), `lib/client/*` for social/multiplayer.
-- Offline: `public/sw.js` (versioned caches), `lib/offline/*` (Daily prefetch, finish queue).
-
-## Copy and i18n
-
-There was no copy or i18n system; strings were inline. `lib/copy/index.ts` now holds player-facing copy per
-feature (`copy.signIn`, `copy.welcome`, …). New strings go there; existing inline strings move over as their
-screens are touched.
+- Settings store `lib/settings/store.ts` (theme, colour-blind patterns, text scale, reduced motion, sound
+  effects, music, haptics, low data, relaxed, other-audio mixing; versioned audio defaults).
+- Client API `lib/client/api.ts` (`useMe`, `useToday`, attempts), `lib/client/*`.
+- Offline: `public/sw.js` (versioned caches + long-lived audio cache), `lib/offline/*`.
+- Audio: `lib/audio/*` (recorded ElevenLabs effects with synth fallback, recorded music loops per area).
+- Copy: `lib/copy/*.ts`, one file per feature, `en` object in `lib/copy/index.ts`. Some screens (`DuelScreen`,
+  `party.tsx`) still have inline strings: they move to `lib/copy` as R2 tickets touch them.
+- Tokens: `styles/spuzl-tokens.css`, `styles/tailwind-theme.css`, `styles/spuz.css`.
 
 ## Admin console
 
-`app/admin/(console)/*` pages backed by `/api/admin/*`; roles in `lib/admin/roles.ts`; every action writes the
-audit log (`audit_log`). Feature flags table `feature_flags` (admin Flags page). Runtime tunables live in the
-`game_settings` key/value table (`lib/game-settings/*`, admin page "Game settings"), read at runtime with a 30 s cache.
+- Runtime settings: `lib/game-settings/schema.ts` (keys with ranges and help text: `features.*`, `perf.prefetch`,
+  `free.*`, `guest.*`, `leagues.*`, `adultParty.*`…), page `app/admin/(console)/settings/page.tsx`, read at runtime
+  with a 30 s server cache and `useGameSettings` on the client.
+- Feature flags: `app/admin/(console)/flags/page.tsx` (`FlagsPage` in `components/admin/OpsPages.tsx:426`).
+- Audit log: `audit()` in `lib/admin/auth.ts:127`; audit page.
+- Metrics: `components/admin/MetricsPage.tsx` with CSV export (audited POST `/api/admin/metrics`); client events
+  POST `/api/v1/metrics` into `client_metrics` (first-party events only, `lib/analytics/track.ts:45`). Players
+  CSV: `app/api/admin/players/export/route.ts`.
+- Fast-solve moderation: flagged attempts per player (`lib/admin/players.ts:113`), resolve with
+  `svc_admin_resolve_flagged`.
 
 ## Tests and tooling
 
-Vitest unit (`*.test.ts`), API integration (`vitest.api.config.mts`, needs a running server), pgTAP, Playwright
-(`playwright.config.ts`, `tests/e2e`, `tests/visual`), k6 (`tests/load`). CI: `.github/workflows/ci.yml`
-(authorship, checks, database + API, build + bundle budget), `release.yml` (tagging, PR tidy).
+- Vitest unit (`*.test.ts`), API integration (`vitest.api.config.mts`, needs a server), pgTAP
+  (`supabase/tests`), Playwright (`playwright.config.ts`: projects mobile/desktop dark, mobile light, `phone-375`,
+  `desktop-1280`, `perf`), k6 (`tests/load`). CI `.github/workflows/ci.yml`.
+- QA harness `tests/e2e/harness.ts` (see its header): onboarding by age or exact birth year, seeded boards for every
+  game, solvers, Duel and Party with several browser contexts, focus keeping, throttling, axe-core.
+- Perf: `tests/perf/r2-baseline.spec.ts` (round 2 baseline, any deployment), `tests/perf/tap-to-board.spec.ts`
+  (round 1, local stack).
+- Test guests: `scripts/qa/delete-test-guests.mjs` deletes the anonymous guests a run created (ids logged by the
+  specs). Every run against production must end with it.

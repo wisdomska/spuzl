@@ -1,19 +1,26 @@
 /**
  * QA harness for SPUZL end-to-end tests (Playwright). Shared helpers for every spec:
  *
- *   onboardGuest(page, age)            first run as a guest, lands on Home
+ *   onboardGuest(page, age | opts)     first run as a guest, lands on Home; opts: { age, birthYear, birthMonth,
+ *                                      nickname, guided }
+ *   keepFocus(page)                    the page always thinks it has focus (games auto-pause on blur)
  *   openGame(page, slug, mode)         /play/<slug>?mode=… and waits for the board
  *   openTestBoard(page, slug, seed, d) seeded, server-free board (/dev/board fixture, deterministic)
  *   solveTestBoard(page, slug, seed)   solves a seeded board by tapping (games with a tap solver below)
+ *   solveSeeded(page, slug, seed)      alias of solveTestBoard (the R2 brief's name)
+ *   seededBoardUrl(slug, seed, d)      the /dev/board URL for any game's deterministic puzzle
  *   tapCell(page, row, col)            taps a grid cell by its accessible name ("Row r, column c, …")
  *   duelVsBot(page)                    starts a Practice-bot Duel
  *   openPartyRoom(page)                opens a Party room, returns its 4-character code
+ *   duelFriend(browser, o)             two players in two contexts: host creates a friend duel, guest joins by code
+ *   partyRoom(browser, n, o)           n players in n contexts in one Party room (host first)
+ *   runAxe(page, o)                    axe-core scan; returns serious/critical violations
  *   throttle(page, profile)            network profile via CDP (Chromium): "4g" | "slow3g" | "offline" | "none"
  *
  * Seeded puzzles come from the game's own generator (same code as the server), so tests never depend on
  * today's Daily. The /dev routes exist only when ENABLE_DEV_ROUTES=1 or outside production.
  */
-import { expect, type Page } from "@playwright/test";
+import { expect, type Browser, type Page } from "@playwright/test";
 import { GAMES, LAB_GAMES } from "@/lib/catalog";
 import { createRng } from "@/lib/rng";
 import type { Difficulty } from "@/games/types";
@@ -25,15 +32,38 @@ export function birthFor(age: Age, today = new Date()): { year: number; month: n
   return age === "18+" ? { year: y - 30, month: 1 } : age === "16-17" ? { year: y - 17, month: 12 } : { year: y - 14, month: 12 };
 }
 
-/** The onboarding step "When were you born?": picks a birth month and year for the band and continues. */
-export async function pickBirth(page: Page, age: Age = "18+") {
-  const b = birthFor(age);
+/** The onboarding step "When were you born?": picks a birth month and year (a band, or exact values) and continues. */
+export async function pickBirth(page: Page, age: Age | { year: number; month?: number } = "18+") {
+  const b = typeof age === "string" ? birthFor(age) : { year: age.year, month: age.month ?? 12 };
   await page.getByLabel("Month", { exact: true }).selectOption(String(b.month));
   await page.getByLabel("Year", { exact: true }).selectOption(String(b.year));
   await page.getByRole("button", { name: "Continue" }).click();
 }
 
-export async function onboardGuest(page: Page, age: Age = "18+", nickname = `Qa${Date.now() % 1e7}`, o: { guided?: boolean } = {}) {
+export interface GuestOpts {
+  age?: Age;
+  /** an exact birth year (e.g. this year − 15 for a 15-year-old with a December birthday); wins over `age` */
+  birthYear?: number;
+  birthMonth?: number;
+  nickname?: string;
+  /** keep the guided first play (practice rounds) instead of marking every game learned */
+  guided?: boolean;
+}
+
+/** Age in whole years today for a birth month and year (the app counts the month as passed at its start). */
+export function ageOf(year: number, month = 12, today = new Date()) {
+  const y = today.getUTCFullYear() - year;
+  return today.getUTCMonth() + 1 >= month ? y : y - 1;
+}
+
+export async function onboardGuest(
+  page: Page,
+  ageOrOpts: Age | GuestOpts = "18+",
+  nickname = `Qa${Date.now() % 1e7}`,
+  legacy: { guided?: boolean } = {},
+) {
+  const o: GuestOpts = typeof ageOrOpts === "string" ? { age: ageOrOpts, nickname, ...legacy } : { nickname, ...ageOrOpts };
+  nickname = o.nickname ?? nickname;
   await page.goto("/welcome");
   // Most tests go straight to the real game; the guided first play has its own test.
   if (!o.guided)
@@ -43,7 +73,7 @@ export async function onboardGuest(page: Page, age: Age = "18+", nickname = `Qa$
     );
   await page.getByRole("button", { name: "Play as guest" }).click();
   await expect(page.getByRole("heading", { name: /When were you born\?/ })).toBeVisible();
-  await pickBirth(page, age);
+  await pickBirth(page, o.birthYear ? { year: o.birthYear, month: o.birthMonth } : (o.age ?? "18+"));
   await page.getByRole("button", { name: /Jump straight in|Go to the map/ }).click();
   await page.locator("#nick").fill(nickname);
   await page.getByRole("button", { name: /Enter The Grid|Create my Spuz|Save my Spuz/ }).click();
@@ -65,10 +95,15 @@ export async function openGame(page: Page, slug: string, mode: "daily" | "free" 
   return waitForBoard(page);
 }
 
-export async function openTestBoard(page: Page, slug: string, seed = "qa", d: Difficulty = "easy", state?: unknown) {
+/** The /dev/board fixture URL for any game's deterministic puzzle (same generator as the server). */
+export function seededBoardUrl(slug: string, seed = "qa", d: Difficulty = "easy", state?: unknown) {
   const q = new URLSearchParams({ seed, d });
   if (state !== undefined) q.set("state", JSON.stringify(state));
-  await page.goto(`/dev/board/${slug}?${q}`);
+  return `/dev/board/${slug}?${q}`;
+}
+
+export async function openTestBoard(page: Page, slug: string, seed = "qa", d: Difficulty = "easy", state?: unknown) {
+  await page.goto(seededBoardUrl(slug, seed, d, state));
   return waitForBoard(page);
 }
 
@@ -154,6 +189,12 @@ export async function solveTestBoard(page: Page, slug: string, seed = "qa", d: D
   await solve(page, seed, d);
 }
 
+/** The R2 brief's name for solveTestBoard. */
+export const solveSeeded = solveTestBoard;
+
+/** Every game a player can open (and the lab ones behind the flag): the list seeded-board smoke tests walk. */
+export const ALL_SLUGS = [...GAMES, ...LAB_GAMES].map((g) => g.id);
+
 export async function duelVsBot(page: Page) {
   // no game is picked by default any more: come in with one chosen
   await page.goto("/duel?game=sixer");
@@ -179,6 +220,86 @@ export async function openPartyRoom(page: Page) {
     .click();
   await page.waitForURL(/\/party\/[A-Z0-9]{4}/, { timeout: 30_000 });
   return new URL(page.url()).pathname.split("/").pop()!;
+}
+
+/**
+ * Games pause when the window loses focus (blur/visibilitychange). Headless and multi-context runs blur pages that
+ * aren't in front, so tell Chromium every page is focused and visible.
+ */
+export async function keepFocus(page: Page) {
+  try {
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send("Emulation.setFocusEmulationEnabled", { enabled: true });
+  } catch {
+    /* not Chromium */
+  }
+  await page.addInitScript(() => {
+    Object.defineProperty(document, "visibilityState", { get: () => "visible", configurable: true });
+    Object.defineProperty(document, "hidden", { get: () => false, configurable: true });
+    document.hasFocus = () => true;
+  });
+}
+
+/** A signed-in guest in its own browser context (focused), for multi-player tests. */
+export async function guestContext(browser: Browser, o: GuestOpts & { viewport?: { width: number; height: number } } = {}) {
+  const ctx = await browser.newContext({ viewport: o.viewport ?? VIEWPORTS.phone });
+  const page = await ctx.newPage();
+  await keepFocus(page);
+  const nickname = await onboardGuest(page, o);
+  return { ctx, page, nickname };
+}
+
+/**
+ * Friend duel between two contexts: the host opens Duel, picks `game` (default Sixer) and Challenge a friend; the
+ * guest joins with the code. Returns both pages on the duel screen. Ages via `host`/`guest` options.
+ */
+export async function duelFriend(browser: Browser, o: { game?: string; host?: GuestOpts; guest?: GuestOpts } = {}) {
+  const a = await guestContext(browser, o.host);
+  const b = await guestContext(browser, o.guest);
+  await a.page.goto(`/duel?game=${o.game ?? "sixer"}`);
+  await a.page
+    .getByRole("button", { name: /Challenge a friend/ })
+    .first()
+    .click();
+  const code = (await a.page
+    .getByText(/^[A-Z0-9]{4}$/)
+    .first()
+    .textContent({ timeout: 30_000 }))!.trim();
+  await b.page.goto("/duel");
+  await b.page
+    .getByRole("button", { name: /Got a friend's code\?/ })
+    .first()
+    .click();
+  await b.page.locator("#join-code").fill(code);
+  await b.page.locator("#join-code").press("Enter");
+  return { host: a, guest: b, code };
+}
+
+/** A Party room with n players in n contexts (host first). Returns the code and every player. */
+export async function partyRoom(browser: Browser, n: number, o: { host?: GuestOpts; guests?: GuestOpts } = {}) {
+  const host = await guestContext(browser, o.host);
+  const code = await openPartyRoom(host.page);
+  const players = [host];
+  for (let i = 1; i < n; i++) {
+    const g = await guestContext(browser, o.guests);
+    await g.page.goto(`/party/${code}`);
+    await g.page.getByRole("button", { name: /^Join$/ }).click();
+    players.push(g);
+  }
+  await expect(host.page.getByText(new RegExp(`${n}\\s*(/|of)`)).first())
+    .toBeVisible({ timeout: 30_000 })
+    .catch(() => undefined); // lobby count wording varies; joining is checked by each spec
+  return { code, players };
+}
+
+/** axe-core scan of the page (WCAG 2.1 AA). Returns serious and critical violations only. */
+export async function runAxe(page: Page, o: { include?: string; exclude?: string[] } = {}) {
+  const { default: AxeBuilder } = await import("@axe-core/playwright");
+  let b = new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]);
+  if (o.include) b = b.include(o.include);
+  for (const x of o.exclude ?? []) b = b.exclude(x);
+  const r = await b.analyze();
+  return r.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
 }
 
 /** Chrome DevTools network profiles (Lighthouse's "slow 4G" and Chrome's "slow 3G"). */
