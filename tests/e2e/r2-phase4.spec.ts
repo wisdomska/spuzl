@@ -146,12 +146,10 @@ for (const [vpName, vp] of Object.entries({ "375": VIEWPORTS.phone, "1280": VIEW
       });
       await shot("gotcha-first-frame");
       const h = (await canvas.boundingBox())!.height;
-      test
-        .info()
-        .annotations.push({
-          type: "gotcha",
-          description: `canvas ${Math.round(h)}px of ${vp.height}; dark first frame: ${firstFrameDark}`,
-        });
+      test.info().annotations.push({
+        type: "gotcha",
+        description: `canvas ${Math.round(h)}px of ${vp.height}; dark first frame: ${firstFrameDark}`,
+      });
       expect(firstFrameDark).not.toBe(true);
       expect(h / vp.height).toBeGreaterThanOrEqual(0.6);
     });
