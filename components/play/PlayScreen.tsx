@@ -54,8 +54,14 @@ import { LevelSheet } from "@/components/levels/LevelSheet";
 import { levelsCopy } from "@/lib/copy/levels";
 import { isLadderGame } from "@/lib/game/levels";
 import { dropResume, keepResume, resumeIdFor } from "@/lib/client/resume";
+import { fiveHref, useDailyFive } from "@/lib/client/daily-five";
+import { dailyFiveCopy as FT } from "@/lib/copy/daily-five";
+import { MAX_SCORE } from "@/lib/daily-five";
+import { GAME_BY_ID } from "@/lib/catalog";
+import { track } from "@/lib/analytics/track";
 
-type Mode = "daily" | "free" | "archive" | "level";
+/** five: a Daily Five game (R2-05), played as today's shared Daily; it ends back on the Daily Five, not free play. */
+type Mode = "daily" | "free" | "archive" | "level" | "five";
 type Phase = "loading" | "playing" | "results" | "failed" | "error";
 type Difficulty = "easy" | "medium" | "hard" | "expert" | "mega";
 
@@ -99,6 +105,9 @@ export function PlayScreen({
   const [freeResult, setFreeResult] = useState<{ timeMs: number; xp: number; accuracy: number } | null>(null);
   const [levelResult, setLevelResult] = useState<{ timeMs: number; xp: number; ladder: NonNullable<FinishRes["ladder"]> } | null>(null);
   const [levelsOpen, setLevelsOpen] = useState(false);
+  const [fiveResult, setFiveResult] = useState<{ status: FinishRes["status"]; timeMs: number; progress: FinishRes["dailyFive"] } | null>(
+    null,
+  );
   const moves = useRef(0);
   const [error, setError] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
@@ -138,6 +147,7 @@ export function PlayScreen({
       setHolding(false);
       setFreeResult(null);
       setLevelResult(null);
+      setFiveResult(null);
       moves.current = 0;
       try {
         // Started at the tap when possible (SPZ-01); otherwise start it now.
@@ -158,6 +168,8 @@ export function PlayScreen({
         const primed = fresh ? null : takePrimed(meta.id, m, m === "free" ? (d ?? difficulty) : m === "level" ? n : undefined);
         // A primed start that failed (offline blip, a mode the server refuses) falls back to a fresh start.
         const a = withLocalBackup(await (primed ? primed.catch(start) : start()));
+        // The first game of today's Daily Five (the server counted it): the admin Metrics "starts".
+        if (m === "five" && a.first) track("daily5_start", { game: meta.id });
         latestState.current = a.state ?? undefined;
         elapsedRef.current = a.activeMs ?? 0;
         dirty.current = false;
@@ -169,11 +181,18 @@ export function PlayScreen({
           setNotice("Today's Daily is done. Free play is open, no limit.");
           return beginRef.current("free");
         }
+        // Daily Five: already played today, or not in today's five (an old link): back to today's five.
+        if (e instanceof HttpError && m === "five" && (e.code === "daily_done" || e.code === "not_in_daily_five")) {
+          void qc.invalidateQueries({ queryKey: ["daily-five"] });
+          router.replace("/daily");
+          return;
+        }
+        if (e instanceof HttpError && m === "five" && e.code === "daily_five_off") return beginRef.current("free");
         setError(e instanceof HttpError ? (e.message ?? e.code) : "Could not load the puzzle.");
         setPhase("error");
       }
     },
-    [meta.id, date, difficulty],
+    [meta.id, date, difficulty, qc, router],
   );
   useEffect(() => {
     beginRef.current = begin;
@@ -186,7 +205,11 @@ export function PlayScreen({
   // Learned games live on the account and on this device; keep both in step.
   useLearnedSync(me.data);
   const markLearned = useMarkLearned();
-  const startedToday = today.data?.games.find((g) => g.id === meta.id)?.state === "in_progress";
+  // Daily Five: the five (cached from Home or /daily, else fetched) names the slot, e.g. "Daily Five · 2 of 5".
+  const fiveCached = useDailyFive(initialMode === "five").data;
+  const fiveSlot = fiveCached?.games.find((g) => g.game === meta.id);
+  const startedToday =
+    initialMode === "five" ? fiveSlot?.state === "in_progress" : today.data?.games.find((g) => g.id === meta.id)?.state === "in_progress";
   // First try of a game: a short guided practice round before the real one (skippable).
   const [guided, setGuided] = useState(false);
   useEffect(() => {
@@ -195,7 +218,8 @@ export function PlayScreen({
     const id = setTimeout(() => {
       const first = needsGuided({
         id: meta.id,
-        mode: initialMode,
+        // A Daily Five game is a Daily: first-timers get the same practice round.
+        mode: initialMode === "five" ? "daily" : initialMode,
         played,
         learned: allLearned(learnedGames(), me.data?.learned),
         started: startedToday,
@@ -283,7 +307,12 @@ export function PlayScreen({
       } catch {}
       void qc.invalidateQueries({ queryKey: ["me"] });
       void qc.invalidateQueries({ queryKey: ["today"] });
+      if (mode === "five") void qc.invalidateQueries({ queryKey: ["daily-five"] });
+      // The fifth game of the day just finished (the server counted it): the admin Metrics "completions".
+      if (mode === "five" && res.dailyFive?.complete && res.dailyFive.done === res.dailyFive.total)
+        track("daily5_complete", { game: meta.id });
       if (!res.ok) {
+        setFiveResult(mode === "five" ? { status: res.status, timeMs: res.timeMs, progress: res.dailyFive } : null);
         setPhase("failed");
         return;
       }
@@ -295,6 +324,14 @@ export function PlayScreen({
         void qc.invalidateQueries({ queryKey: ["levels"] });
         const ladder = res.ladder;
         afterHold(() => setLevelResult({ timeMs: res.timeMs, xp: res.reward.xp, ladder }));
+        const chips = celebrationChips(res);
+        if (chips.length) setNotice(chips.map((c) => c.label).join(" · "));
+        return;
+      }
+      if (mode === "five") {
+        // Daily Five: hold the solved board, then a compact bar that leads on to the next game of the five (or
+        // back to the Daily Five for the share grid), never the free-play loop.
+        afterHold(() => setFiveResult({ status: res.status, timeMs: res.timeMs, progress: res.dailyFive }));
         const chips = celebrationChips(res);
         if (chips.length) setNotice(chips.map((c) => c.label).join(" · "));
         return;
@@ -316,10 +353,15 @@ export function PlayScreen({
     async (state: unknown, _reason: string, elapsedMs: number) => {
       if (!attempt) return;
       dropResume(meta.id, attempt.attemptId);
-      await finishAttempt(attempt.attemptId, { state, activeMs: elapsedMs, mistakes: stats.mistakes }).catch(() => {});
+      const res = await finishAttempt(attempt.attemptId, { state, activeMs: elapsedMs, mistakes: stats.mistakes }).catch(() => null);
+      if (mode === "five") {
+        void qc.invalidateQueries({ queryKey: ["daily-five"] });
+        if (res?.dailyFive?.complete && res.dailyFive.done === res.dailyFive.total) track("daily5_complete", { game: meta.id });
+        setFiveResult({ status: "failed", timeMs: elapsedMs, progress: res?.dailyFive });
+      }
       setPhase("failed");
     },
-    [attempt, stats.mistakes, meta.id],
+    [attempt, stats.mistakes, meta.id, mode, qc],
   );
 
   const hint = useCallback(
@@ -415,14 +457,40 @@ export function PlayScreen({
   ) : undefined;
   const levelSheet = <LevelSheet meta={meta} open={levelsOpen} onClose={() => setLevelsOpen(false)} onPlay={(n) => playLevel(n)} />;
 
+  // Daily Five: on to the next game of the five, or back to the Daily Five (share grid) when all are played.
+  const fiveNext = fiveResult?.progress?.next ?? null;
+  const fiveNextAction = fiveNext
+    ? {
+        label: FT.nextGame(GAME_BY_ID[fiveNext.game]?.name ?? fiveNext.game, fiveNext.slot, fiveResult?.progress?.total ?? 5),
+        playNav: true,
+        onClick: () => {
+          primeAttempt(fiveHref(fiveNext.game));
+          router.push(fiveHref(fiveNext.game) as never);
+        },
+      }
+    : { label: FT.seeFive, onClick: () => router.push("/daily") };
+  const fiveBar =
+    mode === "five" && fiveResult ? (
+      <FiveResultBar
+        status={fiveResult.status}
+        timeMs={fiveResult.timeMs}
+        progress={fiveResult.progress}
+        relaxed={relaxed}
+        next={fiveNextAction}
+        onFive={() => router.push("/daily")}
+      />
+    ) : undefined;
+
   const label =
     mode === "level" && attempt?.level
       ? levelsCopy.level(attempt.level)
-      : mode === "daily" && attempt?.date
-        ? `Daily #${dailyNumber(attempt.date)}`
-        : mode === "archive" && attempt?.date
-          ? `Archive #${dailyNumber(attempt.date)}`
-          : `Free play ${freeN}`;
+      : mode === "five" && fiveSlot
+        ? FT.label(fiveSlot.slot, fiveCached?.total ?? 5)
+        : (mode === "daily" || mode === "five") && attempt?.date
+          ? `Daily #${dailyNumber(attempt.date)}`
+          : mode === "archive" && attempt?.date
+            ? `Archive #${dailyNumber(attempt.date)}`
+            : `Free play ${freeN}`;
 
   if (phase === "results" && result) {
     return (
@@ -483,8 +551,8 @@ export function PlayScreen({
         {meta.photosensitive && <PhotosensitivityNotice />}
         <GuidedPlay
           meta={meta}
-          daily={initialMode === "daily"}
-          onExit={() => router.push(`/world/${meta.world}`)}
+          daily={initialMode === "daily" || initialMode === "five"}
+          onExit={() => router.push(initialMode === "five" ? "/daily" : `/world/${meta.world}`)}
           onDone={() => {
             markLearned(meta.id);
             setGuided(false);
@@ -514,6 +582,27 @@ export function PlayScreen({
           </Button>
         </div>
         {levelSheet}
+      </main>
+    );
+  }
+
+  if ((phase === "failed" || phase === "error") && mode === "five") {
+    return (
+      <main className="mx-auto flex min-h-dvh max-w-[560px] flex-col items-center justify-center gap-4 px-6 text-center">
+        <Spuz mood={phase === "failed" ? "sad" : "shocked"} size={140} decorative />
+        <h1 className="font-display text-[24px] font-black">{phase === "failed" ? FT.missed : FT.broke}</h1>
+        {phase === "error" && <p className="text-muted text-[16px]">{error ?? FT.tryLater}</p>}
+        {fiveResult?.progress && <p className="text-muted num text-[16px]">{FT.score(fiveResult.progress.score, MAX_SCORE)}</p>}
+        <div className="mt-4 flex w-full flex-col gap-3">
+          {phase === "failed" && fiveNext ? (
+            <Button size="lg" icon="play" onClick={fiveNextAction.onClick} {...PLAY_NAV}>
+              {fiveNextAction.label}
+            </Button>
+          ) : null}
+          <Button size="lg" variant={phase === "failed" && fiveNext ? "secondary" : "primary"} onClick={() => router.push("/daily")}>
+            {fiveNext || phase === "error" ? FT.backToFive : FT.seeFive}
+          </Button>
+        </div>
       </main>
     );
   }
@@ -549,7 +638,7 @@ export function PlayScreen({
           meta={meta}
           Board={Board}
           puzzle={attempt.puzzle}
-          mode={mode === "archive" ? "archive" : mode === "level" ? "free" : mode}
+          mode={mode === "archive" ? "archive" : mode === "level" ? "free" : mode === "five" ? "daily" : mode}
           label={label}
           initialState={attempt.state ?? undefined}
           initialElapsed={attempt.resumed ? attempt.activeMs : 0}
@@ -560,7 +649,7 @@ export function PlayScreen({
           onFailed={onFailed}
           onExit={() => {
             flush();
-            router.push(`/world/${meta.world}`);
+            router.push(mode === "five" ? "/daily" : `/world/${meta.world}`);
           }}
           onHelp={() => setHowTo(true)}
           onNewPuzzle={mode === "free" && !holding ? anotherAction.onClick : undefined}
@@ -569,6 +658,7 @@ export function PlayScreen({
           celebrate={holding}
           puzzleKey={attempt.attemptId}
           endBar={
+            fiveBar ??
             levelBar ??
             (freeResult ? (
               <div className="flex flex-col gap-2">
@@ -756,6 +846,50 @@ function FreeResultBar({
         {another.label}
       </Button>
       <RaceLiveButton meta={meta} size="md" className="w-full" />
+    </div>
+  );
+}
+
+/** Daily Five's result bar (R2-05): cleared (or in review), time, the five's combined score, then the next game. */
+function FiveResultBar({
+  status,
+  timeMs,
+  progress,
+  relaxed,
+  next,
+  onFive,
+}: {
+  status: FinishRes["status"];
+  timeMs: number;
+  progress: FinishRes["dailyFive"];
+  relaxed: boolean;
+  next: { label: string; onClick: () => void; playNav?: boolean };
+  onFive: () => void;
+}) {
+  return (
+    <div className="bg-surface flex flex-col gap-3 rounded-[22px] p-3.5" role="status" aria-live="polite" data-testid="five-result">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-1">
+        <span className="font-display text-accent text-[18px] font-black">{FT.cleared}</span>
+        {!relaxed && <span className="num text-[15px] font-semibold">{formatClock(timeMs)}</span>}
+        {progress && <span className="num text-[15px] font-semibold">{FT.ring(progress.done, progress.total)}</span>}
+        {progress && <span className="num text-accent text-[15px] font-bold">{FT.points(progress.score)}</span>}
+      </div>
+      {status === "flagged" && <p className="text-muted px-1 text-[14px]">{FT.inReview}</p>}
+      <Button
+        size="lg"
+        icon={next.playNav ? "play" : "share-network"}
+        className="w-full"
+        onClick={next.onClick}
+        autoFocus
+        {...(next.playNav ? PLAY_NAV : {})}
+      >
+        {next.label}
+      </Button>
+      {next.playNav && (
+        <Button size="md" variant="secondary" className="w-full" onClick={onFive}>
+          {FT.backToFive}
+        </Button>
+      )}
     </div>
   );
 }

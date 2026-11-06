@@ -28,6 +28,8 @@ import { BannerStack } from "@/components/notify/Banner";
 import { useNotices } from "@/lib/notify/notices";
 import { PLAY_NAV } from "@/lib/analytics/play-nav";
 import { BirthAskOnce } from "@/components/onboarding/BirthAsk";
+import { DailyFiveCard } from "@/components/daily-five/DailyFiveCard";
+import { useDailyFive } from "@/lib/client/daily-five";
 
 export function HomeScreen() {
   const router = useRouter();
@@ -36,6 +38,9 @@ export function HomeScreen() {
   // The clock is client-only (null on the server pass): the at-risk banner and countdown use local time.
   const [now, setNow] = useState<number | null>(null);
   const { notices, dismiss } = useNotices({ me: me.data ?? null, today: today.data ?? null });
+  // Daily Five (R2-05): its card sits above the map, and a sleepy streak points at it.
+  const five = useDailyFive(!!me.data);
+  const fiveOpen = !!five.data?.enabled && !five.data.complete && five.data.games.length > 0;
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- starts the local clock after hydration
@@ -122,6 +127,7 @@ export function HomeScreen() {
                 onDismiss: () => dismiss(n.id),
               }))}
           />
+          <DailyFiveCard />
         </div>
         <section aria-label="The Grid" className="relative overflow-y-auto pb-[250px] lg:pb-[200px]">
           <HomeMap
@@ -149,7 +155,7 @@ export function HomeScreen() {
             >
               <Spuz mood="sleepy" size={60} still decorative />
               <div className="flex flex-1 flex-col gap-0.5">
-                <p className="text-[16px] leading-[1.3] font-semibold text-pretty">{T.sleepy(streak)}</p>
+                <p className="text-[16px] leading-[1.3] font-semibold text-pretty">{fiveOpen ? T.sleepyFive(streak) : T.sleepy(streak)}</p>
                 <p className="num text-gold text-[13px] font-medium">{T.resetsIn(formatCountdown(msToReset(new Date(now ?? 0))))}</p>
               </div>
             </motion.div>

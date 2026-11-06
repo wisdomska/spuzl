@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { body, handle, ok, rateLimit, requirePlayer } from "@/lib/api/server";
 import { finishAttempt } from "@/lib/game/service";
+import { fiveProgressAfter } from "@/lib/daily-five/server";
 
 const Finish = z.object({
   state: z.unknown().default(null),
@@ -20,5 +21,8 @@ export const POST = handle(async (req: Request, ctx: RouteContext<"/api/v1/attem
   await rateLimit(admin, `finish:${player.id}`, 120, 3600);
   const input = await body(req, Finish);
   const result = await finishAttempt(admin, player.id, id, input, player.ranking_revoked);
-  return ok(result);
+  // A Daily Five game: the player's progress after it (score from the server's records), so the play screen
+  // goes on to the next game of the five, or back to the Daily Five when all are played.
+  const dailyFive = await fiveProgressAfter(admin, player.id, id).catch(() => null);
+  return ok(dailyFive ? { ...result, dailyFive } : result);
 });

@@ -7,7 +7,7 @@ import type { SettingDef } from "@/lib/game-settings/schema";
 import { adminCopy } from "@/lib/copy/admin";
 import { Btn, Field, Notice, PageTitle, RowsSkeleton, inputCls } from "./ui";
 
-type Value = number | boolean | string[];
+type Value = number | boolean | string | string[];
 type Row = { key: string; def: SettingDef; value: Value; isDefault: boolean; updatedAt: string | null };
 
 const C = adminCopy.settings;
@@ -63,7 +63,9 @@ function SettingRow({ row, canWrite, busy, onSave }: { row: Row; canWrite: boole
             ? C.intRange(d.default, d.min, d.max, d.unit)
             : d.kind === "set"
               ? C.setDefault(d.options.filter((o) => d.default.includes(o.id)).map((o) => o.label))
-              : C.boolDefault(d.default)}
+              : d.kind === "enum"
+                ? C.enumDefault(d.default, d.options)
+                : C.boolDefault(d.default)}
         </p>
       </div>
       {d.kind === "set" ? (
@@ -88,6 +90,22 @@ function SettingRow({ row, canWrite, busy, onSave }: { row: Row; canWrite: boole
         <Btn tone={row.value ? "primary" : "secondary"} disabled={!canWrite || busy} onClick={() => onSave(!row.value)}>
           {row.value ? common.on : common.off}
         </Btn>
+      ) : d.kind === "enum" ? (
+        <Field label={C.value} htmlFor={id}>
+          <select
+            id={id}
+            value={String(row.value)}
+            disabled={!canWrite || busy}
+            onChange={(e) => onSave(e.target.value)}
+            className={`${inputCls} w-36 font-semibold`}
+          >
+            {d.options.map((o) => (
+              <option key={o} value={o}>
+                {o}
+              </option>
+            ))}
+          </select>
+        </Field>
       ) : (
         <form
           className="flex items-end gap-2"

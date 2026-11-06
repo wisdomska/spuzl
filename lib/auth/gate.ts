@@ -18,11 +18,16 @@ export async function requireSessionPage(): Promise<void> {
   if (!(await currentUser())) redirect("/intro");
 }
 
-export async function requirePlayerPage(): Promise<{ user: User; player: PlayerRow } | null> {
+/**
+ * `back`: a deep link's name (lib/client/onboarding RETURNS, e.g. "daily"); first-run visitors come back to it
+ * after onboarding instead of landing on Home.
+ */
+export async function requirePlayerPage(opts: { back?: "daily" } = {}): Promise<{ user: User; player: PlayerRow } | null> {
   if (!hasSupabase()) return null;
+  const q = opts.back ? `?return=${opts.back}` : "";
   const user = await currentUser();
-  if (!user) redirect("/intro");
+  if (!user) redirect(`/intro${q}`);
   const { data } = await supabaseAdmin().from("players").select("id, xp, sparks, is_guest").eq("id", user.id).maybeSingle();
-  if (!data) redirect("/welcome");
+  if (!data) redirect(`/welcome${q}`);
   return { user, player: data as PlayerRow };
 }

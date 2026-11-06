@@ -22,6 +22,10 @@ const Metric = z
       "prompt_shown",
       "prompt_accepted",
       "prompt_dismissed",
+      // Daily Five (R2-05)
+      "daily5_start",
+      "daily5_complete",
+      "daily5_share",
     ]),
     game: z
       .string()

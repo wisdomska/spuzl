@@ -4,11 +4,14 @@ import { resumeAttempt, startAttempt } from "@/lib/game/service";
 import { difficultyForDate } from "@/games/types";
 import { getGameSettings } from "@/lib/game-settings/server";
 import { MAX_LEVEL } from "@/lib/game/levels";
+import { fiveDate, rulesFrom } from "@/lib/daily-five";
+import { ensureDay } from "@/lib/daily-five/server";
 
 const Start = z.object({
   game: z.string().min(2).max(24),
   // Challenges start through /api/v1/challenges/:code/accept, which serves the sender's puzzle.
-  mode: z.enum(["tutorial", "daily", "free", "archive", "level"]),
+  // five: a Daily Five game (R2-05), played as that day's shared Daily on the five's scheduled puzzle.
+  mode: z.enum(["tutorial", "daily", "free", "archive", "level", "five"]),
   date: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -30,6 +33,28 @@ export const POST = handle(async (req: Request) => {
   const { admin, player } = await requirePlayer();
   const input = await body(req, Start);
   const today = todayGmt();
+  if (input.mode === "five") {
+    // Daily Five: its own switch, on whether or not Dailies are. The day and the puzzle are the server's.
+    const settings = await getGameSettings();
+    if (!settings["dailyFive.enabled"]) throw new ApiError(404, "daily_five_off", "The Daily Five is resting today. Free play is open.");
+    await rateLimit(admin, `attempt:${player.id}`, 120, 3600);
+    const rules = rulesFrom(settings);
+    const date = fiveDate(new Date(), rules.resetHour);
+    await ensureDay(admin, date, settings);
+    const res = await startAttempt(admin, player.id, { gameId: input.game, mode: "daily", date, difficulty: rules.difficulty, five: true });
+    // The player's first game of this day's five (for the admin Metrics "starts", sent by the client).
+    let first = false;
+    if (!res.resumed) {
+      const { count } = await admin
+        .from("attempts")
+        .select("id", { count: "exact", head: true })
+        .eq("player_id", player.id)
+        .eq("daily_five", true)
+        .eq("daily_date", date);
+      first = count === 1;
+    }
+    return ok({ ...res, date, difficulty: rules.difficulty, five: true, first });
+  }
   // Dailies switched off (admin "features.dailies"): free play is the only solo mode, enforced here.
   if ((input.mode === "daily" || input.mode === "archive") && !(await getGameSettings())["features.dailies"])
     throw new ApiError(404, "dailies_off", "Dailies are off. Free play is open.");

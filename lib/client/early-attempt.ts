@@ -7,8 +7,8 @@ import { markPlayTap } from "@/lib/perf/quiet";
 /**
  * SPZ-01: start a game's attempt the moment it is tapped, in parallel with loading the Play route, so the board
  * is ready as soon as the screen is. The Play screen takes the primed request if it matches; otherwise it starts
- * its own. Daily, free play and levels are primed (R2-01: Continue opens ladder games in level mode); archive
- * needs a date the link carries, challenges a code.
+ * its own. Daily, free play, levels (R2-01: Continue opens ladder games in level mode) and Daily Five games are
+ * primed; archive needs a date the link carries, challenges a code.
  */
 type Key = string;
 const primed = new Map<Key, { at: number; p: Promise<StartRes> }>();
@@ -16,7 +16,7 @@ const TTL_MS = 15_000;
 
 export function parsePlayHref(
   href: string,
-): { game: string; mode: "daily" | "free" | "level"; difficulty?: string; level?: number } | null {
+): { game: string; mode: "daily" | "free" | "level" | "five"; difficulty?: string; level?: number } | null {
   let u: URL;
   try {
     u = new URL(href, "https://x.invalid");
@@ -26,7 +26,7 @@ export function parsePlayHref(
   const m = /^\/play\/([a-z0-9]+)\/?$/.exec(u.pathname);
   if (!m) return null;
   const mode = u.searchParams.get("mode") ?? "daily";
-  if (mode !== "daily" && mode !== "free" && mode !== "level") return null;
+  if (mode !== "daily" && mode !== "free" && mode !== "level" && mode !== "five") return null;
   const d = u.searchParams.get("difficulty") ?? undefined;
   const lv = u.searchParams.get("level");
   const level = mode === "level" && lv && /^\d{1,4}$/.test(lv) ? Number(lv) || undefined : undefined;

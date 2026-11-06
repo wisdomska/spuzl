@@ -20,7 +20,7 @@ import { api, ensureSession, finishAttempt, HttpError, startAttempt } from "@/li
 import { BirthPicker, type Birth } from "@/components/onboarding/BirthPicker";
 import { ageBandOf, birthProblem } from "@/lib/age";
 import { ageCopy } from "@/lib/copy/age";
-import { writeOnboarding } from "@/lib/client/onboarding";
+import { rememberReturn, takeReturn, writeOnboarding } from "@/lib/client/onboarding";
 import { onboardingStepOf } from "@/lib/analytics/onboarding";
 import { track } from "@/lib/analytics/track";
 import { formatClock } from "@/lib/format";
@@ -95,6 +95,9 @@ export default function Welcome() {
   const [leaving, setLeaving] = useState(false);
   // Back from the sign-in email's link (/auth/callback?next=/welcome): returning players go home, new
   // accounts finish onboarding signed in.
+  // A deep link (e.g. /daily) sends visitors here with ?return=: onboarding ends there instead of the Grid.
+  useEffect(() => rememberReturn(new URLSearchParams(window.location.search).get("return")), []);
+
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("auth") !== "linked") return;
     let live = true;
@@ -104,7 +107,7 @@ export default function Welcome() {
         if (me) {
           writeOnboarding({ introSeen: true, tutorialDone: true });
           setLeaving(true);
-          router.replace("/");
+          router.replace((takeReturn() ?? "/") as never);
         } else {
           setSignedIn(true);
           setStep("age");
@@ -184,7 +187,7 @@ export default function Welcome() {
       qc.removeQueries({ queryKey: ["me"] });
       qc.removeQueries({ queryKey: ["today"] });
       setLeaving(true);
-      router.replace(dest);
+      router.replace((takeReturn() ?? dest) as never);
     } catch (e) {
       if (e instanceof HttpError && e.code === "too_young") {
         setBirth({ year: null, month: null });
@@ -266,7 +269,7 @@ export default function Welcome() {
                     qc.removeQueries({ queryKey: ["today"] });
                     writeOnboarding({ introSeen: true, tutorialDone: true });
                     setLeaving(true);
-                    router.replace("/");
+                    router.replace((takeReturn() ?? "/") as never);
                   } else {
                     // New account: set it up like any new player, signed in from the start.
                     setSignedIn(true);

@@ -140,23 +140,25 @@ export async function reportRows(
   return { rows: out, total };
 }
 
-/** One page of flagged scores, latest finish first (or oldest first when sorted ascending); id breaks ties. */
+/**
+ * One page of flagged scores, latest finish first (or oldest first when sorted ascending); id breaks ties.
+ * `dailyFive` narrows them to Daily Five games (attempts.daily_five, R2-05): the same fast-solve flags.
+ */
 export async function flaggedRows(
   db: SupabaseClient,
   page: PageParams,
   sort: ModSort = { sort: "created_at", dir: "desc" },
+  dailyFive = false,
 ): Promise<{ rows: ModRow[]; total: number }> {
   const asc = sort.dir === "asc";
-  const { rows: data, total } = await fetchPage(
-    () =>
-      db
-        .from("attempts")
-        .select("id, player_id, game_id, mode, time_ms, started_at, finished_at", { count: "exact" })
-        .eq("status", "flagged")
-        .order("finished_at", { ascending: asc, nullsFirst: false })
-        .order("id", { ascending: asc }),
-    page,
-  );
+  const { rows: data, total } = await fetchPage(() => {
+    let q = db
+      .from("attempts")
+      .select("id, player_id, game_id, mode, time_ms, started_at, finished_at", { count: "exact" })
+      .eq("status", "flagged");
+    if (dailyFive) q = q.eq("daily_five", true);
+    return q.order("finished_at", { ascending: asc, nullsFirst: false }).order("id", { ascending: asc });
+  }, page);
   const players = await playerSummaries(
     db,
     data.map((a) => a.player_id),
@@ -164,7 +166,7 @@ export async function flaggedRows(
   const rows = data.map((a) => ({
     id: a.id,
     ref: shortRef("F", a.id),
-    title: `${players[a.player_id]?.nickname ?? "player"} · ${GAME_BY_ID[a.game_id]?.name ?? a.game_id} ${clock(a.time_ms)}`,
+    title: `${players[a.player_id]?.nickname ?? "player"} · ${dailyFive ? "Daily Five · " : ""}${GAME_BY_ID[a.game_id]?.name ?? a.game_id} ${clock(a.time_ms)}`,
     kind: "Anti-cheat",
     status: "flagged",
     created_at: a.finished_at ?? a.started_at,

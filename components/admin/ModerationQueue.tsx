@@ -40,8 +40,8 @@ const C = adminCopy.moderation;
 const K = C.cases;
 const TABS: Tab[] = ["reports", "nicknames", "party", "flagged"];
 const KINDS = ["player", "crew", "score", "content"] as const;
-const FILTERS = { tab: "reports", status: "open", kind: "" } as const;
-const ALLOWED = { tab: TABS, status: ["open", "actioned", "dismissed", "all"], kind: [...KINDS] };
+const FILTERS = { tab: "reports", status: "open", kind: "", source: "" } as const;
+const ALLOWED = { tab: TABS, status: ["open", "actioned", "dismissed", "all"], kind: [...KINDS], source: ["five"] };
 type SortKey = (typeof MODERATION_SORT.keys)[number];
 /** Flagged scores all share a kind and status, so only their age sorts. */
 const cols = (flagged: boolean): HeadCol<SortKey>[] => [
@@ -60,13 +60,15 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
   const tab = filters.tab as Tab;
   const status = filters.status;
   const kind = tab === "reports" ? filters.kind : "";
+  // Flagged scores: all, or the Daily Five's only (R2-05).
+  const five = tab === "flagged" && filters.source === "five";
   const [sel, setSel] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
   const pager = usePager();
   const sort = useUrlSort(MODERATION_SORT);
   const q = useAdminQuery<Queue>(
-    ["moderation", tab, status, kind, sort.query, pager.query],
-    `/api/admin/moderation?tab=${tab}&status=${tab === "flagged" ? "open" : status}${kind ? `&kind=${kind}` : ""}&${sort.query}&${pager.query}`,
+    ["moderation", tab, status, kind, five, sort.query, pager.query],
+    `/api/admin/moderation?tab=${tab}&status=${tab === "flagged" ? "open" : status}${kind ? `&kind=${kind}` : ""}${five ? "&five=1" : ""}&${sort.query}&${pager.query}`,
     { keepPrevious: true },
   );
   const selected = q.data?.rows.find((r) => r.id === sel) ?? q.data?.rows[0] ?? null;
@@ -99,6 +101,22 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
         >
           {q.data && <Pill tone={q.data.open ? "danger" : "ok"}>{C.open(q.data.open)}</Pill>}
         </PageTitle>
+        {tab === "flagged" && (
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="text-muted flex items-center gap-2 text-[13px] font-semibold">
+              {C.source}
+              <select
+                value={filters.source}
+                onChange={(e) => (setFilters({ source: e.target.value }), setSel(null))}
+                style={{ fontSize: 13 }}
+                className="bg-surface text-text h-11 rounded-[10px] px-2 font-semibold"
+              >
+                <option value="">{C.sources.all}</option>
+                <option value="five">{C.sources.five}</option>
+              </select>
+            </label>
+          </div>
+        )}
         {tab !== "flagged" && (
           <div className="flex flex-wrap items-center gap-3">
             <label className="text-muted flex items-center gap-2 text-[13px] font-semibold">

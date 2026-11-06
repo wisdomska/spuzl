@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, useReducedMotionConfig } from "motion/react";
 import { Spuz } from "@/components/brand/Spuz";
 import { play, unlock } from "@/lib/audio";
-import { writeOnboarding } from "@/lib/client/onboarding";
+import { rememberReturn, writeOnboarding } from "@/lib/client/onboarding";
 import { introCopy as T } from "@/lib/copy/intro";
 import { EASE_IN_CUBIC, EASE_IN_OUT, EASE_OUT, FINISH_AT, introCues, LETTERS, SPUZ_AT, TAGLINE_AT, Z, zImpact } from "@/lib/motion/intro";
 
@@ -27,6 +27,9 @@ export default function Intro() {
   const [leaving, setLeaving] = useState(false);
   const done = useRef(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  // A deep link (e.g. /daily from a friend's share) comes back here as ?return=: onboarding ends there.
+  useEffect(() => rememberReturn(new URLSearchParams(window.location.search).get("return")), []);
 
   const finish = useCallback(() => {
     if (done.current) return;

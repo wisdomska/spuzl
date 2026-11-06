@@ -82,3 +82,10 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   or Home card, so a host who left the lobby screen won't see it until they come back. The asker can wait or cancel.
 - **R2-13, Board Bay invites:** friends-only covers Party rooms and friend duels (the ticket). Board Bay invite codes
   from an under-16 host (`/api/v1/bay/[id]/join`) still let anyone with the code in.
+- **Daily Five reset hour (R2-05):** with `dailyFive.resetHour` above 0, a Daily Five attempt's `daily_date` is the
+  Daily Five day, while the offline-clear check in `finishAttempt` ("offline clear outside its day") and the regular
+  Daily (when `features.dailies` is on) still use the GMT date. Keep the reset hour at 0 while Dailies are on, or
+  teach those two places the Daily Five day.
+- **Daily Five scoring (R2-05):** points come from time against the game's typical time (Library), hints and
+  mistakes, so score-based games (Quickfire, Echo, Beat Tap) are scored on time too. A per-game score scale would
+  be fairer once the game designers pick one.

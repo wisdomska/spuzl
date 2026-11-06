@@ -155,6 +155,8 @@ export interface StartRes {
   /** level mode: the level started and the ladder size (null: endless) */
   level?: number;
   levels?: number | null;
+  /** Daily Five: this was the player's first game of the day's five */
+  first?: boolean;
 }
 
 export function startAttempt(input: {
@@ -193,6 +195,8 @@ export interface FinishRes {
   rank: { track: string; before: number; after: number } | null;
   /** level mode: the level cleared, the highest clear now, and the next level (null when the ladder is done) */
   ladder?: { level: number; top: number; next: number | null; bestMs: number; levels: number | null };
+  /** a Daily Five game (R2-05): the player's progress after it, from the server's records */
+  dailyFive?: { done: number; total: number; score: number; complete: boolean; next: { game: string; slot: number } | null };
 }
 export function finishAttempt(
   id: string,

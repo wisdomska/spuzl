@@ -8,9 +8,9 @@ const TABS = ["reports", "nicknames", "party", "flagged"] as const;
 const STATUSES = ["open", "actioned", "dismissed", "all"];
 
 /**
- * GET /api/admin/moderation?tab=reports|nicknames|party|flagged&status=open&kind=&sort=&dir=&page=&pageSize=: one page
- * of the moderation queue (FR-AD-05), with the open count per tab. `kind` (player, crew, score, content) narrows
- * the reports tab; sort by created_at (age), kind or status.
+ * GET /api/admin/moderation?tab=reports|nicknames|party|flagged&status=open&kind=&five=1&sort=&dir=&page=&pageSize=: one
+ * page of the moderation queue (FR-AD-05), with the open count per tab. `kind` (player, crew, score, content) narrows
+ * the reports tab; `five=1` narrows the flagged tab to Daily Five games; sort by created_at (age), kind or status.
  */
 export const GET = handle(async (req: Request) => {
   const ctx = await requireAdmin("moderation.read");
@@ -19,13 +19,14 @@ export const GET = handle(async (req: Request) => {
   const tab = (url.searchParams.get("tab") ?? "reports") as (typeof TABS)[number];
   const status = url.searchParams.get("status") ?? "open";
   const kind = url.searchParams.get("kind");
+  const five = url.searchParams.get("five") === "1";
   const sort = sortParams(url.searchParams, MODERATION_SORT);
   if (kind && !(REPORT_KINDS as readonly string[]).includes(kind)) throw new ApiError(400, "bad_kind");
   if (!TABS.includes(tab)) throw new ApiError(400, "bad_tab");
   if (!STATUSES.includes(status)) throw new ApiError(400, "bad_status");
   const head = { count: "exact" as const, head: true };
   const [list, reports, nicknames, party, flagged] = await Promise.all([
-    tab === "flagged" ? flaggedRows(ctx.db, p, sort) : reportRows(ctx.db, tab, status, p, sort, kind),
+    tab === "flagged" ? flaggedRows(ctx.db, p, sort, five) : reportRows(ctx.db, tab, status, p, sort, kind),
     ctx.db
       .from("reports")
       .select("id", head)

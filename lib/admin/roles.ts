@@ -21,6 +21,9 @@ export const PERMISSIONS = {
   "calendar.read": ALL,
   "calendar.write": EDIT,
   "daily.swap": EDIT,
+  /** Daily Five scheduler (R2-05): see and preview the days; pick, re-pick, lock and import them. */
+  "dailyFive.read": ALL,
+  "dailyFive.write": EDIT,
   "content.read": EDIT,
   "content.write": EDIT,
   "content.approve": EDIT,

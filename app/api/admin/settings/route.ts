@@ -24,7 +24,7 @@ export const GET = handle(async () => {
 
 const Put = z.object({
   key: z.string().min(3).max(80),
-  value: z.union([z.number(), z.boolean(), z.array(z.string().max(32)).max(20)]),
+  value: z.union([z.number(), z.boolean(), z.string().max(40), z.array(z.string().max(32)).max(20)]),
 });
 
 /** PUT /api/admin/settings: sets one tunable after validating it against its range (or its options). */

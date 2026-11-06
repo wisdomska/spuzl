@@ -69,6 +69,12 @@ export interface MetricRow {
   duels_quick_1315?: number;
   duels_quick_1617?: number;
   duels_quick_18?: number;
+  /** Daily Five (20261130100501): first-party daily5_* events, plus players and full fives from attempts. */
+  daily5_starts?: number;
+  daily5_completes?: number;
+  daily5_shares?: number;
+  daily5_players?: number;
+  daily5_full?: number;
 }
 
 export interface PromptCounts {
@@ -117,6 +123,7 @@ export const METRIC_IDS = [
   "daily",
   "shares",
   "prompts",
+  "daily_five",
 ] as const;
 export type MetricId = (typeof METRIC_IDS)[number];
 
@@ -336,6 +343,23 @@ export const METRICS: readonly MetricDef[] = [
         }),
     },
     csv: promptsCsv,
+  },
+  {
+    id: "daily_five",
+    title: "Daily Five",
+    note: "Starts = players who began the day's five (daily5_start), completions = players who played all five (daily5_complete), shares = share grids sent or copied (daily5_share); client recorded. Players and Full fives come from Daily Five attempts on the server (test players left out).",
+    headline: (t) => pct(rate(t.daily5_completes ?? 0, t.daily5_starts ?? 0)),
+    sub: (t) =>
+      `${n(t.daily5_completes ?? 0)} of ${n(t.daily5_starts ?? 0)} starts completed · ${n(t.daily5_shares ?? 0)} shares · ${n(t.daily5_players ?? 0)} players`,
+    cols: [
+      { key: "daily5_start", label: "Starts", value: (r) => r.daily5_starts ?? 0 },
+      { key: "daily5_complete", label: "Completions", value: (r) => r.daily5_completes ?? 0 },
+      { key: "daily5_share", label: "Shares", value: (r) => r.daily5_shares ?? 0 },
+      { key: "completion_pct", label: "Completion %", value: (r) => rate(r.daily5_completes ?? 0, r.daily5_starts ?? 0) },
+      { key: "share_pct", label: "Share %", value: (r) => rate(r.daily5_shares ?? 0, r.daily5_completes ?? 0) },
+      { key: "players", label: "Players", value: (r) => r.daily5_players ?? 0 },
+      { key: "full_fives", label: "Full fives", value: (r) => r.daily5_full ?? 0 },
+    ],
   },
 ];
 

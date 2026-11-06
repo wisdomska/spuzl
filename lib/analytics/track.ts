@@ -52,6 +52,10 @@ export const KEY_EVENTS = [
   "prompt_shown",
   "prompt_accepted",
   "prompt_dismissed",
+  // Daily Five (R2-05), also first party
+  "daily5_start",
+  "daily5_complete",
+  "daily5_share",
 ] as const;
 export type KeyEvent = (typeof KEY_EVENTS)[number];
 
@@ -148,6 +152,9 @@ const FIRST_PARTY: ReadonlySet<KeyEvent> = new Set([
   "prompt_shown",
   "prompt_accepted",
   "prompt_dismissed",
+  "daily5_start",
+  "daily5_complete",
+  "daily5_share",
 ]);
 
 /** Pure: the first-party metric body for an event, or null. Exported for tests. */

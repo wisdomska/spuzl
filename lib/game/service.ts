@@ -24,6 +24,7 @@ import { finalVerdict } from "./guess-check";
 import { bindPuzzle } from "./guess-token";
 import { isLadderGame, isLevel, levelCount, levelDifficulty, levelOpen, nextLevel } from "./levels";
 import { securedLevelSeed } from "./level-seed";
+import { fiveSlot } from "@/lib/daily-five/server";
 
 /** Human floor for one Rage Ridge room played in Levels mode. */
 const LEVEL_ROOM_FLOOR_MS = 1500;
@@ -59,6 +60,8 @@ export interface PuzzleRef {
   difficulty: Difficulty;
   /** level mode: the level to play (default: the player's next one) */
   level?: number;
+  /** daily mode: a Daily Five game (refused unless the game is in that date's five) */
+  five?: boolean;
 }
 
 interface Loaded {
@@ -170,6 +173,7 @@ export async function startAttempt(admin: SupabaseClient, playerId: string, ref:
   let loaded: Loaded;
   let seed: string | null = null;
   let level: number | undefined;
+  let dailyFive = false;
   if (ref.mode === "level") {
     // Level ladder: any level up to one past the highest verified clear; cleared levels replay.
     if (!isLadderGame(meta.id)) throw new ApiError(404, "no_levels");
@@ -181,7 +185,12 @@ export async function startAttempt(admin: SupabaseClient, playerId: string, ref:
     seed = securedLevelSeed(meta.id, level);
   } else if (ref.mode === "daily" || ref.mode === "archive") {
     if (!ref.date) throw new ApiError(400, "date_required");
-    loaded = await loadDaily(admin, meta.id, ref.date);
+    // Daily Five (R2-05): a game in that day's five is played on the five's scheduled puzzle, the same for everyone
+    // (also when it is opened as the regular Daily, so one game never has two puzzles on one day).
+    const slot = ref.mode === "daily" ? await fiveSlot(admin, ref.date, meta.id) : null;
+    if (ref.five && !slot) throw new ApiError(404, "not_in_daily_five", "That game is not in today's Daily Five.");
+    dailyFive = !!slot;
+    loaded = slot ? await loadPuzzleById(admin, slot.puzzle_id) : await loadDaily(admin, meta.id, ref.date);
     if (ref.mode === "daily") {
       // One ranked attempt per game per day: resume it if it exists.
       const { data: existing } = await admin
@@ -220,6 +229,8 @@ export async function startAttempt(admin: SupabaseClient, playerId: string, ref:
       daily_date: ref.mode === "daily" || ref.mode === "archive" ? ref.date : null,
       puzzle_id: loaded.puzzleId,
       free_seed: seed ? `${seed}|${loaded.difficulty}` : null,
+      // Only sent when true, so other modes keep working before the Daily Five migration is applied.
+      ...(dailyFive ? { daily_five: true } : {}),
     })
     .select("id, started_at")
     .single();
@@ -323,11 +334,13 @@ async function getAttempt(admin: SupabaseClient, playerId: string, id: string): 
   return data as AttemptRow;
 }
 
+async function loadPuzzleById(admin: SupabaseClient, id: string): Promise<Loaded> {
+  const { data } = await admin.from("puzzles").select("data, solution, difficulty").eq("id", id).single();
+  return { puzzleId: id, puzzle: data!.data, solution: decodeSolution(data!.solution), difficulty: data!.difficulty };
+}
+
 async function loadForAttempt(admin: SupabaseClient, a: AttemptRow): Promise<Loaded> {
-  if (a.puzzle_id) {
-    const { data } = await admin.from("puzzles").select("data, solution, difficulty").eq("id", a.puzzle_id).single();
-    return { puzzleId: a.puzzle_id, puzzle: data!.data, solution: decodeSolution(data!.solution), difficulty: data!.difficulty };
-  }
+  if (a.puzzle_id) return loadPuzzleById(admin, a.puzzle_id);
   if (a.mode === "level") return loadLevel(a.game_id, levelOfSeed(a.free_seed));
   const [seed, difficulty] = (a.free_seed ?? "").split("|");
   return loadFree(a.game_id, seed, (difficulty as Difficulty) || "easy");

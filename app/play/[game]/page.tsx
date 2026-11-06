@@ -14,8 +14,9 @@ export async function generateMetadata({ params }: PageProps<"/play/[game]">): P
 }
 
 /**
- * /play/<game>?mode=daily|free|archive|level&date=YYYY-MM-DD&difficulty=easy|medium|hard|expert|mega (free play)
- * &level=<n> (Levels; without it the server picks the player's next level).
+ * /play/<game>?mode=daily|free|archive|level|five&date=YYYY-MM-DD&difficulty=easy|medium|hard|expert|mega (free play)
+ * &level=<n> (Levels; without it the server picks the player's next level). mode=five plays the game as part of
+ * today's Daily Five (R2-05), its own switch whether or not Dailies are on.
  */
 export default async function Play({ params, searchParams }: PageProps<"/play/[game]">) {
   const { game } = await params;
@@ -27,16 +28,20 @@ export default async function Play({ params, searchParams }: PageProps<"/play/[g
   // cache from the previous screen, and PlayScreen sends players without a profile to onboarding itself.
   await requireSessionPage();
   // Dailies off (admin "features.dailies"): every link plays free; old Daily and archive links land there too.
-  const dailies = (await getGameSettings())["features.dailies"];
-  // Levels work whether or not Dailies are on.
+  const settings = await getGameSettings();
+  const dailies = settings["features.dailies"];
+  // Levels work whether or not Dailies are on, and so does the Daily Five (its own switch; the server checks the
+  // game is in today's five).
   const mode =
     sp.mode === "level" && isLadderGame(game)
       ? "level"
-      : !dailies
-        ? "free"
-        : sp.mode === "free" || sp.mode === "archive"
-          ? sp.mode
-          : "daily";
+      : sp.mode === "five" && settings["dailyFive.enabled"]
+        ? "five"
+        : !dailies
+          ? "free"
+          : sp.mode === "free" || sp.mode === "archive"
+            ? sp.mode
+            : "daily";
   // Ludo free play is a full game against the bot (owner's call); the Daily stays the best-move puzzle.
   if (game === "ludo" && mode === "free") redirect("/play/ludo/bot");
   const level = mode === "level" && typeof sp.level === "string" && /^\d{1,4}$/.test(sp.level) ? Number(sp.level) || undefined : undefined;

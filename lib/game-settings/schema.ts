@@ -15,7 +15,9 @@ export type SettingDef =
       group: string;
       default: readonly string[];
       options: readonly { id: string; label: string }[];
-    };
+    }
+  /** One of a fixed list of values (shown as a select). */
+  | { kind: "enum"; label: string; help: string; group: string; default: string; options: readonly string[] };
 
 export const SETTINGS = {
   "features.dailies": {
@@ -24,6 +26,107 @@ export const SETTINGS = {
     label: "Dailies",
     help: "The shared Daily puzzles, their leaderboards and the archive. Off: free play is the only solo mode and every Daily screen and mention is hidden. The server refuses Daily play while off.",
     default: false,
+  },
+  "dailyFive.enabled": {
+    kind: "bool",
+    group: "Daily Five",
+    label: "Daily Five",
+    help: "Five short shared puzzles a day, the same for everyone: one per world plus a bonus, with a combined score and a share grid. Shows the Daily Five card on Home and the /daily page. Off: both are hidden and the server refuses Daily Five play.",
+    default: true,
+  },
+  "dailyFive.resetHour": {
+    kind: "int",
+    group: "Daily Five",
+    label: "New Daily Five at (GMT hour)",
+    help: "The hour, in GMT, when the next Daily Five opens. 0 is midnight GMT. A clear before this hour counts for the previous day's five.",
+    default: 0,
+    min: 0,
+    max: 23,
+    unit: "h GMT",
+  },
+  "dailyFive.difficulty": {
+    kind: "enum",
+    group: "Daily Five",
+    label: "Difficulty",
+    help: "The difficulty every Daily Five puzzle is made at. Keep it quick: the five should take about 5 minutes together. Applies to days picked after the change; locked days keep theirs.",
+    default: "easy",
+    options: ["easy", "medium", "hard"],
+  },
+  "dailyFive.maxGameSec": {
+    kind: "int",
+    group: "Daily Five",
+    label: "Longest game picked",
+    help: "Only games whose typical time (Library page) is at most this are picked automatically. A world with no game this quick uses its quickest game.",
+    default: 120,
+    min: 30,
+    max: 600,
+    unit: "s",
+  },
+  "dailyFive.daysAhead": {
+    kind: "int",
+    group: "Daily Five",
+    label: "Days scheduled ahead",
+    help: "How many days ahead the daily job keeps the Daily Five picked and its puzzles made. Unlocked automatic days are re-picked when the rules change.",
+    default: 14,
+    min: 2,
+    max: 60,
+    unit: "days",
+  },
+  "dailyFive.world.logic": {
+    kind: "bool",
+    group: "Daily Five",
+    label: "Puzzles slot",
+    help: "One game from Puzzles each day. Off: a bonus game takes the slot, so there are still five.",
+    default: true,
+  },
+  "dailyFive.world.word": {
+    kind: "bool",
+    group: "Daily Five",
+    label: "Words & Quiz slot",
+    help: "One game from Words & Quiz each day. Off: a bonus game takes the slot.",
+    default: true,
+  },
+  "dailyFive.world.reflex": {
+    kind: "bool",
+    group: "Daily Five",
+    label: "Arcade slot",
+    help: "One game from Arcade each day. Off: a bonus game takes the slot.",
+    default: true,
+  },
+  "dailyFive.world.board": {
+    kind: "bool",
+    group: "Daily Five",
+    label: "Board Games slot",
+    help: "One board puzzle from Board Games each day. Off: a bonus game takes the slot.",
+    default: true,
+  },
+  "dailyFive.bonus.logic": {
+    kind: "bool",
+    group: "Daily Five",
+    label: "Bonus pool: Puzzles",
+    help: "The bonus game rotates through the worlds switched on here (never a game already in that day's five). All off: every world is in the pool.",
+    default: true,
+  },
+  "dailyFive.bonus.word": {
+    kind: "bool",
+    group: "Daily Five",
+    label: "Bonus pool: Words & Quiz",
+    help: "Words & Quiz games can be the bonus game.",
+    default: true,
+  },
+  "dailyFive.bonus.reflex": {
+    kind: "bool",
+    group: "Daily Five",
+    label: "Bonus pool: Arcade",
+    help: "Arcade games can be the bonus game.",
+    default: true,
+  },
+  "dailyFive.bonus.board": {
+    kind: "bool",
+    group: "Daily Five",
+    label: "Bonus pool: Board Games",
+    help: "Board puzzles can be the bonus game.",
+    default: true,
   },
   "features.newGames": {
     kind: "bool",
@@ -360,9 +463,11 @@ export type GameSettings = {
     ? boolean
     : (typeof SETTINGS)[K]["default"] extends readonly string[]
       ? readonly string[]
-      : number;
+      : (typeof SETTINGS)[K]["default"] extends string
+        ? string
+        : number;
 };
-export type SettingValue = number | boolean | readonly string[];
+export type SettingValue = number | boolean | string | readonly string[];
 
 export const DEFAULTS = Object.fromEntries(Object.entries(SETTINGS).map(([k, d]) => [k, d.default])) as unknown as GameSettings;
 
@@ -379,6 +484,7 @@ export function validateSetting(key: string, value: unknown): string | null {
       return `Must be a list of: ${ids.join(", ")}`;
     return new Set(value).size === value.length ? null : "Each option at most once";
   }
+  if (d.kind === "enum") return typeof value === "string" && d.options.includes(value) ? null : `Must be one of: ${d.options.join(", ")}`;
   if (typeof value !== "number" || !Number.isInteger(value)) return "Must be a whole number";
   if (value < d.min || value > d.max) return `Must be between ${d.min} and ${d.max}${d.unit ? ` ${d.unit}` : ""}`;
   return null;

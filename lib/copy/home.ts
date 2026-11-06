@@ -16,5 +16,6 @@ export const homeCopy = {
   party: "Party",
   allGames: "All games",
   sleepy: (n: number) => `Your ${n}-day streak is sleepy. One clear wakes it up.`,
+  sleepyFive: (n: number) => `Your ${n}-day streak is sleepy. One Daily Five game wakes it up.`,
   resetsIn: (t: string) => `Resets in ${t}`,
 } as const;

@@ -13,6 +13,17 @@ describe("game settings schema", () => {
     expect(validateSetting("free.xpDailyCap", 5001)).toMatch(/between 0 and 5000/);
     expect(validateSetting("free.sparksPerClear", -1)).toMatch(/between 0 and 50/);
   });
+  it("checks choice settings against their options (Daily Five difficulty)", () => {
+    expect(validateSetting("dailyFive.difficulty", "medium")).toBeNull();
+    expect(validateSetting("dailyFive.difficulty", "mega")).toMatch(/one of: easy, medium, hard/);
+    expect(validateSetting("dailyFive.difficulty", 1)).toMatch(/one of/);
+    expect(validateSetting("dailyFive.resetHour", 24)).toMatch(/between 0 and 23/);
+  });
+  it("ships the Daily Five on, resetting at midnight GMT, on easy", () => {
+    expect(DEFAULTS["dailyFive.enabled"]).toBe(true);
+    expect(DEFAULTS["dailyFive.resetHour"]).toBe(0);
+    expect(DEFAULTS["dailyFive.difficulty"]).toBe("easy");
+  });
   it("free-play economy defaults match the original design (+10 XP, +5 Sparks, 300 XP a day)", () => {
     expect(DEFAULTS["free.xpPerClear"]).toBe(10);
     expect(DEFAULTS["free.sparksPerClear"]).toBe(5);

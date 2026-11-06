@@ -5,6 +5,8 @@ describe("attempt priming (SPZ-01, R2-01)", () => {
   it("reads daily, free play and level links", () => {
     expect(parsePlayHref("/play/crownfall")).toEqual({ game: "crownfall", mode: "daily" });
     expect(parsePlayHref("/play/dusk?mode=free&difficulty=hard")).toEqual({ game: "dusk", mode: "free", difficulty: "hard" });
+    // Daily Five links prime too; the server picks the day and the puzzle, so no difficulty rides along.
+    expect(parsePlayHref("/play/remix?mode=five&difficulty=hard")).toEqual({ game: "remix", mode: "five", difficulty: undefined });
     // R2-01: Continue opens ladder games in level mode; those taps are primed too
     expect(parsePlayHref("/play/dusk?mode=level")).toEqual({ game: "dusk", mode: "level", level: undefined });
     expect(parsePlayHref("/play/dusk?mode=level&level=12")).toEqual({ game: "dusk", mode: "level", level: 12 });
