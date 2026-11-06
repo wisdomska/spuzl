@@ -9,7 +9,7 @@ import { parseFen, parseSq, toRows, inCheck, kingSquare } from "@/games/chess/en
 import { CH_N, Piece, useSprites } from "@/games/chess/Piece";
 import { PromotionPicker, type PromotionPiece } from "@/games/chess/Promotion";
 import { ColourBadge, Die3D, LUDO_LOOK, LudoTable } from "@/games/ludo/look";
-import { cellOf, trackIndexOfCell, SAFE } from "@/games/ludo/engine";
+import { cellOf, trackIndexOfCell, SAFE, type LudoAlt } from "@/games/ludo/engine";
 import { TOP_ROW, BOTTOM_ROW } from "@/games/oware/engine";
 import { COLS as FU_COLS, ROWS as FU_ROWS } from "@/games/fourup/engine";
 import { flipsFor } from "@/games/flip/engine";
@@ -572,12 +572,20 @@ function DaraLive({ state, seat, legal, disabled, lastMove, onMove, announce }: 
 
 /* ---------------- Ludo (B6) ---------------- */
 
+/** Chooser buttons for a piece with more than one way to move (house-rule kicks). */
+const ALT_LABEL: Record<LudoAlt, (roll: number) => string> = {
+  back: (r) => `Back-kick ${r}`,
+  home: () => "Home-kick",
+  side: (r) => `Move ${r} + side-kick`,
+  backside: (r) => `Back ${r} + side-kick`,
+};
+
 function LudoLive({ state, seat, legal, disabled, onMove, names }: LiveBoardProps) {
   const s = state as LudoMatch;
   const moves = legal as LudoMove[];
   const cell = useLudoCell();
   const canRoll = moves.some((m) => m.kind === "roll") && !disabled;
-  const stepMoves = moves.filter((m): m is { kind: "move"; piece: number; alt?: "back" | "home" } => m.kind === "move");
+  const stepMoves = moves.filter((m): m is { kind: "move"; piece: number; alt?: LudoAlt } => m.kind === "move");
   const movable = new Set(stepMoves.map((m) => m.piece));
   const lastRoll = s.log[s.log.length - 1];
   const nameOf = (st: number) => (st === seat ? "You" : (names?.[st] ?? LUDO_LOOK[s.colours[st]].name));
@@ -692,7 +700,7 @@ function LudoLive({ state, seat, legal, disabled, onMove, names }: LiveBoardProp
                 }}
                 className="press bg-surface-raised h-11 rounded-[14px] px-4 text-[15px] font-semibold"
               >
-                {m.alt === "back" ? `Back-kick ${s.roll}` : m.alt === "home" ? "Home-kick" : `Move ${s.roll}`}
+                {m.alt ? ALT_LABEL[m.alt](s.roll ?? 0) : `Move ${s.roll}`}
               </button>
             ))}
           <button type="button" onClick={() => setChoosing(null)} className="press text-muted h-11 px-3 text-[15px] font-semibold">

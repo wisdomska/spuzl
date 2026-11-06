@@ -4,10 +4,10 @@
  */
 import type { BoardGameRules, MatchStatus } from "@/games/types";
 import type { Rng } from "@/lib/rng";
-import { HOME, applyStep, coloursFor, legalSteps, type LudoOpts, type Step, type Table } from "./engine";
+import { HOME, applyStep, coloursFor, legalSteps, type LudoAlt, type LudoOpts, type Step, type Table } from "./engine";
 import { scoreStep } from "./logic";
 
-export type LudoMove = { kind: "roll" } | { kind: "move"; piece: number; alt?: "back" | "home" };
+export type LudoMove = { kind: "roll" } | { kind: "move"; piece: number; alt?: LudoAlt };
 
 export interface LudoMatch extends Table {
   /** house rules chosen before the match (back-kick, side-kick, home-kick); none in Quick Match */

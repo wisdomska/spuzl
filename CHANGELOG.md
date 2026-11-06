@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.32.0 (6 November 2026)
+
+### For players
+
+- **Stacks block everywhere in Ludo.** Two or more of one colour on any square, star and start squares included,
+  can't be passed or landed on by anyone else. Only a piece coming out onto its own start square can still go there.
+- **Side-kick takes the square.** With Side-kick on, landing across the lane from a lone rival gives you the choice
+  "Move + side-kick": the rival goes home and your piece moves onto its square.
+- **Back-kick through the side line.** With both Back-kick and Side-kick on, you can move back by your roll and kick
+  the rival straight across from there ("Back + side-kick"). The bots use these moves too.
+
 ## 1.31.1 (6 November 2026)
 
 ### For players

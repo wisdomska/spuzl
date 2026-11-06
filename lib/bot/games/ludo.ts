@@ -1,5 +1,5 @@
 import ludoRules, { type LudoMatch, type LudoMove } from "@/games/ludo/rules";
-import { HOME, LAST_TRACK, absOf, applyStep, legalSteps, threatened, type Table, type LudoOpts } from "@/games/ludo/engine";
+import { HOME, LAST_TRACK, absOf, applyStep, legalSteps, threatened, type Table, type LudoOpts, type LudoAlt } from "@/games/ludo/engine";
 import { scoreStep } from "@/games/ludo/logic";
 import type { Bot } from "../types";
 
@@ -14,7 +14,7 @@ function exposure(t: Table, seat: number): number {
  * the move, so it does not leave a far-travelled piece in range to save a short one, and it prefers
  * moving the piece that is most at risk.
  */
-export function ludoHardScore(t: Table, seat: number, roll: number, piece: number, opts: LudoOpts = {}, alt?: "back" | "home"): number {
+export function ludoHardScore(t: Table, seat: number, roll: number, piece: number, opts: LudoOpts = {}, alt?: LudoAlt): number {
   const step = legalSteps(t, seat, roll, opts).find((s) => s.piece === piece && (s.alt ?? null) === (alt ?? null));
   if (!step) return -Infinity;
   const base = scoreStep(t, seat, step).score;

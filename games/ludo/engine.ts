@@ -9,8 +9,8 @@
  * - Exact rolls only to reach home.
  * - Landing on a rival on a plain track square sends it back to base. Start squares and star squares are
  *   safe: pieces share them.
- * - Blocks (as in Ludo King): two or more pieces of one colour on a plain track square form a block. Rivals can't
- *   land on it or pass it; the owner's own pieces can. Safe squares never block.
+ * - Blocks: two or more pieces of one colour on any track square (star and start squares too) form a block. Rivals
+ *   can't land on it or pass it; the owner's own pieces can. A piece coming out onto its own start square still can.
  * - A 6, a capture or reaching home earns another roll, every time: sixes in a row never cost the turn.
  * - First to bring all four pieces home wins.
  */
@@ -48,14 +48,19 @@ export interface Step {
   to: number;
   /** [seat, piece] of rivals sent back to base */
   captures: [number, number][];
-  /** an option move (house rules): "back" a back-kick, "home" a home-kick; plain moves forward have none */
-  alt?: "back" | "home";
+  /**
+   * an option move (house rules): "back" a back-kick, "home" a home-kick, "side" a side-kick (move, then jump
+   * across the lane onto the rival you kick), "backside" a back-kick through the side line (back by the roll, then
+   * across); plain moves forward have none
+   */
+  alt?: LudoAlt;
 }
 
 /**
  * House rules a Ludo match can switch on before it starts (all off by default, and in Quick Match):
  * - backKick: a piece may move back by the roll when that lands on a lone rival, and sends it home;
- * - sideKick: landing straight across the lane from a lone rival (same line, other side of the arm) sends it home;
+ * - sideKick: landing straight across the lane from a lone rival (same line, other side of the arm) may kick it home,
+ *   and your piece takes its square; with backKick too, the kick can be made from the square a back move reaches;
  * - homeKick: a piece may run into a rival's home column on an exact count to take a piece there, then waits at
  *   the column's mouth (it can't stay in another colour's column).
  * Safe squares and blocks protect as always.
@@ -66,13 +71,15 @@ export interface LudoOpts {
   homeKick?: boolean;
 }
 
+export type LudoAlt = "back" | "home" | "side" | "backside";
+
 export function target(p: number, roll: number): number {
   if (p < 0) return roll === 6 ? 0 : -2;
   const t = p + roll;
   return t > HOME ? -2 : t;
 }
 
-/** Plain track squares (absolute) held by a rival block: two or more pieces of one other seat. */
+/** Track squares (absolute) held by a rival block: two or more pieces of one other seat, on any square. */
 export function rivalBlocks(t: Table, seat: number): Set<number> {
   const out = new Set<number>();
   t.pieces.forEach((ps, s) => {
@@ -80,7 +87,7 @@ export function rivalBlocks(t: Table, seat: number): Set<number> {
     const seen = new Set<number>();
     for (const q of ps) {
       const a = absOf(t.colours[s], q);
-      if (a < 0 || SAFE.has(a)) continue;
+      if (a < 0) continue;
       if (seen.has(a)) out.add(a);
       seen.add(a);
     }
@@ -110,12 +117,25 @@ export function legalSteps(t: Table, seat: number, roll: number, opts: LudoOpts 
     for (let q = Math.min(a, b) + 1; q < Math.max(a, b); q++) if (q <= LAST_TRACK && blocks.has(absOf(colour, q))) return false;
     return true;
   };
+  // side-kick from a square this piece reaches: jump across the lane onto a lone rival there, taking its square
+  const across = (L: number): { to: number; captures: [number, number][] } | null => {
+    const a = absOf(colour, L);
+    if (a < 0 || !PARTNER.has(a)) return null;
+    const P = PARTNER.get(a)!;
+    const caps = loneRivals(t, seat, P, blocks);
+    const to = (P - startOf(colour) + TRACK_LEN) % TRACK_LEN;
+    return caps.length && to <= LAST_TRACK ? { to, captures: caps } : null;
+  };
   t.pieces[seat].forEach((p, i) => {
     if (p < 0 || p > LAST_TRACK) return;
-    // back-kick: back by the roll onto a lone rival
-    if (opts.backKick && p - roll >= 0 && clear(p, p - roll)) {
-      const caps = loneRivals(t, seat, absOf(colour, p - roll), blocks);
-      if (caps.length) out.push({ piece: i, from: p, to: p - roll, captures: caps, alt: "back" });
+    const back = p - roll;
+    if (opts.backKick && back >= 0 && clear(p, back) && !blocks.has(absOf(colour, back))) {
+      // back-kick: back by the roll onto a lone rival
+      const caps = loneRivals(t, seat, absOf(colour, back), blocks);
+      if (caps.length) out.push({ piece: i, from: p, to: back, captures: caps, alt: "back" });
+      // back-kick through the side line: back by the roll, then across onto a lone rival
+      const x = opts.sideKick ? across(back) : null;
+      if (x) out.push({ piece: i, from: p, to: x.to, captures: x.captures, alt: "backside" });
     }
     // home-kick: up a rival's home column on an exact count, onto one of its pieces
     if (opts.homeKick)
@@ -145,9 +165,10 @@ export function legalSteps(t: Table, seat: number, roll: number, opts: LudoOpts 
           if (absOf(t.colours[s], q) === abs) captures.push([s, j]);
         });
       });
-    // side-kick: also take a lone rival straight across the lane
-    if (opts.sideKick && abs >= 0 && PARTNER.has(abs)) captures.push(...loneRivals(t, seat, PARTNER.get(abs)!, blocks));
     out.push({ piece: i, from: p, to, captures });
+    // side-kick: instead of stopping there, jump across the lane onto a lone rival and take its square
+    const x = opts.sideKick && to <= LAST_TRACK ? across(to) : null;
+    if (x) out.push({ piece: i, from: p, to: x.to, captures: x.captures, alt: "side" });
   });
   return out;
 }

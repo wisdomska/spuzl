@@ -120,15 +120,17 @@ describe("ludo engine", () => {
       2,
     );
     expect(own.find((s) => s.piece === 2)!.to).toBe(2);
-    // two pieces on a safe square are not a block
+    // a stack blocks on a safe square too (colour 2's start, abs 26): no landing, no passing
     const safe: Table = {
       colours: [0, 2],
       pieces: [
-        [22, -1, -1, -1],
+        [22, 20, -1, -1],
         [0, 0, -1, -1],
       ],
     };
-    expect(legalSteps(safe, 0, 6).find((s) => s.piece === 0)).toBeDefined();
+    expect(legalSteps(safe, 0, 4).find((s) => s.piece === 0)).toBeUndefined(); // would land on it
+    expect(legalSteps(safe, 0, 6).find((s) => s.piece === 0)).toBeUndefined(); // would pass it
+    expect(legalSteps(safe, 0, 6).find((s) => s.piece === 1)).toBeUndefined(); // would land on it
   });
 
   it("house rules: back-kick, side-kick and home-kick only when switched on", () => {
@@ -154,10 +156,29 @@ describe("ludo engine", () => {
         [prog(b, 2), -1, -1, -1],
       ],
     };
-    if (prog(a, 0) - 2 >= 0) {
-      const plain = legalSteps(side, 0, 2).find((s) => s.piece === 0)!;
-      expect(plain.captures).toEqual([]);
-      expect(legalSteps(side, 0, 2, { sideKick: true }).find((s) => s.piece === 0)!.captures).toEqual([[1, 0]]);
+    expect(prog(a, 0) - 2).toBeGreaterThanOrEqual(0); // the case below always runs
+    {
+      expect(legalSteps(side, 0, 2).some((s) => s.alt === "side")).toBe(false);
+      const sk = legalSteps(side, 0, 2, { sideKick: true }).find((s) => s.alt === "side")!;
+      // the kicker takes the kicked piece's square
+      expect(sk).toMatchObject({ piece: 0, to: prog(b, 0), captures: [[1, 0]] });
+      expect(applyStep(side, 0, sk).pieces).toEqual([
+        [prog(b, 0), -1, -1, -1],
+        [-1, -1, -1, -1],
+      ]);
+      // the plain move is still there, landing where it lands
+      expect(legalSteps(side, 0, 2, { sideKick: true }).find((s) => s.piece === 0 && !s.alt)!.to).toBe(prog(a, 0));
+      // back-kick through the side line: back by the roll to a, then across onto the rival on b
+      const bs: Table = {
+        colours: [0, 2],
+        pieces: [
+          [prog(a, 0) + 3, -1, -1, -1],
+          [prog(b, 2), -1, -1, -1],
+        ],
+      };
+      expect(legalSteps(bs, 0, 3, { backKick: true }).some((s) => s.alt === "backside")).toBe(false);
+      const combo = legalSteps(bs, 0, 3, { backKick: true, sideKick: true }).find((s) => s.alt === "backside")!;
+      expect(combo).toMatchObject({ piece: 0, to: prog(b, 0), captures: [[1, 0]] });
     }
     // home-kick: colour 2's piece 2 deep in its home column (progress 52); colour 0 two squares before its mouth
     const mouth = absOf(2, 50);
