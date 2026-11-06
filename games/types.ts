@@ -77,6 +77,11 @@ export interface GameLogic<P = unknown, S = unknown, St = unknown> {
    * level pool, or null past the last level. Games without it build levels from a seed with generate().
    */
   level?(n: number): Generated<P, S> | null;
+  /**
+   * Optional: the guided first play's fixed practice board (lib/guided.ts, GuidedPlay), smaller than a real one.
+   * Games without it practise on a seeded easy board (`tutorial:<game>`). Its answers are public.
+   */
+  practice?(): Generated<P, S>;
 }
 
 /** Props the GameShell passes to every Board. */

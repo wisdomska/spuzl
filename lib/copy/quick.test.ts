@@ -39,6 +39,13 @@ describe("quick copy: quads", () => {
     );
     expect(quick.quads.found("Ghana regions", "Easy", 4)).toBe("Ghana regions (Easy). All four groups.");
   });
+
+  it("orders the levels Easy to Tricky and counts the practice round's two groups", () => {
+    expect(quick.quads.levels).toEqual(["Easy", "Medium", "Hard", "Tricky"]);
+    expect(quick.quads.found("Fruits", "Medium", 1, 2)).toBe("Fruits (Medium). 1 of 2 groups.");
+    expect(quick.quads.found("Fruits", "Medium", 2, 2)).toBe("Fruits (Medium). Both groups.");
+    expect(quick.quads.foundSay("Fruits", "Medium", ["MANGO"], 2, 2)).toBe("Group found: Fruits, Medium: MANGO. Both groups found.");
+  });
 });
 
 describe("quick copy: merge time bar", () => {

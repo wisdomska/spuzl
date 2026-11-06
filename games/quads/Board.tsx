@@ -9,30 +9,35 @@ import { sfx } from "@/games/_shared/sfx";
 import { sendGuess } from "@/games/_shared/guess";
 import { reducedMotion } from "@/games/_shared/fly";
 import { quick } from "@/lib/copy/quick";
-import { setKey, SLIPS, type QuadsCheck, type QuadsPuzzle, type QuadsState, type SolvedGroup } from "./rules";
+import { Icon } from "@/components/ui/Icon";
+import { groupCount, LEVELS, setKey, SLIPS, type QuadsCheck, type QuadsPuzzle, type QuadsState, type SolvedGroup } from "./rules";
 
-const INK = "#0E0F1A";
+const INK = "var(--quad-ink)";
 const EASE = [0.23, 1, 0.32, 1] as const;
 const t = quick.quads;
 /** "Checking…" only shows when the server is slow, so quick answers don't flash it */
 const CHECKING_AFTER_MS = 250;
 
 /**
- * One colour per difficulty level, 0 most direct .. 3 trickiest: yellow, cyan, orange, violet. They differ
- * in hue and lightness for the common colour-blind types, and the level name is always printed beside
- * the colour, so the colour is never the only signal.
+ * One colour per difficulty level, 0 most direct .. 3 trickiest: yellow, green, blue, purple (tokens --quad-0..3;
+ * the colour-blind modes swap in a safe set and add a pattern per level, app/globals.css). The level's name and
+ * its shape are always printed on the bar, so the colour is never the only signal.
  */
-const LEVEL_BG = ["var(--w-number)", "var(--w-line)", "var(--w-shape)", "var(--w-logic)"] as const;
-const levelOf = (g: SolvedGroup) => Math.max(0, Math.min(3, g.level));
+const LEVEL_BG = ["var(--quad-0)", "var(--quad-1)", "var(--quad-2)", "var(--quad-3)"] as const;
+const LEVEL_SHAPE = ["circle", "triangle", "square", "diamond"] as const;
+const levelOf = (g: SolvedGroup) => Math.max(0, Math.min(LEVELS - 1, g.level));
+type Feedback = { kind: "correct" | "one-away" | "wrong"; ms: number; n: number };
 
 const fontFor = (w: string) =>
   w.length >= 11 ? 9.5 : w.length >= 10 ? 10 : w.length >= 9 ? 10.5 : w.length >= 8 ? 11 : w.length >= 7 ? 12 : 13;
 
 /**
- * Quads board (Game Boards: Quads). 4 × 4 word tiles; tap four to lift them, then Submit. The lifted four
- * show a "checking" state at once while the server answers. Solved groups become bars coloured by
- * difficulty, each labelled Easy, Medium, Tricky or Hard, with their name and words. Four slips, shown as
- * dots that empty (hollow, so the state never relies on colour). One away? The feedback line says so.
+ * Quads board (Game Boards: Quads). 4 × 4 word tiles (2 × 4 on the practice round); tap four to lift them, then
+ * Submit. The lifted four show a "checking" state at once while the server answers. Solved groups become bars
+ * coloured by difficulty, each labelled Easy, Medium, Hard or Tricky with a shape, their name and words. Four
+ * slips, shown as dots that empty (hollow, so the state never relies on colour). One away? The feedback line
+ * says so. The board stamps how long each answer took, from Submit to the feedback on screen
+ * (`data-feedback-ms`, and a `quads:feedback` performance measure), so the 600 ms budget can be checked.
  */
 export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode, api }: BoardProps<QuadsPuzzle, QuadsState>) {
   const [order, setOrder] = useState<string[]>(() => puzzle.words.slice());
@@ -45,6 +50,8 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
   /** the four being checked by the server right now */
   const [checking, setChecking] = useState<string[]>([]);
   const [over, setOver] = useState(false);
+  const [fb, setFb] = useState<Feedback | null>(null);
+  const total = groupCount(puzzle);
   const guessesRef = useRef<string[][]>([]);
   const streak = useRef(0);
   const [reduce] = useState(() => reducedMotion());
@@ -125,6 +132,18 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
     // Acknowledge at once: the four are marked as checking, and a slow answer gets a "Checking…" line.
     setBusy(true);
     setChecking(words);
+    const t0 = performance.now();
+    // Stamped on the next frame, once the answer's state is rendered: Submit to feedback on screen.
+    const stamp = (kind: Feedback["kind"]) =>
+      requestAnimationFrame(() => {
+        const ms = Math.round(performance.now() - t0);
+        setFb((f) => ({ kind, ms, n: (f?.n ?? 0) + 1 }));
+        try {
+          performance.measure("quads:feedback", { start: t0 });
+        } catch {
+          /* older browsers: the data attribute still has it */
+        }
+      });
     const slow = window.setTimeout(() => {
       api.feedback(t.checking, "info", "hourglass");
       api.announce(t.checking);
@@ -150,14 +169,15 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
     if (res.ok) {
       streak.current++;
       apply(res, words, true);
+      stamp("correct");
       sfx.cascade(res.group.words.length, res.group.level);
 
       const found = solved.length + 1;
       const level = t.levels[levelOf(res.group)];
-      api.feedback(t.found(res.group.label, level, found), found === 4 ? "success" : "info", "check-circle");
-      api.announce(t.foundSay(res.group.label, level, res.group.words, found));
+      api.feedback(t.found(res.group.label, level, found, total), found === total ? "success" : "info", "check-circle");
+      api.announce(t.foundSay(res.group.label, level, res.group.words, found, total));
       api.onMove(state, { correctStreak: streak.current });
-      const done = found === 4;
+      const done = found === total;
       if (done) {
         setOver(true);
         api.onSolved(state, { clearDelayMs: 200 });
@@ -170,6 +190,7 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
     }
     streak.current = 0;
     apply(res, words, true);
+    stamp(res.oneAway ? "one-away" : "wrong");
     const left = slips - 1;
     setTimeout(() => setShaking([]), 400);
     // ruleBreak shows the line, buzzes and announces it once ("One away. 2 slips left.").
@@ -181,7 +202,7 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
       api.announce(t.outOfSlips);
       api.onFailed?.(state, "out of slips");
     }
-  }, [api, apply, locked, puzzle.ref, selected, slips, solved.length]);
+  }, [api, apply, locked, puzzle.ref, selected, slips, solved.length, total]);
 
   const shuffle = useCallback(() => {
     setOrder((o) => {
@@ -224,8 +245,11 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
 
   return (
     <div
-      className={`flex w-full max-w-[400px] flex-col gap-1.5 rounded-[20px] p-3 ${over && solved.length === 4 ? "board-pulse" : ""}`}
+      className={`flex w-full max-w-[400px] flex-col gap-1.5 rounded-[20px] p-3 ${over && solved.length === total ? "board-pulse" : ""}`}
       style={{ background: "var(--board-bg)" }}
+      data-feedback={fb?.kind}
+      data-feedback-ms={fb?.ms}
+      data-feedback-n={fb?.n ?? 0}
     >
       <AnimatePresence initial={false}>
         {solved.map((g) => {
@@ -241,15 +265,19 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
               role="group"
               aria-label={t.groupSay(g.label, level, g.words)}
               data-level={levelOf(g)}
+              data-quad={levelOf(g)}
               className="flex h-[52px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-[12px] px-2 text-center"
-              style={{ background: LEVEL_BG[levelOf(g)], color: INK }}
+              // backgroundColor, not background: the colour-blind pattern (a background-image) layers on top.
+              style={{ backgroundColor: LEVEL_BG[levelOf(g)], color: INK }}
             >
               <span className="flex max-w-full min-w-0 items-center gap-1.5 text-[13px] leading-tight font-extrabold">
                 <span
                   aria-hidden
-                  className="flex-none rounded-full px-1.5 text-[10px] leading-[16px] font-bold tracking-[.06em] uppercase"
+                  data-level-tag
+                  className="flex flex-none items-center gap-1 rounded-full px-1.5 text-[10px] leading-[16px] font-bold tracking-[.06em] uppercase"
                   style={{ background: `color-mix(in srgb, ${INK} 16%, transparent)` }}
                 >
+                  <Icon name={LEVEL_SHAPE[levelOf(g)]} size={10} />
                   {level}
                 </span>
                 <span aria-hidden className="truncate" style={{ fontFamily: "var(--font-display)" }}>

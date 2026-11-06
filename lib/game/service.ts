@@ -118,7 +118,8 @@ export async function loadFree(gameId: string, seed: string, difficulty: Difficu
     return { puzzleId: null, puzzle: TUTORIAL_PUZZLE, solution: TUTORIAL_SOLUTION, difficulty: "easy" };
   }
   const logic = await loadLogic(gameId);
-  const g = logic.generate(createRng(seed), difficulty);
+  // A game with its own small practice board (Quads) uses it for the guided first play.
+  const g = seed === guidedSeed(gameId) && logic.practice ? logic.practice() : logic.generate(createRng(seed), difficulty);
   return { puzzleId: null, puzzle: g.puzzle, solution: g.solution, difficulty };
 }
 

@@ -1,11 +1,14 @@
 /**
  * Quads: sort 16 words into 4 hidden groups of 4. The client gets the words only; groups, labels and
  * levels stay on the server. Each submitted four is checked with `checkGuess`; the fourth slip ends the game.
+ * The guided practice round is a fixed board of 2 groups (practice.ts); everything here counts groups from
+ * the solution, so it plays and verifies the same way.
  */
 import type { Difficulty, Generated, Hint, VerifyResult } from "@/games/types";
 import type { GuessLogic } from "@/games/_shared/guess";
 import { createRng, type Rng } from "@/lib/rng";
 import { CONTENT } from "./content";
+import { PRACTICE_GROUPS, PRACTICE_INDEX, PRACTICE_ORDER } from "./practice";
 import {
   setKey,
   SLIPS,
@@ -42,6 +45,13 @@ export function generate(rng: Rng, difficulty: Difficulty): Generated<QuadsPuzzl
   return generateAt(rng.int(0, contentCount - 1), difficulty);
 }
 
+/** The guided first play's board: two plain groups in a fixed order (lib/game/service.ts loadFree). */
+export function practice(): Generated<QuadsPuzzle, QuadsSolution> {
+  const puzzle: QuadsPuzzle = { ref: { game: "quads", i: PRACTICE_INDEX, d: "easy" }, words: PRACTICE_ORDER.slice() };
+  const solution: QuadsSolution = { groups: PRACTICE_GROUPS.map((g, level) => ({ label: g.label, words: g.words.slice(), level })) };
+  return { puzzle, solution, grade: 0 };
+}
+
 /** Pure check of one set of four, for the server guess API. */
 export function checkGuess(p: QuadsPuzzle, s: QuadsSolution, guess: QuadsGuess): QuadsCheck {
   if (!validGuess(p, guess)) return { ok: false, oneAway: false, invalid: true };
@@ -64,7 +74,7 @@ export function replay(p: QuadsPuzzle, s: QuadsSolution, state: QuadsState): Rep
   if (!state || typeof state !== "object" || !Array.isArray(state.guesses)) return { ...out, bad: true };
   const seen = new Set<string>();
   for (const g of state.guesses) {
-    if (out.slips >= SLIPS || out.solved.length === 4 || !validGuess(p, g)) return { ...out, bad: true };
+    if (out.slips >= SLIPS || out.solved.length === s.groups.length || !validGuess(p, g)) return { ...out, bad: true };
     const key = setKey(g);
     if (seen.has(key)) continue;
     seen.add(key);
@@ -77,13 +87,14 @@ export function replay(p: QuadsPuzzle, s: QuadsSolution, state: QuadsState): Rep
 
 export function verify(p: QuadsPuzzle, s: QuadsSolution, state: QuadsState): VerifyResult {
   const r = replay(p, s, state);
-  if (r.bad) return { ok: false, progress: r.solved.length / 4, reason: "malformed or played past the end" };
-  if (r.solved.length === 4) return { ok: true, progress: 1 };
-  return { ok: false, progress: r.solved.length / 4, reason: r.slips >= SLIPS ? "out of slips" : "incomplete" };
+  const n = s.groups.length;
+  if (r.bad) return { ok: false, progress: r.solved.length / n, reason: "malformed or played past the end" };
+  if (r.solved.length === n) return { ok: true, progress: 1 };
+  return { ok: false, progress: r.solved.length / n, reason: r.slips >= SLIPS ? "out of slips" : "incomplete" };
 }
 
 export function progress(p: QuadsPuzzle, s: QuadsSolution, state: QuadsState): number {
-  return replay(p, s, state).solved.length / 4;
+  return replay(p, s, state).solved.length / s.groups.length;
 }
 
 /** Points at two words of the most direct unsolved group, without naming the group. */
@@ -100,6 +111,7 @@ const logic: GuessLogic<QuadsPuzzle, QuadsSolution, QuadsState, QuadsGuess, Quad
   contentCount,
   generate,
   generateAt,
+  practice,
   checkGuess,
   verify,
   progress,

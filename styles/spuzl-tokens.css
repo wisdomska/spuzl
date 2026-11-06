@@ -40,6 +40,14 @@
   /* Ink on chess and draughts squares (SQUARE in games/_shared/BayStyles) and on Board Bay brown: these are the same in
      both themes, so this is not redefined for light. 4.2:1 on the dark square, 15.5:1 on the light one. */
   --square-ink: #0e0f1a;
+  /* Quads difficulty colours (games/quads/Board.tsx), the same in both themes, with --quad-ink on them (6:1 or more).
+     Every level also prints its name (Easy, Medium, Hard, Tricky) and a shape, and the colour-blind modes swap in a
+     colour-blind safe set and add a pattern per level, so colour is never the only signal. */
+  --quad-0: #ffd23f; /* Easy: yellow, circle */
+  --quad-1: #3ddc84; /* Medium: green, triangle */
+  --quad-2: #6fa4ff; /* Hard: blue, square */
+  --quad-3: #b48cff; /* Tricky: purple, diamond */
+  --quad-ink: #0e0f1a;
   /* Board Bay live boards (components/multiplayer/bay/boards.tsx and BayScreen.tsx): board materials, the same in both themes like
      the squares, so these are not redefined for light. Brown is var(--w-board), its depth var(--w-board-ink). */
   --bay-well: #2a1a10; /* oware pits, empty Four Up slots, Flip and Ludo board */
@@ -194,6 +202,14 @@
 }
 
 /* Colour-blind modes swap hues AND turn on glyph/pattern helpers (data-cb also toggles .cb-patterns in components) */
+/* Quads levels in every colour-blind mode: the Okabe-Ito set (yellow, sky blue, orange, reddish purple), which differ
+   in lightness as well as hue for protan, deutan and tritan vision. */
+[data-cb] {
+  --quad-0: #f0e442;
+  --quad-1: #56b4e9;
+  --quad-2: #e69f00;
+  --quad-3: #cc79a7;
+}
 [data-cb="protan"] {
   --danger: #ffb000;
   --accent: #b8f23a;

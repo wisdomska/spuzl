@@ -5,6 +5,8 @@
 import { formatNumber } from "@/lib/format";
 
 const plural = (n: number, one: string, many = `${one}s`) => (n === 1 ? one : many);
+/** Quads: every group of the board found (4 on a real board, 2 on the practice round). */
+const allGroups = (of: number) => (of === 2 ? "Both groups" : of === 4 ? "All four groups" : `All ${of} groups`);
 
 export const quick = {
   quiz: {
@@ -44,18 +46,18 @@ export const quick = {
     summaryTitle: "Your run",
   },
   quads: {
-    /** level 0 (most direct) to 3 (trickiest); always printed next to the colour */
-    levels: ["Easy", "Medium", "Tricky", "Hard"] as const,
+    /** level 0 (most direct) to 3 (trickiest); always printed next to the colour and its shape */
+    levels: ["Easy", "Medium", "Hard", "Tricky"] as const,
     start: "Find four groups of four.",
     startTutorial: "Tap four words that share something, then Submit.",
     starter: (label: string) => `Starter group: ${label}.`,
     checking: "Checking your four…",
     tried: "You tried those four already.",
     offline: "No connection. Submit again.",
-    found: (label: string, level: string, n: number) =>
-      n >= 4 ? `${label} (${level}). All four groups.` : `${label} (${level}). ${n} of 4 groups.`,
-    foundSay: (label: string, level: string, words: string[], n: number) =>
-      `Group found: ${label}, ${level}: ${words.join(", ")}. ${n >= 4 ? "All four groups found." : `${n} of 4 groups.`}`,
+    found: (label: string, level: string, n: number, of = 4) =>
+      n >= of ? `${label} (${level}). ${allGroups(of)}.` : `${label} (${level}). ${n} of ${of} groups.`,
+    foundSay: (label: string, level: string, words: string[], n: number, of = 4) =>
+      `Group found: ${label}, ${level}: ${words.join(", ")}. ${n >= of ? `${allGroups(of)} found.` : `${n} of ${of} groups.`}`,
     oneAway: (left: number) => `One away. ${left} ${plural(left, "slip")} left.`,
     notGroup: (left: number) => `Not a group. ${left} ${plural(left, "slip")} left.`,
     outOfSlips: "Out of slips. The groups stay hidden this time.",

@@ -2,10 +2,16 @@
 import type { PuzzleRef } from "@/games/_shared/guess";
 
 export const SLIPS = 4;
+export const GROUP_SIZE = 4;
+/** Difficulty levels, 0 most direct .. 3 trickiest (yellow, green, blue, purple on the board). */
+export const LEVELS = 4;
+
+/** How many groups a board holds: 4 on a real board, 2 on the practice round. */
+export const groupCount = (p: { words: string[] }) => Math.max(1, Math.floor(p.words.length / GROUP_SIZE));
 
 export interface QuadsPuzzle {
   ref: PuzzleRef;
-  /** the 16 words, shuffled, with no group labels */
+  /** the 16 words (8 on the practice round), shuffled, with no group labels */
   words: string[];
   /** easy days name the most direct group up front */
   starter?: string;
@@ -36,8 +42,8 @@ export const setKey = (words: string[]) => words.slice().sort().join("|");
 export function validGuess(p: QuadsPuzzle, guess: unknown): guess is string[] {
   return (
     Array.isArray(guess) &&
-    guess.length === 4 &&
-    new Set(guess).size === 4 &&
+    guess.length === GROUP_SIZE &&
+    new Set(guess).size === GROUP_SIZE &&
     guess.every((w) => typeof w === "string" && p.words.includes(w))
   );
 }
