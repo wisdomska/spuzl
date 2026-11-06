@@ -123,7 +123,7 @@ describe("18+ party: Draw It round, text filter, reports and moderation", () => 
     expect((await guesser.api(`/api/v1/rooms/${code}/join`, { json: {} })).status).toBe(200);
     expect((await guesser.api(`/api/v1/rooms/${code}/ready`, { json: { ready: true } })).status).toBe(200);
     expect((await host.api(`/api/v1/rooms/${code}/start`, { json: {} })).status).toBe(200);
-    await new Promise((r) => setTimeout(r, 4300)); // countdown
+    await new Promise((r) => setTimeout(r, 5000)); // countdown and the 0.5 s head start (R2-03)
 
     // The host (seat 0) draws first and sees the word; the guesser sees only the blanks.
     const hv = await host.api(`/api/v1/matches/${matchId}`);

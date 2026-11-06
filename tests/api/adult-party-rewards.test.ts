@@ -83,7 +83,7 @@ async function openRoom(players: Player[]) {
   }
   const start = await host.api(`/api/v1/rooms/${code}/start`, { json: {} });
   expect(start.status, JSON.stringify(start.data)).toBe(200);
-  await sleep(4300); // countdown
+  await sleep(5000); // countdown (3-2-1 at 0.8 s, SPUZL! 1.6 s) and the 0.5 s head start (R2-03)
   return { code, matchId };
 }
 

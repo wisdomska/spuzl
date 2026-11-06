@@ -107,7 +107,7 @@ describe("prompt settings (admin cascade)", () => {
     expect((await put("prompts.alertsCooldownDays", 31)).status).toBe(422);
     expect((await put("prompts.lowDataThresholdMs", 1000)).status).toBe(422);
     expect((await put("prompts.alertsTriggers", ["friend", "birthday"])).status).toBe(422);
-    expect((await put("prompts.alertsTriggers", "friend")).status).toBe(422);
+    expect((await put("prompts.alertsTriggers", "friend")).status).toBe(400); // not a list: refused by the request shape
     expect((await put("prompts.alertsTriggers", ["invite", "streak"])).status).toBe(200);
     expect((await put("prompts.lowDataSlowLoads", 3)).status).toBe(200);
 
