@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { body, handle, ok, rateLimit, requirePlayer } from "@/lib/api/server";
 import { cancelBayQueue, joinBayQueue, pollBayQueue } from "@/lib/multiplayer/server/bayQueue";
+import { requireLivePlay } from "@/lib/multiplayer/server/liveGate";
+import { bayLive } from "@/lib/copy/bay-live";
 
 export const dynamic = "force-dynamic";
 
@@ -20,9 +22,10 @@ export const POST = handle(async (req: Request) => {
   return ok(await joinBayQueue(admin, player, game, minutes, ludo, seats));
 });
 
-/** GET /api/v1/bay/queue: poll while searching (about once a second). Pairs as soon as someone fits. */
+/** GET /api/v1/bay/queue: poll while searching (about once a second). Pairs as soon as someone fits. 16+ only, like joining. */
 export const GET = handle(async () => {
   const { admin, player } = await requirePlayer();
+  requireLivePlay(player, bayLive.ageRestricted);
   await rateLimit(admin, `bay-queue-poll:${player.id}`, 120, 60);
   return ok(await pollBayQueue(admin, player.id));
 });

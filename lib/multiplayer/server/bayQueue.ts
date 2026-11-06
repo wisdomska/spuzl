@@ -7,6 +7,7 @@ import { bayLive } from "@/lib/copy/bay-live";
 import { clockMinutes, initialState, isBayGame, loadRules, type BayGame } from "../bay";
 import { BAY_QUEUE, blockedPair, isLive, pickBayOpponent, searchTimedOut, seatOrder, type BayQueueEntry } from "../bayMatchmaking";
 import { readRating } from "./rewards";
+import { requireLivePlay } from "./liveGate";
 
 /**
  * Board Bay "Play live": a server-side queue per game and time control (table board_queue, one entry per player);
@@ -73,7 +74,7 @@ export async function joinBayQueue(
   ludo?: Kicks,
   wantSeats?: number,
 ) {
-  if (player.age_band === "13-15") throw new ApiError(403, "age_restricted", bayLive.ageRestricted);
+  requireLivePlay(player, bayLive.ageRestricted);
   if (!isBayGame(game)) throw new ApiError(400, "not_board_game");
   const clock = clockMinutes(game, minutes) * 60_000;
   const rules = rulesKey(game, ludo);

@@ -9,6 +9,7 @@ import { Sheet } from "@/components/meta/Sheet";
 import { useMe } from "@/lib/client/api";
 import { useSettings } from "@/lib/settings/store";
 import { challengeLinks, isRaceGame } from "@/lib/multiplayer/games";
+import { canPlayLive } from "@/lib/multiplayer/liveGate";
 import { partyCopy } from "@/lib/copy/party";
 
 /*
@@ -35,7 +36,7 @@ export function GameChallengeSheet({
   onBeatMyTime?: () => void;
 }) {
   const me = useMe();
-  const youngster = me.data?.age_band === "13-15";
+  const youngster = !!me.data && !canPlayLive(me.data);
   const live = useCanChallenge(meta);
   const links = challengeLinks(meta.id);
   const c = partyCopy.challenge;

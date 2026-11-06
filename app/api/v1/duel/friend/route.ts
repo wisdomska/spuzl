@@ -9,5 +9,5 @@ export const POST = handle(async (req: Request) => {
   const { admin, player } = await requirePlayer();
   await rateLimit(admin, `friend-duel:${player.id}`, 20, 600);
   const { game } = await body(req, Friend);
-  return ok(await friendDuel(admin, player.id, game));
+  return ok(await friendDuel(admin, player.id, game, player.age_band));
 });

@@ -4,17 +4,16 @@ import { whenQuiet } from "@/lib/perf/quiet";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { GAMES, LAB_GAMES, WORLDS, WORLD_BY_ID, type GameMeta, type WorldId } from "@/lib/catalog";
+import { GAMES, LAB_GAMES, WORLD_BY_ID, type GameMeta } from "@/lib/catalog";
 import { Icon } from "@/components/ui/Icon";
 import { GameIcon3D } from "@/components/world/GameIcon3D";
 import { GameCard } from "@/components/library/GameCard";
 import { useMe } from "@/lib/client/api";
 import { useGamesMeta } from "@/lib/games-meta/client";
-import { durationLabel, matchesQuery, TAGS, type Tag } from "@/lib/games-meta";
+import { durationLabel, filterGames, type GameFilter } from "@/lib/games-meta";
+import { GameFilterChips, GameSearchField } from "@/components/library/GameFilters";
 import { useGameSettings } from "@/lib/game-settings/client";
 import { libraryCopy as T } from "@/lib/copy/library";
-
-type Filter = "all" | Tag | WorldId;
 
 /**
  * All games (SPZ-14): search, one row of filter chips, and one tap per game that opens its card
@@ -25,7 +24,7 @@ export default function Library() {
   const me = useMe();
   const meta = useGamesMeta();
   const prefetch = useGameSettings()["perf.prefetch"];
-  const [filter, setFilter] = useState<Filter>("all");
+  const [filter, setFilter] = useState<GameFilter>("all");
   const [q, setQ] = useState("");
   const [open, setOpen] = useState<GameMeta | null>(null);
   const dailiesOn = useGameSettings()["features.dailies"];
@@ -35,18 +34,7 @@ export default function Library() {
     : Object.fromEntries((me.data?.played ?? []).map((id) => [id, 1]));
 
   const labOn = useGameSettings()["features.newGames"];
-  const list = useMemo(
-    () =>
-      [...GAMES, ...(labOn ? LAB_GAMES : [])].filter((g) => {
-        if (filter !== "all") {
-          if ((TAGS as readonly string[]).includes(filter)) {
-            if (!meta[g.id]?.tags.includes(filter as Tag)) return false;
-          } else if (g.world !== filter) return false;
-        }
-        return !q || matchesQuery(`${g.name} ${WORLD_BY_ID[g.world].name} ${g.blurb}`, q);
-      }),
-    [filter, q, meta, labOn],
-  );
+  const list = useMemo(() => filterGames([...GAMES, ...(labOn ? LAB_GAMES : [])], filter, q, meta), [filter, q, meta, labOn]);
 
   // SPZ-01: warm the first rows' play routes while the list is idle.
   useEffect(() => {
@@ -59,12 +47,6 @@ export default function Library() {
       live = false;
     };
   }, [list, prefetch, router]);
-
-  const chips: { id: Filter; label: string; title?: string; color?: string }[] = [
-    { id: "all", label: T.all },
-    ...TAGS.map((t) => ({ id: t as Filter, label: T.tag[t], title: T.tagHelp[t] })),
-    ...WORLDS.map((w) => ({ id: w.id as Filter, label: w.name, color: w.color })),
-  ];
 
   return (
     <main className="bg-bg mx-auto flex min-h-dvh max-w-[560px] flex-col lg:max-w-[1180px]">
@@ -82,54 +64,8 @@ export default function Library() {
             <p className="text-muted text-[14px] leading-[1.35]">{T.subtitle}</p>
           </div>
         </div>
-        <div className="bg-surface focus-within:ring-accent flex h-12 items-center gap-2.5 rounded-[16px] px-3.5 focus-within:ring-2">
-          <Icon name="magnifying-glass" size={20} className="text-muted shrink-0" />
-          <input
-            type="search"
-            aria-label={T.search}
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder={T.searchPlaceholder}
-            className="placeholder:text-muted min-w-0 flex-1 bg-transparent text-[16px] outline-none focus-visible:shadow-none focus-visible:outline-none [&::-webkit-search-cancel-button]:hidden"
-            enterKeyHint="search"
-            autoComplete="off"
-          />
-          {q && (
-            <button
-              type="button"
-              aria-label={T.clear}
-              onClick={() => setQ("")}
-              className="press -mr-1.5 flex size-11 items-center justify-center"
-            >
-              <Icon name="x" size={18} className="text-muted" />
-            </button>
-          )}
-        </div>
-        <div className="edge-fade -mx-4">
-          <div role="group" aria-label={T.filters} className="no-scrollbar flex gap-1.5 overflow-x-auto px-4">
-            {chips.map((c) => {
-              const on = filter === c.id;
-              return (
-                <button
-                  key={c.id}
-                  type="button"
-                  aria-pressed={on}
-                  title={c.title}
-                  onClick={() => setFilter(on && c.id !== "all" ? "all" : c.id)}
-                  className="press flex h-10 shrink-0 items-center gap-1.5 rounded-[12px] px-3.5 text-[14px] font-semibold whitespace-nowrap"
-                  style={
-                    on
-                      ? { background: c.color ?? "var(--accent)", color: c.color ? "var(--bg)" : "var(--on-accent)" }
-                      : { background: "var(--surface)", color: "var(--text-muted)" }
-                  }
-                >
-                  {c.color && !on && <span aria-hidden className="size-2.5 rounded-full" style={{ background: c.color }} />}
-                  {c.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <GameSearchField value={q} onChange={setQ} />
+        <GameFilterChips value={filter} onChange={setFilter} />
         <p className="text-muted text-[13px] font-medium" aria-live="polite">
           {T.count(list.length)}
         </p>

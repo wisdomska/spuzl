@@ -55,6 +55,13 @@ export const KEY_EVENTS = [
 ] as const;
 export type KeyEvent = (typeof KEY_EVENTS)[number];
 
+/**
+ * First-party events the server records itself (lib/analytics/server.ts) into the same table, because only the
+ * server knows the facts: never sent from a client, and POST /api/v1/metrics refuses them.
+ *   duel_created  { band, kind: "friend" | "quick" }  admin Metrics "Duels created by age band" (R2-02)
+ */
+export const SERVER_EVENTS = ["duel_created"] as const;
+
 export type Props = Record<string, string | number | boolean | null | undefined>;
 
 const BLOCKED_KEY =

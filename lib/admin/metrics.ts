@@ -62,6 +62,13 @@ export interface MetricRow {
   prompt_dismissed?: number;
   /** Per "<prompt>.<trigger>" (lib/prompts/ids.ts). */
   prompts?: Record<string, PromptCounts>;
+  /** R2-02: duels created, by kind and the creator's age band (server recorded duel_created; 20261130100201). */
+  duels_friend_1315?: number;
+  duels_friend_1617?: number;
+  duels_friend_18?: number;
+  duels_quick_1315?: number;
+  duels_quick_1617?: number;
+  duels_quick_18?: number;
 }
 
 export interface PromptCounts {
@@ -106,6 +113,7 @@ export const METRIC_IDS = [
   "party_first_move",
   "hints",
   "duels",
+  "duel_bands",
   "daily",
   "shares",
   "prompts",
@@ -137,6 +145,11 @@ const n = (v: number) => v.toLocaleString("en-US");
  */
 export const hintCancels = (r: MetricRow) => Math.max(0, (r.hint_requests ?? 0) - (r.hint_uses ?? 0)) + (r.hint_cancels ?? 0);
 const accidental = (r: MetricRow) => rate(r.hinted_abandoned + hintCancels(r), r.hinted + hintCancels(r));
+/** Duels created (duel_created), missing fields from older API rows count as 0. */
+export const friendDuels = (r: MetricRow) => (r.duels_friend_1315 ?? 0) + (r.duels_friend_1617 ?? 0) + (r.duels_friend_18 ?? 0);
+export const quickDuels = (r: MetricRow) => (r.duels_quick_1315 ?? 0) + (r.duels_quick_1617 ?? 0) + (r.duels_quick_18 ?? 0);
+const createdDuels = (r: MetricRow) => friendDuels(r) + quickDuels(r);
+const under16Duels = (r: MetricRow) => (r.duels_friend_1315 ?? 0) + (r.duels_quick_1315 ?? 0);
 /** Onboarding completion: of new players who reached the age step, the share that reached Home. */
 const onboarded = (r: MetricRow) => rate(r.onboarding_home ?? 0, r.onboarding_age ?? 0);
 
@@ -253,6 +266,24 @@ export const METRICS: readonly MetricDef[] = [
       { key: "matchmade", label: "Matchmade", value: (r) => r.duels_matchmade },
       { key: "bot", label: "Bot", value: (r) => r.duels_bot },
       { key: "bot_fallback_pct", label: "Bot %", value: (r) => rate(r.duels_bot, r.duels_matchmade) },
+    ],
+  },
+  {
+    id: "duel_bands",
+    title: "Duels created by age band",
+    note: "Duels created in the range, by how (Challenge a friend or a Quick Match pairing) and the creator's age band, recorded by the server (duel_created). Under-16 Quick Match should always be 0: the server refuses it.",
+    headline: (t) => n(createdDuels(t)),
+    sub: (t) =>
+      `${n(friendDuels(t))} friend · ${n(quickDuels(t))} Quick Match · under 16 ${pct(rate(under16Duels(t), createdDuels(t)))} (${n(under16Duels(t))})`,
+    cols: [
+      { key: "friend_13_15", label: "Friend 13-15", value: (r) => r.duels_friend_1315 ?? 0 },
+      { key: "friend_16_17", label: "Friend 16-17", value: (r) => r.duels_friend_1617 ?? 0 },
+      { key: "friend_18_plus", label: "Friend 18+", value: (r) => r.duels_friend_18 ?? 0 },
+      { key: "quick_13_15", label: "Quick 13-15", value: (r) => r.duels_quick_1315 ?? 0 },
+      { key: "quick_16_17", label: "Quick 16-17", value: (r) => r.duels_quick_1617 ?? 0 },
+      { key: "quick_18_plus", label: "Quick 18+", value: (r) => r.duels_quick_18 ?? 0 },
+      { key: "created", label: "Created", value: createdDuels },
+      { key: "under_16_pct", label: "Under 16 %", value: (r) => rate(under16Duels(r), createdDuels(r)) },
     ],
   },
   {

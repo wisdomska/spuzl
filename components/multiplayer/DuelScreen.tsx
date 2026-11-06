@@ -22,6 +22,7 @@ import { useGameSettings } from "@/lib/game-settings/client";
 import { duelCopy } from "@/lib/copy/duel";
 import { botProgress, duelPhase, inRulesBreak, roundOutcomes, BOT_ID } from "@/lib/multiplayer/duel";
 import { gameName, raceGameParam } from "@/lib/multiplayer/games";
+import { canPlayLive } from "@/lib/multiplayer/liveGate";
 import { DUEL_ROUNDS, TIMING, type EmoteId } from "@/lib/multiplayer/constants";
 import type { MatchView } from "@/lib/multiplayer/types";
 import { GAME_BY_ID } from "@/lib/catalog";
@@ -82,8 +83,8 @@ function DuelLobby({
   const back = useBackOrHome();
   const me = useMe();
   const relaxed = useSettings((s) => s.relaxed);
-  // No game is picked for the player: "Select game" until they choose one (or Any game).
-  const [game, setGame] = useState<string | null | undefined>(initialGame ?? undefined);
+  // R2-02: Any game by default (null), so Challenge a friend and Quick Match are never disabled.
+  const [game, setGame] = useState<string | null>(initialGame);
   const [mode, setMode] = useState<"sheet" | "search" | "friend" | "code">("sheet");
   const [codeBusy, setCodeBusy] = useState(false);
   const [waited, setWaited] = useState(0);
@@ -141,7 +142,6 @@ function DuelLobby({
   }, [mode, friend, router]);
 
   const quick = async (rulesSeen = false) => {
-    if (game === undefined) return;
     try {
       since.current = Date.now();
       setWaited(0);
@@ -178,7 +178,6 @@ function DuelLobby({
   };
   const friends = useFriends(!!friendName);
   const challengeFriend = async () => {
-    if (game === undefined) return;
     try {
       const r = await api<{ matchId: string; code: string }>("/api/v1/duel/friend", { json: { game } });
       setFriend(r);
@@ -239,7 +238,7 @@ function DuelLobby({
       {mode === "search" && (
         <Matchmaking
           rating={rating}
-          game={game ?? null}
+          game={game}
           waitedMs={waited}
           searching={searching}
           color={me.data?.avatar_color ?? "#B8F23A"}
@@ -253,11 +252,11 @@ function DuelLobby({
           <div className="flex items-center gap-3">
             <TopButton icon="arrow-left" label="Back" onClick={cancel} />
             <h1 className="font-display min-w-0 truncate text-[22px] font-black">
-              {friendName ? `Challenge ${friendName}` : "Challenge a friend"}
+              {friendName ? duelCopy.friendNamed(friendName) : duelCopy.friend}
             </h1>
           </div>
           <p className="text-muted text-[16px]">
-            Unranked. {game ? gameName(game) : "Any game"}, best of 3. The duel starts the moment they join.
+            Unranked. {game ? gameName(game) : duelCopy.anyGame}, best of 3. The duel starts the moment they join.
           </p>
           <ShareCode code={friend.code} url={`/duel?code=${friend.code}`} text="Duel me on SPUZL. Best of 3." />
           <InviteFriends kind="duel" target={friend.matchId} />
@@ -293,7 +292,7 @@ function DuelLobby({
           onCode={() => setMode("code")}
           onClose={back}
           friendName={friendName}
-          youngster={me.data?.age_band === "13-15"}
+          live={me.data ? canPlayLive(me.data) : null}
         />
       )}
     </Screen>

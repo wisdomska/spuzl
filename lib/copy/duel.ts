@@ -18,6 +18,33 @@ export const duelCopy = {
     failed: "Couldn't check that code. Try again.",
   },
   back: "Back",
+  // R2-02: the entry sheet's two ways to duel, and the game row.
+  quick: "Quick Match",
+  quickSub: "Ranked. Best of 3.",
+  quickRating: "Rating",
+  /** under 16: Quick Match shows as a muted, locked note, never as a button */
+  quickLocked: "Opens at 16",
+  quickLockedLabel: "Quick Match opens at 16",
+  /** the server's answer when an under-16 account asks for Quick Match anyway */
+  quickRefused: "Quick Match opens at 16. Challenge a friend instead.",
+  friend: "Challenge a friend",
+  friendNamed: (name: string) => `Challenge ${name}`,
+  friendSub: "Unranked. Send them a code or link.",
+  anyGame: "Any game",
+  gameRow: "Game",
+  gameRowLabel: (name: string) => `Game: ${name}. Change game`,
+  picker: {
+    title: "Pick a game",
+    body: "Search or filter, then tap a game.",
+    searchPlaceholder: (n: number) => `Search ${n} games`,
+    any: "Any game",
+    anySub: "A different game each round",
+    selected: "Selected",
+    close: "Close",
+    count: (n: number) => (n === 1 ? "1 game" : `${n} games`),
+    empty: "No games match. Try another word or filter.",
+    showAll: "Show all games",
+  },
   roundTitle: (round: number, who: "me" | "them" | "draw", them: string) =>
     who === "draw" ? `Round ${round}: dead level` : who === "me" ? `Round ${round}: you win` : `Round ${round}: ${them} wins`,
   nextRound: "Next round",

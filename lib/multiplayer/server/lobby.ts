@@ -16,6 +16,9 @@ import { knownGames } from "./known";
 import { GAME_BY_ID } from "@/lib/catalog";
 import { isAdultMode, type PartyMode } from "@/lib/party-adult/modes";
 import { clearRounds, isAdultRoom, startAdult } from "./adult";
+import { requireLivePlay } from "./liveGate";
+import { recordDuelCreated } from "@/lib/analytics/server";
+import { duelCopy } from "@/lib/copy/duel";
 
 const iso = (n: number) => new Date(n).toISOString();
 const secureRandom = () => randomInt(0, CODE_ALPHABET.length) / CODE_ALPHABET.length;
@@ -44,7 +47,7 @@ async function addPlayer(admin: SupabaseClient, matchId: string, playerId: strin
 /* ---------------- Duel: matchmaking ---------------- */
 
 export async function enqueue(admin: SupabaseClient, player: { id: string; age_band: string }, game: string | null, rulesSeen = false) {
-  if (player.age_band === "13-15") throw new ApiError(403, "age_restricted", "Quick Match opens at 16. Challenge a friend instead.");
+  requireLivePlay(player, duelCopy.quickRefused);
   if (game && !isRaceGame(game)) throw new ApiError(400, "game_not_duelable");
   // A ranked game the player has never cleared or learned: read the rules first (the client shows a 20 s rules card).
   if (game && !rulesSeen && !(await knownGames(admin, [player.id], [game])).get(player.id)?.has(game))
@@ -63,10 +66,11 @@ export async function enqueue(admin: SupabaseClient, player: { id: string; age_b
     enqueued_at: iso(Date.now()),
     match_id: null,
   });
-  return pollQueue(admin, player.id);
+  return pollQueue(admin, player.id, player.age_band);
 }
 
-export async function pollQueue(admin: SupabaseClient, playerId: string) {
+/** `band`: the polling player's effective band, recorded with the duel when this poll pairs them (admin Metrics). */
+export async function pollQueue(admin: SupabaseClient, playerId: string, band: string) {
   const { data: mine } = await admin.from("matchmaking_queue").select("*").eq("player_id", playerId).maybeSingle();
   if (!mine) return { status: "idle" as const };
   const rating = Math.round(Number(mine.rating));
@@ -98,7 +102,10 @@ export async function pollQueue(admin: SupabaseClient, playerId: string) {
   const opp = pickOpponent(me, (others ?? []).map(toEntry), now);
   if (opp) {
     const matchId = await createDuel(admin, [me.playerId, opp.playerId], me.gameId ?? opp.gameId, { rated: true, claim: true });
-    if (matchId) return { status: "matched" as const, matchId, rating, waitedMs: waited };
+    if (matchId) {
+      await recordDuelCreated(admin, band, "quick");
+      return { status: "matched" as const, matchId, rating, waitedMs: waited };
+    }
   }
   // Live data only (SPZ-12): how many others are searching right now. No estimated wait is shown.
   return { status: "searching" as const, rating, waitedMs: waited, searching: (others ?? []).length };
@@ -172,7 +179,8 @@ export async function practiceBot(admin: SupabaseClient, playerId: string, game:
 
 /* ---------------- Duel: challenge a friend (unranked, by link) ---------------- */
 
-export async function friendDuel(admin: SupabaseClient, playerId: string, game: string | null) {
+/** `band`: the host's effective band, recorded with the duel (admin Metrics). */
+export async function friendDuel(admin: SupabaseClient, playerId: string, game: string | null, band: string) {
   if (game && !isRaceGame(game)) throw new ApiError(400, "game_not_duelable");
   const id = randomUUID();
   const games = pickGames(createRng(`duel:${id}`), game, DUEL_ROUNDS);
@@ -188,6 +196,7 @@ export async function friendDuel(admin: SupabaseClient, playerId: string, game: 
     best_of: DUEL_ROUNDS,
   });
   await addPlayer(admin, id, playerId, 0, { ready: true });
+  await recordDuelCreated(admin, band, "friend");
   return { matchId: row.id, code: row.code };
 }
 

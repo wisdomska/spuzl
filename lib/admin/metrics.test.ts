@@ -186,3 +186,20 @@ describe("prompt acceptance by trigger (R2-04)", () => {
     expect(lines).toContain("total,low_data,slow_net,0,0,0,");
   });
 });
+
+describe("duels created by age band (R2-02)", () => {
+  it("splits friend and Quick Match duels by band, with the under-16 share", () => {
+    const total = row({ duels_friend_1315: 3, duels_friend_1617: 1, duels_friend_18: 2, duels_quick_1617: 1, duels_quick_18: 3 });
+    const csv = metricCsv("duel_bands", { rows: [{ ...row({ duels_friend_1315: 1 }), date: "2026-11-05" }], total })
+      .trimEnd()
+      .split("\r\n");
+    expect(csv[0]).toBe("date,friend_13_15,friend_16_17,friend_18_plus,quick_13_15,quick_16_17,quick_18_plus,created,under_16_pct");
+    expect(csv[1]).toBe("2026-11-05,1,0,0,0,0,0,1,100");
+    expect(csv[2]).toBe("total,3,1,2,0,1,3,10,30");
+    expect(METRIC_BY_ID.duel_bands.headline(total)).toBe("10");
+    expect(METRIC_BY_ID.duel_bands.sub(row())).toContain("under 16 n/a");
+  });
+  it("reads rows from before the migration (no band fields) as 0", () => {
+    expect(metricCsv("duel_bands", { rows: [], total: row() }).trimEnd().split("\r\n")[1]).toBe("total,0,0,0,0,0,0,0,");
+  });
+});

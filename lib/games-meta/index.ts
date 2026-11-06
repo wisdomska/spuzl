@@ -3,7 +3,7 @@
  * These are the defaults; the admin console can override them per game (games.typical_sec and games.tags),
  * read at runtime through useGamesMeta().
  */
-import { GAMES, GAME_BY_ID, LAB_GAMES } from "@/lib/catalog";
+import { GAMES, GAME_BY_ID, LAB_GAMES, WORLD_BY_ID, type GameMeta, type WorldId } from "@/lib/catalog";
 import { isRaceGame } from "@/lib/multiplayer/games";
 
 export const TAGS = ["quick", "calm", "competitive"] as const;
@@ -128,4 +128,24 @@ export function matchesQuery(text: string, q: string): boolean {
   const words = norm(q).split(/\s+/).filter(Boolean);
   const t = norm(text);
   return words.every((w) => t.includes(w));
+}
+
+/** One Library filter chip: All, a tag, or a world. Shared by All games and the Duel game picker. */
+export type GameFilter = "all" | Tag | WorldId;
+
+/** The Library's filter and search over a list of games (the same rule wherever the filters appear). */
+export function filterGames<G extends Pick<GameMeta, "id" | "name" | "world" | "blurb">>(
+  games: readonly G[],
+  filter: GameFilter,
+  q: string,
+  meta: Record<string, GameMetaRow | undefined>,
+): G[] {
+  return games.filter((g) => {
+    if (filter !== "all") {
+      if (isTag(filter)) {
+        if (!meta[g.id]?.tags.includes(filter)) return false;
+      } else if (g.world !== filter) return false;
+    }
+    return !q || matchesQuery(`${g.name} ${WORLD_BY_ID[g.world].name} ${g.blurb}`, q);
+  });
 }

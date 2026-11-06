@@ -8,6 +8,7 @@ import { bayLive } from "@/lib/copy/bay-live";
 import { AnimatePresence, motion } from "motion/react";
 import { Icon } from "@/components/ui/Icon";
 import { AddFriend } from "./AddFriend";
+import { GamePickerSheet } from "./GamePickerSheet";
 import { Spuz, type SpuzMood } from "@/components/brand/Spuz";
 import { play } from "@/lib/audio";
 import { formatClock, formatNumber } from "@/lib/format";
@@ -35,6 +36,52 @@ import {
 
 /* ---------------- M1 Duel entry sheet ---------------- */
 
+/** One way to duel: the primary (lemon) or the secondary (raised) card. Both are real, enabled buttons. */
+function DuelOption({
+  primary,
+  icon,
+  title,
+  sub,
+  onClick,
+}: {
+  primary: boolean;
+  icon: string;
+  title: string;
+  sub: React.ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`toy flex min-h-11 items-center gap-3.5 rounded-[22px] p-[18px] text-left ${primary ? "" : "bg-surface-raised [--btn-depth:var(--depth)]"}`}
+      style={
+        primary
+          ? {
+              background: "var(--accent)",
+              color: "var(--on-accent)",
+              ["--btn-depth" as string]: "var(--accent-depth)",
+              boxShadow: "0 6px 0 var(--accent-depth)",
+            }
+          : { boxShadow: "0 6px 0 var(--depth)" }
+      }
+    >
+      <Icon name={icon} size={32} className={primary ? undefined : "text-accent"} />
+      <span className="flex flex-1 flex-col">
+        <span className="font-display text-[19px] font-black">{title}</span>
+        <span className={`text-[15px] font-medium ${primary ? "" : "text-muted"}`}>{sub}</span>
+      </span>
+      <Icon name="caret-right" size={20} className={primary ? undefined : "text-muted"} />
+    </button>
+  );
+}
+
+/**
+ * R2-02: the Duel entry. "Game: <name> ▸" opens the full-height game picker (Any game by default, so the
+ * buttons are never disabled). 16+: Quick Match is the primary action and Challenge a friend the second. Under 16
+ * (and while the age band is unknown): Challenge a friend is the primary action and Quick Match is only a muted
+ * note with a lock, "Opens at 16", never a button. The server refuses Quick Match to under-16s whatever the screen.
+ */
 export function DuelEntrySheet({
   game,
   setGame,
@@ -43,11 +90,11 @@ export function DuelEntrySheet({
   onFriend,
   onCode,
   onClose,
-  youngster,
+  live,
   friendName,
 }: {
-  /** a race game, null for Any game, undefined until the player picks (no game is chosen for them) */
-  game: string | null | undefined;
+  /** a race game, or null for Any game */
+  game: string | null;
   setGame: (g: string | null) => void;
   rating: number;
   onQuick: () => void;
@@ -57,12 +104,14 @@ export function DuelEntrySheet({
   /** open the friend's-code box */
   onCode: () => void;
   onClose: () => void;
-  youngster: boolean;
+  /** may play Quick Match (16+); null while the profile loads */
+  live: boolean | null;
 }) {
   const reduce = useReduce();
   const [picking, setPicking] = useState(false);
-  const named = game ? gameName(game) : "Select game";
-  const chosen = game !== undefined;
+  const named = game ? gameName(game) : duelCopy.anyGame;
+  const quickFirst = live === true && !friendName;
+  const friendTitle = friendName ? duelCopy.friendNamed(friendName) : duelCopy.friend;
   // A page, not a modal: /duel is often opened straight from a shared link or the home screen, so
   // there is nothing behind it to dim. The app background, a Back header and the panel docked below.
   return (
@@ -83,122 +132,46 @@ export function DuelEntrySheet({
         <div className="flex items-center gap-3">
           <Icon name="sword" size={28} className="text-accent" />
           <h1 id="duel-title" className="font-display text-[26px] font-black">
-            {friendName ? `Challenge ${friendName}` : duelCopy.entryTitle}
+            {friendName ? duelCopy.friendNamed(friendName) : duelCopy.entryTitle}
           </h1>
         </div>
-        <div className="bg-bg flex gap-2 rounded-[16px] p-1" role="radiogroup" aria-label="Game">
-          <button
-            type="button"
-            role="radio"
-            aria-checked={typeof game === "string"}
-            onClick={() => (typeof game === "string" ? setPicking((p) => !p) : setPicking(true))}
-            className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-[12px] text-[15px] font-semibold"
-            style={
-              typeof game === "string"
-                ? { background: "var(--surface-raised)" }
-                : game === undefined
-                  ? { boxShadow: "inset 0 0 0 2px var(--accent)", color: "var(--accent)" }
-                  : { color: "var(--text-muted)" }
+        <button
+          type="button"
+          onClick={() => setPicking(true)}
+          aria-haspopup="dialog"
+          aria-label={duelCopy.gameRowLabel(named)}
+          className="press bg-bg flex min-h-12 items-center gap-2 rounded-[16px] px-4 text-left text-[15px]"
+        >
+          <span className="text-muted font-semibold">{duelCopy.gameRow}:</span>
+          <span className="min-w-0 flex-1 truncate font-bold">{named}</span>
+          <Icon name="caret-right" size={18} className="text-accent shrink-0" />
+        </button>
+        <GamePickerSheet open={picking} onOpenChange={setPicking} value={game} onPick={setGame} />
+        {quickFirst && (
+          <DuelOption
+            primary
+            icon="lightning"
+            title={duelCopy.quick}
+            onClick={onQuick}
+            sub={
+              <>
+                {duelCopy.quickSub} {duelCopy.quickRating} <span className="num">{formatNumber(rating)}</span>.
+              </>
             }
-          >
-            {named}
-            <Icon name="caret-down" size={14} />
-          </button>
-          <button
-            type="button"
-            role="radio"
-            aria-checked={game === null}
-            onClick={() => {
-              setGame(null);
-              setPicking(false);
-            }}
-            className="flex h-11 flex-1 items-center justify-center rounded-[12px] text-[15px] font-semibold"
-            style={game === null ? { background: "var(--surface-raised)" } : { color: "var(--text-muted)" }}
-          >
-            Any game
-          </button>
-        </div>
-        {picking && (
-          <div className="grid max-h-[180px] grid-cols-3 gap-2 overflow-y-auto" role="listbox" aria-label="Pick a game">
-            {RACE_GAMES.map((g) => (
-              <button
-                key={g.id}
-                type="button"
-                role="option"
-                aria-selected={game === g.id}
-                onClick={() => {
-                  setGame(g.id);
-                  setPicking(false);
-                }}
-                className="press bg-surface-raised h-11 rounded-[12px] px-2 text-[14px] font-semibold"
-                style={game === g.id ? { boxShadow: "inset 0 0 0 2px var(--accent)" } : undefined}
-              >
-                {g.name}
-              </button>
-            ))}
-          </div>
+          />
         )}
-        {!chosen && (
-          <p className="text-muted text-[14px]" role="status">
-            Pick a game (or Any game) to start.
+        <DuelOption primary={!quickFirst} icon="user-plus" title={friendTitle} sub={duelCopy.friendSub} onClick={onFriend} />
+        <DuelOption primary={false} icon="keyboard" title={duelCopy.code.open} sub={duelCopy.code.openSub} onClick={onCode} />
+        {live === false && !friendName && (
+          // Not a button and not styled like one: a quiet note so nobody reads it as a broken primary action.
+          <p className="text-muted flex min-h-11 items-center gap-2.5 px-1 text-[15px]">
+            <Icon name="lock-simple" size={20} className="shrink-0" />
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="font-semibold">{duelCopy.quick}</span>
+              <span className="text-[13px] font-medium">{duelCopy.quickLocked}</span>
+            </span>
           </p>
         )}
-        {!friendName && (
-          <button
-            type="button"
-            onClick={onQuick}
-            disabled={youngster || !chosen}
-            className="toy flex items-center gap-3.5 rounded-[22px] p-[18px] text-left"
-            style={{
-              background: "var(--accent)",
-              color: "var(--on-accent)",
-              ["--btn-depth" as string]: "var(--accent-depth)",
-              boxShadow: "0 6px 0 var(--accent-depth)",
-            }}
-          >
-            <Icon name="lightning" size={32} />
-            <span className="flex flex-1 flex-col">
-              <span className="font-display text-[19px] font-black">Quick Match</span>
-              <span className="text-[15px] font-medium">
-                {youngster ? (
-                  "Opens at 16. Challenge a friend."
-                ) : (
-                  <>
-                    Ranked. Rating <span className="num">{formatNumber(rating)}</span>. Best of 3.
-                  </>
-                )}
-              </span>
-            </span>
-            <Icon name="caret-right" size={20} />
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={onFriend}
-          disabled={!chosen}
-          className="toy bg-surface-raised flex items-center gap-3.5 rounded-[22px] p-[18px] text-left [--btn-depth:var(--depth)]"
-          style={{ boxShadow: "0 6px 0 var(--depth)" }}
-        >
-          <Icon name="user-plus" size={32} className="text-accent" />
-          <span className="flex flex-1 flex-col">
-            <span className="font-display text-[19px] font-black">{friendName ? `Challenge ${friendName}` : "Challenge a friend"}</span>
-            <span className="text-muted text-[15px] font-medium">Unranked. Send them a link.</span>
-          </span>
-          <Icon name="caret-right" size={20} className="text-muted" />
-        </button>
-        <button
-          type="button"
-          onClick={onCode}
-          className="toy bg-surface-raised flex items-center gap-3.5 rounded-[22px] p-[18px] text-left [--btn-depth:var(--depth)]"
-          style={{ boxShadow: "0 6px 0 var(--depth)" }}
-        >
-          <Icon name="keyboard" size={32} className="text-accent" />
-          <span className="flex flex-1 flex-col">
-            <span className="font-display text-[19px] font-black">{duelCopy.code.open}</span>
-            <span className="text-muted text-[15px] font-medium">{duelCopy.code.openSub}</span>
-          </span>
-          <Icon name="caret-right" size={20} className="text-muted" />
-        </button>
         {/* Board games are played in Board Bay, not Duel: point there for live chess, draughts and the rest. */}
         <Link href="/bay" className="press flex min-h-11 items-center gap-2.5 rounded-[14px] px-1 text-[15px] font-semibold">
           <Icon name="horse" size={20} className="text-accent" />
