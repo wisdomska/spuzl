@@ -1,5 +1,40 @@
 # Changelog
 
+## 1.35.0 (6 November 2026)
+
+### For players
+
+- **Daily Five.** Five quick shared puzzles every day: one from each world plus a bonus. Everyone gets the same
+  five, they reset at midnight GMT, and they take about five minutes.
+  - The card sits above the map on Home, with your progress ring and combined score.
+  - Finish all five to share an emoji grid with your friends, and open `/daily` to see today's five.
+- **Party rounds start cleanly.** Chat and other sheets close when a game starts, and the same 3-2-1-SPUZL!
+  countdown as Duel runs before anyone can move.
+  - Results list players in rank order with "You" highlighted.
+  - "Next game (2 of 3)" leads until the set ends; "Run it back" leads after the last game.
+- **Fewer pop-ups.**
+  - SPUZL asks about notifications only after something worth an alert happens: your first friend, a Duel or
+    Party invite, or a 3-day streak. It never asks on Home or during a game.
+  - The low-data tip only appears after slow loads you actually had.
+  - You never get two prompts on one screen.
+- **Duel for under-16s.**
+  - "Challenge a friend" is the main button and works with "Any game".
+  - Quick Match shows "Opens at 16" instead of a greyed-out button.
+  - Picking a game opens a full-height list with the Library's search and filters.
+- **Friends-only rooms for under-16 hosts.** Only the host's friends can join their Party room or friend duel
+  with the code. Anyone else can ask to join, and the host lets them in or says no.
+
+### For admins
+
+- **Daily Five page:** preview, auto-pick or hand-pick each day, lock a day, run the scheduler, and export or
+  import the schedule as JSON.
+- **Moderation:** a "Daily Five only" filter for fast solves, and a Join requests log for under-16 rooms with CSV
+  export.
+- **New settings:** Daily Five (on/off, reset hour, difficulty, worlds and bonus pool), countdown length,
+  notification triggers and cooldown, low-data thresholds, and under-16 friends-only rooms.
+- **Metrics cards with CSV:** Daily Five starts / completions / shares, duels created by age band, Party start to
+  first move, and prompt acceptance by trigger.
+
 ## 1.34.0 (6 November 2026)
 
 ### For players
