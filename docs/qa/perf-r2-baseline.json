@@ -1,0 +1,1955 @@
+{
+  "at": "2026-11-06T19:18:07.081Z",
+  "base": "https://spuzl.vercel.app",
+  "runs": 10,
+  "summary": {
+    "desktop:home-continue:cold": {
+      "runs": 10,
+      "p50": 2663,
+      "p95": 4376,
+      "min": 2188,
+      "max": 8000,
+      "firstApiP50": 1262,
+      "todayCallsMax": 1,
+      "waterfall": {
+        "requests": [
+          {
+            "name": "/play/crownfall",
+            "type": "fetch",
+            "start": 3,
+            "end": 291
+          },
+          {
+            "name": "/music/logic.mp3",
+            "type": "fetch",
+            "start": 19,
+            "end": 354
+          },
+          {
+            "name": "/sfx/letter.mp3",
+            "type": "fetch",
+            "start": 49,
+            "end": 312
+          },
+          {
+            "name": "/sfx/spuzpop.mp3",
+            "type": "fetch",
+            "start": 73,
+            "end": 274
+          },
+          {
+            "name": "/_next/static/immutable/chunks/29ogkwhrk1exn.js",
+            "type": "script",
+            "start": 141,
+            "end": 900
+          },
+          {
+            "name": "/_next/static/immutable/chunks/22kjs3e2ais3w.js",
+            "type": "script",
+            "start": 141,
+            "end": 1001
+          },
+          {
+            "name": "/_next/static/immutable/chunks/1yljeeo3g350i.js",
+            "type": "script",
+            "start": 142,
+            "end": 1106
+          },
+          {
+            "name": "/world/logic",
+            "type": "fetch",
+            "start": 142,
+            "end": 1353
+          },
+          {
+            "name": "/sfx/piece_lift.mp3",
+            "type": "fetch",
+            "start": 157,
+            "end": 398
+          },
+          {
+            "name": "/sfx/piece_place.mp3",
+            "type": "fetch",
+            "start": 276,
+            "end": 541
+          },
+          {
+            "name": "/_next/static/immutable/chunks/44i4bzeilso6k.js",
+            "type": "script",
+            "start": 293,
+            "end": 1138
+          },
+          {
+            "name": "/_next/static/immutable/chunks/07gndsk_l43jt.js",
+            "type": "script",
+            "start": 293,
+            "end": 1212
+          },
+          {
+            "name": "/_next/static/immutable/chunks/3r-2p4fe5u74z.js",
+            "type": "script",
+            "start": 293,
+            "end": 1252
+          },
+          {
+            "name": "/_next/static/immutable/chunks/3dtp1zdhuyj8p.js",
+            "type": "script",
+            "start": 293,
+            "end": 1346
+          },
+          {
+            "name": "/sfx/piece_capture.mp3",
+            "type": "fetch",
+            "start": 319,
+            "end": 515
+          },
+          {
+            "name": "/sfx/piece_castle.mp3",
+            "type": "fetch",
+            "start": 400,
+            "end": 619
+          },
+          {
+            "name": "/sfx/piece_check.mp3",
+            "type": "fetch",
+            "start": 520,
+            "end": 784
+          },
+          {
+            "name": "/sfx/disc_place.mp3",
+            "type": "fetch",
+            "start": 543,
+            "end": 750
+          },
+          {
+            "name": "/sfx/disc_capture.mp3",
+            "type": "fetch",
+            "start": 622,
+            "end": 949
+          },
+          {
+            "name": "/sfx/disc_crown.mp3",
+            "type": "fetch",
+            "start": 752,
+            "end": 1034
+          },
+          {
+            "name": "/sfx/seed_drop.mp3",
+            "type": "fetch",
+            "start": 790,
+            "end": 1013
+          },
+          {
+            "name": "/sfx/seed_scoop.mp3",
+            "type": "fetch",
+            "start": 958,
+            "end": 1222
+          },
+          {
+            "name": "/sfx/dice_roll.mp3",
+            "type": "fetch",
+            "start": 1015,
+            "end": 1242
+          },
+          {
+            "name": "/sfx/token_step.mp3",
+            "type": "fetch",
+            "start": 1036,
+            "end": 1239
+          },
+          {
+            "name": "/sfx/column_drop.mp3",
+            "type": "fetch",
+            "start": 1225,
+            "end": 1584
+          },
+          {
+            "name": "/api/v1/presence",
+            "type": "fetch",
+            "start": 1382,
+            "end": 2218
+          },
+          {
+            "name": "/api/v1/me/learned",
+            "type": "fetch",
+            "start": 1383,
+            "end": 2211
+          },
+          {
+            "name": "/play/dusk",
+            "type": "fetch",
+            "start": 1385,
+            "end": 2034
+          },
+          {
+            "name": "/api/v1/attempts",
+            "type": "fetch",
+            "start": 1392,
+            "end": 2344
+          },
+          {
+            "name": "/_next/static/immutable/chunks/26qwqnqsy_0yg.js",
+            "type": "script",
+            "start": 2350,
+            "end": 2469
+          },
+          {
+            "name": "/api/v1/metrics",
+            "type": "fetch",
+            "start": 2359,
+            "end": 2830
+          }
+        ],
+        "longTasks": []
+      }
+    },
+    "desktop:home-continue:warm": {
+      "runs": 10,
+      "p50": 1669,
+      "p95": 2867,
+      "min": 1498,
+      "max": 5882,
+      "firstApiP50": 623,
+      "todayCallsMax": 0,
+      "waterfall": {
+        "requests": [
+          {
+            "name": "/sfx/tick.mp3",
+            "type": "fetch",
+            "start": -2,
+            "end": 215
+          },
+          {
+            "name": "/sfx/pop.mp3",
+            "type": "fetch",
+            "start": -2,
+            "end": 222
+          },
+          {
+            "name": "/sfx/nav.mp3",
+            "type": "fetch",
+            "start": -2,
+            "end": 225
+          },
+          {
+            "name": "/music/home.mp3",
+            "type": "fetch",
+            "start": -2,
+            "end": 248
+          },
+          {
+            "name": "/play/crownfall",
+            "type": "fetch",
+            "start": 2,
+            "end": 502
+          },
+          {
+            "name": "/music/logic.mp3",
+            "type": "fetch",
+            "start": 15,
+            "end": 451
+          },
+          {
+            "name": "/sfx/tile.mp3",
+            "type": "fetch",
+            "start": 217,
+            "end": 470
+          },
+          {
+            "name": "/sfx/buzz.mp3",
+            "type": "fetch",
+            "start": 224,
+            "end": 647
+          },
+          {
+            "name": "/sfx/success.mp3",
+            "type": "fetch",
+            "start": 226,
+            "end": 451
+          },
+          {
+            "name": "/sfx/toggle.mp3",
+            "type": "fetch",
+            "start": 454,
+            "end": 785
+          },
+          {
+            "name": "/sfx/sheet_open.mp3",
+            "type": "fetch",
+            "start": 472,
+            "end": 677
+          },
+          {
+            "name": "/_next/static/immutable/chunks/44i4bzeilso6k.js",
+            "type": "script",
+            "start": 503,
+            "end": 503
+          },
+          {
+            "name": "/_next/static/immutable/chunks/07gndsk_l43jt.js",
+            "type": "script",
+            "start": 504,
+            "end": 504
+          },
+          {
+            "name": "/_next/static/immutable/chunks/3r-2p4fe5u74z.js",
+            "type": "script",
+            "start": 505,
+            "end": 505
+          },
+          {
+            "name": "/_next/static/immutable/chunks/3dtp1zdhuyj8p.js",
+            "type": "script",
+            "start": 505,
+            "end": 505
+          },
+          {
+            "name": "/api/v1/presence",
+            "type": "fetch",
+            "start": 546,
+            "end": 1060
+          },
+          {
+            "name": "/play/dusk",
+            "type": "fetch",
+            "start": 547,
+            "end": 1075
+          },
+          {
+            "name": "/api/v1/attempts",
+            "type": "fetch",
+            "start": 551,
+            "end": 1331
+          },
+          {
+            "name": "/sfx/sheet_close.mp3",
+            "type": "fetch",
+            "start": 649,
+            "end": 854
+          },
+          {
+            "name": "/sfx/chime.mp3",
+            "type": "fetch",
+            "start": 679,
+            "end": 894
+          },
+          {
+            "name": "/sfx/twinkle.mp3",
+            "type": "fetch",
+            "start": 788,
+            "end": 1025
+          },
+          {
+            "name": "/sfx/jingle.mp3",
+            "type": "fetch",
+            "start": 857,
+            "end": 1105
+          },
+          {
+            "name": "/sfx/fanfare.mp3",
+            "type": "fetch",
+            "start": 896,
+            "end": 1154
+          },
+          {
+            "name": "/sfx/whoosh.mp3",
+            "type": "fetch",
+            "start": 1028,
+            "end": 1409
+          },
+          {
+            "name": "/sfx/swoosh.mp3",
+            "type": "fetch",
+            "start": 1109,
+            "end": 1342
+          },
+          {
+            "name": "/sfx/fizzle.mp3",
+            "type": "fetch",
+            "start": 1159,
+            "end": 1400
+          },
+          {
+            "name": "/_next/static/immutable/chunks/26qwqnqsy_0yg.js",
+            "type": "script",
+            "start": 1338,
+            "end": 1338
+          },
+          {
+            "name": "/api/v1/metrics",
+            "type": "fetch",
+            "start": 1343,
+            "end": 1758
+          },
+          {
+            "name": "/sfx/clink.mp3",
+            "type": "fetch",
+            "start": 1359,
+            "end": 1620
+          },
+          {
+            "name": "/sfx/coins.mp3",
+            "type": "fetch",
+            "start": 1407,
+            "end": 1732
+          },
+          {
+            "name": "/sfx/cheer.mp3",
+            "type": "fetch",
+            "start": 1416,
+            "end": 1651
+          },
+          {
+            "name": "/sfx/splat.mp3",
+            "type": "fetch",
+            "start": 1624,
+            "end": 1863
+          }
+        ],
+        "longTasks": []
+      }
+    },
+    "desktop:next-level": {
+      "runs": 10,
+      "p50": 593,
+      "p95": 988,
+      "min": 510,
+      "max": 1850,
+      "firstApiP50": 1,
+      "todayCallsMax": 0,
+      "waterfall": {
+        "requests": [
+          {
+            "name": "/api/v1/attempts",
+            "type": "fetch",
+            "start": 4,
+            "end": 579
+          }
+        ],
+        "longTasks": []
+      }
+    },
+    "desktop:library-play:cold": {
+      "runs": 10,
+      "p50": 1428,
+      "p95": 2025,
+      "min": 1343,
+      "max": 6818,
+      "firstApiP50": 2,
+      "todayCallsMax": 1,
+      "waterfall": {
+        "requests": [
+          {
+            "name": "/api/v1/attempts",
+            "type": "fetch",
+            "start": 2,
+            "end": 556
+          },
+          {
+            "name": "/play/dusk",
+            "type": "fetch",
+            "start": 11,
+            "end": 406
+          },
+          {
+            "name": "/_next/static/immutable/chunks/1l_eer01ih1f5.js",
+            "type": "script",
+            "start": 30,
+            "end": 35
+          },
+          {
+            "name": "/music/logic.mp3",
+            "type": "fetch",
+            "start": 35,
+            "end": 352
+          },
+          {
+            "name": "/sfx/letter.mp3",
+            "type": "fetch",
+            "start": 46,
+            "end": 461
+          },
+          {
+            "name": "/sfx/spuzpop.mp3",
+            "type": "fetch",
+            "start": 170,
+            "end": 388
+          },
+          {
+            "name": "/sfx/piece_lift.mp3",
+            "type": "fetch",
+            "start": 202,
+            "end": 417
+          },
+          {
+            "name": "/sfx/piece_place.mp3",
+            "type": "fetch",
+            "start": 391,
+            "end": 657
+          },
+          {
+            "name": "/_next/static/immutable/chunks/44i4bzeilso6k.js",
+            "type": "script",
+            "start": 407,
+            "end": 534
+          },
+          {
+            "name": "/_next/static/immutable/chunks/138hsr4txe1gu.js",
+            "type": "script",
+            "start": 408,
+            "end": 580
+          },
+          {
+            "name": "/_next/static/immutable/chunks/07gndsk_l43jt.js",
+            "type": "script",
+            "start": 408,
+            "end": 634
+          },
+          {
+            "name": "/_next/static/immutable/chunks/3r-2p4fe5u74z.js",
+            "type": "script",
+            "start": 408,
+            "end": 659
+          },
+          {
+            "name": "/_next/static/immutable/chunks/0jvl3295pu1dv.js",
+            "type": "script",
+            "start": 408,
+            "end": 696
+          },
+          {
+            "name": "/_next/static/immutable/chunks/3dtp1zdhuyj8p.js",
+            "type": "script",
+            "start": 408,
+            "end": 779
+          },
+          {
+            "name": "/sfx/piece_capture.mp3",
+            "type": "fetch",
+            "start": 428,
+            "end": 646
+          },
+          {
+            "name": "/sfx/piece_castle.mp3",
+            "type": "fetch",
+            "start": 464,
+            "end": 685
+          },
+          {
+            "name": "/sfx/piece_check.mp3",
+            "type": "fetch",
+            "start": 647,
+            "end": 885
+          },
+          {
+            "name": "/sfx/disc_place.mp3",
+            "type": "fetch",
+            "start": 659,
+            "end": 900
+          },
+          {
+            "name": "/sfx/disc_capture.mp3",
+            "type": "fetch",
+            "start": 686,
+            "end": 907
+          },
+          {
+            "name": "/_next/static/immutable/chunks/03v2odeyhskx-.js",
+            "type": "script",
+            "start": 812,
+            "end": 845
+          },
+          {
+            "name": "/api/v1/presence",
+            "type": "fetch",
+            "start": 814,
+            "end": 1233
+          },
+          {
+            "name": "/api/v1/today",
+            "type": "fetch",
+            "start": 815,
+            "end": 1223
+          },
+          {
+            "name": "/world/logic",
+            "type": "fetch",
+            "start": 819,
+            "end": 1543
+          },
+          {
+            "name": "/play/sixer",
+            "type": "fetch",
+            "start": 819,
+            "end": 1577
+          },
+          {
+            "name": "/_next/static/immutable/chunks/1-tneb6pq5f8w.js",
+            "type": "script",
+            "start": 832,
+            "end": 1405
+          },
+          {
+            "name": "/api/v1/metrics",
+            "type": "fetch",
+            "start": 851,
+            "end": 1309
+          },
+          {
+            "name": "/sfx/disc_crown.mp3",
+            "type": "fetch",
+            "start": 886,
+            "end": 1112
+          },
+          {
+            "name": "/sfx/seed_drop.mp3",
+            "type": "fetch",
+            "start": 901,
+            "end": 1134
+          },
+          {
+            "name": "/sfx/seed_scoop.mp3",
+            "type": "fetch",
+            "start": 909,
+            "end": 1169
+          },
+          {
+            "name": "/sfx/dice_roll.mp3",
+            "type": "fetch",
+            "start": 1114,
+            "end": 1354
+          },
+          {
+            "name": "/sfx/token_step.mp3",
+            "type": "fetch",
+            "start": 1135,
+            "end": 1380
+          },
+          {
+            "name": "/sfx/column_drop.mp3",
+            "type": "fetch",
+            "start": 1170,
+            "end": 1427
+          }
+        ],
+        "longTasks": []
+      }
+    },
+    "desktop:library-play:warm": {
+      "runs": 10,
+      "p50": 929,
+      "p95": 1171,
+      "min": 793,
+      "max": 2967,
+      "firstApiP50": 1,
+      "todayCallsMax": 1,
+      "waterfall": {
+        "requests": [
+          {
+            "name": "/api/v1/attempts",
+            "type": "fetch",
+            "start": 1,
+            "end": 548
+          },
+          {
+            "name": "/play/dusk",
+            "type": "fetch",
+            "start": 6,
+            "end": 436
+          },
+          {
+            "name": "/",
+            "type": "fetch",
+            "start": 60,
+            "end": 1101
+          },
+          {
+            "name": "/sfx/emote.mp3",
+            "type": "fetch",
+            "start": 105,
+            "end": 323
+          },
+          {
+            "name": "/sfx/sting.mp3",
+            "type": "fetch",
+            "start": 117,
+            "end": 336
+          },
+          {
+            "name": "/play/dusk",
+            "type": "fetch",
+            "start": 257,
+            "end": 1197
+          },
+          {
+            "name": "/sfx/bump.mp3",
+            "type": "fetch",
+            "start": 275,
+            "end": 482
+          },
+          {
+            "name": "/sfx/clack.mp3",
+            "type": "fetch",
+            "start": 326,
+            "end": 524
+          },
+          {
+            "name": "/sfx/capture.mp3",
+            "type": "fetch",
+            "start": 339,
+            "end": 543
+          },
+          {
+            "name": "/_next/static/immutable/chunks/44i4bzeilso6k.js",
+            "type": "script",
+            "start": 436,
+            "end": 436
+          },
+          {
+            "name": "/_next/static/immutable/chunks/138hsr4txe1gu.js",
+            "type": "script",
+            "start": 436,
+            "end": 436
+          },
+          {
+            "name": "/_next/static/immutable/chunks/07gndsk_l43jt.js",
+            "type": "script",
+            "start": 437,
+            "end": 437
+          },
+          {
+            "name": "/_next/static/immutable/chunks/3r-2p4fe5u74z.js",
+            "type": "script",
+            "start": 437,
+            "end": 437
+          },
+          {
+            "name": "/_next/static/immutable/chunks/0jvl3295pu1dv.js",
+            "type": "script",
+            "start": 437,
+            "end": 437
+          },
+          {
+            "name": "/_next/static/immutable/chunks/3dtp1zdhuyj8p.js",
+            "type": "script",
+            "start": 437,
+            "end": 437
+          },
+          {
+            "name": "/sfx/check.mp3",
+            "type": "fetch",
+            "start": 487,
+            "end": 702
+          },
+          {
+            "name": "/sfx/synth.mp3",
+            "type": "fetch",
+            "start": 525,
+            "end": 745
+          },
+          {
+            "name": "/sfx/jump.mp3",
+            "type": "fetch",
+            "start": 544,
+            "end": 754
+          },
+          {
+            "name": "/music/logic.mp3",
+            "type": "fetch",
+            "start": 613,
+            "end": 616
+          },
+          {
+            "name": "/api/v1/presence",
+            "type": "fetch",
+            "start": 616,
+            "end": 999
+          },
+          {
+            "name": "/api/v1/today",
+            "type": "fetch",
+            "start": 617,
+            "end": 976
+          },
+          {
+            "name": "/_next/static/immutable/chunks/1-tneb6pq5f8w.js",
+            "type": "script",
+            "start": 621,
+            "end": 621
+          },
+          {
+            "name": "/api/v1/metrics",
+            "type": "fetch",
+            "start": 630,
+            "end": 1096
+          },
+          {
+            "name": "/sfx/land.mp3",
+            "type": "fetch",
+            "start": 704,
+            "end": 949
+          },
+          {
+            "name": "/sfx/spike.mp3",
+            "type": "fetch",
+            "start": 751,
+            "end": 754
+          },
+          {
+            "name": "/sfx/streak.mp3",
+            "type": "fetch",
+            "start": 755,
+            "end": 757
+          },
+          {
+            "name": "/sfx/notify.mp3",
+            "type": "fetch",
+            "start": 755,
+            "end": 758
+          },
+          {
+            "name": "/sfx/count.mp3",
+            "type": "fetch",
+            "start": 759,
+            "end": 760
+          },
+          {
+            "name": "/sfx/win.mp3",
+            "type": "fetch",
+            "start": 759,
+            "end": 761
+          },
+          {
+            "name": "/sfx/lose.mp3",
+            "type": "fetch",
+            "start": 762,
+            "end": 763
+          },
+          {
+            "name": "/sfx/rush.mp3",
+            "type": "fetch",
+            "start": 765,
+            "end": 767
+          },
+          {
+            "name": "/sfx/thump.mp3",
+            "type": "fetch",
+            "start": 765,
+            "end": 767
+          },
+          {
+            "name": "/sfx/letter.mp3",
+            "type": "fetch",
+            "start": 769,
+            "end": 770
+          },
+          {
+            "name": "/sfx/spuzpop.mp3",
+            "type": "fetch",
+            "start": 769,
+            "end": 772
+          },
+          {
+            "name": "/sfx/piece_lift.mp3",
+            "type": "fetch",
+            "start": 771,
+            "end": 773
+          },
+          {
+            "name": "/sfx/piece_place.mp3",
+            "type": "fetch",
+            "start": 773,
+            "end": 774
+          },
+          {
+            "name": "/sfx/piece_capture.mp3",
+            "type": "fetch",
+            "start": 775,
+            "end": 777
+          },
+          {
+            "name": "/sfx/piece_castle.mp3",
+            "type": "fetch",
+            "start": 777,
+            "end": 778
+          },
+          {
+            "name": "/sfx/piece_check.mp3",
+            "type": "fetch",
+            "start": 779,
+            "end": 780
+          },
+          {
+            "name": "/sfx/disc_place.mp3",
+            "type": "fetch",
+            "start": 779,
+            "end": 781
+          },
+          {
+            "name": "/sfx/disc_capture.mp3",
+            "type": "fetch",
+            "start": 781,
+            "end": 783
+          },
+          {
+            "name": "/sfx/disc_crown.mp3",
+            "type": "fetch",
+            "start": 783,
+            "end": 784
+          },
+          {
+            "name": "/sfx/seed_drop.mp3",
+            "type": "fetch",
+            "start": 784,
+            "end": 786
+          },
+          {
+            "name": "/sfx/seed_scoop.mp3",
+            "type": "fetch",
+            "start": 786,
+            "end": 787
+          },
+          {
+            "name": "/sfx/dice_roll.mp3",
+            "type": "fetch",
+            "start": 788,
+            "end": 792
+          },
+          {
+            "name": "/sfx/token_step.mp3",
+            "type": "fetch",
+            "start": 793,
+            "end": 799
+          },
+          {
+            "name": "/sfx/column_drop.mp3",
+            "type": "fetch",
+            "start": 794,
+            "end": 803
+          },
+          {
+            "name": "/world/logic",
+            "type": "fetch",
+            "start": 839,
+            "end": 1306
+          }
+        ],
+        "longTasks": []
+      }
+    },
+    "desktop:landing-to-board": {
+      "runs": 10,
+      "p50": 4689,
+      "p95": 4762,
+      "min": 4676,
+      "max": 4768,
+      "firstApiP50": -1,
+      "todayCallsMax": 0,
+      "waterfall": {
+        "requests": [],
+        "longTasks": []
+      }
+    },
+    "desktop:landing-steps": {
+      "runs": 10,
+      "p50": 589,
+      "p95": 591,
+      "min": 578,
+      "max": 593,
+      "firstApiP50": -1,
+      "todayCallsMax": 0,
+      "waterfall": {
+        "requests": [
+          {
+            "name": "welcome",
+            "type": "step",
+            "start": 0,
+            "end": 3382
+          },
+          {
+            "name": "birth",
+            "type": "step",
+            "start": 0,
+            "end": 3616
+          },
+          {
+            "name": "start-choice",
+            "type": "step",
+            "start": 0,
+            "end": 4096
+          },
+          {
+            "name": "board",
+            "type": "step",
+            "start": 0,
+            "end": 4685
+          }
+        ],
+        "longTasks": []
+      }
+    },
+    "4g-phone:home-continue:cold": {
+      "runs": 10,
+      "p50": 4658,
+      "p95": 5114,
+      "min": 2816,
+      "max": 5114,
+      "firstApiP50": 2718,
+      "todayCallsMax": 0,
+      "waterfall": {
+        "requests": [
+          {
+            "name": "/play/crownfall",
+            "type": "fetch",
+            "start": 8,
+            "end": 559
+          },
+          {
+            "name": "/sfx/hop.mp3",
+            "type": "fetch",
+            "start": 185,
+            "end": 465
+          },
+          {
+            "name": "/sfx/emote.mp3",
+            "type": "fetch",
+            "start": 267,
+            "end": 516
+          },
+          {
+            "name": "/sfx/sting.mp3",
+            "type": "fetch",
+            "start": 269,
+            "end": 630
+          },
+          {
+            "name": "/sfx/bump.mp3",
+            "type": "fetch",
+            "start": 483,
+            "end": 773
+          },
+          {
+            "name": "/sfx/clack.mp3",
+            "type": "fetch",
+            "start": 527,
+            "end": 866
+          },
+          {
+            "name": "/_next/static/immutable/chunks/1l_eer01ih1f5.js",
+            "type": "script",
+            "start": 540,
+            "end": 1160
+          },
+          {
+            "name": "/_next/static/immutable/chunks/44i4bzeilso6k.js",
+            "type": "script",
+            "start": 562,
+            "end": 1420
+          },
+          {
+            "name": "/_next/static/immutable/chunks/138hsr4txe1gu.js",
+            "type": "script",
+            "start": 564,
+            "end": 1767
+          },
+          {
+            "name": "/_next/static/immutable/chunks/07gndsk_l43jt.js",
+            "type": "script",
+            "start": 565,
+            "end": 2097
+          },
+          {
+            "name": "/_next/static/immutable/chunks/3r-2p4fe5u74z.js",
+            "type": "script",
+            "start": 566,
+            "end": 2146
+          },
+          {
+            "name": "/_next/static/immutable/chunks/0jvl3295pu1dv.js",
+            "type": "script",
+            "start": 567,
+            "end": 2720
+          },
+          {
+            "name": "/_next/static/immutable/chunks/3dtp1zdhuyj8p.js",
+            "type": "script",
+            "start": 567,
+            "end": 2619
+          },
+          {
+            "name": "/me",
+            "type": "fetch",
+            "start": 593,
+            "end": 3005
+          },
+          {
+            "name": "/sfx/capture.mp3",
+            "type": "fetch",
+            "start": 641,
+            "end": 903
+          },
+          {
+            "name": "/sfx/check.mp3",
+            "type": "fetch",
+            "start": 788,
+            "end": 1081
+          },
+          {
+            "name": "/sfx/synth.mp3",
+            "type": "fetch",
+            "start": 884,
+            "end": 1133
+          },
+          {
+            "name": "/me",
+            "type": "fetch",
+            "start": 902,
+            "end": 3169
+          },
+          {
+            "name": "/sfx/jump.mp3",
+            "type": "fetch",
+            "start": 912,
+            "end": 1181
+          },
+          {
+            "name": "/me",
+            "type": "fetch",
+            "start": 949,
+            "end": 3026
+          },
+          {
+            "name": "/sfx/land.mp3",
+            "type": "fetch",
+            "start": 1094,
+            "end": 1345
+          },
+          {
+            "name": "/sfx/spike.mp3",
+            "type": "fetch",
+            "start": 1144,
+            "end": 1431
+          },
+          {
+            "name": "/sfx/streak.mp3",
+            "type": "fetch",
+            "start": 1194,
+            "end": 1496
+          },
+          {
+            "name": "/sfx/notify.mp3",
+            "type": "fetch",
+            "start": 1357,
+            "end": 1732
+          },
+          {
+            "name": "/shop",
+            "type": "fetch",
+            "start": 1389,
+            "end": 3892
+          },
+          {
+            "name": "/sfx/count.mp3",
+            "type": "fetch",
+            "start": 1434,
+            "end": 1696
+          },
+          {
+            "name": "/sfx/win.mp3",
+            "type": "fetch",
+            "start": 1517,
+            "end": 1896
+          },
+          {
+            "name": "/sfx/lose.mp3",
+            "type": "fetch",
+            "start": 1703,
+            "end": 2289
+          },
+          {
+            "name": "/sfx/rush.mp3",
+            "type": "fetch",
+            "start": 1738,
+            "end": 2082
+          },
+          {
+            "name": "/sfx/thump.mp3",
+            "type": "fetch",
+            "start": 1904,
+            "end": 2225
+          },
+          {
+            "name": "/sfx/letter.mp3",
+            "type": "fetch",
+            "start": 2088,
+            "end": 2375
+          },
+          {
+            "name": "/sfx/spuzpop.mp3",
+            "type": "fetch",
+            "start": 2231,
+            "end": 2704
+          },
+          {
+            "name": "/sfx/piece_lift.mp3",
+            "type": "fetch",
+            "start": 2295,
+            "end": 2754
+          },
+          {
+            "name": "/sfx/piece_place.mp3",
+            "type": "fetch",
+            "start": 2380,
+            "end": 2833
+          },
+          {
+            "name": "/sfx/piece_capture.mp3",
+            "type": "fetch",
+            "start": 2709,
+            "end": 2955
+          },
+          {
+            "name": "/sfx/piece_castle.mp3",
+            "type": "fetch",
+            "start": 2835,
+            "end": 3126
+          },
+          {
+            "name": "/api/v1/presence",
+            "type": "fetch",
+            "start": 2851,
+            "end": 3592
+          },
+          {
+            "name": "/api/v1/me/learned",
+            "type": "fetch",
+            "start": 2857,
+            "end": 3620
+          },
+          {
+            "name": "/api/v1/attempts",
+            "type": "fetch",
+            "start": 2894,
+            "end": 3656
+          },
+          {
+            "name": "/sfx/piece_check.mp3",
+            "type": "fetch",
+            "start": 2897,
+            "end": 3376
+          },
+          {
+            "name": "/sfx/disc_place.mp3",
+            "type": "fetch",
+            "start": 2961,
+            "end": 3434
+          },
+          {
+            "name": "/play/dusk",
+            "type": "fetch",
+            "start": 3016,
+            "end": 4178
+          },
+          {
+            "name": "/_next/static/immutable/chunks/1d31-0zfq6iiw.js",
+            "type": "script",
+            "start": 3031,
+            "end": 4536
+          },
+          {
+            "name": "/world/logic",
+            "type": "fetch",
+            "start": 3038,
+            "end": 4557
+          },
+          {
+            "name": "/sfx/disc_capture.mp3",
+            "type": "fetch",
+            "start": 3136,
+            "end": 3648
+          },
+          {
+            "name": "/world/board",
+            "type": "fetch",
+            "start": 3181,
+            "end": 4778
+          },
+          {
+            "name": "/sfx/disc_crown.mp3",
+            "type": "fetch",
+            "start": 3382,
+            "end": 3713
+          },
+          {
+            "name": "/sfx/seed_drop.mp3",
+            "type": "fetch",
+            "start": 3443,
+            "end": 3870
+          },
+          {
+            "name": "/sfx/seed_scoop.mp3",
+            "type": "fetch",
+            "start": 3657,
+            "end": 3963
+          },
+          {
+            "name": "/_next/static/immutable/chunks/26qwqnqsy_0yg.js",
+            "type": "script",
+            "start": 3693,
+            "end": 4600
+          },
+          {
+            "name": "/api/v1/metrics",
+            "type": "fetch",
+            "start": 3703,
+            "end": 4320
+          },
+          {
+            "name": "/sfx/dice_roll.mp3",
+            "type": "fetch",
+            "start": 3738,
+            "end": 4170
+          },
+          {
+            "name": "/sfx/token_step.mp3",
+            "type": "fetch",
+            "start": 3872,
+            "end": 4456
+          },
+          {
+            "name": "/_next/static/immutable/chunks/3960tmkdziv_6.js",
+            "type": "script",
+            "start": 3898,
+            "end": 4722
+          },
+          {
+            "name": "/_next/static/immutable/chunks/0kp9jx9pg7kyh.js",
+            "type": "script",
+            "start": 3898,
+            "end": 4907
+          },
+          {
+            "name": "/sfx/column_drop.mp3",
+            "type": "fetch",
+            "start": 3969,
+            "end": 4235
+          },
+          {
+            "name": "/world/word",
+            "type": "fetch",
+            "start": 4186,
+            "end": 4949
+          }
+        ],
+        "longTasks": [
+          {
+            "start": 2723,
+            "dur": 64
+          }
+        ]
+      }
+    },
+    "4g-phone:home-continue:warm": {
+      "runs": 10,
+      "p50": 1566,
+      "p95": 1775,
+      "min": 1394,
+      "max": 2151,
+      "firstApiP50": 565,
+      "todayCallsMax": 0,
+      "waterfall": {
+        "requests": [
+          {
+            "name": "/play/crownfall",
+            "type": "fetch",
+            "start": 6,
+            "end": 354
+          },
+          {
+            "name": "/_next/static/immutable/chunks/3w6fpe7dv2ej2.js",
+            "type": "script",
+            "start": 29,
+            "end": 148
+          },
+          {
+            "name": "/_next/static/immutable/chunks/1i0e_9t1gmi_z.js",
+            "type": "script",
+            "start": 77,
+            "end": 192
+          },
+          {
+            "name": "/_next/static/immutable/chunks/1415cv01nq4fi.js",
+            "type": "script",
+            "start": 77,
+            "end": 196
+          },
+          {
+            "name": "/music/logic.mp3",
+            "type": "fetch",
+            "start": 96,
+            "end": 99
+          },
+          {
+            "name": "/_next/static/immutable/chunks/44i4bzeilso6k.js",
+            "type": "script",
+            "start": 349,
+            "end": 349
+          },
+          {
+            "name": "/_next/static/immutable/chunks/07gndsk_l43jt.js",
+            "type": "script",
+            "start": 351,
+            "end": 351
+          },
+          {
+            "name": "/_next/static/immutable/chunks/3r-2p4fe5u74z.js",
+            "type": "script",
+            "start": 351,
+            "end": 351
+          },
+          {
+            "name": "/_next/static/immutable/chunks/3dtp1zdhuyj8p.js",
+            "type": "script",
+            "start": 352,
+            "end": 352
+          },
+          {
+            "name": "/api/v1/presence",
+            "type": "fetch",
+            "start": 441,
+            "end": 889
+          },
+          {
+            "name": "/play/dusk",
+            "type": "fetch",
+            "start": 446,
+            "end": 790
+          },
+          {
+            "name": "/api/v1/attempts",
+            "type": "fetch",
+            "start": 457,
+            "end": 1202
+          },
+          {
+            "name": "/_next/static/immutable/chunks/26qwqnqsy_0yg.js",
+            "type": "script",
+            "start": 1222,
+            "end": 1222
+          },
+          {
+            "name": "/api/v1/metrics",
+            "type": "fetch",
+            "start": 1242,
+            "end": 1719
+          }
+        ],
+        "longTasks": []
+      }
+    },
+    "4g-phone:next-level": {
+      "runs": 10,
+      "p50": 604,
+      "p95": 817,
+      "min": 576,
+      "max": 920,
+      "firstApiP50": 6,
+      "todayCallsMax": 0,
+      "waterfall": {
+        "requests": [
+          {
+            "name": "/api/v1/attempts",
+            "type": "fetch",
+            "start": 7,
+            "end": 560
+          }
+        ],
+        "longTasks": []
+      }
+    },
+    "4g-phone:library-play:cold": {
+      "runs": 10,
+      "p50": 5034,
+      "p95": 5611,
+      "min": 2898,
+      "max": 7115,
+      "firstApiP50": 8,
+      "todayCallsMax": 1,
+      "waterfall": {
+        "requests": [
+          {
+            "name": "/api/v1/attempts",
+            "type": "fetch",
+            "start": 9,
+            "end": 800
+          },
+          {
+            "name": "/play/dusk",
+            "type": "fetch",
+            "start": 49,
+            "end": 493
+          },
+          {
+            "name": "/sfx/drum.mp3",
+            "type": "fetch",
+            "start": 116,
+            "end": 900
+          },
+          {
+            "name": "/music/logic.mp3",
+            "type": "fetch",
+            "start": 145,
+            "end": 4791
+          },
+          {
+            "name": "/sfx/horn.mp3",
+            "type": "fetch",
+            "start": 325,
+            "end": 929
+          },
+          {
+            "name": "/sfx/hop.mp3",
+            "type": "fetch",
+            "start": 348,
+            "end": 1151
+          },
+          {
+            "name": "/_next/static/immutable/chunks/1l_eer01ih1f5.js",
+            "type": "script",
+            "start": 475,
+            "end": 2060
+          },
+          {
+            "name": "/_next/static/immutable/chunks/44i4bzeilso6k.js",
+            "type": "script",
+            "start": 494,
+            "end": 2288
+          },
+          {
+            "name": "/_next/static/immutable/chunks/138hsr4txe1gu.js",
+            "type": "script",
+            "start": 494,
+            "end": 2446
+          },
+          {
+            "name": "/_next/static/immutable/chunks/07gndsk_l43jt.js",
+            "type": "script",
+            "start": 494,
+            "end": 2602
+          },
+          {
+            "name": "/_next/static/immutable/chunks/3r-2p4fe5u74z.js",
+            "type": "script",
+            "start": 494,
+            "end": 2860
+          },
+          {
+            "name": "/_next/static/immutable/chunks/0jvl3295pu1dv.js",
+            "type": "script",
+            "start": 494,
+            "end": 3253
+          },
+          {
+            "name": "/_next/static/immutable/chunks/3dtp1zdhuyj8p.js",
+            "type": "script",
+            "start": 494,
+            "end": 3389
+          },
+          {
+            "name": "/sfx/emote.mp3",
+            "type": "fetch",
+            "start": 907,
+            "end": 1193
+          },
+          {
+            "name": "/sfx/sting.mp3",
+            "type": "fetch",
+            "start": 935,
+            "end": 1315
+          },
+          {
+            "name": "/sfx/bump.mp3",
+            "type": "fetch",
+            "start": 1252,
+            "end": 1758
+          },
+          {
+            "name": "/sfx/clack.mp3",
+            "type": "fetch",
+            "start": 1254,
+            "end": 1930
+          },
+          {
+            "name": "/sfx/capture.mp3",
+            "type": "fetch",
+            "start": 1325,
+            "end": 1894
+          },
+          {
+            "name": "/play/crownfall",
+            "type": "fetch",
+            "start": 1469,
+            "end": 3790
+          },
+          {
+            "name": "/play/dusk",
+            "type": "fetch",
+            "start": 1647,
+            "end": 4469
+          },
+          {
+            "name": "/play/dusk",
+            "type": "fetch",
+            "start": 1699,
+            "end": 4720
+          },
+          {
+            "name": "/sfx/check.mp3",
+            "type": "fetch",
+            "start": 1765,
+            "end": 2052
+          },
+          {
+            "name": "/sfx/synth.mp3",
+            "type": "fetch",
+            "start": 1900,
+            "end": 2166
+          },
+          {
+            "name": "/sfx/jump.mp3",
+            "type": "fetch",
+            "start": 1934,
+            "end": 2266
+          },
+          {
+            "name": "/sfx/land.mp3",
+            "type": "fetch",
+            "start": 2059,
+            "end": 2388
+          },
+          {
+            "name": "/play/nine",
+            "type": "fetch",
+            "start": 2133,
+            "end": 4849
+          },
+          {
+            "name": "/sfx/spike.mp3",
+            "type": "fetch",
+            "start": 2170,
+            "end": 2475
+          },
+          {
+            "name": "/sfx/streak.mp3",
+            "type": "fetch",
+            "start": 2272,
+            "end": 2774
+          },
+          {
+            "name": "/sfx/notify.mp3",
+            "type": "fetch",
+            "start": 2395,
+            "end": 2717
+          },
+          {
+            "name": "/sfx/count.mp3",
+            "type": "fetch",
+            "start": 2480,
+            "end": 2731
+          },
+          {
+            "name": "/sfx/win.mp3",
+            "type": "fetch",
+            "start": 2724,
+            "end": 3246
+          },
+          {
+            "name": "/sfx/lose.mp3",
+            "type": "fetch",
+            "start": 2738,
+            "end": 3289
+          },
+          {
+            "name": "/sfx/rush.mp3",
+            "type": "fetch",
+            "start": 2780,
+            "end": 3325
+          },
+          {
+            "name": "/sfx/thump.mp3",
+            "type": "fetch",
+            "start": 3253,
+            "end": 3618
+          },
+          {
+            "name": "/sfx/letter.mp3",
+            "type": "fetch",
+            "start": 3296,
+            "end": 3561
+          },
+          {
+            "name": "/sfx/spuzpop.mp3",
+            "type": "fetch",
+            "start": 3333,
+            "end": 3626
+          },
+          {
+            "name": "/api/v1/presence",
+            "type": "fetch",
+            "start": 3539,
+            "end": 4348
+          },
+          {
+            "name": "/api/v1/today",
+            "type": "fetch",
+            "start": 3544,
+            "end": 4005
+          },
+          {
+            "name": "/_next/static/immutable/chunks/1-tneb6pq5f8w.js",
+            "type": "script",
+            "start": 3608,
+            "end": 4969
+          },
+          {
+            "name": "/api/v1/metrics",
+            "type": "fetch",
+            "start": 3635,
+            "end": 4083
+          },
+          {
+            "name": "/sfx/piece_lift.mp3",
+            "type": "fetch",
+            "start": 3660,
+            "end": 4039
+          },
+          {
+            "name": "/sfx/piece_place.mp3",
+            "type": "fetch",
+            "start": 3661,
+            "end": 4242
+          },
+          {
+            "name": "/sfx/piece_capture.mp3",
+            "type": "fetch",
+            "start": 3663,
+            "end": 4283
+          },
+          {
+            "name": "/sfx/piece_castle.mp3",
+            "type": "fetch",
+            "start": 4045,
+            "end": 4333
+          },
+          {
+            "name": "/sfx/piece_check.mp3",
+            "type": "fetch",
+            "start": 4246,
+            "end": 4691
+          },
+          {
+            "name": "/sfx/disc_place.mp3",
+            "type": "fetch",
+            "start": 4293,
+            "end": 4655
+          },
+          {
+            "name": "/sfx/disc_capture.mp3",
+            "type": "fetch",
+            "start": 4342,
+            "end": 4612
+          },
+          {
+            "name": "/sfx/disc_crown.mp3",
+            "type": "fetch",
+            "start": 4618,
+            "end": 4877
+          },
+          {
+            "name": "/sfx/seed_drop.mp3",
+            "type": "fetch",
+            "start": 4665,
+            "end": 4906
+          },
+          {
+            "name": "/sfx/seed_scoop.mp3",
+            "type": "fetch",
+            "start": 4701,
+            "end": 4933
+          },
+          {
+            "name": "/sfx/dice_roll.mp3",
+            "type": "fetch",
+            "start": 4911,
+            "end": 5127
+          }
+        ],
+        "longTasks": [
+          {
+            "start": 1105,
+            "dur": 92
+          },
+          {
+            "start": 3391,
+            "dur": 108
+          }
+        ]
+      }
+    },
+    "4g-phone:library-play:warm": {
+      "runs": 10,
+      "p50": 966,
+      "p95": 1315,
+      "min": 846,
+      "max": 1427,
+      "firstApiP50": 2,
+      "todayCallsMax": 1,
+      "waterfall": {
+        "requests": [
+          {
+            "name": "/api/v1/attempts",
+            "type": "fetch",
+            "start": 3,
+            "end": 516
+          },
+          {
+            "name": "/play/dusk",
+            "type": "fetch",
+            "start": 38,
+            "end": 543
+          },
+          {
+            "name": "/play/sixer",
+            "type": "fetch",
+            "start": 79,
+            "end": 457
+          },
+          {
+            "name": "/play/crownfall",
+            "type": "fetch",
+            "start": 89,
+            "end": 437
+          },
+          {
+            "name": "/music/logic.mp3",
+            "type": "fetch",
+            "start": 112,
+            "end": 115
+          },
+          {
+            "name": "/_next/static/immutable/chunks/22x2_41taj0vb.js",
+            "type": "script",
+            "start": 256,
+            "end": 256
+          },
+          {
+            "name": "/_next/static/immutable/chunks/44i4bzeilso6k.js",
+            "type": "script",
+            "start": 544,
+            "end": 544
+          },
+          {
+            "name": "/_next/static/immutable/chunks/138hsr4txe1gu.js",
+            "type": "script",
+            "start": 546,
+            "end": 546
+          },
+          {
+            "name": "/_next/static/immutable/chunks/07gndsk_l43jt.js",
+            "type": "script",
+            "start": 546,
+            "end": 546
+          },
+          {
+            "name": "/_next/static/immutable/chunks/3r-2p4fe5u74z.js",
+            "type": "script",
+            "start": 547,
+            "end": 547
+          },
+          {
+            "name": "/_next/static/immutable/chunks/0jvl3295pu1dv.js",
+            "type": "script",
+            "start": 548,
+            "end": 548
+          },
+          {
+            "name": "/_next/static/immutable/chunks/3dtp1zdhuyj8p.js",
+            "type": "script",
+            "start": 548,
+            "end": 548
+          },
+          {
+            "name": "/api/v1/today",
+            "type": "fetch",
+            "start": 605,
+            "end": 979
+          },
+          {
+            "name": "/world/logic",
+            "type": "fetch",
+            "start": 610,
+            "end": 980
+          },
+          {
+            "name": "/_next/static/immutable/chunks/1-tneb6pq5f8w.js",
+            "type": "script",
+            "start": 626,
+            "end": 626
+          }
+        ],
+        "longTasks": []
+      }
+    },
+    "4g-phone:landing-to-board": {
+      "runs": 10,
+      "p50": 5061,
+      "p95": 5242,
+      "min": 4606,
+      "max": 5270,
+      "firstApiP50": -1,
+      "todayCallsMax": 0,
+      "waterfall": {
+        "requests": [],
+        "longTasks": []
+      }
+    },
+    "4g-phone:landing-steps": {
+      "runs": 10,
+      "p50": 532,
+      "p95": 554,
+      "min": 508,
+      "max": 645,
+      "firstApiP50": -1,
+      "todayCallsMax": 0,
+      "waterfall": {
+        "requests": [
+          {
+            "name": "welcome",
+            "type": "step",
+            "start": 0,
+            "end": 3718
+          },
+          {
+            "name": "birth",
+            "type": "step",
+            "start": 0,
+            "end": 4093
+          },
+          {
+            "name": "start-choice",
+            "type": "step",
+            "start": 0,
+            "end": 4738
+          },
+          {
+            "name": "board",
+            "type": "step",
+            "start": 0,
+            "end": 5270
+          }
+        ],
+        "longTasks": []
+      }
+    }
+  }
+}

@@ -13,7 +13,7 @@
  * Runs against any deployment (production by default for the baseline):
  *   PW_BASE_URL=https://spuzl.vercel.app RUNS=10 PERF_LABEL=r2-baseline \
  *     pnpm exec playwright test tests/perf/r2-baseline.spec.ts --project=perf
- * Writes docs/qa/perf-<label>.json. Every guest it creates is listed in test-results/r2-guests.txt so the
+ * Writes docs/qa/perf-<label>.json. Every guest it creates is listed in .qa/guests.txt (QA_GUEST_LOG) so the
  * cleanup step (scripts/qa/delete-test-guests.mjs) can remove them afterwards.
  */
 import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
@@ -23,7 +23,7 @@ import { keepFocus, onboardGuest, pickBirth, tapCell, throttle, VIEWPORTS, waitF
 
 const RUNS = Number(process.env.RUNS ?? 10);
 const LABEL = process.env.PERF_LABEL ?? "r2-baseline";
-const GUESTS = "test-results/r2-guests.txt";
+const GUESTS = process.env.QA_GUEST_LOG ?? ".qa/guests.txt";
 const BOARD = '[role="grid"], [role="listbox"], main[aria-label$=" board"] canvas, main[aria-label$=" board"] button';
 const PROFILES = ["desktop", "4g-phone"] as const;
 type Profile = (typeof PROFILES)[number];
@@ -78,7 +78,7 @@ async function logGuest(ctx: BrowserContext) {
     try {
       const id = JSON.parse(Buffer.from(raw, "base64").toString("utf8"))?.user?.id;
       if (id) {
-        mkdirSync("test-results", { recursive: true });
+        mkdirSync(".qa", { recursive: true });
         appendFileSync(GUESTS, `${id}\n`);
         return id as string;
       }

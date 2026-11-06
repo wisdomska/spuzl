@@ -50,3 +50,6 @@ supabase/.branches
 .env*
 !.env.example
 .claude/worktrees/
+
+# QA runs: ids of the guests a run created, for scripts/qa/delete-test-guests.mjs
+/.qa

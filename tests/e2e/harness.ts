@@ -24,12 +24,37 @@ import { expect, type Browser, type Page } from "@playwright/test";
 import { GAMES, LAB_GAMES } from "@/lib/catalog";
 import { createRng } from "@/lib/rng";
 import type { Difficulty } from "@/games/types";
+// Static imports: Playwright's loader resolves the "@/" alias only for these, not for runtime import()
+import * as crownfall from "@/games/crownfall/logic";
+import * as trotro from "@/games/trotro/logic";
+import * as lightup from "@/games/lightup/logic";
+import * as killer from "@/games/killer/logic";
+import * as dara from "@/games/dara/logic";
+import * as daraRules from "@/games/dara/rules";
 
 export type Age = "13-15" | "16-17" | "18+";
 /** A birth month and year in each band today (December births are the youngest of their year). */
 export function birthFor(age: Age, today = new Date()): { year: number; month: number } {
   const y = today.getUTCFullYear();
   return age === "18+" ? { year: y - 30, month: 1 } : age === "16-17" ? { year: y - 17, month: 12 } : { year: y - 14, month: 12 };
+}
+
+/** Where every guest a run creates is listed, for `scripts/qa/delete-test-guests.mjs` (outside test-results, which
+ * Playwright clears at the start of each run). */
+export const GUEST_LOG = process.env.QA_GUEST_LOG ?? ".qa/guests.txt";
+
+/** Appends the signed-in guest's id to GUEST_LOG. */
+export async function logGuest(page: Page) {
+  const id = await page
+    .evaluate(() => fetch("/api/v1/me?optional=1").then((r) => r.json()))
+    .then((m: { id?: string } | null) => m?.id ?? null)
+    .catch(() => null);
+  if (!id) return null;
+  const { appendFileSync, mkdirSync } = await import("node:fs");
+  const { dirname } = await import("node:path");
+  mkdirSync(dirname(GUEST_LOG), { recursive: true });
+  appendFileSync(GUEST_LOG, `${id}\n`);
+  return id;
 }
 
 /** The onboarding step "When were you born?": picks a birth month and year (a band, or exact values) and continues. */
@@ -78,13 +103,18 @@ export async function onboardGuest(
   await page.locator("#nick").fill(nickname);
   await page.getByRole("button", { name: /Enter The Grid|Create my Spuz|Save my Spuz/ }).click();
   await page.waitForURL((u) => u.pathname === "/", { timeout: 30_000 });
+  await logGuest(page);
   return nickname;
 }
 
-/** The board is interactive when its grid (or main board region) is visible and not aria-disabled. */
+/**
+ * The board is interactive when its grid (or main board region) is visible and not aria-disabled. Quiz games
+ * (Quickfire, Emoji Hits) show only their Start button until play begins: that counts as ready.
+ */
 export async function waitForBoard(page: Page, timeout = 30_000) {
   const board = page
     .locator('[role="grid"], [role="listbox"], main[aria-label$=" board"] canvas, main[aria-label$=" board"] button')
+    .or(page.getByRole("button", { name: /^Start\b/ }))
     .first();
   await board.waitFor({ state: "visible", timeout });
   return board;
@@ -117,7 +147,7 @@ export async function tapCell(page: Page, row: number, col: number) {
 /** Per-game solvers that play the seeded solution through real taps. Extend as games get contract tests. */
 const SOLVERS: Record<string, (page: Page, seed: string, d: Difficulty) => Promise<void>> = {
   async crownfall(page, seed, d) {
-    const { generate } = await import("@/games/crownfall/logic");
+    const { generate } = crownfall;
     const g = generate(createRng(seed), d);
     // tap mode cycles empty → X → crown, so two taps place a crown
     for (let r = 0; r < g.solution.length; r++) {
@@ -126,7 +156,7 @@ const SOLVERS: Record<string, (page: Page, seed: string, d: Difficulty) => Promi
     }
   },
   async trotro(page, seed, d) {
-    const { generate, applyMove } = await import("@/games/trotro/logic");
+    const { generate, applyMove } = trotro;
     const { puzzle: p, solution } = generate(createRng(seed), d);
     // Tap a cell of the vehicle to select it, then the free cell in its lane where its leading end lands.
     let pos = p.start;
@@ -142,13 +172,13 @@ const SOLVERS: Record<string, (page: Page, seed: string, d: Difficulty) => Promi
     }
   },
   async lightup(page, seed, d) {
-    const { generate } = await import("@/games/lightup/logic");
+    const { generate } = lightup;
     const g = generate(createRng(seed), d);
     // one tap on an empty white cell places a lamp
     for (const i of g.solution.lamps) await tapCell(page, Math.floor(i / g.puzzle.size) + 1, (i % g.puzzle.size) + 1);
   },
   async killer(page, seed, d) {
-    const { generate } = await import("@/games/killer/logic");
+    const { generate } = killer;
     const g = generate(createRng(seed), d);
     const n = g.puzzle.size;
     const pad = page.getByRole("group", { name: "Number pad" });
@@ -160,8 +190,8 @@ const SOLVERS: Record<string, (page: Page, seed: string, d: Difficulty) => Promi
     }
   },
   async dara(page, seed, d) {
-    const { generate, replay } = await import("@/games/dara/logic");
-    const { steps } = await import("@/games/dara/rules");
+    const { generate, replay } = dara;
+    const { steps } = daraRules;
     const g = generate(createRng(seed), d);
     const cell = (i: number) => tapCell(page, Math.floor(i / 6) + 1, (i % 6) + 1);
     const { from, to, takes } = g.solution;
