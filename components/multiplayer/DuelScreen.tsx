@@ -5,7 +5,16 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Icon } from "@/components/ui/Icon";
 import { api, HttpError, useMe } from "@/lib/client/api";
-import { matchAction, matchKey, useEmotes, useMatch, useMatchChat, useProfileGate, useServerNow } from "@/lib/client/multiplayer";
+import {
+  matchAction,
+  matchKey,
+  useCountdown,
+  useEmotes,
+  useMatch,
+  useMatchChat,
+  useProfileGate,
+  useServerNow,
+} from "@/lib/client/multiplayer";
 import { ChatPanel, ChatPopup } from "./chat";
 import { useSettings } from "@/lib/settings/store";
 import { useBackOrHome } from "@/lib/client/nav";
@@ -13,7 +22,7 @@ import { useGameSettings } from "@/lib/game-settings/client";
 import { duelCopy } from "@/lib/copy/duel";
 import { botProgress, duelPhase, inRulesBreak, roundOutcomes, BOT_ID } from "@/lib/multiplayer/duel";
 import { gameName, raceGameParam } from "@/lib/multiplayer/games";
-import { TIMING, type EmoteId } from "@/lib/multiplayer/constants";
+import { DUEL_ROUNDS, TIMING, type EmoteId } from "@/lib/multiplayer/constants";
 import type { MatchView } from "@/lib/multiplayer/types";
 import { GAME_BY_ID } from "@/lib/catalog";
 import { ShareSheet } from "@/components/share/ShareSheet";
@@ -25,7 +34,7 @@ import { useWide } from "@/components/game/useBoardSize";
 import { LeaveConfirm } from "@/components/game/LeaveConfirm";
 import { leavePolicy } from "@/lib/game/leave";
 import { DuelEntrySheet, EdgeCard, MatchEnd, Matchmaking, OppDisconnected, OpponentStrip, RematchWipe, RoundEnd, Versus } from "./duel";
-import { CountdownNumber, Cta, EmoteBar, LoadingScreen, MpToast, NeedProfile, Screen, TopButton, useToast } from "./ui";
+import { CountdownOverlay, Cta, EmoteBar, LoadingScreen, MpToast, NeedProfile, Screen, TopButton, useToast } from "./ui";
 import { JoinRoom, ShareCode } from "./party";
 import { InviteFriends } from "./InviteFriends";
 import { useFriends } from "@/lib/client/social";
@@ -314,6 +323,7 @@ function DuelMatch({ id }: { id: string }) {
   const [rulesClosed, setRulesClosed] = useState(0);
   const toasted = useRef<string>("");
   const roundResultMs = useGameSettings()["duel.roundResultMs"];
+  const countdown = useCountdown(view);
 
   const me = view?.players.find((p) => p.id === view.me);
   const themP = view?.players.find((p) => p.id !== view.me && !p.spectator) ?? null;
@@ -346,7 +356,7 @@ function DuelMatch({ id }: { id: string }) {
 
   const start = view?.roundStartedAt ?? 0;
   const phase = view
-    ? duelPhase({ status: view.status, round: view.round, roundStartedAt: start, pausedAt: view.pausedAt }, now)
+    ? duelPhase({ status: view.status, round: view.round, roundStartedAt: start, pausedAt: view.pausedAt }, now, countdown.ms)
     : "versus";
   const elapsed = Math.max(0, now - start - (view?.pauseMs ?? 0) - (view?.pausedAt ? now - view.pausedAt : 0));
   const botP = view?.isBot && view.bot?.finishMs ? botProgress(elapsed, view.bot.finishMs) : 0;
@@ -439,7 +449,8 @@ function DuelMatch({ id }: { id: string }) {
   const rulesFor = view.rulesFor ?? [];
   const rulesBreak = rulesFor.length > 0 && (phase === "versus" || phase === "round_end");
   const upcoming = view.games[view.round - 1];
-  const myRules = rulesBreak && inRulesBreak(start - now) && rulesFor.includes(me.id) && rulesClosed !== view.round && !!upcoming;
+  const myRules =
+    rulesBreak && inRulesBreak(start - now, countdown.ms) && rulesFor.includes(me.id) && rulesClosed !== view.round && !!upcoming;
   const rivalReading = rulesBreak && rulesFor.some((p) => p !== me.id) ? duelCopy.rivalReading(them.nickname) : null;
   const pausedFor = view.pausedAt ? now - view.pausedAt : 0;
 
@@ -469,12 +480,23 @@ function DuelMatch({ id }: { id: string }) {
         body={duelCopy.rulesMatchBody}
         auto={duelCopy.rulesMatchAuto}
         ready={duelCopy.rulesMatchReady}
-        progress={1 - (start - TIMING.countdownMs - now) / TIMING.rulesMs}
+        progress={1 - (start - countdown.ms - now) / TIMING.rulesMs}
         onReady={() => setRulesClosed(view.round)}
       />
     );
   else if (phase === "versus" || (phase === "countdown" && view.round === 1))
-    body = <Versus me={me} them={them} msToStart={start - now} round={view.round} note={rivalReading} h2h={view.h2h} />;
+    body = (
+      <Versus
+        me={me}
+        them={them}
+        msToStart={start - now}
+        round={view.round}
+        note={rivalReading}
+        h2h={view.h2h}
+        countdownMs={countdown.ms}
+        beats={countdown.beats}
+      />
+    );
   else if (phase === "round_end") {
     const prev = view.round - 1;
     const mine = view.rounds.find((r) => r.round === prev && r.playerId === me.id);
@@ -491,7 +513,7 @@ function DuelMatch({ id }: { id: string }) {
         theirMs={view.isBot ? (res === "them" ? (view.bot?.times[prev - 1] ?? null) : null) : (theirs?.timeMs ?? null)}
         rounds={rounds}
         oppColor={them.color}
-        msToNext={start - TIMING.countdownMs - now}
+        msToNext={start - countdown.ms - now}
         totalMs={roundResultMs + (rulesBreak ? TIMING.rulesMs : 0)}
         note={rivalReading}
         onEmote={sendEmote}
@@ -578,11 +600,7 @@ function DuelMatch({ id }: { id: string }) {
           onRejected={onRejected}
         />
         {phase === "countdown" && (
-          <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center bg-[rgba(6,7,13,.55)]">
-            <div className="flex flex-col items-center gap-4">
-              <CountdownOverlay ms={start - now} round={view.round} />
-            </div>
-          </div>
+          <CountdownOverlay msToStart={start - now} beats={countdown.beats} dim="soft" line={duelCopy.roundOf(view.round, DUEL_ROUNDS)} />
         )}
       </div>
     );
@@ -664,15 +682,6 @@ function DuelMatch({ id }: { id: string }) {
       )}
       <LeaveConfirm kind="match" open={leave.asking} busy={leave.busy} onKeep={leave.keep} onLeave={() => void leave.confirm()} />
     </Screen>
-  );
-}
-
-function CountdownOverlay({ ms, round }: { ms: number; round: number }) {
-  return (
-    <>
-      <CountdownNumber msToStart={ms} />
-      <div className="text-[15px] font-semibold text-[#A2A6C2]">Round {round} of 3</div>
-    </>
   );
 }
 

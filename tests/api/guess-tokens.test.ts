@@ -70,6 +70,10 @@ describe("api: content-game tokens", () => {
     expect((await p2.api(`/api/v1/rooms/${room.data.code}/join`, { json: {} })).status).toBe(200);
     await p2.api(`/api/v1/rooms/${room.data.code}/ready`, { json: { ready: true } });
     expect((await host.api(`/api/v1/rooms/${room.data.code}/start`, { json: {} })).status).toBe(200);
+    // R2-03: during the countdown the puzzle is out, but answers are refused until the round's real start.
+    const early = (await p2.api(`/api/v1/matches/${id}`)).data;
+    const tooEarly = await guess(p2, "rungs", early.puzzle.data.ref, { rung: 1, word: "ZZZZ" });
+    expect([tooEarly.status, tooEarly.data.error]).toEqual([409, "too_early"]);
     await admin()
       .from("matches")
       .update({ round_started_at: new Date(Date.now() - 1000).toISOString() })

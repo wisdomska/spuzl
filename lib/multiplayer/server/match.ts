@@ -3,7 +3,7 @@ import { headToHead } from "./h2h";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ApiError } from "@/lib/api/server";
 import { serverBroadcast } from "@/lib/realtime/server";
-import { TIMING } from "../constants";
+import { TIMING, countdownMsFor } from "../constants";
 import { BOT_ID, matchState, newToGame, nextRoundStart, resolveRound, rulesBreakMs, type Finisher } from "../duel";
 import { placeRace, raceOver, nextHost, type Racer } from "../race";
 import { validateProgress } from "../progress";
@@ -19,6 +19,19 @@ import { effectiveBand } from "@/lib/age";
 import { isUnder16 } from "@/lib/social";
 
 export const matchTopic = (id: string) => `match:${id}`;
+
+/** The live countdown length (admin setting party.countdownSeconds, shared by Duel and Party), in ms. */
+export async function liveCountdownMs(): Promise<number> {
+  return countdownMsFor((await getGameSettings())["party.countdownSeconds"]);
+}
+
+/**
+ * When a round's puzzle goes out: as its countdown begins. A Party round is started `startBufferMs` ahead of its
+ * countdown, so the puzzle is ready for the whole lead-in. Moves are still refused until the start itself.
+ */
+export function puzzleShowsAt(kind: MatchRow["kind"], start: number, countdownMs: number): number {
+  return start - countdownMs - (kind === "race" ? TIMING.startBufferMs : 0);
+}
 
 export interface MatchRow {
   id: string;
@@ -201,13 +214,14 @@ export async function viewOf(admin: SupabaseClient, l: Loaded, me: string, rewar
   let puzzle: MatchView["puzzle"] = null;
   const game = m.games[m.round - 1];
   const adult = isAdultRoom(m);
+  const countdownMs = await liveCountdownMs();
   // Before a ranked round's countdown: who is new to its game (their rules card shows; the rival waits).
   let rulesFor: string[] | null = null;
-  if (!adult && rulesRound(m) && game && m.status === "playing" && start !== null && now < start - TIMING.countdownMs) {
+  if (!adult && rulesRound(m) && game && m.status === "playing" && start !== null && now < start - countdownMs) {
     const ids = l.players.filter((p) => !p.spectator).map((p) => p.player_id);
     rulesFor = newToGame(game, ids, await knownGames(admin, ids, [game]));
   }
-  if (!adult && m.status === "playing" && start !== null && game && now >= start - TIMING.countdownMs) {
+  if (!adult && m.status === "playing" && start !== null && game && now >= puzzleShowsAt(m.kind, start, countdownMs)) {
     const r = await roundPuzzle(m.id, m.set_no, m.round, game, m.difficulty);
     // A content game's reference goes out as a token good only for this round, for this player.
     puzzle = { round: m.round, game, data: bindPuzzle(r.puzzle, me, { k: "m", m: m.id, s: m.set_no, r: m.round }) };
@@ -275,6 +289,7 @@ export async function viewOf(admin: SupabaseClient, l: Loaded, me: string, rewar
     rated: m.rated,
     isBot: m.is_bot,
     roundStartedAt: start,
+    countdownMs,
     roundFirstAt: ms(m.round_first_at),
     pausedAt: ms(m.paused_at),
     pauseMs: m.pause_ms,
@@ -303,8 +318,9 @@ function requirePlaying(l: Loaded, p: PlayerRow, round: number) {
   if (p.spectator) throw new ApiError(403, "spectator");
   if (l.m.status !== "playing") throw new ApiError(409, "not_playing");
   if (l.m.round !== round) throw new ApiError(409, "wrong_round");
-  const start = ms(l.m.round_started_at)!;
-  if (l.now < start) throw new ApiError(409, "too_early");
+  // Duel and Party alike: nothing counts before the round's real start (the end of its countdown), whatever the UI shows.
+  const start = ms(l.m.round_started_at);
+  if (start === null || l.now < start) throw new ApiError(409, "too_early");
 }
 
 /* ---------------- Progress (server validated) ---------------- */
@@ -326,9 +342,10 @@ export async function raceRoundPuzzle(
   const p = member(l, playerId);
   if (p.spectator || p.left_at) throw new ApiError(403, "not_racing");
   const start = ms(m.round_started_at);
-  const showing = m.status === "playing" && start !== null && now >= start - TIMING.countdownMs;
-  if (!showing || isAdultRoom(m) || m.set_no !== setNo || m.round !== round || m.games[round - 1] !== game)
+  if (isAdultRoom(m) || m.status !== "playing" || start === null || m.set_no !== setNo || m.round !== round || m.games[round - 1] !== game)
     throw new ApiError(409, "round_over");
+  // No answers during the countdown, the same rule as moves and finishes (requirePlaying): input never bleeds in early.
+  if (now < start) throw new ApiError(409, "too_early");
   return roundPuzzle(m.id, m.set_no, m.round, game, m.difficulty);
 }
 
@@ -506,7 +523,7 @@ async function resolveDuel(admin: SupabaseClient, l: Loaded): Promise<boolean> {
   const applied = await commit(admin, l, {
     status: state.over ? "finished" : "playing",
     round: state.over ? m.round : m.round + 1,
-    startAt: state.over ? null : nextRoundStart(now, (await getGameSettings())["duel.roundResultMs"]) + rulesMs,
+    startAt: state.over ? null : nextRoundStart(now, (await getGameSettings())["duel.roundResultMs"], await liveCountdownMs()) + rulesMs,
     winner: state.over && state.winner && state.winner !== BOT_ID ? state.winner : null,
     result: state.over ? (state.draw ? "draw" : state.winner === BOT_ID ? "bot" : "win") : null,
     botRoundsWon: m.is_bot ? score[BOT_ID] : null,

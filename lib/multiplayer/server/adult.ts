@@ -14,7 +14,8 @@ import { STROKE_LIMITS, fitsDrawing, pointsIn, type Stroke } from "@/lib/party-a
 import { TIMING } from "../constants";
 import type { AdultRoundView } from "../types";
 import { playedIn } from "@/lib/party-adult/rewards";
-import { commit, loadMatch, matchTopic, type Loaded, type MatchRow, type PlayerRow } from "./match";
+import { partyRoundStart } from "../duel";
+import { commit, liveCountdownMs, loadMatch, matchTopic, type Loaded, type MatchRow, type PlayerRow } from "./match";
 import { finalizeAdult } from "./rewards";
 
 /**
@@ -161,7 +162,7 @@ export async function startAdult(admin: SupabaseClient, l: Loaded) {
     .map((p) => p.player_id)
     .slice(0, 8);
   const rounds = roundsFor(leads.length);
-  const startAt = Date.now() + TIMING.countdownMs;
+  const startAt = partyRoundStart(Date.now(), await liveCountdownMs());
   await admin.from("party_rounds").delete().eq("match_id", l.m.id);
   await admin
     .from("match_players")

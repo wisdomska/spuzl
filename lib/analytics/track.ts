@@ -47,6 +47,7 @@ export const KEY_EVENTS = [
   "hint_cancel", // older clients only; now derived as hint_request minus hint_use
   "hint_request",
   "hint_use",
+  "party_first_move", // ms from a Party round's real start (after the countdown) to the player's first move
 ] as const;
 export type KeyEvent = (typeof KEY_EVENTS)[number];
 
@@ -125,7 +126,15 @@ function load(): Promise<PostHog | null> {
  * Events the admin Metrics page needs that the database cannot see: also sent to our own anonymous
  * POST /api/v1/metrics (name, game, mode, kind and a duration only), with or without PostHog.
  */
-const FIRST_PARTY: ReadonlySet<KeyEvent> = new Set(["tap_to_board", "hint_cancel", "hint_request", "hint_use", "share", "onboarding_step"]);
+const FIRST_PARTY: ReadonlySet<KeyEvent> = new Set([
+  "tap_to_board",
+  "hint_cancel",
+  "hint_request",
+  "hint_use",
+  "share",
+  "onboarding_step",
+  "party_first_move",
+]);
 
 /** Pure: the first-party metric body for an event, or null. Exported for tests. */
 export function firstPartyBody(event: KeyEvent, clean: Record<string, string | number | boolean>) {

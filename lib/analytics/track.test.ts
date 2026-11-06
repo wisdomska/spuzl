@@ -60,6 +60,14 @@ describe("first-party metrics", () => {
       ms: 120_000,
     });
     expect(firstPartyBody("hint_cancel", { game: "Bad Game!", mode: "free" })).toMatchObject({ game: undefined, mode: "free" });
+    // R2-03: Party start-to-first-move goes first party with its game and duration
+    expect(firstPartyBody("party_first_move", { game: "sixer", mode: "race", ms: 1234.6 })).toEqual({
+      name: "party_first_move",
+      game: "sixer",
+      mode: "race",
+      kind: undefined,
+      ms: 1235,
+    });
   });
 
   it("forwards onboarding steps and hint requests and uses", () => {

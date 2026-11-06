@@ -15,7 +15,8 @@ import { GAME_BY_ID, WORLDS, WORLD_BY_ID, type WorldId } from "@/lib/catalog";
 import { useSettings } from "@/lib/settings/store";
 import { RACE_GAMES, roomGamesName } from "@/lib/multiplayer/games";
 import { partyCopy } from "@/lib/copy/party";
-import { overtakes, raceOrder } from "@/lib/multiplayer/race";
+import { overtakes, raceOrder, standingOrder } from "@/lib/multiplayer/race";
+import { countdownBeat } from "@/lib/multiplayer/duel";
 import { PARTY_GAMES, PARTY_MAX, PARTY_MIN, PARTY_PICK_MAX, PARTY_PICK_MIN, type EmoteId } from "@/lib/multiplayer/constants";
 import type { MatchPlayerView, MatchView } from "@/lib/multiplayer/types";
 import { useReduce } from "@/lib/client/multiplayer";
@@ -715,6 +716,7 @@ export function RaceRail({
               className="absolute inset-x-0 top-0 flex h-[28px] items-center gap-2 rounded-[10px] px-1.5"
               style={{
                 background: me ? "color-mix(in srgb, var(--accent) 16%, var(--surface))" : "transparent",
+                boxShadow: me ? "inset 0 0 0 2px var(--accent)" : undefined,
                 opacity: r.gone || r.passed ? 0.5 : 1,
               }}
               initial={false}
@@ -729,8 +731,8 @@ export function RaceRail({
                 {placeLabel(i + 1)}
               </span>
               <Avatar name={r.nickname} color={r.color} size={22} radius={7} />
-              <span className="w-[58px] truncate text-[14px]" style={{ fontWeight: me ? 700 : 500 }}>
-                {me ? "You" : r.nickname}
+              <span className={`w-[58px] truncate text-[14px] ${me ? "text-accent" : ""}`} style={{ fontWeight: me ? 700 : 500 }}>
+                {me ? partyCopy.results.you : r.nickname}
               </span>
               <div className="bg-line relative h-2 flex-1 overflow-hidden rounded-[4px]">
                 <motion.div
@@ -755,6 +757,9 @@ export function RaceRail({
 }
 
 /* ---------------- P3 Podium ---------------- */
+
+/** Where 1st, 2nd and 3rd stand on the podium, left to right: 2-1-3. */
+const PODIUM_ORDER = [2, 1, 3] as const;
 
 /** After the last game: everyone you played who isn't a friend yet, with Add friend (and Accept, or Cancel). */
 function PartyAddFriends({ view }: { view: MatchView }) {
@@ -805,21 +810,24 @@ export function Podium({
   const reduce = useReduce();
   const lowData = useSettings((s) => s.lowData);
   const [skip, setSkip] = useState(false);
-  const standing = inSet(view).sort((a, b) => b.points - a.points || (a.place ?? 9) - (b.place ?? 9));
+  const standing = standingOrder(inSet(view));
   const top = standing[0];
+  const R = partyCopy.results;
   useEffect(() => {
     play(top?.id === view.me ? "celebrate" : "success");
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once when the standings appear
   }, []);
-  const title = top?.id === view.me ? "You take it!" : `${top?.nickname ?? "Someone"} takes it`;
+  const title = top?.id === view.me ? R.youWin : R.theyWin(top?.nickname ?? R.someone);
   const sub =
     subtitle ??
     `${roomGamesName(view.gameId, view.chosenGames)}, ${final ? `${view.games.length} games` : `game ${view.round} of ${view.games.length}`}, ${standing.length} Spuzlers`;
+  // Rank order in the page (1st, 2nd, 3rd) for screen readers and the keyboard; the steps still stand 2-1-3.
   const podium: [MatchPlayerView | undefined, number][] = [
-    [standing[1], 1],
     [standing[0], 0],
+    [standing[1], 1],
     [standing[2], 2],
   ];
+  const hasNext = !final && view.round < view.games.length;
   const confetti = useMemo(() => {
     const cs = [1, 2, 3, 4, 5, 6, 7].map((k) => `var(--confetti-${k})`);
     return Array.from({ length: lowData ? 12 : 24 }, (_, i) => ({
@@ -829,7 +837,7 @@ export function Podium({
       dl: ((i * 7) % 10) / 10,
     }));
   }, [lowData]);
-  const hostName = view.players.find((p) => p.id === view.hostId)?.nickname ?? "the host";
+  const hostName = view.players.find((p) => p.id === view.hostId)?.nickname ?? R.theHost;
   return (
     <div
       className="relative flex flex-1 flex-col overflow-hidden pb-[max(28px,env(safe-area-inset-bottom))]"
@@ -854,12 +862,14 @@ export function Podium({
       <p className="text-muted mt-1.5 text-center text-[15px] font-medium">{sub}</p>
       <PodiumReward reward={final ? view.reward : null} note={final ? rewardNote : null} reduce={reduce || skip} />
       {final && <RankChanges matchId={view.id} setNo={view.setNo} className="mt-3 px-4" />}
-      <div className="mt-7 flex items-end justify-center gap-2 px-4">
+      <ol className="mt-7 flex items-end justify-center gap-2 px-4" aria-label={R.standings}>
         {podium.map(([p, rank]) =>
           p ? (
-            <motion.div
+            <motion.li
               key={p.id}
               className="flex flex-1 flex-col items-center gap-2"
+              style={{ order: PODIUM_ORDER[rank] }}
+              aria-label={R.placeLine(rank + 1, p.id === view.me ? R.you : p.nickname, p.points)}
               initial={reduce || skip ? { opacity: 0 } : { opacity: 0, transform: "translateY(-40px) scale(0.8)" }}
               animate={{ opacity: 1, transform: "translateY(0px) scale(1)" }}
               transition={reduce || skip ? { duration: 0.15 } : { ...SPRING_PARTY, delay: [0.3, 0.15, 0.45][rank] }}
@@ -870,52 +880,85 @@ export function Podium({
                 color={p.color}
                 decorative
               />
-              <span className="max-w-full truncate text-[16px] font-bold">{p.id === view.me ? "You" : p.nickname}</span>
+              {p.id === view.me ? (
+                <span className="text-accent max-w-full truncate rounded-full px-2.5 text-[16px] font-bold shadow-[inset_0_0_0_2px_var(--accent)]">
+                  {R.you}
+                </span>
+              ) : (
+                <span className="max-w-full truncate text-[16px] font-bold">{p.nickname}</span>
+              )}
               <div
-                className="flex w-full flex-col items-center gap-1 rounded-t-[18px] pt-3 shadow-[inset_0_-8px_0_rgba(0,0,0,.2)]"
-                style={{ height: [150, 110, 80][rank], background: PODIUM[rank] }}
+                aria-hidden
+                className="flex w-full flex-col items-center gap-1 rounded-t-[18px] pt-3"
+                style={{
+                  height: [150, 110, 80][rank],
+                  background: PODIUM[rank],
+                  boxShadow:
+                    p.id === view.me
+                      ? "inset 0 -8px 0 rgba(0,0,0,.2), 0 0 0 2px var(--bg), 0 0 0 4px var(--accent)"
+                      : "inset 0 -8px 0 rgba(0,0,0,.2)",
+                }}
               >
                 <span className="font-display text-[34px] font-black text-[var(--ink-on-bright)]">{rank + 1}</span>
                 <span className="num text-[14px] font-semibold text-[var(--ink-on-bright)]">{formatNumber(p.points)}</span>
               </div>
-            </motion.div>
+            </motion.li>
           ) : (
-            <div key={rank} className="flex-1" />
+            <li key={rank} aria-hidden className="flex-1" style={{ order: PODIUM_ORDER[rank] }} />
           ),
         )}
-      </div>
-      <ol className="flex flex-col px-4" start={4}>
-        {standing.slice(3).map((p, i) => (
-          <li key={p.id} className="bg-surface border-line flex h-[52px] items-center gap-2.5 border-t px-3">
-            <span className="num text-muted w-[22px] text-[15px] font-semibold">{i + 4}</span>
-            <Avatar name={p.nickname} color={p.color} size={28} radius={9} />
-            <span className="flex-1 text-[16px] font-medium">{p.id === view.me ? "You" : p.nickname}</span>
-            <span className="num text-[15px] font-semibold">{formatNumber(p.points)}</span>
-          </li>
-        ))}
+      </ol>
+      <ol className="flex flex-col px-4" start={4} aria-label={R.rest}>
+        {standing.slice(3).map((p, i) => {
+          const mine = p.id === view.me;
+          return (
+            <li
+              key={p.id}
+              className="bg-surface border-line flex h-[52px] items-center gap-2.5 border-t px-3"
+              style={mine ? { boxShadow: "inset 0 0 0 2px var(--accent)", borderRadius: 12 } : undefined}
+              aria-label={R.placeLine(i + 4, mine ? R.you : p.nickname, p.points)}
+            >
+              <span className="num text-muted w-[22px] text-[15px] font-semibold">{i + 4}</span>
+              <Avatar name={p.nickname} color={p.color} size={28} radius={9} />
+              <span className={`flex-1 text-[16px] ${mine ? "text-accent font-bold" : "font-medium"}`}>{mine ? R.you : p.nickname}</span>
+              <span className="num text-[15px] font-semibold">{formatNumber(p.points)}</span>
+            </li>
+          );
+        })}
       </ol>
       {final && <PartyAddFriends view={view} />}
-      <div className="mt-auto grid grid-cols-2 gap-2.5 px-4 pt-3">
+      {/* One primary action: "Next game (2 of 3)" until the set ends, then "Run it back". */}
+      <div className="mt-auto grid grid-cols-2 gap-2.5 px-4 pt-3" data-testid="party-results-actions">
         {host ? (
-          <>
-            <Cta onClick={onRunItBack}>Run it back</Cta>
-            {final ? (
+          hasNext ? (
+            <>
+              <Cta className="col-span-2" onClick={onNext}>
+                {R.nextGame(view.round + 1, view.games.length)}
+              </Cta>
+              <Cta tone="raised" onClick={onRunItBack}>
+                {R.runItBack}
+              </Cta>
               <Cta tone="raised" onClick={onLeave}>
-                Leave
+                {R.leave}
               </Cta>
-            ) : (
-              <Cta tone="raised" onClick={onNext}>
-                Next game
+            </>
+          ) : (
+            <>
+              <Cta className="col-span-2" onClick={onRunItBack}>
+                {R.runItBack}
               </Cta>
-            )}
-          </>
+              <Cta tone="raised" className="col-span-2" onClick={onLeave}>
+                {R.leave}
+              </Cta>
+            </>
+          )
         ) : (
           <>
             <div className="text-muted col-span-2 text-center text-[15px]" role="status">
-              {final ? `Waiting for ${hostName} to run it back` : `Waiting for ${hostName} to start the next game`}
+              {hasNext ? R.waitingNext(hostName, view.round + 1, view.games.length) : R.waitingRunItBack(hostName)}
             </div>
             <Cta tone="raised" className="col-span-2" onClick={onLeave}>
-              Leave
+              {R.leave}
             </Cta>
           </>
         )}
@@ -966,12 +1009,15 @@ export function TvMode({
   elapsedMs,
   phase,
   msToStart,
+  beats,
 }: {
   view: MatchView;
   rows: RailRow[];
   elapsedMs: number;
   phase: string;
   msToStart: number;
+  /** the countdown's numbers (setting party.countdownSeconds) */
+  beats?: number;
 }) {
   const reduce = useReduce();
   const game = view.games[view.round - 1];
@@ -984,7 +1030,7 @@ export function TvMode({
       Q.default.toDataURL(`${window.location.origin}/party/${view.code}`, { margin: 1, width: 280 }).then(setQr),
     );
   }, [phase, view.code]);
-  const standing = [...racers].sort((a, b) => b.points - a.points);
+  const standing = standingOrder(racers);
   const list =
     phase === "race" || phase === "countdown"
       ? rows.map((r) => ({ id: r.id, name: r.nickname, p: r.progress, sub: null as string | null }))
@@ -1037,7 +1083,7 @@ export function TvMode({
             </div>
             <div className="mt-auto flex items-end gap-6">
               <div className="num text-[120px] leading-none font-semibold">
-                {phase === "countdown" ? Math.max(1, Math.ceil(msToStart / 1000)) : formatClock(elapsedMs)}
+                {phase === "countdown" ? countdownBeat(msToStart, beats).label : formatClock(elapsedMs)}
               </div>
               <Spuz mood={phase === "race" ? "shocked" : "party"} size={180} decorative />
             </div>

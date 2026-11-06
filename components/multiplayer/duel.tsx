@@ -336,7 +336,12 @@ export function Versus({
   round,
   note,
   h2h,
+  countdownMs = TIMING.countdownMs,
+  beats,
 }: {
+  /** the countdown's length and numbers (setting party.countdownSeconds) */
+  countdownMs?: number;
+  beats?: number;
   me: MatchPlayerView;
   them: { nickname: string; color: string; rating: number; country: string | null; city: string | null; bot?: boolean };
   msToStart: number;
@@ -350,7 +355,7 @@ export function Versus({
   useEffect(() => {
     play("whoosh");
   }, []);
-  const countdown = msToStart <= TIMING.countdownMs;
+  const countdown = msToStart <= countdownMs;
   const slide = (from: string) =>
     reduce
       ? { initial: { opacity: 0 }, animate: { opacity: 1 } }
@@ -395,7 +400,7 @@ export function Versus({
       </div>
       <div className="absolute inset-x-0 top-[380px] flex justify-center">
         {countdown ? (
-          <CountdownNumber msToStart={msToStart} />
+          <CountdownNumber msToStart={msToStart} beats={beats} />
         ) : (
           <span className="font-display text-muted flex h-[100px] items-center text-[40px] font-black">vs</span>
         )}

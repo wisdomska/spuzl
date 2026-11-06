@@ -3,7 +3,7 @@
  * best of 3. Finishes in the same tenth of a second are a tie: fewer slips takes it, otherwise the
  * round is a draw (Overlays M4 "Draw. 2:04.3 each"). Pure functions shared by server and tests.
  */
-import { DUEL_ROUNDS, DUEL_TO_WIN, TIMING } from "./constants";
+import { COUNTDOWN_BEATS, DUEL_ROUNDS, DUEL_TO_WIN, TIMING, countdownBeats, countdownMsFor } from "./constants";
 
 export const BOT_ID = "bot";
 
@@ -59,9 +59,17 @@ export function matchState(score: Score, roundsPlayed: number): MatchProgress {
   return { over: true, winner: sorted[0] ?? null, draw: false };
 }
 
-/** When the next round's puzzle unlocks: round end screen, then the countdown. */
-export function nextRoundStart(now: number, roundEndMs: number = TIMING.roundEndMs): number {
-  return now + roundEndMs + TIMING.countdownMs;
+/** When the next round's puzzle unlocks: round end screen, then the countdown (`countdownMs`, from the setting). */
+export function nextRoundStart(now: number, roundEndMs: number = TIMING.roundEndMs, countdownMs: number = TIMING.countdownMs): number {
+  return now + roundEndMs + countdownMs;
+}
+
+/**
+ * Party: when a round starts, from the moment the host starts it (or the next game). The countdown plus a small
+ * buffer, so a phone that hears about the start a little late still sees the whole countdown.
+ */
+export function partyRoundStart(now: number, countdownMs: number = TIMING.countdownMs): number {
+  return now + countdownMs + TIMING.startBufferMs;
 }
 
 /**
@@ -92,8 +100,8 @@ export const rulesBreakMs = (newTo: readonly string[]): number => (newTo.length 
  * Before a round with a rules break: the round's rules card takes the last `rulesMs` before the countdown,
  * after the versus intro or the round end card. `msToStart` is the time to the round's start.
  */
-export function inRulesBreak(msToStart: number): boolean {
-  const toCountdown = msToStart - TIMING.countdownMs;
+export function inRulesBreak(msToStart: number, countdownMs: number = TIMING.countdownMs): boolean {
+  const toCountdown = msToStart - countdownMs;
   return toCountdown > 0 && toCountdown <= TIMING.rulesMs;
 }
 
@@ -122,27 +130,36 @@ export function roundOutcomes(
   }
   return out;
 }
-export function firstRoundStart(now: number): number {
-  return now + TIMING.versusMs + TIMING.countdownMs;
+export function firstRoundStart(now: number, countdownMs: number = TIMING.countdownMs): number {
+  return now + TIMING.versusMs + countdownMs;
 }
 
 export type DuelPhase = "versus" | "round_end" | "countdown" | "playing" | "paused" | "match_end";
 
 /** Client phase from the server's match row and the synced clock. */
-export function duelPhase(m: { status: string; round: number; roundStartedAt: number; pausedAt?: number | null }, now: number): DuelPhase {
+export function duelPhase(
+  m: { status: string; round: number; roundStartedAt: number; pausedAt?: number | null },
+  now: number,
+  countdownMs: number = TIMING.countdownMs,
+): DuelPhase {
   if (m.status === "finished" || m.status === "abandoned") return "match_end";
   const toStart = m.roundStartedAt - now;
-  if (toStart > TIMING.countdownMs) return m.round === 1 ? "versus" : "round_end";
+  if (toStart > countdownMs) return m.round === 1 ? "versus" : "round_end";
   if (toStart > 0) return "countdown";
   return m.pausedAt ? "paused" : "playing";
 }
 
-/** Countdown label for the time left: "3", "2", "1", then "SPUZL!" (prototype: 800 ms beats, SPUZL! held). */
-export function countdownBeat(msToStart: number): { label: string; beat: number } {
-  const elapsed = TIMING.countdownMs - msToStart;
+/**
+ * Countdown label for the time left: "3", "2", "1", then "SPUZL!" (prototype: 800 ms beats, SPUZL! held). `beats` is
+ * how many numbers count down (the setting party.countdownSeconds: 2 to 5); `beat` reaches `beats` on SPUZL!. Time
+ * before the countdown proper (the Party start buffer) shows the first number.
+ */
+export function countdownBeat(msToStart: number, beats: number = COUNTDOWN_BEATS.default): { label: string; beat: number } {
+  const n = countdownBeats(beats);
+  const elapsed = countdownMsFor(n) - msToStart;
   const beat = Math.max(0, Math.floor(elapsed / TIMING.beatMs));
-  if (beat >= 3) return { label: "SPUZL!", beat: 3 };
-  return { label: String(3 - beat), beat };
+  if (beat >= n) return { label: "SPUZL!", beat: n };
+  return { label: String(n - beat), beat };
 }
 
 /**

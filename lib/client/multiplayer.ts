@@ -11,7 +11,8 @@ import { api, ensureSession, HttpError } from "@/lib/client/api";
 import { getTransport, type ChannelStatus, type PresenceMember, type RealtimeChannel } from "@/lib/realtime/transport";
 import { useSettings, prefersReducedMotion } from "@/lib/settings/store";
 import { play } from "@/lib/audio";
-import { TIMING, isEmoteId, type EmoteId } from "@/lib/multiplayer/constants";
+import { TIMING, beatsOfCountdown, countdownMsFor, isEmoteId, type EmoteId } from "@/lib/multiplayer/constants";
+import { useGameSettings } from "@/lib/game-settings/client";
 import type { BayView, MatchView } from "@/lib/multiplayer/types";
 
 /* ---------------- Clock: render phases on the server's clock ---------------- */
@@ -28,6 +29,16 @@ export function useServerNow(serverNow: number | undefined, tickMs = 200) {
     return () => clearInterval(id);
   }, [tickMs]);
   return now;
+}
+
+/**
+ * The round-start countdown for a match (Duel and Party share it): its length in ms and how many numbers it counts.
+ * The server's view says what it scheduled; before a view arrives, the admin setting party.countdownSeconds.
+ */
+export function useCountdown(view: Pick<MatchView, "countdownMs"> | undefined) {
+  const setting = useGameSettings()["party.countdownSeconds"];
+  const ms = view?.countdownMs ?? countdownMsFor(setting);
+  return { ms, beats: beatsOfCountdown(ms) };
 }
 
 export function useReduce() {

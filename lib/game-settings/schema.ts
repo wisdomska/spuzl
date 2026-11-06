@@ -174,6 +174,15 @@ export const SETTINGS = {
     max: 5000,
     unit: "ms",
   },
+  "party.countdownSeconds": {
+    kind: "int",
+    group: "Duel and Party",
+    label: "Round start countdown",
+    help: "The number every Duel round and Party game counts down from before SPUZL! (3 means 3, 2, 1). Each number shows for 0.8 s, then SPUZL! for 1.6 s. Boards stay frozen until the round starts, and the server refuses moves sent before then. Party rounds start half a second after the countdown so slow phones see all of it.",
+    default: 3,
+    min: 2,
+    max: 5,
+  },
   "quickfire.autoAdvanceMs": {
     kind: "int",
     group: "Games",

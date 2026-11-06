@@ -1,13 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Icon } from "@/components/ui/Icon";
 import { Spuz } from "@/components/brand/Spuz";
 import { api, HttpError, useMe } from "@/lib/client/api";
 import { useCrew } from "@/lib/client/social";
-import { matchAction, matchKey, useEmotes, useMatch, useMatchChat, useProfileGate, useServerNow } from "@/lib/client/multiplayer";
+import {
+  matchAction,
+  matchKey,
+  useCountdown,
+  useEmotes,
+  useMatch,
+  useMatchChat,
+  useProfileGate,
+  useServerNow,
+} from "@/lib/client/multiplayer";
+import { track } from "@/lib/analytics/track";
 import { ChatPanel, ChatPopup } from "./chat";
 import { useSettings } from "@/lib/settings/store";
 import { useBackOrHome } from "@/lib/client/nav";
@@ -48,7 +58,7 @@ import {
   type PartyTab,
   type RoomRequest,
 } from "./party";
-import { Avatar, CountdownNumber, Cta, LoadingScreen, MpToast, NeedProfile, Screen, TopButton, useToast } from "./ui";
+import { Avatar, CountdownNumber, CountdownOverlay, Cta, LoadingScreen, MpToast, NeedProfile, Screen, TopButton, useToast } from "./ui";
 
 /* ---------------- /party ---------------- */
 
@@ -281,21 +291,48 @@ function Room({ id, code }: { id: string; code: string }) {
   const { toast, show } = useToast();
   const emotes = useEmotes(channel, view?.me);
   const chat = useMatchChat(view?.id ?? null, channel, view?.me);
-  const chatUi = view && (
-    <>
-      <ChatPanel chat={chat} me={view.me} onEmote={(e) => emotes.send(e)} />
-      <ChatPopup chat={chat} />
-    </>
-  );
+  const countdown = useCountdown(view);
   const [settings, setSettings] = useState(false);
   const [passAsk, setPassAsk] = useState(false);
   useJoinToasts(view, show);
 
   const phase = view ? partyPhase({ status: view.status, roundStartedAt: view.roundStartedAt }, now) : "lobby";
+  const racing = phase === "countdown" || phase === "race";
+  // A round starting (the host's Start or Next game) closes every sheet: chat, room settings, the skip question.
+  // While a race game runs, chat stays shut and its pop-ups wait, so nothing ever covers the board.
+  // (Adjusted while rendering, when the round changes: no frame ever shows a sheet over the countdown.)
+  const liveRound = view && racing ? `${view.setNo}:${view.round}` : null;
+  const [sheetsFor, setSheetsFor] = useState<string | null>(null);
+  if (liveRound !== sheetsFor) {
+    setSheetsFor(liveRound);
+    if (liveRound) {
+      if (chat.open) chat.setOpen(false);
+      setSettings(false);
+      setPassAsk(false);
+    }
+  }
+  const raceLive = racing && !!view && !isAdultMode(view.mode);
+  const chatUi = view && !raceLive && (
+    <>
+      <ChatPanel chat={chat} me={view.me} onEmote={(e) => emotes.send(e)} />
+      <ChatPopup chat={chat} />
+    </>
+  );
+
+  // Admin metric party_first_move: ms from the round's real start to this player's first move (server clock).
+  const clock = useRef({ now, at: 0, start: null as number | null });
+  useEffect(() => {
+    clock.current = { now, at: Date.now(), start: view?.roundStartedAt ?? null };
+  }, [now, view?.roundStartedAt]);
+  const onFirstMove = useCallback((game: string) => {
+    const c = clock.current;
+    if (c.start === null) return;
+    const ms = Math.round(c.now + (Date.now() - c.at) - c.start);
+    if (ms >= 0) track("party_first_move", { game, mode: "race", ms });
+  }, []);
   // Leaving a race in progress (lib/game/leave.ts): Back, the game menu, Escape or the back gesture ask first,
   // then the leave call takes the player out of the room so everyone else's race board updates at once.
   const wide = useWide();
-  const racing = phase === "countdown" || phase === "race";
   const spectating = !!view?.players.find((p) => p.id === view.me)?.spectator;
   const leaveRace = useLeave({
     policy: leavePolicy({ context: "party", over: !view || !racing || isAdultMode(view.mode) || spectating }),
@@ -366,6 +403,7 @@ function Room({ id, code }: { id: string; code: string }) {
           channel={channel}
           onChat={() => chat.setOpen(true)}
           unread={chat.unread}
+          beats={countdown.beats}
         />
         {chatUi}
       </Screen>
@@ -374,7 +412,14 @@ function Room({ id, code }: { id: string; code: string }) {
   if (tvParam || me.spectator)
     return (
       <TvFrame>
-        <TvMode view={view} rows={rows} elapsedMs={elapsed} phase={phase === "final" ? "podium" : phase} msToStart={start - now} />
+        <TvMode
+          view={view}
+          rows={rows}
+          elapsedMs={elapsed}
+          phase={phase === "final" ? "podium" : phase}
+          msToStart={start - now}
+          beats={countdown.beats}
+        />
         {me.spectator && host && phase === "lobby" && (
           <button
             type="button"
@@ -390,7 +435,7 @@ function Room({ id, code }: { id: string; code: string }) {
             onClick={() => act("next")}
             className="toy bg-accent text-on-accent font-display fixed right-6 bottom-6 h-[60px] rounded-[20px] px-8 text-[20px] font-black [--btn-depth:var(--accent-depth)]"
           >
-            Next game
+            {partyCopy.results.nextGame(view.round + 1, view.games.length)}
           </button>
         )}
         <MpToast toast={toast} />
@@ -483,6 +528,7 @@ function Room({ id, code }: { id: string; code: string }) {
           onExit={leaveRace.request}
           onFinished={onFinished}
           onRejected={onRejected}
+          onFirstMove={onFirstMove}
         />
         {iPassed && phase === "race" && (
           <div className="absolute inset-x-0 bottom-0 z-30 flex justify-center px-4 pb-[max(24px,env(safe-area-inset-bottom))]">
@@ -497,22 +543,17 @@ function Room({ id, code }: { id: string; code: string }) {
             </div>
           </div>
         )}
-        {phase === "countdown" && (
-          <div className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-6 bg-[rgba(6,7,13,.8)]">
-            <div className="flex flex-wrap justify-center gap-2.5 px-4">
-              {view.players
-                .filter((p) => !p.spectator && !p.left)
-                .map((p) => (
-                  <Avatar key={p.id} name={p.nickname} color={p.color} size={52} radius={16} />
-                ))}
-            </div>
-            <CountdownNumber msToStart={start - now} />
-            <p className="text-[17px] font-semibold text-[#A2A6C2]">Everyone gets the same puzzle. Go.</p>
-          </div>
-        )}
+        {phase === "countdown" && <RaceCountdown view={view} msToStart={start - now} beats={countdown.beats} />}
       </div>
     );
-  } else body = <LoadingScreen />;
+  } else if (phase === "countdown")
+    // The puzzle is still on its way: the countdown runs on its own, the board drops in under it.
+    body = (
+      <div className="relative flex flex-1 flex-col">
+        <RaceCountdown view={view} msToStart={start - now} beats={countdown.beats} />
+      </div>
+    );
+  else body = <LoadingScreen />;
 
   return (
     <Screen label={`Party ${phase}`} wide={wide && racing && !!view.puzzle}>
@@ -539,6 +580,21 @@ function Room({ id, code }: { id: string; code: string }) {
         />
       )}
     </Screen>
+  );
+}
+
+/** The Party round-start countdown: Duel's 3-2-1-SPUZL! overlay, with the racers above it. Covers the whole board. */
+function RaceCountdown({ view, msToStart, beats }: { view: MatchView; msToStart: number; beats: number }) {
+  return (
+    <CountdownOverlay msToStart={msToStart} beats={beats} blocking line={partyCopy.countdown.line(view.round, view.games.length)}>
+      <div className="flex flex-wrap justify-center gap-2.5 px-4">
+        {view.players
+          .filter((p) => !p.spectator && !p.left)
+          .map((p) => (
+            <Avatar key={p.id} name={p.nickname} color={p.color} size={52} radius={16} />
+          ))}
+      </div>
+    </CountdownOverlay>
   );
 }
 
@@ -619,6 +675,7 @@ function AdultRoom({
   onChat,
   unread,
   channel,
+  beats,
 }: {
   view: MatchView;
   code: string;
@@ -636,11 +693,22 @@ function AdultRoom({
   onHome: () => void;
   onChat: () => void;
   unread: number;
+  /** the countdown's numbers (setting party.countdownSeconds) */
+  beats: number;
 }) {
   const qc = useQueryClient();
   const [players, setPlayers] = useState(false);
   const [kick, setKick] = useState<MatchPlayerView | null>(null);
   const host = view.hostId === view.me;
+  // A round starting closes the players sheet and any kick question (chat is closed by the room).
+  const [sheetsPhase, setSheetsPhase] = useState(phase);
+  if (phase !== sheetsPhase) {
+    setSheetsPhase(phase);
+    if (phase === "countdown") {
+      setPlayers(false);
+      setKick(null);
+    }
+  }
   const mode = isAdultMode(view.mode) ? view.mode : "draw";
   const doKick = async () => {
     const p = kick;
@@ -694,7 +762,7 @@ function AdultRoom({
     body = (
       <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4">
         <h1 className="font-display text-[26px] font-black">{modeName(mode)}</h1>
-        <CountdownNumber msToStart={(view.roundStartedAt ?? now) - now} />
+        <CountdownNumber msToStart={(view.roundStartedAt ?? now) - now} beats={beats} />
       </div>
     );
   else if (view.party)

@@ -50,6 +50,26 @@ export const partyCopy = {
     beat: "Beat my time",
     beatHint: "Send this exact puzzle. They race your time.",
   },
+  /** the round-start countdown (Duel's 3-2-1-SPUZL!) over the board */
+  countdown: {
+    line: (game: number, of: number) => `Game ${game} of ${of}. Same puzzle for everyone. Go!`,
+  },
+  /** results after each game and after the set (podium, lists, rail) */
+  results: {
+    you: "You",
+    someone: "Someone",
+    theHost: "the host",
+    youWin: "You take it!",
+    theyWin: (name: string) => `${name} takes it`,
+    standings: "Standings",
+    rest: "Everyone else",
+    placeLine: (place: number, name: string, points: number) => `${place}. ${name}, ${points} points`,
+    nextGame: (game: number, of: number) => `Next game (${game} of ${of})`,
+    runItBack: "Run it back",
+    leave: "Leave",
+    waitingNext: (host: string, game: number, of: number) => `Waiting for ${host} to start game ${game} of ${of}`,
+    waitingRunItBack: (host: string) => `Waiting for ${host} to run it back`,
+  },
   /** the podium's reward line (shown when the server says what you were paid) */
   podium: {
     reward: "You earned",

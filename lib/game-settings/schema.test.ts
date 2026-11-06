@@ -29,3 +29,14 @@ describe("game settings schema", () => {
     expect(Object.keys(s)).toEqual(Object.keys(DEFAULTS));
   });
 });
+
+describe("party.countdownSeconds (R2-03)", () => {
+  it("defaults to 3 (3, 2, 1) and allows 2 to 5", () => {
+    expect(DEFAULTS["party.countdownSeconds"]).toBe(3);
+    expect(validateSetting("party.countdownSeconds", 2)).toBeNull();
+    expect(validateSetting("party.countdownSeconds", 5)).toBeNull();
+    expect(validateSetting("party.countdownSeconds", 1)).toMatch(/between 2 and 5/);
+    expect(validateSetting("party.countdownSeconds", 6)).toMatch(/between 2 and 5/);
+    expect(SETTINGS["party.countdownSeconds"].help.length).toBeGreaterThan(20);
+  });
+});

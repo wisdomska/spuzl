@@ -5,9 +5,16 @@
 export const TIMING = {
   /** D2 versus intro before the first countdown */
   versusMs: 1600,
-  /** 3, 2, 1 at 800 ms each, SPUZL! held for 1,600 ms (prototype: 5 ticks of 800 ms) */
+  /**
+   * The default countdown: 3, 2, 1 at 800 ms each, SPUZL! held for 1,600 ms (prototype: 5 ticks of 800 ms). The live
+   * length comes from the admin setting party.countdownSeconds (shared by Duel and Party): `countdownMsFor(n)`.
+   */
   countdownMs: 4000,
   beatMs: 800,
+  /** SPUZL! stays up this long after the last number */
+  spuzlHoldMs: 1600,
+  /** Party: the server starts a round this much later than the countdown, so a slow phone still sees all of it */
+  startBufferMs: 500,
   /** M2 round end card before the next countdown; the live value is the admin setting duel.roundResultMs */
   roundEndMs: 2000,
   /** a ranked round of a game one of the players has never cleared: the rules card's time before the countdown */
@@ -34,6 +41,24 @@ export const TIMING = {
   asyncMoveMs: 24 * 60 * 60_000,
   nudgeAfterMs: 12 * 60 * 60_000,
 } as const;
+
+/** The countdown numbers (the setting party.countdownSeconds): 2 to 5, 3 by default ("3, 2, 1"). */
+export const COUNTDOWN_BEATS = { min: 2, max: 5, default: 3 } as const;
+
+/** Clamps a stored countdown length to the allowed range (a bad value plays the default). */
+export function countdownBeats(n: unknown): number {
+  return typeof n === "number" && Number.isInteger(n) && n >= COUNTDOWN_BEATS.min && n <= COUNTDOWN_BEATS.max ? n : COUNTDOWN_BEATS.default;
+}
+
+/** How long the countdown runs for `beats` numbers: one beat each, then SPUZL! held. 3 beats = TIMING.countdownMs. */
+export function countdownMsFor(beats: number): number {
+  return countdownBeats(beats) * TIMING.beatMs + TIMING.spuzlHoldMs;
+}
+
+/** The number of beats in a countdown of `ms` (the inverse of countdownMsFor). */
+export function beatsOfCountdown(ms: number): number {
+  return countdownBeats(Math.round((ms - TIMING.spuzlHoldMs) / TIMING.beatMs));
+}
 
 export const DUEL_ROUNDS = 3;
 export const DUEL_TO_WIN = 2;

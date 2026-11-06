@@ -10,7 +10,7 @@ const label = z.string().regex(/^[a-z_]{1,16}$/);
 const Metric = z
   .object({
     // hint_cancel: older clients only (now hint_request minus hint_use).
-    name: z.enum(["tap_to_board", "hint_cancel", "hint_request", "hint_use", "share", "onboarding_step"]),
+    name: z.enum(["tap_to_board", "hint_cancel", "hint_request", "hint_use", "share", "onboarding_step", "party_first_move"]),
     game: z
       .string()
       .refine((g) => !!playableGame(g))
@@ -23,14 +23,18 @@ const Metric = z
     (m) => m.name !== "tap_to_board" || (m.ms !== undefined && (m.kind === "tap" || m.kind === "load")),
     "tap_to_board needs ms and kind",
   )
+  .refine((m) => m.name !== "party_first_move" || m.ms !== undefined, "party_first_move needs ms")
   .refine((m) => m.name !== "onboarding_step" || isOnboardingStep(m.kind), "onboarding_step needs a known step as kind")
   .refine((m) => !m.name.startsWith("hint_") || m.name === "hint_cancel" || m.kind === "confirm" || m.kind === "direct", {
     message: "hint_request and hint_use need kind confirm or direct",
   });
 
+/** Metrics that carry a duration (value_ms): tap-to-board latency and Party start-to-first-move. */
+const TIMED = new Set(["tap_to_board", "party_first_move"]);
+
 /**
  * POST /api/v1/metrics: one anonymous client measurement for the admin Metrics page (tap-to-board latency,
- * hint requests and uses, shares, onboarding steps). Guests and signed-out visitors may send; nothing that identifies them is
+ * hint requests and uses, shares, onboarding steps, Party start-to-first-move). Guests and signed-out visitors may send; nothing that identifies them is
  * stored (no player id, IP or URL). Rate limited per user, else per hashed client address.
  */
 export const POST = handle(async (req: Request) => {
@@ -49,7 +53,7 @@ export const POST = handle(async (req: Request) => {
     game_id: m.game ?? null,
     mode: m.mode ?? null,
     kind: m.kind ?? null,
-    value_ms: m.name === "tap_to_board" ? (m.ms ?? null) : null,
+    value_ms: TIMED.has(m.name) ? (m.ms ?? null) : null,
   });
   if (error) throw error;
   return new Response(null, { status: 204 });

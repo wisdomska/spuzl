@@ -2,6 +2,8 @@
 export const duelCopy = {
   // SPZ-25: /duel is a page with its own Back (to the Grid when opened from a link).
   entryTitle: "Duel",
+  /** under the round-start countdown */
+  roundOf: (round: number, of: number) => `Round ${round} of ${of}`,
   /** entering a code a friend sent (any code: a Duel, a Party room or a Board Games invite) */
   code: {
     open: "Got a friend's code?",

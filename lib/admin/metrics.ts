@@ -51,6 +51,10 @@ export interface MetricRow {
   /** Taps on Hint, and go-aheads (direct, or Confirm on the first-hint sheet). */
   hint_requests: number;
   hint_uses: number;
+  /** First-party party_first_move (R2-03): ms from a Party round's start to a player's first move; absent before it. */
+  party_first_move_n?: number;
+  party_first_move_p50?: number | null;
+  party_first_move_p95?: number | null;
 }
 
 export interface MetricsData {
@@ -82,7 +86,7 @@ export function metricRange(days: RangeDays, end: string = todayIso()): { from: 
   return { from: addDays(end, -(days - 1)), to: end };
 }
 
-export const METRIC_IDS = ["tap_to_board", "onboarding", "first_move", "hints", "duels", "daily", "shares"] as const;
+export const METRIC_IDS = ["tap_to_board", "onboarding", "first_move", "party_first_move", "hints", "duels", "daily", "shares"] as const;
 export type MetricId = (typeof METRIC_IDS)[number];
 
 type Col = { key: string; label: string; value: (r: MetricRow) => number | null };
@@ -155,6 +159,18 @@ export const METRICS: readonly MetricDef[] = [
       { key: "attempts", label: "Attempts", value: (r) => r.first_move_n },
       { key: "p50_ms", label: "p50 ms", value: (r) => r.first_move_p50 },
       { key: "p95_ms", label: "p95 ms", value: (r) => r.first_move_p95 },
+    ],
+  },
+  {
+    id: "party_first_move",
+    title: "Party start to first move",
+    note: "Time from a Party game's real start (the end of its 3-2-1-SPUZL! countdown) to each racer's first move on the board, on the server clock (client recorded, party_first_move). One per racer per game; a reload into a game already started is not counted again.",
+    headline: (t) => `${ms(t.party_first_move_p50 ?? null)} / ${ms(t.party_first_move_p95 ?? null)}`,
+    sub: (t) => `p50 / p95 · ${n(t.party_first_move_n ?? 0)} first moves`,
+    cols: [
+      { key: "first_moves", label: "First moves", value: (r) => r.party_first_move_n ?? 0 },
+      { key: "p50_ms", label: "p50 ms", value: (r) => r.party_first_move_p50 ?? null },
+      { key: "p95_ms", label: "p95 ms", value: (r) => r.party_first_move_p95 ?? null },
     ],
   },
   {

@@ -62,6 +62,8 @@ export interface MatchView {
   rated: boolean;
   isBot: boolean;
   roundStartedAt: number | null;
+  /** the 3-2-1-SPUZL! countdown's length in ms (admin setting party.countdownSeconds), as the server schedules it */
+  countdownMs?: number;
   roundFirstAt: number | null;
   pausedAt: number | null;
   pauseMs: number;

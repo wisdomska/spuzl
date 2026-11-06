@@ -286,6 +286,44 @@ describe("api: skipping a Party round", () => {
   });
 });
 
+describe("api: Party round start (R2-03)", () => {
+  it("starts after the countdown setting plus a buffer, shows the puzzle, and refuses moves until the real start", async () => {
+    await setSetting("party.countdownSeconds", 5);
+    try {
+      const host = await guest(uniq("rh_"));
+      const room = await host.api("/api/v1/rooms", { json: { game: "crownfall", difficulty: "easy", maxPlayers: 2 } });
+      const code: string = room.data.code;
+      const id: string = room.data.matchId;
+      const p2 = await guest(uniq("r2_"));
+      await p2.api(`/api/v1/rooms/${code}/join`, { json: {} });
+      await p2.api(`/api/v1/rooms/${code}/ready`, { json: { ready: true } });
+      const t0 = Date.now();
+      expect((await host.api(`/api/v1/rooms/${code}/start`, { json: {} })).status).toBe(200);
+      const v = (await p2.api(`/api/v1/matches/${id}`)).data;
+      // 5 beats of 800 ms + SPUZL! 1.6 s = 5.6 s, plus the start buffer
+      expect(v.countdownMs).toBe(5600);
+      expect(v.roundStartedAt - t0).toBeGreaterThanOrEqual(5600);
+      expect(v.roundStartedAt - t0).toBeLessThan(5600 + 1500 + 2000);
+      // the board can be drawn during the countdown, but nothing it sends counts yet
+      expect(v.puzzle).not.toBeNull();
+      const s = solve(id, v.setNo, 1, "easy").state;
+      const early = await p2.api(`/api/v1/matches/${id}/progress`, { json: { round: 1, state: s, mistakes: 0 } });
+      expect([early.status, early.data.error]).toEqual([409, "too_early"]);
+      expect((await p2.api(`/api/v1/matches/${id}/finish`, { json: { round: 1, state: s, mistakes: 0 } })).status).toBe(409);
+      // the same for the next game of the set
+      await startNow(id);
+      await host.api(`/api/v1/matches/${id}/finish`, { json: { round: 1, state: s, mistakes: 0 } });
+      const f = await p2.api(`/api/v1/matches/${id}/finish`, { json: { round: 1, state: s, mistakes: 0 } });
+      expect(f.data.status).toBe("round_end");
+      expect((await host.api(`/api/v1/rooms/${code}/next`, { json: {} })).status).toBe(200);
+      const s2 = solve(id, v.setNo, 2, "easy").state;
+      expect((await p2.api(`/api/v1/matches/${id}/finish`, { json: { round: 2, state: s2, mistakes: 0 } })).status).toBe(409);
+    } finally {
+      await admin().from("game_settings").delete().eq("key", "party.countdownSeconds");
+    }
+  });
+});
+
 describe("api: a friend's code", () => {
   it("sends any code where it leads: a Duel challenge, a Party room or a Board Games invite, and nothing else", async () => {
     const host = await guest(uniq("ch_"));

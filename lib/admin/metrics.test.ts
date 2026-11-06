@@ -126,3 +126,19 @@ describe("hint requests and onboarding funnel", () => {
     expect(METRIC_BY_ID.onboarding.headline(row())).toBe("n/a");
   });
 });
+
+describe("party start to first move (R2-03)", () => {
+  it("shows p50 / p95 and exports count, p50 and p95 per day", () => {
+    const total = row({ party_first_move_n: 12, party_first_move_p50: 900, party_first_move_p95: 14_200 });
+    expect(METRIC_BY_ID.party_first_move.headline(total)).toBe("900 ms / 14.2 s");
+    expect(METRIC_BY_ID.party_first_move.sub(total)).toContain("12 first moves");
+    const csv = metricCsv("party_first_move", { rows: [row({ date: "2026-11-30" })], total })
+      .trimEnd()
+      .split("\r\n");
+    expect(csv).toEqual(["date,first_moves,p50_ms,p95_ms", "2026-11-30,0,,", "total,12,900,14200"]);
+  });
+
+  it("reads rows from before the migration as no data", () => {
+    expect(METRIC_BY_ID.party_first_move.headline(row())).toBe("n/a / n/a");
+  });
+});

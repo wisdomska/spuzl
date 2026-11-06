@@ -5,12 +5,12 @@ import type { CodeTarget } from "../types";
 import { ApiError } from "@/lib/api/server";
 import { serverBroadcast } from "@/lib/realtime/server";
 import { createRng } from "@/lib/rng";
-import { DUEL_ROUNDS, PARTY_GAMES, PARTY_MIN, TIMING } from "../constants";
-import { botTimes, firstRoundStart, newToGame, rankedPool, rulesBreakMs } from "../duel";
+import { DUEL_ROUNDS, PARTY_GAMES, PARTY_MIN } from "../constants";
+import { botTimes, firstRoundStart, newToGame, partyRoundStart, rankedPool, rulesBreakMs } from "../duel";
 import { isRaceGame, pickGames } from "../games";
 import { pickOpponent, type QueueEntry } from "../matchmaking";
 import { CODE_ALPHABET, makeRoomCode, roomExpired } from "../roomCode";
-import { loadMatch, matchTopic, member, touch, viewOf } from "./match";
+import { liveCountdownMs, loadMatch, matchTopic, member, touch, viewOf } from "./match";
 import { readRating } from "./rewards";
 import { knownGames } from "./known";
 import { GAME_BY_ID } from "@/lib/catalog";
@@ -121,6 +121,7 @@ async function createDuel(
   const games = pickGames(rng, game, DUEL_ROUNDS, !game && known ? rankedPool(known) : undefined);
   // A first round that is new to either player starts after a rules break (both wait the same).
   const rulesMs = known ? rulesBreakMs(newToGame(games[0], players, known)) : 0;
+  const countdownMs = await liveCountdownMs();
   const now = Date.now();
   const { error } = await admin.from("matches").insert({
     id,
@@ -134,7 +135,7 @@ async function createDuel(
     is_bot: !!o.bot,
     best_of: DUEL_ROUNDS,
     round: 1,
-    round_started_at: iso(firstRoundStart(now) + rulesMs),
+    round_started_at: iso(firstRoundStart(now, countdownMs) + rulesMs),
     bot_ms: o.bot ? botTimes(70_000, [rng.next(), rng.next(), rng.next()]) : [],
   });
   if (error) throw error;
@@ -150,7 +151,7 @@ async function createDuel(
   if (o.claim)
     await admin
       .from("matches")
-      .update({ status: "playing", round_started_at: iso(firstRoundStart(Date.now()) + rulesMs) })
+      .update({ status: "playing", round_started_at: iso(firstRoundStart(Date.now(), countdownMs) + rulesMs) })
       .eq("id", id);
   return id;
 }
@@ -198,9 +199,10 @@ export async function joinFriendDuel(admin: SupabaseClient, playerId: string, co
   if (l.players.some((p) => p.player_id === playerId)) return { matchId: m.id as string };
   if (m.status !== "lobby" || l.players.length >= 2) throw new ApiError(409, "duel_full");
   await addPlayer(admin, m.id, playerId, 1, { ready: true });
+  const countdownMs = await liveCountdownMs();
   const { data } = await admin
     .from("matches")
-    .update({ status: "playing", round: 1, round_started_at: iso(firstRoundStart(Date.now())), code: null })
+    .update({ status: "playing", round: 1, round_started_at: iso(firstRoundStart(Date.now(), countdownMs)), code: null })
     .eq("id", m.id)
     .eq("status", "lobby")
     .select("id");
@@ -402,6 +404,7 @@ export async function startRoom(admin: SupabaseClient, playerId: string, code: s
   }
   // One game every round, PARTY_GAMES of the host's picks (shuffled per set), or a random mix.
   const games = pickGames(createRng(`party:${l.m.id}:${l.m.set_no}`), l.m.game_id, PARTY_GAMES, l.m.chosen_games);
+  const countdownMs = await liveCountdownMs();
   await admin
     .from("match_players")
     .update({ points: 0, place: null, progress: 0, mistakes: 0, finished_ms: null, state: null })
@@ -412,7 +415,8 @@ export async function startRoom(admin: SupabaseClient, playerId: string, code: s
       status: "playing",
       round: 1,
       games,
-      round_started_at: iso(Date.now() + TIMING.countdownMs),
+      // The countdown (party.countdownSeconds) plus a small buffer; moves before this moment are refused.
+      round_started_at: iso(partyRoundStart(Date.now(), countdownMs)),
       round_first_at: null,
       winner_id: null,
       result: null,
@@ -428,13 +432,14 @@ export async function startRoom(admin: SupabaseClient, playerId: string, code: s
 export async function nextGame(admin: SupabaseClient, playerId: string, code: string) {
   const l = await roomForHost(admin, code, playerId, true);
   if (l.m.status !== "round_end") throw new ApiError(409, "not_podium");
+  const countdownMs = await liveCountdownMs();
   const { data, error } = await admin.rpc("svc_match_commit", {
     p_match: l.m.id,
     p_expect_status: "round_end",
     p_expect_round: l.m.round,
     p_status: "playing",
     p_round: l.m.round + 1,
-    p_round_started_at: iso(Date.now() + TIMING.countdownMs),
+    p_round_started_at: iso(partyRoundStart(Date.now(), countdownMs)),
     p_winner: null,
     p_result: null,
     p_bot_rounds_won: null,

@@ -7,7 +7,7 @@ import { Icon } from "@/components/ui/Icon";
 import { Spuz } from "@/components/brand/Spuz";
 import { play } from "@/lib/audio";
 import { haptic, LEVELS } from "@/lib/haptics";
-import { EMOTES, EMOTE_LABELS, type EmoteId } from "@/lib/multiplayer/constants";
+import { COUNTDOWN_BEATS, EMOTES, EMOTE_LABELS, countdownBeats, type EmoteId } from "@/lib/multiplayer/constants";
 import { countdownBeat } from "@/lib/multiplayer/duel";
 import { useReduce } from "@/lib/client/multiplayer";
 
@@ -97,20 +97,21 @@ export function RoundDots({
  */
 const SLAM_S = 0.2;
 
-export function CountdownNumber({ msToStart }: { msToStart: number }) {
-  const { label, beat } = countdownBeat(msToStart);
+export function CountdownNumber({ msToStart, beats = COUNTDOWN_BEATS.default }: { msToStart: number; beats?: number }) {
+  const { label, beat } = countdownBeat(msToStart, beats);
+  const n = countdownBeats(beats);
   const reduce = useReduce();
   const played = useRef(-1);
   useEffect(() => {
     if (played.current === beat || msToStart <= 0) return;
     played.current = beat;
     const delay = reduce ? 0 : SLAM_S;
-    if (beat >= 3) {
+    if (beat >= n) {
       play("horn", { delay, silentHaptic: true });
       setTimeout(() => haptic(LEVELS.heavy), delay * 1000);
-    } else play("countdown", { step: 3 - beat, delay });
-  }, [beat, msToStart, reduce]);
-  const go = beat >= 3;
+    } else play("countdown", { step: n - beat, delay });
+  }, [beat, n, msToStart, reduce]);
+  const go = beat >= n;
   return (
     <div aria-live="assertive" className="flex justify-center">
       <AnimatePresence mode="popLayout" initial={false}>
@@ -143,6 +144,42 @@ export function CountdownNumber({ msToStart }: { msToStart: number }) {
           <span className="num">{label}</span>
         </motion.div>
       </AnimatePresence>
+    </div>
+  );
+}
+
+/**
+ * The round-start countdown over a match board (Duel rounds and Party games share it): a scrim, the 3-2-1-SPUZL!
+ * number and a line under it. `msToStart` counts to the round's real start; the board under it stays locked until
+ * then and the server refuses anything sent earlier. `blocking` also catches taps on the scrim (Party, where the
+ * whole board is covered); the Duel lets them through to its own controls.
+ */
+export function CountdownOverlay({
+  msToStart,
+  beats,
+  line,
+  blocking = false,
+  dim = "strong",
+  children,
+}: {
+  msToStart: number;
+  beats?: number;
+  /** under the number, e.g. "Round 2 of 3" */
+  line?: ReactNode;
+  blocking?: boolean;
+  /** scrim strength: the Duel keeps its board half visible */
+  dim?: "soft" | "strong";
+  /** above the number (the Party racers) */
+  children?: ReactNode;
+}) {
+  return (
+    <div
+      data-testid="round-countdown"
+      className={`absolute inset-0 z-40 flex flex-col items-center justify-center gap-6 ${dim === "soft" ? "bg-[rgba(6,7,13,.55)]" : "bg-[rgba(6,7,13,.8)]"} ${blocking ? "" : "pointer-events-none"}`}
+    >
+      {children}
+      <CountdownNumber msToStart={msToStart} beats={beats} />
+      {line && <div className="text-[15px] font-semibold text-[#A2A6C2]">{line}</div>}
     </div>
   );
 }
@@ -415,6 +452,7 @@ export function Cta({
       type="button"
       onClick={onClick}
       disabled={disabled}
+      data-tone={accent ? "primary" : "secondary"}
       className={`toy font-display flex h-[60px] items-center justify-center gap-2.5 rounded-[20px] text-[17px] font-black ${className}`}
       style={{
         background: accent ? "var(--accent)" : "var(--surface-raised)",

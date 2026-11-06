@@ -273,3 +273,9 @@ Without it push stays off and everything else works.
 | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------ |
 | `20261130000001_rank_contribution_delta.sql` | `rank_contributions.track` and `delta`: which category a counted round moved and by how much (shown on the end screen) | In the file header |
 | `20261130000002_board_queue_seats.sql`       | `board_queue.seats`: Play live Ludo for 3 or 4 players; only the same table size is grouped                            | In the file header |
+
+## R2 (unreleased)
+
+| Migration                                    | What it does                                                                                                                                                             | Rollback           |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------ |
+| `20261130100301_party_first_move_metric.sql` | R2-03: `client_metrics` accepts `party_first_move` (ms from a Party game's start to a racer's first move); `svc_admin_metrics` adds its count, p50 and p95 per day/range | In the file header |

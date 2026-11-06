@@ -24,7 +24,10 @@ export function MatchBoard({
   onExit,
   onFinished,
   onRejected,
+  onFirstMove,
 }: {
+  /** once per round, on this player's first move (not after a reload into a round they had already started) */
+  onFirstMove?: (game: string) => void;
   view: MatchView;
   strip: ReactNode;
   locked: boolean;
@@ -41,6 +44,8 @@ export function MatchBoard({
   const key = `${view.id}:${view.setNo}:${round}`;
   const lastState = useRef<unknown>(view.myState);
   const qc = useQueryClient();
+  // The round this player already made a move in (a saved board state counts: they moved before a reload).
+  const moved = useRef<string | null>(view.myState != null ? key : null);
 
   useEffect(() => {
     mistakes.current = view.players.find((p) => p.id === view.me)?.mistakes ?? 0;
@@ -68,9 +73,13 @@ export function MatchBoard({
     (state: unknown, _ms: number, info?: { mistake?: boolean }) => {
       if (info?.mistake) mistakes.current++;
       lastState.current = state;
+      if (moved.current !== key) {
+        moved.current = key;
+        onFirstMove?.(puzzle.game);
+      }
       send(state, mistakes.current);
     },
-    [send],
+    [send, key, onFirstMove, puzzle.game],
   );
 
   const onSolved = useCallback(

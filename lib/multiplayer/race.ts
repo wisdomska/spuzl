@@ -58,6 +58,14 @@ export function raceOver(racers: Racer[], startedAt: number, firstFinishAt: numb
   return now - startedAt >= TIMING.raceCapMs;
 }
 
+/**
+ * Party results in rank order (podium, lists, TV board): most points first, then the server's place, then a stable
+ * id order, the same tie-break the server uses when it places the set. Index 0 is first place.
+ */
+export function standingOrder<T extends { id: string; points: number; place: number | null }>(players: readonly T[]): T[] {
+  return [...players].sort((a, b) => b.points - a.points || (a.place ?? Infinity) - (b.place ?? Infinity) || a.id.localeCompare(b.id));
+}
+
 /** Who overtook whom between two orders (ids). Returns pairs [passer, passed] involving `me`. */
 export function overtakes(before: string[], after: string[], me: string): { passer: string; passed: string }[] {
   const out: { passer: string; passed: string }[] = [];
