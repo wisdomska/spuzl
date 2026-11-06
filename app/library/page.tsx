@@ -13,11 +13,14 @@ import { useGamesMeta } from "@/lib/games-meta/client";
 import { durationLabel, filterGames, type GameFilter } from "@/lib/games-meta";
 import { GameFilterChips, GameSearchField } from "@/components/library/GameFilters";
 import { useGameSettings } from "@/lib/game-settings/client";
+import { SHEET_LINK } from "@/lib/analytics/play-nav";
 import { libraryCopy as T } from "@/lib/copy/library";
 
 /**
  * All games (SPZ-14): search, one row of filter chips, and one tap per game that opens its card
  * (Daily first, Free play second). Each row shows only the name, world, typical time and a tick when done today.
+ * R2-12: each row is a real link to /play/<game>, so long-press, open in a new tab and share work; a plain tap
+ * (Link `onNavigate`, which never runs for modifier or middle clicks) opens the card instead.
  */
 export default function Library() {
   const router = useRouter();
@@ -27,6 +30,8 @@ export default function Library() {
   const [filter, setFilter] = useState<GameFilter>("all");
   const [q, setQ] = useState("");
   const [open, setOpen] = useState<GameMeta | null>(null);
+  // R2-12: every row renders at once; the list fades in on its first paint only (never again on a filter change).
+  const [entering, setEntering] = useState(true);
   const dailiesOn = useGameSettings()["features.dailies"];
   // The tick marks games done today (Dailies on) or games ever played (Dailies off).
   const cleared: Record<string, number> = dailiesOn
@@ -87,15 +92,24 @@ export default function Library() {
           </button>
         </div>
       ) : (
-        <ul className="flex flex-col gap-2 px-4 pt-1 pb-10 lg:grid lg:grid-cols-2 lg:gap-2.5 xl:grid-cols-3">
-          {list.map((g, i) => {
+        <ul
+          className={`flex flex-col gap-2 px-4 pt-1 pb-10 lg:grid lg:grid-cols-2 lg:gap-2.5 xl:grid-cols-3 ${entering ? "list-in" : ""}`}
+          onAnimationEnd={() => setEntering(false)}
+        >
+          {list.map((g) => {
             const done = cleared[g.id] !== undefined;
             const time = durationLabel(meta[g.id]?.typicalSec ?? 180);
             return (
-              <li key={g.id} className="list-in" style={{ animationDelay: `${Math.min(i, 8) * 25}ms` }}>
-                <button
-                  type="button"
-                  onClick={() => setOpen(g)}
+              <li key={g.id}>
+                {/* R2-12: a real link to the game (long-press, new tab and share work); a plain tap opens its card. */}
+                <Link
+                  href={`/play/${g.id}` as never}
+                  prefetch={false}
+                  {...SHEET_LINK}
+                  onNavigate={(e) => {
+                    e.preventDefault();
+                    setOpen(g);
+                  }}
                   aria-haspopup="dialog"
                   className="press bg-surface flex w-full items-center gap-3 rounded-[20px] py-2.5 pr-3 pl-3 text-left"
                 >
@@ -122,7 +136,7 @@ export default function Library() {
                   ) : (
                     <Icon name="caret-right" size={18} className="text-muted shrink-0" />
                   )}
-                </button>
+                </Link>
               </li>
             );
           })}

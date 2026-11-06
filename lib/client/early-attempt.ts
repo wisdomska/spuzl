@@ -3,6 +3,7 @@
 import { startAttempt, type StartRes } from "./api";
 import { resumeIdFor } from "./resume";
 import { markPlayTap } from "@/lib/perf/quiet";
+import { isSheetLink } from "@/lib/analytics/play-nav";
 
 /**
  * SPZ-01: start a game's attempt the moment it is tapped, in parallel with loading the Play route, so the board
@@ -59,11 +60,24 @@ export function takePrimed(game: string, mode: string, extra?: string | number):
   return hit && Date.now() - hit.at < TTL_MS ? hit.p : null;
 }
 
+/**
+ * Pure: the Play link a click should prime, or null. Only a plain left click navigates in this tab; a sheet link
+ * (R2-12 Library rows) opens its game card on a plain tap, so it is never primed.
+ */
+export function primableLink<A extends Pick<Element, "closest" | "getAttribute">>(
+  target: Pick<Element, "closest"> | null | undefined,
+  e: Pick<MouseEvent, "defaultPrevented" | "button" | "metaKey" | "ctrlKey" | "shiftKey" | "altKey">,
+): A | null {
+  if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return null;
+  if (typeof target?.closest !== "function" || isSheetLink(target)) return null;
+  return target.closest("a[href^='/play/']") as A | null;
+}
+
 /** Listens for taps on links to /play/... (capture phase, before navigation). */
 export function installAttemptPriming(): () => void {
   const on = (e: MouseEvent) => {
-    const a = (e.target as Element | null)?.closest?.("a[href^='/play/']") as HTMLAnchorElement | null;
-    if (a && !e.defaultPrevented && e.button === 0 && !e.metaKey && !e.ctrlKey) {
+    const a = primableLink<HTMLAnchorElement>(e.target as Element | null, e);
+    if (a) {
       markPlayTap();
       primeAttempt(a.getAttribute("href")!);
     }

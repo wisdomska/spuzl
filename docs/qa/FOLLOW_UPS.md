@@ -105,3 +105,9 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 - **Quads feedback on slow networks (R2-14):** answers are checked on the server (the groups never reach the
   client), so the 600 ms budget from Submit to feedback holds on a normal connection; on slow 3G the round trip
   alone can pass it. The lifted four show a "checking" ring at once and "Checking…" after 250 ms meanwhile.
+- **R2-12, Emoji Hits card icon:** not reproducible from the code. The catalog icon (`smiley`) is in
+  `components/ui/icons.generated.ts`, both tiles (`public/3d/icons{,-sm}/emojihits.webp`) exist and draw a smiley,
+  and production serves them (direct and through `/_next/image`). The likeliest cause is a miss cached while Emoji
+  Hits was a lab game with no tile (the tile landed on 2 November). `GameIcon3D` now falls back to the flat tile
+  with the game's Phosphor icon when the image fails, and `lib/catalog.test.ts` checks every live game's icon and
+  tiles. If it shows again on a device, clear that site's data and check whether the image request returned 404.

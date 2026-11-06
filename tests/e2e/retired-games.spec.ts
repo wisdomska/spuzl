@@ -17,7 +17,7 @@ test("retired games are hidden and refused; the promoted games play", async ({ p
   await page.goto("/library");
   await expect(page.getByText(`${GAME_COUNT} games`)).toBeVisible();
   for (const name of ["Pinned", "Pixl", "Dead On", "Hunch", "Flip"])
-    await expect(page.getByRole("button", { name: new RegExp(`^${name} `) })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: new RegExp(`^${name} `) })).toHaveCount(0);
   await expect(page.getByRole("button", { name: WORLD_BY_ID.number.name })).toHaveCount(0);
   await page.getByRole("searchbox").fill("pinned");
   await expect(page.getByText("No games match.", { exact: false })).toBeVisible();

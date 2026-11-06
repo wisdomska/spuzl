@@ -28,8 +28,9 @@ import { useSheetSound } from "@/lib/audio/useSheetSound";
 
 /**
  * One game's card (SPZ-14): the rule, then one primary action (Play; with Dailies on, today's Daily then Free play
- * is done), Free play second, Levels (with the player's current level) for games with a level ladder, and the
- * ways to play with others where the game supports them.
+ * is done), Free play second, and the ways to play with others where the game supports them.
+ * R2-12: for a game with a level ladder the primary is the player's next level by name ("Play Level 3"), the
+ * Daily and Free play follow as secondary, and "All levels" (with where the player stands) is a text link.
  */
 export function GameCard({
   meta,
@@ -45,11 +46,28 @@ export function GameCard({
   const router = useRouter();
   const dailies = useGameSettings()["features.dailies"];
   const done = dailies && doneMs !== undefined;
+  const ladder = meta ? isLadderGame(meta.id) : false;
+  const levels = useLevels(ladder);
+  const progress = meta ? levels.data?.games[meta.id] : undefined;
+  const finished = !!meta && !!progress && ladderDone(meta.id, progress.top);
+  const levelStatus = progress ? L.status(progress.top, progress.next, finished) : null;
+  // R2-12: a ladder game's primary is the player's next level, named ("Play Level 3"), until the ladder is done.
+  const levelFirst = ladder && !finished;
+  const nextLevel = progress?.next;
+  const primaryHref = !meta
+    ? null
+    : levelFirst
+      ? levelHref(meta.id, nextLevel)
+      : dailies && !done
+        ? `/play/${meta.id}`
+        : `/play/${meta.id}?mode=free`;
+  // Wait for the level number before warming a ladder game, so the one full prefetch is the link the button opens.
+  const warmHref = levelFirst && levels.isPending ? null : primaryHref;
   useEffect(() => {
-    if (!meta) return;
+    if (!warmHref) return;
     // R2-01: the card is open, so this game is the likely tap: its page, code and board in full.
-    warmPlay(router, done ? `/play/${meta.id}?mode=free` : `/play/${meta.id}`);
-  }, [meta, done, router]);
+    warmPlay(router, warmHref);
+  }, [warmHref, router]);
   const go = (href: string) => {
     primeAttempt(href);
     showTapSkeleton(href);
@@ -61,10 +79,6 @@ export function GameCard({
   // Board Bay games: play someone live (matchmaking) or invite a friend.
   const bay = meta ? isBayGame(meta.id) : false;
   const relaxed = useSettings((s) => s.relaxed);
-  const ladder = meta ? isLadderGame(meta.id) : false;
-  const levels = useLevels(ladder);
-  const progress = meta ? levels.data?.games[meta.id] : undefined;
-  const levelStatus = progress ? L.status(progress.top, progress.next, ladderDone(meta!.id, progress.top)) : null;
   const [levelsOpen, setLevelsOpen] = useState(false);
   useSheetSound(!!meta);
   return (
@@ -106,9 +120,21 @@ export function GameCard({
               </Dialog.Description>
 
               <div className="flex flex-col gap-2.5">
+                {levelFirst && (
+                  <Button size="lg" icon="mountains" onClick={() => go(levelHref(meta.id, nextLevel))} autoFocus {...PLAY_NAV}>
+                    {nextLevel ? L.play(nextLevel) : T.play}
+                  </Button>
+                )}
                 {!dailies ? (
-                  <Button size="lg" icon="play" onClick={() => go(`/play/${meta.id}?mode=free`)} autoFocus {...PLAY_NAV}>
-                    {T.play}
+                  <Button
+                    size="lg"
+                    variant={levelFirst ? "secondary" : "primary"}
+                    icon={levelFirst ? "infinity" : "play"}
+                    onClick={() => go(`/play/${meta.id}?mode=free`)}
+                    autoFocus={!levelFirst}
+                    {...PLAY_NAV}
+                  >
+                    {levelFirst ? T.freePlay : T.play}
                   </Button>
                 ) : done ? (
                   <p className="text-accent flex items-center gap-2 px-1 text-[15px] font-semibold">
@@ -116,36 +142,41 @@ export function GameCard({
                     {T.dailyDone(formatClock(doneMs!))}
                   </p>
                 ) : (
-                  <Button size="lg" icon="calendar-blank" onClick={() => go(`/play/${meta.id}`)} autoFocus {...PLAY_NAV}>
+                  <Button
+                    size="lg"
+                    variant={levelFirst ? "secondary" : "primary"}
+                    icon="calendar-blank"
+                    onClick={() => go(`/play/${meta.id}`)}
+                    autoFocus={!levelFirst}
+                    {...PLAY_NAV}
+                  >
                     {T.daily}
                   </Button>
                 )}
                 {dailies && (
                   <Button
                     size="lg"
-                    variant={done ? "primary" : "secondary"}
+                    variant={done && !levelFirst ? "primary" : "secondary"}
                     icon="infinity"
                     onClick={() => go(`/play/${meta.id}?mode=free`)}
-                    autoFocus={done}
+                    autoFocus={done && !levelFirst}
                     {...PLAY_NAV}
                   >
                     {T.freePlay}
                   </Button>
                 )}
                 {ladder && (
-                  <div className="flex flex-col gap-1.5">
-                    <Button variant="secondary" icon="mountains" onClick={() => go(levelHref(meta.id))} {...PLAY_NAV}>
-                      {L.mode}
-                    </Button>
-                    <button
-                      type="button"
-                      onClick={() => setLevelsOpen(true)}
-                      className="press text-muted flex min-h-11 items-center justify-center gap-1.5 rounded-[12px] px-2 text-[14px] font-semibold"
-                    >
-                      <Icon name="flag-checkered" size={16} />
-                      {levelStatus ? `${levelStatus} · ${L.allLevels}` : L.allLevels}
-                    </button>
-                  </div>
+                  // "All levels" is a secondary text link to the level list.
+                  <button
+                    type="button"
+                    onClick={() => setLevelsOpen(true)}
+                    aria-haspopup="dialog"
+                    className="press text-muted flex min-h-11 items-center justify-center gap-1.5 rounded-[12px] px-2 text-[14px] font-semibold underline-offset-4 hover:underline"
+                  >
+                    <Icon name="flag-checkered" size={16} />
+                    {/* The primary already names the next level; the link only adds a finished ladder's tally. */}
+                    {finished && levelStatus ? `${levelStatus} · ${L.allLevels}` : L.allLevels}
+                  </button>
                 )}
                 {meta.botPlay && (
                   <Button variant="secondary" icon="robot" onClick={() => go(`/play/${meta.id}/bot`)}>

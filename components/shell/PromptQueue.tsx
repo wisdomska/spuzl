@@ -15,7 +15,7 @@ import { usePathname } from "next/navigation";
 import { decide, enterVisit, initialQueue, request, settleIn, withdraw, type QueueState } from "@/lib/prompts/queue";
 import type { PromptId } from "@/lib/prompts/ids";
 import { readPageLoadMs, recordLoad } from "@/lib/lowdata/suggest";
-import { isPlayNav } from "@/lib/analytics/play-nav";
+import { isPlayNav, isSheetLink } from "@/lib/analytics/play-nav";
 
 let state: QueueState = initialQueue();
 const subs = new Set<() => void>();
@@ -64,8 +64,9 @@ function onClickCapture(e: MouseEvent) {
   if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
   const el = e.target as Element | null;
   const a = el?.closest?.("a[href]") as HTMLAnchorElement | null;
-  // Play links are measured by tap-to-board (to an interactive board), so they aren't counted twice.
-  if (!a || a.target === "_blank" || a.hasAttribute("download") || isPlayNav(a)) return;
+  // Play links are measured by tap-to-board (to an interactive board), so they aren't counted twice; a sheet link
+  // (R2-12 Library rows) opens a sheet on a plain tap, so it is no load at all.
+  if (!a || a.target === "_blank" || a.hasAttribute("download") || isPlayNav(a) || isSheetLink(a)) return;
   let url: URL;
   try {
     url = new URL(a.href, location.href);

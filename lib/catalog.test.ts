@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { existsSync } from "node:fs";
 import {
   ALL_GAMES,
   ALL_WORLDS,
@@ -229,5 +230,16 @@ describe("catalog: derived lists", () => {
     // No stale hand-typed totals left behind.
     const all = JSON.stringify([aboutCopy, libraryCopy, siteCopy, copy.welcome]);
     expect(all).not.toMatch(/\b(51|61)\b|[Nn]ine worlds|9 worlds|[Ee]ight worlds|8 worlds/);
+  });
+});
+
+describe("catalog: game art (R2-12)", () => {
+  it("gives every live game a registered Phosphor icon and both 3D tiles", () => {
+    for (const g of [...GAMES, ...LAB_GAMES]) {
+      expect(ICONS[g.icon], `${g.id}: ${g.icon}`).toMatch(/<path /);
+      for (const dir of ["icons", "icons-sm"]) expect(existsSync(`public/3d/${dir}/${g.id}.webp`), `${dir}/${g.id}.webp`).toBe(true);
+    }
+    // The audit's empty card icon: Emoji Hits draws a smiley, which the icon set has.
+    expect(GAME_BY_ID.emojihits.icon).toBe("smiley");
   });
 });

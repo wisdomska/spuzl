@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { onboardGuest } from "./harness";
 import { GAME_COUNT } from "@/lib/catalog";
 
-/** SPZ-14: search, filter chips, one action per row opening the game card, no horizontal scroll. */
+/** SPZ-14: search, filter chips, one link per row opening the game card (R2-12), no horizontal scroll. */
 test("library: search, filters and the game card", async ({ page }, info) => {
   await onboardGuest(page);
   await page.goto("/library");
@@ -18,14 +18,15 @@ test("library: search, filters and the game card", async ({ page }, info) => {
   await page.getByRole("searchbox").fill("crownf");
   await expect(page.getByText("1 game")).toBeVisible();
   await page.screenshot({ path: `docs/qa/screens/after/library-search-${info.project.name}.png` });
-  await page.getByRole("button", { name: /^Crownfall Puzzles/ }).click();
+  await page.getByRole("link", { name: /^Crownfall Puzzles/ }).click();
   const card = page.getByRole("dialog");
   await expect(card.getByRole("heading", { name: "Crownfall" })).toBeVisible();
-  await expect(card.getByRole("button", { name: "Play", exact: true })).toBeVisible();
+  // R2-12: Crownfall has levels, so its primary names the next one; Free play is second.
+  await expect(card.getByRole("button", { name: /^Play Level \d+$/ })).toBeVisible();
   await expect(card.getByRole("button", { name: "Today's Daily" })).toHaveCount(0); // Dailies are off
   await page.screenshot({ path: `docs/qa/screens/after/library-card-${info.project.name}.png` });
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
   expect(overflow).toBe(false);
-  await card.getByRole("button", { name: "Play", exact: true }).click();
+  await card.getByRole("button", { name: "Free play", exact: true }).click();
   await page.waitForURL(/\/play\/crownfall\?mode=free/);
 });
