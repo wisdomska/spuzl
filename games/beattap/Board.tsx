@@ -1,15 +1,27 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
-import { play } from "@/lib/audio";
+import { isUnlocked, play, unlock } from "@/lib/audio";
+import { Button } from "@/components/ui/Button";
 import { sfx } from "@/games/_shared/sfx";
 
 import { prefersReducedMotion, useSettings } from "@/lib/settings/store";
 import { BEATTAP_COPY as t } from "@/lib/copy/beattap";
 import { HUMAN_FLOOR_MS } from "@/games/_shared/reflex";
-import { judge, songEnd, STRAY_PENALTY, type BeatPuzzle, type BeatState, type Mark } from "./logic";
+import {
+  clockAtStart,
+  COUNT_IN,
+  countIn,
+  judge,
+  scoreFrom,
+  songEnd,
+  STRAY_PENALTY,
+  type BeatPuzzle,
+  type BeatState,
+  type Mark,
+} from "./logic";
 import { useBoardBox } from "@/components/game/useBoardSize";
 
 type Phase = "ready" | "play" | "over";
@@ -19,6 +31,23 @@ const R = 60;
 const CIRC = 2 * Math.PI * R;
 /** A second tap this soon after the song ends does not count for anything. */
 const END_PAUSE_MS = 400;
+/** This device has been asked "Turn sound on for this one?" (first play only). */
+const SOUND_ASK_KEY = "spuzl.beattap.soundAsked";
+
+function soundAsked() {
+  try {
+    return localStorage.getItem(SOUND_ASK_KEY) === "1";
+  } catch {
+    return true; // storage blocked: we could not remember the answer, so never ask
+  }
+}
+function markSoundAsked() {
+  try {
+    localStorage.setItem(SOUND_ASK_KEY, "1");
+  } catch {
+    /* blocked */
+  }
+}
 
 /**
  * Beat Tap board. One big square pad (a real button, also Space anywhere on the page). A fixed target
@@ -27,10 +56,21 @@ const END_PAUSE_MS = 400;
  * motion the pad shows one static ring that fills around like a clock and is full on the beat. Each tap is
  * judged with the same pure `judge` the server runs; the word and its icon show under the circle, so the
  * judgement never relies on colour. A tick plays on each beat when sound is on; it plays fine muted.
+ *
+ * R2-10: the Start tap begins a 4-click count-in (a big number on the pad and a count sound on each click); scoring
+ * opens with the first beat's window, so the Start tap and taps along with the count are never off beat (the
+ * server's `judge` skips them too). Practice (tutorial) never deducts. On a first play with sound off or not yet
+ * allowed by the browser, an in-board card asks "Turn sound on for this one?" once per device.
  */
 export default function BeatTapBoard({ puzzle, initialState, disabled, mode, api }: BoardProps<BeatPuzzle, BeatState>) {
   const total = puzzle.beats.length;
   const end = songEnd(puzzle);
+  const practice = mode === "tutorial";
+  const penalty = practice ? 0 : STRAY_PENALTY;
+  const clicks = useMemo(() => countIn(puzzle.beats), [puzzle.beats]);
+  const clock0 = clockAtStart(puzzle.beats);
+  const opens = scoreFrom(puzzle.beats, puzzle.goodMs);
+  const setSetting = useSettings((s) => s.set);
   const reduce = prefersReducedMotion({ reducedMotion: useSettings((s) => s.reducedMotion) });
   const restored = initialState?.done ? initialState : null;
   const [taps, setTaps] = useState<number[]>(() => restored?.taps ?? []);
@@ -40,48 +80,81 @@ export default function BeatTapBoard({ puzzle, initialState, disabled, mode, api
   const tapsRef = useRef(taps);
   const startAt = useRef(0);
   const ticked = useRef(0);
+  const counted = useRef(0);
   const reportedMiss = useRef(-1);
   const finishTimer = useRef<number | null>(null);
   useEffect(() => () => void (finishTimer.current && window.clearTimeout(finishTimer.current)), []);
 
-  const j = judge(puzzle.beats, taps, puzzle.perfectMs, puzzle.goodMs);
+  const j = judge(puzzle.beats, taps, puzzle.perfectMs, puzzle.goodMs, penalty);
+
+  // First play: ask once to turn sound on, only when it's off or the browser hasn't allowed audio yet.
+  const [ask, setAsk] = useState<null | "off" | "locked">(null);
+  useEffect(() => {
+    if (restored || soundAsked()) return;
+    const why = !useSettings.getState().sfx ? "off" : !isUnlocked() ? "locked" : null;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- device state (storage, audio) is only readable after mount
+    if (why) setAsk(why);
+  }, [restored]);
+  const answerAsk = useCallback(
+    (on: boolean) => {
+      markSoundAsked();
+      setAsk(null);
+      if (!on) return;
+      if (!useSettings.getState().sfx) setSetting("sfx", true);
+      unlock();
+      play("countdown", { step: 1, silentHaptic: true });
+      api.announce(t.soundOnDone);
+    },
+    [api, setSetting],
+  );
 
   const finish = useCallback(() => {
     setPhase("over");
     setNow(end);
     const state = { taps: tapsRef.current, done: true };
-    const fj = judge(puzzle.beats, state.taps, puzzle.perfectMs, puzzle.goodMs);
+    const fj = judge(puzzle.beats, state.taps, puzzle.perfectMs, puzzle.goodMs, penalty);
     api.onMove(state);
     finishTimer.current = window.setTimeout(() => {
       api.feedback(t.finished(fj.score, fj.perfect, total), "success", "check-circle");
       api.onSolved(state);
     }, 600);
-  }, [api, end, puzzle, total]);
+  }, [api, end, penalty, puzzle, total]);
 
   const start = useCallback(() => {
     tapsRef.current = [];
     setTaps([]);
     setLastMark(null);
     ticked.current = 0;
+    counted.current = 0;
     reportedMiss.current = -1;
+    if (ask) {
+      markSoundAsked();
+      setAsk(null);
+    }
     startAt.current = performance.now();
-    setNow(0);
+    setNow(clock0);
     setPhase("play");
-    api.announce(t.startAnnounce);
-  }, [api]);
+    api.announce(t.countInAnnounce);
+  }, [api, ask, clock0]);
 
   // The song clock: render, tick on each beat, report beats that slipped by untapped, end the song.
   useEffect(() => {
     if (phase !== "play") return;
     let raf = 0;
     const frame = () => {
-      const el = performance.now() - startAt.current;
+      const el = performance.now() - startAt.current + clock0;
+      // the count-in: 4, 3, 2, 1 left on the count voice (its light haptic too, so it reads on a muted phone)
+      while (counted.current < COUNT_IN && clicks[counted.current] <= el + 15) {
+        play("countdown", { step: COUNT_IN - counted.current, gain: 0.8 });
+        counted.current++;
+        if (counted.current === COUNT_IN) api.announce(t.startAnnounce);
+      }
       while (ticked.current < total && puzzle.beats[ticked.current] <= el + 15) {
         // the metronome: heard, never felt (a buzz on every beat would drown the taps' own)
         play("tick", { gain: 0.7, silentHaptic: true });
         ticked.current++;
       }
-      const jj = judge(puzzle.beats, tapsRef.current, puzzle.perfectMs, puzzle.goodMs);
+      const jj = judge(puzzle.beats, tapsRef.current, puzzle.perfectMs, puzzle.goodMs, penalty);
       for (let b = reportedMiss.current + 1; b < total && puzzle.beats[b] + puzzle.goodMs < el; b++) {
         reportedMiss.current = b;
         if (jj.marks[b] === "miss") {
@@ -95,28 +168,36 @@ export default function BeatTapBoard({ puzzle, initialState, disabled, mode, api
     };
     raf = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(raf);
-  }, [api, end, finish, phase, puzzle, total]);
+  }, [api, clicks, clock0, end, finish, penalty, phase, puzzle, total]);
 
   const press = useCallback(
     (at: number) => {
       if (disabled) return;
       if (phase === "ready") return start();
       if (phase !== "play") return;
-      const tap = Math.round(at - startAt.current);
+      const tap = Math.round(at - startAt.current + clock0);
+      // The count-in: scoring hasn't opened, so this tap is never judged (the server skips these too).
+      if (tap < opens) return;
       const prev = tapsRef.current[tapsRef.current.length - 1] ?? 0;
       // Under the human floor or after the last window: not a tap the server would accept, so not one at all.
       if (tap - prev < HUMAN_FLOOR_MS || tap > end) return;
       const next = [...tapsRef.current, tap];
       tapsRef.current = next;
       setTaps(next);
-      const jj = judge(puzzle.beats, next, puzzle.perfectMs, puzzle.goodMs);
+      const jj = judge(puzzle.beats, next, puzzle.perfectMs, puzzle.goodMs, penalty);
       const b = jj.tapBeat[next.length - 1];
       const state = { taps: next, done: false };
       if (b === -1) {
         setLastMark("stray");
-        api.onMove(state, { mistake: true });
-        api.feedback(t.strayFeedback(STRAY_PENALTY), "danger", "prohibit");
-        play("bump");
+        if (practice) {
+          // practice never deducts: no mistake, a gentle word, no buzz
+          api.onMove(state);
+          api.feedback(t.strayPractice, "info", "prohibit");
+        } else {
+          api.onMove(state, { mistake: true });
+          api.feedback(t.strayFeedback(STRAY_PENALTY), "danger", "prohibit");
+          play("bump");
+        }
       } else {
         const m = jj.marks[b];
         setLastMark(m);
@@ -127,7 +208,7 @@ export default function BeatTapBoard({ puzzle, initialState, disabled, mode, api
         api.announce(t.mark[m]);
       }
     },
-    [api, disabled, end, phase, puzzle, start],
+    [api, clock0, disabled, end, opens, penalty, phase, practice, puzzle, start],
   );
 
   // Pause or lock mid song: the run is void and starts again from the top next time.
@@ -162,12 +243,15 @@ export default function BeatTapBoard({ puzzle, initialState, disabled, mode, api
 
   useEffect(() => {
     api.setControls([]);
-    api.feedback(mode === "tutorial" ? t.tutorial : reduce ? t.introReduced(total) : t.intro(total), "info", "metronome");
+    api.feedback(practice ? t.tutorial : reduce ? t.introReduced(total) : t.intro(total), "info", "metronome");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // What the pad shows right now.
   const playing = phase === "play";
+  // the count-in: which click we're on (1 to 4) until scoring opens; 0 in the quiet gap before the first
+  const counting = playing && now < opens;
+  const countNo = counting ? clicks.filter((c) => c <= now).length : 0;
   const nextBeat = playing ? puzzle.beats.findIndex((b) => b + puzzle.goodMs >= now) : -1;
   const beforeFirst = playing && now < puzzle.beats[0] - APPROACH_MS;
   const rings = playing
@@ -190,9 +274,13 @@ export default function BeatTapBoard({ puzzle, initialState, disabled, mode, api
       ? t.start
       : phase === "over"
         ? `${t.score} ${j.score}`
-        : beforeFirst
-          ? t.getReady
-          : t.beatOf(Math.min(total, (nextBeat === -1 ? total : nextBeat) + 1), total);
+        : counting
+          ? countNo
+            ? t.countIn(countNo)
+            : t.getReady
+          : beforeFirst
+            ? t.getReady
+            : t.beatOf(Math.min(total, (nextBeat === -1 ? total : nextBeat) + 1), total);
 
   // Wide screen: the tap pad grows with the board's height (the progress and tally rows sit under it).
   const box = useBoardBox();
@@ -201,6 +289,34 @@ export default function BeatTapBoard({ puzzle, initialState, disabled, mode, api
       className="flex w-[min(358px,calc(100vw-36px))] flex-col gap-3 rounded-[20px] p-3"
       style={{ background: "var(--board-bg)", ...(box.wide ? { width: Math.min(820, box.side - 90) } : null) }}
     >
+      {ask && phase === "ready" && (
+        <section
+          data-sound-ask
+          aria-labelledby="beattap-sound-ask"
+          className="flex flex-col gap-3 rounded-[16px] p-4"
+          style={{ background: "var(--surface-raised)", color: "var(--text)" }}
+        >
+          <div className="flex items-start gap-3">
+            <Icon name="speaker-high" size={24} />
+            <div className="min-w-0 flex-1">
+              <h2 id="beattap-sound-ask" className="font-display m-0 text-[17px] font-black">
+                {t.soundAskTitle}
+              </h2>
+              <p className="m-0 mt-1 text-[14px] leading-5" style={{ color: "var(--text-muted)" }}>
+                {ask === "locked" ? t.soundAskBodyLocked : t.soundAskBody}
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button size="md" icon="speaker-high" className="flex-1" onClick={() => answerAsk(true)}>
+              {t.soundOn}
+            </Button>
+            <Button size="md" variant="secondary" onClick={() => answerAsk(false)}>
+              {t.soundNotNow}
+            </Button>
+          </div>
+        </section>
+      )}
       <button
         type="button"
         aria-label={t.padLabel(`${status}.${markText ? ` ${markText}.` : ""}`)}
@@ -254,11 +370,31 @@ export default function BeatTapBoard({ puzzle, initialState, disabled, mode, api
           />
         </svg>
         <span className="relative flex flex-col items-center gap-1">
-          <Icon name={phase === "over" ? "flag-checkered" : markText && playing ? markIcon : "metronome"} size={40} />
-          <span className="font-display text-[22px] font-black">{playing && markText ? markText : phase === "over" ? j.score : t.tap}</span>
+          {counting ? (
+            <span data-count={countNo} className="font-display num text-[64px] leading-none font-black" aria-hidden>
+              {countNo || ""}
+            </span>
+          ) : (
+            <>
+              <Icon name={phase === "over" ? "flag-checkered" : markText && playing ? markIcon : "metronome"} size={40} />
+              <span className="font-display text-[22px] font-black">
+                {playing && markText ? markText : phase === "over" ? j.score : t.tap}
+              </span>
+            </>
+          )}
         </span>
         <span className="absolute inset-x-0 bottom-5 text-center text-[15px] font-semibold" style={{ color: "var(--text-muted)" }}>
-          {phase === "ready" ? t.start : playing ? (beforeFirst ? t.getReadySmall : reduce ? t.onFull : t.onBeat) : t.done}
+          {phase === "ready"
+            ? t.start
+            : playing
+              ? counting
+                ? t.countInSmall
+                : beforeFirst
+                  ? t.getReadySmall
+                  : reduce
+                    ? t.onFull
+                    : t.onBeat
+              : t.done}
         </span>
         <span className="absolute inset-x-0 top-4 text-center text-[13px] font-semibold" style={{ color: "var(--text-muted)" }}>
           {status}

@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { createRng } from "@/lib/rng";
 import type { Difficulty } from "@/games/types";
 import logic, {
+  clockAtStart,
+  COUNT_IN,
+  COUNT_IN_TAP,
+  countIn,
+  countInGap,
   generate,
   GOOD_MS,
   judge,
@@ -10,6 +15,7 @@ import logic, {
   PATTERN_FOR,
   PERFECT_MS,
   POINTS,
+  scoreFrom,
   songEnd,
   STRAY_PENALTY,
   verify,
@@ -114,5 +120,64 @@ describe("beat tap verify", () => {
     const fast = [...p.beats];
     fast[3] = fast[2] + 200;
     expect(verify({ ...p, beats: fast }, null, { taps: [], done: true }).reason).toBe("pulse rate above 2 Hz");
+  });
+});
+
+describe("beat tap count-in (R2-10)", () => {
+  it("counts four clicks at the song's own pulse, never faster than 2 Hz, ending a gap before the first beat", () => {
+    for (const d of D) {
+      for (let s = 0; s < 10; s++) {
+        const { beats } = generate(createRng(`ci:${d}:${s}`), d).puzzle;
+        const g = countInGap(beats);
+        const c = countIn(beats);
+        expect(c).toHaveLength(COUNT_IN);
+        expect(g).toBeGreaterThanOrEqual(MIN_GAP_MS);
+        for (let i = 1; i < c.length; i++) expect(c[i] - c[i - 1]).toBe(g);
+        expect(beats[0] - c[c.length - 1]).toBe(g);
+        // the start tap comes a gap before the first click, and every click is before scoring opens
+        expect(c[0] - clockAtStart(beats)).toBe(g);
+        for (const click of c) expect(click).toBeLessThan(scoreFrom(beats));
+      }
+    }
+    expect(countInGap([2000, 2750, 3500, 5000])).toBe(750);
+    expect(countIn([2000, 2750, 3500, 5000])).toEqual([-1000, -250, 500, 1250]);
+    expect(countInGap([2000])).toBe(MIN_GAP_MS);
+  });
+
+  it("never judges a count-in tap: not a stray, not a hit, no penalty", () => {
+    const beats = [2000, 2500, 3000, 4000];
+    const j = judge(beats, [300, 1000, 1500, 2000]);
+    expect(j.tapBeat).toEqual([COUNT_IN_TAP, COUNT_IN_TAP, COUNT_IN_TAP, 0]);
+    expect(j.strays).toBe(0);
+    expect(j.score).toBe(POINTS.perfect);
+    // the first beat's whole Good window is live: an early Good still scores
+    const early = judge(beats, [2000 - GOOD_MS]);
+    expect(early.marks[0]).toBe("good");
+    expect(judge(beats, [2000 - GOOD_MS - 1]).tapBeat).toEqual([COUNT_IN_TAP]);
+  });
+
+  it("the server agrees: a run with count-in taps verifies to the same score as without them", () => {
+    for (const d of D) {
+      const p = generate(createRng(`cs:${d}`), d).puzzle;
+      const taps = human(p);
+      // tapping along with the count (and the start tap a moment in) changes nothing
+      const counted = [...countIn(p.beats).filter((t) => t >= 200), ...taps];
+      const a = verify(p, null, { taps, done: true });
+      const b = verify(p, null, { taps: counted, done: true });
+      expect(b.ok).toBe(true);
+      expect(b.score).toBe(a.score);
+      expect(b.score).toBe(judge(p.beats, counted).score);
+    }
+  });
+
+  it("practice judges with no stray penalty", () => {
+    const beats = [2000, 2500, 3000, 4000];
+    const taps = [2000, 2250, 2500, 3500];
+    expect(judge(beats, taps).score).toBe(2 * POINTS.perfect - 2 * STRAY_PENALTY);
+    const practice = judge(beats, taps, PERFECT_MS, GOOD_MS, 0);
+    expect(practice.strays).toBe(2);
+    expect(practice.score).toBe(2 * POINTS.perfect);
+    // all strays in practice: zero, never below
+    expect(judge(beats, [2250, 3500], PERFECT_MS, GOOD_MS, 0).score).toBe(0);
   });
 });

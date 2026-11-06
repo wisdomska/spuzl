@@ -17,5 +17,7 @@ export default async function Page({ params, searchParams }: PageProps<"/dev/boa
   const seed = typeof sp.seed === "string" ? sp.seed : "dev";
   const d = (typeof sp.d === "string" ? sp.d : "easy") as Difficulty;
   const g = logic.generate(createRng(seed), d);
-  return <DevBoard id={game} puzzle={g.puzzle} seed={seed} d={d} />;
+  // `mode=tutorial`: the board as a practice round (the guided first play), e.g. Beat Tap's no-penalty rule.
+  const mode = sp.mode === "tutorial" ? "tutorial" : "free";
+  return <DevBoard id={game} puzzle={g.puzzle} seed={seed} d={d} mode={mode} />;
 }

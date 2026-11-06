@@ -6,6 +6,12 @@
  * The client submits only its tap times (ms after the song started). `judge` is the one pure function the
  * board (live feedback) and the server (verify) both run, with the same windows, so a forged judgement or
  * score cannot verify. Beats are never closer than 500 ms, so the pulses stay at or under 2 Hz.
+ *
+ * Count-in (R2-10): four clicks at the song's own pulse lead into the first beat (`countIn`). Scoring opens only
+ * when the first beat's window does (`scoreFrom`): a tap before that (the tap that started the round, or a tap
+ * along with the count) is a count-in tap. `judge` skips it on the board and on the server alike, so it is never
+ * a stray. Practice rounds judge with no stray penalty at all (`judge(..., 0)`); practice is never scored on
+ * the server (nothing is recorded), so the server always uses STRAY_PENALTY.
  */
 import type { Difficulty, GameLogic, Generated, VerifyResult } from "@/games/types";
 import type { Rng } from "@/lib/rng";
@@ -25,6 +31,10 @@ export const MIN_SPREAD_MS = 3;
 
 export const POINTS = { perfect: 300, good: 100 } as const;
 export const STRAY_PENALTY = 50;
+/** Clicks in the count-in before the first beat. */
+export const COUNT_IN = 4;
+/** `Judgement.tapBeat` for a tap before scoring opened (count-in): never judged, never a stray. */
+export const COUNT_IN_TAP = -2;
 
 export type Mark = "perfect" | "good" | "miss";
 
@@ -64,12 +74,34 @@ export function grade(beats: number[]) {
   return Math.min(100, Math.round(beats.length * 1.5 + new Set(gaps).size * 8));
 }
 
+/** The count-in pulse: the song's shortest gap (at least MIN_GAP_MS, so the count never beats faster than 2 Hz). */
+export function countInGap(beats: number[]): number {
+  let g = Infinity;
+  for (let i = 1; i < beats.length; i++) g = Math.min(g, beats[i] - beats[i - 1]);
+  return Number.isFinite(g) ? Math.max(MIN_GAP_MS, g) : MIN_GAP_MS;
+}
+
+/**
+ * The count-in clicks, on the song clock (ms; the first ones can be before 0): one gap apart, the last one a gap
+ * before the first beat. The board starts its clock one more gap before the first click.
+ */
+export function countIn(beats: number[]): number[] {
+  const g = countInGap(beats);
+  return Array.from({ length: COUNT_IN }, (_, k) => beats[0] - (COUNT_IN - k) * g);
+}
+
+/** Song-clock time at the tap that starts the round: one gap of quiet, then the count-in. */
+export const clockAtStart = (beats: number[]) => countIn(beats)[0] - countInGap(beats);
+
+/** Scoring opens when the first beat's Good window does; earlier taps are count-in taps. */
+export const scoreFrom = (beats: number[], goodMs = GOOD_MS) => beats[0] - goodMs;
+
 export interface Judgement {
   /** per beat; beats after the last tap that are still inside their window count as Miss too */
   marks: Mark[];
   /** per beat, tap minus beat for matched beats, else null */
   offsets: (number | null)[];
-  /** per tap, the beat it matched or -1 for a stray */
+  /** per tap, the beat it matched, -1 for a stray, or COUNT_IN_TAP for a tap before scoring opened */
   tapBeat: number[];
   perfect: number;
   good: number;
@@ -81,14 +113,20 @@ export interface Judgement {
 /**
  * Matches taps to beats in time order: a tap takes the earliest unmatched beat whose Good window holds
  * it; otherwise it is a stray. Beats are at least 500 ms apart and the window is 140 ms, so no tap can
- * sit in two windows. Pure and deterministic: the board and the server share it.
+ * sit in two windows. Taps before `scoreFrom` (the count-in) are skipped. `strayPenalty` is 0 in practice.
+ * Pure and deterministic: the board and the server share it.
  */
-export function judge(beats: number[], taps: number[], perfectMs = PERFECT_MS, goodMs = GOOD_MS): Judgement {
+export function judge(beats: number[], taps: number[], perfectMs = PERFECT_MS, goodMs = GOOD_MS, strayPenalty = STRAY_PENALTY): Judgement {
   const marks: Mark[] = beats.map(() => "miss");
   const offsets: (number | null)[] = beats.map(() => null);
   const tapBeat: number[] = [];
+  const opens = beats.length ? scoreFrom(beats, goodMs) : Infinity;
   let b = 0;
   for (const t of taps) {
+    if (t < opens) {
+      tapBeat.push(COUNT_IN_TAP);
+      continue;
+    }
     while (b < beats.length && beats[b] + goodMs < t) b++;
     const d = b < beats.length ? t - beats[b] : Infinity;
     if (Math.abs(d) <= goodMs) {
@@ -101,7 +139,7 @@ export function judge(beats: number[], taps: number[], perfectMs = PERFECT_MS, g
   const perfect = marks.filter((m) => m === "perfect").length;
   const good = marks.filter((m) => m === "good").length;
   const strays = tapBeat.filter((x) => x === -1).length;
-  const score = Math.max(0, perfect * POINTS.perfect + good * POINTS.good - strays * STRAY_PENALTY);
+  const score = Math.max(0, perfect * POINTS.perfect + good * POINTS.good - strays * strayPenalty);
   return { marks, offsets, tapBeat, perfect, good, miss: beats.length - perfect - good, strays, score };
 }
 
