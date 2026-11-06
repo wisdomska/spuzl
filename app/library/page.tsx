@@ -1,5 +1,6 @@
 "use client";
 
+import { whenQuiet } from "@/lib/perf/quiet";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -51,10 +52,12 @@ export default function Library() {
   useEffect(() => {
     if (!prefetch) return;
     const ids = list.slice(0, 4).map((g) => g.id);
-    const run = () => ids.forEach((id) => router.prefetch(`/play/${id}?mode=free`));
-    const w = window as Window & { requestIdleCallback?: (cb: () => void) => number };
-    if (w.requestIdleCallback) w.requestIdleCallback(run);
-    else setTimeout(run, 300);
+    // R2-01: only once the list is quiet, so it never competes with a game opened straight away.
+    let live = true;
+    void whenQuiet().then(() => live && ids.forEach((id) => router.prefetch(`/play/${id}?mode=free`)));
+    return () => {
+      live = false;
+    };
   }, [list, prefetch, router]);
 
   const chips: { id: Filter; label: string; title?: string; color?: string }[] = [

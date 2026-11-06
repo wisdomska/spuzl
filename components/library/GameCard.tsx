@@ -1,5 +1,7 @@
 "use client";
 
+import { showTapSkeleton } from "@/components/shell/TapSkeleton";
+import { warmPlay } from "@/lib/perf/prefetch";
 import { useGameSettings } from "@/lib/game-settings/client";
 import { primeAttempt } from "@/lib/client/early-attempt";
 import { useEffect, useState } from "react";
@@ -45,10 +47,12 @@ export function GameCard({
   const done = dailies && doneMs !== undefined;
   useEffect(() => {
     if (!meta) return;
-    router.prefetch(done ? `/play/${meta.id}?mode=free` : `/play/${meta.id}`);
+    // R2-01: the card is open, so this game is the likely tap: its page, code and board in full.
+    warmPlay(router, done ? `/play/${meta.id}?mode=free` : `/play/${meta.id}`);
   }, [meta, done, router]);
   const go = (href: string) => {
     primeAttempt(href);
+    showTapSkeleton(href);
     onClose();
     router.push(href as never);
   };

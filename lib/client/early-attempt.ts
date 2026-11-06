@@ -2,17 +2,21 @@
 
 import { startAttempt, type StartRes } from "./api";
 import { resumeIdFor } from "./resume";
+import { markPlayTap } from "@/lib/perf/quiet";
 
 /**
  * SPZ-01: start a game's attempt the moment it is tapped, in parallel with loading the Play route, so the board
  * is ready as soon as the screen is. The Play screen takes the primed request if it matches; otherwise it starts
- * its own. Only daily and free play are primed (archive needs a date the link carries; challenges a code).
+ * its own. Daily, free play and levels are primed (R2-01: Continue opens ladder games in level mode); archive
+ * needs a date the link carries, challenges a code.
  */
 type Key = string;
 const primed = new Map<Key, { at: number; p: Promise<StartRes> }>();
 const TTL_MS = 15_000;
 
-export function parsePlayHref(href: string): { game: string; mode: "daily" | "free"; difficulty?: string } | null {
+export function parsePlayHref(
+  href: string,
+): { game: string; mode: "daily" | "free" | "level"; difficulty?: string; level?: number } | null {
   let u: URL;
   try {
     u = new URL(href, "https://x.invalid");
@@ -22,29 +26,34 @@ export function parsePlayHref(href: string): { game: string; mode: "daily" | "fr
   const m = /^\/play\/([a-z0-9]+)\/?$/.exec(u.pathname);
   if (!m) return null;
   const mode = u.searchParams.get("mode") ?? "daily";
-  if (mode !== "daily" && mode !== "free") return null;
+  if (mode !== "daily" && mode !== "free" && mode !== "level") return null;
   const d = u.searchParams.get("difficulty") ?? undefined;
-  return { game: m[1], mode, difficulty: mode === "free" ? d : undefined };
+  const lv = u.searchParams.get("level");
+  const level = mode === "level" && lv && /^\d{1,4}$/.test(lv) ? Number(lv) || undefined : undefined;
+  return { game: m[1], mode, difficulty: mode === "free" ? d : undefined, ...(mode === "level" ? { level } : {}) };
 }
 
-const keyOf = (game: string, mode: string, difficulty?: string) => `${game}|${mode}|${difficulty ?? ""}`;
+/** `extra`: the free-play difficulty, or the level number for levels ("" = the player's next level). */
+const keyOf = (game: string, mode: string, extra?: string | number) => `${game}|${mode}|${extra ?? ""}`;
 
 export function primeAttempt(href: string) {
   const t = parsePlayHref(href);
   if (!t) return;
-  const k = keyOf(t.game, t.mode, t.difficulty);
+  markPlayTap(); // background downloads wait for this board (lib/perf/quiet.ts)
+  const k = keyOf(t.game, t.mode, t.mode === "level" ? t.level : t.difficulty);
   const hit = primed.get(k);
   if (hit && Date.now() - hit.at < TTL_MS) return;
-  // A free-play puzzle left part way is picked up again (lib/client/resume.ts).
-  const resume = t.mode === "free" ? resumeIdFor(t.game, "free", { difficulty: t.difficulty }) : undefined;
+  // A free-play puzzle or level left part way is picked up again (lib/client/resume.ts).
+  const resume =
+    t.mode === "free" || t.mode === "level" ? resumeIdFor(t.game, t.mode, { difficulty: t.difficulty, level: t.level }) : undefined;
   const p = startAttempt({ ...t, resume });
   p.catch(() => primed.delete(k));
   primed.set(k, { at: Date.now(), p });
 }
 
-/** The primed start for this game and mode, used once. */
-export function takePrimed(game: string, mode: string, difficulty?: string): Promise<StartRes> | null {
-  const k = keyOf(game, mode, mode === "free" ? difficulty : undefined);
+/** The primed start for this game and mode, used once. `extra`: free-play difficulty or level number. */
+export function takePrimed(game: string, mode: string, extra?: string | number): Promise<StartRes> | null {
+  const k = keyOf(game, mode, mode === "free" || mode === "level" ? extra : undefined);
   const hit = primed.get(k);
   primed.delete(k);
   return hit && Date.now() - hit.at < TTL_MS ? hit.p : null;
@@ -54,7 +63,10 @@ export function takePrimed(game: string, mode: string, difficulty?: string): Pro
 export function installAttemptPriming(): () => void {
   const on = (e: MouseEvent) => {
     const a = (e.target as Element | null)?.closest?.("a[href^='/play/']") as HTMLAnchorElement | null;
-    if (a && !e.defaultPrevented && e.button === 0 && !e.metaKey && !e.ctrlKey) primeAttempt(a.getAttribute("href")!);
+    if (a && !e.defaultPrevented && e.button === 0 && !e.metaKey && !e.ctrlKey) {
+      markPlayTap();
+      primeAttempt(a.getAttribute("href")!);
+    }
   };
   document.addEventListener("click", on, true);
   return () => document.removeEventListener("click", on, true);

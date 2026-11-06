@@ -12,6 +12,7 @@
 import { useEffect, useRef } from "react";
 import { isPlayNav } from "./play-nav";
 import { track } from "./track";
+import { markBoardReady, markPlayTap } from "@/lib/perf/quiet";
 
 const KEY = "spuzl.tap";
 const MAX_MS = 15_000;
@@ -27,6 +28,7 @@ export function installTapStamp() {
     "click",
     (e) => {
       if (!isPlayNav(e.target as Element | null)) return;
+      markPlayTap();
       try {
         sessionStorage.setItem(KEY, JSON.stringify({ at: now(), origin: performance.timeOrigin } satisfies Stamp));
       } catch {
@@ -67,6 +69,7 @@ export function useTapToBoard(ready: boolean, game: string, mode: string) {
   useEffect(() => {
     if (!ready || sent.current || mount.current === null) return;
     sent.current = true;
+    markBoardReady(); // background downloads may start (lib/perf/quiet.ts)
     const mountAt = mount.current;
     requestAnimationFrame(() => {
       const r = tapToBoard(readStamp(), { mount: mountAt, ready: now(), origin: performance.timeOrigin, sinceNav: performance.now() });

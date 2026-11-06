@@ -1,5 +1,6 @@
 "use client";
 
+import { whenQuiet } from "@/lib/perf/quiet";
 import { primeAttempt, takePrimed } from "@/lib/client/early-attempt";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -114,9 +115,14 @@ export function PlayScreen({
     if (me.isSuccess && me.data === null) router.replace(readOnboarding().introSeen ? "/welcome" : "/intro");
   }, [me.isSuccess, me.data, router]);
 
-  // Back goes to the world page in code, so have its loading screen ready.
+  // Back goes to the world page in code, so have its loading screen ready, once this board is up and the network
+  // is quiet (R2-01: never during the board's own load).
   useEffect(() => {
-    router.prefetch(`/world/${meta.world}`);
+    let live = true;
+    void whenQuiet().then(() => live && router.prefetch(`/world/${meta.world}`));
+    return () => {
+      live = false;
+    };
   }, [router, meta.world]);
 
   const beginRef = useRef<(m: Mode, d?: Difficulty, n?: number, fresh?: boolean) => Promise<void>>(async () => {});
@@ -149,7 +155,7 @@ export function PlayScreen({
                 ? resumeIdFor(meta.id, m, { difficulty: m === "free" ? (d ?? difficulty) : undefined, level: n })
                 : undefined,
           });
-        const primed = fresh ? null : takePrimed(meta.id, m, m === "free" ? (d ?? difficulty) : undefined);
+        const primed = fresh ? null : takePrimed(meta.id, m, m === "free" ? (d ?? difficulty) : m === "level" ? n : undefined);
         // A primed start that failed (offline blip, a mode the server refuses) falls back to a fresh start.
         const a = withLocalBackup(await (primed ? primed.catch(start) : start()));
         latestState.current = a.state ?? undefined;
@@ -367,7 +373,12 @@ export function PlayScreen({
         }
       : anotherAction;
   useEffect(() => {
-    if (nextId && settings["perf.prefetch"]) router.prefetch(`/play/${nextId}`);
+    if (!nextId || !settings["perf.prefetch"]) return;
+    let live = true;
+    void whenQuiet().then(() => live && router.prefetch(`/play/${nextId}`));
+    return () => {
+      live = false;
+    };
   }, [nextId, router, settings]);
 
   // Game menu (free play): another puzzle, or the same game at another level. The address keeps the level.

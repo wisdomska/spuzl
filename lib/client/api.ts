@@ -114,8 +114,30 @@ export function useMe(enabled = true) {
   });
 }
 
+/**
+ * R2-01: one `/api/v1/today` request at a time for the whole page. The hook and the offline Daily prefetch
+ * (lib/offline/register.ts) share an in-flight request and a result kept for 15 s within the same GMT day, so a
+ * load never asks for it twice.
+ */
+let todayInFlight: Promise<Today> | null = null;
+let todayLast: { at: number; day: string; data: Today } | null = null;
+const gmtDay = () => new Date().toISOString().slice(0, 10);
+export function fetchToday(maxAgeMs = 15_000): Promise<Today> {
+  if (todayLast && todayLast.day === gmtDay() && Date.now() - todayLast.at < maxAgeMs) return Promise.resolve(todayLast.data);
+  if (todayInFlight) return todayInFlight;
+  todayInFlight = api<Today>("/api/v1/today")
+    .then((data) => {
+      todayLast = { at: Date.now(), day: gmtDay(), data };
+      return data;
+    })
+    .finally(() => {
+      todayInFlight = null;
+    });
+  return todayInFlight;
+}
+
 export function useToday() {
-  return useQuery({ queryKey: ["today"], queryFn: () => api<Today>("/api/v1/today"), staleTime: 15_000 });
+  return useQuery({ queryKey: ["today"], queryFn: () => fetchToday(0), staleTime: 15_000 });
 }
 
 export interface StartRes {

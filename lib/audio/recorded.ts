@@ -1,4 +1,5 @@
 import type { MusicPlayer, StyleId } from "./music";
+import { constrainedNetwork, whenQuiet } from "@/lib/perf/quiet";
 
 /**
  * Recorded background music (ElevenLabs loops picked by the owner), one loop per area in public/music. An area
@@ -18,7 +19,10 @@ const buffers = new Map<string, Promise<AudioBuffer | null>>();
 function load(a: AudioContext, url: string): Promise<AudioBuffer | null> {
   let p = buffers.get(url);
   if (!p) {
-    p = fetch(url)
+    // R2-01: a 30-second loop is ~480 KB; it waits until the game on screen is ready and the network is quiet,
+    // and is skipped on data-saving or 2G connections.
+    p = (constrainedNetwork() ? Promise.reject(new Error("constrained")) : whenQuiet())
+      .then(() => fetch(url, { priority: "low" } as RequestInit))
       .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
       .then((b) => a.decodeAudioData(b))
       .catch(() => {

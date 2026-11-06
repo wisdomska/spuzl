@@ -1,5 +1,6 @@
 "use client";
 
+import { useWarmPlay } from "@/lib/perf/prefetch";
 import { useGameSettings } from "@/lib/game-settings/client";
 import { homeCopy as T } from "@/lib/copy/home";
 import { FirstTips } from "@/components/ui/FirstTips";
@@ -66,6 +67,8 @@ export function HomeScreen() {
   const recentId = continueGame(me.data?.recent, null);
   const next = recentId ?? nextDaily(cleared, ready);
   const nextMeta = next ? GAME_BY_ID[next] : null;
+  // R2-01: the Continue game's page, code and board are downloaded while the player looks at Home.
+  useWarmPlay(me.data && nextMeta ? continueHref(nextMeta.id, { dailiesOn, clearedToday: cleared[nextMeta.id] !== undefined }) : null);
   const progress = worldProgress(cleared);
   const currentWorld: WorldId = nextMeta?.world ?? "logic";
   const featuredDone = LAUNCH_IDS.filter((id) => cleared[id] !== undefined).length;

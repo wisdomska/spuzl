@@ -1,4 +1,5 @@
 import { LAUNCH_IDS } from "@/lib/catalog";
+import { fetchToday } from "@/lib/client/api";
 import { gmtDay, needsDailyPack, packGames, rolloverDelayMs, type TodayGame } from "./daily-pack";
 
 /**
@@ -45,9 +46,8 @@ export async function prefetchDailies(): Promise<number> {
   if (!reg.active || !navigator.serviceWorker.controller) return 0; // the worker must see the requests
   let today: TodayRes;
   try {
-    const r = await fetch("/api/v1/today", { credentials: "same-origin" });
-    if (!r.ok) return 0;
-    today = (await r.json()) as TodayRes;
+    // R2-01: shares the page's request (or its result from the last 15 s) instead of asking again.
+    today = (await fetchToday()) as unknown as TodayRes;
   } catch {
     return 0;
   }

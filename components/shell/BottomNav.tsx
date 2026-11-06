@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { Icon } from "@/components/ui/Icon";
+import { whenQuiet } from "@/lib/perf/quiet";
 
 export const NAV = [
   { href: "/", icon: "map-trifold", label: "Grid" },
@@ -11,6 +13,24 @@ export const NAV = [
   { href: "/shop", icon: "storefront", label: "Shop" },
   { href: "/me", icon: "user", label: "Me" },
 ] as const;
+
+/**
+ * R2-01: tab links don't prefetch on sight (the bar and the rail both render, so each tab was fetched two or three
+ * times while the first game loaded). They prefetch once the screen is quiet, and on a finger or pointer coming near.
+ */
+function useQuietTabPrefetch() {
+  const router = useRouter();
+  useEffect(() => {
+    let live = true;
+    void whenQuiet().then(() => {
+      if (live) for (const n of NAV) router.prefetch(n.href);
+    });
+    return () => {
+      live = false;
+    };
+  }, [router]);
+  return (href: string) => () => router.prefetch(href);
+}
 
 export function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
@@ -22,6 +42,7 @@ export function isActive(pathname: string, href: string) {
 /** Mobile bottom nav: 80 px, 5 items, active lime (global chrome is always lime). */
 export function BottomNav() {
   const pathname = usePathname();
+  const intent = useQuietTabPrefetch();
   return (
     <nav
       aria-label="Main"
@@ -33,6 +54,9 @@ export function BottomNav() {
           <Link
             key={n.href}
             href={n.href}
+            prefetch={false}
+            onPointerEnter={intent(n.href)}
+            onTouchStart={intent(n.href)}
             aria-current={active ? "page" : undefined}
             className="press flex flex-col items-center justify-center gap-[3px]"
             style={{ color: active ? "var(--accent)" : "var(--text-muted)" }}
@@ -49,6 +73,8 @@ export function BottomNav() {
 /** Desktop ≥ 1024: 88 px left rail. */
 export function DesktopRail() {
   const pathname = usePathname();
+  const router = useRouter();
+  const intent = (href: string) => () => router.prefetch(href);
   return (
     <nav
       aria-label="Main"
@@ -63,6 +89,9 @@ export function DesktopRail() {
           <Link
             key={n.href}
             href={n.href}
+            prefetch={false}
+            onPointerEnter={intent(n.href)}
+            onTouchStart={intent(n.href)}
             aria-current={active ? "page" : undefined}
             className="flex h-16 w-16 flex-col items-center justify-center gap-1 rounded-[18px] transition-colors duration-150"
             style={{ color: active ? "var(--accent)" : "var(--text-muted)", background: active ? "var(--surface-raised)" : "transparent" }}

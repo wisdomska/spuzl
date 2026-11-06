@@ -1,5 +1,6 @@
 "use client";
 
+import { whenQuiet } from "@/lib/perf/quiet";
 import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
@@ -125,8 +126,15 @@ export function HomeMap({
 
   // Islands navigate in code (after Spuz's hop), so prefetch every world: the loading screen is then ready
   // the moment the hop ends, even on a slow connection.
+  // R2-01: once the screen is quiet, so it never competes with a game the player opens straight away.
   useEffect(() => {
-    for (const w of WORLDS) router.prefetch(`/world/${w.id}`);
+    let live = true;
+    void whenQuiet().then(() => {
+      if (live) for (const w of WORLDS) router.prefetch(`/world/${w.id}`);
+    });
+    return () => {
+      live = false;
+    };
   }, [router]);
 
   // World travel (Handoff): camera + Spuz hops along the dotted path in 3 arcs over 700 ms; RM cross-fades.

@@ -73,3 +73,78 @@ export const BOARDS: Record<string, AnyBoard> = {
   killer: dynamic(() => import("./killer/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   dara: dynamic(() => import("./dara/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
 };
+
+/**
+ * R2-01: the same board chunks, loadable ahead of a tap (Home idle for the Continue game, an opened game card),
+ * so the board's code is already in the cache when the Play screen mounts.
+ */
+const LOADERS: Record<string, () => Promise<unknown>> = {
+  crownfall: () => import("./crownfall/Board"),
+  dusk: () => import("./dusk/Board"),
+  sixer: () => import("./sixer/Board"),
+  nine: () => import("./nine/Board"),
+  pixl: () => import("./pixl/Board"),
+  blackout: () => import("./blackout/Board"),
+  tripwire: () => import("./tripwire/Board"),
+  chess: () => import("./chess/Board"),
+  draughts: () => import("./draughts/Board"),
+  oware: () => import("./oware/Board"),
+  fourup: () => import("./fourup/Board"),
+  flip: () => import("./flip/Board"),
+  ludo: () => import("./ludo/Board"),
+  weave: () => import("./weave/Board"),
+  flowline: () => import("./flowline/Board"),
+  isles: () => import("./isles/Board"),
+  pairup: () => import("./pairup/Board"),
+  lost: () => import("./lost/Board"),
+  hunch: () => import("./hunch/Board"),
+  echo: () => import("./echo/Board"),
+  twins: () => import("./twins/Board"),
+  flinch: () => import("./flinch/Board"),
+  quickfire: () => import("./quickfire/Board"),
+  flagged: () => import("./flagged/Board"),
+  pinned: () => import("./pinned/Board"),
+  quilt: () => import("./quilt/Board"),
+  deadon: () => import("./deadon/Board"),
+  snug: () => import("./snug/Board"),
+  shuffle: () => import("./shuffle/Board"),
+  reflect: () => import("./reflect/Board"),
+  squint: () => import("./squint/Board"),
+  merge: () => import("./merge/Board"),
+  sums: () => import("./sums/Board"),
+  equal: () => import("./equal/Board"),
+  gotcha: () => import("./gotcha/Board"),
+  dash: () => import("./dash/Board"),
+  flipside: () => import("./flipside/Board"),
+  ricochet: () => import("./ricochet/Board"),
+  stacked: () => import("./stacked/Board"),
+  wobble: () => import("./wobble/Board"),
+  grapple: () => import("./grapple/Board"),
+  ghosted: () => import("./ghosted/Board"),
+  slip: () => import("./slip/Board"),
+  gauntlet: () => import("./gauntlet/Board"),
+  coil: () => import("./coil/Board"),
+  quads: () => import("./quads/Board"),
+  rungs: () => import("./rungs/Board"),
+  minicross: () => import("./minicross/Board"),
+  seven: () => import("./seven/Board"),
+  buried: () => import("./buried/Board"),
+  remix: () => import("./remix/Board"),
+  penalty: () => import("./penalty/Board"),
+  beattap: () => import("./beattap/Board"),
+  hilo: () => import("./hilo/Board"),
+  market: () => import("./market/Board"),
+  five: () => import("./five/Board"),
+  emojihits: () => import("./emojihits/Board"),
+  trotro: () => import("./trotro/Board"),
+  lightup: () => import("./lightup/Board"),
+  killer: () => import("./killer/Board"),
+  dara: () => import("./dara/Board"),
+};
+
+const preloaded = new Set<string>();
+export function preloadBoard(id: string) {
+  if (preloaded.has(id) || !LOADERS[id]) return;
+  preloaded.add(id);
+  LOADERS[id]().catch(() => preloaded.delete(id));
+}

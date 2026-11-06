@@ -1,5 +1,6 @@
 import type { PlayOptions } from "./index";
 import { VOICES, type SfxName } from "./palette";
+import { constrainedNetwork, whenQuiet } from "@/lib/perf/quiet";
 
 /**
  * Recorded sound effects (made with ElevenLabs, trimmed and levelled), one file per voice in public/sfx. They load
@@ -13,16 +14,24 @@ export const SAMPLED: ReadonlySet<SfxName> = new Set(VOICES.filter((v) => !SYNTH
 const buffers = new Map<SfxName, AudioBuffer>();
 let loading = false;
 
-/** Fetches and decodes every sample, a few at a time, most-used first. Safe to call more than once. */
+/**
+ * Fetches and decodes every sample, two at a time, most-used first, at low priority. Safe to call more than once.
+ * R2-01: starts only once the game on screen is ready and the network is quiet (lib/perf/quiet.ts), and never on a
+ * data-saving or 2G connection, so 55 small files never compete with a first board.
+ */
 export function loadSamples(a: AudioContext) {
-  if (loading || typeof fetch === "undefined") return;
+  if (loading || typeof fetch === "undefined" || constrainedNetwork()) return;
   loading = true;
+  void whenQuiet().then(() => fetchAll(a));
+}
+
+function fetchAll(a: AudioContext) {
   const first: SfxName[] = ["tick", "nav", "pop", "tile", "buzz", "success", "toggle", "sheet_open", "sheet_close"];
   const queue = [...first, ...[...SAMPLED].filter((n) => !first.includes(n))];
   const worker = async () => {
     for (let n = queue.shift(); n; n = queue.shift()) {
       try {
-        const r = await fetch(`/sfx/${n}.mp3`);
+        const r = await fetch(`/sfx/${n}.mp3`, { priority: "low" } as RequestInit);
         if (!r.ok) continue;
         buffers.set(n, await a.decodeAudioData(await r.arrayBuffer()));
       } catch {
@@ -30,7 +39,7 @@ export function loadSamples(a: AudioContext) {
       }
     }
   };
-  void Promise.all([worker(), worker(), worker()]);
+  void Promise.all([worker(), worker()]);
 }
 
 export const sampleFor = (name: SfxName) => buffers.get(name) ?? null;
