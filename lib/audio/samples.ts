@@ -30,6 +30,8 @@ function fetchAll(a: AudioContext) {
   const queue = [...first, ...[...SAMPLED].filter((n) => !first.includes(n))];
   const worker = async () => {
     for (let n = queue.shift(); n; n = queue.shift()) {
+      // checked before every file: a Play tap mid-way pauses the rest until that board is up
+      await whenQuiet();
       try {
         const r = await fetch(`/sfx/${n}.mp3`, { priority: "low" } as RequestInit);
         if (!r.ok) continue;
