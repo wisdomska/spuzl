@@ -644,6 +644,7 @@ function LudoLive({ state, seat, legal, disabled, onMove, names }: LiveBoardProp
       <div className="relative">
         <LudoTable
           cell={cell}
+          bottom={seat !== null ? s.colours[seat] : undefined}
           label={`Ludo board${mine ? `. You are ${mine.name}` : ""}. Glowing pawns can move.`}
           pieces={pieces}
           interactive={(i) => !disabled && !!mineAt(i)}

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.31.1 (6 November 2026)
+
+### For players
+
+- **Your Ludo colour faces you.** The board turns so your colour's base sits in the bottom-left corner, nearest you,
+  in every Ludo game (with friends, Play live, against the bot and the Daily puzzle). Spectators see it as drawn.
+
 ## 1.31.0 (6 November 2026)
 
 ### For players

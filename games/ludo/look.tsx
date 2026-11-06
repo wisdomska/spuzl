@@ -375,6 +375,7 @@ export function LudoTable({
   onCell,
   interactive,
   hintCell,
+  bottom,
 }: {
   cell: number;
   pieces: LudoPiece[];
@@ -387,8 +388,19 @@ export function LudoTable({
   /** cells that can be tapped (a movable piece) */
   interactive: (i: number) => boolean;
   hintCell?: number;
+  /** the colour you play: the board turns so its base sits bottom-left, nearest you (none for spectators) */
+  bottom?: number;
 }) {
   const reduce = useReduced();
+  // Bases run clockwise from the top-left (colour 0) to the bottom-left (colour 3): turn the board clockwise by
+  // quarter turns until yours is bottom-left. Cells, taps and pieces keep their board (logical) positions.
+  const q = bottom === undefined ? 0 : (((3 - bottom) % 4) + 4) % 4;
+  const toLogic = (R: number, C: number): [number, number] => {
+    let r = R,
+      c = C;
+    for (let k = 0; k < q; k++) [r, c] = [N - 1 - c, r];
+    return [r, c];
+  };
   const tilt = reduce ? 0 : LUDO_TILT;
   const startColours = new Map([0, 1, 2, 3].map((col) => [startOf(col), col]));
   const at = new Map<number, LudoPiece[]>();
@@ -425,10 +437,17 @@ export function LudoTable({
             boxShadow: "inset 0 0 0 1px rgba(0,0,0,.4)",
           }}
         >
-          <BoardArt cell={cell} startColours={startColours} />
-          {Array.from({ length: N }, (_, r) => (
-            <div role="row" key={r} className="contents">
-              {Array.from({ length: N }, (_, c) => {
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0"
+            style={q ? { transform: `rotate(${q * 90}deg)`, transformOrigin: "50% 50%" } : undefined}
+          >
+            <BoardArt cell={cell} startColours={startColours} />
+          </div>
+          {Array.from({ length: N }, (_, R) => (
+            <div role="row" key={R} className="contents">
+              {Array.from({ length: N }, (_, C) => {
+                const [r, c] = toLogic(R, C);
                 const i = r * N + c;
                 const here = at.get(i) ?? [];
                 const isDest = !!dest && dest[0] === r && dest[1] === c;

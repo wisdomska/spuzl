@@ -194,6 +194,7 @@ export default function LudoBoard({ puzzle, initialState, hint, disabled, api }:
       <div className="flex justify-center">
         <LudoTable
           cell={cell}
+          bottom={t.colours[0]}
           label={`Ludo board. You are ${LUDO_LOOK[t.colours[0]].name}, ${LUDO_LOOK[t.colours[0]].shape} on the pawn. Glowing pawns can move.`}
           focus={keys.focus}
           onKeyDown={keys.onKeyDown}
