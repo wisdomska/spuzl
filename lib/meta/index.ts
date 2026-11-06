@@ -227,3 +227,11 @@ export function purchaseState(
   if (sparks < item.price) return { kind: "short", short: item.price - sparks };
   return { kind: "buy" };
 }
+
+/**
+ * R2-19: the Shop's "You can afford this" badge. True only when the buy button would buy it now: priced, within the
+ * Sparks balance, unlocked, not owned and not at the Freeze limit. A hint only; the server still decides the sale.
+ */
+export function canAfford(item: ShopItemState, sparks: number, level: number, freezesHeld = 0, isFreeze = false): boolean {
+  return purchaseState(item, sparks, level, freezesHeld, isFreeze).kind === "buy";
+}

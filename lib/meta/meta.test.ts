@@ -12,6 +12,7 @@ import {
   monthGrid,
   nextMonday,
   purchaseState,
+  canAfford,
   shortDate,
   tabOf,
   topPercent,
@@ -145,5 +146,14 @@ describe("shop", () => {
     expect(purchaseState({ ...item, consumable: true, owned: true }, 1000, 5, 2, true)).toEqual({ kind: "full" });
     expect(tabOf("freeze")).toBe("extra");
     expect(tabOf("hat")).toBe("hat");
+  });
+  it("badges only what the Sparks can buy right now (R2-19)", () => {
+    expect(canAfford(item, 350, 5)).toBe(true); // exactly the price
+    expect(canAfford(item, 349, 5)).toBe(false);
+    expect(canAfford({ ...item, price: 0 }, 0, 5)).toBe(false); // free, not a purchase
+    expect(canAfford({ ...item, owned: true }, 1000, 5)).toBe(false);
+    expect(canAfford({ ...item, unlockLevel: 10 }, 1000, 5)).toBe(false);
+    expect(canAfford({ ...item, consumable: true }, 1000, 5, 2, true)).toBe(false); // freezes full
+    expect(canAfford({ ...item, consumable: true, owned: true }, 1000, 5, 1, true)).toBe(true);
   });
 });

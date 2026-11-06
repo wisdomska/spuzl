@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { BOARD_THEMES } from "@/lib/gamification/cosmetics";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { SHOP_TABS, purchaseState, tabOf, type ShopTab } from "@/lib/meta";
+import { SHOP_TABS, canAfford, purchaseState, tabOf, type ShopTab } from "@/lib/meta";
 import { formatNumber } from "@/lib/format";
 import { play } from "@/lib/audio";
 import { useGameSettings } from "@/lib/game-settings/client";
@@ -216,6 +216,14 @@ export default function ShopPage() {
                   : priceOf(i) === 0
                     ? { icon: "gift", text: "Free", color: "var(--accent)" }
                     : { icon: "lightning", text: formatNumber(priceOf(i)), color: "var(--gold)" };
+            // R2-19: a hint only; purchase rules and the charge stay on the server.
+            const affordable = canAfford(
+              { price: priceOf(i), owned: i.owned, unlockLevel: i.unlockLevel, consumable },
+              d!.sparks,
+              d!.level,
+              d!.freezesHeld,
+              i.type === "freeze",
+            );
             return (
               <button
                 key={i.id}
@@ -245,7 +253,18 @@ export default function ShopPage() {
                   <Icon name={price.icon} size={13} />
                   {price.text}
                 </span>
+                {affordable && (
+                  <span
+                    aria-hidden
+                    data-afford
+                    className="bg-accent text-on-accent flex items-center gap-1 rounded-[8px] px-1.5 py-0.5 text-[12px] font-bold whitespace-nowrap"
+                  >
+                    <Icon name="check" size={12} />
+                    {shopCopy.afford}
+                  </span>
+                )}
                 <span className="sr-only">
+                  {affordable ? `, ${shopCopy.affordAria}` : ""}
                   {i.starter ? `, ${shopCopy.starterAria}` : ""}
                   {i.type === "freeze" ? `, you hold ${d!.freezesHeld} of 2` : ""}
                 </span>
