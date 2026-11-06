@@ -6,7 +6,7 @@ import { BOARDS } from "@/games/board-registry";
 import { setGuessTransport } from "@/games/_shared/guess";
 import type { BoardApi, ControlSpec, FeedbackTone } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
-import { GAME_BY_ID, colourOf } from "@/lib/catalog";
+import { GAME_BY_ID, UI_ACCENT } from "@/lib/catalog";
 import { dayMonth } from "@/lib/admin/dates";
 import { SOLVED_STATE } from "@/lib/admin/solved-state";
 import { api } from "@/lib/client/api";
@@ -96,7 +96,6 @@ export function PuzzlePreview({
   const autoRan = useRef(false);
 
   const meta = GAME_BY_ID[game];
-  const world = colourOf(meta);
   const p = q.data?.puzzle;
   const report = check.data ?? p?.check_report ?? null;
 
@@ -171,15 +170,7 @@ export function PuzzlePreview({
           </Notice>
         )}
         <div className="flex flex-col gap-5 lg:flex-row">
-          <BoardFrame
-            key={p.id}
-            game={game}
-            puzzle={p.data}
-            solution={p.solution}
-            puzzleId={p.id}
-            worldColor={world.color}
-            worldInk={world.ink}
-          />
+          <BoardFrame key={p.id} game={game} puzzle={p.data} solution={p.solution} puzzleId={p.id} />
           <div className="flex min-w-0 flex-1 flex-col gap-2.5">
             {report ? (
               report.checks.map((c) => (
@@ -314,21 +305,7 @@ export function PuzzlePreview({
 }
 
 /** The real Board in a 390 × 680 phone frame, with Show solution and Play test. */
-function BoardFrame({
-  game,
-  puzzle,
-  solution,
-  puzzleId,
-  worldColor,
-  worldInk,
-}: {
-  game: string;
-  puzzle: unknown;
-  solution: unknown;
-  puzzleId: string;
-  worldColor: string;
-  worldInk: string;
-}) {
+function BoardFrame({ game, puzzle, solution, puzzleId }: { game: string; puzzle: unknown; solution: unknown; puzzleId: string }) {
   const Board = BOARDS[game];
   const meta = GAME_BY_ID[game];
   const [mode, setMode] = useState<"puzzle" | "solution" | "play">("puzzle");
@@ -371,9 +348,9 @@ function BoardFrame({
   );
 
   const style = {
-    "--world": worldColor,
-    "--world-ink": worldInk,
-    "--world-depth": `color-mix(in srgb, ${worldColor} 55%, #0E0F1A)`,
+    "--world": UI_ACCENT,
+    "--world-ink": UI_ACCENT,
+    "--world-depth": "var(--accent-depth)",
   } as CSSProperties;
   const showJson = mode === "solution" && solved === undefined;
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.33.0 (6 November 2026)
+
+### For players
+
+- **One SPUZL colour everywhere.** Buttons, titles, highlights, selections and progress bars use SPUZL's lemon green
+  on every screen, in every game category, board games included (no more brown Ludo title or Roll button). A
+  category's own colour now shows only on its island on the map and in game art such as the Ludo board.
+
 ## 1.32.0 (6 November 2026)
 
 ### For players

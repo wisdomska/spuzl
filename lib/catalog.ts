@@ -15,6 +15,12 @@ import { dara } from "@/lib/copy/dara";
  */
 export type WorldId = "logic" | "line" | "shape" | "number" | "word" | "clue" | "reflex" | "rage" | "board";
 
+/**
+ * SPUZL's one interface colour (owner's call: lemon green, uniform across the app). Buttons, titles, highlights and
+ * the `--world` variable games read all use it; a world's own colour stays only on its map island and game art.
+ */
+export const UI_ACCENT = "var(--accent)";
+
 export interface World {
   id: WorldId;
   name: string;

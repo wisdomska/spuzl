@@ -42,7 +42,7 @@ export function GameTile({ game, size }: { game: string; size: number }) {
         style={{
           width: size,
           height: size,
-          background: "var(--w-board)",
+          background: "var(--accent)",
           color: "#0E0F1A",
           boxShadow: "inset -4px -4px 0 rgba(0,0,0,.18), inset 3px 3px 0 rgba(255,255,255,.22)",
         }}
@@ -65,7 +65,7 @@ export function GameTile({ game, size }: { game: string; size: number }) {
 }
 
 const CTA: Record<InboxStatus, { label: string; style: CSSProperties }> = {
-  "your-move": { label: "Play", style: { background: "var(--world)", color: "#0E0F1A" } },
+  "your-move": { label: "Play", style: { background: "var(--world)", color: "var(--on-accent)" } },
   "their-move": { label: "Nudge", style: { background: "var(--surface-raised)", color: "var(--text)" } },
   finished: { label: "Rematch", style: { background: "var(--surface-raised)", color: "var(--accent)" } },
 };
@@ -89,7 +89,7 @@ export function YourMoveInbox({
   return (
     <section
       className="flex min-h-full flex-col gap-3 px-4 pt-14 pb-6"
-      style={{ ["--world" as string]: "var(--w-board)" }}
+      style={{ ["--world" as string]: "var(--accent)" }}
       aria-labelledby="your-move-title"
     >
       <div className="flex items-center justify-between gap-3">
@@ -99,7 +99,7 @@ export function YourMoveInbox({
         {waiting > 0 && (
           <span
             className="num rounded-[10px] px-2.5 py-1.5 text-[13px] font-bold whitespace-nowrap"
-            style={{ background: "var(--world)", color: "#0E0F1A" }}
+            style={{ background: "var(--world)", color: "var(--on-accent)" }}
           >
             {waiting} waiting
           </span>

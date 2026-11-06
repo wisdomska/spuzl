@@ -176,7 +176,7 @@ export function BaySearch({
 
   const searching = phase.kind === "searching" || phase.kind === "matched";
   return (
-    <Screen label={T.screenLabel} style={{ ["--world" as string]: "var(--w-board)" }}>
+    <Screen label={T.screenLabel} style={{ ["--world" as string]: "var(--accent)" }}>
       <MpToast toast={toast} />
       <div className="absolute top-[max(12px,env(safe-area-inset-top))] left-4 z-10">
         <TopButton icon="arrow-left" label={T.back} onClick={cancel} />

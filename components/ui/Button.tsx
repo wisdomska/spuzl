@@ -16,7 +16,7 @@ const VARIANT: Record<ButtonVariant, string> = {
   secondary: "bg-surface-raised text-text [--btn-depth:var(--depth)]",
   ghost: "bg-transparent text-text shadow-none! hover-fine:bg-surface-raised",
   danger: "bg-danger text-on-accent [--btn-depth:var(--danger-depth)]",
-  world: "bg-[var(--world)] text-[#0E0F1A] [--btn-depth:var(--world-depth,rgb(0_0_0/.35))]",
+  world: "bg-[var(--world)] text-[var(--on-accent)] [--btn-depth:var(--world-depth,rgb(0_0_0/.35))]",
 };
 const SIZE: Record<ButtonSize, string> = {
   md: "h-12 px-5 text-[16px] rounded-[16px] font-display font-extrabold",

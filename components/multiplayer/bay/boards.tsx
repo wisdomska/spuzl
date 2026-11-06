@@ -303,7 +303,7 @@ function DraughtsLive({ state, seat, legal, disabled, onMove }: LiveBoardProps) 
             className="relative flex items-center justify-center"
             style={{
               background: dark ? SQUARE.draughtsDark : SQUARE.light,
-              boxShadow: sel === sq ? "inset 0 0 0 3px var(--w-board)" : undefined,
+              boxShadow: sel === sq ? "inset 0 0 0 3px var(--accent)" : undefined,
             }}
           >
             {p ? (
@@ -313,7 +313,7 @@ function DraughtsLive({ state, seat, legal, disabled, onMove }: LiveBoardProps) 
                   width: cell * 0.76,
                   height: cell * 0.76,
                   ...draughtsDisc(!!mine, !!king),
-                  outline: movable && !disabled ? "2px solid var(--w-board)" : undefined,
+                  outline: movable && !disabled ? "2px solid var(--accent)" : undefined,
                 }}
               >
                 {king ? <Icon name="crown-simple" size={Math.round(cell * 0.32)} /> : null}
@@ -364,7 +364,7 @@ function OwareLive({ state, seat, legal, disabled, onMove }: LiveBoardProps) {
                     fontSize: Math.round(pitPx * 0.375),
                     background: "var(--bay-well)",
                     color: "var(--bay-pit-ink)",
-                    boxShadow: can ? "inset 0 0 0 3px var(--w-board)" : "inset 0 4px 0 rgba(0,0,0,.35)",
+                    boxShadow: can ? "inset 0 0 0 3px var(--accent)" : "inset 0 4px 0 rgba(0,0,0,.35)",
                   }}
                 >
                   {s.pits[pit]}
@@ -423,8 +423,8 @@ function FourUpLive({ state, legal, disabled, onMove }: LiveBoardProps) {
                   width: cell,
                   height: cell,
                   background: v === 1 ? "var(--bay-disc-light)" : v === 2 ? "var(--bay-disc-dark)" : "var(--bay-well)",
-                  boxShadow: v === 2 ? "inset 0 0 0 3px var(--w-board)" : "inset 0 3px 0 rgba(0,0,0,.3)",
-                  color: v === 2 ? "var(--w-board)" : "var(--square-ink)",
+                  boxShadow: v === 2 ? "inset 0 0 0 3px var(--accent)" : "inset 0 3px 0 rgba(0,0,0,.3)",
+                  color: v === 2 ? "var(--accent)" : "var(--square-ink)",
                   animation:
                     !reduce && v && s.moves[s.moves.length - 1] === c && r === firstFilled(s, c)
                       ? "bay-pop 180ms var(--ease-out)"
@@ -479,11 +479,11 @@ function FlipLive({ state, seat, legal, disabled, onMove }: LiveBoardProps) {
                   width: cell * 0.76,
                   height: cell * 0.76,
                   background: v === 1 ? "var(--bay-disc-light)" : "var(--bay-disc-dark)",
-                  boxShadow: v === 2 ? "inset 0 0 0 3px var(--w-board)" : "inset 0 -3px 0 var(--bay-disc-light-rim)",
+                  boxShadow: v === 2 ? "inset 0 0 0 3px var(--accent)" : "inset 0 -3px 0 var(--bay-disc-light-rim)",
                 }}
               />
             ) : can ? (
-              <span className="num flex size-[60%] items-center justify-center rounded-full text-[12px] font-bold text-[var(--w-board)] shadow-[inset_0_0_0_2px_var(--w-board)]">
+              <span className="num flex size-[60%] items-center justify-center rounded-full text-[12px] font-bold text-[var(--accent)] shadow-[inset_0_0_0_2px_var(--accent)]">
                 {flips}
               </span>
             ) : null}
@@ -724,7 +724,7 @@ function LudoLive({ state, seat, legal, disabled, onMove, names }: LiveBoardProp
           onClick={roll}
           className="toy font-display h-12 rounded-[16px] px-6 text-[17px] font-black disabled:opacity-50"
           style={{
-            background: "var(--w-board)",
+            background: "var(--accent)",
             color: "var(--square-ink)",
             ["--btn-depth" as string]: "var(--w-board-ink)",
             boxShadow: "0 5px 0 var(--w-board-ink)",

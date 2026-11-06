@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, 
 import { AnimatePresence, motion } from "motion/react";
 import type { BoardApi, BoardProps, ControlSpec, FeedbackTone, Hint, PlayMode } from "@/games/types";
 import type { GameMeta } from "@/lib/catalog";
-import { colourOf } from "@/lib/catalog";
+import { UI_ACCENT } from "@/lib/catalog";
 import { IconButton } from "@/components/ui/IconButton";
 import { Icon } from "@/components/ui/Icon";
 import { GameMenu, type GameMenuEntry } from "./GameMenu";
@@ -160,7 +160,6 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   const asideW = wideAside(vw);
   const [aside, setAside] = useState<HTMLElement | null>(null);
   // The game's own colour (lib/catalog colourOf): moved games keep the hue they were designed in.
-  const world = colourOf(meta);
   const relaxed = useSettings((s) => s.relaxed);
   const sfx = useSettings((s) => s.sfx);
   const haptics = useSettings((s) => s.haptics);
@@ -451,9 +450,9 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   ];
 
   const style = {
-    "--world": world.color,
-    "--world-ink": world.ink,
-    "--world-depth": `color-mix(in srgb, ${world.color} 55%, #0E0F1A)`,
+    "--world": UI_ACCENT,
+    "--world-ink": UI_ACCENT,
+    "--world-depth": "var(--accent-depth)",
   } as CSSProperties;
 
   const header = (

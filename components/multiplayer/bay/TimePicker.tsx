@@ -56,7 +56,7 @@ export function TimePicker({ game, value, onChange }: { game: BayGame; value: nu
             className="press num flex h-11 flex-1 items-center justify-center rounded-[12px] text-[15px] font-semibold"
             style={
               value === m
-                ? { background: "var(--w-board)", color: "var(--ink-on-bright)" }
+                ? { background: "var(--accent)", color: "var(--ink-on-bright)" }
                 : { color: "var(--text-muted)", background: "transparent" }
             }
           >

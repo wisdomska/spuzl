@@ -3,7 +3,7 @@
 import { Dialog } from "radix-ui";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
-import { colourOf, type GameMeta } from "@/lib/catalog";
+import { type GameMeta, UI_ACCENT } from "@/lib/catalog";
 import { formatClock } from "@/lib/format";
 import { isBossLevel, levelCount, levelDifficulty, nextLevel, SEEDED_LADDERS } from "@/lib/game/levels";
 import { useGameLevels } from "@/lib/client/levels";
@@ -30,7 +30,6 @@ export function LevelSheet({
 }) {
   const q = useGameLevels(meta.id, open);
   useSheetSound(open);
-  const world = colourOf(meta);
   const top = q.data?.top ?? 0;
   const count = levelCount(meta.id);
   const next = nextLevel(meta.id, top);
@@ -44,7 +43,7 @@ export function LevelSheet({
         <Dialog.Overlay className="sheet-overlay fixed inset-0 z-50 bg-[rgb(6_7_13/.6)]" />
         <Dialog.Content
           className="sheet-content safe-bottom bg-surface fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[90dvh] max-w-[560px] flex-col gap-4 overflow-y-auto rounded-t-[28px] px-5 pt-3 pb-7"
-          style={{ "--world": world.color } as React.CSSProperties}
+          style={{ "--world": UI_ACCENT } as React.CSSProperties}
         >
           <div aria-hidden className="bg-line mx-auto h-1.5 w-10 shrink-0 rounded-full" />
           <div className="flex items-start gap-3">

@@ -9,7 +9,7 @@ import { Icon } from "@/components/ui/Icon";
 import { formatClock, formatNumber } from "@/lib/format";
 import { play } from "@/lib/audio";
 import type { GameMeta } from "@/lib/catalog";
-import { colourOf } from "@/lib/catalog";
+import { UI_ACCENT } from "@/lib/catalog";
 import type { FinishRes } from "@/lib/client/api";
 import { RaceLiveButton } from "@/components/multiplayer/GameChallenge";
 import { SaveStreakPrompt } from "@/components/meta/SaveStreakPrompt";
@@ -67,7 +67,6 @@ export function ResultsScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once per results screen
   }, [instant]);
 
-  const world = colourOf(meta);
   const flagged = result.status === "flagged";
   const scoreGame = meta.scoring === "score" && result.score !== undefined;
   const line = flagged
@@ -89,7 +88,7 @@ export function ResultsScreen({
       animate={{ opacity: 1 }}
       transition={{ duration: 0.28, ease: EASE_OUT }}
       onPointerDown={() => setSkipped(true)}
-      style={{ ["--world" as string]: world.color }}
+      style={{ ["--world" as string]: UI_ACCENT }}
     >
       <div
         className="relative flex h-[230px] items-end justify-center overflow-hidden pb-3"

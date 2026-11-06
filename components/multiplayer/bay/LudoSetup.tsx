@@ -73,7 +73,7 @@ export function LudoSetup({
               type="checkbox"
               checked={kicks[k]}
               onChange={(e) => onKicks({ ...kicks, [k]: e.target.checked })}
-              className="size-5 flex-none accent-[var(--w-board)]"
+              className="size-5 flex-none accent-[var(--accent)]"
             />
           </label>
         ))}

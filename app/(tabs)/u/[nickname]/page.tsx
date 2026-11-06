@@ -108,13 +108,13 @@ export default function PlayerPage({ params }: PageProps<"/u/[nickname]">) {
               <h2 className="text-[16px] font-bold">You vs {p.nickname}</h2>
               <div className="flex items-center gap-3">
                 <span className="num text-accent text-[32px] font-semibold">{p.versus.me}</span>
-                <div className="relative h-3 flex-1 overflow-hidden rounded-[6px]" style={{ background: "var(--w-shape)" }} aria-hidden>
+                <div className="relative h-3 flex-1 overflow-hidden rounded-[6px]" style={{ background: "var(--accent)" }} aria-hidden>
                   <div
                     className="bg-accent absolute inset-0 origin-left"
                     style={{ transform: `scaleX(${p.versus.me + p.versus.them ? p.versus.me / (p.versus.me + p.versus.them) : 0.5})` }}
                   />
                 </div>
-                <span className="num text-[32px] font-semibold" style={{ color: "var(--w-shape)" }}>
+                <span className="num text-[32px] font-semibold" style={{ color: "var(--accent)" }}>
                   {p.versus.them}
                 </span>
               </div>

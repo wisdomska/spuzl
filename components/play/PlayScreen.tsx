@@ -7,7 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { GameShell } from "@/components/game/GameShell";
 import { BoardSkeleton } from "@/components/game/BoardSkeleton";
 import { BOARDS } from "@/games/board-registry";
-import { WORLD_BY_ID, colourOf, type GameMeta, type WorldId } from "@/lib/catalog";
+import { WORLD_BY_ID, type GameMeta, type WorldId, UI_ACCENT } from "@/lib/catalog";
 import { Skeleton } from "@/components/ui/Skeleton";
 import {
   finishAttempt,
@@ -648,11 +648,10 @@ function Toast({ text, onDone }: { text: string; onDone: () => void }) {
  */
 function PlayLoading({ meta }: { meta: GameMeta }) {
   // The game's own colour (lib/catalog colourOf), as GameShell paints it, so the frame does not change hue.
-  const world = colourOf(meta);
   return (
     <div
       className="bg-bg wide:max-w-[1384px] min-[1280px]:wide:max-w-[1424px] wide:px-6 relative mx-auto flex min-h-dvh w-full max-w-[560px] flex-col"
-      style={{ ["--world" as string]: world.color, ["--world-ink" as string]: world.ink }}
+      style={{ ["--world" as string]: UI_ACCENT, ["--world-ink" as string]: UI_ACCENT }}
       data-world={meta.world}
       aria-busy
     >

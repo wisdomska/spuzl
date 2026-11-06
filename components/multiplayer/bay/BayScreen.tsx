@@ -137,7 +137,7 @@ function NewBaySheet({
     }
   };
   return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center" style={{ ["--world" as string]: "var(--w-board)" }}>
+    <div className="fixed inset-0 z-40 flex items-end justify-center" style={{ ["--world" as string]: "var(--accent)" }}>
       <button type="button" aria-label="Close" className="absolute inset-0 bg-[rgba(6,7,13,.55)]" onClick={onClose} data-no-tick />
       <div
         role="dialog"
@@ -157,8 +157,8 @@ function NewBaySheet({
               onClick={() => setGame(g)}
               className="press flex h-[72px] flex-col items-center justify-center gap-1 rounded-[16px]"
               style={{
-                background: game === g ? "color-mix(in srgb, var(--w-board) 16%, var(--bg))" : "var(--surface-raised)",
-                boxShadow: game === g ? "inset 0 0 0 2px var(--w-board)" : undefined,
+                background: game === g ? "color-mix(in srgb, var(--accent) 16%, var(--bg))" : "var(--surface-raised)",
+                boxShadow: game === g ? "inset 0 0 0 2px var(--accent)" : undefined,
               }}
             >
               <Icon name={GAME_BY_ID[g].icon} size={22} />
@@ -348,7 +348,7 @@ export function BayMatch({ id }: { id: string }) {
   // Invite: not seated yet.
   if (seat === null)
     return (
-      <Screen label="Bay invite" style={{ ["--world" as string]: "var(--w-board)" }}>
+      <Screen label="Bay invite" style={{ ["--world" as string]: "var(--accent)" }}>
         <MpToast toast={toast} />
         <div className="flex flex-1 flex-col items-center gap-4 px-5 pt-[max(80px,env(safe-area-inset-top))] pb-[max(28px,env(safe-area-inset-bottom))] text-center">
           <Spuz mood="wave" size={120} />
@@ -529,7 +529,7 @@ export function BayMatch({ id }: { id: string }) {
           return (
             <span key={ply} className="flex gap-2">
               {ply % 2 === 0 && <span>{ply / 2 + 1}.</span>}
-              <span className={i === a.length - 1 ? "rounded-[6px] bg-[var(--w-board)] px-1.5 text-[var(--square-ink)]" : "text-text"}>
+              <span className={i === a.length - 1 ? "rounded-[6px] bg-[var(--accent)] px-1.5 text-[var(--square-ink)]" : "text-text"}>
                 {s}
               </span>
             </span>
@@ -633,11 +633,7 @@ export function BayMatch({ id }: { id: string }) {
   );
 
   return (
-    <Screen
-      label="B3 Bay match"
-      wide={wide}
-      style={{ ["--world" as string]: "var(--w-board)", ["--world-ink" as string]: "var(--w-board-ink)" }}
-    >
+    <Screen label="B3 Bay match" wide={wide} style={{ ["--world" as string]: "var(--accent)", ["--world-ink" as string]: "var(--accent)" }}>
       <MpToast toast={toast} />
       <div aria-live="polite" className="sr-only">
         {live ||
@@ -653,7 +649,7 @@ export function BayMatch({ id }: { id: string }) {
         }
       >
         <TopButton icon="arrow-left" label="Back" onClick={leave.request} />
-        <h1 className="font-display flex-1 text-[22px] font-black text-[var(--w-board)] [[data-theme=light]_&]:text-[var(--w-board-ink)]">
+        <h1 className="font-display flex-1 text-[22px] font-black text-[var(--accent)] [[data-theme=light]_&]:text-[var(--accent)]">
           {meta?.name}
         </h1>
         <span className="text-muted text-[14px] font-medium whitespace-nowrap">
@@ -756,7 +752,7 @@ function MoveList({ sans }: { sans: string[] }) {
                 <span
                   key={j}
                   aria-current={k * 2 + j === sans.length - 1 || undefined}
-                  className={`rounded-[8px] px-1.5 py-1 ${k * 2 + j === sans.length - 1 ? "bg-[var(--w-board)] text-[var(--square-ink)]" : ""}`}
+                  className={`rounded-[8px] px-1.5 py-1 ${k * 2 + j === sans.length - 1 ? "bg-[var(--accent)] text-[var(--square-ink)]" : ""}`}
                 >
                   {m}
                 </span>

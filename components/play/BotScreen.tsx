@@ -85,7 +85,7 @@ export function BotScreen({ meta, game, initialLevel }: { meta: GameMeta; game: 
     return (
       <main
         className="mx-auto flex min-h-dvh w-full max-w-[560px] flex-col gap-4 px-4 pt-[max(20px,env(safe-area-inset-top))] pb-[max(28px,env(safe-area-inset-bottom))]"
-        style={{ ["--world" as string]: "var(--w-board)" }}
+        style={{ ["--world" as string]: "var(--accent)" }}
       >
         <div className="flex items-center gap-3">
           <button

@@ -76,7 +76,7 @@ export function Inbox() {
           body: `It's your move in ${gameName(t.game)}.`,
           action: "Play",
           href: `/bay/${t.matchId}`,
-          color: "var(--w-board)",
+          color: "var(--accent)",
           icon: "hand-pointing",
           ms: 15_000,
         });
@@ -90,7 +90,7 @@ export function Inbox() {
           body: `Your rival is waiting on your move in ${gameName(t.game)}.`,
           action: "Play",
           href: `/bay/${t.matchId}`,
-          color: "var(--w-board)",
+          color: "var(--accent)",
           icon: "bell-ringing",
           ms: 15_000,
         });

@@ -12,7 +12,7 @@ import { Dialog } from "radix-ui";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { GameIcon3D } from "@/components/world/GameIcon3D";
-import { WORLD_BY_ID, type GameMeta } from "@/lib/catalog";
+import { WORLD_BY_ID, type GameMeta, UI_ACCENT } from "@/lib/catalog";
 import { isRaceGame } from "@/lib/multiplayer/games";
 import { isBayGame } from "@/lib/multiplayer/bay";
 import { bayLive } from "@/lib/copy/bay-live";
@@ -69,7 +69,7 @@ export function GameCard({
         <Dialog.Overlay className="sheet-overlay fixed inset-0 z-50 bg-[rgb(6_7_13/.6)]" />
         <Dialog.Content
           className="sheet-content safe-bottom bg-surface fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[90dvh] max-w-[560px] flex-col gap-4 overflow-y-auto rounded-t-[28px] px-5 pt-3 pb-7"
-          style={world ? ({ "--world": world.color } as React.CSSProperties) : undefined}
+          style={world ? ({ "--world": UI_ACCENT } as React.CSSProperties) : undefined}
         >
           <div aria-hidden className="bg-line mx-auto h-1.5 w-10 shrink-0 rounded-full" />
           {meta && world && (

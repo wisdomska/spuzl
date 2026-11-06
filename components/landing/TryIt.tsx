@@ -77,7 +77,7 @@ export function TryIt() {
         <div
           ref={boardBox}
           className="mt-4 flex justify-center"
-          style={{ ["--world" as string]: "var(--w-reflex)", minHeight: boardWidth ? undefined : 300 }}
+          style={{ ["--world" as string]: "var(--accent)", minHeight: boardWidth ? undefined : 300 }}
         >
           {boardWidth > 0 && (
             <EmbeddedBoard.Provider value={{ width: boardWidth }}>

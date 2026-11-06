@@ -66,7 +66,7 @@ export default function CrewPage({ params }: PageProps<"/crews/[id]">) {
                   <span className="num text-[30px] font-semibold">{formatNumber(c.clash.them)}</span>
                 </div>
               </div>
-              <div className="relative h-3.5 overflow-hidden rounded-[7px]" style={{ background: "var(--w-shape)" }} aria-hidden>
+              <div className="relative h-3.5 overflow-hidden rounded-[7px]" style={{ background: "var(--accent)" }} aria-hidden>
                 <div
                   className="bg-accent absolute inset-0 origin-left transition-transform duration-500"
                   style={{ transform: `scaleX(${c.clash.us + c.clash.them ? c.clash.us / (c.clash.us + c.clash.them) : 0.5})` }}

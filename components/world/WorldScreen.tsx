@@ -6,7 +6,7 @@ import { isRaceGame } from "@/lib/multiplayer/games";
 import { worldCopy } from "@/lib/copy/world";
 import Link from "next/link";
 import { motion } from "motion/react";
-import { WORLD_BY_ID, gamesInWorld, labGamesInWorld, type WorldId } from "@/lib/catalog";
+import { WORLD_BY_ID, gamesInWorld, labGamesInWorld, type WorldId, UI_ACCENT } from "@/lib/catalog";
 import { useMe, useToday } from "@/lib/client/api";
 import { Island } from "@/components/home/Island";
 import { Icon } from "@/components/ui/Icon";
@@ -43,11 +43,11 @@ export function WorldScreen({ id }: { id: WorldId }) {
   return (
     <main
       className="bg-bg mx-auto min-h-dvh max-w-[560px] lg:max-w-[1180px]"
-      style={{ ["--world" as string]: world.color, ["--world-ink" as string]: world.ink }}
+      style={{ ["--world" as string]: UI_ACCENT, ["--world-ink" as string]: UI_ACCENT }}
     >
       <header
         className="dotgrid relative overflow-hidden pb-5"
-        style={{ backgroundColor: `color-mix(in srgb, ${world.color} 14%, var(--bg))` }}
+        style={{ backgroundColor: `color-mix(in srgb, ${UI_ACCENT} 10%, var(--bg))` }}
       >
         {/* z-10: the scaled island below would otherwise sit on top of the button and swallow taps */}
         <div className="safe-top relative z-10 px-4">
@@ -128,7 +128,7 @@ export function WorldScreen({ id }: { id: WorldId }) {
                     {worldCopy.resume}
                   </Chip>
                 ) : (
-                  <Chip icon="sparkle" bg="var(--world)" fg="#0E0F1A">
+                  <Chip icon="sparkle" bg="var(--world)" fg="var(--on-accent)">
                     {worldCopy.isNew}
                   </Chip>
                 )}
