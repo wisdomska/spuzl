@@ -5,7 +5,7 @@ import { ApiError } from "@/lib/api/server";
 import { serverBroadcast } from "@/lib/realtime/server";
 import { bayLive } from "@/lib/copy/bay-live";
 import { clockMinutes, initialState, isBayGame, loadRules, type BayGame } from "../bay";
-import { BAY_QUEUE, isLive, pickBayOpponent, searchTimedOut, seatOrder, type BayQueueEntry } from "../bayMatchmaking";
+import { BAY_QUEUE, blockedPair, isLive, pickBayOpponent, searchTimedOut, seatOrder, type BayQueueEntry } from "../bayMatchmaking";
 import { readRating } from "./rewards";
 
 /**
@@ -28,6 +28,8 @@ interface QueueRow {
   match_id: string | null;
   /** Ludo house rules picked before searching ("back,side"; "" for standard): only the same rules are paired */
   rules: string;
+  /** seats searched for: 2, or 3 to 4 for Ludo */
+  seats: number;
 }
 
 type Kicks = { backKick?: boolean; sideKick?: boolean; homeKick?: boolean };
@@ -69,11 +71,13 @@ export async function joinBayQueue(
   game: string,
   minutes?: number,
   ludo?: Kicks,
+  wantSeats?: number,
 ) {
   if (player.age_band === "13-15") throw new ApiError(403, "age_restricted", bayLive.ageRestricted);
   if (!isBayGame(game)) throw new ApiError(400, "not_board_game");
   const clock = clockMinutes(game, minutes) * 60_000;
   const rules = rulesKey(game, ludo);
+  const seats = game === "ludo" ? Math.max(2, Math.min(4, wantSeats ?? 2)) : 2;
   // One queue entry per player across modes: joining here ends a Duel Quick Match search.
   await admin.from("matchmaking_queue").delete().eq("player_id", player.id).is("match_id", null);
   const now = Date.now();
@@ -88,12 +92,14 @@ export async function joinBayQueue(
     prev.game_id === game &&
     prev.clock_ms === clock &&
     (prev.rules ?? "") === rules &&
+    (prev.seats ?? 2) === seats &&
     isLive(toEntry(prev), now);
   const { error } = await admin.from("board_queue").upsert({
     player_id: player.id,
     game_id: game,
     clock_ms: clock,
     rules,
+    seats,
     rating: rating.rating.toFixed(2),
     has_rating: rating.games > 0,
     enqueued_at: resume ? prev!.enqueued_at : iso(now),
@@ -136,6 +142,7 @@ export async function pollBayQueue(admin: SupabaseClient, playerId: string): Pro
       .eq("game_id", mine.game_id)
       .eq("clock_ms", mine.clock_ms)
       .eq("rules", mine.rules ?? "")
+      .eq("seats", mine.seats ?? 2)
       .is("match_id", null)
       .neq("player_id", playerId)
       .gte("seen_at", iso(now - BAY_QUEUE.staleMs))
@@ -146,10 +153,25 @@ export async function pollBayQueue(admin: SupabaseClient, playerId: string): Pro
   ]);
   const others = ((rows ?? []) as QueueRow[]).map(toEntry);
   const blocks = (blockRows ?? []).map((b) => [b.player_id as string, b.blocked_id as string] as const);
-  const opp = pickBayOpponent(me, others, now, blocks);
-  if (opp) {
-    const matchId = await createMatched(admin, [me.playerId, opp.playerId], mine.game_id, mine.clock_ms, mine.rules ?? "");
-    if (matchId) return { status: "matched", game: mine.game_id, matchId };
+  const want = mine.seats ?? 2;
+  if (want === 2) {
+    const opp = pickBayOpponent(me, others, now, blocks);
+    if (opp) {
+      const matchId = await createMatched(admin, [me.playerId, opp.playerId], mine.game_id, mine.clock_ms, mine.rules ?? "");
+      if (matchId) return { status: "matched", game: mine.game_id, matchId };
+    }
+  } else {
+    // 3 or 4 at the table (Ludo): the longest-waiting live searches for the same game, time, rules and size, first
+    // come first served (casual, no rating window). The claim refuses the group if any two of them blocked each other.
+    const group = others
+      .filter((o) => isLive(o, now) && !blockedPair(me.playerId, o.playerId, blocks))
+      .sort((a, b) => a.enqueuedAt - b.enqueuedAt)
+      .slice(0, want - 1);
+    if (group.length === want - 1) {
+      const ids = [me.playerId, ...group.map((o) => o.playerId)];
+      const matchId = await createMatched(admin, ids, mine.game_id, mine.clock_ms, mine.rules ?? "");
+      if (matchId) return { status: "matched", game: mine.game_id, matchId };
+    }
   }
   const visible = others.filter((o) => !blocks.some(([x, y]) => x === o.playerId || y === o.playerId));
   return {
@@ -168,23 +190,25 @@ export async function cancelBayQueue(admin: SupabaseClient, playerId: string) {
 }
 
 /**
- * Creates the live match for a pair and claims both queue entries in one step. Returns null when either
+ * Creates the live match for a pair (or a Ludo group of 3 or 4) and claims their queue entries in one step. Returns null when either
  * player was taken by someone else first (or a block appeared): the caller just keeps searching.
  */
-async function createMatched(
-  admin: SupabaseClient,
-  pair: [string, string],
-  game: BayGame,
-  clock: number,
-  house: string,
-): Promise<string | null> {
+async function createMatched(admin: SupabaseClient, group: string[], game: BayGame, clock: number, house: string): Promise<string | null> {
   const rules = await loadRules(game);
   const seed = crypto.randomUUID();
-  const base = initialState(rules, 2, seed);
+  const n = group.length;
+  const base = initialState(rules, n, seed);
   // Ludo house rules both players chose ride in the match state, like a friend game
   const opts = game === "ludo" ? rulesOpts(house) : null;
   const state = opts ? { ...(base as object), opts } : base;
-  const players = seatOrder(pair[0], pair[1], randomInt(0, 1_000_000) / 1_000_000);
+  // Who moves first: a fair coin for two; for three or four, a fair shuffle of the seats
+  const players =
+    n === 2
+      ? seatOrder(group[0], group[1], randomInt(0, 1_000_000) / 1_000_000)
+      : group
+          .map((p) => ({ p, k: randomInt(0, 1_000_000) }))
+          .sort((a, b) => a.k - b.k)
+          .map((x) => x.p);
   // Created as "waiting" with no invite code (nobody can join it by link), then started once the claim holds.
   const { data: row, error } = await admin
     .from("board_matches")
@@ -193,22 +217,28 @@ async function createMatched(
       mode: "live",
       status: "waiting",
       players,
-      seats: 2,
+      seats: n,
       turn: rules.turn(state),
       state,
       seed,
       invite_code: null,
-      rated: true,
+      // Ratings are two-player; a 3 or 4 player table is casual
+      rated: n === 2,
       bot: false,
-      created_by: pair[0],
-      clock_ms: [clock, clock],
+      created_by: group[0],
+      clock_ms: Array.from({ length: n }, () => clock),
       clock_base_ms: clock,
     })
     .select("id")
     .single();
   if (error) throw error;
   const id = row.id as string;
-  const { data: ok, error: e2 } = await admin.rpc("svc_bay_mm_claim_timed", { p_players: pair, p_game: game, p_clock: clock, p_match: id });
+  const { data: ok, error: e2 } = await admin.rpc("svc_bay_mm_claim_timed", {
+    p_players: group,
+    p_game: game,
+    p_clock: clock,
+    p_match: id,
+  });
   if (e2 || !ok) {
     await admin.from("board_matches").delete().eq("id", id);
     if (e2) throw e2;

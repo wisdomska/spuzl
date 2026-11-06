@@ -27,7 +27,13 @@ export function Providers({ children }: { children: ReactNode }) {
   }, [hydrate]);
 
   useEffect(() => {
-    configure({ sfx: settings.sfx, music: musicEnabled(settings), haptics: settings.haptics, lowData: settings.lowData });
+    configure({
+      sfx: settings.sfx,
+      music: musicEnabled(settings),
+      haptics: settings.haptics,
+      lowData: settings.lowData,
+      mixOthers: settings.mixOthers,
+    });
     setHapticsEnabled(hapticsEnabled(settings));
   }, [settings]);
 

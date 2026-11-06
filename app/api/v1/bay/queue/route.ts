@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 const Join = z.object({
   game: z.string().min(2).max(24),
   minutes: z.number().int().min(1).max(60).optional(),
+  seats: z.number().int().min(2).max(4).optional(),
   ludo: z.object({ backKick: z.boolean().optional(), sideKick: z.boolean().optional(), homeKick: z.boolean().optional() }).optional(),
 });
 
@@ -15,8 +16,8 @@ const Join = z.object({
 export const POST = handle(async (req: Request) => {
   const { admin, player } = await requirePlayer();
   await rateLimit(admin, `bay-queue:${player.id}`, 30, 60);
-  const { game, minutes, ludo } = await body(req, Join);
-  return ok(await joinBayQueue(admin, player, game, minutes, ludo));
+  const { game, minutes, ludo, seats } = await body(req, Join);
+  return ok(await joinBayQueue(admin, player, game, minutes, ludo, seats));
 });
 
 /** GET /api/v1/bay/queue: poll while searching (about once a second). Pairs as soon as someone fits. */

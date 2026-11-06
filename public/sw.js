@@ -14,11 +14,14 @@
  * - Push (lib/push/server.ts): your turn, a nudge, a friend's invite. Shown only when no SPUZL window is on screen
  *   (an open app shows its own card); tapping it focuses SPUZL on that page, or opens it.
  */
-const VERSION = "2026-11-05.1";
+const VERSION = "2026-11-06.1";
 const SHELL = `spuzl-shell-${VERSION}`;
 const STATIC = `spuzl-static-${VERSION}`;
 const DATA = `spuzl-data-${VERSION}`;
 const DAILY_PREFIX = "spuzl-daily-";
+// Music and sound effects (public/music, public/sfx): kept across app updates so they load instantly and work
+// offline. Bump this when a recording is replaced under the same file name.
+const AUDIO = "spuzl-audio-1";
 const SHELL_URLS = ["/", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png", "/icons/apple-touch-icon.png"];
 const DATA_PATHS = ["/api/v1/today", "/api/v1/me"];
 const NAV_TIMEOUT_MS = 4000;
@@ -41,7 +44,7 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
-      const keep = new Set([SHELL, STATIC, DATA, dailyCache()]);
+      const keep = new Set([SHELL, STATIC, DATA, AUDIO, dailyCache()]);
       for (const name of await caches.keys()) {
         if (name.startsWith("spuzl-") && !keep.has(name)) await caches.delete(name);
       }
@@ -262,6 +265,9 @@ self.addEventListener("fetch", (event) => {
     /\.(?:woff2?|ttf)$/.test(url.pathname)
   ) {
     return event.respondWith(cacheFirst(event, STATIC));
+  }
+  if (/^\/(music|sfx)\/[\w-]+\.mp3$/.test(url.pathname) && !req.headers.has("range")) {
+    return event.respondWith(cacheFirst(event, AUDIO));
   }
 });
 

@@ -46,6 +46,8 @@ export interface PlayOptions {
 }
 
 interface Runtime {
+  /** let other apps' audio keep playing (iPhone: SPUZL then follows the silent switch) */
+  mixOthers?: boolean;
   sfx: boolean;
   music: boolean;
   haptics: boolean;
@@ -54,8 +56,24 @@ interface Runtime {
 
 const runtime: Runtime = { sfx: true, music: false, haptics: true, lowData: false };
 
+/**
+ * iPhone audio session. "playback": game sound plays even with the silent switch on (it may pause other apps' audio).
+ * "ambient": mixes with other apps' audio (Spotify keeps playing) and follows the silent switch. The player picks in
+ * Settings; playback is the default.
+ */
+function applyAudioSession() {
+  try {
+    const session = (navigator as Navigator & { audioSession?: { type: string } }).audioSession;
+    if (session) session.type = runtime.mixOthers ? "ambient" : "playback";
+  } catch {
+    /* older browsers */
+  }
+}
+
 export function configure(next: Partial<Runtime>) {
+  const mixChanged = next.mixOthers !== undefined && next.mixOthers !== runtime.mixOthers;
   Object.assign(runtime, next);
+  if (mixChanged && typeof navigator !== "undefined" && ac) applyAudioSession();
   if (!runtime.music || runtime.lowData) haltMusic();
   else resumeMusic();
 }
@@ -115,12 +133,7 @@ function ctx(): AudioContext | null {
     const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     if (!AC) return null;
     // iPhone: web audio follows the silent switch unless the page asks for playback; game sound is on by default
-    try {
-      const session = (navigator as Navigator & { audioSession?: { type: string } }).audioSession;
-      if (session) session.type = "playback";
-    } catch {
-      /* older browsers */
-    }
+    applyAudioSession();
     ac = new AC();
     build(ac);
     if (!runtime.lowData) loadSamples(ac);
@@ -271,12 +284,8 @@ function resumeMusic() {
   if (playing === key && player) return;
   const a = ctx();
   if (!a || a.state !== "running") return;
+  // The old track fades out while the new one fades in (each player has its own fade).
   haltMusic();
-  // Fade the new track in rather than starting at full level.
-  const t = a.currentTime;
-  musicBus.gain.cancelScheduledValues(t);
-  musicBus.gain.setValueAtTime(0.0001, t);
-  musicBus.gain.exponentialRampToValueAtTime(MUSIC_LEVEL, t + 1.2);
   player = createRecordedPlayer(a, musicBus, wanted.style);
   playing = key;
 }

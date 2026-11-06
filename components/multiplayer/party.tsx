@@ -1,5 +1,6 @@
 "use client";
 
+import { RankChanges } from "./RankChanges";
 import { InviteShare } from "@/components/share/InviteShare";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
@@ -852,6 +853,7 @@ export function Podium({
       </h1>
       <p className="text-muted mt-1.5 text-center text-[15px] font-medium">{sub}</p>
       <PodiumReward reward={final ? view.reward : null} note={final ? rewardNote : null} reduce={reduce || skip} />
+      {final && <RankChanges matchId={view.id} setNo={view.setNo} className="mt-3 px-4" />}
       <div className="mt-7 flex items-end justify-center gap-2 px-4">
         {podium.map(([p, rank]) =>
           p ? (

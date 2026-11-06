@@ -66,6 +66,24 @@ describe("api: board bay play live", () => {
     await cancel(b);
   });
 
+  it("seats three Ludo players together when all three asked for a 3-player table", async () => {
+    await clearGame("ludo");
+    const [a, b, c, d] = await Promise.all([guest(uniq("q3a_")), guest(uniq("q3b_")), guest(uniq("q3c_")), guest(uniq("q3d_"))]);
+    expect((await a.api("/api/v1/bay/queue", { json: { game: "ludo", seats: 3 } })).data.status).toBe("searching");
+    // A 2-player search never joins a 3-player table
+    expect((await d.api("/api/v1/bay/queue", { json: { game: "ludo" } })).data.status).toBe("searching");
+    expect((await b.api("/api/v1/bay/queue", { json: { game: "ludo", seats: 3 } })).data.status).toBe("searching");
+    const qc = await c.api("/api/v1/bay/queue", { json: { game: "ludo", seats: 3 } });
+    expect(qc.data.status).toBe("matched");
+    const { data: m } = await admin().from("board_matches").select("players, seats, rated, clock_ms").eq("id", qc.data.matchId).single();
+    expect(m!.seats).toBe(3);
+    expect(m!.rated).toBe(false);
+    expect((m!.clock_ms as number[]).length).toBe(3);
+    expect((m!.players as string[]).sort()).toEqual([a.userId, b.userId, c.userId].sort());
+    expect((await poll(a)).data).toMatchObject({ status: "matched", matchId: qc.data.matchId });
+    await cancel(d);
+  });
+
   it("cancels, keeps one entry per player, and keeps the place in line on a reconnect", async () => {
     await clearGame("draughts");
     await clearGame("fourup");

@@ -36,7 +36,17 @@ const leaveQueue = () => void api(QUEUE, { method: "DELETE", keepalive: true }).
  * After a minute with nobody found it stops and offers a friend invite or the bot. Cancel, Back and leaving the
  * page end the search; a reload rejoins and keeps the place in line.
  */
-export function BaySearch({ game, minutes: asked, rules }: { game: BayGame; minutes?: number | null; rules?: LudoKicks }) {
+export function BaySearch({
+  game,
+  minutes: asked,
+  rules,
+  seats: askedSeats,
+}: {
+  game: BayGame;
+  minutes?: number | null;
+  rules?: LudoKicks;
+  seats?: number;
+}) {
   const router = useRouter();
   // Back where the player came from (a game card), or the Board Bay inbox on a fresh tab.
   const back = useBackOr("/bay");
@@ -50,7 +60,9 @@ export function BaySearch({ game, minutes: asked, rules }: { game: BayGame; minu
   const [kicks, setKicks] = useState<LudoKicks>(rules ?? NO_KICKS);
   // Ludo always opens on its setup (house rules) first, even with the time already chosen
   const [phase, setPhase] = useState<Phase>(preset && game !== "ludo" ? { kind: "searching" } : { kind: "pick" });
+  const [seats, setSeats] = useState(Math.max(2, Math.min(4, askedSeats ?? 2)));
   const ludo = game === "ludo" ? kicks : undefined;
+  const extra = ludo ? { ludo, seats } : {};
   const [waited, setWaited] = useState(0);
   const [others, setOthers] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -79,10 +91,10 @@ export function BaySearch({ game, minutes: asked, rules }: { game: BayGame; minu
         setOthers(r.searching);
       } else if (r.status === "idle") {
         // The entry went missing (a late cancel from an earlier visit, another tab): rejoin, keeping the screen.
-        void api<QueueReply>(QUEUE, { json: { game, minutes: chosen, ...(ludo ? { ludo } : {}) } }).catch(() => {});
+        void api<QueueReply>(QUEUE, { json: { game, minutes: chosen, ...(ludo ? { ludo, seats } : {}) } }).catch(() => {});
       }
     },
-    [open, game, chosen, ludo],
+    [open, game, chosen, ludo, seats],
   );
 
   // Join, then poll. A new attempt ("Search again") rejoins.
@@ -92,7 +104,7 @@ export function BaySearch({ game, minutes: asked, rules }: { game: BayGame; minu
     done.current = false;
     let stop = false;
     let since = Date.now();
-    void api<QueueReply>(QUEUE, { json: { game, minutes: chosen, ...(ludo ? { ludo } : {}) } })
+    void api<QueueReply>(QUEUE, { json: { game, minutes: chosen, ...extra } })
       .then((r) => {
         if (stop) return;
         if (r.status === "searching") since = Date.now() - r.waitedMs;
@@ -154,7 +166,7 @@ export function BaySearch({ game, minutes: asked, rules }: { game: BayGame; minu
   const invite = async () => {
     setBusy(true);
     try {
-      const v = await api<BayView>("/api/v1/bay", { json: { game, mode: "live", minutes: chosen, ...(ludo ? { ludo } : {}) } });
+      const v = await api<BayView>("/api/v1/bay", { json: { game, mode: "live", minutes: chosen, ...extra } });
       router.replace(`/bay/${v.id}`);
     } catch {
       setBusy(false);
@@ -187,8 +199,10 @@ export function BaySearch({ game, minutes: asked, rules }: { game: BayGame; minu
             </div>
             {game === "ludo" && (
               <div className="mt-5 w-full max-w-[528px]">
-                <LudoSetup kicks={kicks} onKicks={setKicks} />
-                <p className="text-muted mt-2 text-[13px]">Play live pairs you with one player who chose the same rules.</p>
+                <LudoSetup kicks={kicks} onKicks={setKicks} seats={seats} onSeats={setSeats} />
+                <p className="text-muted mt-2 text-[13px]">
+                  Play live seats you with {seats === 2 ? "one player" : `${seats - 1} players`} who chose the same rules.
+                </p>
               </div>
             )}
             <div className="mt-auto w-full max-w-[528px] pt-6">

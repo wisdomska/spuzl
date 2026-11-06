@@ -30,29 +30,50 @@ function load(a: AudioContext, url: string): Promise<AudioBuffer | null> {
   return p;
 }
 
-/** Loops the area's recorded track on `out` until stopped; null when the area has no track. */
+/** Seconds a new track takes to fade in, and an old one to fade out: changing area crossfades between them. */
+const FADE_IN = 1.2;
+const FADE_OUT = 0.9;
+
+/** Loops the area's recorded track on `out` until stopped (fading in, and out on stop); null when it has none. */
 export function createRecordedPlayer(a: AudioContext, out: AudioNode, style: StyleId): MusicPlayer | null {
   const url = MUSIC_FILES[style];
   if (!url) return null;
   let stopped = false;
   let src: AudioBufferSourceNode | null = null;
+  const g = a.createGain();
+  g.gain.value = 0;
+  g.connect(out);
   void load(a, url).then((buf) => {
     if (stopped || !buf) return;
     src = a.createBufferSource();
     src.buffer = buf;
     src.loop = true;
-    src.connect(out);
-    src.start();
+    src.connect(g);
+    const t = a.currentTime;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(1, t + FADE_IN);
+    src.start(t);
   });
   return {
     stop() {
+      if (stopped) return;
       stopped = true;
-      try {
-        src?.stop();
-      } catch {
-        /* never started */
-      }
-      src?.disconnect();
+      const t = a.currentTime;
+      g.gain.cancelScheduledValues(t);
+      g.gain.setValueAtTime(g.gain.value, t);
+      g.gain.linearRampToValueAtTime(0, t + FADE_OUT);
+      setTimeout(
+        () => {
+          try {
+            src?.stop();
+          } catch {
+            /* never started */
+          }
+          src?.disconnect();
+          g.disconnect();
+        },
+        FADE_OUT * 1000 + 100,
+      );
     },
   };
 }

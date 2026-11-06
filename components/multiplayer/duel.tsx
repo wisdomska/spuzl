@@ -1,5 +1,6 @@
 "use client";
 
+import { RankChanges } from "./RankChanges";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { duelCopy } from "@/lib/copy/duel";
@@ -920,6 +921,7 @@ export function MatchEnd({
           );
         })}
       </div>
+      {!view.isBot && <RankChanges matchId={view.id} setNo={view.setNo} className="mt-3 px-4" />}
       <div className="mt-3 grid w-[calc(100%-32px)] grid-cols-3 gap-2">
         <div className="bg-surface flex flex-col gap-0.5 rounded-[16px] p-3">
           <span className="text-muted text-[13px] font-semibold">Rating</span>

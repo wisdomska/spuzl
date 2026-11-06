@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.31.0 (6 November 2026)
+
+### For players
+
+- **See how a match moved your rank.** The end of a Duel, and the final podium of a Party, now show what it did to
+  your category ranks, e.g. "Puzzles rank +6".
+- **Music crossfades.** Moving between areas fades the old track out while the new one fades in.
+- **Music and sounds work offline.** Once heard, they are kept on your device, so they start instantly next time.
+- **Keep my other audio playing.** A new Settings switch lets your own music or podcast keep playing alongside SPUZL
+  (on iPhone the game then follows the silent switch).
+- **Play live Ludo with 3 or 4 players.** Pick the table size on the Play live screen; you're seated with players who
+  chose the same size and rules. Tables of 3 or 4 are casual (not rated).
+- **Ludo free play is a full game against the bot.** "Play" on Ludo opens the bot game with its setup screen; the
+  Daily stays the pick-the-best-move puzzle.
+
 ## 1.30.1 (5 November 2026)
 
 ### For players

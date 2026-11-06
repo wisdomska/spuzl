@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getGameSettings } from "@/lib/game-settings/server";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { playableGame } from "@/lib/catalog";
 import { hasLogic } from "@/games/logic-registry";
 import { PlayScreen } from "@/components/play/PlayScreen";
@@ -37,6 +37,8 @@ export default async function Play({ params, searchParams }: PageProps<"/play/[g
         : sp.mode === "free" || sp.mode === "archive"
           ? sp.mode
           : "daily";
+  // Ludo free play is a full game against the bot (owner's call); the Daily stays the best-move puzzle.
+  if (game === "ludo" && mode === "free") redirect("/play/ludo/bot");
   const level = mode === "level" && typeof sp.level === "string" && /^\d{1,4}$/.test(sp.level) ? Number(sp.level) || undefined : undefined;
   const date = typeof sp.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sp.date) ? sp.date : undefined;
   const difficulty =

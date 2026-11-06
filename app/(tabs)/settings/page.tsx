@@ -140,6 +140,9 @@ function SettingsScreen() {
             />
           </Row>
         )}
+        <Row icon="headphones" label="Keep my other audio playing">
+          <Switch checked={s.mixOthers} onChange={(v) => save("mixOthers", v)} label="Keep my other audio playing" />
+        </Row>
         <AlertsRow />
         <Row icon="vibrate" label="Haptics">
           <Switch

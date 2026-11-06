@@ -55,7 +55,15 @@ export function BayInbox() {
   if (gate === "loading") return <LoadingScreen />;
   if (gate === "no_profile") return <NeedProfile />;
   if (liveGame)
-    return <BaySearch key={`${liveGame}-${liveMinutes}`} game={liveGame} minutes={liveMinutes} rules={kicksFromParam(sp.get("rules"))} />;
+    return (
+      <BaySearch
+        key={`${liveGame}-${liveMinutes}`}
+        game={liveGame}
+        minutes={liveMinutes}
+        rules={kicksFromParam(sp.get("rules"))}
+        seats={Number(sp.get("seats")) || 2}
+      />
+    );
   const action = async (id: string, a: "nudge" | "rematch") => {
     try {
       const v = await api<BayView>(`/api/v1/bay/${id}/action`, { json: { action: a } });
@@ -90,7 +98,7 @@ export function BayInbox() {
           initialGame={newGame ?? "chess"}
           onClose={() => setSheet(false)}
           onCreated={(id) => router.push(`/bay/${id}`)}
-          onLive={(g, m, r) => router.push(`/bay?live=${g}${m ? `&t=${m}` : ""}${r ? `&rules=${r}` : ""}`)}
+          onLive={(g, m, r, n) => router.push(`/bay?live=${g}${m ? `&t=${m}` : ""}${r ? `&rules=${r}` : ""}${n > 2 ? `&seats=${n}` : ""}`)}
         />
       )}
     </Screen>
@@ -106,7 +114,7 @@ function NewBaySheet({
   initialGame: BayGame;
   onClose: () => void;
   onCreated: (id: string) => void;
-  onLive: (game: BayGame, minutes: number | null, rules: string) => void;
+  onLive: (game: BayGame, minutes: number | null, rules: string, seats: number) => void;
 }) {
   const relaxed = useSettings((s) => s.relaxed);
   const [game, setGame] = useState<BayGame>(initialGame);
@@ -181,7 +189,9 @@ function NewBaySheet({
         {!relaxed && (
           <Cta
             tone="raised"
-            onClick={() => onLive(game, mode === "live" ? minutes : null, game === "ludo" ? kicksToParam(kicks) : "")}
+            onClick={() =>
+              onLive(game, mode === "live" ? minutes : null, game === "ludo" ? kicksToParam(kicks) : "", game === "ludo" ? seats : 2)
+            }
             disabled={busy}
             icon="lightning"
           >

@@ -183,9 +183,18 @@ async function countRounds(admin: SupabaseClient, l: Loaded) {
             : 0;
       const { error } = await admin.from("rank_contributions").insert({ player_id: r.player_id, ref: `${m.id}:${m.set_no}:${round}` });
       if (error) continue; // already counted (or the table is missing): never twice
-      await updateRating(admin, r.player_id, world!, pct, 0, r.mistakes, ROUND_RANK_WEIGHT).catch((e: unknown) =>
-        console.error("[rank] round not counted", m.id, round, e),
-      );
+      const ref = `${m.id}:${m.set_no}:${round}`;
+      try {
+        const d = await updateRating(admin, r.player_id, world!, pct, 0, r.mistakes, ROUND_RANK_WEIGHT);
+        // kept so the end screen can say "Logic +6"
+        await admin
+          .from("rank_contributions")
+          .update({ track: world, delta: (d.after - d.before).toFixed(2) })
+          .eq("player_id", r.player_id)
+          .eq("ref", ref);
+      } catch (e) {
+        console.error("[rank] round not counted", m.id, round, e);
+      }
     }
   }
 }

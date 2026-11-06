@@ -17,6 +17,8 @@ export interface AudioSettings {
   haptics: boolean;
   /** true once the player has touched the haptics toggle, so reduced motion stops overriding it */
   hapticsTouched: boolean;
+  /** let other apps' audio (music, podcasts) keep playing; on iPhone the game then follows the silent switch */
+  mixOthers: boolean;
   /** audio defaults version: when it moves on, sound and music go back on once (the owner's call: on by default) */
   audioVersion: number;
 }
@@ -43,6 +45,7 @@ export const defaultSettings: Settings = {
   musicTouched: false,
   haptics: true,
   hapticsTouched: false,
+  mixOthers: false,
   audioVersion: AUDIO_VERSION,
   theme: "dark",
   cb: "off",
@@ -52,7 +55,7 @@ export const defaultSettings: Settings = {
   lowData: false,
 };
 
-const AUDIO_FIELDS = ["sfx", "music", "musicTouched", "haptics", "hapticsTouched", "audioVersion"] as const;
+const AUDIO_FIELDS = ["sfx", "music", "musicTouched", "haptics", "hapticsTouched", "mixOthers", "audioVersion"] as const;
 
 function read(key: string): Record<string, unknown> {
   try {

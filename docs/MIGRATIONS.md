@@ -266,3 +266,10 @@ Without it push stays off and everything else works.
 | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
 | `20261129000001_rank_from_matches.sql` | `rank_contributions`: one row per player per Duel or Party round that counted towards their rank (so a round never counts twice); server-only | In the file header |
 | `20261129000002_board_queue_rules.sql` | `board_queue.rules`: the Ludo house rules a player picked before Play live; only the same rules are paired                                    | In the file header |
+
+## 1.31.0
+
+| Migration                                    | What it does                                                                                                           | Rollback           |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| `20261130000001_rank_contribution_delta.sql` | `rank_contributions.track` and `delta`: which category a counted round moved and by how much (shown on the end screen) | In the file header |
+| `20261130000002_board_queue_seats.sql`       | `board_queue.seats`: Play live Ludo for 3 or 4 players; only the same table size is grouped                            | In the file header |
