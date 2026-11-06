@@ -63,8 +63,9 @@ export async function logGuest(page: Page) {
 export async function pickBirth(page: Page, age: Age | { year: number; month?: number } = "18+") {
   const b = typeof age === "string" ? birthFor(age) : { year: age.year, month: age.month ?? 12 };
   await page.getByLabel("Month", { exact: true }).selectOption(String(b.month));
-  await page.getByLabel("Year", { exact: true }).selectOption(String(b.year));
-  await page.getByRole("button", { name: "Continue" }).click();
+  // R2-09: the year is a 4-digit numeric field (it was a select).
+  await page.getByLabel("Year", { exact: true }).fill(String(b.year));
+  await page.getByRole("button", { name: /^Continue\b/ }).click();
 }
 
 export interface GuestOpts {

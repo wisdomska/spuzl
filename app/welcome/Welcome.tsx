@@ -316,25 +316,15 @@ export function Welcome({ first = "hello" }: { first?: "hello" | "age" }) {
                 {ageCopy.title}
               </h1>
               <p className="text-muted text-center text-[16px] leading-normal">{ageCopy.why}</p>
-              <BirthPicker
-                value={birth}
-                error={birthError}
-                onChange={(b) => {
-                  setBirth(b);
-                  setBirthError(null);
-                }}
-              />
-              <p className="text-muted flex items-center justify-center gap-1.5 text-center text-[14px]">
-                <Icon name="lock-simple" size={16} />
-                {ageCopy.lockedNote}
-              </p>
-              <Button
-                size="lg"
-                className="mt-auto w-full text-[17px]"
-                disabled={!birth.year || !birth.month}
-                onClick={() => {
+              {/* A form, so the keypad's Done / Enter continues too (R2-09). `contents` keeps the screen's layout. */}
+              <form
+                className="contents"
+                noValidate
+                onSubmit={(e) => {
+                  e.preventDefault();
                   if (!birth.year || !birth.month) return;
-                  if (birthProblem(birth.year, birth.month)) return setBirthError(ageCopy.future);
+                  const problem = birthProblem(birth.year, birth.month);
+                  if (problem) return setBirthError(problem === "future" ? ageCopy.future : ageCopy.birthInvalid);
                   // Under 13: no profile and nothing kept, not even on this device.
                   if (!ageBandOf(birth.year, birth.month)) {
                     setBirth({ year: null, month: null });
@@ -351,8 +341,28 @@ export function Welcome({ first = "hello" }: { first?: "hello" | "age" }) {
                   setStep("start");
                 }}
               >
-                {ageCopy.continue}
-              </Button>
+                <BirthPicker
+                  value={birth}
+                  error={birthError}
+                  onChange={(b) => {
+                    setBirth(b);
+                    setBirthError(null);
+                  }}
+                />
+                <p className="text-muted flex items-center justify-center gap-1.5 text-center text-[14px] text-balance">
+                  <Icon name="lock-simple" size={16} className="flex-none" />
+                  {ageCopy.lockedNote}
+                </p>
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="mt-auto w-full text-[17px]"
+                  disabled={!birth.year || !birth.month}
+                  aria-label={ageCopy.continueLabel}
+                >
+                  {ageCopy.continue}
+                </Button>
+              </form>
             </Screen>
           )}
 

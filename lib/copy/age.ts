@@ -7,12 +7,18 @@ export const ageCopy = {
   greeting: "Akwaaba, Spuzler.",
   title: "When were you born?",
   why: "Your birth month and year set what's on for your age, to keep SPUZL safe and fair. We never show them to anyone.",
-  lockedNote: "You can't change this later, so pick carefully.",
+  /** R2-09: honest that it's set once, and why, without the warning tone. */
+  lockedNote: "It's set once, so go with your real month and year. That's how we keep the right features on for you.",
   month: "Month",
   year: "Year",
   pickMonth: "Pick a month",
   pickYear: "Pick a year",
+  /** R2-09: the year is a 4-digit field */
+  yearPlaceholder: "YYYY",
+  yearHelp: "Type all four digits of the year.",
   continue: "Continue",
+  /** R2-09: the Continue button's accessible name says what it does (starts with the visible word). */
+  continueLabel: "Continue with this birth month and year",
   future: "That's in the future. Check the month and year.",
 
   /** Under 13: no profile, nothing kept. */

@@ -1,8 +1,8 @@
 "use client";
 
-import { useId, useMemo } from "react";
+import { useId, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
-import { birthYears } from "@/lib/age";
+import { readYearInput } from "@/lib/age";
 import { ageCopy as C } from "@/lib/copy/age";
 
 export interface Birth {
@@ -11,23 +11,31 @@ export interface Birth {
 }
 
 /**
- * Birth month and year, never the day: two native selects (screen readers and phone wheels handle them well),
- * each with a visible label and a 56 px target. Years run from this year back 100; under-13 years are offered
- * too, so nobody is nudged to pick a false one (the server refuses under 13 and keeps nothing).
+ * Birth month and year, never the day, each with a visible label and a 56 px target.
+ *
+ * R2-09 control choice (fastest on a mid-range Android phone, and accessible):
+ * - Month: a native select. Twelve rows fit Android's picker dialog without scrolling, and screen readers know it.
+ * - Year: a 4-digit numeric field (numeric keypad via inputMode, autofill via `bday-year`). Four taps for any
+ *   age, where a year list needs a fling through up to 87 rows in a dialog. It has no list to start at the wrong
+ *   end, and an under-13 year can still be typed truthfully: the age gate then turns the visitor away and keeps
+ *   nothing, so nobody is nudged to pick a false year that a shortened list would force.
  */
 export function BirthPicker({ value, onChange, error }: { value: Birth; onChange: (b: Birth) => void; error?: string | null }) {
   const id = useId();
-  const years = useMemo(() => birthYears(), []);
+  // The typed digits (a partial year is not a year yet); starts from the value when the step reopens.
+  const [yearText, setYearText] = useState(value.year ? String(value.year) : "");
+  const described = [`${id}-yh`, error ? `${id}-err` : null].filter(Boolean).join(" ");
   return (
     <div className="flex flex-col gap-2">
       <div className="flex gap-2.5">
-        <Field id={`${id}-m`} label={C.month} className="flex-[3]">
+        <Field id={`${id}-m`} label={C.month} className="flex-[3]" caret>
           <select
             id={`${id}-m`}
             value={value.month ?? ""}
             onChange={(e) => onChange({ ...value, month: e.target.value ? Number(e.target.value) : null })}
             aria-invalid={!!error}
             aria-describedby={error ? `${id}-err` : undefined}
+            autoComplete="bday-month"
             className="h-full w-full appearance-none bg-transparent pr-10 pl-4 text-[17px] font-semibold outline-none"
           >
             <option value="" className="bg-surface">
@@ -41,25 +49,30 @@ export function BirthPicker({ value, onChange, error }: { value: Birth; onChange
           </select>
         </Field>
         <Field id={`${id}-y`} label={C.year} className="flex-[2]">
-          <select
+          <input
             id={`${id}-y`}
-            value={value.year ?? ""}
-            onChange={(e) => onChange({ ...value, year: e.target.value ? Number(e.target.value) : null })}
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            autoComplete="bday-year"
+            enterKeyHint="done"
+            maxLength={4}
+            placeholder={C.yearPlaceholder}
+            value={yearText}
+            onChange={(e) => {
+              const next = readYearInput(e.target.value);
+              setYearText(next.text);
+              if (next.year !== value.year) onChange({ ...value, year: next.year });
+            }}
             aria-invalid={!!error}
-            aria-describedby={error ? `${id}-err` : undefined}
-            className="num h-full w-full appearance-none bg-transparent pr-10 pl-4 text-[17px] font-semibold outline-none"
-          >
-            <option value="" className="bg-surface">
-              {C.pickYear}
-            </option>
-            {years.map((y) => (
-              <option key={y} value={y} className="bg-surface">
-                {y}
-              </option>
-            ))}
-          </select>
+            aria-describedby={described}
+            className="num placeholder:text-muted h-full w-full bg-transparent px-4 text-[17px] font-semibold outline-none"
+          />
         </Field>
       </div>
+      <p id={`${id}-yh`} className="text-muted text-[14px]">
+        {C.yearHelp}
+      </p>
       {error && (
         <p id={`${id}-err`} role="alert" className="text-danger text-[14px]">
           {error}
@@ -69,18 +82,31 @@ export function BirthPicker({ value, onChange, error }: { value: Birth; onChange
   );
 }
 
-function Field({ id, label, className, children }: { id: string; label: string; className: string; children: React.ReactNode }) {
+function Field({
+  id,
+  label,
+  className,
+  caret,
+  children,
+}: {
+  id: string;
+  label: string;
+  className: string;
+  caret?: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <div className={`flex min-w-0 flex-col gap-1.5 ${className}`}>
       <label htmlFor={id} className="text-[15px] font-semibold">
         {label}
       </label>
+      {/* Visible focus: the whole field gets the accent ring while its control has focus. */}
       <div
-        className="bg-surface-raised relative flex h-14 items-center rounded-[16px]"
+        className="bg-surface-raised focus-within:outline-accent relative flex h-14 items-center rounded-[16px] focus-within:outline-2 focus-within:outline-offset-2"
         style={{ boxShadow: "inset 0 0 0 2px var(--line)" }}
       >
         {children}
-        <Icon name="caret-down" size={18} className="text-muted pointer-events-none absolute right-3.5" />
+        {caret && <Icon name="caret-down" size={18} className="text-muted pointer-events-none absolute right-3.5" />}
       </div>
     </div>
   );

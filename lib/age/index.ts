@@ -48,6 +48,16 @@ export function birthProblem(birthYear: number, birthMonth: number, today: Date 
   return null;
 }
 
+/**
+ * R2-09: the birth step's 4-digit year field. Keeps digits only (pasted spaces, a stray letter) and at most four;
+ * `year` is set once all four are there, else null (Continue waits). Range checks stay with birthProblem and the
+ * age gate, so an under-13 year is still accepted here and then turned away honestly by the band check.
+ */
+export function readYearInput(text: string): { text: string; year: number | null } {
+  const digits = text.replace(/\D/g, "").slice(0, 4);
+  return { text: digits, year: digits.length === 4 ? Number(digits) : null };
+}
+
 /** Years for the picker, newest first: this year back to MAX_AGE_YEARS ago. */
 export function birthYears(today: Date = new Date()): number[] {
   const { y } = ymOf(today);

@@ -22,7 +22,8 @@ export function BirthAskSheet({ open, onOpenChange }: { open: boolean; onOpenCha
 
   const save = async () => {
     if (!birth.year || !birth.month) return;
-    if (birthProblem(birth.year, birth.month)) return setError(C.future);
+    const problem = birthProblem(birth.year, birth.month);
+    if (problem) return setError(problem === "future" ? C.future : C.birthInvalid);
     setSaving(true);
     setError(null);
     try {

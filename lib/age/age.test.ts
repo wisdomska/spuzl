@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { adultPartyRefusal } from "@/lib/party-adult/gate";
 import { canRequestByUsername, isUnder16 } from "@/lib/social";
-import { ageBandOf, ageOn, bandRank, birthProblem, birthYears, effectiveBand } from ".";
+import { ageBandOf, ageOn, bandRank, birthProblem, birthYears, effectiveBand, readYearInput } from ".";
 
 /** GMT midnight on a day. */
 const d = (iso: string) => new Date(`${iso}T00:00:00Z`);
@@ -68,6 +68,26 @@ describe("birthProblem and birthYears", () => {
     expect(ys[0]).toBe(2026);
     expect(ys.at(-1)).toBe(1926);
     expect(ys).toHaveLength(101);
+  });
+});
+
+describe("readYearInput (R2-09 year field)", () => {
+  it("waits for four digits", () => {
+    expect(readYearInput("")).toEqual({ text: "", year: null });
+    expect(readYearInput("20")).toEqual({ text: "20", year: null });
+    expect(readYearInput("2009")).toEqual({ text: "2009", year: 2009 });
+  });
+  it("keeps digits only, four at most", () => {
+    expect(readYearInput(" 2 0 0 9 ")).toEqual({ text: "2009", year: 2009 });
+    expect(readYearInput("20a9")).toEqual({ text: "209", year: null });
+    expect(readYearInput("200915")).toEqual({ text: "2009", year: 2009 });
+  });
+  it("leaves range checks to birthProblem and the age gate (under 13 is answered honestly, not hidden)", () => {
+    const today = d("2026-11-02");
+    expect(readYearInput("2016").year).toBe(2016);
+    expect(ageBandOf(2016, 1, today)).toBeNull();
+    expect(birthProblem(readYearInput("2099").year!, 1, today)).toBe("future");
+    expect(birthProblem(readYearInput("1900").year!, 1, today)).toBe("invalid");
   });
 });
 

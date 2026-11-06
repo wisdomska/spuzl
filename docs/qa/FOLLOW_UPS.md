@@ -97,3 +97,5 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 - **R2-08, guest session timing (left as is on purpose):** the anonymous guest session is still made at "Save my
   Spuz", after the age gate, as "Play as guest" always did. Making it on the "Play now" tap would create an auth
   account before the birth step, including for under-13s who are then turned away. The lead may decide otherwise.
+- **R2-09, admin year list:** the admin player editor (`components/admin/PlayerDetail.tsx`) still lists years from
+  this year back (`birthYears()`). It is staff-only, so it was left as is; it could start at this year minus 13.

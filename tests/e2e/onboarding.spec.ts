@@ -35,7 +35,7 @@ test("onboarding: birth month and year first, under 13 keeps nothing", async ({ 
   await page.goto("/welcome");
   await page.getByRole("button", { name: "Play as guest" }).click();
   await expect(page.getByRole("heading", { name: /When were you born\?/ })).toBeVisible();
-  await expect(page.getByText(/can't change this later/)).toBeVisible();
+  await expect(page.getByText(/It's set once/)).toBeVisible();
   // Month and year only: no day picker.
   await expect(page.getByLabel("Day")).toHaveCount(0);
   for (const name of ["Month", "Year"]) {
@@ -44,8 +44,8 @@ test("onboarding: birth month and year first, under 13 keeps nothing", async ({ 
   }
   const y = new Date().getUTCFullYear();
   await page.getByLabel("Month", { exact: true }).selectOption("1");
-  await page.getByLabel("Year", { exact: true }).selectOption(String(y - 10));
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByLabel("Year", { exact: true }).fill(String(y - 10));
+  await page.getByRole("button", { name: /^Continue\b/ }).click();
   await expect(page.getByRole("heading", { name: "SPUZL is for 13 and up" })).toBeVisible();
   const me = await page.evaluate(() => fetch("/api/v1/me?optional=1").then((r) => r.json()));
   expect(me).toBeNull();
