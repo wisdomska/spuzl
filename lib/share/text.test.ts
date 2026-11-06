@@ -62,9 +62,9 @@ describe("share text", () => {
 
   it("matches the design's Full Spuzl format", () => {
     const t = fullSpuzlShareText({ number: 214, cleared: [...LAUNCH_IDS].reverse(), totalMs: 38 * 60_000 + 12_000, streak: 12 });
-    // The live launch Dailies, one colour per category: Puzzles ×5 blue, Words ×3 green, Arcade ×3 red.
-    expect(LAUNCH_IDS).toHaveLength(11);
-    expect(t).toBe(["SPUZL #214 · FULL SPUZL 11/11 · 38:12 🔥12", "🟦🟦🟦🟦🟦🟩🟩🟩🟥🟥🟥", SHARE_DOMAIN].join("\n"));
+    // The live launch Dailies, one colour per category: Puzzles ×5 blue, Words ×4 green (Quads back, R2-14), Arcade ×3 red.
+    expect(LAUNCH_IDS).toHaveLength(12);
+    expect(t).toBe(["SPUZL #214 · FULL SPUZL 12/12 · 38:12 🔥12", "🟦🟦🟦🟦🟦🟩🟩🟩🟩🟥🟥🟥", SHARE_DOMAIN].join("\n"));
   });
 
   it("shows progress and dark squares on a partial day", () => {

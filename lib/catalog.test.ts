@@ -18,6 +18,9 @@ import {
   isLiveWorld,
   isRetired,
   MERGED_WORLDS,
+  NEW_GAMES,
+  NEW_IDS,
+  isNewGame,
   playableGame,
   colourOf,
   toneOf,
@@ -45,6 +48,7 @@ const KEEP = [
   "trotro",
   "coil",
   "rungs",
+  "quads",
   "seven",
   "minicross",
   "buried",
@@ -65,15 +69,15 @@ const KEEP = [
 ];
 
 describe("catalog: retired games", () => {
-  it("keeps exactly the 28 owner-picked games live", () => {
+  it("keeps exactly the 29 owner-picked games live (28, plus Quads back in R2-14)", () => {
     expect(GAMES.map((g) => g.id).sort()).toEqual([...KEEP].sort());
-    expect(GAME_COUNT).toBe(28);
+    expect(GAME_COUNT).toBe(29);
     expect(GAMES.every((g) => !g.retired && !g.lab)).toBe(true);
   });
 
-  it("retires the other 33 but keeps them in code", () => {
-    expect(RETIRED_IDS.size).toBe(33);
-    expect(RETIRED_GAMES).toHaveLength(33);
+  it("retires the other 32 but keeps them in code", () => {
+    expect(RETIRED_IDS.size).toBe(32);
+    expect(RETIRED_GAMES).toHaveLength(32);
     expect(ALL_GAMES).toHaveLength(61);
     for (const id of RETIRED_IDS) {
       expect(GAME_BY_ID[id], id).toBeDefined();
@@ -116,7 +120,7 @@ describe("catalog: retired games", () => {
 describe("catalog: four groups", () => {
   const GROUPS: [WorldId, string, string[]][] = [
     ["logic", "Puzzles", ["crownfall", "dusk", "sixer", "nine", "weave", "flowline", "pairup", "lost", "trotro"]],
-    ["word", "Words & Quiz", ["coil", "rungs", "seven", "minicross", "buried", "remix", "quickfire", "emojihits"]],
+    ["word", "Words & Quiz", ["coil", "rungs", "quads", "seven", "minicross", "buried", "remix", "quickfire", "emojihits"]],
     ["reflex", "Arcade", ["echo", "twins", "flinch", "beattap", "gotcha", "dash"]],
     ["board", "Board Games", ["chess", "draughts", "oware", "ludo", "fourup"]],
   ];
@@ -174,6 +178,19 @@ describe("catalog: four groups", () => {
     expect(toneOf(GAME_BY_ID.flowline)).toBe("logic");
     expect(toneOf(GAME_BY_ID.gotcha)).toBe("reflex");
     expect(colourOf(GAME_BY_ID.chess)).toEqual({ color: WORLD_BY_ID.board.color, ink: WORLD_BY_ID.board.ink });
+  });
+});
+
+describe("catalog: new games (R2-14, for the R2-18 Home banner)", () => {
+  it("marks Quads new and live, and only live or lab games count", () => {
+    expect(NEW_IDS.has("quads")).toBe(true);
+    expect(GAME_BY_ID.quads.isNew).toBe(true);
+    expect(isNewGame("quads")).toBe(true);
+    expect(isLiveGame("quads")).toBe(true);
+    expect(NEW_GAMES.map((g) => g.id)).toContain("quads");
+    for (const g of NEW_GAMES) expect(isRetired(g.id), g.id).toBe(false);
+    expect(GAME_BY_ID.crownfall.isNew).toBeFalsy();
+    expect(isNewGame("pixl")).toBe(false);
   });
 });
 

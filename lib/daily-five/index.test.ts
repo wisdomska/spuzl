@@ -101,6 +101,23 @@ describe("Daily Five selection", () => {
   });
 });
 
+describe("Daily Five and Quads (R2-14)", () => {
+  const days = (cands: Candidate[], patch: Partial<GameSettings> = {}) =>
+    Array.from({ length: 60 }, (_, i) => pickFive(addDays(DAY, i), rules(patch), cands)).flat();
+
+  it("picks Quads for the Words & Quiz slot when it is quick enough (typical 120 s, limit 120 s)", () => {
+    expect(TYPICAL_SEC.quads).toBeLessThanOrEqual(DEFAULTS["dailyFive.maxGameSec"]);
+    expect(LIVE.some((c) => c.id === "quads" && c.world === "word")).toBe(true);
+    expect(days(LIVE).some((p) => p.game === "quads" && p.world === "word")).toBe(true);
+  });
+
+  it("never picks Quads when its typical time is over the limit", () => {
+    const slow = LIVE.map((c) => (c.id === "quads" ? { ...c, typicalSec: 300 } : c));
+    expect(days(slow).some((p) => p.game === "quads")).toBe(false);
+    expect(days(LIVE, { "dailyFive.maxGameSec": 90 }).some((p) => p.game === "quads")).toBe(false);
+  });
+});
+
 describe("Daily Five day and reset", () => {
   it("resets at midnight GMT by default, or at the admin's hour", () => {
     expect(fiveDate(new Date("2026-11-06T00:00:00Z"))).toBe("2026-11-06");

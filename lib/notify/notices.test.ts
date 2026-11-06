@@ -38,7 +38,7 @@ describe("notices", () => {
     expect(one.text).toBe("New game: Quickfire.");
     expect(buildNotices({ readyGames: ["ghost-game"], seenGames: [] }, morning)).toEqual([]);
     // Retired games are never announced, even when an old client still lists them as ready.
-    expect(buildNotices({ readyGames: ["pinned", "quads"], seenGames: [] }, morning)).toEqual([]);
+    expect(buildNotices({ readyGames: ["pinned", "flagged"], seenGames: [] }, morning)).toEqual([]);
   });
 
   it("words league results for each outcome", () => {

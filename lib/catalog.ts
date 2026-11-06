@@ -64,6 +64,8 @@ export interface GameMeta {
   lab?: boolean;
   /** Retired (RETIRED_IDS): kept in code, hidden from players and refused by the server. Set by the catalog. */
   retired?: boolean;
+  /** Newly added or brought back (NEW_IDS): the Home "new games" banner counts it. Set by the catalog. */
+  isNew?: boolean;
 }
 
 /**
@@ -740,7 +742,7 @@ const LAB_LIST: GameMeta[] = [
 ];
 
 /**
- * Retired by the owner (2026-11, 61 to 29 games). Code, boards and tests stay; players never see these and the
+ * Retired by the owner (2026-11, 61 to 29 games; Quads came back in R2-14). Code, boards and tests stay; players never see these and the
  * server answers 404 unknown_game. The admin console lists them, marked retired, read-only for scheduling.
  */
 export const RETIRED_IDS: ReadonlySet<string> = new Set([
@@ -765,8 +767,7 @@ export const RETIRED_IDS: ReadonlySet<string> = new Set([
   "hilo",
   "market",
   "killer",
-  // Words & Quiz (was Word Woods)
-  "quads",
+  // Words & Quiz (was Word Woods). Quads came back in R2-14.
   "five",
   // Clue Cave
   "hunch",
@@ -789,7 +790,13 @@ export const RETIRED_IDS: ReadonlySet<string> = new Set([
   "dara",
 ]);
 
-const mark = (x: GameMeta): GameMeta => (RETIRED_IDS.has(x.id) ? { ...x, retired: true } : x);
+/**
+ * Games that are new to players (just added, or brought back from retirement). The Home "new games" banner
+ * (R2-18) counts the live ones; take an id out once it has had its launch weeks. Retired ids here are ignored.
+ */
+export const NEW_IDS: ReadonlySet<string> = new Set(["quads"]);
+
+const mark = (x: GameMeta): GameMeta => (RETIRED_IDS.has(x.id) ? { ...x, retired: true } : NEW_IDS.has(x.id) ? { ...x, isNew: true } : x);
 
 /** Every game in code: live, lab and retired. Admin and old-result lookups only; never a player list. */
 export const ALL_GAMES: GameMeta[] = [...MAIN_GAMES, ...LAB_LIST].map(mark);
@@ -798,6 +805,9 @@ export const GAMES: GameMeta[] = ALL_GAMES.filter((x) => !x.retired && !x.lab);
 /** Lab games that are not retired (shown only while "features.newGames" is on). May be empty. */
 export const LAB_GAMES: GameMeta[] = ALL_GAMES.filter((x) => x.lab && !x.retired);
 export const RETIRED_GAMES: GameMeta[] = ALL_GAMES.filter((x) => x.retired);
+/** Games marked new and not retired: what the Home "new games" banner counts (lab ones only while switched on). */
+export const NEW_GAMES: GameMeta[] = ALL_GAMES.filter((x) => x.isNew && !x.retired);
+export const isNewGame = (id: string) => NEW_IDS.has(id) && !RETIRED_IDS.has(id);
 /** Worlds that still have a live game. Empty worlds are hidden everywhere players look. */
 export const WORLDS: World[] = ALL_WORLDS.filter((w) => GAMES.some((x) => x.world === w.id));
 export const GAME_COUNT = GAMES.length;
