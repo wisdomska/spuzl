@@ -347,8 +347,11 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   useEffect(() => {
     lastActive.current = performance.now();
   }, [feedback.n]);
+  // The board's own Hint control says when a hint makes sense: never while it's off (a quiz before its Start,
+  // between rounds), so the idle hint can't start the clock or show a clue for a round not in play (R2-17).
+  const hintOff = controls.find((c) => c.id === "hint")?.disabled === true;
   useEffect(() => {
-    if (!guided || !requestHint || solved || paused || pausedExternally || menuHold) return;
+    if (!guided || !requestHint || solved || paused || pausedExternally || menuHold || hintOff) return;
     const t = setInterval(() => {
       if (performance.now() - lastActive.current > GUIDED_IDLE_MS) {
         lastActive.current = performance.now();
@@ -356,7 +359,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
       }
     }, 1000);
     return () => clearInterval(t);
-  }, [guided, requestHint, solved, paused, pausedExternally, menuHold, spendHint]);
+  }, [guided, requestHint, solved, paused, pausedExternally, menuHold, hintOff, spendHint]);
 
   // Hint controls registered by the board call into the shell.
   // No hint source (Duels, Party Races): the Hint control is hidden rather than dead.

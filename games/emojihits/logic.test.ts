@@ -141,11 +141,12 @@ describe("emoji hits guesses and verification", () => {
         expect(verify(puzzle, solution, null as unknown as EmojiState).ok).toBe(false);
         expect(verify(puzzle, solution, { rounds: [{ tries: [{}], ms: 5000 } as unknown as RoundLog] }).ok).toBe(false);
         expect(progress(puzzle, solution, { rounds: clean(titles).rounds.slice(0, 2) })).toBe(0.4);
+        // scored rounds are typed (R2-17): a log with a pick in it never verifies, even with the right option
         if (d === "easy") {
           const picks: EmojiState = {
             rounds: puzzle.rounds.map((r, k) => ({ tries: [r.options!.indexOf(titles[k])], ms: 5000 })),
           };
-          expect(verify(puzzle, solution, picks)).toEqual(perfect);
+          expect(verify(puzzle, solution, picks)).toMatchObject({ ok: false, reason: "malformed or implausible log" });
         } else {
           expect(verify(puzzle, solution, { rounds: titles.map(() => ({ tries: [0], ms: 5000 })) }).ok).toBe(false);
         }
@@ -158,14 +159,27 @@ describe("emoji hits guesses and verification", () => {
     const title = solution.answers[0][0];
     expect(checkGuess(puzzle, solution, { round: 0, answer: title.toLowerCase() })).toEqual({ ok: true, title });
     expect(checkGuess(puzzle, solution, { round: 0, answer: "definitely not it" })).toEqual({ ok: false });
-    expect(checkGuess(puzzle, solution, { round: 0, answer: puzzle.rounds[0].options!.indexOf(title) })).toEqual({ ok: true, title });
-    expect(checkGuess(puzzle, solution, { round: 0, answer: 9 })).toMatchObject({ invalid: true });
+    // a pick is the practice round's input: checked on the practice board only (R2-17)
+    const pick = puzzle.rounds[0].options!.indexOf(title);
+    expect(checkGuess(puzzle, solution, { round: 0, answer: pick }, PRACTICE)).toEqual({ ok: true, title });
+    expect(checkGuess(puzzle, solution, { round: 0, answer: (pick + 1) % 4 }, PRACTICE)).toEqual({ ok: false });
+    expect(checkGuess(puzzle, solution, { round: 0, answer: pick })).toMatchObject({ invalid: true });
+    expect(checkGuess(puzzle, solution, { round: 0, answer: pick }, { kind: "attempt", state: null, log: [] })).toMatchObject({
+      invalid: true,
+    });
+    // typed answers are checked the same everywhere
+    expect(checkGuess(puzzle, solution, { round: 0, answer: title }, PRACTICE)).toEqual({ ok: true, title });
+    expect(checkGuess(puzzle, solution, { round: 0, answer: title }, { kind: "attempt", state: null, log: [] })).toEqual({
+      ok: true,
+      title,
+    });
+    expect(checkGuess(puzzle, solution, { round: 0, answer: 9 }, PRACTICE)).toMatchObject({ invalid: true });
     expect(checkGuess(puzzle, solution, { round: 7, answer: title })).toMatchObject({ invalid: true });
     expect(checkGuess(puzzle, solution, { round: 0, answer: "" })).toMatchObject({ invalid: true });
     expect(checkGuess(puzzle, solution, null as never)).toMatchObject({ invalid: true });
     expect(checkGuess(puzzle, solution, { round: 2, reveal: true }, PRACTICE)).toEqual({ reveal: solution.answers[2][0] });
     const hard = generateAt(4, "hard");
-    expect(checkGuess(hard.puzzle, hard.solution, { round: 0, answer: 0 })).toMatchObject({ invalid: true });
+    expect(checkGuess(hard.puzzle, hard.solution, { round: 0, answer: 0 }, PRACTICE)).toMatchObject({ invalid: true });
   });
 
   it("never shows a title to a bare puzzle reference", () => {

@@ -1,7 +1,12 @@
 /**
  * Emoji Hits: name the song, film or TV show from a row of emoji. Five rounds, three tries each, a time bar
- * per round. Easy days also offer four titles to pick from. Titles stay on the server: the board sends each
+ * per round. Easy boards also carry four titles to pick from. Titles stay on the server: the board sends each
  * try through the guess transport. Score: 100 per title found, up to 50 more for speed, 20 off per wrong try.
+ *
+ * One input per mode (R2-17): the practice round picks from the options, scored rounds are typed. The server
+ * enforces it: a pick is checked only on the practice board (`checkGuess` with the PRACTICE context), scored
+ * boards are served without options (`scoredView`, lib/game/guess-token.ts) and a scored log with a pick in it
+ * does not verify.
  */
 import type { Difficulty, Generated, Hint, VerifyResult } from "@/games/types";
 import type { GuessContext, GuessLogic } from "@/games/_shared/guess";
@@ -78,7 +83,7 @@ export function generate(rng: Rng, difficulty: Difficulty): Generated<EmojiPuzzl
   return generateAt(rng.int(0, contentCount - 1), difficulty);
 }
 
-/** One try against one round: typed text (forgiving) or, on easy, a picked option. */
+/** One try against one round: typed text (forgiving) or, in practice on easy, a picked option. */
 export function tryMatches(p: EmojiPuzzle, s: EmojiSolution, round: number, t: HitTry): boolean {
   const accepted = s.answers[round];
   if (typeof t === "number") {
@@ -110,7 +115,8 @@ export function checkGuess(p: EmojiPuzzle, s: EmojiSolution, g: EmojiGuess, ctx:
   if (!g || typeof g !== "object" || !validRound(p, g.round)) return { ok: false, invalid: true };
   if ("reveal" in g && g.reveal === true) return ctx ? { reveal: s.answers[g.round][0] } : { ok: false, invalid: true };
   if (!("answer" in g) || !isTry(g.answer)) return { ok: false, invalid: true };
-  if (typeof g.answer === "number" && !p.rounds[g.round].options) return { ok: false, invalid: true };
+  // a pick is the practice round's input only; scored rounds are typed
+  if (typeof g.answer === "number" && (!p.rounds[g.round].options || ctx?.kind !== "practice")) return { ok: false, invalid: true };
   return tryMatches(p, s, g.round, g.answer) ? { ok: true, title: s.answers[g.round][0] } : { ok: false };
 }
 
@@ -143,7 +149,8 @@ export function replay(p: EmojiPuzzle, s: EmojiSolution, state: EmojiState): Rou
     let right = false;
     let wrong = 0;
     for (const t of log.tries) {
-      if (right || !isTry(t) || (typeof t === "number" && !p.rounds[r].options)) return null;
+      // scored logs are typed only (a pick belongs to the practice round, which is never verified)
+      if (right || !isTry(t) || typeof t === "number") return null;
       if (tryMatches(p, s, r, t)) right = true;
       else wrong++;
     }

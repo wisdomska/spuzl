@@ -18,7 +18,10 @@ export interface HitRound {
   kind: HitKind;
   /** words in the title, as a gentle nudge */
   words: number;
-  /** easy days only: four titles to pick from */
+  /**
+   * Easy boards only: four titles to pick from. Picking is the practice round's input (R2-17); scored rounds are
+   * typed, so the server strips these from every scored board it serves (`scoredView`).
+   */
   options?: string[];
 }
 
@@ -36,7 +39,7 @@ export interface EmojiSolution {
   clues: string[];
 }
 
-/** A try is typed text, or (easy) the index of a picked option. */
+/** A try is typed text, or (practice only) the index of a picked option. */
 export type HitTry = string | number;
 
 export interface RoundLog {
@@ -88,6 +91,19 @@ export function titleMatches(typed: string, accepted: string[]): boolean {
     const t = titleKey(a);
     return k === t || (t.length >= 6 && closeEnough(k, t));
   });
+}
+
+/** A scored board as the server serves it (an attempt, a race round): no options, so every answer is typed. */
+export function scoredView(p: EmojiPuzzle): EmojiPuzzle {
+  if (!p.rounds.some((r) => r.options)) return p;
+  return {
+    ...p,
+    rounds: p.rounds.map((r) => {
+      const typed = { ...r };
+      delete typed.options;
+      return typed;
+    }),
+  };
 }
 
 export const isTry = (t: unknown): t is HitTry =>

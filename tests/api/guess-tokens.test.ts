@@ -60,6 +60,23 @@ describe("api: content-game tokens", () => {
     expect((await guess(g, "coil", ref, { round: 0, reveal: true })).status).toBe(404);
   });
 
+  it("R2-17: Emoji Hits picks from four in practice only; a scored easy board comes without options and refuses a pick", async () => {
+    const g = await guest(uniq("tokpick_"));
+    const board = emojihits.generate(createRng("tutorial:emojihits"), "easy");
+    const practice = (await g.api("/api/v1/guided/emojihits")).data.puzzle;
+    expect(practice.rounds[0].options).toEqual(board.puzzle.rounds[0].options);
+    const pick = board.puzzle.rounds[0].options!.indexOf(board.solution.answers[0][0]);
+    expect((await guess(g, "emojihits", practice.ref, { round: 0, answer: pick })).data).toMatchObject({ ok: true });
+
+    const s = await g.api("/api/v1/attempts", { json: { game: "emojihits", mode: "free", difficulty: "easy" } });
+    expect(s.status, JSON.stringify(s.data)).toBe(200);
+    const scored = s.data.puzzle;
+    for (const r of scored.rounds) expect(r.options).toBeUndefined();
+    expect((await guess(g, "emojihits", scored.ref, { round: 0, answer: 0 })).data).toMatchObject({ ok: false, invalid: true });
+    // typing still works on the scored board
+    expect((await guess(g, "emojihits", scored.ref, { round: 0, answer: "definitely not it" })).data).toEqual({ ok: false });
+  });
+
   it("answers a race round only while it is the current round, and only for its racers", async () => {
     const host = await guest(uniq("tokh_"));
     const p2 = await guest(uniq("tokr_"));

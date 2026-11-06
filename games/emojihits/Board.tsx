@@ -23,12 +23,19 @@ interface Outcome {
 
 /**
  * Emoji Hits board (Clue Cave). Press Start; a row of emoji appears with its kind and word count, and a bar
- * drains for the round's time limit (the shell header keeps the only clock). Type the title (or pick one of
- * four on easy days); three tries per round, each wrong try is a slip. A right answer, the third miss, a skip
- * or the end of the bar reveals the title, then the next round follows on its own. Five rounds, then a summary.
+ * drains for the round's time limit (the shell header keeps the only clock). Three tries per round, each wrong
+ * try is a slip. A right answer, the third miss, a skip or the end of the bar reveals the title, then the next
+ * round follows on its own. Five rounds, then a summary.
+ *
+ * One input per mode (R2-17), said on screen: the practice round picks from four ("Pick the answer"), every
+ * scored round is typed ("Type the answer"; scored boards come without options and the server refuses picks).
+ * The shell clock starts on Start (`api.start`), the first move. A hint belongs to the round in play: its text
+ * is cleared once that round is over (`setHintText`), and the Hint control is off outside a round.
  */
 export default function EmojiHitsBoard({ puzzle, initialState, hint, disabled, mode, api }: BoardProps<EmojiPuzzle, EmojiState>) {
   const total = puzzle.rounds.length;
+  // practice picks, scored rounds type (a board without options always types)
+  const picking = mode === "tutorial" && puzzle.rounds.every((r) => !!r.options?.length);
   const [logs, setLogs] = useState<RoundLog[]>(() => initialState?.rounds?.slice() ?? []);
   const [outcomes, setOutcomes] = useState<(Outcome | null)[]>(() => (initialState?.rounds ?? []).map(() => null));
   const [tries, setTries] = useState<HitTry[]>(() => initialState?.current?.slice() ?? []);
@@ -54,6 +61,14 @@ export default function EmojiHitsBoard({ puzzle, initialState, hint, disabled, m
   useEffect(() => {
     if (physical && phase === "asking") input.current?.focus({ preventScroll: true });
   }, [physical, phase]);
+  // A hint is for the round in play only: once that round is over its text goes (R2-17).
+  useEffect(() => {
+    api.setHintText?.((h) => {
+      const r = (h.target as { round?: number } | null)?.round;
+      return phaseRef.current === "asking" && r === logsRef.current.length ? h.text : "";
+    });
+    return () => api.setHintText?.(null);
+  }, [api]);
   const streak = useRef(0);
   useEffect(() => {
     phaseRef.current = phase;
@@ -286,7 +301,7 @@ export default function EmojiHitsBoard({ puzzle, initialState, hint, disabled, m
     const saved = initialState?.rounds ?? [];
     const slips = saved.reduce((a, r) => a + (Array.isArray(r.tries) ? r.tries.length : 0), 0) + (initialState?.current?.length ?? 0);
     if (!saved.length) {
-      api.feedback(mode === "tutorial" ? t.introTutorial : t.intro(total, Math.round(puzzle.limitMs / 1000)), "info", "hand-pointing");
+      api.feedback(picking ? t.introTutorial : t.intro(total, Math.round(puzzle.limitMs / 1000)), "info", "hand-pointing");
       return;
     }
     let cancelled = false;
@@ -418,33 +433,41 @@ export default function EmojiHitsBoard({ puzzle, initialState, hint, disabled, m
 
       {phase !== "done" && (
         <>
-          <form onSubmit={onSubmit} className="flex gap-2">
-            <input
-              ref={input}
-              type="text"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              disabled={off}
-              aria-label={t.inputLabel}
-              placeholder={phase === "asking" ? t.inputPlaceholder : ""}
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="words"
-              spellCheck={false}
-              enterKeyHint="go"
-              maxLength={80}
-              className="wide:h-14 wide:text-[18px] h-12 min-w-0 flex-1 rounded-[14px] px-3 text-[16px] font-semibold outline-none disabled:opacity-50"
-              style={{ background: "var(--surface-raised)", color: "var(--text)", boxShadow: "inset 0 0 0 2px var(--line)" }}
-            />
-            <button
-              type="submit"
-              disabled={off || !text.trim()}
-              className="toy wide:h-14 wide:px-6 h-12 flex-none rounded-[14px] px-4 text-[16px] font-bold disabled:opacity-50"
-              style={{ background: "var(--world)", color: "var(--on-accent)", boxShadow: "0 3px 0 var(--world-depth)" }}
-            >
-              {t.guess}
-            </button>
-          </form>
+          {/* The one way to answer in this mode, said plainly. */}
+          <p className="m-0 flex items-center gap-1.5 text-[14px] font-bold" data-input-mode={picking ? "pick" : "type"}>
+            <Icon name={picking ? "hand-pointing" : "keyboard"} size={16} className="text-[var(--world)]" />
+            {picking ? t.howPick : t.howType}
+            {!picking && <span className="text-muted font-medium">{t.howTypeNote}</span>}
+          </p>
+          {!picking && (
+            <form onSubmit={onSubmit} className="flex gap-2">
+              <input
+                ref={input}
+                type="text"
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                disabled={off}
+                aria-label={t.inputLabel}
+                placeholder={phase === "asking" ? t.inputPlaceholder : ""}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="words"
+                spellCheck={false}
+                enterKeyHint="go"
+                maxLength={80}
+                className="wide:h-14 wide:text-[18px] h-12 min-w-0 flex-1 rounded-[14px] px-3 text-[16px] font-semibold outline-none disabled:opacity-50"
+                style={{ background: "var(--surface-raised)", color: "var(--text)", boxShadow: "inset 0 0 0 2px var(--line)" }}
+              />
+              <button
+                type="submit"
+                disabled={off || !text.trim()}
+                className="toy wide:h-14 wide:px-6 h-12 flex-none rounded-[14px] px-4 text-[16px] font-bold disabled:opacity-50"
+                style={{ background: "var(--world)", color: "var(--on-accent)", boxShadow: "0 3px 0 var(--world-depth)" }}
+              >
+                {t.guess}
+              </button>
+            </form>
+          )}
           <div className="text-muted flex items-center justify-between text-[13px] font-medium">
             <span>{phase === "asking" ? t.triesLeft(triesLeft) : ""}</span>
             <span className="flex gap-[5px]" aria-hidden>
@@ -457,7 +480,7 @@ export default function EmojiHitsBoard({ puzzle, initialState, hint, disabled, m
               ))}
             </span>
           </div>
-          {round.options && phase !== "ready" && (
+          {picking && round.options && phase !== "ready" && (
             <div className="flex flex-col gap-2" role="group" aria-label={t.options}>
               {round.options.map((c, k) => {
                 const tried = phase === "asking" && wrongPicks.includes(k);

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import five from "@/games/five/logic";
 import penalty from "@/games/penalty/logic";
 import hunch from "@/games/hunch/logic";
+import emojihits from "@/games/emojihits/logic";
 import { isGuessToken } from "@/games/_shared/guess";
 import {
   TOKEN_TTL_S,
@@ -84,6 +85,24 @@ describe("guess tokens", () => {
     const bound = bindPuzzle(g.puzzle, PLAYER, { k: "m", m: ATTEMPT, s: 1, r: 2 }, KEY, NOW);
     expect(JSON.stringify(bound)).not.toMatch(/"i":|"dives"/);
     expect(openGuessToken((bound.ref as { t: string }).t, KEY, NOW)?.x).toBe(Math.floor(NOW / 1000) + TOKEN_TTL_S.m);
+  });
+
+  it("serves Emoji Hits' pick-from-four options on the practice board only; scored boards are typed (R2-17)", () => {
+    const g = emojihits.generateAt(4, "easy");
+    expect(g.puzzle.rounds.every((r) => r.options?.length === 4)).toBe(true);
+    const practice = bindPuzzle(g.puzzle, PLAYER, { k: "p" }, KEY, NOW);
+    expect(practice.rounds.map((r) => r.options)).toEqual(g.puzzle.rounds.map((r) => r.options));
+    for (const ctx of [
+      { k: "a", a: ATTEMPT },
+      { k: "m", m: ATTEMPT, s: 1, r: 2 },
+    ] as const) {
+      const scored = bindPuzzle(g.puzzle, PLAYER, ctx, KEY, NOW);
+      expect(scored.rounds.some((r) => "options" in r)).toBe(false);
+      expect(scored.rounds.map((r) => r.emoji)).toEqual(g.puzzle.rounds.map((r) => r.emoji));
+      expect(isGuessToken(scored.ref)).toBe(true);
+    }
+    // the generator's puzzle (what the server checks against) keeps them
+    expect(g.puzzle.rounds[0].options).toHaveLength(4);
   });
 
   it("leaves logic games, sealed quiz salts and odd values alone", () => {

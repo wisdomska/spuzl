@@ -16,7 +16,11 @@ export const EMOJI_COPY = {
   hint: "Hint",
   guess: "Guess",
   intro: (rounds: number, secs: number) => `${rounds} rounds. Name the song, film or TV show from the emoji. ${secs} seconds each.`,
-  introTutorial: "Press Start, read the emoji, then type the title. Close spelling is fine.",
+  introTutorial: "Practice round: press Start, read the emoji, then pick the title from four.",
+  /** the one input this mode uses, said on screen (R2-17) */
+  howPick: "Pick the answer",
+  howType: "Type the answer",
+  howTypeNote: "Close spelling is fine.",
   ready: "The emoji appear when you press Start.",
   resumeNext: (n: number, total: number) => `Round ${n} of ${total} is next. Press Resume.`,
   step: (n: number, total: number) => `Round ${n} of ${total}`,
