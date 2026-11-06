@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.34.0 (6 November 2026)
+
+### For players
+
+- **Games open faster, especially the first one.** On a phone connection the first game used to share the
+  connection with every sound effect, the music and other pages loading in the background. Now:
+  - the game comes first;
+  - sounds and music load once you're playing;
+  - "Continue" starts fetching your game the moment you tap it;
+  - Home quietly gets your next game ready while you look at the map.
+- **No more blank wait after a tap.** The game's outline appears on the same frame you tap, then fills in.
+
+### For admins
+
+- Tap-to-board times on the Metrics page should drop. Compare with `docs/qa/BASELINE_R2.md`.
+
 ## 1.33.0 (6 November 2026)
 
 ### For players
