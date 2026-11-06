@@ -41,19 +41,25 @@ export const GameSearchField = forwardRef<HTMLInputElement, { value: string; onC
   },
 );
 
-/** All, the tags, then the worlds (pass `worlds` to show only those that hold games in the list). */
+/**
+ * All, New (R2-18, only while some game in the list is new: `showNew`), the other tags, then the worlds (pass
+ * `worlds` to show only those that hold games in the list).
+ */
 export function GameFilterChips({
   value,
   onChange,
   worlds = WORLDS,
+  showNew = false,
 }: {
   value: GameFilter;
   onChange: (f: GameFilter) => void;
   worlds?: readonly World[];
+  showNew?: boolean;
 }) {
+  const tags = [...(showNew || value === "new" ? (["new"] as const) : []), ...TAGS.filter((t) => t !== "new")];
   const chips: { id: GameFilter; label: string; title?: string; color?: string }[] = [
     { id: "all", label: T.all },
-    ...TAGS.map((t) => ({ id: t as GameFilter, label: T.tag[t], title: T.tagHelp[t] })),
+    ...tags.map((t) => ({ id: t as GameFilter, label: T.tag[t], title: T.tagHelp[t] })),
     ...worlds.map((w) => ({ id: w.id as GameFilter, label: w.name, color: w.color })),
   ];
   return (

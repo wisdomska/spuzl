@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_META, durationLabel, filterGames, matchesQuery, validateMeta } from "./index";
+import { DEFAULT_META, durationLabel, filterGames, matchesQuery, newGameIds, parseFilter, validateMeta } from "./index";
 import { RACE_GAMES } from "@/lib/multiplayer/games";
 import { GAMES, LAB_GAMES, RETIRED_GAMES } from "@/lib/catalog";
 
@@ -45,5 +45,29 @@ describe("filterGames (Library and the Duel game picker)", () => {
     const meta = { ...DEFAULT_META, [id]: { typicalSec: 60, tags: ["calm" as const] } };
     expect(filterGames(races, "calm", "", meta).map((g) => g.id)).toContain(id);
     expect(filterGames(races, "competitive", "", meta).map((g) => g.id)).not.toContain(id);
+  });
+});
+
+describe("the new tag (R2-18)", () => {
+  it("defaults to the catalog's isNew games, three today", () => {
+    const fresh = GAMES.filter((g) => g.isNew).map((g) => g.id);
+    expect([...fresh].sort()).toEqual(["beattap", "emojihits", "trotro"]);
+    expect(newGameIds(GAMES, DEFAULT_META)).toEqual(fresh);
+    expect(validateMeta({ tags: ["new", "quick"] })).toBeNull();
+  });
+  it("follows admin overrides and filters the Library", () => {
+    const meta = { ...DEFAULT_META, crownfall: { typicalSec: 110, tags: ["new" as const] }, trotro: { typicalSec: 120, tags: [] } };
+    const ids = newGameIds(GAMES, meta);
+    expect(ids).toContain("crownfall");
+    expect(ids).not.toContain("trotro");
+    expect(filterGames(GAMES, "new", "", meta).map((g) => g.id)).toEqual(ids);
+  });
+  it("reads a filter from the URL, falling back to All", () => {
+    expect(parseFilter("new")).toBe("new");
+    expect(parseFilter("quick")).toBe("quick");
+    expect(parseFilter("logic")).toBe("logic");
+    expect(parseFilter("number")).toBe("all"); // a world with no live games
+    expect(parseFilter("<script>")).toBe("all");
+    expect(parseFilter(null)).toBe("all");
   });
 });

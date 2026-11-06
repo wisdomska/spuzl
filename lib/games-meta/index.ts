@@ -3,10 +3,11 @@
  * These are the defaults; the admin console can override them per game (games.typical_sec and games.tags),
  * read at runtime through useGamesMeta().
  */
-import { GAMES, GAME_BY_ID, LAB_GAMES, WORLD_BY_ID, type GameMeta, type WorldId } from "@/lib/catalog";
+import { GAMES, GAME_BY_ID, LAB_GAMES, WORLDS, WORLD_BY_ID, type GameMeta, type WorldId } from "@/lib/catalog";
 import { isRaceGame } from "@/lib/multiplayer/games";
 
-export const TAGS = ["quick", "calm", "competitive"] as const;
+/** R2-18: "new" marks recently added games (default from the catalog's `isNew`, admin-editable like the rest). */
+export const TAGS = ["quick", "calm", "competitive", "new"] as const;
 export type Tag = (typeof TAGS)[number];
 
 /** Typical seconds for an average player on the Daily's usual difficulty. */
@@ -85,6 +86,7 @@ export function defaultTags(id: string): Tag[] {
   // Arcade (memory, reflex and the action courses, wherever they sit) is never calm.
   if (g.world !== "reflex" && g.engine !== "phaser" && !PRESSURE.has(id)) tags.push("calm");
   if (isRaceGame(id) || g.botPlay) tags.push("competitive");
+  if (g.isNew) tags.push("new");
   return tags;
 }
 
@@ -102,6 +104,18 @@ export const DEFAULT_META: Record<string, GameMetaRow> = Object.fromEntries(
 export function durationLabel(sec: number): string {
   if (sec < 60) return "Under 1 min";
   return `${Math.round(sec / 60)} min`;
+}
+
+/** R2-18: the games in `games` tagged "new" (admin overrides included), in list order. */
+export function newGameIds(games: readonly Pick<GameMeta, "id">[], meta: Record<string, GameMetaRow | undefined>): string[] {
+  return games.filter((g) => meta[g.id]?.tags.includes("new")).map((g) => g.id);
+}
+
+/** A Library filter from a URL (`/library?filter=new`): All, a tag, or a live world; anything else is All. */
+export function parseFilter(v: string | null | undefined): GameFilter {
+  if (!v) return "all";
+  if (isTag(v)) return v;
+  return WORLDS.some((w) => w.id === v) ? (v as WorldId) : "all";
 }
 
 export const isTag = (t: unknown): t is Tag => typeof t === "string" && (TAGS as readonly string[]).includes(t);

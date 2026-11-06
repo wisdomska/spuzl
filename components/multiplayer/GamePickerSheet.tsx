@@ -7,7 +7,7 @@ import { Icon } from "@/components/ui/Icon";
 import { GameIcon3D } from "@/components/world/GameIcon3D";
 import { GameFilterChips, GameSearchField } from "@/components/library/GameFilters";
 import { useGamesMeta } from "@/lib/games-meta/client";
-import { durationLabel, filterGames, type GameFilter } from "@/lib/games-meta";
+import { durationLabel, filterGames, newGameIds, type GameFilter } from "@/lib/games-meta";
 import { RACE_GAMES } from "@/lib/multiplayer/games";
 import { duelCopy } from "@/lib/copy/duel";
 import { useSheetSound } from "@/lib/audio/useSheetSound";
@@ -74,7 +74,7 @@ export function GamePickerSheet({
               </Dialog.Close>
             </div>
             <GameSearchField ref={search} value={q} onChange={setQ} placeholder={C.searchPlaceholder(RACE_GAMES.length)} />
-            <GameFilterChips value={filter} onChange={setFilter} worlds={RACE_WORLDS} />
+            <GameFilterChips value={filter} onChange={setFilter} worlds={RACE_WORLDS} showNew={newGameIds(RACE_GAMES, meta).length > 0} />
             <p className="text-muted text-[13px] font-medium" aria-live="polite">
               {C.count(list.length)}
             </p>

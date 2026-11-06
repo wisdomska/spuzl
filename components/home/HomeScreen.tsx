@@ -29,6 +29,11 @@ import { useNotices } from "@/lib/notify/notices";
 import { PLAY_NAV } from "@/lib/analytics/play-nav";
 import { BirthAskOnce } from "@/components/onboarding/BirthAsk";
 import { DailyFiveCard } from "@/components/daily-five/DailyFiveCard";
+import { NewGamesBanner } from "./NewGamesBanner";
+import { BoardThumb } from "./BoardThumb";
+import { isLadderGame } from "@/lib/game/levels";
+import { useLevels } from "@/lib/client/levels";
+import type { GameMeta } from "@/lib/catalog";
 import { useDailyFive } from "@/lib/client/daily-five";
 
 export function HomeScreen() {
@@ -74,6 +79,10 @@ export function HomeScreen() {
   const nextMeta = next ? GAME_BY_ID[next] : null;
   // R2-01: the Continue game's page, code and board are downloaded while the player looks at Home.
   useWarmPlay(me.data && nextMeta ? continueHref(nextMeta.id, { dailiesOn, clearedToday: cleared[nextMeta.id] !== undefined }) : null);
+  // R2-18: a ladder game's Continue names the level it opens ("Level 12").
+  const nextLadder = !!me.data && !!nextMeta && isLadderGame(nextMeta.id);
+  const levels = useLevels(nextLadder);
+  const nextLevel = nextLadder && nextMeta ? levels.data?.games[nextMeta.id]?.next : undefined;
   const progress = worldProgress(cleared);
   const currentWorld: WorldId = nextMeta?.world ?? "logic";
   const featuredDone = LAUNCH_IDS.filter((id) => cleared[id] !== undefined).length;
@@ -116,7 +125,8 @@ export function HomeScreen() {
           {/* Streak at risk has its own designed card below; banners carry new games and league results. */}
           <BannerStack
             items={notices
-              .filter((n) => n.kind !== "streak_at_risk")
+              // R2-18: new games have their own card (NewGamesBanner, the admin's "new" tag) below Daily Five.
+              .filter((n) => n.kind !== "streak_at_risk" && n.kind !== "new_games")
               .map((n) => ({
                 id: n.id,
                 icon: n.icon,
@@ -128,6 +138,7 @@ export function HomeScreen() {
               }))}
           />
           <DailyFiveCard />
+          <NewGamesBanner played={d.played ?? []} />
         </div>
         <section aria-label="The Grid" className="relative overflow-y-auto pb-[250px] lg:pb-[200px]">
           <HomeMap
@@ -163,6 +174,7 @@ export function HomeScreen() {
           <PlayCard
             href={nextMeta ? continueHref(nextMeta.id, { dailiesOn, clearedToday: cleared[nextMeta.id] !== undefined }) : "/library"}
             playNav={!!nextMeta}
+            game={nextMeta}
             title={
               nextMeta
                 ? recentId || posInWorld > 1 || counted > 0
@@ -173,7 +185,13 @@ export function HomeScreen() {
                   : T.allTried
             }
             sub={
-              nextMeta ? T.where(WORLD_BY_ID[nextMeta.world].name, posInWorld, worldGames.length) : dailiesOn ? T.allDoneSub : T.allTriedSub
+              nextMeta
+                ? nextLevel
+                  ? T.levelWhere(nextLevel, WORLD_BY_ID[nextMeta.world].name)
+                  : T.where(WORLD_BY_ID[nextMeta.world].name, posInWorld, worldGames.length)
+                : dailiesOn
+                  ? T.allDoneSub
+                  : T.allTriedSub
             }
             done={dailiesOn ? counted : (d.played ?? []).filter((id) => isLiveGame(id)).length}
             total={dailiesOn ? LAUNCH_IDS.length : GAMES.length}
@@ -220,10 +238,14 @@ function HomeSkeleton() {
   );
 }
 
-/** SPZ-16: the one Play card. The ring is "Today x of N" (N = LAUNCH_IDS.length); the label names exactly what opens. */
+/**
+ * SPZ-16: the one Play card. The ring is "Today x of N" (N = LAUNCH_IDS.length); the label names exactly what opens.
+ * R2-18: a tiny static board of the game sits at the end (BoardThumb: SVG only, no board code).
+ */
 function PlayCard({
   href,
   playNav,
+  game,
   title,
   sub,
   done,
@@ -233,6 +255,7 @@ function PlayCard({
   href: string;
   /** The card opens a game (not All games): marks it for the tap-to-board metric. */
   playNav: boolean;
+  game: GameMeta | null;
   title: string;
   sub: string;
   done: number;
@@ -274,7 +297,16 @@ function PlayCard({
         <span className="truncate text-[13px] font-semibold opacity-80">{sub}</span>
         <span className="sr-only">. {aria(done, total)}</span>
       </span>
-      <Icon name="play" size={22} className="shrink-0" />
+      {game ? (
+        <span className="relative shrink-0">
+          <BoardThumb meta={game} />
+          <span className="bg-on-accent text-accent absolute -right-1.5 -bottom-1.5 flex size-6 items-center justify-center rounded-full">
+            <Icon name="play" size={12} />
+          </span>
+        </span>
+      ) : (
+        <Icon name="play" size={22} className="shrink-0" />
+      )}
     </Link>
   );
 }

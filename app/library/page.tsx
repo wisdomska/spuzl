@@ -10,7 +10,7 @@ import { GameIcon3D } from "@/components/world/GameIcon3D";
 import { GameCard } from "@/components/library/GameCard";
 import { useMe } from "@/lib/client/api";
 import { useGamesMeta } from "@/lib/games-meta/client";
-import { durationLabel, filterGames, type GameFilter } from "@/lib/games-meta";
+import { durationLabel, filterGames, newGameIds, parseFilter, type GameFilter } from "@/lib/games-meta";
 import { GameFilterChips, GameSearchField } from "@/components/library/GameFilters";
 import { useGameSettings } from "@/lib/game-settings/client";
 import { SHEET_LINK } from "@/lib/analytics/play-nav";
@@ -39,7 +39,17 @@ export default function Library() {
     : Object.fromEntries((me.data?.played ?? []).map((id) => [id, 1]));
 
   const labOn = useGameSettings()["features.newGames"];
-  const list = useMemo(() => filterGames([...GAMES, ...(labOn ? LAB_GAMES : [])], filter, q, meta), [filter, q, meta, labOn]);
+  const all = useMemo(() => [...GAMES, ...(labOn ? LAB_GAMES : [])], [labOn]);
+  const list = useMemo(() => filterGames(all, filter, q, meta), [all, filter, q, meta]);
+  const hasNew = newGameIds(all, meta).length > 0;
+
+  // R2-18: Home's "new games" banner opens /library?filter=new. Read once after hydration (no Suspense boundary
+  // needed, and the server pass stays the plain list).
+  useEffect(() => {
+    const f = parseFilter(new URLSearchParams(window.location.search).get("filter"));
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- the URL is client-only; read after hydration
+    if (f !== "all") setFilter(f);
+  }, []);
 
   // SPZ-01: warm the first rows' play routes while the list is idle.
   useEffect(() => {
@@ -70,7 +80,7 @@ export default function Library() {
           </div>
         </div>
         <GameSearchField value={q} onChange={setQ} />
-        <GameFilterChips value={filter} onChange={setFilter} />
+        <GameFilterChips value={filter} onChange={setFilter} showNew={hasNew} />
         <p className="text-muted text-[13px] font-medium" aria-live="polite">
           {T.count(list.length)}
         </p>

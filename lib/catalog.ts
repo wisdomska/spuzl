@@ -64,7 +64,11 @@ export interface GameMeta {
   lab?: boolean;
   /** Retired (RETIRED_IDS): kept in code, hidden from players and refused by the server. Set by the catalog. */
   retired?: boolean;
-  /** Newly added or brought back (NEW_IDS): the Home "new games" banner counts it. Set by the catalog. */
+  /**
+   * Recently added or brought back (R2-18's `isNew` option on the game, or R2-14's NEW_IDS): the default for the
+   * Library's "new" tag (Home's "N new games" card and the New filter); the admin Library page can add or remove
+   * the tag per game (games.tags), which wins over this.
+   */
   isNew?: boolean;
 }
 
@@ -127,7 +131,7 @@ const g = (
   engine: Engine,
   blurb: string,
   rule: string,
-  opts: Partial<Pick<GameMeta, "unique" | "scoring" | "minTimeMs" | "content" | "photosensitive" | "botPlay" | "lab">> = {},
+  opts: Partial<Pick<GameMeta, "unique" | "scoring" | "minTimeMs" | "content" | "photosensitive" | "botPlay" | "lab" | "isNew">> = {},
 ): GameMeta => ({ id, name, world, icon, phase, engine, blurb, rule, unique: false, scoring: "time", minTimeMs: 4000, ...opts });
 
 /** Every game the code knows, before retirement is applied. Use GAMES / ALL_GAMES below. */
@@ -301,7 +305,7 @@ const MAIN_GAMES: GameMeta[] = [
     "grid",
     "Free the trotro from the station",
     "Slide cars and trucks along their lanes until the trotro can drive out of the exit.",
-    { minTimeMs: 5000 },
+    { minTimeMs: 5000, isNew: true },
   ),
   // Number Den (retired world)
   g(
@@ -474,7 +478,7 @@ const MAIN_GAMES: GameMeta[] = [
     "custom",
     "Name the hit from its emoji",
     "Name the song, film or TV show from the emoji. 5 rounds, 3 tries each.",
-    { content: "curated", scoring: "score", minTimeMs: 4000 },
+    { content: "curated", scoring: "score", minTimeMs: 4000, isNew: true },
   ),
   // Arcade: memory, rhythm and reflex (the old Reflex Rink)
   g(
@@ -512,7 +516,7 @@ const MAIN_GAMES: GameMeta[] = [
     "custom",
     "Tap on the beat",
     "Tap on every beat of the pattern. Perfect and Good score; extra taps cost points.",
-    { scoring: "score", minTimeMs: 0 },
+    { scoring: "score", minTimeMs: 0, isNew: true },
   ),
   // Arcade: action (from Rage Ridge; the rest stays there, retired)
   g(
@@ -807,7 +811,7 @@ export const LAB_GAMES: GameMeta[] = ALL_GAMES.filter((x) => x.lab && !x.retired
 export const RETIRED_GAMES: GameMeta[] = ALL_GAMES.filter((x) => x.retired);
 /** Games marked new and not retired: what the Home "new games" banner counts (lab ones only while switched on). */
 export const NEW_GAMES: GameMeta[] = ALL_GAMES.filter((x) => x.isNew && !x.retired);
-export const isNewGame = (id: string) => NEW_IDS.has(id) && !RETIRED_IDS.has(id);
+export const isNewGame = (id: string) => NEW_GAMES.some((g) => g.id === id);
 /** Worlds that still have a live game. Empty worlds are hidden everywhere players look. */
 export const WORLDS: World[] = ALL_WORLDS.filter((w) => GAMES.some((x) => x.world === w.id));
 export const GAME_COUNT = GAMES.length;

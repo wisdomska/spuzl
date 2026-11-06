@@ -14,6 +14,10 @@ import { formatNumber } from "@/lib/format";
 import { nextDaily } from "./HomeMap";
 import { continueGame, continueHref } from "@/lib/game/next";
 import { PLAY_NAV } from "@/lib/analytics/play-nav";
+import { BoardThumb } from "./BoardThumb";
+import { isLadderGame } from "@/lib/game/levels";
+import { useLevels } from "@/lib/client/levels";
+import { levelsCopy } from "@/lib/copy/levels";
 
 /**
  * Desktop right panel, 360 px (States, Share, Light and Desktop file, "Desktop home"):
@@ -41,6 +45,10 @@ export function SidePanel() {
   const ready = (id: string) => today.data?.games.find((g) => g.id === id)?.ready ?? id === "crownfall";
   const next = continueGame(d?.recent, null) ?? nextDaily(cleared, ready);
   const nextMeta = next ? GAME_BY_ID[next] : null;
+  // R2-18: like Home's Continue card, a ladder game names the level it opens. Shares the cached /levels query.
+  const nextLadder = !!d && !!nextMeta && wide && isLadderGame(nextMeta.id);
+  const levels = useLevels(nextLadder);
+  const nextLevel = nextLadder && nextMeta ? levels.data?.games[nextMeta.id]?.next : undefined;
   const featured = LAUNCH_IDS.filter((id) => cleared[id] !== undefined).length;
   const done = dailiesOn ? Math.max(featured, d?.today.counted ?? 0) : featured;
   const online = (friends.data?.friends ?? []).filter((f) => f.presence.online).slice(0, 6);
@@ -124,12 +132,17 @@ export function SidePanel() {
           <Link
             href={nextMeta ? continueHref(nextMeta.id, { dailiesOn, clearedToday: cleared[nextMeta.id] !== undefined }) : "/library"}
             {...(nextMeta ? PLAY_NAV : {})}
-            className="toy bg-accent text-on-accent flex h-16 items-center justify-center gap-2.5 rounded-[20px]"
+            className="toy bg-accent text-on-accent flex h-16 items-center justify-center gap-2.5 rounded-[20px] px-3"
             style={{ ["--btn-depth" as string]: "var(--accent-depth)" }}
           >
-            <Icon name={nextMeta ? "play" : "infinity"} size={20} />
-            <span className="font-display text-[18px] font-black">
-              {nextMeta ? `${d?.recent?.length ? "Continue" : "Play"} ${nextMeta.name}` : "Play anytime"}
+            {nextMeta ? <BoardThumb meta={nextMeta} size={40} /> : <Icon name="infinity" size={20} />}
+            <span className="flex min-w-0 flex-col">
+              <span className="font-display truncate text-[18px] leading-tight font-black">
+                {nextMeta ? `${d?.recent?.length ? "Continue" : "Play"} ${nextMeta.name}` : "Play anytime"}
+              </span>
+              {nextLevel !== undefined && (
+                <span className="truncate text-[13px] font-semibold opacity-80">{levelsCopy.level(nextLevel)}</span>
+              )}
             </span>
           </Link>
           <div className="grid grid-cols-2 gap-2">

@@ -868,6 +868,24 @@ describe("Library metadata (SPZ-14 admin cascade)", () => {
     await S.owner.aal2("/api/admin/games/meta", { method: "PATCH", json: { id: "minicross", typicalSec: null, tags: null } });
   });
 
+  it("marks and unmarks games as new (R2-18, needs 20261201001801)", async () => {
+    const before = await fetch(`${BASE}/api/v1/games/meta`).then((r) => r.json());
+    expect(before.trotro.tags).toContain("new");
+    expect(before.crownfall.tags).not.toContain("new");
+    const mark = await S.content_editor.aal2("/api/admin/games/meta", {
+      method: "PATCH",
+      json: { id: "crownfall", tags: ["calm", "new"] },
+    });
+    expect(mark.status).toBe(200);
+    const unmark = await S.content_editor.aal2("/api/admin/games/meta", { method: "PATCH", json: { id: "trotro", tags: ["calm"] } });
+    expect(unmark.status).toBe(200);
+    const pub = await fetch(`${BASE}/api/v1/games/meta`).then((r) => r.json());
+    expect(pub.crownfall.tags).toEqual(["calm", "new"]);
+    expect(pub.trotro.tags).toEqual(["calm"]);
+    for (const id of ["crownfall", "trotro"])
+      await S.owner.aal2("/api/admin/games/meta", { method: "PATCH", json: { id, typicalSec: null, tags: null } });
+  });
+
   it("lists retired games, marked, and refuses to change them", async () => {
     const rows = (await S.owner.aal2("/api/admin/games/meta")).data.rows as { id: string; retired: boolean }[];
     expect(rows.find((r) => r.id === "pinned")).toMatchObject({ retired: true });

@@ -646,7 +646,8 @@ export const adminCopy = {
   /** Library duration chip and filter tags per game. */
   library: {
     title: "Library",
-    intro: "Typical play time (the duration chip) and filter tags per game. Players see changes within 5 minutes.",
+    intro:
+      "Typical play time (the duration chip) and filter tags per game. The new tag picks the games in Home's new-games banner and the New filter. Players see changes within 5 minutes.",
     exportImport: "Export and import",
     exportIntro: "Only overrides are exported. Import validates every row before saving any.",
     export: "Export",
