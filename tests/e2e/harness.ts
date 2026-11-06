@@ -32,6 +32,7 @@ import * as trotro from "@/games/trotro/logic";
 import * as lightup from "@/games/lightup/logic";
 import * as killer from "@/games/killer/logic";
 import * as dara from "@/games/dara/logic";
+import * as quads from "@/games/quads/logic";
 import * as daraRules from "@/games/dara/rules";
 
 export type Age = "13-15" | "16-17" | "18+";
@@ -204,6 +205,14 @@ const SOLVERS: Record<string, (page: Page, seed: string, d: Difficulty) => Promi
       await pad.getByRole("button", { name: new RegExp(`^${g.solution[i]}\\b`) }).click();
     }
   },
+  async quads(page, seed, d) {
+    const { generate } = quads;
+    const g = generate(createRng(seed), d);
+    await quadsSolveGroups(
+      page,
+      g.solution.groups.map((x) => x.words),
+    );
+  },
   async dara(page, seed, d) {
     const { generate, replay } = dara;
     const { steps } = daraRules;
@@ -226,6 +235,23 @@ const SOLVERS: Record<string, (page: Page, seed: string, d: Difficulty) => Promi
         .click();
   },
 };
+
+/** Quads tile for a word (named "WORD", "WORD, lifted", …). */
+export const quadsTile = (page: Page, w: string) => page.getByRole("option", { name: new RegExp(`^${w}(,|$)`) });
+
+/**
+ * Lifts each group's four words and presses Submit, waiting for the board's answer (data-feedback-n) each time.
+ * Used by the Quads solver, the practice round and the R2-14 spec.
+ */
+export async function quadsSolveGroups(page: Page, groups: string[][]) {
+  const board = page.locator("[data-feedback-n]");
+  for (const words of groups) {
+    const n = Number((await board.getAttribute("data-feedback-n")) ?? 0);
+    for (const w of words) await quadsTile(page, w).click();
+    await page.getByRole("button", { name: /^Submit/ }).click();
+    await expect(board).toHaveAttribute("data-feedback-n", String(n + 1), { timeout: 15_000 });
+  }
+}
 
 export async function solveTestBoard(page: Page, slug: string, seed = "qa", d: Difficulty = "easy") {
   const solve = SOLVERS[slug];
