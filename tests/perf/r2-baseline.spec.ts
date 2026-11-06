@@ -8,7 +8,7 @@
  *   Warm  = the same journey again in that context.
  *
  * Journeys: Home Continue/Play, Library → card → Play, results "Next level", and landing "Play now" → the first
- * playable board for a brand-new guest (the 30-second lesson).
+ * playable board for a brand-new guest (the 30-second lesson; since R2-08 also with the landing demo solved first).
  *
  * Runs against any deployment (production by default for the baseline):
  *   PW_BASE_URL=https://spuzl.vercel.app RUNS=10 PERF_LABEL=r2-baseline \
@@ -19,7 +19,7 @@
 import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { test, type BrowserContext, type Page } from "@playwright/test";
 import { solve, type CrownfallPuzzle } from "@/games/crownfall/logic";
-import { keepFocus, onboardGuest, pickBirth, tapCell, throttle, VIEWPORTS, waitForBoard } from "../e2e/harness";
+import { keepFocus, onboardGuest, pickBirth, solveLandingDemo, tapCell, throttle, VIEWPORTS, waitForBoard } from "../e2e/harness";
 
 const RUNS = Number(process.env.RUNS ?? 10);
 const LABEL = process.env.PERF_LABEL ?? "r2-baseline";
@@ -215,51 +215,64 @@ for (const profile of PROFILES) {
       }
     });
 
-    test("Landing Play now → first playable board (new guest)", async ({ browser }) => {
-      for (let i = 0; i < RUNS; i++) {
-        const { ctx, page } = await newCtx(browser, profile);
-        await page.goto("/");
-        const playNow = page.getByRole("link", { name: "Play now" }).first();
-        await playNow.waitFor({ timeout: 90_000 });
-        await page.waitForTimeout(1500);
-        // Every step is answered the moment it appears, so the time is the app's, not a person's thinking.
-        const t0 = Date.now();
-        const steps: Record<string, number> = {};
-        const mark = (k: string) => (steps[k] = Date.now() - t0);
-        await playNow.click();
-        await page.getByRole("button", { name: "Play as guest" }).waitFor({ timeout: 90_000 });
-        mark("welcome");
-        await page.getByRole("button", { name: "Play as guest" }).click();
-        await page.getByLabel("Month", { exact: true }).waitFor({ timeout: 90_000 });
-        mark("birth");
-        await pickBirth(page);
-        const learn = page.getByRole("button", { name: /Learn a game in 30 seconds/ });
-        await learn.waitFor({ timeout: 90_000 });
-        mark("start-choice");
-        await learn.click();
-        await page.locator(BOARD).first().waitFor({ state: "visible", timeout: 90_000 });
-        mark("board");
-        const total = Date.now() - t0;
-        (results[`${profile}:landing-to-board`] ??= []).push({
-          ms: total,
-          wall: total,
-          firstApiMs: null,
-          todayCalls: 0,
-          requests: [],
-          longTasks: [],
-        });
-        (results[`${profile}:landing-steps`] ??= []).push({
-          ms: steps.board - steps["start-choice"],
-          wall: total,
-          firstApiMs: null,
-          todayCalls: 0,
-          requests: Object.entries(steps).map(([name, end]) => ({ name, type: "step", start: 0, end })),
-          longTasks: [],
-        });
-        await logGuest(ctx);
-        await ctx.close();
-      }
-    });
+    /**
+     * R2-08: "Play now" goes straight to the birth step as a guest (no intro, no second guest/sign-in choice):
+     * Play now → birth → start choice → lesson board. With the landing demo solved first, the lesson is skipped and
+     * the first board after the start choice is the chosen game (Crownfall, after the nickname). R2-08 target: the
+     * unsolved path under 2 000 ms.
+     */
+    for (const demo of [false, true]) {
+      test(`Landing Play now → first playable board (new guest${demo ? ", demo solved" : ""})`, async ({ browser }) => {
+        for (let i = 0; i < RUNS; i++) {
+          const { ctx, page } = await newCtx(browser, profile);
+          await page.goto("/");
+          const playNow = page.getByRole("link", { name: "Play now" }).first();
+          await playNow.waitFor({ timeout: 90_000 });
+          if (demo) await solveLandingDemo(page);
+          await page.waitForTimeout(1500);
+          // Every step is answered the moment it appears, so the time is the app's, not a person's thinking.
+          const t0 = Date.now();
+          const steps: Record<string, number> = {};
+          const mark = (k: string) => (steps[k] = Date.now() - t0);
+          await playNow.click();
+          await page.getByRole("heading", { name: /When were you born\?/ }).waitFor({ timeout: 90_000 });
+          mark("birth");
+          await pickBirth(page);
+          const choice = page.getByRole("button", { name: demo ? /Play more Crownfall/ : /Learn a game in 30 seconds/ });
+          await choice.waitFor({ timeout: 90_000 });
+          mark("start-choice");
+          await choice.click();
+          if (demo) {
+            await page.locator("#nick").fill(`R2d${Date.now() % 1e7}`);
+            mark("nickname");
+            await page.getByRole("button", { name: "Save my Spuz and play Crownfall" }).click();
+            await page.waitForURL((u) => u.pathname === "/play/crownfall", { timeout: 90_000 });
+          }
+          await page.locator(BOARD).first().waitFor({ state: "visible", timeout: 90_000 });
+          mark("board");
+          const total = Date.now() - t0;
+          const key = demo ? "landing-solved-to-board" : "landing-to-board";
+          (results[`${profile}:${key}`] ??= []).push({
+            ms: total,
+            wall: total,
+            firstApiMs: null,
+            todayCalls: 0,
+            requests: [],
+            longTasks: [],
+          });
+          (results[`${profile}:${demo ? "landing-solved-steps" : "landing-steps"}`] ??= []).push({
+            ms: steps.board - steps["start-choice"],
+            wall: total,
+            firstApiMs: null,
+            todayCalls: 0,
+            requests: Object.entries(steps).map(([name, end]) => ({ name, type: "step", start: 0, end })),
+            longTasks: [],
+          });
+          await logGuest(ctx);
+          await ctx.close();
+        }
+      });
+    }
   });
 }
 

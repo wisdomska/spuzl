@@ -89,3 +89,11 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 - **Daily Five scoring (R2-05):** points come from time against the game's typical time (Library), hints and
   mistakes, so score-based games (Quickfire, Echo, Beat Tap) are scored on time too. A per-game score scale would
   be fairer once the game designers pick one.
+- **R2-08, onboarding funnel:** landing visitors now start at the age step (`/welcome/play`), so the admin Metrics
+  "Welcome" column only counts `/welcome` visits (sign-in links, deep links, Home redirects). Completion % is
+  measured from the age step, so it is unaffected; the column label could say "Welcome (sign-in screen)".
+- **R2-08, other first-run entries:** server gates (`lib/auth/gate.ts`), invite links (`app/i/[code]`) and the
+  `/daily` deep link still open the `/intro` logo animation first. They could go to `/welcome/play` too.
+- **R2-08, guest session timing (left as is on purpose):** the anonymous guest session is still made at "Save my
+  Spuz", after the age gate, as "Play as guest" always did. Making it on the "Play now" tap would create an auth
+  account before the birth step, including for under-13s who are then turned away. The lead may decide otherwise.

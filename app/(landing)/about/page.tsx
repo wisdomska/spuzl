@@ -45,10 +45,14 @@ export default function Landing() {
             </a>
           </div>
           <div className="flex items-center gap-2">
-            <Link href="/welcome" className="text-text hidden h-11 items-center px-3 text-[15px] font-semibold sm:flex">
+            {/* R2-08: Play goes straight to the birth step as a guest, so Google and email sign-in live here (every width). */}
+            <Link href="/welcome" className="text-text flex h-11 items-center px-2 text-[15px] font-semibold sm:px-3">
               {T.nav.signIn}
             </Link>
-            <Link href="/intro" className="press bg-accent text-on-accent flex h-11 items-center rounded-full px-5 text-[15px] font-bold">
+            <Link
+              href="/welcome/play"
+              className="press bg-accent text-on-accent flex h-11 items-center rounded-full px-5 text-[15px] font-bold"
+            >
               {T.nav.play}
             </Link>
           </div>
@@ -70,7 +74,7 @@ export default function Landing() {
             </h1>
             <p className="text-muted max-w-[540px] text-[17px] leading-relaxed sm:text-[18px]">{T.lede}</p>
             <div className="flex flex-col gap-3 sm:flex-row">
-              <Link href="/intro" className={PRIMARY}>
+              <Link href="/welcome/play" className={PRIMARY}>
                 <Icon name="play" size={20} />
                 {T.play}
               </Link>
@@ -185,7 +189,7 @@ export default function Landing() {
           </h2>
           <p className="text-[17px] font-medium opacity-80">{T.ctaBody}</p>
           <Link
-            href="/intro"
+            href="/welcome/play"
             className="press bg-bg text-text flex h-14 items-center gap-2 rounded-full px-8 text-[17px] font-bold shadow-[0_5px_0_var(--depth)]"
           >
             <Icon name="play" size={20} />

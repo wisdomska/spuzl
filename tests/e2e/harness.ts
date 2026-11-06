@@ -10,6 +10,7 @@
  *   solveSeeded(page, slug, seed)      alias of solveTestBoard (the R2 brief's name)
  *   seededBoardUrl(slug, seed, d)      the /dev/board URL for any game's deterministic puzzle
  *   tapCell(page, row, col)            taps a grid cell by its accessible name ("Row r, column c, …")
+ *   solveLandingDemo(page)             solves the landing page's "Try it" Crownfall (R2-08)
  *   duelVsBot(page)                    starts a Practice-bot Duel
  *   openPartyRoom(page)                opens a Party room, returns its 4-character code
  *   duelFriend(browser, o)             two players in two contexts: host creates a friend duel, guest joins by code
@@ -26,6 +27,7 @@ import { createRng } from "@/lib/rng";
 import type { Difficulty } from "@/games/types";
 // Static imports: Playwright's loader resolves the "@/" alias only for these, not for runtime import()
 import * as crownfall from "@/games/crownfall/logic";
+import { TUTORIAL_SOLUTION } from "@/games/crownfall/tutorial";
 import * as trotro from "@/games/trotro/logic";
 import * as lightup from "@/games/lightup/logic";
 import * as killer from "@/games/killer/logic";
@@ -142,6 +144,18 @@ export async function tapCell(page: Page, row: number, col: number) {
     .getByRole("gridcell", { name: new RegExp(`^Row ${row}, column ${col}\\b`) })
     .first()
     .click();
+}
+
+/**
+ * R2-08: solves the landing page's playable Crownfall ("Try it", the welcome lesson's fixed 4 × 4 board) by tapping,
+ * so "Play now" carries the clear into onboarding. Call on the landing page ("/" for a visitor).
+ */
+export async function solveLandingDemo(page: Page) {
+  for (let r = 0; r < TUTORIAL_SOLUTION.length; r++) {
+    await tapCell(page, r + 1, TUTORIAL_SOLUTION[r] + 1);
+    await tapCell(page, r + 1, TUTORIAL_SOLUTION[r] + 1);
+  }
+  await expect(page.getByText(/^Cleared! That's one of/)).toBeVisible();
 }
 
 /** Per-game solvers that play the seeded solution through real taps. Extend as games get contract tests. */

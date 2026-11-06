@@ -12,13 +12,18 @@ import { Icon } from "@/components/ui/Icon";
 import { aboutCopy as T } from "@/lib/copy/about";
 import { play } from "@/lib/audio";
 import { EmbeddedBoard } from "@/components/game/useBoardSize";
+import { rememberDemoClear } from "@/lib/client/onboarding";
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
-/** The landing page's playable 4 × 4 Crownfall (the same board as the welcome lesson), in a phone card. */
+/**
+ * The landing page's playable 4 × 4 Crownfall (the same board as the welcome lesson), in a phone card. R2-08: a
+ * clear is remembered for this tab, so "Play now" counts it as the visitor's first clear and skips the lesson.
+ */
 export function TryIt() {
   const [cells, setCells] = useState<CrownfallState>(() => new Array(16).fill(0));
   const [solved, setSolved] = useState(false);
+  const t0 = useRef<number | null>(null);
   const boardBox = useRef<HTMLDivElement>(null);
   const [boardWidth, setBoardWidth] = useState(0);
   useLayoutEffect(() => {
@@ -34,8 +39,12 @@ export function TryIt() {
   const ok = [a.crowns >= 2 && a.rule !== "row" && a.rule !== "column", a.crowns >= 2 && a.rule !== "region", a.clear];
   const api = useMemo<BoardApi<CrownfallState>>(
     () => ({
-      onMove: (s) => setCells(s),
-      onSolved: () => {
+      onMove: (s) => {
+        t0.current ??= performance.now();
+        setCells(s);
+      },
+      onSolved: (s) => {
+        rememberDemoClear({ state: s, ms: performance.now() - (t0.current ?? performance.now()) });
         setSolved(true);
         play("clear", { delay: 0.1 });
       },
@@ -98,7 +107,8 @@ export function TryIt() {
                 <Spuz mood="party" size={52} decorative />
                 <div className="flex flex-1 flex-col">
                   <p className="text-[15px] font-bold">{T.tryIt.solved}</p>
-                  <Link href="/intro" className="text-accent flex items-center gap-1 text-[15px] font-bold">
+                  <p className="text-muted text-[14px]">{T.tryIt.counted}</p>
+                  <Link href="/welcome/play" className="text-accent flex items-center gap-1 text-[15px] font-bold">
                     {T.tryIt.more}
                     <Icon name="arrow-right" size={16} />
                   </Link>

@@ -88,7 +88,11 @@ export const en = {
       tutorial: { t: "Learn a game in 30 seconds", d: "A tiny puzzle with tips as you go." },
       pick: { t: `Browse all ${GAME_COUNT} games`, d: "See every game and pick one." },
       jump: { t: "Go to the map", d: "Islands of games. Pick one and play." },
+      /** R2-08: in place of the lesson when the landing demo was solved. */
+      more: { t: "Play more Crownfall", d: "You know the rules now. Try today's board." },
     },
+    /** R2-08: the landing demo, solved before onboarding, counted as the first clear. */
+    demoCounted: "You cleared Crownfall on the way in. That's your first clear, so no lesson needed.",
     startLater: "You can learn any game later from its Help button.",
     firstClear: "First clear!",
     firstClearLine: (time: string) => `${time} on your first ever puzzle. Okay, big brain.`,
@@ -96,7 +100,11 @@ export const en = {
     makeYoursAfterClear: "Now make Spuz yours",
     ctaMap: "Save my Spuz and open the map",
     ctaLibrary: "Save my Spuz and see all games",
+    ctaCrownfall: "Save my Spuz and play Crownfall",
     saving: "Making your Spuz…",
+    openingMap: "Opening the Grid",
+    openingLibrary: "Opening all games",
+    openingCrownfall: "Opening Crownfall",
   },
 } as const;
 

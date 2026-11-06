@@ -26,6 +26,8 @@ export const aboutCopy = {
     rules: ["One crown per row and column", "One crown per colour", "Crowns never touch, even corners"],
     hint: "Tap a square twice to place a crown.",
     solved: `Cleared! That's one of ${GAME_COUNT}.`,
+    /** R2-08: the demo clear is carried into onboarding as the first clear. */
+    counted: "That counts as your first clear. No lesson needed.",
     more: "Play the rest",
   },
   stats: [
