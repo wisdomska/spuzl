@@ -4,7 +4,8 @@
  *
  * Measured loads (`recordLoad`), the last few kept for this session in sessionStorage:
  * - the page load itself: Navigation Timing `loadEventStart` (`responseEnd` if the load event hasn't fired),
- *   only when the document came over the network (a page the service worker served from cache is fast by design);
+ *   including pages the service worker answered: from its cache they are fast and reset the run, and on a slow
+ *   connection the worker answers only after its 4 s network wait, which is exactly the slowness to measure;
  * - every in-app link navigation: tap on a link to the new screen's first render (`components/shell/PromptQueue`);
  * - tap-to-board on the Play screen (`lib/analytics/tap-to-board.ts`, taps only: cold loads are the page load).
  *
@@ -86,11 +87,11 @@ export function readConnectionHints(): ConnectionHints {
   return { effectiveType: c?.effectiveType ?? null };
 }
 
-/** Browser: this page load's duration, or null when unknown or served from the service worker's cache. */
+/** Browser: this page load's duration, or null when unknown. */
 export function readPageLoadMs(): number | null {
   try {
     const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
-    if (!nav || nav.transferSize === 0) return null;
+    if (!nav) return null;
     const end = nav.loadEventStart > 0 ? nav.loadEventStart : nav.responseEnd;
     return end > 0 ? end - nav.startTime : null;
   } catch {
