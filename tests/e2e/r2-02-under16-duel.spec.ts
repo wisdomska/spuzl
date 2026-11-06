@@ -80,8 +80,13 @@ test("the game picker is a full-height sheet with the Library's search and filte
   // Full height: the sheet reaches from near the top of the screen to the bottom.
   const box = (await sheet.boundingBox())!;
   expect(box.height).toBeGreaterThan(VIEWPORTS.phone.height * 0.9);
-  // The search box has focus, and the same filter chips as All games are there.
-  await expect(sheet.getByRole("searchbox", { name: "Search games" })).toBeFocused();
+  // Keyboard/mouse: the search box has focus. Touch: focus stays in the sheet without opening the on-screen keyboard.
+  const search = sheet.getByRole("searchbox", { name: "Search games" });
+  if (await page.evaluate(() => matchMedia("(pointer: coarse)").matches)) {
+    expect(await sheet.evaluate((el) => el.contains(document.activeElement))).toBe(true);
+    await search.focus();
+  } else await expect(search).toBeFocused();
+  // The same filter chips as All games are there.
   await expect(sheet.getByRole("group", { name: "Filter games" }).getByRole("button", { name: "Quick" })).toBeVisible();
   await page.keyboard.type("crownfall");
   await expect(sheet.getByRole("button", { name: /Crownfall/ })).toBeVisible();

@@ -43,7 +43,7 @@ test("party: a stranger asks to join an under-16 host's room, the host lets them
   // The request reaches the host's lobby on the room channel (the slow poll is 15 s; allow for it as a fallback).
   const card = host.page.getByRole("region", { name: "1 player wants to join" });
   await expect(card).toBeVisible({ timeout: 20_000 });
-  await expect(card.getByText(guest.nick)).toBeVisible();
+  await expect(card.getByText(guest.nick).first()).toBeVisible();
   await card.getByRole("button", { name: `Let ${guest.nick} in` }).click();
   await expect(card).toBeHidden();
 
