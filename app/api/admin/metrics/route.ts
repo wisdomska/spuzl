@@ -23,7 +23,8 @@ async function load(ctx: AdminCtx, days: RangeDays, end?: string): Promise<Metri
 
 /**
  * GET /api/admin/metrics?days=7|30&end=yyyy-mm-dd: the Metrics page numbers (tap-to-board, onboarding, first
- * move, hints, duels, Daily completion, shares), per GMT day and for the range. Aggregated in Postgres.
+ * move, hints, duels, Daily completion, shares, prompts by trigger), per GMT day and for the range. Aggregated in
+ * Postgres.
  */
 export const GET = handle(async (req: Request) => {
   const ctx = await requireAdmin("metrics.read");

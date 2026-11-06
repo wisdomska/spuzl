@@ -7,7 +7,8 @@ import type { SettingDef } from "@/lib/game-settings/schema";
 import { adminCopy } from "@/lib/copy/admin";
 import { Btn, Field, Notice, PageTitle, RowsSkeleton, inputCls } from "./ui";
 
-type Row = { key: string; def: SettingDef; value: number | boolean; isDefault: boolean; updatedAt: string | null };
+type Value = number | boolean | string[];
+type Row = { key: string; def: SettingDef; value: Value; isDefault: boolean; updatedAt: string | null };
 
 const C = adminCopy.settings;
 const { common } = adminCopy;
@@ -15,7 +16,7 @@ const { common } = adminCopy;
 /** Admin: runtime game settings (lib/game-settings/schema.ts). Range-checked here and on the server. */
 export function SettingsPage({ canWrite }: { canWrite: boolean }) {
   const q = useAdminQuery<{ rows: Row[] }>(["game-settings"], "/api/admin/settings");
-  const put = useAdminAction<{ key: string; value: number | boolean }>("PUT", "/api/admin/settings");
+  const put = useAdminAction<{ key: string; value: Value }>("PUT", "/api/admin/settings");
   const groups = new Map<string, Row[]>();
   for (const r of q.data?.rows ?? []) groups.set(r.def.group, [...(groups.get(r.def.group) ?? []), r]);
   return (
@@ -43,17 +44,7 @@ export function SettingsPage({ canWrite }: { canWrite: boolean }) {
   );
 }
 
-function SettingRow({
-  row,
-  canWrite,
-  busy,
-  onSave,
-}: {
-  row: Row;
-  canWrite: boolean;
-  busy: boolean;
-  onSave: (v: number | boolean) => void;
-}) {
+function SettingRow({ row, canWrite, busy, onSave }: { row: Row; canWrite: boolean; busy: boolean; onSave: (v: Value) => void }) {
   const d = row.def;
   const [draft, setDraft] = useState(String(row.value));
   const id = `set-${row.key.replace(/\W/g, "-")}`;
@@ -68,10 +59,32 @@ function SettingRow({
         <p className="text-muted text-[13px]">{d.help}</p>
         <p className="text-muted text-[12px]">
           {row.isDefault ? C.isDefault : C.changed(row.updatedAt ? age(row.updatedAt) : "")}
-          {d.kind === "int" ? C.intRange(d.default, d.min, d.max, d.unit) : C.boolDefault(d.default)}
+          {d.kind === "int"
+            ? C.intRange(d.default, d.min, d.max, d.unit)
+            : d.kind === "set"
+              ? C.setDefault(d.options.filter((o) => d.default.includes(o.id)).map((o) => o.label))
+              : C.boolDefault(d.default)}
         </p>
       </div>
-      {d.kind === "bool" ? (
+      {d.kind === "set" ? (
+        <div role="group" aria-label={d.label} className="flex flex-wrap gap-2">
+          {d.options.map((o) => {
+            const picked = Array.isArray(row.value) ? row.value : [];
+            const on = picked.includes(o.id);
+            return (
+              <Btn
+                key={o.id}
+                tone={on ? "primary" : "secondary"}
+                aria-pressed={on}
+                disabled={!canWrite || busy}
+                onClick={() => onSave(on ? picked.filter((x) => x !== o.id) : [...picked, o.id])}
+              >
+                {o.label}
+              </Btn>
+            );
+          })}
+        </div>
+      ) : d.kind === "bool" ? (
         <Btn tone={row.value ? "primary" : "secondary"} disabled={!canWrite || busy} onClick={() => onSave(!row.value)}>
           {row.value ? common.on : common.off}
         </Btn>

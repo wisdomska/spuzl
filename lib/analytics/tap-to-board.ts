@@ -13,6 +13,7 @@ import { useEffect, useRef } from "react";
 import { isPlayNav } from "./play-nav";
 import { track } from "./track";
 import { markBoardReady, markPlayTap } from "@/lib/perf/quiet";
+import { recordLoad } from "@/lib/lowdata/suggest";
 
 const KEY = "spuzl.tap";
 const MAX_MS = 15_000;
@@ -74,6 +75,8 @@ export function useTapToBoard(ready: boolean, game: string, mode: string) {
     requestAnimationFrame(() => {
       const r = tapToBoard(readStamp(), { mount: mountAt, ready: now(), origin: performance.timeOrigin, sinceNav: performance.now() });
       if (r) track("tap_to_board", { game, mode, kind: r.kind, ms: r.ms });
+      // A tap's wait also counts toward the low-data suggestion (cold loads are counted as the page load).
+      if (r?.kind === "tap") recordLoad(r.ms);
     });
   }, [ready, game, mode]);
 }

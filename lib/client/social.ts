@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient, type QueryKey } from "@tanstack/react-query";
 import { api } from "./api";
+import { noteAlertsTrigger } from "@/lib/prompts/alerts";
 import type { Reaction } from "@/lib/social";
 import type { Scope } from "@/lib/meta";
 import type { Zone } from "@/lib/leagues";
@@ -297,13 +298,29 @@ export function usePlayerSearch(q: string) {
   });
 }
 
+/** A friendship that just became real earns the notification ask (R2-04); the other side sees it in their list. */
+const madeFriend = <T>(r: T) => {
+  noteAlertsTrigger("friend");
+  return r;
+};
+
 export const useAddFriend = () =>
-  useAct((nickname: string) => api<{ status: "requested" | "friends" }>("/api/v1/friends", { json: { nickname } }), [["friends"]]);
-export const useAccept = () => useAct((id: string) => api(`/api/v1/friends/${id}/accept`, { method: "POST" }), [["friends"], ["feed"]]);
+  useAct(
+    (nickname: string) =>
+      api<{ status: "requested" | "friends" }>("/api/v1/friends", { json: { nickname } }).then((r) =>
+        r.status === "friends" ? madeFriend(r) : r,
+      ),
+    [["friends"]],
+  );
+export const useAccept = () =>
+  useAct((id: string) => api(`/api/v1/friends/${id}/accept`, { method: "POST" }).then(madeFriend), [["friends"], ["feed"]]);
 export const useRemoveFriend = () =>
   useAct((id: string) => api(`/api/v1/friends/${id}`, { method: "DELETE" }), [["friends"], ["feed"], ["player"]]);
 export const useAcceptInvite = () =>
-  useAct((code: string) => api<{ ok: true; nickname: string | null }>("/api/v1/friends/invite/accept", { json: { code } }), [["friends"]]);
+  useAct(
+    (code: string) => api<{ ok: true; nickname: string | null }>("/api/v1/friends/invite/accept", { json: { code } }).then(madeFriend),
+    [["friends"]],
+  );
 export const useBlock = () =>
   useAct((playerId: string) => api("/api/v1/blocks", { json: { playerId } }), [["friends"], ["feed"], ["blocks"], ["player"]]);
 export const useUnblock = () => useAct((id: string) => api(`/api/v1/blocks/${id}`, { method: "DELETE" }), [["blocks"], ["player"]]);

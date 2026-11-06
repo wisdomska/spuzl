@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { usePromptSlot } from "@/components/shell/PromptQueue";
+import { track } from "@/lib/analytics/track";
 import { useQueryClient } from "@tanstack/react-query";
 import { useMe } from "@/lib/client/api";
 import { useGameSettings } from "@/lib/game-settings/client";
@@ -27,6 +29,20 @@ export function SaveStreakPrompt({ className = "" }: { className?: string }) {
   const [open, setOpen] = useState(false);
   const [saved, setSaved] = useState(false);
   const dismissedAt = dismissedNow ?? stored;
+  const ask =
+    dismissedAt !== undefined &&
+    shouldAskToSave({
+      guest: me.data?.guest,
+      clears: me.data?.clears,
+      after: settings["guest.signInPromptAfterClears"],
+      dismissedAt,
+      now,
+    });
+  // One prompt per screen (R2-04): the card waits for the prompt queue; an open sign-in sheet keeps its slot.
+  const granted = usePromptSlot("save_streak", !saved && (ask || open));
+  useEffect(() => {
+    if (granted) track("prompt_shown", { prompt: "save_streak", trigger: "clears" });
+  }, [granted]);
 
   if (saved)
     return (
@@ -35,26 +51,20 @@ export function SaveStreakPrompt({ className = "" }: { className?: string }) {
         {T.saved}
       </p>
     );
-  if (dismissedAt === undefined) return null;
-  const ask = shouldAskToSave({
-    guest: me.data?.guest,
-    clears: me.data?.clears,
-    after: settings["guest.signInPromptAfterClears"],
-    dismissedAt,
-    now,
-  });
-  if (!ask && !open) return null;
+  if (!granted) return null;
 
   const dismiss = () => {
     const at = Date.now();
     writeDismissedAt(at);
     setDismissedNow(at);
+    track("prompt_dismissed", { prompt: "save_streak", trigger: "clears" });
   };
 
   return (
     <>
       <section
         aria-labelledby="save-streak-title"
+        data-prompt="save_streak"
         className={`bg-surface flex flex-col gap-2.5 rounded-[18px] p-3.5 ${className}`}
         style={{ boxShadow: "inset 0 0 0 1px var(--line)" }}
       >
@@ -92,6 +102,7 @@ export function SaveStreakPrompt({ className = "" }: { className?: string }) {
           autoFocus={false}
           googleNext={typeof window === "undefined" ? "/" : window.location.pathname}
           onDone={() => {
+            track("prompt_accepted", { prompt: "save_streak", trigger: "clears" });
             setOpen(false);
             setSaved(true);
             void qc.invalidateQueries({ queryKey: ["me"] });

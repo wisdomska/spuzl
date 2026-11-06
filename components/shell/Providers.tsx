@@ -13,6 +13,7 @@ import { useNavTracker } from "@/lib/client/nav";
 import { HapticFallback } from "./HapticFallback";
 import { Inbox } from "./Inbox";
 import { TapSkeleton } from "./TapSkeleton";
+import { PromptHost } from "./PromptQueue";
 
 export function Providers({ children }: { children: ReactNode }) {
   const [client] = useState(
@@ -64,6 +65,7 @@ export function Providers({ children }: { children: ReactNode }) {
         {children}
         <HapticFallback />
         <MusicDirector />
+        <PromptHost />
         <Inbox />
         <TapSkeleton />
       </MotionConfig>

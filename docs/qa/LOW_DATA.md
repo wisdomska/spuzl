@@ -15,18 +15,35 @@ turning the setting on.
 
 ## (a) Suggesting it on a slow connection
 
-`components/shell/LowDataSuggest.tsx`, shown on the tabbed screens (above the bottom nav), never during a
-game. After the page has loaded it checks (`lib/lowdata/suggest.ts`, unit tested):
+`components/shell/LowDataSuggest.tsx`, shown on the tabbed screens (above the bottom nav), never on Home
+(it would cover the Continue card) and never during a game. Timing reworked in R2-04
+(`lib/lowdata/suggest.ts`, unit tested): **only after measured slow loads, at most once a session, never on a
+fast connection.**
 
-- `navigator.connection.saveData`, or `effectiveType` of `slow-2g`, `2g` or `3g` (Chromium);
-- the measured load: Navigation Timing `responseEnd` over 4 s (every browser, including Safari and
-  Firefox that lack the Network Information API). Loads served from the HTTP cache don't count.
+Measured loads (the last 5 are kept for the browser session in `sessionStorage['spuzl.loads']`):
 
-If any is true, low-data mode is off and the player hasn't answered before, it shows
-"Slow connection? Turn on low-data mode" with Turn on / Not now. Either answer is stored in
-`localStorage['spuzl.lowDataSuggest']` and it never asks again on that device. If storage is blocked it
-doesn't ask (it couldn't remember a "Not now"). It changes the setting on this device only: connection
-speed is a property of the device, not the account.
+- the page load: Navigation Timing `loadEventStart` (or `responseEnd`), only when the document came over the
+  network (a page the service worker served from its cache doesn't count);
+- every in-app link navigation: the tap on the link to the new screen's first render
+  (`components/shell/PromptQueue.tsx`);
+- tap-to-board on Play (`lib/analytics/tap-to-board.ts`, taps only; a cold load is the page load).
+
+The rule, with admin settings `prompts.lowDataThresholdMs` (default 4000 ms, 2000 to 15000) and
+`prompts.lowDataSlowLoads` (default 2, 1 to 5):
+
+- `slow_loads`: the last N measured loads were all over the threshold. One fast load resets the run.
+- `slow_net`: the browser rates the connection `slow-2g`, `2g` or `3g` (Chromium's own RTT and throughput
+  estimate) **and** the latest load was over the threshold. The estimate can shorten the wait to one slow
+  load; it never shows the suggestion on its own.
+- Save-Data alone no longer triggers it (it is a preference, not a measurement, and it already stops
+  background downloads).
+
+When low-data mode is off and the session hasn't been asked, it shows "Slow connection? Turn on low-data mode"
+with Turn on / Not now, through the prompt queue (one prompt per screen). Showing it marks the session
+(`sessionStorage['spuzl.lowDataAsked']`); Turn on switches the setting (the lasting answer); Not now holds for
+the session. It changes the setting on this device only: connection speed is a property of the device, not
+the account. Metrics: `prompt_shown` / `prompt_accepted` / `prompt_dismissed` with
+`{ prompt: "low_data", trigger }`.
 
 ## (b) Offline Daily pack: decision
 
@@ -73,8 +90,8 @@ like any other finish (a clear outside its day is flagged).
 
 ## Checking it by hand
 
-- Suggestion: Chrome devtools, Network throttling "3G" (or "Slow 4G" with a cold cache so the load
-  passes 4 s), clear `spuzl.lowDataSuggest`, open `/`.
+- Suggestion: Chrome devtools, Network throttling "3G" with a cold cache, a new tab (new session), open
+  `/leagues`, then `/me`: it shows once. E2E: `tests/e2e/r2-04-prompt-timing.spec.ts`.
 - Pack: production build (`pnpm build && pnpm start`, or `NEXT_PUBLIC_SW_DEV=1`), sign in, then in
   devtools Application: Cache Storage `spuzl-daily-<today>` holds one entry per Daily. Set the device clock
   just before 00:00 GMT with the app open; a new `spuzl-daily-<tomorrow>` appears a few minutes after.

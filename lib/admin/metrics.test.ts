@@ -1,5 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { csvCell, hintCancels, METRIC_BY_ID, METRIC_IDS, metricCsv, metricRange, percentile, rate, type MetricRow } from "./metrics";
+import {
+  csvCell,
+  hintCancels,
+  METRIC_BY_ID,
+  METRIC_IDS,
+  metricCsv,
+  metricRange,
+  percentile,
+  promptCounts,
+  rate,
+  type MetricRow,
+} from "./metrics";
+import { PROMPT_PAIRS } from "@/lib/prompts/ids";
 
 const row = (over: Partial<MetricRow> = {}): MetricRow => ({
   tap_n: 0,
@@ -140,5 +152,37 @@ describe("party start to first move (R2-03)", () => {
 
   it("reads rows from before the migration as no data", () => {
     expect(METRIC_BY_ID.party_first_move.headline(row())).toBe("n/a / n/a");
+  });
+});
+
+describe("prompt acceptance by trigger (R2-04)", () => {
+  it("reads per-trigger counts, with zeros for prompts that never showed", () => {
+    const total = row({
+      prompt_shown: 5,
+      prompt_accepted: 2,
+      prompt_dismissed: 3,
+      prompts: { "alerts.friend": { shown: 4, accepted: 2, dismissed: 2 }, "low_data.slow_loads": { shown: 1, accepted: 0, dismissed: 1 } },
+    });
+    expect(promptCounts(total, "alerts", "friend")).toEqual({ shown: 4, accepted: 2, dismissed: 2 });
+    expect(promptCounts(total, "alerts", "streak")).toEqual({ shown: 0, accepted: 0, dismissed: 0 });
+    const p = METRIC_BY_ID.prompts;
+    expect(p.headline(total)).toBe("40%");
+    expect(p.headline(row())).toBe("n/a");
+    const rows = p.breakdown!.rows(total);
+    expect(rows.find((r) => r.key === "alerts.friend")?.values).toEqual([4, 2, 2, 50]);
+    expect(rows.find((r) => r.key === "event.live")?.values).toEqual([0, 0, 0, null]);
+  });
+
+  it("exports one CSV row per day and trigger, then the range total", () => {
+    const day = row({ date: "2026-11-01", prompts: { "alerts.invite": { shown: 2, accepted: 1, dismissed: 1 } } });
+    const total = row({ prompts: { "alerts.invite": { shown: 2, accepted: 1, dismissed: 1 } } });
+    const lines = metricCsv("prompts", { rows: [day], total })
+      .trimEnd()
+      .split("\r\n");
+    expect(lines[0]).toBe("date,prompt,trigger,shown,accepted,dismissed,accept_pct");
+    expect(lines).toHaveLength(1 + 2 * PROMPT_PAIRS.length);
+    expect(lines).toContain("2026-11-01,alerts,invite,2,1,1,50");
+    expect(lines).toContain("total,alerts,invite,2,1,1,50");
+    expect(lines).toContain("total,low_data,slow_net,0,0,0,");
   });
 });

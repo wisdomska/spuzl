@@ -6,9 +6,11 @@ import { AnimatePresence, motion } from "motion/react";
 import { Icon } from "@/components/ui/Icon";
 import { useMe } from "@/lib/client/api";
 import { useChannel } from "@/lib/client/multiplayer";
-import { alertIfAway, alertsSupported, askAlerts, enablePush } from "@/lib/client/alerts";
+import { alertIfAway, enablePush } from "@/lib/client/alerts";
 import { GAME_BY_ID } from "@/lib/catalog";
 import { play } from "@/lib/audio";
+import { noteAlertsTrigger } from "@/lib/prompts/alerts";
+import { AlertsAsk } from "./AlertsAsk";
 
 /** What arrives on a player's own channel (user:<id>) from the server. */
 interface TurnMsg {
@@ -97,6 +99,7 @@ export function Inbox() {
       }),
       channel.onMessage("invite", (p) => {
         const v = p as InviteMsg;
+        if (v.kind === "duel" || v.kind === "party") noteAlertsTrigger("invite"); // earns the notification ask
         const what = v.kind === "duel" ? "a Duel" : v.kind === "party" ? "a Party Race" : `a game of ${gameName(v.game)}`;
         show({
           key: `invite:${v.id}`,
@@ -122,7 +125,7 @@ export function Inbox() {
 
   return (
     <>
-      <AlertsAsk signedIn={!!id} pathname={pathname} />
+      <AlertsAsk me={me.data ?? null} pathname={pathname} />
       <AnimatePresence>
         {card && (
           <motion.div
@@ -166,98 +169,5 @@ export function Inbox() {
         )}
       </AnimatePresence>
     </>
-  );
-}
-
-const ASKED = "spuzl.alertsAsked";
-/** Screens where the ask would get in the way of play or sign-in: a game in progress, the intro, welcome, admin. */
-const QUIET = /^\/(play|intro|welcome|admin)(\/|$)/;
-/** "Not now" asks again after 3 days, at most 3 times in all. */
-const AGAIN_MS = 3 * 24 * 3600_000;
-const MAX_ASKS = 3;
-
-function askedState(): { n: number; at: number } {
-  try {
-    const raw = localStorage.getItem(ASKED);
-    if (!raw) return { n: 0, at: 0 };
-    if (raw === "1") return { n: 1, at: 0 }; // the old one-time flag counts as one ask
-    const v = JSON.parse(raw) as { n?: number; at?: number };
-    return { n: v.n ?? 1, at: v.at ?? 0 };
-  } catch {
-    return { n: MAX_ASKS, at: Date.now() };
-  }
-}
-
-/** Whether it is time to ask (never asked, or Not now a few days ago and asks left). */
-function askDue(): boolean {
-  const st = askedState();
-  return st.n < MAX_ASKS && Date.now() - st.at >= AGAIN_MS;
-}
-
-/**
- * Alerts are on by default: a browser only allows notifications after the player says yes once, so once they are
- * signed in we ask, in our own words, on the first screen that isn't a game in progress. Yes turns on push for this
- * device; Not now asks again a few days later (three asks in all). Settings can turn it on any time.
- */
-function AlertsAsk({ signedIn, pathname }: { signedIn: boolean; pathname: string }) {
-  const [asked, setAsked] = useState(true);
-  // checked again when the page changes and once the player has loaded (signed in arrives after the first render)
-  const [seen, setSeen] = useState("");
-  const key = `${pathname}|${signedIn}`;
-  if (seen !== key) {
-    setSeen(key);
-    const due = askDue();
-    const want = signedIn && !QUIET.test(pathname) && alertsSupported() && Notification.permission === "default" && due;
-    if (want !== !asked) setAsked(!want);
-  }
-  const close = () => {
-    try {
-      localStorage.setItem(ASKED, JSON.stringify({ n: askedState().n + 1, at: Date.now() }));
-    } catch {
-      /* private mode: may ask again next time */
-    }
-    setAsked(true);
-  };
-  return (
-    <AnimatePresence>
-      {!asked && (
-        <motion.div
-          role="dialog"
-          aria-label="Turn on alerts"
-          className="bg-surface-raised fixed inset-x-3 bottom-[max(16px,env(safe-area-inset-bottom))] z-[70] mx-auto flex max-w-[480px] flex-col gap-3 rounded-[20px] p-4 shadow-[0_14px_40px_rgba(0,0,0,.45)]"
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 24 }}
-          transition={{ duration: 0.24, ease: [0.23, 1, 0.32, 1] }}
-        >
-          <div className="flex items-center gap-3">
-            <span className="bg-accent text-on-accent flex size-11 flex-none items-center justify-center rounded-[14px]">
-              <Icon name="bell-ringing" size={22} />
-            </span>
-            <span className="flex min-w-0 flex-col">
-              <span className="font-display text-[16px] font-black">Know when it&apos;s your turn</span>
-              <span className="text-muted text-[14px]">
-                Alerts for your turn, nudges and friends&apos; invites, even with SPUZL closed.
-              </span>
-            </span>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <button type="button" onClick={close} className="press bg-surface h-11 rounded-[14px] text-[15px] font-semibold">
-              Not now
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                close();
-                void askAlerts();
-              }}
-              className="press bg-accent text-on-accent font-display h-11 rounded-[14px] text-[15px] font-black"
-            >
-              Turn on
-            </button>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
   );
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULTS, SETTINGS, mergeSettings, validateSetting } from "./schema";
+import { DEFAULTS, SETTINGS, mergeSettings, sameSetting, validateSetting } from "./schema";
 
 describe("game settings schema", () => {
   it("every default passes its own validation", () => {
@@ -18,6 +18,32 @@ describe("game settings schema", () => {
     expect(DEFAULTS["free.sparksPerClear"]).toBe(5);
     expect(DEFAULTS["free.xpDailyCap"]).toBe(300);
   });
+  it("prompt timing settings (R2-04): ranges and a set of triggers", () => {
+    expect(validateSetting("prompts.alertsCooldownDays", 0)).toMatch(/between 1 and 30/);
+    expect(validateSetting("prompts.alertsCooldownDays", 31)).toMatch(/between 1 and 30/);
+    expect(validateSetting("prompts.alertsStreakDays", 1)).toMatch(/between 2 and 14/);
+    expect(validateSetting("prompts.lowDataThresholdMs", 1999)).toMatch(/between 2000 and 15000/);
+    expect(validateSetting("prompts.lowDataSlowLoads", 6)).toMatch(/between 1 and 5/);
+    expect(validateSetting("prompts.alertsTriggers", ["friend", "streak"])).toBeNull();
+    expect(validateSetting("prompts.alertsTriggers", [])).toBeNull();
+    expect(validateSetting("prompts.alertsTriggers", ["friend", "friend"])).toMatch(/at most once/);
+    expect(validateSetting("prompts.alertsTriggers", ["birthday"])).toMatch(/list of/);
+    expect(validateSetting("prompts.alertsTriggers", "friend")).toMatch(/list of/);
+    expect(validateSetting("prompts.alertsTriggers", 3)).toMatch(/list of/);
+    const s = mergeSettings([
+      { key: "prompts.alertsTriggers", value: ["invite"] },
+      { key: "prompts.lowDataSlowLoads", value: 3 },
+    ]);
+    expect(s["prompts.alertsTriggers"]).toEqual(["invite"]);
+    expect(s["prompts.lowDataSlowLoads"]).toBe(3);
+    expect(mergeSettings([{ key: "prompts.alertsTriggers", value: ["nope"] }])["prompts.alertsTriggers"]).toEqual(
+      DEFAULTS["prompts.alertsTriggers"],
+    );
+    expect(sameSetting(["streak", "friend"], ["friend", "streak"])).toBe(true);
+    expect(sameSetting(["friend"], ["friend", "streak"])).toBe(false);
+    expect(sameSetting(3, 3)).toBe(true);
+  });
+
   it("merges stored rows over defaults and ignores bad rows", () => {
     const s = mergeSettings([
       { key: "duel.roundResultMs", value: 3000 },

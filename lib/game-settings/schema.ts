@@ -6,7 +6,16 @@
  */
 export type SettingDef =
   | { kind: "int"; label: string; help: string; group: string; default: number; min: number; max: number; unit?: string }
-  | { kind: "bool"; label: string; help: string; group: string; default: boolean };
+  | { kind: "bool"; label: string; help: string; group: string; default: boolean }
+  /** A set of switches picked from `options` (any number of them, none included). */
+  | {
+      kind: "set";
+      label: string;
+      help: string;
+      group: string;
+      default: readonly string[];
+      options: readonly { id: string; label: string }[];
+    };
 
 export const SETTINGS = {
   "features.dailies": {
@@ -269,6 +278,57 @@ export const SETTINGS = {
     min: 0,
     max: 50,
   },
+  "prompts.alertsTriggers": {
+    kind: "set",
+    group: "Prompts",
+    label: "Notification ask: triggers",
+    help: "The moments that earn the “Know when it's your turn” ask. It never shows cold, on Home or during play. None ticked: it never shows (Settings > Alerts still works).",
+    default: ["friend", "invite", "streak"],
+    options: [
+      { id: "friend", label: "First friend added" },
+      { id: "invite", label: "First Duel or Party invite, sent or received" },
+      { id: "streak", label: "Streak reached (days below)" },
+    ],
+  },
+  "prompts.alertsCooldownDays": {
+    kind: "int",
+    group: "Prompts",
+    label: "Notification ask: wait after it shows",
+    help: "After the ask has shown (Not now, or no answer), it waits at least this long before it can show again, and then only after a new trigger.",
+    default: 7,
+    min: 1,
+    max: 30,
+    unit: "days",
+  },
+  "prompts.alertsStreakDays": {
+    kind: "int",
+    group: "Prompts",
+    label: "Notification ask: streak trigger",
+    help: "The streak, in days, that earns the ask while the streak trigger is on.",
+    default: 3,
+    min: 2,
+    max: 14,
+    unit: "days",
+  },
+  "prompts.lowDataThresholdMs": {
+    kind: "int",
+    group: "Prompts",
+    label: "Low-data suggestion: slow load",
+    help: "A measured load (the page load, a tap on a link to the next screen, or a tap to a playable board) longer than this counts as slow.",
+    default: 4000,
+    min: 2000,
+    max: 15000,
+    unit: "ms",
+  },
+  "prompts.lowDataSlowLoads": {
+    kind: "int",
+    group: "Prompts",
+    label: "Low-data suggestion: slow loads in a row",
+    help: "How many slow loads in a row before low-data mode is suggested (at most once a session). On a connection the browser rates 2G or 3G, one slow load is enough.",
+    default: 2,
+    min: 1,
+    max: 5,
+  },
   "leagues.fillWithFriends": {
     kind: "bool",
     group: "Leagues",
@@ -288,9 +348,16 @@ export const SETTINGS = {
 } as const satisfies Record<string, SettingDef>;
 
 export type SettingKey = keyof typeof SETTINGS;
-export type GameSettings = { [K in SettingKey]: (typeof SETTINGS)[K]["default"] extends boolean ? boolean : number };
+export type GameSettings = {
+  [K in SettingKey]: (typeof SETTINGS)[K]["default"] extends boolean
+    ? boolean
+    : (typeof SETTINGS)[K]["default"] extends readonly string[]
+      ? readonly string[]
+      : number;
+};
+export type SettingValue = number | boolean | readonly string[];
 
-export const DEFAULTS = Object.fromEntries(Object.entries(SETTINGS).map(([k, d]) => [k, d.default])) as GameSettings;
+export const DEFAULTS = Object.fromEntries(Object.entries(SETTINGS).map(([k, d]) => [k, d.default])) as unknown as GameSettings;
 
 export const isSettingKey = (k: string): k is SettingKey => k in SETTINGS;
 
@@ -299,9 +366,21 @@ export function validateSetting(key: string, value: unknown): string | null {
   if (!isSettingKey(key)) return "Unknown setting";
   const d: SettingDef = SETTINGS[key];
   if (d.kind === "bool") return typeof value === "boolean" ? null : "Must be on or off";
+  if (d.kind === "set") {
+    const ids = d.options.map((o) => o.id);
+    if (!Array.isArray(value) || !value.every((v) => typeof v === "string" && ids.includes(v)))
+      return `Must be a list of: ${ids.join(", ")}`;
+    return new Set(value).size === value.length ? null : "Each option at most once";
+  }
   if (typeof value !== "number" || !Number.isInteger(value)) return "Must be a whole number";
   if (value < d.min || value > d.max) return `Must be between ${d.min} and ${d.max}${d.unit ? ` ${d.unit}` : ""}`;
   return null;
+}
+
+/** Equal setting values (a set compares as a set, in any order). */
+export function sameSetting(a: unknown, b: unknown): boolean {
+  if (Array.isArray(a) && Array.isArray(b)) return a.length === b.length && a.every((x) => b.includes(x));
+  return a === b;
 }
 
 /** Stored rows over the defaults; invalid or unknown stored values fall back to the default. */

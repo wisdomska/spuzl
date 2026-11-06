@@ -9,6 +9,8 @@ import { api } from "@/lib/client/api";
 import { useGameSettings } from "@/lib/game-settings/client";
 import { EVENT_ACCENTS } from "@/lib/events";
 import { eventsCopy as T } from "@/lib/copy/events";
+import { track } from "@/lib/analytics/track";
+import { usePromptSlot } from "@/components/shell/PromptQueue";
 
 interface CurrentEvent {
   event: { id: string; name: string; endsAt: string; accent: string; banner: string } | null;
@@ -43,10 +45,15 @@ export function EventBanner() {
     setDismissed(readDismissed());
   }, []);
   const e = on ? q.data?.event : null;
-  const show = !!e && dismissed !== e.id;
+  // Through the prompt queue (R2-04), lowest priority: on a screen visit another prompt holds, it waits for the next.
+  const show = usePromptSlot("event", !!e && dismissed !== e.id);
+  useEffect(() => {
+    if (show) track("prompt_shown", { prompt: "event", trigger: "live" });
+  }, [show]);
   const accent = e && (EVENT_ACCENTS as readonly string[]).includes(e.accent) ? `var(--${e.accent})` : "var(--accent)";
   const dismiss = () => {
     if (!e) return;
+    track("prompt_dismissed", { prompt: "event", trigger: "live" });
     setDismissed(e.id);
     try {
       localStorage.setItem(KEY, e.id);
@@ -61,6 +68,7 @@ export function EventBanner() {
           key={e.id}
           aria-label={T.bannerLabel(e.name)}
           data-testid="event-banner"
+          data-prompt="event"
           initial={reduce ? { opacity: 0 } : { opacity: 0, transform: "translateY(-8px)" }}
           animate={reduce ? { opacity: 1 } : { opacity: 1, transform: "translateY(0px)" }}
           exit={{ opacity: 0, transition: { duration: 0.15 } }}
@@ -74,6 +82,7 @@ export function EventBanner() {
           </p>
           <Link
             href="/quests"
+            onClick={() => track("prompt_accepted", { prompt: "event", trigger: "live" })}
             className="press text-accent flex min-h-11 shrink-0 items-center rounded-[12px] px-3 text-[14px] font-semibold"
           >
             {T.bannerAction}

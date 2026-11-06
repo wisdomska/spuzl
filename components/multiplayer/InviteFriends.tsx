@@ -6,6 +6,7 @@ import { Icon } from "@/components/ui/Icon";
 import { api, HttpError } from "@/lib/client/api";
 import { useFriends } from "@/lib/client/social";
 import type { InviteKind } from "@/lib/multiplayer/types";
+import { noteAlertsTrigger } from "@/lib/prompts/alerts";
 import { Avatar } from "./ui";
 
 /**
@@ -24,6 +25,7 @@ export function InviteFriends({ kind, target, collapsible = false }: { kind: Inv
     try {
       await api("/api/v1/game-invites", { json: { to, kind, target } });
       setState((s) => ({ ...s, [to]: "sent" }));
+      if (kind === "duel" || kind === "party") noteAlertsTrigger("invite"); // earns the notification ask (R2-04)
     } catch (e) {
       setState((s) => ({ ...s, [to]: "failed" }));
       if (e instanceof HttpError && e.code === "invite_closed") return;

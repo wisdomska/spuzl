@@ -76,6 +76,24 @@ describe("first-party metrics", () => {
     expect(firstPartyBody("hint_use", { game: "crownfall", mode: "free", kind: "direct" })).toMatchObject({ kind: "direct" });
   });
 
+  it("forwards prompt events with the prompt as mode and the trigger as kind (R2-04)", () => {
+    expect(firstPartyBody("prompt_shown", sanitize({ prompt: "alerts", trigger: "friend" }))).toEqual({
+      name: "prompt_shown",
+      game: undefined,
+      mode: "alerts",
+      kind: "friend",
+      ms: undefined,
+    });
+    expect(firstPartyBody("prompt_accepted", { prompt: "low_data", trigger: "slow_loads" })).toMatchObject({
+      mode: "low_data",
+      kind: "slow_loads",
+    });
+    expect(firstPartyBody("prompt_dismissed", { prompt: "Bad!", trigger: "x".repeat(20) })).toMatchObject({
+      mode: undefined,
+      kind: undefined,
+    });
+  });
+
   it("maps Welcome steps to metric labels", () => {
     expect(onboardingStepOf("under13")).toBe("too_young");
     expect(onboardingStepOf("nickname")).toBe("nickname");

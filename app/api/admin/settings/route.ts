@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { ApiError, body, handle, ok } from "@/lib/api/server";
 import { audit, requireAdmin } from "@/lib/admin/auth";
-import { DEFAULTS, SETTINGS, mergeSettings, validateSetting } from "@/lib/game-settings/schema";
+import { DEFAULTS, SETTINGS, mergeSettings, sameSetting, validateSetting } from "@/lib/game-settings/schema";
 import { invalidateGameSettings } from "@/lib/game-settings/server";
 
 /** GET /api/admin/settings: every tunable with its definition, current value and last change. */
@@ -16,15 +16,18 @@ export const GET = handle(async () => {
       key,
       def,
       value: current[key as keyof typeof current],
-      isDefault: current[key as keyof typeof current] === DEFAULTS[key as keyof typeof DEFAULTS],
+      isDefault: sameSetting(current[key as keyof typeof current], DEFAULTS[key as keyof typeof DEFAULTS]),
       updatedAt: changed[key] ?? null,
     })),
   });
 });
 
-const Put = z.object({ key: z.string().min(3).max(80), value: z.union([z.number(), z.boolean()]) });
+const Put = z.object({
+  key: z.string().min(3).max(80),
+  value: z.union([z.number(), z.boolean(), z.array(z.string().max(32)).max(20)]),
+});
 
-/** PUT /api/admin/settings: sets one tunable after validating it against its range. */
+/** PUT /api/admin/settings: sets one tunable after validating it against its range (or its options). */
 export const PUT = handle(async (req: Request) => {
   const ctx = await requireAdmin("settings.write");
   const { key, value } = await body(req, Put);

@@ -520,6 +520,7 @@ export const adminCopy = {
     intRange: (def: number, min: number, max: number, unit?: string) =>
       ` · default ${def}, range ${min} to ${max}${unit ? ` ${unit}` : ""}`,
     boolDefault: (on: boolean) => ` · default ${on ? "on" : "off"}`,
+    setDefault: (labels: string[]) => ` · default ${labels.length ? labels.join(", ") : "none"}`,
     value: "Value",
     save: "Save",
     wholeNumber: (min: number, max: number) => `Must be a whole number from ${min} to ${max}.`,

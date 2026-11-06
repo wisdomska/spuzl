@@ -1,7 +1,8 @@
 "use client";
 
 /**
- * Metrics (admin cascade): tap-to-board, onboarding, first move, hints, duels, Daily completion and shares over
+ * Metrics (admin cascade): tap-to-board, onboarding, first move, hints, duels, Daily completion, shares and
+ * prompt acceptance by trigger over
  * the last 7 or 30 GMT days. Numbers come from /api/admin/metrics (aggregated in Postgres); each card exports
  * its daily rows as CSV through an audited POST.
  */
@@ -58,6 +59,35 @@ function MetricCard({ def, data }: { def: MetricDef; data: MetricsData }) {
       <span className="num text-[22px] leading-tight font-semibold sm:text-[28px]">{def.headline(data.total)}</span>
       <span className="num text-muted text-[12px] font-semibold">{def.sub(data.total)}</span>
       <p className="text-muted text-[13px] leading-[1.4]">{def.note}</p>
+      {def.breakdown && (
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-[13px]">
+            <thead>
+              <tr className="bg-surface-raised num text-muted text-left text-[12px]">
+                {def.breakdown.head.map((h, i) => (
+                  <th key={h} scope="col" className={`px-2 py-2 font-semibold whitespace-nowrap ${i ? "text-right" : ""}`}>
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {def.breakdown.rows(data.total).map((r) => (
+                <tr key={r.key}>
+                  <th scope="row" className="border-line border-t px-2 py-1.5 text-left font-medium">
+                    {r.label}
+                  </th>
+                  {r.values.map((v, i) => (
+                    <td key={i} className="num border-line border-t px-2 py-1.5 text-right">
+                      {v ?? C.notApplicable}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       {err && (
         <Notice tone="danger" icon="warning">
           {err}

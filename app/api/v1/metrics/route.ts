@@ -5,12 +5,24 @@ import { currentUser } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { playableGame } from "@/lib/catalog";
 import { isOnboardingStep } from "@/lib/analytics/onboarding";
+import { isPromptTrigger } from "@/lib/prompts/ids";
 
 const label = z.string().regex(/^[a-z_]{1,16}$/);
 const Metric = z
   .object({
     // hint_cancel: older clients only (now hint_request minus hint_use).
-    name: z.enum(["tap_to_board", "hint_cancel", "hint_request", "hint_use", "share", "onboarding_step", "party_first_move"]),
+    name: z.enum([
+      "tap_to_board",
+      "hint_cancel",
+      "hint_request",
+      "hint_use",
+      "share",
+      "onboarding_step",
+      "party_first_move",
+      "prompt_shown",
+      "prompt_accepted",
+      "prompt_dismissed",
+    ]),
     game: z
       .string()
       .refine((g) => !!playableGame(g))
@@ -27,6 +39,9 @@ const Metric = z
   .refine((m) => m.name !== "onboarding_step" || isOnboardingStep(m.kind), "onboarding_step needs a known step as kind")
   .refine((m) => !m.name.startsWith("hint_") || m.name === "hint_cancel" || m.kind === "confirm" || m.kind === "direct", {
     message: "hint_request and hint_use need kind confirm or direct",
+  })
+  .refine((m) => !m.name.startsWith("prompt_") || isPromptTrigger(m.mode, m.kind), {
+    message: "prompt events need a known prompt as mode and one of its triggers as kind",
   });
 
 /** Metrics that carry a duration (value_ms): tap-to-board latency and Party start-to-first-move. */
@@ -34,7 +49,7 @@ const TIMED = new Set(["tap_to_board", "party_first_move"]);
 
 /**
  * POST /api/v1/metrics: one anonymous client measurement for the admin Metrics page (tap-to-board latency,
- * hint requests and uses, shares, onboarding steps, Party start-to-first-move). Guests and signed-out visitors may send; nothing that identifies them is
+ * hint requests and uses, shares, onboarding steps, Party start-to-first-move, prompts shown, accepted and dismissed by trigger). Guests and signed-out visitors may send; nothing that identifies them is
  * stored (no player id, IP or URL). Rate limited per user, else per hashed client address.
  */
 export const POST = handle(async (req: Request) => {

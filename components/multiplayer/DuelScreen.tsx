@@ -39,6 +39,7 @@ import { JoinRoom, ShareCode } from "./party";
 import { InviteFriends } from "./InviteFriends";
 import { useFriends } from "@/lib/client/social";
 import { codeHref } from "@/lib/client/codes";
+import { noteAlertsTrigger } from "@/lib/prompts/alerts";
 
 type Outcome = "me" | "them" | "draw";
 
@@ -184,7 +185,10 @@ function DuelLobby({
       setMode("friend");
       // challenged from a friend's card: their invite goes out at once (a card on their screen, or a push)
       const to = friends.data?.friends.find((f) => f.nickname.toLowerCase() === friendName?.toLowerCase());
-      if (to) void api("/api/v1/game-invites", { json: { to: to.id, kind: "duel", target: r.matchId } }).catch(() => {});
+      if (to)
+        void api("/api/v1/game-invites", { json: { to: to.id, kind: "duel", target: r.matchId } })
+          .then(() => noteAlertsTrigger("invite"))
+          .catch(() => {});
     } catch {
       show("Couldn't make a link. Try again.", "bad");
     }

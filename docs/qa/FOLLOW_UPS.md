@@ -62,3 +62,11 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   route can't resolve by puzzle, but attempt guesses already check the stored puzzle; the flag looks stale.
 - **Brute force:** the generators are deterministic, so someone with the game code could still match a served
   board to its content index by generating every index; the token only stops the guess route from helping.
+
+## Round 2
+
+- **R2-04 prompt timing:** the "invite" trigger for the notification ask counts in-app friend invites (Duel or
+  Party, sent through Invite your friends or received as an Inbox card). Sharing a code or link is not counted, as
+  the app cannot tell whether anyone opened it. The audit suggests the low-data prompt on mobile only; it stays on
+  every device but now needs measured slow loads, so a fast desktop never sees it. Navigations the service worker
+  answers from cache (transfer size 0) are not measured as page loads; in-app link taps and tap-to-board still are.

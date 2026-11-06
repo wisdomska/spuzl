@@ -1,48 +1,83 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { usePathname } from "next/navigation";
 import { Icon } from "@/components/ui/Icon";
 import { Button } from "@/components/ui/Button";
 import { useSettings } from "@/lib/settings/store";
-import { readAnswered, readConnectionHints, rememberAnswer, shouldSuggestLowData } from "@/lib/lowdata/suggest";
+import { useGameSettings } from "@/lib/game-settings/client";
+import { track } from "@/lib/analytics/track";
+import {
+  lowDataTrigger,
+  markAskedThisSession,
+  parseSamples,
+  readAskedThisSession,
+  readConnectionHints,
+  readSamplesRaw,
+  shouldSuggestLowData,
+  subscribeLoads,
+} from "@/lib/lowdata/suggest";
+import type { LowDataTrigger } from "@/lib/prompts/ids";
+import { isQuietScreen } from "@/lib/prompts/queue";
 import { lowDataCopy as t } from "@/lib/copy/low-data";
+import { usePromptSlot } from "./PromptQueue";
 
 /**
- * SPZ-27a: a one-time card above the bottom nav offering low-data mode on a slow connection.
- * Waits for the page load to finish so the measured load time is known. Either answer is remembered.
+ * SPZ-27a, timing from R2-04: a card above the bottom nav offering low-data mode, only after measured slow loads
+ * (`lib/lowdata/suggest.ts`), at most once a session, through the prompt queue. Never on Home (it would cover the
+ * Continue card) or during play.
  */
 export function LowDataSuggest() {
+  const pathname = usePathname();
   const hydrated = useSettings((s) => s.hydrated);
   const lowData = useSettings((s) => s.lowData);
   const set = useSettings((s) => s.set);
-  const [show, setShow] = useState(false);
+  const settings = useGameSettings();
+  const raw = useSyncExternalStore(subscribeLoads, readSamplesRaw, () => null);
+  const samples = useMemo(() => parseSamples(raw), [raw]);
+  // the trigger of the card on screen (kept while open: the session is marked asked as soon as it shows)
+  const [showing, setShowing] = useState<LowDataTrigger | null>(null);
+  const [asked, setAsked] = useState(true);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sessionStorage is client-only; read after hydration
+    setAsked(readAskedThisSession());
+  }, []);
+
+  const trigger = hydrated
+    ? lowDataTrigger({
+        samples,
+        thresholdMs: settings["prompts.lowDataThresholdMs"],
+        slowLoads: settings["prompts.lowDataSlowLoads"],
+        effectiveType: readConnectionHints().effectiveType,
+      })
+    : null;
+  const eligible = hydrated && !lowData && !isQuietScreen(pathname);
+  const want = eligible && (showing !== null || shouldSuggestLowData({ lowData, askedThisSession: asked, trigger }));
+  const granted = usePromptSlot("low_data", want);
+  if (granted && showing === null && trigger !== null && !asked) setShowing(trigger);
+  const open = granted && showing !== null;
 
   useEffect(() => {
-    if (!hydrated) return;
-    const check = () => {
-      const st = useSettings.getState();
-      if (shouldSuggestLowData({ lowData: st.lowData, answered: readAnswered(), ...readConnectionHints() })) setShow(true);
-    };
-    if (document.readyState === "complete") {
-      check();
-      return;
-    }
-    window.addEventListener("load", check, { once: true });
-    return () => window.removeEventListener("load", check);
-  }, [hydrated]);
+    if (!open || !showing) return;
+    markAskedThisSession();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mirrors the session flag just written
+    setAsked(true);
+    track("prompt_shown", { prompt: "low_data", trigger: showing });
+  }, [open, showing]);
 
-  if (!show || lowData) return null;
+  if (!open) return null;
 
   const answer = (on: boolean) => {
-    rememberAnswer(on ? "on" : "dismissed");
+    track(on ? "prompt_accepted" : "prompt_dismissed", { prompt: "low_data", trigger: showing });
     if (on) set("lowData", true);
-    setShow(false);
+    setShowing(null);
   };
 
   return (
     <section
       aria-label={t.label}
       role="status"
+      data-prompt="low_data"
       className="bg-surface-raised border-line fixed inset-x-4 bottom-[calc(92px+env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-[528px] flex-col gap-3 rounded-[20px] border p-4 lg:bottom-6 lg:left-[112px]"
     >
       <div className="flex items-start gap-3">

@@ -276,6 +276,7 @@ Without it push stays off and everything else works.
 
 ## R2 (unreleased)
 
-| Migration                                    | What it does                                                                                                                                                             | Rollback           |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------ |
-| `20261130100301_party_first_move_metric.sql` | R2-03: `client_metrics` accepts `party_first_move` (ms from a Party game's start to a racer's first move); `svc_admin_metrics` adds its count, p50 and p95 per day/range | In the file header |
+| Migration                                    | What it does                                                                                                                                                                                                               | Rollback           |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| `20261130100301_party_first_move_metric.sql` | R2-03: `client_metrics` accepts `party_first_move` (ms from a Party game's start to a racer's first move); `svc_admin_metrics` adds its count, p50 and p95 per day/range                                                   | In the file header |
+| `20261130100401_prompt_metrics.sql`          | R2-04: `client_metrics` accepts `prompt_shown`, `prompt_accepted`, `prompt_dismissed` (mode = prompt, kind = trigger); `private.admin_prompt_metrics` counts them per day and per trigger, merged into `svc_admin_metrics` | In the file header |

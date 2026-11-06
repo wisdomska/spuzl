@@ -6,6 +6,7 @@
  * are percentile_cont; `percentile` below is the same linear interpolation for code and tests.
  */
 import { addDays, ISO_DATE, todayIso } from "./dates";
+import { PROMPT_LABELS, PROMPT_PAIRS, TRIGGER_LABELS } from "@/lib/prompts/ids";
 
 export const RANGE_DAYS = [7, 30] as const;
 export type RangeDays = (typeof RANGE_DAYS)[number];
@@ -55,6 +56,18 @@ export interface MetricRow {
   party_first_move_n?: number;
   party_first_move_p50?: number | null;
   party_first_move_p95?: number | null;
+  /** First-party prompt events (20261130100401); absent from older API rows. */
+  prompt_shown?: number;
+  prompt_accepted?: number;
+  prompt_dismissed?: number;
+  /** Per "<prompt>.<trigger>" (lib/prompts/ids.ts). */
+  prompts?: Record<string, PromptCounts>;
+}
+
+export interface PromptCounts {
+  shown: number;
+  accepted: number;
+  dismissed: number;
 }
 
 export interface MetricsData {
@@ -86,7 +99,17 @@ export function metricRange(days: RangeDays, end: string = todayIso()): { from: 
   return { from: addDays(end, -(days - 1)), to: end };
 }
 
-export const METRIC_IDS = ["tap_to_board", "onboarding", "first_move", "party_first_move", "hints", "duels", "daily", "shares"] as const;
+export const METRIC_IDS = [
+  "tap_to_board",
+  "onboarding",
+  "first_move",
+  "party_first_move",
+  "hints",
+  "duels",
+  "daily",
+  "shares",
+  "prompts",
+] as const;
 export type MetricId = (typeof METRIC_IDS)[number];
 
 type Col = { key: string; label: string; value: (r: MetricRow) => number | null };
@@ -99,6 +122,10 @@ export interface MetricDef {
   headline: (t: MetricRow) => string;
   sub: (t: MetricRow) => string;
   cols: Col[];
+  /** a table for the range total, one row per item (the prompts card: one row per prompt and trigger) */
+  breakdown?: { head: string[]; rows: (t: MetricRow) => { key: string; label: string; values: (number | null)[] }[] };
+  /** a CSV other than one row per day (default: `cols` by day, then a total row) */
+  csv?: (data: Pick<MetricsData, "rows" | "total">) => string;
 }
 
 const ms = (v: number | null) => (v === null ? "n/a" : v >= 10_000 ? `${(v / 1000).toFixed(1)} s` : `${Math.round(v)} ms`);
@@ -112,6 +139,27 @@ export const hintCancels = (r: MetricRow) => Math.max(0, (r.hint_requests ?? 0) 
 const accidental = (r: MetricRow) => rate(r.hinted_abandoned + hintCancels(r), r.hinted + hintCancels(r));
 /** Onboarding completion: of new players who reached the age step, the share that reached Home. */
 const onboarded = (r: MetricRow) => rate(r.onboarding_home ?? 0, r.onboarding_age ?? 0);
+
+/** One prompt and trigger's counts in a row (zeros when it never showed). */
+export const promptCounts = (r: MetricRow, prompt: string, trigger: string): PromptCounts => {
+  const c = r.prompts?.[`${prompt}.${trigger}`];
+  return { shown: c?.shown ?? 0, accepted: c?.accepted ?? 0, dismissed: c?.dismissed ?? 0 };
+};
+const accepted = (r: MetricRow) => rate(r.prompt_accepted ?? 0, r.prompt_shown ?? 0);
+
+/** Prompts CSV: one row per day and per prompt and trigger, then the range total for each. */
+function promptsCsv(data: Pick<MetricsData, "rows" | "total">): string {
+  const lines = ["date,prompt,trigger,shown,accepted,dismissed,accept_pct"];
+  const add = (date: string, r: MetricRow) => {
+    for (const { prompt, trigger } of PROMPT_PAIRS) {
+      const c = promptCounts(r, prompt, trigger);
+      lines.push([date, prompt, trigger, c.shown, c.accepted, c.dismissed, rate(c.accepted, c.shown)].map(csvCell).join(","));
+    }
+  };
+  for (const r of data.rows) add(r.date ?? "", r);
+  add("total", data.total);
+  return lines.join("\r\n") + "\r\n";
+}
 
 export const METRICS: readonly MetricDef[] = [
   {
@@ -231,6 +279,33 @@ export const METRICS: readonly MetricDef[] = [
       { key: "share_pct", label: "Share %", value: (r) => rate(r.shares, r.finished_games) },
     ],
   },
+  {
+    id: "prompts",
+    title: "Prompt acceptance by trigger",
+    note: "Prompts shown, accepted and dismissed (client recorded), by the trigger that earned them. Notifications: accepted = Turn on pressed. Low data: Turn on. Save your streak: the email was saved. Event banner: the quest link. Never more than one prompt per screen.",
+    headline: (t) => pct(accepted(t)),
+    sub: (t) =>
+      `accepted of ${n(t.prompt_shown ?? 0)} shown · ${n(t.prompt_accepted ?? 0)} accepted, ${n(t.prompt_dismissed ?? 0)} dismissed`,
+    cols: [
+      { key: "shown", label: "Shown", value: (r) => r.prompt_shown ?? 0 },
+      { key: "accepted", label: "Accepted", value: (r) => r.prompt_accepted ?? 0 },
+      { key: "dismissed", label: "Dismissed", value: (r) => r.prompt_dismissed ?? 0 },
+      { key: "accept_pct", label: "Accept %", value: accepted },
+    ],
+    breakdown: {
+      head: ["Prompt · trigger", "Shown", "Accepted", "Dismissed", "Accept %"],
+      rows: (t) =>
+        PROMPT_PAIRS.map(({ prompt, trigger }) => {
+          const c = promptCounts(t, prompt, trigger);
+          return {
+            key: `${prompt}.${trigger}`,
+            label: `${PROMPT_LABELS[prompt]} · ${TRIGGER_LABELS[trigger] ?? trigger}`,
+            values: [c.shown, c.accepted, c.dismissed, rate(c.accepted, c.shown)],
+          };
+        }),
+    },
+    csv: promptsCsv,
+  },
 ];
 
 export const METRIC_BY_ID = Object.fromEntries(METRICS.map((m) => [m.id, m])) as Record<MetricId, MetricDef>;
@@ -246,6 +321,7 @@ export function csvCell(v: string | number | null | undefined): string {
 /** CSV for one metric: header, one row per day, then a "total" row for the whole range. */
 export function metricCsv(id: MetricId, data: Pick<MetricsData, "rows" | "total">): string {
   const def = METRIC_BY_ID[id];
+  if (def.csv) return def.csv(data);
   const lines = [["date", ...def.cols.map((c) => c.key)].join(",")];
   for (const r of data.rows) lines.push([r.date ?? "", ...def.cols.map((c) => c.value(r))].map(csvCell).join(","));
   lines.push(["total", ...def.cols.map((c) => c.value(data.total))].map(csvCell).join(","));

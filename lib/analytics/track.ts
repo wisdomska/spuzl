@@ -48,6 +48,10 @@ export const KEY_EVENTS = [
   "hint_request",
   "hint_use",
   "party_first_move", // ms from a Party round's real start (after the countdown) to the player's first move
+  // Prompt timing (R2-04): { prompt, trigger } from lib/prompts/ids.ts
+  "prompt_shown",
+  "prompt_accepted",
+  "prompt_dismissed",
 ] as const;
 export type KeyEvent = (typeof KEY_EVENTS)[number];
 
@@ -134,6 +138,9 @@ const FIRST_PARTY: ReadonlySet<KeyEvent> = new Set([
   "share",
   "onboarding_step",
   "party_first_move",
+  "prompt_shown",
+  "prompt_accepted",
+  "prompt_dismissed",
 ]);
 
 /** Pure: the first-party metric body for an event, or null. Exported for tests. */
@@ -141,11 +148,13 @@ export function firstPartyBody(event: KeyEvent, clean: Record<string, string | n
   if (!FIRST_PARTY.has(event)) return null;
   const str = (v: unknown, re: RegExp) => (typeof v === "string" && re.test(v) ? v : undefined);
   const LABEL = /^[a-z_]{1,16}$/;
+  // Prompt events: which prompt goes in `mode`, its trigger in `kind`.
+  const prompt = event.startsWith("prompt_");
   return {
     name: event,
     game: str(clean.game, /^[a-z0-9-]{2,32}$/),
-    mode: str(clean.mode, LABEL),
-    kind: str(clean.kind, LABEL),
+    mode: str(prompt ? clean.prompt : clean.mode, LABEL),
+    kind: str(prompt ? clean.trigger : clean.kind, LABEL),
     ms: typeof clean.ms === "number" ? Math.max(0, Math.min(120_000, Math.round(clean.ms))) : undefined,
   };
 }
