@@ -51,6 +51,8 @@ const ROUTES: Route[] = [
   { method: "POST", path: `/api/admin/moderation/reports/${NIL}`, perm: "moderation.write" },
   { method: "GET", path: `/api/admin/moderation/flagged/${NIL}`, perm: "moderation.read" },
   { method: "POST", path: `/api/admin/moderation/flagged/${NIL}`, perm: "moderation.write" },
+  { method: "GET", path: "/api/admin/join-requests", perm: "joinlog.read" },
+  { method: "POST", path: "/api/admin/join-requests", perm: "joinlog.read" },
   { method: "GET", path: `/api/admin/players/${NIL}`, perm: "moderation.read" },
   { method: "POST", path: `/api/admin/players/${NIL}`, perm: "moderation.write" },
   { method: "GET", path: "/api/admin/players", perm: "players.read" },

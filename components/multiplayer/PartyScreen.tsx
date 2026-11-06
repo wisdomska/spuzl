@@ -35,6 +35,8 @@ import { isAdultMode, type PartyMode } from "@/lib/party-adult/modes";
 import { ADULT_REWARD_MIN_PLAYERS } from "@/lib/party-adult/rewards";
 import { adultPartyCopy } from "@/lib/copy/adult-party";
 import { MatchBoard } from "./MatchBoard";
+import { HostJoinRequests, RequestToJoin } from "./JoinRequests";
+import type { JoinRequestStatus } from "@/lib/multiplayer/joinRules";
 import { useWide } from "@/components/game/useBoardSize";
 import { useLeave } from "@/components/game/useLeave";
 import { LeaveConfirm } from "@/components/game/LeaveConfirm";
@@ -173,6 +175,9 @@ type Preview =
         max: number;
         host: string | null;
         mode?: PartyMode;
+        /** R2-13: an under-16 host's room this player has to ask to join, and their latest request */
+        friendsOnly?: boolean;
+        request?: { id: string; status: JoinRequestStatus } | null;
       };
     };
 
@@ -189,6 +194,8 @@ export function PartyRoom({ code: raw }: { code: string }) {
   });
   const [joined, setJoined] = useState<string | null>(null);
   const [joinErr, setJoinErr] = useState<string | null>(null);
+  // R2-13: the join said "friends only" (the preview may be older than the host's setting or band).
+  const [mustAsk, setMustAsk] = useState(false);
   if (gate === "loading") return <LoadingScreen />;
   if (gate === "no_profile") return <NeedProfile />;
   const matchId = joined ?? (preview.data?.member ? preview.data.view.id : null);
@@ -226,6 +233,7 @@ export function PartyRoom({ code: raw }: { code: string }) {
       const r = await api<{ matchId: string }>(`/api/v1/rooms/${code}/join`, { json: {} });
       setJoined(r.matchId);
     } catch (e) {
+      if (e instanceof HttpError && e.code === "friends_only") return setMustAsk(true);
       setJoinErr(
         e instanceof HttpError
           ? e.code === "room_full"
@@ -239,6 +247,20 @@ export function PartyRoom({ code: raw }: { code: string }) {
       );
     }
   };
+  if ((room.friendsOnly || mustAsk) && room.status === "lobby")
+    return (
+      <Screen label="Join room friends only">
+        <div className="absolute top-[max(56px,env(safe-area-inset-top))] left-4">
+          <TopButton icon="arrow-left" label="Back" onClick={back} />
+        </div>
+        <RequestToJoin code={code} host={room.host} initial={room.request} onApproved={() => void join()} onBack={back} />
+        {joinErr && (
+          <p role="alert" className="px-5 pb-6 text-center text-[var(--danger)]">
+            {joinErr}
+          </p>
+        )}
+      </Screen>
+    );
   return (
     <Screen label="Join room">
       <div className="absolute top-[max(56px,env(safe-area-inset-top))] left-4">
@@ -457,6 +479,7 @@ function Room({ id, code }: { id: string; code: string }) {
         onLeave={leave}
         onSettings={() => setSettings(true)}
         onTv={() => router.push(`/party/${code}?view=tv`)}
+        requests={host ? <HostJoinRequests matchId={id} channel={channel} /> : null}
       />
     );
   else if (phase === "podium" || phase === "final")

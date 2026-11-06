@@ -16,6 +16,7 @@ export const adminCopy = {
     liveops: { title: "Live ops", what: "live ops" },
     metrics: { title: "Metrics", what: "metrics" },
     moderation: { title: "Moderation", what: "moderation" },
+    joinRequests: { title: "Join requests", what: "the join-request log" },
     puzzles: { title: "Puzzles", what: "the puzzle library" },
     schools: { title: "Schools", what: "schools" },
     settings: { title: "Game settings", what: "game settings" },
@@ -230,6 +231,29 @@ export const adminCopy = {
     inShopAria: (name: string) => `${name} in shop`,
     secretAria: (name: string) => `${name} secret`,
     activeAria: (title: string) => `${title} active`,
+  },
+
+  /** R2-13: the join-approval log for under-16 hosts' friends-only rooms. */
+  joinLog: {
+    title: "Join requests",
+    intro:
+      "Requests to join under-16 hosts' friends-only rooms (setting rooms.under16FriendsOnly): who asked, the host, the room, the outcome and when. No chat or other content. Exports are audited.",
+    outcome: "Outcome",
+    anyOutcome: "Any outcome",
+    outcomes: { pending: "Waiting", approved: "Let in", declined: "Said no", cancelled: "Cancelled" } as Record<string, string>,
+    room: "Room",
+    anyRoom: "Any room",
+    rooms: { duel: "Friend duel", party: "Party room" } as Record<string, string>,
+    search: "Nickname or code",
+    searchPlaceholder: "Kofi or QJRA",
+    from: "From",
+    to: "To",
+    csv: "Export CSV",
+    exporting: "Exporting…",
+    exported: (n: number, total: number) =>
+      n < total ? `Exported ${n} of ${total} rows. Narrow the filters for the rest.` : `Exported ${n} rows.`,
+    empty: "No join requests match.",
+    head: ["Asked (GMT)", "Who asked", "Host", "Room", "Outcome", "Decided (GMT)"],
   },
 
   audit: {
@@ -480,6 +504,7 @@ export const adminCopy = {
       calendar: "Calendar",
       puzzles: "Puzzles",
       moderation: "Moderation",
+      joinRequests: "Join requests",
       liveops: "Live ops",
       metrics: "Metrics",
       schools: "Schools",

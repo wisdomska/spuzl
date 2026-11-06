@@ -74,3 +74,11 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   page board-game links (`components/world/LiveEntry.tsx`) still show "Play live" and "Quick Match" to 13 to 15
   accounts. The server refuses both (403 `age_restricted`, `lib/multiplayer/server/liveGate.ts`), so nothing widens,
   but the tap ends in an error. They should show the same muted "Opens at 16" note as Duel (`canPlayLive`).
+- **R2-13, needs a privacy decision (left out on purpose):** join requests (`room_join_requests`) are not in the
+  player's data export (`app/api/v1/account/export/route.ts`). Rows go with either account on deletion and are
+  pruned after 180 days. Whether the export should list requests a player made or received (the other player's
+  nickname included) is a privacy call for the lead.
+- **R2-13, host away:** a request reaches the host only in the lobby (realtime plus a 15 s poll). There is no push
+  or Home card, so a host who left the lobby screen won't see it until they come back. The asker can wait or cancel.
+- **R2-13, Board Bay invites:** friends-only covers Party rooms and friend duels (the ticket). Board Bay invite codes
+  from an under-16 host (`/api/v1/bay/[id]/join`) still let anyone with the code in.

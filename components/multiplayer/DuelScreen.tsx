@@ -9,12 +9,14 @@ import {
   matchAction,
   matchKey,
   useCountdown,
+  useChannel,
   useEmotes,
   useMatch,
   useMatchChat,
   useProfileGate,
   useServerNow,
 } from "@/lib/client/multiplayer";
+import { HostJoinRequests, RequestToJoin } from "./JoinRequests";
 import { ChatPanel, ChatPopup } from "./chat";
 import { useSettings } from "@/lib/settings/store";
 import { useBackOrHome } from "@/lib/client/nav";
@@ -96,15 +98,20 @@ function DuelLobby({
   const { toast, show } = useToast();
   const since = useRef(0);
 
-  // Joining a friend's Duel by link.
-  useEffect(() => {
+  // Joining a friend's Duel by link. R2-13: an under-16 host's challenge is friends only; anyone else asks first.
+  const [mustAsk, setMustAsk] = useState(false);
+  const joinFriend = useCallback(() => {
     if (!joinCode) return;
     api<{ matchId: string }>("/api/v1/duel/friend/join", { json: { code: joinCode } })
       .then((r) => router.replace(`/duel?m=${r.matchId}`))
-      .catch((e) =>
-        show(e instanceof HttpError && e.code === "duel_full" ? "That duel already started." : "That link has expired.", "bad"),
-      );
+      .catch((e) => {
+        if (e instanceof HttpError && e.code === "friends_only") return setMustAsk(true);
+        show(e instanceof HttpError && e.code === "duel_full" ? "That duel already started." : "That link has expired.", "bad");
+      });
   }, [joinCode, router]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => joinFriend(), [joinFriend]);
+  // The host's waiting screen listens on the duel's channel for requests to join (R2-13).
+  const { channel: friendChannel } = useChannel(mode === "friend" && friend ? `match:${friend.matchId}` : null);
 
   // Searching: poll the queue once a second; the server pairs as soon as a rival is compatible.
   useEffect(() => {
@@ -232,6 +239,17 @@ function DuelLobby({
       </Screen>
     );
 
+  if (mustAsk && joinCode)
+    return (
+      <Screen label="Duel friends only">
+        <MpToast toast={toast} />
+        <div className="absolute top-[max(56px,env(safe-area-inset-top))] left-4">
+          <TopButton icon="arrow-left" label={duelCopy.back} onClick={back} />
+        </div>
+        <RequestToJoin code={joinCode} host={null} onApproved={joinFriend} onBack={back} />
+      </Screen>
+    );
+
   return (
     <Screen label={mode === "search" ? "D1 Matchmaking" : "M1 Duel entry"}>
       <MpToast toast={toast} />
@@ -259,6 +277,7 @@ function DuelLobby({
             Unranked. {game ? gameName(game) : duelCopy.anyGame}, best of 3. The duel starts the moment they join.
           </p>
           <ShareCode code={friend.code} url={`/duel?code=${friend.code}`} text="Duel me on SPUZL. Best of 3." />
+          <HostJoinRequests matchId={friend.matchId} channel={friendChannel} />
           <InviteFriends kind="duel" target={friend.matchId} />
           <div className="text-muted mt-2 flex items-center gap-2 text-[15px]" aria-live="polite">
             <span className="bg-accent size-2 animate-pulse rounded-full" />

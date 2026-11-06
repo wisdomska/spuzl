@@ -27,6 +27,7 @@ const NAV: NavItem[] = [
   { href: "/admin/calendar", label: N.calendar, icon: "calendar-blank", perm: "calendar.read" },
   { href: "/admin/puzzles", label: N.puzzles, icon: "puzzle-piece", perm: "calendar.read", badge: "puzzles" },
   { href: "/admin/moderation", label: N.moderation, icon: "shield-check", perm: "moderation.read", badge: "moderation" },
+  { href: "/admin/join-requests", label: N.joinRequests, icon: "hand-waving", perm: "joinlog.read" },
   { href: "/admin/liveops", label: N.liveops, icon: "pulse", perm: "liveops.read" },
   { href: "/admin/metrics", label: N.metrics, icon: "chart-bar", perm: "metrics.read" },
   { href: "/admin/schools", label: N.schools, icon: "graduation-cap", perm: "schools.read", badge: "schools" },

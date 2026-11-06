@@ -17,6 +17,7 @@ import { GAME_BY_ID } from "@/lib/catalog";
 import { isAdultMode, type PartyMode } from "@/lib/party-adult/modes";
 import { clearRounds, isAdultRoom, startAdult } from "./adult";
 import { requireLivePlay } from "./liveGate";
+import { joinStateFor, requireMayJoin } from "./joinRequests";
 import { recordDuelCreated } from "@/lib/analytics/server";
 import { duelCopy } from "@/lib/copy/duel";
 
@@ -206,6 +207,8 @@ export async function joinFriendDuel(admin: SupabaseClient, playerId: string, co
   if (m.host_id === playerId) return { matchId: m.id as string };
   const l = await loadMatch(admin, m.id);
   if (l.players.some((p) => p.player_id === playerId)) return { matchId: m.id as string };
+  // R2-13: an under-16 host's challenge is friends only; anyone else needs the host's yes first.
+  await requireMayJoin(admin, { id: m.id as string, host_id: m.host_id as string | null }, playerId);
   if (m.status !== "lobby" || l.players.length >= 2) throw new ApiError(409, "duel_full");
   await addPlayer(admin, m.id, playerId, 1, { ready: true });
   const countdownMs = await liveCountdownMs();
@@ -329,6 +332,9 @@ export async function roomPreview(admin: SupabaseClient, code: string, playerId:
   if (mine) return { member: true as const, view: await viewOf(admin, l, playerId) };
   const here = l.players.filter((p) => !p.left_at);
   const host = here.find((p) => p.player_id === l.m.host_id);
+  // R2-13: whether this player has to ask first (an under-16 host's room), and their latest request.
+  const seated = l.players.some((p) => p.player_id === playerId && !p.kicked_at);
+  const access = await joinStateFor(admin, { id: m.id, host_id: l.m.host_id }, playerId, seated);
   return {
     member: false as const,
     room: {
@@ -341,6 +347,8 @@ export async function roomPreview(admin: SupabaseClient, code: string, playerId:
       max: l.m.max_players,
       host: host?.players?.nickname ?? null,
       mode: m.party_mode ?? "race",
+      friendsOnly: access.friendsOnly,
+      request: access.request,
     },
   };
 }
@@ -353,6 +361,8 @@ export async function joinRoom(admin: SupabaseClient, playerId: string, code: st
   const existing = l.players.find((p) => p.player_id === playerId);
   if (existing?.kicked_at) throw new ApiError(403, "kicked", "The host removed you from this room.");
   if (existing && !existing.left_at) return { matchId: m.id };
+  // R2-13: an under-16 host's room is friends only; anyone else needs the host's yes (a rejoin keeps its seat).
+  await requireMayJoin(admin, { id: m.id, host_id: l.m.host_id }, playerId, !!existing);
   if (l.m.status !== "lobby" && !existing) throw new ApiError(409, "race_running", "This race already started. Catch the next one.");
   const here = l.players.filter((p) => !p.left_at && !p.spectator);
   if (here.length >= l.m.max_players) throw new ApiError(409, "room_full");

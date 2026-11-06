@@ -192,6 +192,13 @@ export const SETTINGS = {
     min: 2,
     max: 5,
   },
+  "rooms.under16FriendsOnly": {
+    kind: "bool",
+    group: "Rooms",
+    label: "Under-16 hosts: friends only",
+    help: "Party rooms and friend duels hosted by a 13 to 15 player only let in the host's accepted friends. Anyone else gets a clear message and can send a request to join that the host approves or declines in the lobby (logged on Join requests). Off: anyone with the code can join, as for older hosts. The server enforces it on every join.",
+    default: true,
+  },
   "quickfire.autoAdvanceMs": {
     kind: "int",
     group: "Games",

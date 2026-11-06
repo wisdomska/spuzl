@@ -478,7 +478,10 @@ export function Lobby({
   onSettings,
   onTv,
   adult,
+  requests,
 }: {
+  /** R2-13: the host's pending requests to join (a friends-only room), under the code */
+  requests?: React.ReactNode;
   /** 18+ party room: its mode line instead of the game card, and a players button for the host instead of settings */
   adult?: { icon: string; title: string; sub: string; onPlayers: () => void };
   view: MatchView;
@@ -522,6 +525,7 @@ export function Lobby({
           count={`${here.length} of ${view.maxPlayers} in`}
         />
       </div>
+      {requests && <div className="mx-4 mt-3.5">{requests}</div>}
       <ul className="mx-4 mt-3.5 grid grid-cols-4 gap-2" aria-label="Players">
         <AnimatePresence initial={false}>
           {slots.map((p, i) =>
