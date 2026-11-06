@@ -384,6 +384,22 @@ describe("content editor and two-person approval (FR-AD-03)", () => {
     const { data } = await admin().from("content_items").select("status, reviewer_id, source").eq("source_ref", "quads:0").single();
     expect(data).toMatchObject({ status: "approved", reviewer_id: S.owner.userId, source: "content_file" });
   });
+
+  it("imports a Quads pack as drafts, all or nothing, audited and for editors only (R2-14)", async () => {
+    const { CONTENT } = await import("@/games/quads/content");
+    const { packToJson } = await import("@/lib/admin/quads-pack");
+    const text = packToJson(CONTENT.slice(0, 2));
+    const r = await S.content_editor.aal2("/api/admin/content/import", { json: { game: "quads", text } });
+    expect([r.status, r.data.created]).toEqual([200, 2]);
+    const { data: rows } = await admin().from("content_items").select("status, game_id, payload, author_id").in("id", r.data.ids);
+    expect(rows?.every((x) => x.status === "draft" && x.game_id === "quads" && x.author_id === S.content_editor.userId)).toBe(true);
+    const { data: log } = await admin().from("audit_log").select("id").eq("action", "content.import").limit(1);
+    expect(log?.length).toBe(1);
+    const bad = await S.content_editor.aal2("/api/admin/content/import", { json: { game: "quads", text: "[{}]" } });
+    expect([bad.status, bad.data.error]).toEqual([422, "invalid_pack"]);
+    expect((await S.analyst.aal2("/api/admin/content/import", { json: { game: "quads", text } })).status).toBe(403);
+    await admin().from("content_items").delete().in("id", r.data.ids);
+  });
 });
 
 describe("moderation (FR-AD-05)", () => {
@@ -854,12 +870,12 @@ describe("Library metadata (SPZ-14 admin cascade)", () => {
 
   it("lists retired games, marked, and refuses to change them", async () => {
     const rows = (await S.owner.aal2("/api/admin/games/meta")).data.rows as { id: string; retired: boolean }[];
-    expect(rows.find((r) => r.id === "quads")).toMatchObject({ retired: true });
+    expect(rows.find((r) => r.id === "pinned")).toMatchObject({ retired: true });
     expect(rows.find((r) => r.id === "minicross")).toMatchObject({ retired: false });
-    const r = await S.owner.aal2("/api/admin/games/meta", { method: "PATCH", json: { id: "quads", typicalSec: 95 } });
+    const r = await S.owner.aal2("/api/admin/games/meta", { method: "PATCH", json: { id: "pinned", typicalSec: 95 } });
     expect([r.status, r.data.error]).toEqual([409, "game_retired"]);
     const pub = await fetch(`${BASE}/api/v1/games/meta`).then((x) => x.json());
-    expect(pub.quads).toBeUndefined();
+    expect(pub.pinned).toBeUndefined();
   });
 });
 

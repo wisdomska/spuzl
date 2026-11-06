@@ -9,6 +9,7 @@ import { CONTENT_SORT } from "@/lib/admin/sorting";
 import { errorText, useAdminAction, useAdminQuery, type AdminPage } from "@/lib/client/admin";
 import { adminCopy } from "@/lib/copy/admin";
 import { Pagination, usePager, type Pager } from "./Pagination";
+import { QuadsEditor, QuadsPackPanel, QuadsPreview } from "./QuadsEditor";
 import { SortHead, type HeadCol } from "./SortHeader";
 import { useUrlFilters, useUrlSort } from "./useUrlFilters";
 import { Btn, Empty, Field, Notice, PageTitle, Pill, RowsSkeleton, Swatch, Tabs, inputCls, textareaCls, type PillTone } from "./ui";
@@ -196,6 +197,7 @@ function Items({
           )}
         </div>
         {q.data && <Pagination pager={pager} total={q.data.total} />}
+        {game === "quads" && <QuadsPackPanel status={status} canWrite={canWrite} />}
       </div>
       {open && (
         <Editor
@@ -281,6 +283,9 @@ function Editor({
           </select>
         </Field>
       )}
+      {game === "quads" && (
+        <QuadsEditor value={parsed.ok ? parsed.value : null} readOnly={!editable} onChange={(p) => setText(JSON.stringify(p, null, 2))} />
+      )}
       <Field
         label={E.payload}
         htmlFor="payload"
@@ -325,6 +330,7 @@ function Editor({
           className={`${textareaCls} resize-y`}
         />
       </Field>
+      {game === "quads" && parsed.ok && <QuadsPreview value={parsed.value} />}
       {err && <Notice tone="danger">{errorText(err)}</Notice>}
       {schedule.data && (
         <Notice tone="ok" icon="check-circle">
@@ -373,9 +379,8 @@ function Editor({
         <div className="bg-bg flex flex-col gap-2 rounded-[12px] p-3 shadow-[inset_0_0_0_1px_var(--line)]">
           {!plan ? (
             <span className="text-muted text-[13px]">{E.joinsPool(GAME_BY_ID[game]?.name ?? game)}</span>
-          ) : plan.guessRoute ? (
-            <span className="text-muted text-[13px]">{E.guessRoute(GAME_BY_ID[game]?.name ?? game)}</span>
           ) : (
+            // Guess-route games (Quads, Coil...) schedule too: the guess route checks the attempt's stored puzzle.
             <form
               className="flex items-end gap-2"
               onSubmit={(e) => {
