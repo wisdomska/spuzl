@@ -40,10 +40,10 @@ export const TROTRO_COPY = {
   moveGroup: "Slide the selected vehicle",
   controls: { undo: "Undo", reset: "Reset", hint: "Hint" },
   start: (par: number) => `Par ${par}. Free the trotro: slide the others out of its way.`,
-  tutorial: "Tap a car, then an arrow, or drag it along its lane.",
+  tutorial: "Tap a car, then an arrow, or swipe it along its lane.",
   tally: (moves: number, par: number) =>
     `${moves} ${moves === 1 ? "move" : "moves"}, ${moves <= par ? `par ${par}` : `${moves - par} over par`}.`,
-  selected: (name: string) => `${cap(name)} selected. Use the arrows to slide it.`,
+  selected: (name: string) => `${cap(name)} selected. Slide it with the arrows, or swipe it.`,
   noSelection: "Tap a car or truck first.",
   blocked: (name: string, dir: Dir) => `${cap(name)} cannot move ${dir} from here.`,
   moved: (name: string, dir: Dir, n: number) => `${cap(name)} moved ${dir} ${n} ${n === 1 ? "space" : "spaces"}.`,

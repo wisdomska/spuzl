@@ -24,12 +24,15 @@ import {
   type TrotroPuzzle,
   type TrotroState,
 } from "./logic";
+import { slideSteps } from "./gesture";
 
 const GAP = 4;
 const PAD = 8;
 /** Extra room on the right for the exit mark. */
 const EXIT_PAD = 12;
 const DRAG_START = 6;
+/** The selected vehicle sits this far up (px): the lift, with the accent outline (no transition under reduced motion). */
+const LIFT = 3;
 /** The bus drives out over this long once the lot is clear. */
 const EXIT_MS = 600;
 /** Grid direction (0 N, 1 E, 2 S, 3 W) for a slide along an axis. */
@@ -57,8 +60,12 @@ function pushMove(moves: Move[], m: Move): Move[] {
 /**
  * Trotro Jam board. The lot is a 6 × 6 grid of cells (each a gridcell named "Row r, column c, …"); the
  * vehicles are drawn on top and never take pointer events, so every tap lands on a cell. Tap a vehicle to
- * select it, then an arrow (or a free cell in its lane); or drag it along its lane. Keyboard: arrows move
- * the focus, Enter or Space selects, then arrows slide the selected vehicle and Escape lets go.
+ * select it, then an arrow (or a free cell in its lane); or drag or swipe it along its lane, by mouse or touch
+ * (a short swipe still moves it one space, see ./gesture). Keyboard: arrows move the focus, Enter or Space
+ * selects, then arrows slide the selected vehicle and Escape lets go.
+ *
+ * R2-11: the selected vehicle wears the accent outline and sits LIFT px up (an eased lift; no transition under
+ * reduced motion), and the arrows that can slide it light up in the accent colour.
  */
 export default function TrotroBoard({ puzzle, initialState, hint, disabled, mode, api }: BoardProps<TrotroPuzzle, TrotroState>) {
   const n = puzzle.size;
@@ -241,6 +248,9 @@ export default function TrotroBoard({ puzzle, initialState, hint, disabled, mode
     return el ? Number(el.dataset.i) : -1;
   };
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    // A new press: whatever ended the last drag is over (the click after a captured drag may land on the grid,
+    // not a cell, and must not swallow this tap).
+    suppressClick.current = false;
     if (locked) return;
     const i = cellAt(e);
     const v = i >= 0 ? occ[i] : -1;
@@ -249,7 +259,7 @@ export default function TrotroBoard({ puzzle, initialState, hint, disabled, mode
     const veh = puzzle.vehicles[v];
     const base: [number, number] = [
       PAD + (veh.axis === "h" ? pos[v] : veh.line) * pitch,
-      PAD + (veh.axis === "h" ? veh.line : pos[v]) * pitch,
+      PAD + (veh.axis === "h" ? veh.line : pos[v]) * pitch - LIFT,
     ];
     const el = e.currentTarget.querySelector<HTMLElement>(`[data-vehicle="${v}"]`);
     dragRef.current = { v, x0: e.clientX, y0: e.clientY, lo, hi, moved: false, id: e.pointerId, px: 0, el, base };
@@ -281,7 +291,8 @@ export default function TrotroBoard({ puzzle, initialState, hint, disabled, mode
     suppressClick.current = true;
     setDrag(null);
     e.currentTarget.releasePointerCapture?.(e.pointerId);
-    const steps = cancel ? 0 : Math.round(d.px / pitch);
+    // A drag lands on the nearest space; a short swipe still moves one space its way (if there is room).
+    const steps = slideSteps(d.px, pitch, cancel);
     // Settle from wherever the finger left it: into the next slot, or back home if it did not move a cell.
     if (d.el && !reduce) d.el.style.transition = "transform 140ms var(--ease-out)";
     if (steps) commit([d.v, steps]);
@@ -371,23 +382,25 @@ export default function TrotroBoard({ puzzle, initialState, hint, disabled, mode
               const h = v.axis === "v" ? v.len * cell + (v.len - 1) * GAP : cell;
               const chosen = i === sel;
               const hinted = i === hintV;
+              const lift = chosen ? LIFT : 0;
               return (
                 <div
                   key={i}
                   data-vehicle={i}
+                  data-selected={chosen || undefined}
                   className={`font-display absolute flex items-center justify-center rounded-[12px] font-black ${hinted ? "hint-ring" : ""}`}
                   style={{
                     left: 0,
                     top: 0,
                     width: w,
                     height: h,
-                    transform: `translate(${x + (out && !reduce ? 2 * pitch + EXIT_PAD : 0)}px, ${y}px)`,
+                    transform: `translate(${x + (out && !reduce ? 2 * pitch + EXIT_PAD : 0)}px, ${y - lift}px)`,
                     opacity: out && reduce ? 0.35 : 1,
                     background: isTrotro ? "var(--world)" : `var(--reg-${T.colourIndex(i)})`,
                     color: isTrotro ? "var(--square-ink)" : "var(--text)",
                     fontSize: Math.round(cell * 0.4),
                     boxShadow: chosen
-                      ? "0 0 0 3px var(--accent), var(--shadow-toy)"
+                      ? `0 0 0 3px var(--accent), 0 ${2 + LIFT}px 0 var(--depth), var(--shadow-toy)`
                       : hinted
                         ? "0 0 0 3px var(--gold)"
                         : "inset 0 -4px 0 color-mix(in srgb, var(--square-ink) 30%, transparent)",
@@ -439,9 +452,14 @@ export default function TrotroBoard({ puzzle, initialState, hint, disabled, mode
                 type="button"
                 aria-label={T.moveLabel(dir)}
                 disabled={!can}
+                data-enabled={can || undefined}
                 onClick={() => step(dir)}
-                className="flex h-11 min-w-11 flex-1 items-center justify-center rounded-[var(--r-control)] text-[var(--text)] disabled:opacity-40"
-                style={{ background: "var(--surface-raised)", boxShadow: "0 0 0 1px var(--line)" }}
+                className="flex h-11 min-w-11 flex-1 items-center justify-center rounded-[var(--r-control)] font-bold transition-colors duration-150 outline-none focus-visible:ring-4 focus-visible:ring-[var(--text)] disabled:opacity-40"
+                style={
+                  can
+                    ? { background: "var(--accent)", color: "var(--on-accent)", boxShadow: "0 3px 0 var(--accent-depth)" }
+                    : { background: "var(--surface-raised)", color: "var(--text)", boxShadow: "0 0 0 1px var(--line)" }
+                }
               >
                 <Icon name={icon} size={20} />
               </button>
