@@ -6,6 +6,8 @@ export const gameMenuCopy = {
   paused: "Paused while this menu is open.",
   livePaused: "Live match: the clock keeps running.",
   howToPlay: "How to play",
+  /** read before the rule line at the top of the menu (R2-06) */
+  rule: "The rule",
   restart: "Restart",
   newPuzzle: "New puzzle",
   difficulty: "Difficulty",

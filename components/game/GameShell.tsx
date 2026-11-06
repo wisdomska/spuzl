@@ -3,7 +3,7 @@
 import { markTip, seenTips } from "@/lib/tips";
 import { tipsCopy } from "@/lib/copy/tips";
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, type CSSProperties, type ReactNode } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import type { BoardApi, BoardProps, ControlSpec, FeedbackTone, Hint, PlayMode } from "@/games/types";
 import type { GameMeta } from "@/lib/catalog";
 import { UI_ACCENT } from "@/lib/catalog";
@@ -11,7 +11,7 @@ import { IconButton } from "@/components/ui/IconButton";
 import { Icon } from "@/components/ui/Icon";
 import { GameMenu, type GameMenuEntry } from "./GameMenu";
 import { gameMenuCopy } from "@/lib/copy/game-menu";
-import { useSettings } from "@/lib/settings/store";
+import { prefersReducedMotion, useSettings } from "@/lib/settings/store";
 import { useMe } from "@/lib/client/api";
 import { BOARD_THEMES } from "@/lib/gamification/cosmetics";
 import { play } from "@/lib/audio";
@@ -34,7 +34,8 @@ import { LeaveConfirm } from "./LeaveConfirm";
  *
  * The reusable board template (Game Boards file), slimmed so the board gets the room:
  * 1 slim top bar (Back, game name and label, timer, "⋯" menu), 2 optional strip, 3 board slot,
- * 4 feedback line, 5 compact tool row. The rule is read out with the board and lives in How to play.
+ * 4 feedback line, 5 compact tool row. The one-line rule shows under the title until the first move (R2-06), then
+ * collapses into the menu; screen readers always get it with the board.
  * Everything not needed while playing (How to play, Restart, New puzzle, Difficulty, Sound, Haptics,
  * Settings, Share, Report) sits in the menu. Opening the menu pauses the clock and hides the board where
  * the mode can pause; live matches keep running and the menu says so.
@@ -164,6 +165,9 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   const sfx = useSettings((s) => s.sfx);
   const haptics = useSettings((s) => s.haptics);
   const setSetting = useSettings((s) => s.set);
+  const osReduce = useReducedMotion();
+  const appReduce = useSettings((s) => s.hydrated && prefersReducedMotion(s));
+  const reduce = !!osReduce || appReduce;
   // Equipped Shop board theme: colours the backdrop and frame around the board, never the cells.
   const boardTheme = useMe().data?.boardTheme ?? null;
   const theme = boardTheme ? BOARD_THEMES[boardTheme] : undefined;
@@ -458,6 +462,33 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
     "--world-depth": "var(--accent-depth)",
   } as CSSProperties;
 
+  // R2-06: the one-line rule, visible under the title until the first move, then folded away (it stays in the menu
+  // and in the screen-reader text). It is there from the first paint, so it never pushes the board down; the first
+  // move collapses it (instantly with reduced motion). Wide screens show it in the top bar's empty middle, so the
+  // board never moves at all; when the practice banner holds that spot, it heads the side panel instead.
+  const showRule = !started && !solved && !!meta.rule;
+  const ruleExit = reduce
+    ? { opacity: 0, height: 0, transition: { duration: 0 } }
+    : { opacity: 0, height: 0, transition: { duration: 0.22, ease: [0.23, 1, 0.32, 1] as const } };
+  const ruleLine = (center: boolean) => (
+    <p
+      aria-hidden
+      data-shell-rule
+      className={`text-muted line-clamp-2 text-[14px] leading-5 font-medium ${center ? "text-center" : "short:text-[13px] pb-2"}`}
+    >
+      {meta.rule}
+    </p>
+  );
+  const foldingRule = (cls: string, center = false) => (
+    <AnimatePresence initial={false}>
+      {showRule && (
+        <motion.div key="rule" className={cls} exit={center ? { opacity: 0, transition: { duration: reduce ? 0 : 0.2 } } : ruleExit}>
+          {ruleLine(center)}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+
   const header = (
     // 1 Slim top bar: Back, the game (name over its label), the clock and the menu.
     <header
@@ -474,11 +505,14 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
         </h1>
         <p className="num text-muted truncate text-[12px] leading-4 font-medium">{label}</p>
       </div>
-      {/* Wide: the banner sits inline in the top bar's empty middle, so the board keeps the whole height. */}
+      {/* Wide: the banner (or else the rule) sits inline in the top bar's empty middle, so the board keeps the whole height. */}
       {wide && banner && (
         <div className="flex max-w-[640px] min-w-0 flex-[2] justify-center" data-shell-banner>
           {banner}
         </div>
+      )}
+      {wide && !banner && (
+        <div className="flex max-w-[640px] min-w-0 flex-[2] items-center justify-center">{foldingRule("min-w-0", true)}</div>
       )}
       {!relaxed && (
         <div
@@ -494,6 +528,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
         open={menuOpen}
         onOpenChange={setMenuOpen}
         sections={menuSections}
+        rule={meta.rule}
         note={solved ? undefined : canPause ? M.paused : M.livePaused}
         shield={menuHold}
         triggerRef={menuButton}
@@ -583,6 +618,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
         data-wide={wide || undefined}
       >
         {header}
+        {!wide && foldingRule("relative z-10 overflow-hidden px-4")}
         {banner && !wide && (
           <div className="relative z-20 px-3 pb-1" data-shell-banner>
             {banner}
@@ -601,6 +637,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
           </div>
           {wide && (
             <aside className="flex shrink-0 flex-col gap-3 pt-3 pr-3" style={{ width: asideW }} aria-label={M.panel}>
+              {banner && foldingRule("overflow-hidden")}
               {stripZone}
               <div ref={setAside} className="flex flex-col gap-3 empty:hidden" />
               {feedbackZone}

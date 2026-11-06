@@ -37,6 +37,7 @@ export function GameMenu({
   onOpenChange,
   sections,
   note,
+  rule,
   shield,
   triggerRef,
   onCloseAutoFocus,
@@ -47,6 +48,8 @@ export function GameMenu({
   sections: GameMenuEntry[][];
   /** one line at the top: paused, or why the clock keeps running */
   note?: string;
+  /** the game's one-line rule (R2-06): under the title until the first move, and always here */
+  rule?: string;
   shield?: boolean;
   triggerRef?: RefObject<HTMLButtonElement | null>;
   onCloseAutoFocus?: (e: Event) => void;
@@ -99,6 +102,18 @@ export function GameMenu({
                     <DropdownMenu.Label className="text-muted flex items-center gap-2 px-3 pt-1.5 pb-2 text-[13px] font-medium">
                       <Icon name="pause" size={14} className="shrink-0" />
                       {note}
+                    </DropdownMenu.Label>
+                  )}
+                  {rule && (
+                    <DropdownMenu.Label
+                      className="bg-surface-raised mx-1 mb-1 flex gap-2 rounded-[14px] px-3 py-2 text-[14px] leading-5 font-medium"
+                      data-menu-rule
+                    >
+                      <Icon name="info" size={16} className="text-muted mt-0.5 shrink-0" />
+                      <span>
+                        <span className="sr-only">{T.rule}: </span>
+                        {rule}
+                      </span>
                     </DropdownMenu.Label>
                   )}
                   {groups.map((g, i) => (

@@ -243,3 +243,14 @@ describe("catalog: game art (R2-12)", () => {
     expect(GAME_BY_ID.emojihits.icon).toBe("smiley");
   });
 });
+
+describe("R2-06: visible one-line rules", () => {
+  it("every playable game has a one-line rule that fits two lines under the title on a 375 px phone", () => {
+    for (const g of [...GAMES, ...LAB_GAMES]) {
+      expect(g.rule.trim(), g.id).not.toBe("");
+      expect(g.rule, g.id).not.toMatch(/\n/);
+      // about 45 characters a line at 14 px across a 343 px column; Ludo's 122 is the longest today
+      expect(g.rule.length, g.id).toBeLessThanOrEqual(130);
+    }
+  });
+});

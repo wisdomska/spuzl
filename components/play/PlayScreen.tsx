@@ -764,9 +764,19 @@ function PlayLoading({ meta }: { meta: GameMeta }) {
           </h1>
           <Skeleton className="mt-0.5 h-3 w-16 rounded-[6px]" />
         </div>
+        {/* R2-06: the rule sits where the shell will show it, so the board does not move when the shell arrives. */}
+        <p
+          aria-hidden
+          className="text-muted wide:line-clamp-2 hidden max-w-[640px] min-w-0 flex-[2] text-center text-[14px] leading-5 font-medium"
+        >
+          {meta.rule}
+        </p>
         <Skeleton className="h-11 w-[92px] rounded-[14px] max-[359px]:w-[72px]" />
         <Skeleton className="size-11 rounded-[14px]" />
       </div>
+      <p aria-hidden className="text-muted short:text-[13px] wide:hidden line-clamp-2 px-4 pb-2 text-[14px] leading-5 font-medium">
+        {meta.rule}
+      </p>
       <p className="sr-only">{meta.rule}</p>
       {/* Wide: the board column, with the side panel's width kept free. */}
       <main className="short:py-1 wide:mr-[392px] wide:p-3 flex justify-center px-3 py-2">
