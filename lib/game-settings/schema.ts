@@ -4,6 +4,9 @@
  * schema, and both the server and the client read values at runtime (never hard-coded copies).
  * Add a setting here, then read it with `getGameSettings()` (server) or `useGameSettings()` (client).
  */
+import { GAMES, LAB_GAMES } from "@/lib/catalog";
+import { hasLogic } from "@/games/logic-ids";
+
 export type SettingDef =
   | { kind: "int"; label: string; help: string; group: string; default: number; min: number; max: number; unit?: string }
   | { kind: "bool"; label: string; help: string; group: string; default: boolean }
@@ -438,6 +441,14 @@ export const SETTINGS = {
     default: 2,
     min: 1,
     max: 5,
+  },
+  "practice.disabled": {
+    kind: "set",
+    group: "Practice rounds",
+    label: "Practice round off for",
+    help: "Ticked games skip the practice round (the short first try with free hints) from every way in: Continue, Library, links, Daily Five, levels and vs the bot. They also skip the How it works card in Duels and Parties. The server stops serving their practice boards too. None ticked: every game has its practice round.",
+    default: [] as readonly string[],
+    options: [...GAMES, ...LAB_GAMES].filter((g) => hasLogic(g.id)).map((g) => ({ id: g.id, label: g.name })),
   },
   "leagues.fillWithFriends": {
     kind: "bool",

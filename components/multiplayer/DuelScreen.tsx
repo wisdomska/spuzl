@@ -32,6 +32,7 @@ import { ShareSheet } from "@/components/share/ShareSheet";
 import { cardUrl } from "@/lib/share/urls";
 import { duelShareText } from "@/lib/share/text";
 import { MatchBoard } from "./MatchBoard";
+import { PracticeFirst } from "./practice";
 import { useLeave } from "@/components/game/useLeave";
 import { useWide } from "@/components/game/useBoardSize";
 import { LeaveConfirm } from "@/components/game/LeaveConfirm";
@@ -277,6 +278,8 @@ function DuelLobby({
             Unranked. {game ? gameName(game) : duelCopy.anyGame}, best of 3. The duel starts the moment they join.
           </p>
           <ShareCode code={friend.code} url={`/duel?code=${friend.code}`} text="Duel me on SPUZL. Best of 3." />
+          {/* R2-07: new to the game? Practise while the friend joins (it closes when the duel starts). */}
+          {game && <PracticeFirst games={[game]} />}
           <HostJoinRequests matchId={friend.matchId} channel={friendChannel} />
           <InviteFriends kind="duel" target={friend.matchId} />
           <div className="text-muted mt-2 flex items-center gap-2 text-[15px]" aria-live="polite">
@@ -617,6 +620,8 @@ function DuelMatch({ id }: { id: string }) {
           strip={strip}
           locked={phase !== "playing" || theyFinished || iFinished}
           label="Their board stays hidden"
+          // Ranked Duels already held a server rules break for a game new to either player (SPZ-12).
+          howItWorks={!(view.rated && !view.isBot)}
           onExit={leave.request}
           onFinished={onFinished}
           onRejected={onRejected}

@@ -218,12 +218,13 @@ export function PlayScreen({
     const id = setTimeout(() => {
       const first = needsGuided({
         id: meta.id,
-        // A Daily Five game is a Daily: first-timers get the same practice round.
-        mode: initialMode === "five" ? "daily" : initialMode,
+        // Every entry (R2-07): Daily, Daily Five, free play, archive and levels (Continue opens ladder games there).
+        mode: initialMode,
         played,
         learned: allLearned(learnedGames(), me.data?.learned),
         started: startedToday,
         available: hasLogic(meta.id),
+        disabled: settings["practice.disabled"],
       });
       if (first) setGuided(true);
       else void beginRef.current(initialMode, undefined, level);
@@ -553,8 +554,8 @@ export function PlayScreen({
           meta={meta}
           daily={initialMode === "daily" || initialMode === "five"}
           onExit={() => router.push(initialMode === "five" ? "/daily" : `/world/${meta.world}`)}
-          onDone={() => {
-            markLearned(meta.id);
+          onDone={(how) => {
+            if (how !== "unavailable") markLearned(meta.id);
             setGuided(false);
             void beginRef.current(initialMode, undefined, level);
           }}

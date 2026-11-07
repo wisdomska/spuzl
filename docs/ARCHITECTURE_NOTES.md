@@ -71,9 +71,11 @@ Existing prefetches: `PlayScreen.tsx:119` (world page), `:370` (next game, `perf
 - Registries: `games/logic-registry.ts`, `games/board-registry.tsx`. Bots: `lib/bot/*`.
 - Shell: `components/game/GameShell.tsx` (header with one timer, title + level, menu, board slot, feedback line,
   toolbar, pause overlay with Comfort settings). Boards talk to it through `BoardApi`.
-- Guided first play (practice rounds): `lib/guided.ts` `needsGuided` = mode daily/free/archive, never played, not
-  in `localStorage` `spuzl.learned` or `me.learned`, no Daily in progress. **Skipped** by `mode=level` (so Continue
-  to any ladder game, e.g. Dusk: R2-07), `/bot`, and anything opened before `played` loads.
+- Guided first play (practice rounds): `lib/guided.ts` `needsGuided` = every solo mode (daily, five, free, archive,
+  level, bot), never played, not in `localStorage` `spuzl.learned` or `me.learned`, no Daily in progress, not in the
+  admin's `practice.disabled`. Taps on a game not learned yet are not primed (`shouldPrime`, gate set in
+  `Providers.tsx`). Live rounds: "Practice first" in the Party lobby and friend Duel wait, then a 10 s How it works
+  card (`components/multiplayer/practice.tsx`, R2-07, decision PR1).
 - Levels: `lib/game/levels.ts`, `lib/client/levels.ts`; "Next level of <game>" on the compact result bar.
 
 ## Prompts and banners (R2-04)

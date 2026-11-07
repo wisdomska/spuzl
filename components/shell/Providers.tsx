@@ -1,6 +1,10 @@
 "use client";
 
-import { installAttemptPriming } from "@/lib/client/early-attempt";
+import { installAttemptPriming, setPrimeGate } from "@/lib/client/early-attempt";
+import { allLearned, learnedGames, shouldPrime } from "@/lib/guided";
+import { hasLogic } from "@/games/logic-ids";
+import type { Me } from "@/lib/client/api";
+import type { GameSettings } from "@/lib/game-settings/schema";
 import { MusicDirector } from "./MusicDirector";
 import { useEffect, useState, type ReactNode } from "react";
 import { MotionConfig } from "motion/react";
@@ -22,7 +26,24 @@ export function Providers({ children }: { children: ReactNode }) {
   const settings = useSettings();
   const { hydrate, hydrated } = settings;
   useNavTracker();
-  useEffect(() => installAttemptPriming(), []);
+  useEffect(() => {
+    // R2-07: no early attempt for a game whose practice round comes first (the account and settings from the cache).
+    setPrimeGate((game) => {
+      const me = client.getQueryData<Me | null>(["me"]);
+      return shouldPrime({
+        id: game,
+        played: me?.played,
+        learned: allLearned(learnedGames(), me?.learned),
+        available: hasLogic(game),
+        disabled: client.getQueryData<GameSettings>(["game-settings"])?.["practice.disabled"],
+      });
+    });
+    const off = installAttemptPriming();
+    return () => {
+      off();
+      setPrimeGate(null);
+    };
+  }, [client]);
 
   useEffect(() => {
     hydrate();

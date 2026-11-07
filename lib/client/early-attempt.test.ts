@@ -1,5 +1,11 @@
-import { describe, expect, it } from "vitest";
-import { parsePlayHref, primableLink } from "./early-attempt";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+const start = vi.fn(() => Promise.resolve({ attemptId: "a" }));
+vi.mock("./api", () => ({ startAttempt: (...a: unknown[]) => start(...(a as [])) }));
+vi.mock("./resume", () => ({ resumeIdFor: () => undefined }));
+vi.mock("@/lib/perf/quiet", () => ({ markPlayTap: () => {} }));
+
+import { parsePlayHref, primableLink, primeAttempt, setPrimeGate, takePrimed } from "./early-attempt";
 
 describe("attempt priming (SPZ-01, R2-01)", () => {
   it("reads daily, free play and level links", () => {
@@ -33,5 +39,27 @@ describe("attempt priming (SPZ-01, R2-01)", () => {
     expect(parsePlayHref("/play/dusk?mode=archive&date=2026-10-01")).toBeNull();
     expect(parsePlayHref("/play/chess/bot")).toBeNull();
     expect(parsePlayHref("/library")).toBeNull();
+  });
+});
+
+describe("R2-07: no priming before a practice round", () => {
+  afterEach(() => {
+    setPrimeGate(null);
+    start.mockClear();
+  });
+
+  it("skips a game the gate says is not learned, and primes the rest", () => {
+    setPrimeGate((game) => game !== "dusk");
+    primeAttempt("/play/dusk?mode=level");
+    expect(start).not.toHaveBeenCalled();
+    expect(takePrimed("dusk", "level")).toBeNull();
+    primeAttempt("/play/nine?mode=free");
+    expect(start).toHaveBeenCalledTimes(1);
+    expect(takePrimed("nine", "free")).not.toBeNull();
+  });
+
+  it("primes everything when no gate is set", () => {
+    primeAttempt("/play/crownfall?mode=level&level=3");
+    expect(start).toHaveBeenCalledTimes(1);
   });
 });

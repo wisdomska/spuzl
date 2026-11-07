@@ -37,10 +37,21 @@ export function parsePlayHref(
 /** `extra`: the free-play difficulty, or the level number for levels ("" = the player's next level). */
 const keyOf = (game: string, mode: string, extra?: string | number) => `${game}|${mode}|${extra ?? ""}`;
 
+/**
+ * R2-07: whether this game may be primed. A game the player has not learned opens on its practice round first, so an
+ * attempt started at the tap would sit unused (and a primed Daily's server clock would run through the practice).
+ * Set once by the app shell (it knows the account and the settings); until then every game may be primed.
+ */
+let gate: (game: string) => boolean = () => true;
+export function setPrimeGate(fn: ((game: string) => boolean) | null) {
+  gate = fn ?? (() => true);
+}
+
 export function primeAttempt(href: string) {
   const t = parsePlayHref(href);
   if (!t) return;
   markPlayTap(); // background downloads wait for this board (lib/perf/quiet.ts)
+  if (!gate(t.game)) return;
   const k = keyOf(t.game, t.mode, t.mode === "level" ? t.level : t.difficulty);
   const hit = primed.get(k);
   if (hit && Date.now() - hit.at < TTL_MS) return;

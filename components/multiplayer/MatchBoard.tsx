@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { GameShell } from "@/components/game/GameShell";
 import { BOARDS } from "@/games/board-registry";
 import { GAME_BY_ID } from "@/lib/catalog";
@@ -10,6 +10,10 @@ import { matchAction, matchKey } from "@/lib/client/multiplayer";
 import { throttle } from "@/lib/multiplayer/progress";
 import { TIMING } from "@/lib/multiplayer/constants";
 import type { MatchView } from "@/lib/multiplayer/types";
+import { HowItWorks, useNewToGame } from "./practice";
+
+/** Matches and games whose How it works card was shown (once per game per match; the board remounts each round). */
+const howShown = new Set<string>();
 
 /**
  * The live board for a Duel round or a Party game. Moves stay on this device; the board state goes
@@ -25,7 +29,13 @@ export function MatchBoard({
   onFinished,
   onRejected,
   onFirstMove,
+  howItWorks = true,
 }: {
+  /**
+   * R2-07: a game new to this player gets the 10-second How it works card as the round starts (a live round never
+   * waits for a practice round). Off where the server already held a rules break (ranked Duels).
+   */
+  howItWorks?: boolean;
   /** once per round, on this player's first move (not after a reload into a round they had already started) */
   onFirstMove?: (game: string) => void;
   view: MatchView;
@@ -95,25 +105,36 @@ export function MatchBoard({
     [send, view.id, round, onFinished, onRejected],
   );
 
+  const isNew = useNewToGame();
+  const howKey = `${view.id}:${puzzle.game}`;
+  const [how, setHow] = useState(() => howItWorks && !howShown.has(howKey) && isNew(puzzle.game));
+  const closeHow = useCallback(() => {
+    howShown.add(howKey);
+    setHow(false);
+  }, [howKey]);
+
   if (!meta || !Board) return null;
   return (
-    <GameShell
-      key={key}
-      meta={meta}
-      Board={Board}
-      puzzle={puzzle.data}
-      mode={view.kind === "duel" ? "duel" : "race"}
-      label={label}
-      initialState={(view.myState ?? undefined) as never}
-      onMove={onMove}
-      onSolved={onSolved}
-      onExit={onExit}
-      // The Duel and Party screens own leaving for the whole match (confirm, back-gesture guard, Escape, the
-      // leave call), between rounds too; every way out of the shell asks them.
-      leaveContext="managed"
-      strip={strip}
-      locked={locked}
-      puzzleKey={key}
-    />
+    <>
+      {how && <HowItWorks game={puzzle.game} onDone={closeHow} />}
+      <GameShell
+        key={key}
+        meta={meta}
+        Board={Board}
+        puzzle={puzzle.data}
+        mode={view.kind === "duel" ? "duel" : "race"}
+        label={label}
+        initialState={(view.myState ?? undefined) as never}
+        onMove={onMove}
+        onSolved={onSolved}
+        onExit={onExit}
+        // The Duel and Party screens own leaving for the whole match (confirm, back-gesture guard, Escape, the
+        // leave call), between rounds too; every way out of the shell asks them.
+        leaveContext="managed"
+        strip={strip}
+        locked={locked}
+        puzzleKey={key}
+      />
+    </>
   );
 }

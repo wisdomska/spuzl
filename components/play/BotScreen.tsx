@@ -17,6 +17,14 @@ import { HowToSheet, type HowToTip } from "./HowToSheet";
 import { Icon } from "@/components/ui/Icon";
 import { LudoSetup, NO_KICKS, type LudoKicks } from "@/components/multiplayer/bay/LudoSetup";
 import type { BotExtra, BotPuzzle } from "./BotBoard";
+import { GuidedPlay } from "./GuidedPlay";
+import { useMe } from "@/lib/client/api";
+import { useGameSettings } from "@/lib/game-settings/client";
+import { useMarkLearned } from "@/lib/client/learned";
+import { allLearned, learnedGames, needsGuided } from "@/lib/guided";
+import { hasLogic } from "@/games/logic-ids";
+import { PageLoader } from "@/components/ui/PageLoader";
+import { guidedCopy } from "@/lib/copy/guided";
 
 const t = boardGames.bot;
 const BotBoard = dynamic(() => import("./BotBoard"), { ssr: false, loading: () => <BoardSkeleton /> });
@@ -79,7 +87,38 @@ export function BotScreen({ meta, game, initialLevel }: { meta: GameMeta; game: 
   // Board Bay games: after a game vs the bot, offer a live game against a person (not in relaxed mode: clocks).
   const relaxed = useSettings((s) => s.relaxed);
   const live = isBayGame(game) && !relaxed;
+  // R2-07: the first open of a game here runs its practice round too (decided once the account is known).
+  const me = useMe();
+  const practiceOff = useGameSettings()["practice.disabled"];
+  const markLearned = useMarkLearned();
+  const [practiceDone, setPracticeDone] = useState(false);
+  const practice =
+    !practiceDone &&
+    !!me.data &&
+    needsGuided({
+      id: game,
+      mode: "bot",
+      played: me.data.played,
+      learned: allLearned(learnedGames(), me.data.learned),
+      started: false,
+      available: hasLogic(game),
+      disabled: practiceOff,
+    });
   const harder: BotLevel | null = outcome === "won" ? (level === "easy" ? "medium" : level === "medium" ? "hard" : null) : null;
+
+  if (me.isPending && !practiceDone) return <PageLoader message={guidedCopy.loading} />;
+  if (practice)
+    return (
+      <GuidedPlay
+        meta={meta}
+        daily={false}
+        onExit={() => router.push(`/world/${meta.world}`)}
+        onDone={(how) => {
+          if (how !== "unavailable") markLearned(game);
+          setPracticeDone(true);
+        }}
+      />
+    );
 
   if (setup)
     return (

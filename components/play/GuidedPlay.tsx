@@ -21,11 +21,15 @@ export function GuidedPlay({
   daily,
   onDone,
   onExit,
+  doneLabel,
 }: {
   meta: GameMeta;
   daily: boolean;
-  onDone: (how: "done" | "skipped") => void;
+  /** "unavailable": no practice board (none for this game, turned off, offline): straight to the game, not learned */
+  onDone: (how: "done" | "skipped" | "unavailable") => void;
   onExit: () => void;
+  /** the last button's words (default: on to the Daily or free play) */
+  doneLabel?: string;
 }) {
   const reduce = useReducedMotion();
   const [puzzle, setPuzzle] = useState<unknown>(null);
@@ -36,7 +40,7 @@ export function GuidedPlay({
     let live = true;
     api<{ puzzle: unknown }>(`/api/v1/guided/${meta.id}`)
       .then((r) => live && setPuzzle(r.puzzle))
-      .catch(() => live && onDone("skipped")); // no practice board: straight to the game
+      .catch(() => live && onDone("unavailable")); // no practice board: straight to the game
     return () => {
       live = false;
     };
@@ -90,7 +94,7 @@ export function GuidedPlay({
       endBar={
         solved ? (
           <Button size="lg" className="w-full" icon="play" onClick={() => onDone("done")} autoFocus>
-            {daily ? T.goDaily : T.goFree}
+            {doneLabel ?? (daily ? T.goDaily : T.goFree)}
           </Button>
         ) : undefined
       }

@@ -77,3 +77,14 @@ describe("party.countdownSeconds (R2-03)", () => {
     expect(SETTINGS["party.countdownSeconds"].help.length).toBeGreaterThan(20);
   });
 });
+
+describe("R2-07: practice.disabled", () => {
+  it("is a set of game ids with practice boards, empty by default", () => {
+    expect(DEFAULTS["practice.disabled"]).toEqual([]);
+    expect(validateSetting("practice.disabled", ["dusk", "crownfall"])).toBeNull();
+    expect(validateSetting("practice.disabled", [])).toBeNull();
+    expect(validateSetting("practice.disabled", ["not-a-game"])).toMatch(/Must be a list/);
+    expect(validateSetting("practice.disabled", "dusk")).toMatch(/Must be a list/);
+    expect(SETTINGS["practice.disabled"].help.length).toBeGreaterThan(40);
+  });
+});

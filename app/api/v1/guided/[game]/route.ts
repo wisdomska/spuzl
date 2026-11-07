@@ -4,6 +4,7 @@ import { assertGameOpen, gameOr404, guidedSeed, loadFree } from "@/lib/game/serv
 import { hasLogic, loadLogic } from "@/games/logic-registry";
 import { guidedCopy } from "@/lib/copy/guided";
 import { bindPuzzle } from "@/lib/game/guess-token";
+import { getGameSettings } from "@/lib/game-settings/server";
 
 /**
  * Guided first play (task: first try of each game is a short hinted round). The practice board comes from the
@@ -17,6 +18,8 @@ export const GET = handle(async (_req: Request, ctx: RouteContext<"/api/v1/guide
   const meta = gameOr404(game);
   await assertGameOpen(meta);
   if (!hasLogic(meta.id)) throw new ApiError(404, "no_guided_round");
+  // R2-07: the admin can turn a game's practice round off ("practice.disabled"); the client then goes straight in.
+  if ((await getGameSettings())["practice.disabled"].includes(meta.id)) throw new ApiError(404, "practice_off");
   const { player } = await requirePlayer();
   const g = await loadFree(meta.id, SEED(meta.id), "easy");
   // A content game's reference goes out as a token good only for this practice board (guess route).

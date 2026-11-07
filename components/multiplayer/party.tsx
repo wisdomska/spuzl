@@ -1,5 +1,6 @@
 "use client";
 
+import { PracticeFirst } from "./practice";
 import { RankChanges } from "./RankChanges";
 import { InviteShare } from "@/components/share/InviteShare";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -595,6 +596,10 @@ export function Lobby({
           </span>
           {host && <Icon name="caret-right" size={18} className="text-muted" />}
         </button>
+      )}
+      {/* R2-07: a game new to this player: practise it here, before the round (it closes when the host starts). */}
+      {!adult && (
+        <PracticeFirst className="mx-4 mt-3" games={view.chosenGames.length ? view.chosenGames : view.gameId ? [view.gameId] : []} />
       )}
       <div className="mx-4 mt-3">
         <EmoteBar onSend={onEmote} onChat={onChat} unread={unread} />
