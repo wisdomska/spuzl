@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext, createContext, useLayoutEffect, useState, useSyncExternalStore, type RefObject } from "react";
+import { useContext, createContext, useLayoutEffect, useRef, useState, useSyncExternalStore, type RefObject } from "react";
 
 /** The game shell's board slot pads the board by this much on each side (GameShell's board `main`, px-3). */
 export const SLOT_PAD = 12;
@@ -195,11 +195,22 @@ export function wideCell(vw: number, vh: number, cols: number, overW: number, ma
  * One step of the height fit (pure, for `useFitHeight`). `over` is how many px the page (or the target
  * element) reaches past the bottom of the viewport; `unit` is the px of height one step of size is worth.
  * Shrinks by just enough steps (never under `min`). Grows back towards `ideal` only when `canGrow` (a target
- * element, whose bottom is its natural position) and there is room for a whole step with 2 px to spare.
+ * element, whose bottom is its natural position) and there is room for a whole step with 2 px to spare, never
+ * past `cap` (one under the smallest size that overflowed), so a layout that changes shape between two sizes can't
+ * make it flip between them for ever.
  */
-export function fitStep(cur: number, ideal: number, min: number, unit: number, over: number, canGrow: boolean): number {
+export function fitStep(
+  cur: number,
+  ideal: number,
+  min: number,
+  unit: number,
+  over: number,
+  canGrow: boolean,
+  cap: number = ideal,
+): number {
   if (over > 0) return Math.max(Math.min(min, ideal), cur - Math.ceil(over / unit));
-  if (canGrow && cur < ideal && -over >= unit + 2) return Math.min(ideal, cur + Math.floor((-over - 2) / unit));
+  const top = Math.min(ideal, cap);
+  if (canGrow && cur < top && -over >= unit + 2) return Math.min(top, cur + Math.floor((-over - 2) / unit));
   return cur;
 }
 
@@ -241,8 +252,19 @@ export function useFitHeight(
   const embedded = useContext(EmbeddedBoard);
   const [fit, setFit] = useState({ ideal, size: ideal });
   const size = embedded ? ideal : fit.ideal === ideal ? fit.size : ideal;
+  // Since the last restart: `cap` is one under the smallest size that overflowed (growing back stops there, see
+  // fitStep); `prev` is the last overflowing measurement; `stuck` is set when shrinking the board didn't reduce the
+  // overflow (something else is too tall, e.g. the side panel of the two-column shell), so it stops shrinking.
+  const guard = useRef<{ ideal: number; cap: number; prev: { size: number; over: number } | null; stuck: boolean }>({
+    ideal,
+    cap: ideal,
+    prev: null,
+    stuck: false,
+  });
   useLayoutEffect(() => {
     if (embedded) return;
+    const reset = () => (guard.current = { ideal, cap: ideal, prev: null, stuck: false });
+    if (guard.current.ideal !== ideal) reset();
     const measure = () => {
       const vh = window.innerHeight;
       let over: number;
@@ -253,10 +275,25 @@ export function useFitHeight(
         const bottom = shellBottom ?? el.getBoundingClientRect().bottom + (margin === "shell" ? 0 : margin);
         over = bottom + window.scrollY - vh;
       } else over = document.documentElement.scrollHeight - vh;
-      const next = fitStep(size, ideal, min, unit, over, !!target);
+      const g = guard.current;
+      if (over > 0) {
+        if (g.stuck) return;
+        if (g.prev && g.prev.size > size && over >= g.prev.over) {
+          // The last shrink didn't help: undo it and leave the board alone until the viewport changes.
+          g.stuck = true;
+          setFit({ ideal, size: g.prev.size });
+          return;
+        }
+        g.cap = Math.min(g.cap, size - 1);
+        g.prev = { size, over };
+      }
+      const next = fitStep(size, ideal, min, unit, over, !!target, g.cap);
       if (next !== size) setFit({ ideal, size: next });
     };
-    const restart = () => setFit({ ideal, size: ideal });
+    const restart = () => {
+      reset();
+      setFit({ ideal, size: ideal });
+    };
     measure();
     const ro = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
     ro?.observe(document.body);

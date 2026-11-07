@@ -98,6 +98,10 @@ describe("phone fit", () => {
     expect(fitStep(35, 40, 30, 9, -400, false)).toBe(35); // whole-page mode only shrinks
     expect(fitStep(341, 341, 200, 1, 129, false)).toBe(212); // Rage at 320 x 568
     expect(fitStep(20, 20, 30, 1, 10, false)).toBe(20); // an ideal under the floor stays
+    // Never grows back past the cap (one under a size that overflowed): no flip between two sizes.
+    expect(fitStep(35, 40, 30, 9, -400, true, 37)).toBe(37);
+    expect(fitStep(37, 40, 30, 9, -400, true, 37)).toBe(37);
+    expect(fitStep(38, 40, 30, 9, 5, true, 37)).toBe(37); // shrinking ignores the cap
   });
 
   it("shellContentBottom ends at the last shell zone, without the tool bar's auto margin", () => {
