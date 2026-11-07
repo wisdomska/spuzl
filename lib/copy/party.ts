@@ -77,4 +77,24 @@ export const partyCopy = {
     sparks: (n: number) => `+${n} Sparks`,
     capped: "Daily XP limit reached. Back tomorrow.",
   },
+  /** big-screen spectator view (R2-P5, /party/<code>/tv, admin "features.partyTv") */
+  tv: {
+    pageTitle: "Party on the big screen",
+    loading: "Finding the room…",
+    closedTitle: "This room isn't on the big screen",
+    closedBody: "Ask the host to turn on Big-screen view in Room settings. Then this page fills in by itself.",
+    missingTitle: (code: string) => `No room called ${code}`,
+    missingBody: "Codes expire 2 h after everyone leaves. Check the code on the host's phone.",
+    offTitle: "Big-screen view is resting",
+    offBody: "It's switched off for now. Players can still race on their phones.",
+    retrying: "Checking again every few seconds.",
+    /** host switch in Room settings */
+    switchLabel: "Big-screen view",
+    switchHelp: "Anyone with the code can watch on a TV or projector: nicknames and scores only, no chat.",
+    switchUnder16: "Opens for hosts 16 and over.",
+    openLink: "Open big-screen view",
+    linkLabel: (url: string) => `Watch at ${url}`,
+    saved: (on: boolean) => (on ? "Big-screen view is on." : "Big-screen view is off."),
+    failed: "Couldn't change it. Try again.",
+  },
 } as const;

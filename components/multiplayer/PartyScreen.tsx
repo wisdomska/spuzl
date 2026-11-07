@@ -26,6 +26,7 @@ import { normalizeRoomCode } from "@/lib/multiplayer/roomCode";
 import { partyPhase } from "@/lib/multiplayer/race";
 import { raceGameParam, roomGamesName } from "@/lib/multiplayer/games";
 import { PARTY_PICK_MIN } from "@/lib/multiplayer/constants";
+import { canHostTv, tvPath } from "@/lib/multiplayer/tv";
 import { partyCopy } from "@/lib/copy/party";
 import type { MatchPlayerView, MatchView } from "@/lib/multiplayer/types";
 import type { RealtimeChannel } from "@/lib/realtime/transport";
@@ -51,6 +52,7 @@ import {
   PartyStart,
   Podium,
   RaceRail,
+  TvFrame,
   TvMode,
   rowsOf,
   useJoinToasts,
@@ -316,6 +318,7 @@ function Room({ id, code }: { id: string; code: string }) {
   const countdown = useCountdown(view);
   const [settings, setSettings] = useState(false);
   const [passAsk, setPassAsk] = useState(false);
+  const tvOn = useGameSettings()["features.partyTv"];
   useJoinToasts(view, show);
 
   const phase = view ? partyPhase({ status: view.status, roundStartedAt: view.roundStartedAt }, now) : "lobby";
@@ -600,6 +603,20 @@ function Room({ id, code }: { id: string; code: string }) {
               .catch((e) => err(e, "Couldn't save."))
           }
           onTv={() => router.push(`/party/${code}?view=tv`)}
+          tv={
+            tvOn
+              ? {
+                  open: !!view.tvOpen,
+                  allowed: !!meQ.data && canHostTv(meQ.data),
+                  url: `${typeof window === "undefined" ? "" : window.location.host}${tvPath(code)}`,
+                  onToggle: (open) =>
+                    act("tv", { open })
+                      .then(() => show(partyCopy.tv.saved(open)))
+                      .catch((e) => err(e, partyCopy.tv.failed)),
+                  onOpen: () => window.open(tvPath(code), "_blank", "noopener"),
+                }
+              : null
+          }
         />
       )}
     </Screen>
@@ -626,11 +643,14 @@ function RoomSettings({
   onClose,
   onSave,
   onTv,
+  tv,
 }: {
   view: MatchView;
   onClose: () => void;
   onSave: (s: { game: string | null; games: string[] | null; difficulty: Diff }) => void;
   onTv: () => void;
+  /** R2-P5 big-screen view switch (admin "features.partyTv"); null hides it */
+  tv: { open: boolean; allowed: boolean; url: string; onToggle: (open: boolean) => void; onOpen: () => void } | null;
 }) {
   const [choice, setChoice] = useState<GameChoice>({
     game: view.gameId,
@@ -658,26 +678,11 @@ function RoomSettings({
           <Icon name="television" size={20} />
           TV mode
         </button>
+        {tv && <TvSwitch {...tv} />}
         <Cta disabled={!choiceReady(choice)} onClick={() => onSave({ game: choice.game, games: choice.picks, difficulty })}>
           {choiceReady(choice) ? "Save" : partyCopy.host.pickMore(PARTY_PICK_MIN)}
         </Cta>
       </div>
-    </div>
-  );
-}
-
-/** Scales the 1280 × 720 TV frame to the screen, letterboxed. */
-function TvFrame({ children }: { children: React.ReactNode }) {
-  const [scale, setScale] = useState(1);
-  useEffect(() => {
-    const fit = () => setScale(Math.min(window.innerWidth / 1280, window.innerHeight / 720));
-    fit();
-    window.addEventListener("resize", fit);
-    return () => window.removeEventListener("resize", fit);
-  }, []);
-  return (
-    <div className="bg-bg fixed inset-0 flex items-center justify-center overflow-hidden">
-      <div style={{ width: 1280, height: 720, transform: `scale(${scale})`, transformOrigin: "center" }}>{children}</div>
     </div>
   );
 }
@@ -807,5 +812,64 @@ function AdultRoom({
       )}
       {kick && <KickConfirm player={kick} onConfirm={doKick} onClose={() => setKick(null)} />}
     </>
+  );
+}
+
+/** Room settings: the host's big-screen view switch and its link (R2-P5). The server enforces both. */
+function TvSwitch({
+  open,
+  allowed,
+  url,
+  onToggle,
+  onOpen,
+}: {
+  open: boolean;
+  allowed: boolean;
+  url: string;
+  onToggle: (open: boolean) => void;
+  onOpen: () => void;
+}) {
+  const T = partyCopy.tv;
+  return (
+    <div className="bg-surface-raised flex flex-col gap-2.5 rounded-[16px] p-3.5">
+      <div className="flex items-center gap-3">
+        <div className="flex min-w-0 flex-1 flex-col">
+          <span id="tv-switch-label" className="text-[16px] font-semibold">
+            {T.switchLabel}
+          </span>
+          <span id="tv-switch-help" className="text-muted text-[14px] leading-snug">
+            {allowed ? T.switchHelp : T.switchUnder16}
+          </span>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={open}
+          aria-labelledby="tv-switch-label"
+          aria-describedby="tv-switch-help"
+          disabled={!allowed}
+          onClick={() => onToggle(!open)}
+          className={`press relative flex h-11 w-[68px] flex-none items-center rounded-full px-1 disabled:opacity-50 ${open ? "bg-accent" : "bg-line"}`}
+        >
+          <span
+            aria-hidden
+            className={`bg-bg size-9 rounded-full transition-transform duration-200 motion-reduce:transition-none ${open ? "translate-x-[24px]" : ""}`}
+          />
+        </button>
+      </div>
+      {open && allowed && (
+        <div className="flex items-center gap-2">
+          <span className="num text-muted min-w-0 flex-1 truncate text-[14px]">{T.linkLabel(url)}</span>
+          <button
+            type="button"
+            onClick={onOpen}
+            className="press bg-surface text-accent flex min-h-11 flex-none items-center gap-1.5 rounded-[12px] px-3 text-[14px] font-semibold"
+          >
+            <Icon name="arrow-square-out" size={18} />
+            {T.openLink}
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

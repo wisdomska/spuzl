@@ -62,6 +62,8 @@ export const KEY_EVENTS = [
   "practice_skip",
   // Full games (Board Games with a friend, Play live or the bot): { game, mode: "bay" | "bot", kind: "won" | "lost" | "draw" }
   "game_over",
+  // R2-P5 (PostHog only for now; the admin Metrics agent decides whether they go first party)
+  "party_tv_view", // the big-screen view loaded a room
 ] as const;
 export type KeyEvent = (typeof KEY_EVENTS)[number];
 

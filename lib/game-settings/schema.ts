@@ -160,6 +160,13 @@ export const SETTINGS = {
     help: 'Share from a clear makes a 1080 × 1920 story card: Spuz in the player\'s equipped hat, the time, hints and slips, and "Beat me" with a short link to a challenge on the same puzzle (made on the server when the player shares). Needs Friend challenges on. Off: Share uses the older Daily cards and the story image stops.',
     default: true,
   },
+  "features.partyTv": {
+    kind: "bool",
+    group: "Features",
+    label: "Party big-screen view",
+    help: "A read-only spectator page for a Party room at /party/<code>/tv, for a classroom projector or a TV: anyone with the code can watch nicknames, progress and scores, with no chat and no way to play. The host turns it on or off per room (on by default for classroom rooms, off otherwise; never for a host under 16). Off: the page and its data are refused for every room.",
+    default: true,
+  },
   "features.seasonal": {
     kind: "bool",
     group: "Features",

@@ -20,6 +20,7 @@ import { requireLivePlay } from "./liveGate";
 import { joinStateFor, requireMayJoin } from "./joinRequests";
 import { recordDuelCreated } from "@/lib/analytics/server";
 import { duelCopy } from "@/lib/copy/duel";
+import { tvDefault } from "../tv";
 
 const iso = (n: number) => new Date(n).toISOString();
 const secureRandom = () => randomInt(0, CODE_ALPHABET.length) / CODE_ALPHABET.length;
@@ -301,6 +302,8 @@ export async function createRoom(admin: SupabaseClient, playerId: string, input:
     max_players: input.maxPlayers,
     classroom: input.classroom,
     best_of: PARTY_GAMES,
+    // R2-P5: classroom rooms open the big-screen view by default (column default false covers the rest).
+    ...(tvDefault(input.classroom) ? { tv_open: true } : {}),
   });
   await addPlayer(admin, row.id, playerId, 0, { ready: true, spectator: input.classroom });
   return { matchId: row.id, code: row.code };

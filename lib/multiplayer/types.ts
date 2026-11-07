@@ -58,6 +58,8 @@ export interface MatchView {
   difficulty: string;
   mix: boolean;
   classroom: boolean;
+  /** Party: the host lets anyone with the code watch the big-screen view (/party/<code>/tv) */
+  tvOpen?: boolean;
   maxPlayers: number;
   rated: boolean;
   isBot: boolean;

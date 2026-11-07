@@ -69,6 +69,8 @@ export interface MatchRow {
   /** 18+ party games (20261112000001); absent before that migration, which reads as "race" */
   party_mode?: PartyMode;
   party_leads: string[];
+  /** R2-P5 (20261204000301): the host lets anyone with the code watch at /party/<code>/tv; absent before it */
+  tv_open?: boolean;
 }
 
 export interface PlayerRow {
@@ -285,6 +287,7 @@ export async function viewOf(admin: SupabaseClient, l: Loaded, me: string, rewar
     difficulty: m.difficulty,
     mix: m.mix,
     classroom: m.classroom,
+    tvOpen: !!m.tv_open,
     maxPlayers: m.max_players,
     rated: m.rated,
     isBot: m.is_bot,
