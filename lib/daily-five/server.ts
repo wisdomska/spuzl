@@ -1,7 +1,7 @@
 import "server-only";
 import { createHash } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { GAMES, GAME_BY_ID, LAB_GAMES, isRetired, playableGame, type WorldId } from "@/lib/catalog";
+import { GAME_BY_ID, openGame, playerGames, type WorldId } from "@/lib/catalog";
 import { hasLogic, loadLogic } from "@/games/logic-registry";
 import type { ContentLogic, Difficulty, GameLogic } from "@/games/types";
 import { createRng } from "@/lib/rng";
@@ -68,17 +68,16 @@ export interface DailyFiveView {
 
 const COLS = "date, slot, kind, world, game_id, puzzle_id, source, locked, updated_at";
 
-/** Live games the auto-pick can choose from: playable, with logic, and lab games only while they are switched on. */
+/** Games the auto-pick can choose from: live ones with logic, and lab games only while "features.labGames" has them. */
 export async function fiveCandidates(settings: GameSettings): Promise<Candidate[]> {
   const meta = await loadGamesMeta();
-  const games = [...GAMES, ...(settings["features.newGames"] ? LAB_GAMES : [])].filter((g) => hasLogic(g.id) && !isRetired(g.id));
+  const games = playerGames(settings).filter((g) => hasLogic(g.id));
   return games.map((g) => ({ id: g.id, world: g.world, typicalSec: meta[g.id]?.typicalSec ?? 180 }));
 }
 
 /** A game an admin may put in a Daily Five (manual pick or import). */
 export function schedulableGame(id: string, settings: GameSettings): boolean {
-  const g = playableGame(id);
-  return !!g && hasLogic(id) && (!g.lab || settings["features.newGames"]);
+  return !!openGame(id, settings) && hasLogic(id);
 }
 
 /**

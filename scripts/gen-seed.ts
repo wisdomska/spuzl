@@ -29,7 +29,9 @@ out.push(
     "\non conflict (id) do update set world_id = excluded.world_id, name = excluded.name, status = excluded.status, phase = excluded.phase, engine = excluded.engine, scoring = excluded.scoring, is_unique = excluded.is_unique, min_time_ms = excluded.min_time_ms, sort = excluded.sort;",
 );
 
-// Phase 5 lab games (hidden while features.newGames is off): status coming_soon, never overwritten once live.
+// Lab games (hidden from players unless "features.labGames" has them): status coming_soon. A row already there keeps
+// its status (a lab game made live by hand, or one brought back from retirement, which a migration moves), so a
+// re-seed never hides a live game.
 for (const [i, g] of LAB_GAMES.entries()) {
   out.push("insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values");
   out.push(

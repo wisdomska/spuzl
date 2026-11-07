@@ -131,12 +131,13 @@ export const SETTINGS = {
     help: "Board puzzles can be the bonus game.",
     default: true,
   },
-  "features.newGames": {
-    kind: "bool",
+  "features.labGames": {
+    kind: "set",
     group: "Features",
-    label: "New games (Phase 5)",
-    help: "Shows the new games in All games and on their world, and lets players open them. Off: they are hidden and the server refuses them.",
-    default: false,
+    label: "Lab games",
+    help: "Games switched on for players while in testing. A ticked game shows in All games and on its world, can be picked for the Daily Five and gets Dailies, and players can open it (practice round, free play, vs the bot). Unticked: it is hidden and the server refuses it like an unknown game. Lab games never go into Duels or Parties. None ticked: players see only the live games.",
+    default: [] as readonly string[],
+    options: LAB_GAMES.map((g) => ({ id: g.id, label: g.name })),
   },
   "features.statusCards": {
     kind: "bool",

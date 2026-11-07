@@ -11,7 +11,8 @@ import { dara } from "@/lib/copy/dara";
  * every player-facing list (GAMES, WORLDS, LAB_GAMES) and the server refuses them like an unknown game
  * (`playableGame`, `lib/game/service.ts`). Counts on screens come from GAMES.length / WORLDS.length
  * (GAME_COUNT, WORLD_COUNT), never typed by hand. To bring a game back, take its id out of RETIRED_IDS and
- * set its `games.status` to 'live' in a migration.
+ * set its `games.status` to 'live' in a migration; or bring it back as a lab game (`lab: true` in LAB_LIST,
+ * `games.status` 'coming_soon'), which players reach only while "features.labGames" has it (`openGame`).
  */
 export type WorldId = "logic" | "line" | "shape" | "number" | "word" | "clue" | "reflex" | "rage" | "board";
 
@@ -60,7 +61,7 @@ export interface GameMeta {
   photosensitive?: boolean;
   /** Offers "Play a full game vs bot" (casual, on the device, no XP): /play/<id>/bot */
   botPlay?: boolean;
-  /** Phase 5 game behind the admin setting "features.newGames": hidden and refused by the server while off */
+  /** Lab game: hidden and refused by the server unless the admin setting "features.labGames" has its id (`openGame`) */
   lab?: boolean;
   /** Retired (RETIRED_IDS): kept in code, hidden from players and refused by the server. Set by the catalog. */
   retired?: boolean;
@@ -175,17 +176,6 @@ const MAIN_GAMES: GameMeta[] = [
     { unique: true, minTimeMs: 40000 },
   ),
   g(
-    "pixl",
-    "Pixl",
-    "logic",
-    "checkerboard",
-    "M2",
-    "grid",
-    "Number clues paint a picture",
-    "Fill cells so each row and column matches its number clues.",
-    { unique: true, minTimeMs: 10000 },
-  ),
-  g(
     "blackout",
     "Blackout",
     "logic",
@@ -195,17 +185,6 @@ const MAIN_GAMES: GameMeta[] = [
     "Lights out in fewest moves",
     "Tap a tile to flip it and its 4 neighbours. Turn every light off.",
     { minTimeMs: 3000 },
-  ),
-  g(
-    "tripwire",
-    "Tripwire",
-    "logic",
-    "bomb",
-    "M3+",
-    "grid",
-    "No-guess minesweeper",
-    "Reveal every safe tile. Numbers count the mines touching a tile.",
-    { unique: true, minTimeMs: 8000 },
   ),
   // Puzzles: paths and mazes (from Line Lane; isles stays there, retired)
   g(
@@ -448,28 +427,6 @@ const MAIN_GAMES: GameMeta[] = [
     minTimeMs: 2000,
   }),
   g(
-    "pinned",
-    "Pinned",
-    "clue",
-    "map-pin",
-    "M3+",
-    "custom",
-    "Drop the pin on the map",
-    "Drop a pin where the landmark is. Closer scores more.",
-    { content: "curated", scoring: "score", minTimeMs: 1000 },
-  ),
-  g(
-    "flagged",
-    "Flagged",
-    "clue",
-    "flag",
-    "M3+",
-    "custom",
-    "Flags, capitals, currencies",
-    "10 fast rounds of flags, capitals and currencies.",
-    { content: "curated", scoring: "score", minTimeMs: 3000 },
-  ),
-  g(
     "emojihits",
     "Emoji Hits",
     "word",
@@ -669,45 +626,16 @@ const MAIN_GAMES: GameMeta[] = [
 ];
 
 /**
- * Phase 5 games (lab: true). They are NOT in GAMES, so counts, paths, Duel/Party pickers and Dailies stay the
- * live games; screens add them with `labGamesInWorld` / `LAB_GAMES` only when "features.newGames" is on, and the
- * server refuses them while it is off. Add new games at the END of this list (one block per game).
- * Trotro Jam, Emoji Hits and Beat Tap graduated to the live list (2026-11); the rest are retired.
+ * Lab games (lab: true): playable code that players reach only while the admin setting "features.labGames" (a set
+ * of game ids, lib/game-settings/schema.ts) has their id. They are NOT in GAMES, so counts, paths, Duel/Party
+ * pickers and the live Dailies stay the live games; player screens add the switched-on ones with `openLabGames` /
+ * `labGamesInWorld`, and the server refuses the others like an unknown game (`openGame`, lib/game/service.ts
+ * assertGameOpen). Add new games at the END of this list (one block per game).
+ * Trotro Jam, Emoji Hits and Beat Tap graduated to the live list (2026-11). R2-P5 brought these eleven back from
+ * retirement as lab games, in this order; the Number Den and Clue Cave ones now sit in the group that took their
+ * kind of game (Puzzles, Words & Quiz), so a switched-on game shows on a live world.
  */
 const LAB_LIST: GameMeta[] = [
-  g(
-    "penalty",
-    "Penalty King",
-    "reflex",
-    "soccer-ball",
-    "M3+",
-    "custom",
-    "Five kicks to beat the keeper",
-    "Tap to set your aim, tap again to set your power. Five kicks: most goals wins, then accuracy.",
-    { scoring: "score", minTimeMs: 0, lab: true },
-  ),
-  g(
-    "hilo",
-    "Higher or Lower",
-    "number",
-    "arrows-down-up",
-    "M3+",
-    "custom",
-    "Call the next card",
-    "Work out the next card. Higher or lower than this one? Ten calls, three slips and you are out.",
-    { scoring: "score", minTimeMs: 6000, lab: true },
-  ),
-  g(
-    "market",
-    "Market Run",
-    "number",
-    "storefront",
-    "M3+",
-    "custom",
-    "Shop Makola to the exact change",
-    "Buy 1 to 9 of each item so you bring back the exact change and every rule on the list holds.",
-    { unique: true, minTimeMs: 8000, lab: true },
-  ),
   g(
     "five",
     "Five",
@@ -720,6 +648,39 @@ const LAB_LIST: GameMeta[] = [
     { content: "curated", minTimeMs: 4000, lab: true },
   ),
   g(
+    "hilo",
+    "Higher or Lower",
+    "logic",
+    "arrows-down-up",
+    "M3+",
+    "custom",
+    "Call the next card",
+    "Work out the next card. Higher or lower than this one? Ten calls, three slips and you are out.",
+    { scoring: "score", minTimeMs: 6000, lab: true },
+  ),
+  g(
+    "penalty",
+    "Penalty King",
+    "reflex",
+    "soccer-ball",
+    "M3+",
+    "custom",
+    "Five kicks to beat the keeper",
+    "Tap to set your aim, tap again to set your power. Five kicks: most goals wins, then accuracy.",
+    { scoring: "score", minTimeMs: 0, lab: true },
+  ),
+  g(
+    "market",
+    "Market Run",
+    "logic",
+    "storefront",
+    "M3+",
+    "custom",
+    "Shop Makola to the exact change",
+    "Buy 1 to 9 of each item so you bring back the exact change and every rule on the list holds.",
+    { unique: true, minTimeMs: 8000, lab: true },
+  ),
+  g(
     "lightup",
     "Light Up",
     "logic",
@@ -730,31 +691,74 @@ const LAB_LIST: GameMeta[] = [
     "Light every white cell. Lamps never shine on each other; a number counts the lamps beside it.",
     { unique: true, minTimeMs: 8000, lab: true },
   ),
-  // Killer Sums (Number Den): killer sudoku on the shared sudoku board
-  g("killer", killer.title, "number", "circle-dashed", "M3+", "grid", killer.blurb, killer.rule, {
+  // Killer Sums (was Number Den): killer sudoku on the shared sudoku board
+  g("killer", killer.title, "logic", "circle-dashed", "M3+", "grid", killer.blurb, killer.rule, {
     unique: true,
     minTimeMs: 15000,
     lab: true,
   }),
-  // Dara (Board Bay): West African three-in-a-row; puzzles in the shell plus a full game vs bot
+  // Dara (Board Games): West African three-in-a-row; puzzles in the shell plus a full game vs bot
   g("dara", dara.title, "board", "dots-three", "M3+", "board", dara.blurb, dara.rule, {
     unique: true,
     minTimeMs: 1500,
     botPlay: true,
     lab: true,
   }),
+  // Pinned and Flagged (were Clue Cave): curated geography content
+  g(
+    "pinned",
+    "Pinned",
+    "word",
+    "map-pin",
+    "M3+",
+    "custom",
+    "Drop the pin on the map",
+    "Drop a pin where the landmark is. Closer scores more.",
+    { content: "curated", scoring: "score", minTimeMs: 1000, lab: true },
+  ),
+  g(
+    "flagged",
+    "Flagged",
+    "word",
+    "flag",
+    "M3+",
+    "custom",
+    "Flags, capitals, currencies",
+    "10 fast rounds of flags, capitals and currencies.",
+    { content: "curated", scoring: "score", minTimeMs: 3000, lab: true },
+  ),
+  g(
+    "tripwire",
+    "Tripwire",
+    "logic",
+    "bomb",
+    "M3+",
+    "grid",
+    "No-guess minesweeper",
+    "Reveal every safe tile. Numbers count the mines touching a tile.",
+    { unique: true, minTimeMs: 8000, lab: true },
+  ),
+  g(
+    "pixl",
+    "Pixl",
+    "logic",
+    "checkerboard",
+    "M2",
+    "grid",
+    "Number clues paint a picture",
+    "Fill cells so each row and column matches its number clues.",
+    { unique: true, minTimeMs: 10000, lab: true },
+  ),
 ];
 
 /**
- * Retired by the owner (2026-11, 61 to 29 games; Quads came back in R2-14). Code, boards and tests stay; players never see these and the
- * server answers 404 unknown_game. The admin console lists them, marked retired, read-only for scheduling.
+ * Retired by the owner (2026-11, 61 to 29 games; Quads came back in R2-14, and eleven came back as lab games in
+ * R2-P5). Code, boards and tests stay; players never see these and the server answers 404 unknown_game. The admin
+ * console lists them, marked retired, read-only for scheduling.
  */
 export const RETIRED_IDS: ReadonlySet<string> = new Set([
-  // Puzzles (was Logic Lab)
-  "pixl",
+  // Puzzles (was Logic Lab). Pixl, Tripwire and Light Up came back as lab games (R2-P5).
   "blackout",
-  "tripwire",
-  "lightup",
   // Line Lane
   "isles",
   // Shape Shed
@@ -763,22 +767,13 @@ export const RETIRED_IDS: ReadonlySet<string> = new Set([
   "shuffle",
   "reflect",
   "squint",
-  // Number Den (the whole world)
+  // Number Den. Higher or Lower, Market Run and Killer Sums came back as lab games (R2-P5).
   "deadon",
   "merge",
   "sums",
   "equal",
-  "hilo",
-  "market",
-  "killer",
-  // Words & Quiz (was Word Woods). Quads came back in R2-14.
-  "five",
-  // Clue Cave
+  // Clue Cave. Pinned and Flagged came back as lab games (R2-P5).
   "hunch",
-  "pinned",
-  "flagged",
-  // Arcade (was Reflex Rink)
-  "penalty",
   // Rage Ridge
   "flipside",
   "ricochet",
@@ -787,11 +782,10 @@ export const RETIRED_IDS: ReadonlySet<string> = new Set([
   "grapple",
   "ghosted",
   "slip",
-  // Arcade: Gauntlet was ten Gotcha rooms in a row, so Gotcha covers it
+  // Arcade: Gauntlet was ten Gotcha rooms in a row, so Gotcha covers it. Penalty King came back as a lab game.
   "gauntlet",
-  // Board Games (was Board Bay)
+  // Board Games (was Board Bay). Dara came back as a lab game (R2-P5).
   "flip",
-  "dara",
 ]);
 
 /**
@@ -806,7 +800,7 @@ const mark = (x: GameMeta): GameMeta => (RETIRED_IDS.has(x.id) ? { ...x, retired
 export const ALL_GAMES: GameMeta[] = [...MAIN_GAMES, ...LAB_LIST].map(mark);
 /** The live games: every player-facing list, count, picker, Daily and path. */
 export const GAMES: GameMeta[] = ALL_GAMES.filter((x) => !x.retired && !x.lab);
-/** Lab games that are not retired (shown only while "features.newGames" is on). May be empty. */
+/** Lab games that are not retired, switched on or not. Players see only the ones `features.labGames` has (`openLabGames`). */
 export const LAB_GAMES: GameMeta[] = ALL_GAMES.filter((x) => x.lab && !x.retired);
 export const RETIRED_GAMES: GameMeta[] = ALL_GAMES.filter((x) => x.retired);
 /** Games marked new and not retired: what the Home "new games" banner counts (lab ones only while switched on). */
@@ -823,13 +817,37 @@ export const WORLD_COUNT = WORLDS.length;
  */
 export const GAME_BY_ID: Record<string, GameMeta> = Object.fromEntries(ALL_GAMES.map((x) => [x.id, x]));
 export const isRetired = (id: string) => RETIRED_IDS.has(id);
-/** The game when players may reach it (live or lab), otherwise undefined: unknown and retired ids alike. */
+/**
+ * The game when it is live or lab (not retired), otherwise undefined: unknown and retired ids alike. A lab game is
+ * only open to players while "features.labGames" has it: gate play on `openGame` (or the server's assertGameOpen).
+ */
 export const playableGame = (id: string | null | undefined): GameMeta | undefined =>
   id && Object.hasOwn(GAME_BY_ID, id) && !RETIRED_IDS.has(id) ? GAME_BY_ID[id] : undefined;
 /** A live game (not lab, not retired). */
 export const isLiveGame = (id: string | null | undefined) => !!playableGame(id) && !GAME_BY_ID[id!].lab;
-export const labGamesInWorld = (w: WorldId) => LAB_GAMES.filter((x) => x.world === w);
 export const isLabGame = (id: string) => playableGame(id)?.lab === true;
+
+/**
+ * The settings slice that switches lab games on for players: "features.labGames", a set of lab game ids
+ * (lib/game-settings/schema.ts). Pass the whole settings object (`getGameSettings()` / `useGameSettings()`).
+ */
+export type LabSwitch = { readonly "features.labGames": readonly string[] };
+/** A lab game switched on for players. False for live, retired and unknown ids. */
+export const isLabOn = (id: string, s: LabSwitch) => isLabGame(id) && s["features.labGames"].includes(id);
+/** The lab games switched on for players, in catalogue order. */
+export const openLabGames = (s: LabSwitch): GameMeta[] => LAB_GAMES.filter((x) => s["features.labGames"].includes(x.id));
+/** Every game a player can open now: the live games, then the switched-on lab games (Library, worlds, share card). */
+export const playerGames = (s: LabSwitch): GameMeta[] => [...GAMES, ...openLabGames(s)];
+/** The switched-on lab games of one world (shown after its live games). */
+export const labGamesInWorld = (w: WorldId, s: LabSwitch) => openLabGames(s).filter((x) => x.world === w);
+/**
+ * The game when a player may open it now: live, or lab and switched on. Unknown, retired and switched-off lab ids
+ * are all undefined, so every caller answers them alike (404 unknown_game).
+ */
+export const openGame = (id: string | null | undefined, s: LabSwitch): GameMeta | undefined => {
+  const g = playableGame(id);
+  return g && (!g.lab || s["features.labGames"].includes(g.id)) ? g : undefined;
+};
 /** Every world, including empty ones, so old results and CSS colours always resolve. */
 export const WORLD_BY_ID: Record<WorldId, World> = Object.fromEntries(ALL_WORLDS.map((w) => [w.id, w])) as Record<WorldId, World>;
 /** A world players may open: it has at least one live game. */

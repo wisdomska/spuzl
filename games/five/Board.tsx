@@ -140,10 +140,12 @@ export default function FiveBoard({ puzzle, initialState, hint, disabled, mode, 
   const onLetter = useCallback(
     (ch: string) => {
       if (locked) return;
+      // The first letter typed is the first move: the shell clock starts here, not on the first checked guess.
+      api.start?.();
       setQuiet(isKeyedInput());
       setTyped((w) => (w.length < len ? w + ch : w));
     },
-    [len, locked],
+    [api, len, locked],
   );
   const onBackspace = useCallback(() => {
     if (locked) return;

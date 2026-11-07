@@ -825,6 +825,40 @@ describe("game settings (admin cascade)", () => {
     expect(log?.length).toBe(1);
     await S.owner.aal2("/api/admin/settings", { method: "PUT", json: { key: "duel.roundResultMs", value: 2000 } });
   });
+
+  it("R2-P5: features.labGames switches lab games per game, audited, and the Library page shows each one's state", async () => {
+    const before = (await S.owner.aal2("/api/admin/settings")).data.rows.find((r: { key: string }) => r.key === "features.labGames");
+    expect(before.def.kind).toBe("set");
+    expect(before.def.options.map((o: { id: string }) => o.id)).toContain("pixl");
+    // Only lab ids: a live or retired game is refused.
+    for (const value of [["crownfall"], ["blackout"], "hilo"]) {
+      const bad = await S.owner.aal2("/api/admin/settings", { method: "PUT", json: { key: "features.labGames", value } });
+      expect([JSON.stringify(value), bad.status]).toEqual([JSON.stringify(value), 422]);
+    }
+    expect(
+      (await S.analyst.aal2("/api/admin/settings", { method: "PUT", json: { key: "features.labGames", value: ["hilo"] } })).status,
+    ).toBe(403);
+    try {
+      const set = await S.owner.aal2("/api/admin/settings", { method: "PUT", json: { key: "features.labGames", value: ["hilo"] } });
+      expect(set.status).toBe(200);
+      const pub = await fetch(`${BASE}/api/v1/settings/game`).then((r) => r.json());
+      expect(pub["features.labGames"]).toEqual(["hilo"]);
+      const { data: log } = await admin()
+        .from("audit_log")
+        .select("action, target")
+        .eq("action", "setting.update")
+        .eq("target", "setting:features.labGames")
+        .limit(1);
+      expect(log?.length).toBe(1);
+      const lib = await S.content_editor.aal2("/api/admin/games/meta");
+      const row = (id: string) => lib.data.rows.find((r: { id: string }) => r.id === id);
+      expect(row("hilo")).toMatchObject({ lab: true, labOn: true, retired: false });
+      expect(row("five")).toMatchObject({ lab: true, labOn: false });
+      expect(row("crownfall")).toMatchObject({ lab: false, labOn: false });
+    } finally {
+      await S.owner.aal2("/api/admin/settings", { method: "PUT", json: { key: "features.labGames", value: before.value ?? [] } });
+    }
+  });
 });
 
 describe("Library metadata (SPZ-14 admin cascade)", () => {
@@ -889,12 +923,12 @@ describe("Library metadata (SPZ-14 admin cascade)", () => {
 
   it("lists retired games, marked, and refuses to change them", async () => {
     const rows = (await S.owner.aal2("/api/admin/games/meta")).data.rows as { id: string; retired: boolean }[];
-    expect(rows.find((r) => r.id === "pinned")).toMatchObject({ retired: true });
+    expect(rows.find((r) => r.id === "hunch")).toMatchObject({ retired: true });
     expect(rows.find((r) => r.id === "minicross")).toMatchObject({ retired: false });
-    const r = await S.owner.aal2("/api/admin/games/meta", { method: "PATCH", json: { id: "pinned", typicalSec: 95 } });
+    const r = await S.owner.aal2("/api/admin/games/meta", { method: "PATCH", json: { id: "hunch", typicalSec: 95 } });
     expect([r.status, r.data.error]).toEqual([409, "game_retired"]);
     const pub = await fetch(`${BASE}/api/v1/games/meta`).then((x) => x.json());
-    expect(pub.pinned).toBeUndefined();
+    expect(pub.hunch).toBeUndefined();
   });
 });
 

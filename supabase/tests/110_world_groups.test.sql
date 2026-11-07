@@ -3,7 +3,7 @@ create extension if not exists pgtap with schema extensions;
 select plan(12);
 
 -- Migration 20261121000001 plus the seed: the 29 live games (Quads back in R2-14) sit in 4 groups; the other worlds keep their rows and
--- only retired games.
+-- only retired games (the lab games brought back in R2-P5 moved into the groups too, 20261203005101).
 select set_eq(
   $$select distinct world_id from public.games where status = 'live'$$,
   array['logic', 'word', 'reflex', 'board'],

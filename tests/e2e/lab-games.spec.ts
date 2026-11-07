@@ -4,21 +4,22 @@ import { onboardGuest, waitForBoard } from "./harness";
 import { GAME_COUNT, LAB_GAMES } from "@/lib/catalog";
 
 /**
- * Phase 5 games behind "features.newGames": with it on, every lab game shows in All games and plays inside the
- * shell (one timer); with it off they are hidden and refused. The lab is empty since the 2026-11 catalogue change
- * (Trotro Jam, Emoji Hits and Beat Tap went live, the rest were retired: tests/e2e/retired-games.spec.ts), so this
- * skips until a new lab game is added.
+ * Lab games behind "features.labGames" (a set of game ids; it replaced the all-or-nothing "features.newGames" in
+ * R2-P5): with every lab id in it, every lab game shows in All games and plays inside the shell (one timer); with it
+ * empty they are hidden and refused. tests/e2e/r2-p5-lab-games.spec.ts covers practice rounds and solvers.
  * Needs the server to read settings without a cache (development, or SETTINGS_CACHE_MS=0). It flips a shared
  * setting, so run it with --workers=1.
  */
-const setFlag = (on: boolean) =>
+const setFlag = (on: boolean) => {
+  const value = JSON.stringify(on ? LAB_GAMES.map((g) => g.id) : []);
   execSync(
-    `PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -qc "insert into game_settings(key,value) values ('features.newGames','${on}') on conflict (key) do update set value='${on}'"`,
+    `PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -qc "insert into game_settings(key,value) values ('features.labGames','${value}') on conflict (key) do update set value='${value}'"`,
   );
+};
 
 test.describe.configure({ mode: "serial" });
 
-test("new games: on, every lab game opens and plays in the shell; off, hidden and refused", async ({ page }) => {
+test("lab games: all switched on, every lab game opens and plays in the shell; none, hidden and refused", async ({ page }) => {
   test.skip(LAB_GAMES.length === 0, "no lab games right now");
   test.setTimeout(600_000);
   await onboardGuest(page);

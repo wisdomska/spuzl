@@ -179,6 +179,8 @@ export default function PenaltyBoard({ puzzle, initialState, disabled, mode, api
   const arm = useCallback(() => {
     const i = kicksRef.current.length;
     if (i >= total) return;
+    // Start (the first kick's tap) is the first move: the shell clock runs from here, so Pause can hold a live kick.
+    api.start?.();
     stepped.current = reduce;
     kickStart.current = performance.now();
     setAimVal(0);

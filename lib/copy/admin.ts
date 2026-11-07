@@ -660,6 +660,14 @@ export const adminCopy = {
     secondsUnit: "s",
     save: "Save",
     reset: "Reset",
+    /** Lab games (features.labGames): their state, switched on the Settings page. */
+    labOn: "lab: on for players",
+    labOff: "lab: off",
+    labNote: (on: boolean) =>
+      on
+        ? "In testing and switched on: players can find and play it."
+        : "In testing and switched off: hidden from players, and the server refuses it.",
+    labSwitch: "Switch on Settings",
   },
 
   /** Content calendar: one week of Dailies per game. */

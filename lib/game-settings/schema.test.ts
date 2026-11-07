@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULTS, SETTINGS, mergeSettings, sameSetting, validateSetting } from "./schema";
+import { LAB_GAMES } from "@/lib/catalog";
 
 describe("game settings schema", () => {
   it("every default passes its own validation", () => {
@@ -86,5 +87,31 @@ describe("R2-07: practice.disabled", () => {
     expect(validateSetting("practice.disabled", ["not-a-game"])).toMatch(/Must be a list/);
     expect(validateSetting("practice.disabled", "dusk")).toMatch(/Must be a list/);
     expect(SETTINGS["practice.disabled"].help.length).toBeGreaterThan(40);
+  });
+});
+
+describe("R2-P5: features.labGames", () => {
+  it("is a set of lab game ids, empty by default, with helper text, in Features", () => {
+    const d = SETTINGS["features.labGames"];
+    expect(DEFAULTS["features.labGames"]).toEqual([]);
+    expect(d.group).toBe("Features");
+    expect(d.help.startsWith("Games switched on for players while in testing")).toBe(true);
+    expect(d.options.map((o) => o.id)).toEqual(LAB_GAMES.map((g) => g.id));
+    expect(validateSetting("features.labGames", ["five", "pixl"])).toBeNull();
+    expect(validateSetting("features.labGames", [])).toBeNull();
+    // Only lab games: a live or retired id is refused, and so is a repeat.
+    expect(validateSetting("features.labGames", ["crownfall"])).toMatch(/Must be a list/);
+    expect(validateSetting("features.labGames", ["blackout"])).toMatch(/Must be a list/);
+    expect(validateSetting("features.labGames", ["five", "five"])).toMatch(/at most once/);
+  });
+
+  it("replaces features.newGames, whose stored row is now ignored", () => {
+    expect("features.newGames" in SETTINGS).toBe(false);
+    const s = mergeSettings([
+      { key: "features.newGames", value: true },
+      { key: "features.labGames", value: ["dara"] },
+    ]);
+    expect(s["features.labGames"]).toEqual(["dara"]);
+    expect(Object.keys(s)).not.toContain("features.newGames");
   });
 });

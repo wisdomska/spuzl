@@ -2,7 +2,7 @@ import "server-only";
 import { getGameSettings } from "@/lib/game-settings/server";
 import { createHash, randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { LAUNCH_IDS, isRetired, playableGame, type GameMeta } from "@/lib/catalog";
+import { LAUNCH_IDS, isRetired, openGame, playableGame, type GameMeta } from "@/lib/catalog";
 import { loadLogic, hasLogic } from "@/games/logic-registry";
 import { createRng } from "@/lib/rng";
 import { difficultyForDate, type Difficulty, type Hint } from "@/games/types";
@@ -33,12 +33,12 @@ const LEVEL_ROOM_FLOOR_MS = 1500;
 export type Mode = "tutorial" | "daily" | "free" | "archive" | "challenge" | "level";
 
 /**
- * Retired games are refused always, and Phase 5 (lab) games while the admin setting "features.newGames" is off,
- * both as an unknown game.
+ * Retired games are refused always, and lab games unless the admin setting "features.labGames" has their id,
+ * both as an unknown game (`openGame`, lib/catalog.ts).
  */
 export async function assertGameOpen(meta: GameMeta): Promise<void> {
   if (meta.retired || isRetired(meta.id)) throw new ApiError(404, "unknown_game");
-  if (meta.lab && !(await getGameSettings())["features.newGames"]) throw new ApiError(404, "unknown_game");
+  if (meta.lab && !openGame(meta.id, await getGameSettings())) throw new ApiError(404, "unknown_game");
 }
 
 export function gameOr404(id: string): GameMeta {

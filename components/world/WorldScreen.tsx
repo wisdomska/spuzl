@@ -24,8 +24,9 @@ import { resumeNote, useResumeGames } from "@/lib/client/resume";
 /** Solo Screens 03 World view: island header in world colour, then each game with today's status. */
 export function WorldScreen({ id }: { id: WorldId }) {
   const world = WORLD_BY_ID[id];
-  const labOn = useGameSettings()["features.newGames"];
-  const games = [...gamesInWorld(id), ...(labOn ? labGamesInWorld(id) : [])];
+  // Live games, then the lab games switched on in "features.labGames".
+  const settings = useGameSettings();
+  const games = [...gamesInWorld(id), ...labGamesInWorld(id, settings)];
   const me = useMe();
   const today = useToday();
   const status = (gid: string) => today.data?.games.find((g) => g.id === gid);

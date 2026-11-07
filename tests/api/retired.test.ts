@@ -7,7 +7,7 @@ import { GAMES, MERGED_WORLDS, RETIRED_GAMES, WORLDS } from "@/lib/catalog";
  * like an unknown game, while the live games next to them keep working.
  * Run: API_BASE=http://localhost:<port> pnpm vitest run -c vitest.api.config.mts tests/api/retired.test.ts
  */
-const SAMPLE = ["pinned", "pixl", "deadon", "hunch", "flip", "dara", "lightup", "five"];
+const SAMPLE = ["blackout", "isles", "squint", "deadon", "sums", "hunch", "flip", "gauntlet"];
 
 describe("api: retired games are refused like unknown ones", () => {
   it("covers a game from each kind of board", () => {
@@ -34,7 +34,7 @@ describe("api: retired games are refused like unknown ones", () => {
 
   it("refuses guesses on a retired game's route", async () => {
     const g = await guest(uniq("retg_"));
-    for (const game of ["flagged", "five", "hunch"]) {
+    for (const game of ["hunch", "deadon", "squint"]) {
       const r = await g.api(`/api/games/${game}/guess`, { json: { ref: { game, t: "1.AAAA" }, guess: "CRANE" } });
       expect([game, r.status, r.data?.error]).toEqual([game, 404, "unknown_game"]);
     }
@@ -44,13 +44,13 @@ describe("api: retired games are refused like unknown ones", () => {
     const g = await guest(uniq("reto_"));
     expect((await g.api("/api/v1/ghosts/flipside", { json: {} })).status).toBe(404);
     expect((await g.api("/api/v1/ghosts/ghosted", { json: {} })).status).toBe(404);
-    expect((await g.api("/api/v1/archive?game=pinned")).status).toBe(404);
-    expect((await g.api("/api/v1/leaderboards/pinned")).status).toBe(404);
+    expect((await g.api("/api/v1/archive?game=hunch")).status).toBe(404);
+    expect((await g.api("/api/v1/leaderboards/hunch")).status).toBe(404);
     expect((await g.api("/api/v1/leaderboards/crownfall")).status).toBe(200);
   });
 
   it("answers 404 on the play page, the bot page and an empty world", async () => {
-    for (const path of ["/play/pinned", "/play/pixl?mode=free", "/play/flip/bot", "/play/dara/bot", "/world/number", "/ghost/flipside"]) {
+    for (const path of ["/play/hunch", "/play/blackout?mode=free", "/play/flip/bot", "/world/number", "/ghost/flipside"]) {
       const r = await fetch(BASE + path, { redirect: "manual" });
       // Streamed pages (with a loading state) send 200 before notFound() runs; the body is the not-found page.
       const body = r.status === 404 ? "" : await r.text();
@@ -73,6 +73,7 @@ describe("api: retired games are refused like unknown ones", () => {
     const today = await fetch(`${BASE}/api/v1/today`).then((r) => r.json());
     expect(today.games.map((x: { id: string }) => x.id).sort()).toEqual(GAMES.map((x) => x.id).sort());
     const meta = await fetch(`${BASE}/api/v1/games/meta`).then((r) => r.json());
+    // (Lab games are covered by tests/api/lab-flag.test.ts: they come back when "features.labGames" has them.)
     for (const g of RETIRED_GAMES) expect(meta[g.id], g.id).toBeUndefined();
   });
 });

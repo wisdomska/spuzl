@@ -3,7 +3,7 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { levelFromXp, flameTier } from "@/lib/rewards";
 import { rankFor } from "@/lib/rating/glicko2";
-import { GAMES, LAUNCH_IDS, isLiveWorld, playableGame } from "@/lib/catalog";
+import { GAMES, LAUNCH_IDS, isLiveWorld, openGame, playableGame } from "@/lib/catalog";
 import { COSMETICS } from "@/lib/gamification/cosmetics";
 import { hasLogic } from "@/games/logic-registry";
 import { dailyNumber, msToReset } from "@/lib/format";
@@ -47,6 +47,7 @@ export async function loadMe(user: User, player: PlayerRow, admin: SupabaseClien
     { data: played },
     { data: learned },
     { data: recentRows },
+    settings,
   ] = await Promise.all([
     profileRow(admin, player.id),
     admin
@@ -79,6 +80,7 @@ export async function loadMe(user: User, player: PlayerRow, admin: SupabaseClien
       .neq("mode", "tutorial")
       .order("started_at", { ascending: false })
       .limit(40),
+    getGameSettings(),
   ]);
   // The request identity comes from JWT claims, which can lack the email (e.g. a token minted before an
   // email was linked). Signed-in players see who they are, so read it from the auth record when missing.
@@ -115,8 +117,9 @@ export async function loadMe(user: User, player: PlayerRow, admin: SupabaseClien
     // Retired games drop out: "Games tried x of N" and the guided first play only know games players can reach.
     played: [...new Set((played ?? []).map((r) => r.game_id as string))].filter((id) => !!playableGame(id)),
     learned: (learned ?? []).map((r) => r.game_id as string),
-    // Most recent first, one entry per game, live games only.
-    recent: [...new Set((recentRows ?? []).map((r) => r.game_id as string))].filter((id) => !!playableGame(id)).slice(0, 8),
+    // Most recent first, one entry per game, games the player can open now (live, or lab and switched on), so
+    // Continue never leads to a lab game switched off since.
+    recent: [...new Set((recentRows ?? []).map((r) => r.game_id as string))].filter((id) => !!openGame(id, settings)).slice(0, 8),
     ratings: Object.fromEntries((ratings ?? []).map((r) => [r.track, Number(r.rating)])),
     today: {
       date: today,

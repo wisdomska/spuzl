@@ -3,6 +3,8 @@
 //   - 51 game icons (spuzl3d.js icon(name, worldColour)) into public/3d/icons/<gameId>.webp
 // Usage: pnpm prerender:3d   (needs network for three@0.160.0 from esm.sh and Phosphor SVGs from unpkg,
 // both pinned in design/design_handoff_spuzl/design/spuzl3d.js)
+//   ONLY_GAMES=killer,dara pnpm prerender:3d   renders just those icons (no chess sprites) and updates their
+//   manifest entries; make their 108 px icons-sm copies from the new icons (lib/lowdata/images.ts).
 import { chromium } from "@playwright/test";
 import fs from "node:fs";
 import http from "node:http";
@@ -34,7 +36,8 @@ const WORLD_HEX = {
 /** Reads id, world and icon for every game from lib/catalog.ts (plain node, no TS loader needed). */
 function catalogue() {
   const src = fs.readFileSync(path.join(ROOT, "lib/catalog.ts"), "utf8");
-  const re = /\bg\(\s*"([a-z0-9-]+)",\s*"[^"]*",\s*"([a-z]+)",\s*"([a-z0-9-]+)"/g;
+  // The name is a string or a copy field (`killer.title`).
+  const re = /\bg\(\s*"([a-z0-9-]+)",\s*(?:"[^"]*"|[a-zA-Z]+\.[a-zA-Z]+),\s*"([a-z]+)",\s*"([a-z0-9-]+)"/g;
   const out = [];
   // A game's tone (lib/catalog TONE) overrides its world colour: games that changed world keep their tile colour.
   const block = src.slice(src.indexOf("const TONE"), src.indexOf("};", src.indexOf("const TONE")));
@@ -70,6 +73,8 @@ function writeDataUrl(file, dataUrl) {
 }
 
 const games = catalogue();
+const only = (process.env.ONLY_GAMES ?? "").split(",").filter(Boolean);
+for (const id of only) if (!games.some((g) => g.id === id)) throw new Error(`ONLY_GAMES: ${id} is not in lib/catalog.ts`);
 if (games.length < 28) throw new Error(`expected at least the 28 live games in lib/catalog.ts, found ${games.length}`);
 fs.mkdirSync(OUT_PIECES, { recursive: true });
 fs.mkdirSync(OUT_ICONS, { recursive: true });
@@ -95,22 +100,24 @@ await page.evaluate(() => {
   };
 });
 
-const pieces = await page.evaluate(
-  async ({ size, q }) => {
-    const m = await import("/spuzl3d.js");
-    const map = await m.pieces(size);
-    const out = {};
-    for (const [k, v] of Object.entries(map)) out[k] = await window.toWebp(v, q);
-    return out;
-  },
-  { size: PIECE_PX, q: QUALITY },
-);
+const pieces = only.length
+  ? {}
+  : await page.evaluate(
+      async ({ size, q }) => {
+        const m = await import("/spuzl3d.js");
+        const map = await m.pieces(size);
+        const out = {};
+        for (const [k, v] of Object.entries(map)) out[k] = await window.toWebp(v, q);
+        return out;
+      },
+      { size: PIECE_PX, q: QUALITY },
+    );
 for (const [k, v] of Object.entries(pieces)) writeDataUrl(path.join(OUT_PIECES, `${k}.webp`), v);
 console.log(`pieces: ${Object.keys(pieces).length} sprites at ${PIECE_PX}px`);
-if (Object.keys(pieces).length !== 12) throw new Error("expected 12 chess sprites");
+if (!only.length && Object.keys(pieces).length !== 12) throw new Error("expected 12 chess sprites");
 
 let n = 0;
-for (const g of process.env.ONLY_PIECES ? [] : games) {
+for (const g of process.env.ONLY_PIECES ? [] : only.length ? games.filter((x) => only.includes(x.id)) : games) {
   const color = WORLD_HEX[g.world];
   const url = await page.evaluate(
     async ({ icon, color, size, q }) => {
@@ -124,7 +131,16 @@ for (const g of process.env.ONLY_PIECES ? [] : games) {
 }
 console.log(`icons: ${n} at ${ICON_PX}px`);
 
-if (!process.env.ONLY_PIECES)
+if (only.length) {
+  // Only some icons: update their manifest entries, keep the rest.
+  const file = path.join(ROOT, "public/3d/manifest.json");
+  const m = JSON.parse(fs.readFileSync(file, "utf8"));
+  const entry = (g) => ({ id: g.id, icon: g.icon, world: g.world, file: `icons/${g.id}.webp` });
+  const ids = new Set(m.icons.files.map((f) => f.id));
+  m.icons.files = m.icons.files.map((f) => (only.includes(f.id) ? entry(games.find((g) => g.id === f.id)) : f));
+  for (const g of games) if (only.includes(g.id) && !ids.has(g.id)) m.icons.files.push(entry(g));
+  fs.writeFileSync(file, JSON.stringify(m, null, 2) + "\n");
+} else if (!process.env.ONLY_PIECES)
   fs.writeFileSync(
     path.join(ROOT, "public/3d/manifest.json"),
     JSON.stringify(

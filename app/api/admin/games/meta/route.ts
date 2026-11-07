@@ -2,23 +2,33 @@ import { z } from "zod";
 import { ApiError, body, handle, ok } from "@/lib/api/server";
 import { audit, requireAdmin } from "@/lib/admin/auth";
 import { DEFAULT_META, defaultMetaFor, validateMeta } from "@/lib/games-meta";
-import { RETIRED_GAMES, isRetired } from "@/lib/catalog";
+import { RETIRED_GAMES, isLabGame, isLabOn, isRetired } from "@/lib/catalog";
 import { mergeMeta } from "@/lib/games-meta/server";
+import { getGameSettings } from "@/lib/game-settings/server";
 
 /**
  * GET /api/admin/games/meta: every game's Library metadata, defaults and overrides (also the export format).
- * Retired games are listed last, marked `retired`, and cannot be changed.
+ * Retired games are listed last, marked `retired`, and cannot be changed. Lab games carry `lab` and `labOn`: whether
+ * "features.labGames" (Settings page) has switched them on for players.
  */
 export const GET = handle(async () => {
   const ctx = await requireAdmin("content.read");
-  const { data, error } = await ctx.db.from("games").select("id, typical_sec, tags");
+  const [{ data, error }, settings] = await Promise.all([ctx.db.from("games").select("id, typical_sec, tags"), getGameSettings()]);
   if (error) throw error;
   const current = mergeMeta(data ?? []);
   return ok({
     rows: [
       ...Object.keys(DEFAULT_META).map((id) => {
         const r = (data ?? []).find((x) => x.id === id);
-        return { id, ...current[id], default: DEFAULT_META[id], overridden: r?.typical_sec != null || r?.tags != null, retired: false };
+        return {
+          id,
+          ...current[id],
+          default: DEFAULT_META[id],
+          overridden: r?.typical_sec != null || r?.tags != null,
+          retired: false,
+          lab: isLabGame(id),
+          labOn: isLabOn(id, settings),
+        };
       }),
       ...RETIRED_GAMES.map((g) => {
         const def = defaultMetaFor(g.id);

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { ApiError, body, handle, ok, rateLimit, requirePlayer, todayGmt } from "@/lib/api/server";
-import { playableGame } from "@/lib/catalog";
+import { openGame } from "@/lib/catalog";
+import { getGameSettings } from "@/lib/game-settings/server";
 import { MAX_CUP_GAMES, classroomAllowed, validRun } from "@/lib/meta";
 import { makeCode, normaliseCode } from "@/lib/social";
 
@@ -64,7 +65,9 @@ export const POST = handle(async (req: Request) => {
   const input = await body(req, Create);
   if (!/^[A-Za-z0-9 ]+$/.test(input.className)) throw new ApiError(422, "class_name", "Letters, numbers and spaces only.");
   const games = [...new Set(input.games)];
-  if (games.some((g) => !playableGame(g) || !classroomAllowed(playableGame(g)!)))
+  // Live games, and lab games only while "features.labGames" has them.
+  const settings = await getGameSettings();
+  if (games.some((g) => !openGame(g, settings) || !classroomAllowed(openGame(g, settings)!)))
     throw new ApiError(422, "games", "Pick games that are allowed in classroom mode.");
   const runProblem = validRun(input.weekStart, input.endsOn, todayGmt());
   if (runProblem) throw new ApiError(422, "run", runProblem);

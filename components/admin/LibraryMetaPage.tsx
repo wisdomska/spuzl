@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { errorText, useAdminAction, useAdminQuery } from "@/lib/client/admin";
 import { GAME_BY_ID } from "@/lib/catalog";
 import { TAGS, durationLabel, type GameMetaRow, type Tag } from "@/lib/games-meta";
@@ -9,9 +10,12 @@ import { Btn, Notice, PageTitle, Pill, RowsSkeleton, inputCls } from "./ui";
 
 const C = adminCopy.library;
 
-type Row = GameMetaRow & { id: string; default: GameMetaRow; overridden: boolean; retired?: boolean };
+type Row = GameMetaRow & { id: string; default: GameMetaRow; overridden: boolean; retired?: boolean; lab?: boolean; labOn?: boolean };
 
-/** Admin: Library duration chip and filter tags per game (SPZ-14). Validated here and on the server. */
+/**
+ * Admin: Library duration chip and filter tags per game (SPZ-14). Validated here and on the server. Lab games show
+ * whether "features.labGames" has switched them on for players (switched on the Settings page, which logs it).
+ */
 export function LibraryMetaPage({ canWrite }: { canWrite: boolean }) {
   const q = useAdminQuery<{ rows: Row[]; export: Record<string, unknown> }>(["games-meta"], "/api/admin/games/meta");
   const patch = useAdminAction<{ id: string; typicalSec?: number | null; tags?: Tag[] | null }>("PATCH", "/api/admin/games/meta");
@@ -93,10 +97,19 @@ function MetaRow({
         <p className="flex items-center gap-2 text-[14px] font-semibold">
           {GAME_BY_ID[row.id]?.name ?? row.id}
           {row.retired && <Pill tone="neutral">{adminCopy.retired.pill}</Pill>}
+          {row.lab && <Pill tone={row.labOn ? "ok" : "warn"}>{row.labOn ? C.labOn : C.labOff}</Pill>}
         </p>
         <p className="text-muted text-[12px]">
           {row.retired ? adminCopy.retired.libraryNote : C.rowNote(row.overridden, durationLabel(row.default.typicalSec), row.default.tags)}
         </p>
+        {row.lab && (
+          <p className="text-muted text-[12px]" data-lab-state={row.labOn ? "on" : "off"}>
+            {C.labNote(!!row.labOn)}{" "}
+            <Link href="/admin/settings" className="hover:text-text font-semibold underline">
+              {C.labSwitch}
+            </Link>
+          </p>
+        )}
       </div>
       <form
         className="flex items-center gap-2"

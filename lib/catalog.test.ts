@@ -22,7 +22,12 @@ import {
   NEW_GAMES,
   NEW_IDS,
   isNewGame,
+  isLabOn,
+  labGamesInWorld,
+  openGame,
+  openLabGames,
   playableGame,
+  playerGames,
   colourOf,
   toneOf,
   type WorldId,
@@ -76,9 +81,9 @@ describe("catalog: retired games", () => {
     expect(GAMES.every((g) => !g.retired && !g.lab)).toBe(true);
   });
 
-  it("retires the other 32 but keeps them in code", () => {
-    expect(RETIRED_IDS.size).toBe(32);
-    expect(RETIRED_GAMES).toHaveLength(32);
+  it("retires 21 of the others but keeps them in code (32, less the 11 lab games back in R2-P5)", () => {
+    expect(RETIRED_IDS.size).toBe(21);
+    expect(RETIRED_GAMES).toHaveLength(21);
     expect(ALL_GAMES).toHaveLength(61);
     for (const id of RETIRED_IDS) {
       expect(GAME_BY_ID[id], id).toBeDefined();
@@ -90,12 +95,11 @@ describe("catalog: retired games", () => {
     }
   });
 
-  it("promotes Trotro Jam, Emoji Hits and Beat Tap to live, and leaves the lab empty", () => {
+  it("promotes Trotro Jam, Emoji Hits and Beat Tap to live", () => {
     for (const id of ["trotro", "emojihits", "beattap"]) {
       expect(isLiveGame(id), id).toBe(true);
       expect(GAME_BY_ID[id].lab, id).toBeFalsy();
     }
-    expect(LAB_GAMES).toEqual([]);
   });
 
   it("refuses unknown ids like retired ones", () => {
@@ -179,6 +183,62 @@ describe("catalog: four groups", () => {
     expect(toneOf(GAME_BY_ID.flowline)).toBe("logic");
     expect(toneOf(GAME_BY_ID.gotcha)).toBe("reflex");
     expect(colourOf(GAME_BY_ID.chess)).toEqual({ color: WORLD_BY_ID.board.color, ink: WORLD_BY_ID.board.ink });
+  });
+});
+
+describe("R2-P5: lab games behind features.labGames", () => {
+  const BACK = ["five", "hilo", "penalty", "market", "lightup", "killer", "dara", "pinned", "flagged", "tripwire", "pixl"];
+  const none = { "features.labGames": [] as string[] };
+  const some = { "features.labGames": ["five", "dara"] };
+
+  it("brings the eleven back as lab games, in order, none retired, none live", () => {
+    expect(LAB_GAMES.map((g) => g.id)).toEqual(BACK);
+    for (const id of BACK) {
+      expect(isRetired(id), id).toBe(false);
+      expect(isLabGame(id), id).toBe(true);
+      expect(isLiveGame(id), id).toBe(false);
+      expect(playableGame(id)?.id, id).toBe(id);
+    }
+    expect(ALL_GAMES).toHaveLength(GAMES.length + LAB_GAMES.length + RETIRED_GAMES.length);
+  });
+
+  it("puts every lab game in a live group, so a switched-on game shows on a world", () => {
+    for (const g of LAB_GAMES) expect(isLiveWorld(g.world), g.id).toBe(true);
+    expect(["hilo", "market", "killer"].map((id) => GAME_BY_ID[id].world)).toEqual(["logic", "logic", "logic"]);
+    expect(["pinned", "flagged"].map((id) => GAME_BY_ID[id].world)).toEqual(["word", "word"]);
+  });
+
+  it("opens a lab game only while the setting has its id", () => {
+    expect(openGame("five", none)).toBeUndefined();
+    expect(openGame("five", some)?.id).toBe("five");
+    expect(openGame("hilo", some)).toBeUndefined();
+    expect(isLabOn("five", some)).toBe(true);
+    expect(isLabOn("hilo", some)).toBe(false);
+    // Live games are open whatever the setting; retired and unknown ids never, even when listed.
+    expect(openGame("crownfall", none)?.id).toBe("crownfall");
+    expect(openGame("blackout", { "features.labGames": ["blackout"] })).toBeUndefined();
+    expect(openGame("nope", { "features.labGames": ["nope"] })).toBeUndefined();
+    expect(isLabOn("crownfall", { "features.labGames": ["crownfall"] })).toBe(false);
+  });
+
+  it("adds only switched-on lab games to the player lists", () => {
+    expect(playerGames(none)).toEqual(GAMES);
+    expect(openLabGames(none)).toEqual([]);
+    expect(playerGames(some).map((g) => g.id)).toEqual([...GAMES.map((g) => g.id), "five", "dara"]);
+    expect(labGamesInWorld("board", some).map((g) => g.id)).toEqual(["dara"]);
+    expect(labGamesInWorld("logic", some)).toEqual([]);
+    // Counts and the live world list never include lab games.
+    expect(GAME_COUNT).toBe(29);
+    expect(WORLD_COUNT).toBe(4);
+  });
+
+  it("keeps lab games out of Duel and Party (live races only), the classroom list and the launch Dailies", () => {
+    for (const id of BACK) {
+      expect(isRaceGame(id), id).toBe(false);
+      expect(PARTY_GAME_IDS, id).not.toContain(id);
+      expect(LAUNCH_IDS, id).not.toContain(id);
+    }
+    expect(pickGames(createRng("lab"), "five", 3, BACK).every((id) => !BACK.includes(id))).toBe(true);
   });
 });
 

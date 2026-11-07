@@ -19,7 +19,7 @@ const SAMPLE_NOTICES = buildNotices(
   {
     streak: { current: 12, last_clear_date: "2026-10-30" },
     date: "2026-10-31",
-    readyGames: ["crownfall", "pinned", "buried"],
+    readyGames: ["crownfall", "hunch", "buried"],
     seenGames: ["crownfall"],
     league: { week: "2026-10-26", outcome: "promoted", tier: "Silver", place: 5, of: 30 },
   },

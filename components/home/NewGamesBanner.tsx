@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { GAMES, LAB_GAMES } from "@/lib/catalog";
+import { playerGames } from "@/lib/catalog";
 import { Icon } from "@/components/ui/Icon";
 import { useGamesMeta } from "@/lib/games-meta/client";
 import { newGameIds } from "@/lib/games-meta";
@@ -26,8 +26,8 @@ const read = (): string | null => {
  */
 export function NewGamesBanner({ played }: { played: readonly string[] }) {
   const meta = useGamesMeta();
-  const labOn = useGameSettings()["features.newGames"];
-  const ids = useMemo(() => newGameIds([...GAMES, ...(labOn ? LAB_GAMES : [])], meta), [meta, labOn]);
+  const labOn = useGameSettings()["features.labGames"];
+  const ids = useMemo(() => newGameIds(playerGames({ "features.labGames": labOn }), meta), [meta, labOn]);
   const key = [...ids].sort().join(",");
   const [dismissed, setDismissed] = useState<string | null>(null);
   const [ready, setReady] = useState(false);

@@ -4,7 +4,7 @@ import { whenQuiet } from "@/lib/perf/quiet";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { GAMES, LAB_GAMES, WORLD_BY_ID, type GameMeta } from "@/lib/catalog";
+import { WORLD_BY_ID, playerGames, type GameMeta } from "@/lib/catalog";
 import { Icon } from "@/components/ui/Icon";
 import { GameIcon3D } from "@/components/world/GameIcon3D";
 import { GameCard } from "@/components/library/GameCard";
@@ -38,8 +38,9 @@ export default function Library() {
     ? (me.data?.today.cleared ?? {})
     : Object.fromEntries((me.data?.played ?? []).map((id) => [id, 1]));
 
-  const labOn = useGameSettings()["features.newGames"];
-  const all = useMemo(() => [...GAMES, ...(labOn ? LAB_GAMES : [])], [labOn]);
+  // Live games plus the lab games switched on in "features.labGames" (the server refuses the others).
+  const labOn = useGameSettings()["features.labGames"];
+  const all = useMemo(() => playerGames({ "features.labGames": labOn }), [labOn]);
   const list = useMemo(() => filterGames(all, filter, q, meta), [all, filter, q, meta]);
   const hasNew = newGameIds(all, meta).length > 0;
 

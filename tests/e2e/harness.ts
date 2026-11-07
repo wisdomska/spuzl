@@ -7,6 +7,8 @@
  *   openGame(page, slug, mode)         /play/<slug>?mode=… and waits for the board
  *   openTestBoard(page, slug, seed, d) seeded, server-free board (/dev/board fixture, deterministic)
  *   solveTestBoard(page, slug, seed)   solves a seeded board by tapping (games with a tap solver below)
+ *   hasSolver(slug)                    whether solveTestBoard can play that game
+ *   playSeeded(page, slug, seed, d)    plays a seeded board already on screen (a practice round: `tutorial:<id>`)
  *   solveSeeded(page, slug, seed)      alias of solveTestBoard (the R2 brief's name)
  *   seededBoardUrl(slug, seed, d)      the /dev/board URL for any game's deterministic puzzle
  *   tapCell(page, row, col)            taps a grid cell by its accessible name ("Row r, column c, …")
@@ -34,6 +36,10 @@ import * as killer from "@/games/killer/logic";
 import * as dara from "@/games/dara/logic";
 import * as quads from "@/games/quads/logic";
 import * as daraRules from "@/games/dara/rules";
+import * as five from "@/games/five/logic";
+import * as hilo from "@/games/hilo/logic";
+import * as flagged from "@/games/flagged/logic";
+import { READ_FLOOR_MS } from "@/games/_shared/cluecave";
 
 export type Age = "13-15" | "16-17" | "18+";
 /** A birth month and year in each band today (December births are the youngest of their year). */
@@ -205,6 +211,33 @@ const SOLVERS: Record<string, (page: Page, seed: string, d: Difficulty) => Promi
       await pad.getByRole("button", { name: new RegExp(`^${g.solution[i]}\\b`) }).click();
     }
   },
+  async five(page, seed, d) {
+    // The answer is in the generated puzzle's solution: type it on the physical keyboard, then Enter.
+    const g = five.generate(createRng(seed), d);
+    await page.keyboard.type(g.solution.answer.toLowerCase());
+    await page.keyboard.press("Enter");
+  },
+  async hilo(page, seed, d) {
+    const g = hilo.generate(createRng(seed), d);
+    for (let i = 0; i < hilo.CALLS; i++) {
+      const call = hilo.answer(g.solution.values, i);
+      await page.getByRole("button", { name: call === "hi" ? /^Higher:/ : /^Lower:/ }).click();
+      // Each call's pip turns "right" before the next card is in play.
+      await expect(page.locator(`[aria-label="Call ${i + 1}: right"]`)).toHaveCount(1);
+    }
+  },
+  async flagged(page, seed, d) {
+    const g = flagged.generate(createRng(seed), d);
+    const total = g.solution.correct.length;
+    await page.getByRole("button", { name: /^Start\b/ }).click();
+    const answers = page.getByRole("group", { name: "Answers" });
+    for (let i = 0; i < total; i++) {
+      // Taps before the reading floor are ignored, and the next round follows the last one's reveal (1.1 s).
+      await page.waitForTimeout((i ? 1100 : 0) + READ_FLOOR_MS + 200);
+      await answers.getByRole("button", { name: new RegExp(`^${"ABCD"[g.solution.correct[i]]}, `) }).click();
+      await expect(page.getByRole("img", { name: `${i + 1} of ${total} answered` })).toBeVisible();
+    }
+  },
   async quads(page, seed, d) {
     const { generate } = quads;
     const g = generate(createRng(seed), d);
@@ -257,6 +290,19 @@ export async function solveTestBoard(page: Page, slug: string, seed = "qa", d: D
   const solve = SOLVERS[slug];
   if (!solve) throw new Error(`no tap solver for ${slug} yet`);
   await openTestBoard(page, slug, seed, d);
+  await solve(page, seed, d);
+}
+
+/** Whether solveTestBoard has a tap solver for the game. */
+export const hasSolver = (slug: string) => Object.hasOwn(SOLVERS, slug);
+
+/**
+ * Plays a seeded board that is already on screen through the game's solver, without opening the fixture: e.g. a
+ * practice round, whose board is the easy board from seed `tutorial:<id>` (lib/game/service.ts guidedSeed).
+ */
+export async function playSeeded(page: Page, slug: string, seed: string, d: Difficulty = "easy") {
+  const solve = SOLVERS[slug];
+  if (!solve) throw new Error(`no tap solver for ${slug} yet`);
   await solve(page, seed, d);
 }
 

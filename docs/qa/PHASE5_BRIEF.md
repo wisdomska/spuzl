@@ -1,10 +1,15 @@
-# Phase 5 brief: adding a new game (behind "features.newGames")
+# Phase 5 brief: adding a new game (a lab game, behind "features.labGames")
+
+Since R2-P5 each lab game has its own switch: the admin setting `features.labGames` is a set of lab game ids
+(Settings > Features > Lab games). A lab game is hidden and refused by the server until its id is ticked there; the
+old all-or-nothing `features.newGames` is gone. The schema picks up every `lab: true` game as an option, so a new
+lab game needs no settings change.
 
 Read `docs/qa/AGENT_BRIEF.md` first; its rules apply (commits, copy files, tokens, checks, no push).
 
 Every new game:
 
-1. **Catalog:** add a `g(...)` entry with `{ lab: true }` at the END of `LAB_GAMES` in `lib/catalog.ts`. Do not
+1. **Catalog:** add a `g(...)` entry with `{ lab: true }` at the END of `LAB_LIST` in `lib/catalog.ts`. Do not
    add it to `GAMES`. Choose a world that fits. Pick a Phosphor icon that exists in
    `components/ui/icons.generated.ts`, or add one with `node scripts/gen-icons.mjs <icon-name>`.
 2. **Logic:** `games/<id>/logic.ts` implements `GameLogic` (`games/types.ts`).
@@ -27,7 +32,7 @@ Every new game:
    using your agent letter in the digits) inserts the `public.games` row(s) with `on conflict (id) do nothing`.
    The columns are `world_id`, `name`, `status`, `phase`, `engine`, `scoring`, `is_unique`, `min_time_ms` and
    `sort`; copy the shape of the rows in `supabase/seed.sql`. Rollback is `delete from public.games where id =
-'<id>'` (safe: there are no attempts while the flag is off). Also add the same row to `supabase/seed.sql`
+'<id>'` (safe: there are no attempts while the game is switched off). Also add the same row to `supabase/seed.sql`
    right after the existing games rows. Apply it locally with psql
    (`postgresql://postgres:postgres@127.0.0.1:54322/postgres`) and insert into
    `supabase_migrations.schema_migrations`.

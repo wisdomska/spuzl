@@ -17,13 +17,13 @@ Facts checked against the code on 6 Nov 2026 (release 1.33.0).
 
 ## Size
 
-| Thing                                  | Count | Where                                                                              |
-| -------------------------------------- | ----- | ---------------------------------------------------------------------------------- |
-| Pages (`app/**/page.tsx`)              | 59    |                                                                                    |
-| API route handlers (`app/**/route.ts`) | 141   | `/api/v1/*` player, `/api/admin/*`, `/api/cron/*`, `/api/og/*`                     |
-| Migrations                             | 60    | `supabase/migrations/*.sql`, indexed with rollback notes in `docs/MIGRATIONS.md`   |
-| Live games                             | 29    | `GAMES` in `lib/catalog.ts`; `LAB_GAMES` 0, `RETIRED_GAMES` 32 (Quads back, R2-14) |
-| Visible worlds                         | 4     | Puzzles 9, Words & Quiz 9, Arcade 6, Board Games 5 (`WORLDS`, `lib/catalog.ts`)    |
+| Thing                                  | Count | Where                                                                                               |
+| -------------------------------------- | ----- | --------------------------------------------------------------------------------------------------- |
+| Pages (`app/**/page.tsx`)              | 59    |                                                                                                     |
+| API route handlers (`app/**/route.ts`) | 141   | `/api/v1/*` player, `/api/admin/*`, `/api/cron/*`, `/api/og/*`                                      |
+| Migrations                             | 60    | `supabase/migrations/*.sql`, indexed with rollback notes in `docs/MIGRATIONS.md`                    |
+| Live games                             | 29    | `GAMES` in `lib/catalog.ts`; `LAB_GAMES` 11 (behind `features.labGames`, R2-P5), `RETIRED_GAMES` 21 |
+| Visible worlds                         | 4     | Puzzles 9, Words & Quiz 9, Arcade 6, Board Games 5 (`WORLDS`, `lib/catalog.ts`)                     |
 
 ## Routing
 

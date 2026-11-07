@@ -1,6 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { GAMES, LAB_GAMES, WORLDS } from "@/lib/catalog";
+import { WORLDS, playerGames } from "@/lib/catalog";
 import { getGameSettings } from "@/lib/game-settings/server";
 import { gameStats } from "@/lib/meta/server";
 import { rankFor } from "@/lib/rating/glicko2";
@@ -26,7 +26,7 @@ export async function loadStatusCard(admin: SupabaseClient, playerId: string): P
     getGameSettings(),
   ]);
   if (!p || p.banned_at) return null;
-  const shown = settings["features.newGames"] ? [...GAMES, ...LAB_GAMES] : GAMES;
+  const shown = playerGames(settings);
   const shownIds = new Set(shown.map((g) => g.id));
   const tried = stats.filter((s) => s.clears > 0 && shownIds.has(s.game));
   const worldIds = new Set<string>(WORLDS.map((w) => w.id));

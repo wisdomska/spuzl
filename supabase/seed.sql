@@ -41,39 +41,61 @@ insert into public.games (id, world_id, name, status, phase, engine, scoring, is
   ('oware', 'board', 'Oware', 'live', 'L', 'board', 'time', false, 1500, 26),
   ('ludo', 'board', 'Ludo', 'live', 'M2', 'board', 'time', false, 1500, 27),
   ('fourup', 'board', 'Four Up', 'live', 'M2', 'board', 'time', true, 1500, 28),
-  ('pixl', 'logic', 'Pixl', 'retired', 'M2', 'grid', 'time', true, 10000, 29),
-  ('blackout', 'logic', 'Blackout', 'retired', 'M2', 'grid', 'time', false, 3000, 30),
-  ('tripwire', 'logic', 'Tripwire', 'retired', 'M3+', 'grid', 'time', true, 8000, 31),
-  ('isles', 'line', 'Isles', 'retired', 'M3+', 'grid', 'time', true, 10000, 32),
-  ('quilt', 'shape', 'Quilt', 'retired', 'L', 'grid', 'time', true, 6000, 33),
-  ('snug', 'shape', 'Snug', 'retired', 'M2', 'grid', 'time', false, 6000, 34),
-  ('shuffle', 'shape', 'Shuffle', 'retired', 'M3+', 'grid', 'time', false, 8000, 35),
-  ('reflect', 'shape', 'Reflect', 'retired', 'M3+', 'grid', 'time', true, 4000, 36),
-  ('squint', 'shape', 'Squint', 'retired', 'M3+', 'custom', 'time', false, 4000, 37),
-  ('deadon', 'number', 'Dead On', 'retired', 'L', 'custom', 'score', false, 3000, 38),
-  ('merge', 'number', 'Merge', 'retired', 'M3+', 'grid', 'score', false, 0, 39),
-  ('sums', 'number', 'Sums', 'retired', 'M2', 'grid', 'time', true, 12000, 40),
-  ('equal', 'number', 'Equal', 'retired', 'M3+', 'grid', 'time', true, 8000, 41),
-  ('hunch', 'clue', 'Hunch', 'retired', 'L', 'custom', 'score', false, 2000, 42),
-  ('pinned', 'clue', 'Pinned', 'retired', 'M3+', 'custom', 'score', false, 1000, 43),
-  ('flagged', 'clue', 'Flagged', 'retired', 'M3+', 'custom', 'score', false, 3000, 44),
-  ('flipside', 'rage', 'Flipside', 'retired', 'M2', 'phaser', 'deaths', false, 5000, 45),
-  ('ricochet', 'rage', 'Ricochet', 'retired', 'M3+', 'phaser', 'score', false, 0, 46),
-  ('stacked', 'rage', 'Stacked', 'retired', 'M3+', 'phaser', 'score', false, 0, 47),
-  ('wobble', 'rage', 'Wobble', 'retired', 'M3+', 'phaser', 'deaths', false, 5000, 48),
-  ('grapple', 'rage', 'Grapple', 'retired', 'M3+', 'phaser', 'deaths', false, 5000, 49),
-  ('ghosted', 'rage', 'Ghosted', 'retired', 'M3+', 'phaser', 'deaths', false, 5000, 50),
-  ('slip', 'rage', 'Slip', 'retired', 'M3+', 'phaser', 'deaths', false, 5000, 51),
-  ('gauntlet', 'reflex', 'Gauntlet', 'retired', 'M3+', 'phaser', 'deaths', false, 10000, 52),
-  ('flip', 'board', 'Flip', 'retired', 'M3+', 'board', 'time', false, 1500, 53),
-  ('penalty', 'reflex', 'Penalty King', 'retired', 'M3+', 'custom', 'score', false, 0, 54),
-  ('hilo', 'number', 'Higher or Lower', 'retired', 'M3+', 'custom', 'score', false, 6000, 55),
-  ('market', 'number', 'Market Run', 'retired', 'M3+', 'custom', 'time', true, 8000, 56),
-  ('five', 'word', 'Five', 'retired', 'M3+', 'word', 'time', false, 4000, 57),
-  ('lightup', 'logic', 'Light Up', 'retired', 'M3+', 'grid', 'time', true, 8000, 58),
-  ('killer', 'number', 'Killer Sums', 'retired', 'M3+', 'grid', 'time', true, 15000, 59),
-  ('dara', 'board', 'Dara', 'retired', 'M3+', 'board', 'time', true, 1500, 60)
+  ('blackout', 'logic', 'Blackout', 'retired', 'M2', 'grid', 'time', false, 3000, 29),
+  ('isles', 'line', 'Isles', 'retired', 'M3+', 'grid', 'time', true, 10000, 30),
+  ('quilt', 'shape', 'Quilt', 'retired', 'L', 'grid', 'time', true, 6000, 31),
+  ('snug', 'shape', 'Snug', 'retired', 'M2', 'grid', 'time', false, 6000, 32),
+  ('shuffle', 'shape', 'Shuffle', 'retired', 'M3+', 'grid', 'time', false, 8000, 33),
+  ('reflect', 'shape', 'Reflect', 'retired', 'M3+', 'grid', 'time', true, 4000, 34),
+  ('squint', 'shape', 'Squint', 'retired', 'M3+', 'custom', 'time', false, 4000, 35),
+  ('deadon', 'number', 'Dead On', 'retired', 'L', 'custom', 'score', false, 3000, 36),
+  ('merge', 'number', 'Merge', 'retired', 'M3+', 'grid', 'score', false, 0, 37),
+  ('sums', 'number', 'Sums', 'retired', 'M2', 'grid', 'time', true, 12000, 38),
+  ('equal', 'number', 'Equal', 'retired', 'M3+', 'grid', 'time', true, 8000, 39),
+  ('hunch', 'clue', 'Hunch', 'retired', 'L', 'custom', 'score', false, 2000, 40),
+  ('flipside', 'rage', 'Flipside', 'retired', 'M2', 'phaser', 'deaths', false, 5000, 41),
+  ('ricochet', 'rage', 'Ricochet', 'retired', 'M3+', 'phaser', 'score', false, 0, 42),
+  ('stacked', 'rage', 'Stacked', 'retired', 'M3+', 'phaser', 'score', false, 0, 43),
+  ('wobble', 'rage', 'Wobble', 'retired', 'M3+', 'phaser', 'deaths', false, 5000, 44),
+  ('grapple', 'rage', 'Grapple', 'retired', 'M3+', 'phaser', 'deaths', false, 5000, 45),
+  ('ghosted', 'rage', 'Ghosted', 'retired', 'M3+', 'phaser', 'deaths', false, 5000, 46),
+  ('slip', 'rage', 'Slip', 'retired', 'M3+', 'phaser', 'deaths', false, 5000, 47),
+  ('gauntlet', 'reflex', 'Gauntlet', 'retired', 'M3+', 'phaser', 'deaths', false, 10000, 48),
+  ('flip', 'board', 'Flip', 'retired', 'M3+', 'board', 'time', false, 1500, 49)
 on conflict (id) do update set world_id = excluded.world_id, name = excluded.name, status = excluded.status, phase = excluded.phase, engine = excluded.engine, scoring = excluded.scoring, is_unique = excluded.is_unique, min_time_ms = excluded.min_time_ms, sort = excluded.sort;
+insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
+  ('five', 'word', 'Five', 'coming_soon', 'M3+', 'word', 'time', false, 4000, 50)
+on conflict (id) do nothing;
+insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
+  ('hilo', 'logic', 'Higher or Lower', 'coming_soon', 'M3+', 'custom', 'score', false, 6000, 51)
+on conflict (id) do nothing;
+insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
+  ('penalty', 'reflex', 'Penalty King', 'coming_soon', 'M3+', 'custom', 'score', false, 0, 52)
+on conflict (id) do nothing;
+insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
+  ('market', 'logic', 'Market Run', 'coming_soon', 'M3+', 'custom', 'time', true, 8000, 53)
+on conflict (id) do nothing;
+insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
+  ('lightup', 'logic', 'Light Up', 'coming_soon', 'M3+', 'grid', 'time', true, 8000, 54)
+on conflict (id) do nothing;
+insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
+  ('killer', 'logic', 'Killer Sums', 'coming_soon', 'M3+', 'grid', 'time', true, 15000, 55)
+on conflict (id) do nothing;
+insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
+  ('dara', 'board', 'Dara', 'coming_soon', 'M3+', 'board', 'time', true, 1500, 56)
+on conflict (id) do nothing;
+insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
+  ('pinned', 'word', 'Pinned', 'coming_soon', 'M3+', 'custom', 'score', false, 1000, 57)
+on conflict (id) do nothing;
+insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
+  ('flagged', 'word', 'Flagged', 'coming_soon', 'M3+', 'custom', 'score', false, 3000, 58)
+on conflict (id) do nothing;
+insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
+  ('tripwire', 'logic', 'Tripwire', 'coming_soon', 'M3+', 'grid', 'time', true, 8000, 59)
+on conflict (id) do nothing;
+insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
+  ('pixl', 'logic', 'Pixl', 'coming_soon', 'M2', 'grid', 'time', true, 10000, 60)
+on conflict (id) do nothing;
 insert into public.badges (id, family, tier, name, description, secret, sparks, rule, sort) values
   ('first-clear', 'starter', 'bronze', 'First Clear', 'Clear your first puzzle.', false, 10, '{"kind":"clears","n":1,"icon":"seal-check"}'::jsonb, 0),
   ('explorer-logic', 'explorer', 'gold', 'Puzzles Explorer', 'Clear every game in Puzzles.', false, 50, '{"kind":"world_all","world":"logic","icon":"puzzle-piece"}'::jsonb, 1),

@@ -1,5 +1,6 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { openGame, type GameMeta } from "@/lib/catalog";
 import { DEFAULTS, mergeSettings, type GameSettings } from "./schema";
 
 let cache: { at: number; value: GameSettings } | null = null;
@@ -18,6 +19,14 @@ export async function getGameSettings(): Promise<GameSettings> {
     cache = { at: Date.now(), value: { ...DEFAULTS } };
   }
   return cache.value;
+}
+
+/**
+ * The game when a player may open it now: live, or a lab game switched on in "features.labGames". Unknown, retired
+ * and switched-off lab ids are undefined (answer them 404, like an unknown game).
+ */
+export async function openGameNow(id: string | null | undefined): Promise<GameMeta | undefined> {
+  return openGame(id, await getGameSettings());
 }
 
 /** Drops the cache after an admin change so this instance serves the new value at once. */

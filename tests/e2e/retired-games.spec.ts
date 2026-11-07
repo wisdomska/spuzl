@@ -5,7 +5,8 @@ import { GAME_COUNT, WORLD_COUNT, WORLD_BY_ID } from "@/lib/catalog";
 /**
  * The 2026-11 catalogue change: 29 live games (28 once Gauntlet went, 29 again with Quads back in R2-14), since regrouped into 4 worlds. Retired games and the emptied Number
  * Den are gone from every list and their pages are not found; Trotro Jam, Emoji Hits and Beat Tap play like any live game, with no
- * admin setting needed.
+ * admin setting needed. (Eleven retired games came back as lab games in R2-P5, behind "features.labGames":
+ * tests/e2e/r2-p5-lab-games.spec.ts. The examples here are games that are still retired.)
  */
 const NOT_FOUND = "This page could not be found.";
 
@@ -16,10 +17,10 @@ test("retired games are hidden and refused; the promoted games play", async ({ p
   // All games: the live count, no retired names, no Number Den chip.
   await page.goto("/library");
   await expect(page.getByText(`${GAME_COUNT} games`)).toBeVisible();
-  for (const name of ["Pinned", "Pixl", "Dead On", "Hunch", "Flip"])
+  for (const name of ["Blackout", "Quilt", "Dead On", "Hunch", "Flip"])
     await expect(page.getByRole("link", { name: new RegExp(`^${name} `) })).toHaveCount(0);
   await expect(page.getByRole("button", { name: WORLD_BY_ID.number.name })).toHaveCount(0);
-  await page.getByRole("searchbox").fill("pinned");
+  await page.getByRole("searchbox").fill("hunch");
   await expect(page.getByText("No games match.", { exact: false })).toBeVisible();
 
   // Home: one island per live world.
@@ -28,7 +29,7 @@ test("retired games are hidden and refused; the promoted games play", async ({ p
   await expect(page.locator('[data-world="number"]')).toHaveCount(0);
 
   // Not found: a retired game's play and bot pages, the empty world, a retired ghost track.
-  for (const path of ["/play/pinned?mode=free", "/play/flip/bot", "/world/number", "/ghost/flipside"]) {
+  for (const path of ["/play/hunch?mode=free", "/play/flip/bot", "/world/number", "/ghost/flipside"]) {
     await page.goto(path);
     await expect(page.getByRole("heading", { name: NOT_FOUND }), path).toBeVisible();
     await expect(page.getByRole("timer")).toHaveCount(0);
@@ -39,7 +40,7 @@ test("retired games are hidden and refused; the promoted games play", async ({ p
     const r = await fetch("/api/v1/attempts", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ game: "pinned", mode: "free" }),
+      body: JSON.stringify({ game: "hunch", mode: "free" }),
     });
     return r.status;
   });

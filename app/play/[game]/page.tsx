@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import { getGameSettings } from "@/lib/game-settings/server";
+import { getGameSettings, openGameNow } from "@/lib/game-settings/server";
 import { notFound, redirect } from "next/navigation";
-import { playableGame } from "@/lib/catalog";
 import { hasLogic } from "@/games/logic-registry";
 import { PlayScreen } from "@/components/play/PlayScreen";
 import { requireSessionPage } from "@/lib/auth/gate";
@@ -9,7 +8,7 @@ import { isLadderGame } from "@/lib/game/levels";
 
 export async function generateMetadata({ params }: PageProps<"/play/[game]">): Promise<Metadata> {
   const { game } = await params;
-  const meta = playableGame(game);
+  const meta = await openGameNow(game);
   return meta ? { title: meta.name, description: meta.rule } : {};
 }
 
@@ -21,9 +20,9 @@ export async function generateMetadata({ params }: PageProps<"/play/[game]">): P
 export default async function Play({ params, searchParams }: PageProps<"/play/[game]">) {
   const { game } = await params;
   const sp = await searchParams;
-  const meta = playableGame(game);
+  // Unknown, retired and switched-off lab games ("features.labGames") are not found.
+  const meta = await openGameNow(game);
   if (!meta || !hasLogic(game)) notFound();
-  if (meta.lab && !(await getGameSettings())["features.newGames"]) notFound();
   // SPZ-01: only the session is checked here (a local JWT check). The player profile is already in the client
   // cache from the previous screen, and PlayScreen sends players without a profile to onboarding itself.
   await requireSessionPage();

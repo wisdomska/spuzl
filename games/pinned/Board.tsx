@@ -78,6 +78,8 @@ export default function PinnedBoard({ puzzle, initialState, hint, disabled, mode
 
   const place = useCallback(
     (ll: LatLon) => {
+      // Dropping the first pin is the first move: the shell clock starts here, not when the pin is locked.
+      api.start?.();
       setPin(ll);
       setDropN((n) => n + 1);
       sfx.place(2);

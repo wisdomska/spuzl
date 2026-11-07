@@ -11,8 +11,8 @@ import penalty, { replayKick, type KickInput, type PenaltyPuzzle } from "@/games
 
 /**
  * Attempt-level checks for the guess-transport games that started in the lab, through the real API.
- * Emoji Hits is live now; Five and Penalty King are retired (lib/catalog RETIRED_IDS), so the server refuses
- * them and their blocks skip until a game comes back (their logic tests in games/<id> still run).
+ * Emoji Hits is live now; Five and Penalty King are lab games again (R2-P5), switched on here through
+ * "features.labGames" (the old value is put back after).
  * Five and Emoji Hits reveals answer only on the player's own open attempt and a shown answer can't then clear;
  * Penalty King answers each shot with the keeper's dive only once the shot is kept on the attempt, and finish
  * audits the final kicks against those shots. Medium boards, so an attempt is never the public practice board.
@@ -25,13 +25,13 @@ const D: Difficulty = "medium";
 
 let before: unknown = undefined;
 beforeAll(async () => {
-  const { data } = await admin().from("game_settings").select("value").eq("key", "features.newGames").maybeSingle();
+  const { data } = await admin().from("game_settings").select("value").eq("key", "features.labGames").maybeSingle();
   before = data?.value;
-  await setSetting("features.newGames", true);
+  await setSetting("features.labGames", ["five", "penalty"]);
 });
 afterAll(async () => {
-  if (before === undefined) await admin().from("game_settings").delete().eq("key", "features.newGames");
-  else await setSetting("features.newGames", before);
+  if (before === undefined) await admin().from("game_settings").delete().eq("key", "features.labGames");
+  else await setSetting("features.labGames", before);
 });
 
 /** A free-play attempt, plus its solution rebuilt from the server-only seed (read with the service role). The puzzle

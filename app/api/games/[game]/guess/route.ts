@@ -38,11 +38,13 @@ export const POST = handle(async (req: Request, ctx: RouteContext<"/api/games/[g
   const logicP = LOGIC[game]?.();
   logicP?.catch(() => {});
   await limited;
-  if (ref.game !== game || !LOGIC[game] || !playableGame(game)) throw new ApiError(404, "unknown_game");
+  const meta = playableGame(game);
+  if (ref.game !== game || !LOGIC[game] || !meta) throw new ApiError(404, "unknown_game");
+  // A switched-off lab game ("features.labGames") answers like an unknown one, before the token is read.
+  await assertGameOpen(meta);
   const tok = openGuessToken(ref.t);
   if (!tok || tok.g !== game) throw new ApiError(400, "bad_ref");
   if (tok.c.k !== "p" && tok.p !== player.id) throw new ApiError(403, "not_your_puzzle");
-  await assertGameOpen(playableGame(game)!);
   const logic = (await logicP!).default as unknown as Partial<GuessLogic>;
   if (typeof logic.checkGuess !== "function" || typeof logic.generateAt !== "function") throw new ApiError(400, "no_guess_check");
   const checker = { checkGuess: logic.checkGuess, record: logic.record };

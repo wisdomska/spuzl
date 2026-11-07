@@ -41,6 +41,8 @@ export async function badgeOverview(admin: SupabaseClient, playerId: string, gam
   ]);
   const worldCleared: Partial<Record<WorldId, number>> = {};
   for (const s of stats) {
+    // Explorer badges count the world's live games (gamesInWorld); a lab game cleared there does not count.
+    if (GAME_BY_ID[s.game].lab) continue;
     const w = GAME_BY_ID[s.game].world;
     worldCleared[w] = (worldCleared[w] ?? 0) + 1;
   }

@@ -209,13 +209,13 @@
       {
         "id": "pinned",
         "icon": "map-pin",
-        "world": "clue",
+        "world": "word",
         "file": "icons/pinned.webp"
       },
       {
         "id": "flagged",
         "icon": "flag",
-        "world": "clue",
+        "world": "word",
         "file": "icons/flagged.webp"
       },
       {
@@ -353,13 +353,13 @@
       {
         "id": "hilo",
         "icon": "arrows-down-up",
-        "world": "number",
+        "world": "logic",
         "file": "icons/hilo.webp"
       },
       {
         "id": "market",
         "icon": "storefront",
-        "world": "number",
+        "world": "logic",
         "file": "icons/market.webp"
       },
       {
@@ -373,6 +373,18 @@
         "icon": "lamp",
         "world": "logic",
         "file": "icons/lightup.webp"
+      },
+      {
+        "id": "killer",
+        "icon": "circle-dashed",
+        "world": "logic",
+        "file": "icons/killer.webp"
+      },
+      {
+        "id": "dara",
+        "icon": "dots-three",
+        "world": "board",
+        "file": "icons/dara.webp"
       }
     ]
   }

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import { getGameSettings } from "@/lib/game-settings/server";
+import { openGameNow } from "@/lib/game-settings/server";
 import { notFound } from "next/navigation";
-import { playableGame } from "@/lib/catalog";
 import { isBotGame, isBotLevel } from "@/lib/bot";
 import { BotScreen } from "@/components/play/BotScreen";
 import { requirePlayerPage } from "@/lib/auth/gate";
@@ -9,7 +8,7 @@ import { boardGames } from "@/lib/copy/board-games";
 
 export async function generateMetadata({ params }: PageProps<"/play/[game]/bot">): Promise<Metadata> {
   const { game } = await params;
-  const meta = playableGame(game);
+  const meta = await openGameNow(game);
   return meta?.botPlay ? { title: `${meta.name}: ${boardGames.bot.entry}` } : {};
 }
 
@@ -20,9 +19,9 @@ export async function generateMetadata({ params }: PageProps<"/play/[game]/bot">
 export default async function BotPlay({ params, searchParams }: PageProps<"/play/[game]/bot">) {
   const { game } = await params;
   const { level } = await searchParams;
-  const meta = playableGame(game);
+  // Unknown, retired and switched-off lab games ("features.labGames") are not found.
+  const meta = await openGameNow(game);
   if (!meta?.botPlay || !isBotGame(game)) notFound();
-  if (meta.lab && !(await getGameSettings())["features.newGames"]) notFound();
   // Same first-run gate as every Play page (intro, then onboarding).
   await requirePlayerPage();
   return <BotScreen meta={meta} game={game} initialLevel={isBotLevel(level) ? level : "medium"} />;
