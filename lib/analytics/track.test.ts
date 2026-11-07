@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { firstPartyBody, KEY_EVENTS, sanitize, track } from "./track";
-import { tapToBoard } from "./tap-to-board";
+import { isWarm, tapToBoard } from "./tap-to-board";
 import { isPlayNav, PLAY_NAV } from "./play-nav";
 import { ONBOARDING_STEPS, onboardingStepOf } from "./onboarding";
 
@@ -125,5 +125,25 @@ describe("tap to board", () => {
     expect(tapToBoard(null, { ...t, sinceNav: 60_000 })).toBeNull();
     expect(tapToBoard({ at: 10_200, origin: 1 }, t)).toBeNull();
     expect(tapToBoard({ at: 1_000, origin: 1 }, { ...t, ready: 30_000 })).toBeNull();
+  });
+});
+
+describe("cold and warm tap to board (R2-ADMIN)", () => {
+  it("the first board of the page session is cold, every later one warm", () => {
+    expect(isWarm(0)).toBe(false);
+    expect(isWarm(1)).toBe(true);
+    expect(isWarm(7)).toBe(true);
+  });
+  it("sends warm first party for tap_to_board only", () => {
+    expect(firstPartyBody("tap_to_board", { game: "crownfall", mode: "free", kind: "tap", ms: 800, warm: true })).toMatchObject({
+      kind: "tap",
+      warm: true,
+    });
+    expect(firstPartyBody("tap_to_board", { game: "crownfall", mode: "free", kind: "load", ms: 2400, warm: false })).toMatchObject({
+      kind: "load",
+      warm: false,
+    });
+    expect(firstPartyBody("tap_to_board", { kind: "tap", ms: 800 })?.warm).toBeUndefined();
+    expect(firstPartyBody("share", { kind: "daily", warm: true })?.warm).toBeUndefined();
   });
 });

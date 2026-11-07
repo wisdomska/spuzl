@@ -1157,3 +1157,51 @@ describe("Metrics (admin cascade)", () => {
       );
   });
 });
+
+/** R2-ADMIN: the Metrics cards added by the admin cascade audit (docs/qa/ADMIN_CASCADE_R2.md). Needs 20261202000301+. */
+describe("Metrics added by the admin cascade audit (R2-ADMIN)", () => {
+  const end = day(-rand(9_500, 12_000));
+  const on = addDays(end, -1);
+  const at = (ms = 0) => new Date(Date.parse(`${on}T12:00:00Z`) + ms).toISOString();
+  const metricIds: number[] = [];
+  const seed = async (rows: Record<string, unknown>[]) => {
+    const c = await admin()
+      .from("client_metrics")
+      .insert(rows.map((r) => ({ created_at: at(), ...r })))
+      .select("id");
+    expect(c.error).toBeNull();
+    metricIds.push(...c.data!.map((r) => r.id));
+  };
+  const metrics = async () => (await S.analyst.aal2(`/api/admin/metrics?days=7&end=${end}`)).data;
+
+  afterAll(async () => {
+    await admin().from("client_metrics").delete().in("id", metricIds);
+  });
+
+  it("splits tap to board into cold (the page's first board) and warm (later boards), with CSV", async () => {
+    await seed([
+      { name: "tap_to_board", kind: "load", value_ms: 3_000, warm: false },
+      { name: "tap_to_board", kind: "tap", value_ms: 2_000, warm: false },
+      { name: "tap_to_board", kind: "tap", value_ms: 400, warm: true },
+      { name: "tap_to_board", kind: "tap", value_ms: 600, warm: true },
+      { name: "tap_to_board", kind: "tap", value_ms: 9_000 }, // an older client: only in Tap to board
+    ]);
+    const d = await metrics();
+    expect(d.total).toMatchObject({ cold_n: 2, cold_p50: 2_500, warm_n: 2, warm_p50: 500, tap_n: 4, load_n: 1 });
+    expect(d.rows.find((x: { date: string }) => x.date === end)).toMatchObject({ cold_n: 0, cold_p50: null });
+    const x = await S.analyst.aal2("/api/admin/metrics", { json: { metric: "tap_warmth", days: 7, end } });
+    expect(x.data.csv.trimEnd().split("\r\n").at(-1)).toBe(
+      `total,2,2500,${percentile([2_000, 3_000], 0.95)},2,500,${percentile([400, 600], 0.95)}`,
+    );
+    expect((await lastAudit(S.analyst.userId, "metrics.export"))?.target).toBe("metric:tap_warmth");
+
+    // The client sends warm with tap_to_board; the server keeps it for that metric only.
+    const g = await guest();
+    const sent = await g.api("/api/v1/metrics", { json: { name: "tap_to_board", game: "dusk", kind: "tap", ms: 4321, warm: true } });
+    expect(sent.status).toBe(204);
+    expect((await g.api("/api/v1/metrics", { json: { name: "share", kind: "daily", warm: "yes" } })).status).toBe(400);
+    const { data } = await admin().from("client_metrics").select("id, warm").eq("name", "tap_to_board").eq("value_ms", 4321).limit(1);
+    expect(data?.[0]?.warm).toBe(true);
+    metricIds.push(...data!.map((r) => r.id));
+  });
+});

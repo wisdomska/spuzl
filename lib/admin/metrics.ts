@@ -75,6 +75,13 @@ export interface MetricRow {
   daily5_shares?: number;
   daily5_players?: number;
   daily5_full?: number;
+  /** R2-ADMIN (20261202000301): tap_to_board split by the page session's first board (cold) and later ones (warm). */
+  cold_n?: number;
+  cold_p50?: number | null;
+  cold_p95?: number | null;
+  warm_n?: number;
+  warm_p50?: number | null;
+  warm_p95?: number | null;
 }
 
 export interface PromptCounts {
@@ -114,6 +121,7 @@ export function metricRange(days: RangeDays, end: string = todayIso()): { from: 
 
 export const METRIC_IDS = [
   "tap_to_board",
+  "tap_warmth",
   "onboarding",
   "first_move",
   "party_first_move",
@@ -195,6 +203,22 @@ export const METRICS: readonly MetricDef[] = [
       { key: "load_count", label: "Cold loads", value: (r) => r.load_n },
       { key: "load_p50_ms", label: "Load p50 ms", value: (r) => r.load_p50 },
       { key: "load_p95_ms", label: "Load p95 ms", value: (r) => r.load_p95 },
+    ],
+  },
+  {
+    id: "tap_warmth",
+    title: "Tap to board, cold and warm",
+    note: "Cold = the first board of the page session: the page opened straight on Play, or the first game tapped after it loaded (its code and data not loaded yet). Warm = every later board in the same page. Client measured (tap_to_board with warm); taps from older clients are only in Tap to board.",
+    headline: (t) => `${ms(t.cold_p50 ?? null)} / ${ms(t.warm_p50 ?? null)}`,
+    sub: (t) =>
+      `cold p50 / warm p50 · cold p95 ${ms(t.cold_p95 ?? null)} (${n(t.cold_n ?? 0)}) · warm p95 ${ms(t.warm_p95 ?? null)} (${n(t.warm_n ?? 0)})`,
+    cols: [
+      { key: "cold_count", label: "Cold", value: (r) => r.cold_n ?? 0 },
+      { key: "cold_p50_ms", label: "Cold p50 ms", value: (r) => r.cold_p50 ?? null },
+      { key: "cold_p95_ms", label: "Cold p95 ms", value: (r) => r.cold_p95 ?? null },
+      { key: "warm_count", label: "Warm", value: (r) => r.warm_n ?? 0 },
+      { key: "warm_p50_ms", label: "Warm p50 ms", value: (r) => r.warm_p50 ?? null },
+      { key: "warm_p95_ms", label: "Warm p95 ms", value: (r) => r.warm_p95 ?? null },
     ],
   },
   {

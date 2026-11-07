@@ -170,6 +170,8 @@ export function firstPartyBody(event: KeyEvent, clean: Record<string, string | n
     mode: str(prompt ? clean.prompt : clean.mode, LABEL),
     kind: str(prompt ? clean.trigger : clean.kind, LABEL),
     ms: typeof clean.ms === "number" ? Math.max(0, Math.min(120_000, Math.round(clean.ms))) : undefined,
+    // tap_to_board only: the first board of the page session (false, cold) or a later one (true, warm).
+    warm: event === "tap_to_board" && typeof clean.warm === "boolean" ? clean.warm : undefined,
   };
 }
 

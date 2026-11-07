@@ -61,6 +61,17 @@ export function tapToBoard(
   return null;
 }
 
+/** Boards that became ready in this page (document) so far: the first one is cold, every later one warm. */
+let boardsThisPage = 0;
+
+/**
+ * Pure: cold or warm for the admin Metrics split (R2-ADMIN). The first board of the page session waited for the
+ * game's code and data (cold); later boards in the same page reuse what is loaded (warm). Exported for tests.
+ */
+export function isWarm(boardsBefore: number): boolean {
+  return boardsBefore > 0;
+}
+
 export function useTapToBoard(ready: boolean, game: string, mode: string) {
   const mount = useRef<number | null>(null);
   const sent = useRef(false);
@@ -72,9 +83,10 @@ export function useTapToBoard(ready: boolean, game: string, mode: string) {
     sent.current = true;
     markBoardReady(); // background downloads may start (lib/perf/quiet.ts)
     const mountAt = mount.current;
+    const warm = isWarm(boardsThisPage++);
     requestAnimationFrame(() => {
       const r = tapToBoard(readStamp(), { mount: mountAt, ready: now(), origin: performance.timeOrigin, sinceNav: performance.now() });
-      if (r) track("tap_to_board", { game, mode, kind: r.kind, ms: r.ms });
+      if (r) track("tap_to_board", { game, mode, kind: r.kind, ms: r.ms, warm: r.kind === "load" ? false : warm });
       // A tap's wait also counts toward the low-data suggestion (cold loads are counted as the page load).
       if (r?.kind === "tap") recordLoad(r.ms);
     });

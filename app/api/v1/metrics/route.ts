@@ -34,6 +34,8 @@ const Metric = z
     mode: label.optional(),
     kind: label.optional(),
     ms: z.number().int().min(0).max(120_000).optional(),
+    /** tap_to_board only (R2-ADMIN): false = the first board of the page session (cold), true = a later one */
+    warm: z.boolean().optional(),
   })
   .refine(
     (m) => m.name !== "tap_to_board" || (m.ms !== undefined && (m.kind === "tap" || m.kind === "load")),
@@ -67,13 +69,18 @@ export const POST = handle(async (req: Request) => {
       .digest("hex")
       .slice(0, 24);
   await rateLimit(db, `metrics:${who}`, 120, 600);
-  const { error } = await db.from("client_metrics").insert({
+  const row = {
     name: m.name,
     game_id: m.game ?? null,
     mode: m.mode ?? null,
     kind: m.kind ?? null,
     value_ms: TIMED.has(m.name) ? (m.ms ?? null) : null,
-  });
+  };
+  // R2-ADMIN: tap_to_board says whether it was the page's first board (cold) or a later one (warm).
+  const warm = m.name === "tap_to_board" && typeof m.warm === "boolean" ? { warm: m.warm } : {};
+  let { error } = await db.from("client_metrics").insert({ ...row, ...warm });
+  // Before 20261202000301 adds the column (42703 undefined column), keep the measurement without the split.
+  if (error?.code === "42703" && "warm" in warm) ({ error } = await db.from("client_metrics").insert(row));
   if (error) throw error;
   return new Response(null, { status: 204 });
 });
