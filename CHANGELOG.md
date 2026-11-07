@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.37.2 (7 November 2026)
+
+### For players
+
+- **Tapping a game shows it at once, from every card.** The game's outline now covers the screen on the very frame
+  you tap the Daily Five card, Continue or any other game card on Home. Before, these cards left Home on screen
+  for up to half a second while the game loaded.
+- **Picking a game for a Duel or Party puts you back where you were.** After you choose a game in the picker,
+  keyboard and screen-reader focus returns to the "Game" row instead of jumping to the top of the page.
+
+### Behind the scenes
+
+- E2E specs updated for Library rows being links, Next's route announcer, low-data loads with a service worker,
+  and Ctrl-click popups.
+
 ## 1.37.1 (7 November 2026)
 
 ### For players
