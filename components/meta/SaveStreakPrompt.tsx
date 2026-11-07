@@ -27,7 +27,9 @@ export function SaveStreakPrompt({ className = "" }: { className?: string }) {
   const [dismissedNow, setDismissedNow] = useState<number | null>(null);
   const [now] = useState(() => Date.now());
   const [open, setOpen] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useState<false | "plain" | "granted" | "full">(false);
+  // R2-P5: the free streak shield is the reason to sign in (admin "features.streakShield").
+  const shieldOn = settings["features.streakShield"];
   const dismissedAt = dismissedNow ?? stored;
   const ask =
     dismissedAt !== undefined &&
@@ -48,7 +50,7 @@ export function SaveStreakPrompt({ className = "" }: { className?: string }) {
     return (
       <p role="status" className={`bg-surface flex items-center gap-2 rounded-[16px] px-3.5 py-3 text-[15px] font-semibold ${className}`}>
         <Icon name="check-circle" size={20} className="text-accent" />
-        {T.saved}
+        {saved === "granted" ? T.savedShield : saved === "full" ? T.savedShieldFull : T.saved}
       </p>
     );
   if (!granted) return null;
@@ -69,14 +71,14 @@ export function SaveStreakPrompt({ className = "" }: { className?: string }) {
         style={{ boxShadow: "inset 0 0 0 1px var(--line)" }}
       >
         <div className="flex items-start gap-2.5">
-          <span className="bg-surface-raised text-gold flex size-10 shrink-0 items-center justify-center rounded-[12px]">
-            <Icon name="fire" size={22} />
+          <span className="bg-surface-raised text-freeze flex size-10 shrink-0 items-center justify-center rounded-[12px]">
+            <Icon name={shieldOn ? "shield-check" : "fire"} size={22} className={shieldOn ? undefined : "text-gold"} />
           </span>
           <div className="min-w-0 flex-1">
             <h2 id="save-streak-title" className="font-display text-[16px] font-extrabold">
               {T.title}
             </h2>
-            <p className="text-muted text-[14px] leading-snug">{T.body(me.data?.clears ?? 0)}</p>
+            <p className="text-muted text-[14px] leading-snug">{(shieldOn ? T.shieldBody : T.body)(me.data?.clears ?? 0)}</p>
           </div>
           <button
             type="button"
@@ -88,23 +90,24 @@ export function SaveStreakPrompt({ className = "" }: { className?: string }) {
           </button>
         </div>
         <div className="grid grid-cols-[1fr_auto] gap-2">
-          <Button icon="envelope-simple" onClick={() => setOpen(true)}>
-            {T.save}
+          <Button icon={shieldOn ? "shield-check" : "envelope-simple"} onClick={() => setOpen(true)}>
+            {shieldOn ? T.shieldSave : T.save}
           </Button>
           <Button variant="secondary" onClick={dismiss}>
             {T.notNow}
           </Button>
         </div>
       </section>
-      <Sheet open={open} onOpenChange={setOpen} title={T.sheetTitle} description={T.sheetBody}>
+      <Sheet open={open} onOpenChange={setOpen} title={T.sheetTitle} description={shieldOn ? T.shieldSheetBody : T.sheetBody}>
         <EmailCodeSignIn
           link
           autoFocus={false}
           googleNext={typeof window === "undefined" ? "/" : window.location.pathname}
-          onDone={() => {
+          onDone={(_profile, shield) => {
             track("prompt_accepted", { prompt: "save_streak", trigger: "clears" });
+            if (shield?.status === "granted") track("streak_shield", { status: "granted" });
             setOpen(false);
-            setSaved(true);
+            setSaved(shield?.status === "granted" ? "granted" : shield?.status === "full" ? "full" : "plain");
             void qc.invalidateQueries({ queryKey: ["me"] });
           }}
         />

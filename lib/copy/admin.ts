@@ -383,6 +383,8 @@ export const adminCopy = {
     birthMonth: "Birth month",
     birthYear: "Birth year",
     stats: "Stats",
+    /** R2-P5: no sign-in streak shield given (yet) */
+    shieldNone: "Not given",
     statLabels: {
       level: "Level",
       xp: "XP",
@@ -390,6 +392,7 @@ export const adminCopy = {
       streak: "Streak",
       best: "Best streak",
       freezes: "Freezes held",
+      shield: "Sign-in shield",
       attempts: "Attempts",
       clears: "Clears",
       daily: "Daily clears",

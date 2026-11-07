@@ -167,6 +167,13 @@ export const SETTINGS = {
     help: "A read-only spectator page for a Party room at /party/<code>/tv, for a classroom projector or a TV: anyone with the code can watch nicknames, progress and scores, with no chat and no way to play. The host turns it on or off per room (on by default for classroom rooms, off otherwise; never for a host under 16). Off: the page and its data are refused for every room.",
     default: true,
   },
+  "features.streakShield": {
+    kind: "bool",
+    group: "Features",
+    label: "Sign-in streak shield",
+    help: 'A guest who links an email or Google account gets one free Streak Freeze, once per account (none if they already hold 2). "Save your streak" says so ("Sign in and get a free streak shield"). Grants show in the player\'s audit log. Off: no shield is granted and the prompt keeps its plain wording.',
+    default: true,
+  },
   "features.seasonal": {
     kind: "bool",
     group: "Features",

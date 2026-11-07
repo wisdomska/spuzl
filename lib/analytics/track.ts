@@ -64,6 +64,7 @@ export const KEY_EVENTS = [
   "game_over",
   // R2-P5 (PostHog only for now; the admin Metrics agent decides whether they go first party)
   "party_tv_view", // the big-screen view loaded a room
+  "streak_shield", // a guest signed in from "Save your streak" and got the free Streak Freeze
 ] as const;
 export type KeyEvent = (typeof KEY_EVENTS)[number];
 

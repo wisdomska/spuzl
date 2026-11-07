@@ -102,6 +102,7 @@ export async function playerDetail(ctx: AdminCtx, id: string) {
     { data: ratings },
     { data: rankMoves },
     { data: boardMatches },
+    { data: shieldRow },
   ] = await Promise.all([
     db.auth.admin.getUserById(id),
     db.from("streaks").select("current, best, freezes_held, last_clear_date").eq("player_id", id).maybeSingle(),
@@ -158,6 +159,8 @@ export async function playerDetail(ctx: AdminCtx, id: string) {
       .contains("players", [id])
       .order("created_at", { ascending: false })
       .limit(10),
+    // R2-P5: the sign-in streak shield's once-only ledger ref (svc_signin_shield).
+    db.from("sparks_ledger").select("created_at").eq("player_id", id).eq("source", "shield").eq("ref_id", "signin").maybeSingle(),
   ]);
 
   const user = auth?.user ?? null;
@@ -208,6 +211,8 @@ export async function playerDetail(ctx: AdminCtx, id: string) {
       streak: streak?.current ?? 0,
       bestStreak: streak?.best ?? 0,
       freezes: streak?.freezes_held ?? 0,
+      /** when the sign-in streak shield was given (one Freeze, once per account), or null */
+      shieldAt: (shieldRow?.created_at as string | undefined) ?? null,
       lastClearDate: streak?.last_clear_date ?? null,
       attempts: attemptCount ?? 0,
       clears: clears ?? 0,

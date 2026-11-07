@@ -32,7 +32,8 @@ export function EmailCodeSignIn({
   link = false,
   googleNext,
 }: {
-  onDone: (hasProfile: boolean) => void;
+  /** `shield`: link mode only, the sign-in streak shield the server granted (R2-P5), if any */
+  onDone: (hasProfile: boolean, shield?: { status: "granted" | "full" | "already"; freezes?: number } | null) => void;
   autoFocus?: boolean;
   link?: boolean;
   googleNext?: string;
@@ -107,9 +108,11 @@ export function EmailCodeSignIn({
     await supabaseBrowser()
       .auth.refreshSession()
       .catch(() => null);
-    await api("/api/v1/account/sync", { method: "POST" }).catch(() => {});
+    const synced = await api<{ shield?: { status: "granted" | "full" | "already"; freezes?: number } | null }>("/api/v1/account/sync", {
+      method: "POST",
+    }).catch(() => null);
     setBusy(false);
-    onDone(true);
+    onDone(true, synced?.shield ?? null);
   };
 
   const verify = async (token: string) => {

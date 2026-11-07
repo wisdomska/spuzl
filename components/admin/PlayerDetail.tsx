@@ -216,6 +216,7 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
               <Stat value={d.stats.streak} label={C.statLabels.streak} />
               <Stat value={d.stats.bestStreak} label={C.statLabels.best} />
               <Stat value={d.stats.freezes} label={C.statLabels.freezes} />
+              <Stat value={d.stats.shieldAt ? when(d.stats.shieldAt) : C.shieldNone} label={C.statLabels.shield} />
               <Stat value={fmt(d.stats.attempts)} label={C.statLabels.attempts} />
               <Stat value={fmt(d.stats.clears)} label={C.statLabels.clears} />
               <Stat value={fmt(d.stats.dailyClears)} label={C.statLabels.daily} />
