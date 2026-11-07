@@ -391,14 +391,20 @@ export function BayMatch({ id }: { id: string }) {
   const sans = v.game === "chess" ? ((v.state as { sans: string[] }).sans ?? []) : [];
   const lastMove = v.moves[v.moves.length - 1]?.move;
   const offerFromThem = (o: number | null) => o !== null && o !== seat;
+  // A bot's win is stored without a winner id (the bot isn't a player row), so a finished bot match that isn't a
+  // draw by its result is the bot's win.
+  const DRAWS = ["draw", "agreed draw", "stalemate", "insufficient material", "fifty-move rule", "threefold repetition"];
+  const botWon = v.status === "finished" && v.bot && !v.winnerId && !DRAWS.includes(v.result ?? "draw");
   const finishedLine =
-    v.status === "finished"
-      ? v.winnerId === me.id
-        ? `You won. ${v.result === "resign" ? "They resigned." : v.result === "flag" ? "Their flag fell." : v.result === "timeout" ? "They ran out of time." : ""}`
-        : v.winnerId
-          ? `${opp?.nickname ?? "They"} won${v.result === "resign" ? ". You resigned." : v.result === "flag" ? " on time." : "."}`
-          : `A draw${v.result && v.result !== "draw" ? `, ${v.result}` : ""}.`
-      : null;
+    v.status === "finished" && botWon
+      ? `The Practice bot won${v.result === "resign" ? ". You resigned." : v.result === "flag" || v.result === "timeout" ? " on time." : "."}`
+      : v.status === "finished"
+        ? v.winnerId === me.id
+          ? `You won. ${v.result === "resign" ? "They resigned." : v.result === "flag" ? "Their flag fell." : v.result === "timeout" ? "They ran out of time." : ""}`
+          : v.winnerId
+            ? `${opp?.nickname ?? "They"} won${v.result === "resign" ? ". You resigned." : v.result === "flag" ? " on time." : "."}`
+            : `A draw${v.result && v.result !== "draw" ? `, ${v.result}` : ""}.`
+        : null;
 
   const row = (p: typeof me | null, mine: boolean) => {
     if (!p) return null;
@@ -563,7 +569,8 @@ export function BayMatch({ id }: { id: string }) {
   );
   // The end of the game, made unmissable (owner: "I just won a game of chess and didn't even know").
   const iWon = v.status === "finished" && v.winnerId === me.id;
-  const outcome: GameOutcome | null = v.status !== "finished" || v.mySeat === null ? null : iWon ? "won" : v.winnerId ? "lost" : "draw";
+  const outcome: GameOutcome | null =
+    v.status !== "finished" || v.mySeat === null ? null : iWon ? "won" : v.winnerId || botWon ? "lost" : "draw";
   const R = gameOverCopy.reason;
   const reason = (() => {
     switch (v.result) {
@@ -598,7 +605,7 @@ export function BayMatch({ id }: { id: string }) {
   );
   const finished = finishedLine && (
     <div className={`bg-surface flex items-center gap-3 rounded-[18px] p-3.5 ${gap}`} role="status">
-      <Spuz mood={v.winnerId === me.id ? "party" : v.winnerId ? "sad" : "thinking"} size={56} decorative />
+      <Spuz mood={v.winnerId === me.id ? "party" : v.winnerId || botWon ? "sad" : "thinking"} size={56} decorative />
       <span className="flex-1 text-[16px] font-semibold">{finishedLine}</span>
     </div>
   );
