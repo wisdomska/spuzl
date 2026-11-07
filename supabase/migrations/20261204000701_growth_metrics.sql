@@ -55,55 +55,6 @@ language sql stable security definer set search_path = '' as $$
 $$;
 revoke execute on function private.admin_growth(date, date) from public, anon, authenticated;
 
-create or replace function public.svc_admin_metrics` statement (and its revoke and grant) from
---   supabase/migrations/20261202000601_retention_cohorts_metric.sql, then:
---   drop function if exists private.admin_game_over(date, date);
---   delete from public.client_metrics where name = 'game_over';
---   alter table public.client_metrics drop constraint if exists client_metrics_name_check;
---   alter table public.client_metrics add constraint client_metrics_name_check
---     check (name in ('tap_to_board', 'hint_cancel', 'hint_request', 'hint_use', 'share', 'onboarding_step',
---                     'duel_created', 'party_first_move', 'prompt_shown', 'prompt_accepted', 'prompt_dismissed', 'daily5_start',
---                     'daily5_complete', 'daily5_share', 'practice_start', 'practice_finish', 'practice_skip'));
---   delete from supabase_migrations.schema_migrations where version = '20261202000701';
-
-alter table public.client_metrics drop constraint if exists client_metrics_name_check;
-alter table public.client_metrics add constraint client_metrics_name_check
-  check (name in ('tap_to_board', 'hint_cancel', 'hint_request', 'hint_use', 'share', 'onboarding_step',
-                  'duel_created', 'party_first_move', 'prompt_shown', 'prompt_accepted', 'prompt_dismissed', 'daily5_start',
-                  'daily5_complete', 'daily5_share', 'practice_start', 'practice_finish', 'practice_skip', 'game_over'));
-alter table public.client_metrics enable row level security;
-alter table public.client_metrics force row level security;
-
-create or replace function private.admin_game_over(p_from date, p_to date) returns jsonb
-language sql stable security definer set search_path = '' as $$
-  with b as (
-    select p_from::timestamp at time zone 'utc' as lo, (p_to + 1)::timestamp at time zone 'utc' as hi
-  ),
-  days as (select d::date as d from generate_series(p_from, p_to, interval '1 day') d),
-  cm as (
-    select (c.created_at at time zone 'utc')::date as d, c.mode, c.kind
-    from public.client_metrics c, b
-    where c.created_at >= b.lo and c.created_at < b.hi and c.name = 'game_over'
-      and c.mode in ('bay', 'bot') and c.kind in ('won', 'lost', 'draw')
-  ),
-  per as (
-    select x.d, jsonb_build_object(
-      'go_bay_won', count(c.d) filter (where c.mode = 'bay' and c.kind = 'won'),
-      'go_bay_lost', count(c.d) filter (where c.mode = 'bay' and c.kind = 'lost'),
-      'go_bay_draw', count(c.d) filter (where c.mode = 'bay' and c.kind = 'draw'),
-      'go_bot_won', count(c.d) filter (where c.mode = 'bot' and c.kind = 'won'),
-      'go_bot_lost', count(c.d) filter (where c.mode = 'bot' and c.kind = 'lost'),
-      'go_bot_draw', count(c.d) filter (where c.mode = 'bot' and c.kind = 'draw')) as v
-    from (select d from days union all select null::date) x
-    left join cm c on x.d is null or c.d = x.d
-    group by x.d
-  )
-  select jsonb_build_object(
-    'total', (select v from per where d is null),
-    'days', coalesce((select jsonb_agg(v || jsonb_build_object('date', d) order by d) from per where d is not null), '[]'::jsonb))
-$$;
-revoke execute on function private.admin_game_over(date, date) from public, anon, authenticated;
-
 create or replace function public.svc_admin_metrics(p_from date, p_to date) returns jsonb
 language sql stable security definer set search_path = '' as $$
   with m as (select private.admin_metrics(p_from, p_to) as v),
