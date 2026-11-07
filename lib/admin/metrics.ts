@@ -93,6 +93,15 @@ export interface MetricRow {
   practice_finished?: number;
   practice_skipped?: number;
   practice_games?: Record<string, PracticeCounts>;
+  /**
+   * R2-ADMIN (20261202000601): D1 and D7 retention by cohort day (first attempt that day). A day's D1 (D7) cohort is
+   * 0 until the day after (7 days after) is over.
+   */
+  ret_cohort?: number;
+  ret_d1_cohort?: number;
+  ret_d1_kept?: number;
+  ret_d7_cohort?: number;
+  ret_d7_kept?: number;
 }
 
 export interface PracticeCounts {
@@ -141,6 +150,7 @@ export const METRIC_IDS = [
   "tap_warmth",
   "first_clear",
   "practice",
+  "retention",
   "onboarding",
   "first_move",
   "party_first_move",
@@ -216,6 +226,10 @@ function promptsCsv(data: Pick<MetricsData, "rows" | "total">): string {
   add("total", data.total);
   return lines.join("\r\n") + "\r\n";
 }
+
+/** D1 and D7 retention of a row's cohort days that are due (null until the later day is over). */
+export const d1 = (r: MetricRow) => rate(r.ret_d1_kept ?? 0, r.ret_d1_cohort ?? 0);
+export const d7 = (r: MetricRow) => rate(r.ret_d7_kept ?? 0, r.ret_d7_cohort ?? 0);
 
 /** Practice rounds that showed but were neither solved nor skipped (the player left). Never below 0. */
 export const practiceDropped = (c: PracticeCounts) => Math.max(0, c.started - c.finished - c.skipped);
@@ -307,6 +321,21 @@ export const METRICS: readonly MetricDef[] = [
       { key: "players_created", label: "Created", value: (r) => r.created },
       { key: "tutorial_cleared", label: "Tutorial cleared", value: (r) => r.tutorial_cleared },
       { key: "played_a_game", label: "Played", value: (r) => r.played },
+    ],
+  },
+  {
+    id: "retention",
+    title: "D1 and D7 retention",
+    note: "Cohort = players whose first game started that GMT day (test players left out). D1 = of them, the share who started a game the next day; D7 = 7 days later. A day shows n/a until that later day is over. Same rule as Live ops, by day.",
+    headline: (t) => `${pct(d1(t))} / ${pct(d7(t))}`,
+    sub: (t) =>
+      `D1 / D7 · D1 ${n(t.ret_d1_kept ?? 0)} of ${n(t.ret_d1_cohort ?? 0)} · D7 ${n(t.ret_d7_kept ?? 0)} of ${n(t.ret_d7_cohort ?? 0)} · ${n(t.ret_cohort ?? 0)} new players`,
+    cols: [
+      { key: "cohort", label: "Cohort", value: (r) => r.ret_cohort ?? 0 },
+      { key: "d1_kept", label: "Back D1", value: (r) => ((r.ret_d1_cohort ?? 0) > 0 ? (r.ret_d1_kept ?? 0) : null) },
+      { key: "d1_pct", label: "D1 %", value: d1 },
+      { key: "d7_kept", label: "Back D7", value: (r) => ((r.ret_d7_cohort ?? 0) > 0 ? (r.ret_d7_kept ?? 0) : null) },
+      { key: "d7_pct", label: "D7 %", value: d7 },
     ],
   },
   {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { METRIC_BY_ID, METRIC_IDS, metricCsv, practiceDropped, span, type MetricRow } from "./metrics";
+import { d1, d7, METRIC_BY_ID, METRIC_IDS, metricCsv, practiceDropped, span, type MetricRow } from "./metrics";
 
 /** R2-ADMIN: the Metrics cards added by the admin cascade audit (docs/qa/ADMIN_CASCADE_R2.md). */
 const row = (over: Partial<MetricRow> = {}): MetricRow =>
@@ -124,5 +124,24 @@ describe("practice rounds (20261202000501)", () => {
   it("reads rows from before the migration as no data", () => {
     expect(METRIC_BY_ID.practice.headline(row())).toBe("n/a");
     expect(METRIC_BY_ID.practice.breakdown!.rows(row())).toEqual([]);
+  });
+});
+
+describe("D1 and D7 retention cohorts (20261202000601)", () => {
+  it("rates only the cohorts that are due, and shows n/a until then", () => {
+    const total = row({ ret_cohort: 30, ret_d1_cohort: 20, ret_d1_kept: 9, ret_d7_cohort: 10, ret_d7_kept: 2 });
+    expect([d1(total), d7(total)]).toEqual([45, 20]);
+    expect(METRIC_BY_ID.retention.headline(total)).toBe("45% / 20%");
+    expect(METRIC_BY_ID.retention.sub(total)).toBe("D1 / D7 · D1 9 of 20 · D7 2 of 10 · 30 new players");
+    const recent = row({ date: "2026-12-06", ret_cohort: 4 }); // D1 and D7 not over yet
+    const older = row({ date: "2026-11-20", ret_cohort: 5, ret_d1_cohort: 5, ret_d1_kept: 2, ret_d7_cohort: 5, ret_d7_kept: 0 });
+    expect(
+      metricCsv("retention", { rows: [older, recent], total })
+        .trimEnd()
+        .split("\r\n"),
+    ).toEqual(["date,cohort,d1_kept,d1_pct,d7_kept,d7_pct", "2026-11-20,5,2,40,0,0", "2026-12-06,4,,,,", "total,30,9,45,2,20"]);
+  });
+  it("reads rows from before the migration as no data", () => {
+    expect(METRIC_BY_ID.retention.headline(row())).toBe("n/a / n/a");
   });
 });

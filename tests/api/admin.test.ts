@@ -1262,4 +1262,38 @@ describe("Metrics added by the admin cascade audit (R2-ADMIN)", () => {
       .eq("name", "practice_start")
       .gte("created_at", new Date(Date.now() - 60_000).toISOString());
   });
+
+  it("tables D1 and D7 retention by cohort day, with CSV (needs 20261202000601)", async () => {
+    const db = admin();
+    const first = addDays(end, -5);
+    const when = (d: string) => `${d}T10:00:00Z`;
+    const a = await guest(uniq("rcA"));
+    const b = await guest(uniq("rcB"));
+    for (const id of [a.userId, b.userId]) await db.from("players").update({ is_test: false }).eq("id", id);
+    const att = (player: string, d: string) => ({
+      player_id: player,
+      game_id: "nine",
+      mode: "free",
+      status: "cleared",
+      hints: 0,
+      started_at: when(d),
+      finished_at: when(d),
+    });
+    // A: first game that day, back the next day. B: first game that day, never back.
+    const ins = await db.from("attempts").insert([att(a.userId, first), att(a.userId, addDays(first, 1)), att(b.userId, first)]);
+    expect(ins.error).toBeNull();
+    const d = await metrics();
+    // Years ago: every D1 and D7 day is over, so both are due.
+    expect(d.rows.find((x: { date: string }) => x.date === first)).toMatchObject({
+      ret_cohort: 2,
+      ret_d1_cohort: 2,
+      ret_d1_kept: 1,
+      ret_d7_cohort: 2,
+      ret_d7_kept: 0,
+    });
+    expect(d.rows.find((x: { date: string }) => x.date === addDays(first, 1))).toMatchObject({ ret_cohort: 0 });
+    const x = await S.owner.aal2("/api/admin/metrics", { json: { metric: "retention", days: 7, end } });
+    expect(x.data.csv.split("\r\n")).toContain(`${first},2,1,50,0,0`);
+    expect((await lastAudit(S.owner.userId, "metrics.export"))?.target).toBe("metric:retention");
+  });
 });
