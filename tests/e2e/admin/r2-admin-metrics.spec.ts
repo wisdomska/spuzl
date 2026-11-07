@@ -10,7 +10,7 @@ import { signedIn } from "./helpers";
  */
 test.skip(({ viewport }) => (viewport?.width ?? 0) < 800, "the admin console is desktop and tablet only");
 
-const NEW_CARDS: MetricId[] = ["tap_warmth", "first_clear"];
+const NEW_CARDS: MetricId[] = ["tap_warmth", "first_clear", "practice"];
 
 test("analyst sees the new cards and exports each as CSV, audited", async ({ page }) => {
   const acct = await signedIn(page, "analyst");

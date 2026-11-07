@@ -7,6 +7,7 @@
  */
 import { addDays, ISO_DATE, todayIso } from "./dates";
 import { PROMPT_LABELS, PROMPT_PAIRS, TRIGGER_LABELS } from "@/lib/prompts/ids";
+import { GAME_BY_ID } from "@/lib/catalog";
 
 export const RANGE_DAYS = [7, 30] as const;
 export type RangeDays = (typeof RANGE_DAYS)[number];
@@ -87,6 +88,17 @@ export interface MetricRow {
   fc_cleared?: number;
   fc_p50?: number | null;
   fc_p95?: number | null;
+  /** R2-ADMIN (20261202000501): practice rounds started, solved and skipped (first party), and per game. */
+  practice_started?: number;
+  practice_finished?: number;
+  practice_skipped?: number;
+  practice_games?: Record<string, PracticeCounts>;
+}
+
+export interface PracticeCounts {
+  started: number;
+  finished: number;
+  skipped: number;
 }
 
 export interface PromptCounts {
@@ -128,6 +140,7 @@ export const METRIC_IDS = [
   "tap_to_board",
   "tap_warmth",
   "first_clear",
+  "practice",
   "onboarding",
   "first_move",
   "party_first_move",
@@ -204,6 +217,31 @@ function promptsCsv(data: Pick<MetricsData, "rows" | "total">): string {
   return lines.join("\r\n") + "\r\n";
 }
 
+/** Practice rounds that showed but were neither solved nor skipped (the player left). Never below 0. */
+export const practiceDropped = (c: PracticeCounts) => Math.max(0, c.started - c.finished - c.skipped);
+const practiceAll = (r: MetricRow): PracticeCounts => ({
+  started: r.practice_started ?? 0,
+  finished: r.practice_finished ?? 0,
+  skipped: r.practice_skipped ?? 0,
+});
+/** Per-game practice counts for a row, busiest first (then by id). */
+export const practiceGames = (r: MetricRow): [string, PracticeCounts][] =>
+  Object.entries(r.practice_games ?? {}).sort((a, b) => b[1].started - a[1].started || a[0].localeCompare(b[0]));
+
+/** Practice CSV: per day, every game seen that day then "all"; then the range total the same way. */
+function practiceCsv(data: Pick<MetricsData, "rows" | "total">): string {
+  const lines = ["date,game,started,finished,skipped,dropped,finish_pct"];
+  const line = (date: string, game: string, c: PracticeCounts) =>
+    lines.push([date, game, c.started, c.finished, c.skipped, practiceDropped(c), rate(c.finished, c.started)].map(csvCell).join(","));
+  const add = (date: string, r: MetricRow) => {
+    for (const [g, c] of practiceGames(r)) line(date, g, c);
+    line(date, "all", practiceAll(r));
+  };
+  for (const r of data.rows) add(r.date ?? "", r);
+  add("total", data.total);
+  return lines.join("\r\n") + "\r\n";
+}
+
 export const METRICS: readonly MetricDef[] = [
   {
     id: "tap_to_board",
@@ -270,6 +308,33 @@ export const METRICS: readonly MetricDef[] = [
       { key: "tutorial_cleared", label: "Tutorial cleared", value: (r) => r.tutorial_cleared },
       { key: "played_a_game", label: "Played", value: (r) => r.played },
     ],
+  },
+  {
+    id: "practice",
+    title: "Practice rounds",
+    note: "The short first try of a game with free hints (client recorded). Started = the practice board showed; finished = solved; skipped = Skip tapped; dropped = started but neither (the player left). Games whose practice round is off in Settings never start one.",
+    headline: (t) => pct(rate(t.practice_finished ?? 0, t.practice_started ?? 0)),
+    sub: (t) => {
+      const c = practiceAll(t);
+      return `finished of ${n(c.started)} started · ${n(c.skipped)} skipped (${pct(rate(c.skipped, c.started))}) · ${n(practiceDropped(c))} dropped (${pct(rate(practiceDropped(c), c.started))})`;
+    },
+    cols: [
+      { key: "started", label: "Started", value: (r) => r.practice_started ?? 0 },
+      { key: "finished", label: "Finished", value: (r) => r.practice_finished ?? 0 },
+      { key: "skipped", label: "Skipped", value: (r) => r.practice_skipped ?? 0 },
+      { key: "dropped", label: "Dropped", value: (r) => practiceDropped(practiceAll(r)) },
+      { key: "finish_pct", label: "Finish %", value: (r) => rate(r.practice_finished ?? 0, r.practice_started ?? 0) },
+    ],
+    breakdown: {
+      head: ["Game", "Started", "Finished", "Skipped", "Dropped", "Finish %"],
+      rows: (t) =>
+        practiceGames(t).map(([g, c]) => ({
+          key: g,
+          label: GAME_BY_ID[g]?.name ?? g,
+          values: [c.started, c.finished, c.skipped, practiceDropped(c), rate(c.finished, c.started)],
+        })),
+    },
+    csv: practiceCsv,
   },
   {
     id: "first_move",

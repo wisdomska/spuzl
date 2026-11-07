@@ -1234,4 +1234,32 @@ describe("Metrics added by the admin cascade audit (R2-ADMIN)", () => {
     const x = await S.content_editor.aal2("/api/admin/metrics", { json: { metric: "first_clear", days: 7, end } });
     expect(x.data.csv.trimEnd().split("\r\n").at(-1)).toBe("total,2,1,50,180000,180000");
   });
+
+  it("counts practice rounds started, finished and skipped, per game, with CSV (needs 20261202000501)", async () => {
+    await seed([
+      { name: "practice_start", game_id: "dusk" },
+      { name: "practice_finish", game_id: "dusk" },
+      { name: "practice_start", game_id: "dusk" },
+      { name: "practice_skip", game_id: "dusk" },
+      { name: "practice_start", game_id: "nine" },
+    ]);
+    const d = await metrics();
+    expect(d.total).toMatchObject({ practice_started: 3, practice_finished: 1, practice_skipped: 1 });
+    expect(d.total.practice_games).toEqual({
+      dusk: { started: 2, finished: 1, skipped: 1 },
+      nine: { started: 1, finished: 0, skipped: 0 },
+    });
+    const x = await S.analyst.aal2("/api/admin/metrics", { json: { metric: "practice", days: 7, end } });
+    expect(x.data.csv.trimEnd().split("\r\n").at(-1)).toBe("total,all,3,1,1,1,33.3");
+
+    // The client route takes them from guests, and only with a game.
+    const g = await guest();
+    expect((await g.api("/api/v1/metrics", { json: { name: "practice_start", game: "dusk" } })).status).toBe(204);
+    expect((await g.api("/api/v1/metrics", { json: { name: "practice_skip" } })).status).toBe(400);
+    await admin()
+      .from("client_metrics")
+      .delete()
+      .eq("name", "practice_start")
+      .gte("created_at", new Date(Date.now() - 60_000).toISOString());
+  });
 });

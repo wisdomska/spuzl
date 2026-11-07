@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { GAME_BY_ID } from "@/lib/catalog";
-import { allLearned, knowsGame, learnedToSync, needsGuided, needsHowItWorks, shouldPrime } from "./guided";
+import { allLearned, knowsGame, learnedToSync, needsGuided, needsHowItWorks, practiceStep, shouldPrime } from "./guided";
 
 describe("learned games on the account", () => {
   it("counts a game learned on this device or the account", () => {
@@ -71,5 +71,28 @@ describe("R2-07: practice round from every entry", () => {
     // account not known yet: only what this device learned
     expect(shouldPrime({ ...p, played: undefined })).toBe(false);
     expect(shouldPrime({ ...p, played: undefined, learned: new Set(["dusk"]) })).toBe(true);
+  });
+});
+
+describe("practice round metrics (R2-ADMIN)", () => {
+  const run = (events: Parameters<typeof practiceStep>[1][]) => {
+    let r = { start: false, end: false };
+    const sent: string[] = [];
+    for (const e of events) {
+      const s = practiceStep(r, e);
+      r = s.next;
+      if (s.send) sent.push(e);
+    }
+    return sent;
+  };
+  it("sends one start, then the first ending only", () => {
+    expect(run(["practice_start", "practice_finish"])).toEqual(["practice_start", "practice_finish"]);
+    expect(run(["practice_start", "practice_skip", "practice_finish"])).toEqual(["practice_start", "practice_skip"]);
+    expect(run(["practice_start", "practice_start", "practice_finish", "practice_finish"])).toEqual(["practice_start", "practice_finish"]);
+  });
+  it("never sends an ending without a start, and a start alone is a drop-off", () => {
+    expect(run(["practice_skip"])).toEqual([]);
+    expect(run(["practice_finish", "practice_start"])).toEqual(["practice_start"]);
+    expect(run(["practice_start"])).toEqual(["practice_start"]);
   });
 });

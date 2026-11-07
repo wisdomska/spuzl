@@ -102,3 +102,17 @@ export function shouldPrime(o: {
   if (!o.available || o.disabled?.includes(o.id)) return true;
   return knowsGame(o.id, o.played, o.learned);
 }
+
+export type PracticeEvent = "practice_start" | "practice_finish" | "practice_skip";
+export type PracticeRecord = { start: boolean; end: boolean };
+
+/**
+ * Admin Metrics, practice rounds (R2-ADMIN): which of GuidedPlay's events to send. One start per practice board,
+ * then at most one ending (a finish or a skip, whichever comes first), never an ending without a start. A start
+ * with no ending is a drop-off. Returns whether to send, and the record after it.
+ */
+export function practiceStep(r: PracticeRecord, event: PracticeEvent): { send: boolean; next: PracticeRecord } {
+  if (event === "practice_start") return r.start ? { send: false, next: r } : { send: true, next: { ...r, start: true } };
+  if (!r.start || r.end) return { send: false, next: r };
+  return { send: true, next: { ...r, end: true } };
+}

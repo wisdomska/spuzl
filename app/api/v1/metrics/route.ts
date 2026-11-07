@@ -26,6 +26,10 @@ const Metric = z
       "daily5_start",
       "daily5_complete",
       "daily5_share",
+      // Practice rounds (R2-ADMIN): started, solved or skipped, by game
+      "practice_start",
+      "practice_finish",
+      "practice_skip",
     ]),
     game: z
       .string()
@@ -42,6 +46,7 @@ const Metric = z
     "tap_to_board needs ms and kind",
   )
   .refine((m) => m.name !== "party_first_move" || m.ms !== undefined, "party_first_move needs ms")
+  .refine((m) => !m.name.startsWith("practice_") || m.game !== undefined, "practice events need the game")
   .refine((m) => m.name !== "onboarding_step" || isOnboardingStep(m.kind), "onboarding_step needs a known step as kind")
   .refine((m) => !m.name.startsWith("hint_") || m.name === "hint_cancel" || m.kind === "confirm" || m.kind === "direct", {
     message: "hint_request and hint_use need kind confirm or direct",

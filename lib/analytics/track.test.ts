@@ -146,4 +146,10 @@ describe("cold and warm tap to board (R2-ADMIN)", () => {
     expect(firstPartyBody("tap_to_board", { kind: "tap", ms: 800 })?.warm).toBeUndefined();
     expect(firstPartyBody("share", { kind: "daily", warm: true })?.warm).toBeUndefined();
   });
+  it("forwards practice round events with their game", () => {
+    for (const e of ["practice_start", "practice_finish", "practice_skip"] as const) {
+      expect(KEY_EVENTS).toContain(e);
+      expect(firstPartyBody(e, { game: "dusk" })).toMatchObject({ name: e, game: "dusk" });
+    }
+  });
 });

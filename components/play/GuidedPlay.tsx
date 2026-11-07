@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { GameShell } from "@/components/game/GameShell";
 import { Button } from "@/components/ui/Button";
@@ -11,10 +11,13 @@ import type { Hint } from "@/games/types";
 import type { GameMeta } from "@/lib/catalog";
 import { api } from "@/lib/client/api";
 import { guidedCopy as T } from "@/lib/copy/guided";
+import { track } from "@/lib/analytics/track";
+import { practiceStep, type PracticeEvent } from "@/lib/guided";
 
 /**
  * The first try of each game: a short practice board in the real shell, with free, unlimited hints that also
- * appear on their own after a pause. Skippable at any time; nothing is recorded.
+ * appear on their own after a pause. Skippable at any time. Nothing is recorded on the account (no attempt, XP or
+ * rank); only the anonymous practice_start, practice_finish and practice_skip metrics for the admin Metrics page.
  */
 export function GuidedPlay({
   meta,
@@ -35,11 +38,24 @@ export function GuidedPlay({
   const [puzzle, setPuzzle] = useState<unknown>(null);
   const [solved, setSolved] = useState(false);
   const Board = BOARDS[meta.id];
+  // Admin Metrics, practice rounds (R2-ADMIN): one start when the board shows, then a finish or a skip, once each;
+  // a start with neither is a drop-off. Anonymous like every first-party metric (the game id only).
+  const recorded = useRef<{ game: string; start: boolean; end: boolean }>({ game: meta.id, start: false, end: false });
+  const record = (event: PracticeEvent) => {
+    const { send, next } = practiceStep(recorded.current, event);
+    recorded.current = { ...recorded.current, ...next };
+    if (send) track(event, { game: recorded.current.game });
+  };
 
   useEffect(() => {
     let live = true;
+    recorded.current = { game: meta.id, start: false, end: false };
     api<{ puzzle: unknown }>(`/api/v1/guided/${meta.id}`)
-      .then((r) => live && setPuzzle(r.puzzle))
+      .then((r) => {
+        if (!live) return;
+        setPuzzle(r.puzzle);
+        record("practice_start");
+      })
       .catch(() => live && onDone("unavailable")); // no practice board: straight to the game
     return () => {
       live = false;
@@ -66,7 +82,10 @@ export function GuidedPlay({
       {!solved && (
         <button
           type="button"
-          onClick={() => onDone("skipped")}
+          onClick={() => {
+            record("practice_skip");
+            onDone("skipped");
+          }}
           aria-label={T.skipAria(meta.name)}
           className="press bg-surface h-11 shrink-0 rounded-[14px] px-4 text-[14px] font-bold"
         >
@@ -87,7 +106,10 @@ export function GuidedPlay({
       guided
       hintsLeft={99}
       requestHint={async (state) => (await api<{ hint: Hint | null }>(`/api/v1/guided/${meta.id}`, { json: { state } })).hint}
-      onSolved={() => setSolved(true)}
+      onSolved={() => {
+        record("practice_finish");
+        setSolved(true);
+      }}
       onExit={onExit}
       banner={coach}
       celebrate={solved}

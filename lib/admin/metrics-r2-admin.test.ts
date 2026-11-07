@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { METRIC_BY_ID, METRIC_IDS, metricCsv, span, type MetricRow } from "./metrics";
+import { METRIC_BY_ID, METRIC_IDS, metricCsv, practiceDropped, span, type MetricRow } from "./metrics";
 
 /** R2-ADMIN: the Metrics cards added by the admin cascade audit (docs/qa/ADMIN_CASCADE_R2.md). */
 const row = (over: Partial<MetricRow> = {}): MetricRow =>
@@ -85,5 +85,44 @@ describe("landing to first clear (20261202000401)", () => {
   it("reads rows from before the migration as no data", () => {
     expect(METRIC_BY_ID.first_clear.headline(row())).toBe("n/a / n/a");
     expect(METRIC_BY_ID.first_clear.sub(row())).toContain("(n/a)");
+  });
+});
+
+describe("practice rounds (20261202000501)", () => {
+  const total = row({
+    practice_started: 10,
+    practice_finished: 6,
+    practice_skipped: 3,
+    practice_games: { dusk: { started: 7, finished: 5, skipped: 1 }, nine: { started: 3, finished: 1, skipped: 2 } },
+  });
+  it("shows finish rate, skips and drop-off, never a negative drop-off", () => {
+    expect(METRIC_BY_ID.practice.headline(total)).toBe("60%");
+    expect(METRIC_BY_ID.practice.sub(total)).toBe("finished of 10 started · 3 skipped (30%) · 1 dropped (10%)");
+    expect(practiceDropped({ started: 1, finished: 1, skipped: 1 })).toBe(0);
+  });
+  it("breaks down by game, busiest first, with the game's name", () => {
+    expect(METRIC_BY_ID.practice.breakdown!.rows(total)).toEqual([
+      { key: "dusk", label: "Dusk", values: [7, 5, 1, 1, 71.4] },
+      { key: "nine", label: "Nine", values: [3, 1, 2, 0, 33.3] },
+    ]);
+  });
+  it("exports per day and game, then the range total", () => {
+    const day = row({ date: "2026-12-02", practice_started: 1, practice_games: { dusk: { started: 1, finished: 0, skipped: 0 } } });
+    expect(
+      metricCsv("practice", { rows: [day], total })
+        .trimEnd()
+        .split("\r\n"),
+    ).toEqual([
+      "date,game,started,finished,skipped,dropped,finish_pct",
+      "2026-12-02,dusk,1,0,0,1,0",
+      "2026-12-02,all,1,0,0,1,0",
+      "total,dusk,7,5,1,1,71.4",
+      "total,nine,3,1,2,0,33.3",
+      "total,all,10,6,3,1,60",
+    ]);
+  });
+  it("reads rows from before the migration as no data", () => {
+    expect(METRIC_BY_ID.practice.headline(row())).toBe("n/a");
+    expect(METRIC_BY_ID.practice.breakdown!.rows(row())).toEqual([]);
   });
 });

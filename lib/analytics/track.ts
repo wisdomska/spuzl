@@ -56,6 +56,10 @@ export const KEY_EVENTS = [
   "daily5_start",
   "daily5_complete",
   "daily5_share",
+  // Practice rounds (R2-07, admin Metrics R2-ADMIN): { game }, also first party
+  "practice_start",
+  "practice_finish",
+  "practice_skip",
 ] as const;
 export type KeyEvent = (typeof KEY_EVENTS)[number];
 
@@ -155,6 +159,9 @@ const FIRST_PARTY: ReadonlySet<KeyEvent> = new Set([
   "daily5_start",
   "daily5_complete",
   "daily5_share",
+  "practice_start",
+  "practice_finish",
+  "practice_skip",
 ]);
 
 /** Pure: the first-party metric body for an event, or null. Exported for tests. */
