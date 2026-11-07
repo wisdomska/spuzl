@@ -1,5 +1,7 @@
 "use client";
 
+import { GameOverBanner, type GameOutcome } from "@/components/game/GameOverBanner";
+import { gameOverCopy } from "@/lib/copy/game-over";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useWide } from "@/components/game/useBoardSize";
@@ -559,6 +561,41 @@ export function BayMatch({ id }: { id: string }) {
       </button>
     </div>
   );
+  // The end of the game, made unmissable (owner: "I just won a game of chess and didn't even know").
+  const iWon = v.status === "finished" && v.winnerId === me.id;
+  const outcome: GameOutcome | null = v.status !== "finished" || v.mySeat === null ? null : iWon ? "won" : v.winnerId ? "lost" : "draw";
+  const R = gameOverCopy.reason;
+  const reason = (() => {
+    switch (v.result) {
+      case "checkmate":
+        return R.checkmate;
+      case "resign":
+        return iWon ? R.resign : R.youResigned;
+      case "flag":
+        return iWon ? R.flag : R.yourFlag;
+      case "timeout":
+        return iWon ? R.timeout : R.yourTimeout;
+      case "agreed draw":
+        return R.agreed;
+      case "stalemate":
+        return R.stalemate;
+      case null:
+      case "win":
+      case "draw":
+        return undefined;
+      default:
+        return v.result ? v.result[0].toUpperCase() + v.result.slice(1) + "." : undefined;
+    }
+  })();
+  const gameOver = (
+    <GameOverBanner
+      id={`bay:${v.id}`}
+      outcome={outcome}
+      reason={reason}
+      actionLabel={gameOverCopy.rematch}
+      onAction={() => action("rematch")}
+    />
+  );
   const finished = finishedLine && (
     <div className={`bg-surface flex items-center gap-3 rounded-[18px] p-3.5 ${gap}`} role="status">
       <Spuz mood={v.winnerId === me.id ? "party" : v.winnerId ? "sad" : "thinking"} size={56} decorative />
@@ -687,6 +724,7 @@ export function BayMatch({ id }: { id: string }) {
           <div className={wide ? "flex min-w-0 flex-1 justify-center p-3 pb-0" : "contents"}>
             {!wide && <div className="pt-3">{oppRow}</div>}
             <div className={wide ? "flex justify-center" : "flex justify-center px-3 py-3"}>{board}</div>
+            {gameOver}
             {!wide && meRow}
             {!wide && moves}
             {!wide && offer}

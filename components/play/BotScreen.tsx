@@ -1,5 +1,7 @@
 "use client";
 
+import { GameOverBanner } from "@/components/game/GameOverBanner";
+import { gameOverCopy } from "@/lib/copy/game-over";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
@@ -238,6 +240,14 @@ export function BotScreen({ meta, game, initialLevel }: { meta: GameMeta; game: 
         }
       />
       <HowToSheet open={howTo} meta={botMeta} onClose={() => setHowTo(false)} tips={tips} />
+      {/* The end of the game, made unmissable: the card, the sound and, for a win, confetti */}
+      <GameOverBanner
+        id={`bot:${key}`}
+        outcome={outcome}
+        reason={outcome === "lost" ? t.lost : undefined}
+        actionLabel={gameOverCopy.playAgain}
+        onAction={restart}
+      />
     </>
   );
 }
