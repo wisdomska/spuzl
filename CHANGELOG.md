@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.37.0 (7 November 2026)
+
+### For players
+
+- **You'll know when you've won.** When a full game ends (chess, draughts, Ludo and the rest, with a friend, in
+  Play live or against the bot), a card fills the screen saying "You won!", "You lost" or "It's a draw", and why:
+  checkmate, they resigned, or the clock ran out. It plays the win or loss sound, and wins get confetti. Rematch is
+  one tap away, or close the card to look at the final board.
+- **The rule is on screen.** Every game shows its one-line rule under the title until your first move, then it lives
+  in the game menu.
+- **Practice first, wherever you start.** A game's practice round now runs the first time you open it from
+  Continue, Levels, Daily Five, the bot or a Duel/Party lobby, not just the Library.
+- **The timer waits for you.** It starts on your first move, never during practice, and never shows 00:00 on your
+  first puzzle.
+- **Pause hides the board.** Pausing always covers the board ("Board hidden").
+
+### For admins
+
+- **New setting** `practice.disabled` turns off a game's practice round.
+
 ## 1.36.0 (7 November 2026)
 
 ### For players
