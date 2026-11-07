@@ -135,6 +135,10 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   the Two Truths pack import and join the pool once copied into content.ts.
 - **R2-P5 part B, Two Truths in Party:** not a Party race game. Races rank by finish time and take only time-scored
   live games, so no quiz game (Quickfire, Emoji Hits) races today. A score race mode would let all three join.
+- **R2-P5 part B, Azonto Steps art:** Spuz has no rigged arms, so the "dance" is a spring sway per move with the
+  move's name, arrow and shape in a bubble. A drawn or rigged pose per move (an iron in hand, a phone at the ear)
+  would read better; the beat is the shared tick and chime sounds, and a recorded Azonto loop would suit it more.
+  Azonto's 3D tile uses Phosphor `person-arms-spread`.
 - **R2-P5 settings delay:** a lab switch reaches players within about 30 s (server settings cache) plus up to 60 s
   (edge cache of `/api/v1/settings/game`); the server refuses a switched-off game as soon as its own cache expires.
 - **Admin cascade audit (R2-ADMIN), left out or partial** (full table: `docs/qa/ADMIN_CASCADE_R2.md`):

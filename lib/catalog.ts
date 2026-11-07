@@ -762,6 +762,19 @@ const LAB_LIST: GameMeta[] = [
     "Three statements, two of them true. Tap the lie before the bar runs out.",
     { content: "curated", scoring: "score", minTimeMs: 8000, lab: true },
   ),
+  // Azonto Steps: Simon-style dance memory to a gentle beat, inspired by Ghana's Azonto. The floor is the shortest
+  // honest run (games/azonto/rules.ts MIN_RUN_MS).
+  g(
+    "azonto",
+    "Azonto Steps",
+    "reflex",
+    "person-arms-spread",
+    "M3+",
+    "custom",
+    "Copy Spuz's Azonto moves",
+    "Watch Spuz dance the moves, then repeat them on the pad. One more move every round.",
+    { scoring: "score", minTimeMs: 1500, photosensitive: true, lab: true },
+  ),
 ];
 
 /**

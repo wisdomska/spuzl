@@ -7,7 +7,7 @@ import { judge, check, type BeatPuzzle, type BeatState } from "@/games/beattap/l
 import { tally, type PenaltyPuzzle, type PenaltySolution, type PenaltyState } from "@/games/penalty/logic";
 import { replay as hiloReplay, type HiloSolution, type HiloState } from "@/games/hilo/logic";
 
-const GAMES = ["penalty", "beattap", "hilo", "lightup", "killer", "dara", "twotruths"] as const;
+const GAMES = ["penalty", "beattap", "hilo", "lightup", "killer", "dara", "twotruths", "azonto"] as const;
 const LEVELS: Difficulty[] = ["easy", "medium", "hard", "expert", "mega"];
 
 describe("solved states for the newer games", () => {

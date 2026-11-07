@@ -107,6 +107,15 @@ test("switched on: each lab game opens, runs its practice round and plays in the
   for (const g of LAB_GAMES) {
     await test.step(g.id, async () => {
       await page.goto(`/play/${g.id}?mode=free`);
+      // A photosensitive lab game (Azonto Steps) shows the one-time notice first.
+      if (g.photosensitive) {
+        const notice = page.getByRole("alertdialog").getByRole("button", { name: "Got it" });
+        const shown = await notice
+          .waitFor({ state: "visible", timeout: 10_000 })
+          .then(() => true)
+          .catch(() => false);
+        if (shown) await notice.click();
+      }
       await expect(page.getByText(`First time playing ${g.name}?`)).toBeVisible({ timeout: 45_000 });
       if (hasSolver(g.id)) {
         // The practice board is the seeded easy board from `tutorial:<id>` (lib/game/service.ts guidedSeed): play it

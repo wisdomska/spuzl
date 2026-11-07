@@ -41,6 +41,9 @@ import * as hilo from "@/games/hilo/logic";
 import * as flagged from "@/games/flagged/logic";
 import * as twotruths from "@/games/twotruths/logic";
 import { REVEAL_MS as TRUTHS_REVEAL_MS } from "@/games/twotruths/rules";
+import * as azonto from "@/games/azonto/logic";
+import { MOVE_DEFS as AZONTO_MOVES } from "@/games/azonto/rules";
+import { MOVE_NAME as AZONTO_NAME } from "@/lib/copy/azonto";
 import { READ_FLOOR_MS } from "@/games/_shared/cluecave";
 
 export type Age = "13-15" | "16-17" | "18+";
@@ -251,6 +254,31 @@ const SOLVERS: Record<string, (page: Page, seed: string, d: Difficulty) => Promi
       await page.waitForTimeout((i ? TRUTHS_REVEAL_MS : 0) + READ_FLOOR_MS + 200);
       await answers.getByRole("button", { name: new RegExp(`^${"ABC"[g.solution.lie[i]]}, `) }).click();
       await expect(page.getByRole("img", { name: `${i + 1} of ${total} answered` })).toBeVisible();
+    }
+  },
+  async azonto(page, seed, d) {
+    // The practice round is the game's own short dance, played in full; a seeded board plays two rounds, then a
+    // deliberate wrong move ends the run (a run counts once it is over).
+    const practice = seed === "tutorial:azonto";
+    const p = practice ? azonto.practice().puzzle : azonto.generate(createRng(seed), d).puzzle;
+    const pad = page.getByRole("group", { name: "Azonto moves" });
+    const move = (m: number) => pad.getByRole("button", { name: new RegExp(`^${AZONTO_NAME[AZONTO_MOVES[m].id]},`) });
+    await page.getByRole("button", { name: /^Start\b/ }).click();
+    const rounds = practice ? p.seq.length - p.start + 1 : 2;
+    for (let r = 0; r < rounds; r++) {
+      // Spuz dances the round first; the pad opens when it is your turn.
+      await expect(move(0)).toBeEnabled({ timeout: 30_000 });
+      for (let k = 0; k < p.start + r; k++) {
+        await move(p.seq[k]).click();
+        // the server's human floor between moves is 100 ms
+        await page.waitForTimeout(160);
+      }
+      // the round is repeated: the pad closes while Spuz dances the next one
+      if (r < rounds - 1 || !practice) await expect(move(0)).toBeDisabled();
+    }
+    if (!practice) {
+      await expect(move(0)).toBeEnabled({ timeout: 30_000 });
+      await move((p.seq[0] + 1) % AZONTO_MOVES.length).click();
     }
   },
   async quads(page, seed, d) {

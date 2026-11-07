@@ -123,6 +123,13 @@ export const SOLVED_STATE: Record<string, Adapter> = {
   penalty: (p: any, s: any) => penaltyShots(p, s),
   beattap: (p: any) => ({ taps: (p.beats as number[]).map((b, i) => b + BEAT_SCATTER[i % BEAT_SCATTER.length]), done: true }),
   dara: (p: any, s: any) => daraLine(p, s),
+  // the whole dance repeated, with human, uneven gaps between moves
+  azonto: (p: any) => ({
+    rounds: Array.from({ length: (p.seq as number[]).length - (p.start as number) + 1 }, (_, r) => {
+      let ms = 0;
+      return { taps: (p.seq as number[]).slice(0, p.start + r).map((m, k) => [m, (ms += 320 + ((k * 41 + r * 13) % 120))]) };
+    }),
+  }),
   // every lie found, a few seconds in
   twotruths: (_p, s: any) => ({ answers: (s.lie as number[]).map((pick) => ({ pick, ms: 5000, right: true, answer: pick })) }),
 };

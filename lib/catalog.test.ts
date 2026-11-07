@@ -75,7 +75,7 @@ const KEEP = [
 ];
 
 /** R2-P5 part B: new games, added after the eleven that came back. */
-const NEW_LAB = ["twotruths"];
+const NEW_LAB = ["twotruths", "azonto"];
 
 describe("R2-P5 part B: new lab games", () => {
   it("are lab only, in live worlds, with their own rule line", () => {
