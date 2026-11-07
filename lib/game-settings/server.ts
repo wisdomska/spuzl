@@ -1,4 +1,5 @@
 import "server-only";
+import { connection } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { openGame, type GameMeta } from "@/lib/catalog";
 import { DEFAULTS, mergeSettings, type GameSettings } from "./schema";
@@ -7,8 +8,19 @@ let cache: { at: number; value: GameSettings } | null = null;
 // 30 s in production; no cache in development and tests (SETTINGS_CACHE_MS overrides), so a change applies at once.
 const TTL_MS = Number(process.env.SETTINGS_CACHE_MS ?? (process.env.NODE_ENV === "production" ? 30_000 : 0));
 
-/** Current game settings (stored values over defaults), cached for 30 s per server instance. */
+/**
+ * Current game settings (stored values over defaults), cached for 30 s per server instance.
+ *
+ * Settings change at runtime, so whatever reads them must render per request: without `connection()` a page that
+ * decides before touching cookies (e.g. a switched-off lab game's `notFound()`) can be rendered once and cached,
+ * and then stays "not found" after an admin switches the game on, until the next deploy.
+ */
 export async function getGameSettings(): Promise<GameSettings> {
+  try {
+    await connection();
+  } catch {
+    /* outside a request (scripts, tests, cron helpers): nothing to opt out of */
+  }
   if (cache && Date.now() - cache.at < TTL_MS) return cache.value;
   try {
     const { data, error } = await supabaseAdmin().from("game_settings").select("key, value");
