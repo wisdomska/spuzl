@@ -1,5 +1,35 @@
 # Changelog
 
+## 1.36.0 (7 November 2026)
+
+### For players
+
+- **Quads is back.** Find four groups of four in this Connections-style game.
+  - The groups get difficulty colours, each labelled Easy, Medium, Hard or Tricky (colour-blind safe).
+  - Feedback is quick, including "one away".
+  - It has a practice round, and 38 new puzzles with a West African flavour.
+- **Straight to playing.** "Play now" on the landing page goes straight to "When were you born?", with no intro
+  screen. If you solved the demo on the landing page, it counts as your first clear.
+- **Birth year is quicker to enter.** Type four digits on the number pad instead of scrolling a long list, and the
+  note explains why it's set once.
+- **Beat Tap counts you in.** Four beats before scoring starts, practice never costs points, and the Start tap never
+  counts as off-beat. If your sound is off, it offers to turn it on.
+- **Trotro Jam:** the selected vehicle lifts and is outlined, the arrows light up, and you can drag or swipe a
+  vehicle to move it.
+- **Emoji Hits:** practice is pick-the-answer, real rounds are type-the-answer, and the screen says which. The hint
+  clears after each round, and the clock starts on Start.
+- **Library:** rows are real links, so you can long-press, open in a new tab or share them. Games with levels say
+  "Play Level N".
+- **Home:** a "new games to try" card opens the Library filtered to New. The Continue card shows a small board
+  picture and your level.
+- **Shop:** items you can afford are marked.
+- **Low-data tip:** it now appears on slow connections where it should.
+
+### For admins
+
+- **Quads puzzle editor** on the Content page, with a preview and JSON pack import and export.
+- **"New" tag** on the Library page, which drives Home's "new games" card and the New filter.
+
 ## 1.35.0 (6 November 2026)
 
 ### For players
