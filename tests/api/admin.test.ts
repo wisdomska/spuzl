@@ -50,6 +50,7 @@ const ROUTES: Route[] = [
   { method: "POST", path: `/api/admin/content/${NIL}/review`, perm: "content.approve" },
   { method: "GET", path: "/api/admin/content/files", perm: "content.read" },
   { method: "POST", path: "/api/admin/content/files", perm: "content.owner_review" },
+  { method: "POST", path: "/api/admin/content/import", perm: "content.write" },
   { method: "GET", path: "/api/admin/moderation", perm: "moderation.read" },
   { method: "GET", path: `/api/admin/moderation/reports/${NIL}`, perm: "moderation.read" },
   { method: "POST", path: `/api/admin/moderation/reports/${NIL}`, perm: "moderation.write" },
