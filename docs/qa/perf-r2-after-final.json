@@ -1,205 +1,523 @@
 {
-  "at": "2026-11-07T21:06:21.944Z",
+  "at": "2026-11-07T21:30:22.538Z",
   "base": "https://spuzl.vercel.app",
   "runs": 10,
   "summary": {
-    "4g-phone:home-continue:cold": {
-      "runs": 1,
-      "p50": 1432,
-      "p95": 1432,
-      "min": 1432,
-      "max": 1432,
-      "firstApiP50": 4,
+    "desktop:home-continue:cold": {
+      "runs": 10,
+      "p50": 926,
+      "p95": 1166,
+      "min": 864,
+      "max": 1257,
+      "firstApiP50": 1,
       "todayCallsMax": 0,
       "waterfall": {
         "requests": [
           {
             "name": "/api/v1/attempts",
             "type": "fetch",
-            "start": 4,
-            "end": 884
+            "start": 1,
+            "end": 484
           },
           {
             "name": "/play/crownfall",
             "type": "fetch",
-            "start": 21,
-            "end": 573
+            "start": 5,
+            "end": 366
           },
           {
-            "name": "/world/board",
+            "name": "/_next/static/immutable/chunks/23wg6wduxtte4.js",
+            "type": "script",
+            "start": 17,
+            "end": 215
+          },
+          {
+            "name": "/library",
             "type": "fetch",
-            "start": 70,
+            "start": 19,
+            "end": 560
+          },
+          {
+            "name": "/_next/static/immutable/chunks/0tkvoyhir03ic.js",
+            "type": "script",
+            "start": 168,
+            "end": 313
+          },
+          {
+            "name": "/_next/static/immutable/chunks/02jy5nkm-tuqk.js",
+            "type": "script",
+            "start": 169,
+            "end": 497
+          },
+          {
+            "name": "/_next/static/immutable/chunks/0zmcs0m4dck_7.js",
+            "type": "script",
+            "start": 169,
+            "end": 682
+          },
+          {
+            "name": "/_next/static/immutable/chunks/34oj0f3t09x3i.js",
+            "type": "script",
+            "start": 169,
+            "end": 812
+          },
+          {
+            "name": "/_next/static/immutable/chunks/1hj12wv_dliq3.js",
+            "type": "script",
+            "start": 169,
+            "end": 815
+          },
+          {
+            "name": "/settings",
+            "type": "fetch",
+            "start": 170,
             "end": 688
           },
           {
-            "name": "/world/reflex",
+            "name": "/play/crownfall",
             "type": "fetch",
-            "start": 90,
-            "end": 845
-          },
-          {
-            "name": "/_next/static/immutable/chunks/1db8hk-2w905v.js",
-            "type": "script",
-            "start": 578,
-            "end": 697
-          },
-          {
-            "name": "/_next/static/immutable/chunks/40p0-7p_h8p58.js",
-            "type": "script",
-            "start": 579,
-            "end": 709
-          },
-          {
-            "name": "/_next/static/immutable/chunks/2p9kogbhg0o5r.js",
-            "type": "script",
-            "start": 580,
-            "end": 782
-          },
-          {
-            "name": "/_next/static/immutable/chunks/02tc--glx37fh.js",
-            "type": "script",
-            "start": 580,
-            "end": 789
-          },
-          {
-            "name": "/_next/static/immutable/chunks/1a3mwi_hz7s2l.js",
-            "type": "script",
-            "start": 582,
-            "end": 804
-          },
-          {
-            "name": "/_next/static/immutable/chunks/2og4sg83cz9ns.js",
-            "type": "script",
-            "start": 582,
-            "end": 901
-          },
-          {
-            "name": "/world/word",
-            "type": "fetch",
-            "start": 607,
-            "end": 1245
-          },
-          {
-            "name": "/world/logic",
-            "type": "fetch",
-            "start": 657,
-            "end": 1282
-          },
-          {
-            "name": "/me",
-            "type": "fetch",
-            "start": 700,
-            "end": 1224
-          },
-          {
-            "name": "/me",
-            "type": "fetch",
-            "start": 880,
-            "end": 1303
+            "start": 420,
+            "end": 1304
           },
           {
             "name": "/_next/static/immutable/chunks/03v2odeyhskx-.js",
             "type": "script",
-            "start": 962,
-            "end": 983
+            "start": 429,
+            "end": 446
           },
           {
             "name": "/api/v1/presence",
             "type": "fetch",
-            "start": 967,
-            "end": 1439
+            "start": 441,
+            "end": 808
           },
           {
             "name": "/api/v1/me/learned",
             "type": "fetch",
-            "start": 971,
-            "end": 1589
+            "start": 443,
+            "end": 1124
+          },
+          {
+            "name": "/_next/static/immutable/chunks/1k9dndb_njirh.js",
+            "type": "script",
+            "start": 458,
+            "end": 926
           },
           {
             "name": "/api/v1/metrics",
             "type": "fetch",
-            "start": 999,
-            "end": 1775
+            "start": 488,
+            "end": 866
           },
           {
             "name": "/_next/static/immutable/chunks/3rcn49-8jac5v.js",
             "type": "script",
-            "start": 1017,
-            "end": 1394
+            "start": 495,
+            "end": 910
           },
           {
             "name": "/api/v1/metrics",
             "type": "fetch",
-            "start": 1031,
-            "end": 1853
+            "start": 502,
+            "end": 1070
           },
           {
-            "name": "/me",
-            "type": "fetch",
-            "start": 1235,
-            "end": 1712
+            "name": "/_next/static/immutable/chunks/3y2c3lvjatxoz.js",
+            "type": "script",
+            "start": 562,
+            "end": 977
           },
           {
-            "name": "/shop",
-            "type": "fetch",
-            "start": 1254,
-            "end": 1610
+            "name": "/_next/static/immutable/chunks/182nkoify9z5y.js",
+            "type": "script",
+            "start": 562,
+            "end": 1005
           },
           {
-            "name": "/friends",
-            "type": "fetch",
-            "start": 1297,
-            "end": 1661
+            "name": "/_next/static/immutable/chunks/2pdui0l6836zu.js",
+            "type": "script",
+            "start": 562,
+            "end": 1025
+          },
+          {
+            "name": "/_next/static/immutable/chunks/0x4wizgmhm-3c.js",
+            "type": "script",
+            "start": 692,
+            "end": 1089
           }
         ],
         "longTasks": []
       }
     },
-    "4g-phone:home-continue:warm": {
-      "runs": 1,
-      "p50": 847,
-      "p95": 847,
-      "min": 847,
-      "max": 847,
-      "firstApiP50": 2,
+    "desktop:home-continue:warm": {
+      "runs": 10,
+      "p50": 1016,
+      "p95": 1078,
+      "min": 807,
+      "max": 1135,
+      "firstApiP50": 1,
       "todayCallsMax": 0,
       "waterfall": {
         "requests": [
           {
             "name": "/api/v1/attempts",
             "type": "fetch",
-            "start": 2,
-            "end": 513
+            "start": 1,
+            "end": 690
           },
           {
             "name": "/play/crownfall",
             "type": "fetch",
-            "start": 10,
-            "end": 363
+            "start": 2,
+            "end": 396
           },
           {
             "name": "/api/v1/presence",
             "type": "fetch",
-            "start": 400,
-            "end": 820
+            "start": 409,
+            "end": 813
+          },
+          {
+            "name": "/api/v1/me/learned",
+            "type": "fetch",
+            "start": 411,
+            "end": 839
           },
           {
             "name": "/_next/static/immutable/chunks/3rcn49-8jac5v.js",
             "type": "script",
-            "start": 531,
-            "end": 531
+            "start": 698,
+            "end": 698
+          },
+          {
+            "name": "/api/v1/metrics",
+            "type": "fetch",
+            "start": 702,
+            "end": 1175
           }
         ],
         "longTasks": []
       }
     },
-    "4g-phone:next-level": {
-      "runs": 1,
-      "p50": 924,
-      "p95": 924,
-      "min": 924,
-      "max": 924,
-      "firstApiP50": 9,
+    "desktop:next-level": {
+      "runs": 10,
+      "p50": 530,
+      "p95": 789,
+      "min": 489,
+      "max": 1400,
+      "firstApiP50": 1,
+      "todayCallsMax": 0,
+      "waterfall": {
+        "requests": [
+          {
+            "name": "/api/v1/attempts",
+            "type": "fetch",
+            "start": 1,
+            "end": 516
+          }
+        ],
+        "longTasks": []
+      }
+    },
+    "desktop:library-play:cold": {
+      "runs": 10,
+      "p50": 1200,
+      "p95": 1276,
+      "min": 1091,
+      "max": 2678,
+      "firstApiP50": 2,
+      "todayCallsMax": 1,
+      "waterfall": {
+        "requests": [
+          {
+            "name": "/api/v1/attempts",
+            "type": "fetch",
+            "start": 1,
+            "end": 545
+          },
+          {
+            "name": "/play/dusk",
+            "type": "fetch",
+            "start": 10,
+            "end": 431
+          },
+          {
+            "name": "/play/dusk",
+            "type": "fetch",
+            "start": 92,
+            "end": 508
+          },
+          {
+            "name": "/_next/static/immutable/chunks/1db8hk-2w905v.js",
+            "type": "script",
+            "start": 433,
+            "end": 559
+          },
+          {
+            "name": "/_next/static/immutable/chunks/40p0-7p_h8p58.js",
+            "type": "script",
+            "start": 434,
+            "end": 563
+          },
+          {
+            "name": "/_next/static/immutable/chunks/2p9kogbhg0o5r.js",
+            "type": "script",
+            "start": 434,
+            "end": 614
+          },
+          {
+            "name": "/_next/static/immutable/chunks/02tc--glx37fh.js",
+            "type": "script",
+            "start": 435,
+            "end": 652
+          },
+          {
+            "name": "/_next/static/immutable/chunks/1a3mwi_hz7s2l.js",
+            "type": "script",
+            "start": 435,
+            "end": 665
+          },
+          {
+            "name": "/_next/static/immutable/chunks/2og4sg83cz9ns.js",
+            "type": "script",
+            "start": 435,
+            "end": 835
+          },
+          {
+            "name": "/play/dusk",
+            "type": "fetch",
+            "start": 512,
+            "end": 998
+          },
+          {
+            "name": "/_next/static/immutable/chunks/03v2odeyhskx-.js",
+            "type": "script",
+            "start": 863,
+            "end": 874
+          },
+          {
+            "name": "/api/v1/today",
+            "type": "fetch",
+            "start": 866,
+            "end": 1268
+          },
+          {
+            "name": "/_next/static/immutable/chunks/1pkvt6t4yw4zg.js",
+            "type": "script",
+            "start": 889,
+            "end": 986
+          }
+        ],
+        "longTasks": []
+      }
+    },
+    "desktop:library-play:warm": {
+      "runs": 10,
+      "p50": 860,
+      "p95": 1147,
+      "min": 830,
+      "max": 2612,
+      "firstApiP50": 1,
+      "todayCallsMax": 1,
+      "waterfall": {
+        "requests": [
+          {
+            "name": "/api/v1/attempts",
+            "type": "fetch",
+            "start": 1,
+            "end": 473
+          },
+          {
+            "name": "/play/dusk",
+            "type": "fetch",
+            "start": 7,
+            "end": 447
+          },
+          {
+            "name": "/play/dusk",
+            "type": "fetch",
+            "start": 139,
+            "end": 531
+          },
+          {
+            "name": "/_next/static/immutable/chunks/1db8hk-2w905v.js",
+            "type": "script",
+            "start": 431,
+            "end": 431
+          },
+          {
+            "name": "/_next/static/immutable/chunks/40p0-7p_h8p58.js",
+            "type": "script",
+            "start": 431,
+            "end": 431
+          },
+          {
+            "name": "/_next/static/immutable/chunks/2p9kogbhg0o5r.js",
+            "type": "script",
+            "start": 431,
+            "end": 431
+          },
+          {
+            "name": "/_next/static/immutable/chunks/02tc--glx37fh.js",
+            "type": "script",
+            "start": 431,
+            "end": 431
+          },
+          {
+            "name": "/_next/static/immutable/chunks/1a3mwi_hz7s2l.js",
+            "type": "script",
+            "start": 431,
+            "end": 431
+          },
+          {
+            "name": "/_next/static/immutable/chunks/2og4sg83cz9ns.js",
+            "type": "script",
+            "start": 432,
+            "end": 432
+          },
+          {
+            "name": "/play/dusk",
+            "type": "fetch",
+            "start": 533,
+            "end": 1113
+          },
+          {
+            "name": "/api/v1/presence",
+            "type": "fetch",
+            "start": 542,
+            "end": 961
+          },
+          {
+            "name": "/api/v1/today",
+            "type": "fetch",
+            "start": 542,
+            "end": 967
+          },
+          {
+            "name": "/api/v1/me/learned",
+            "type": "fetch",
+            "start": 543,
+            "end": 1010
+          },
+          {
+            "name": "/_next/static/immutable/chunks/1pkvt6t4yw4zg.js",
+            "type": "script",
+            "start": 549,
+            "end": 549
+          },
+          {
+            "name": "/api/v1/metrics",
+            "type": "fetch",
+            "start": 559,
+            "end": 1002
+          }
+        ],
+        "longTasks": []
+      }
+    },
+    "desktop:landing-to-board": {
+      "runs": 10,
+      "p50": 939,
+      "p95": 945,
+      "min": 918,
+      "max": 949,
+      "firstApiP50": -1,
+      "todayCallsMax": 0,
+      "waterfall": {
+        "requests": [],
+        "longTasks": []
+      }
+    },
+    "desktop:landing-steps": {
+      "runs": 10,
+      "p50": 584,
+      "p95": 585,
+      "min": 578,
+      "max": 590,
+      "firstApiP50": -1,
+      "todayCallsMax": 0,
+      "waterfall": {
+        "requests": [
+          {
+            "name": "birth",
+            "type": "step",
+            "start": 0,
+            "end": 103
+          },
+          {
+            "name": "start-choice",
+            "type": "step",
+            "start": 0,
+            "end": 350
+          },
+          {
+            "name": "board",
+            "type": "step",
+            "start": 0,
+            "end": 934
+          }
+        ],
+        "longTasks": []
+      }
+    },
+    "desktop:landing-solved-to-board": {
+      "runs": 10,
+      "p50": 5542,
+      "p95": 6328,
+      "min": 5206,
+      "max": 6713,
+      "firstApiP50": -1,
+      "todayCallsMax": 0,
+      "waterfall": {
+        "requests": [],
+        "longTasks": []
+      }
+    },
+    "desktop:landing-solved-steps": {
+      "runs": 10,
+      "p50": 5194,
+      "p95": 5954,
+      "min": 4869,
+      "max": 6338,
+      "firstApiP50": -1,
+      "todayCallsMax": 0,
+      "waterfall": {
+        "requests": [
+          {
+            "name": "birth",
+            "type": "step",
+            "start": 0,
+            "end": 99
+          },
+          {
+            "name": "start-choice",
+            "type": "step",
+            "start": 0,
+            "end": 348
+          },
+          {
+            "name": "nickname",
+            "type": "step",
+            "start": 0,
+            "end": 919
+          },
+          {
+            "name": "board",
+            "type": "step",
+            "start": 0,
+            "end": 5542
+          }
+        ],
+        "longTasks": []
+      }
+    },
+    "4g-phone:home-continue:cold": {
+      "runs": 10,
+      "p50": 1103,
+      "p95": 1499,
+      "min": 860,
+      "max": 1813,
+      "firstApiP50": 8,
       "todayCallsMax": 0,
       "waterfall": {
         "requests": [
@@ -207,7 +525,486 @@
             "name": "/api/v1/attempts",
             "type": "fetch",
             "start": 9,
-            "end": 874
+            "end": 597
+          },
+          {
+            "name": "/play/crownfall",
+            "type": "fetch",
+            "start": 27,
+            "end": 347
+          },
+          {
+            "name": "/_next/static/immutable/chunks/2yg30nz0-qjjb.js",
+            "type": "script",
+            "start": 69,
+            "end": 226
+          },
+          {
+            "name": "/_next/static/immutable/chunks/1i0e_9t1gmi_z.js",
+            "type": "script",
+            "start": 71,
+            "end": 319
+          },
+          {
+            "name": "/world/word",
+            "type": "fetch",
+            "start": 137,
+            "end": 619
+          },
+          {
+            "name": "/_next/static/immutable/chunks/1awdp7ctfbckh.js",
+            "type": "script",
+            "start": 253,
+            "end": 417
+          },
+          {
+            "name": "/world/logic",
+            "type": "fetch",
+            "start": 258,
+            "end": 882
+          },
+          {
+            "name": "/duel",
+            "type": "fetch",
+            "start": 463,
+            "end": 718
+          },
+          {
+            "name": "/_next/static/immutable/chunks/03v2odeyhskx-.js",
+            "type": "script",
+            "start": 501,
+            "end": 511
+          },
+          {
+            "name": "/api/v1/presence",
+            "type": "fetch",
+            "start": 520,
+            "end": 960
+          },
+          {
+            "name": "/api/v1/me/learned",
+            "type": "fetch",
+            "start": 525,
+            "end": 976
+          },
+          {
+            "name": "/play/crownfall",
+            "type": "fetch",
+            "start": 540,
+            "end": 1055
+          },
+          {
+            "name": "/music/home.mp3",
+            "type": "fetch",
+            "start": 570,
+            "end": 1177
+          },
+          {
+            "name": "/api/v1/metrics",
+            "type": "fetch",
+            "start": 598,
+            "end": 1033
+          },
+          {
+            "name": "/_next/static/immutable/chunks/3rcn49-8jac5v.js",
+            "type": "script",
+            "start": 618,
+            "end": 1064
+          },
+          {
+            "name": "/api/v1/metrics",
+            "type": "fetch",
+            "start": 634,
+            "end": 1097
+          },
+          {
+            "name": "/_next/static/immutable/chunks/0tkvoyhir03ic.js",
+            "type": "script",
+            "start": 722,
+            "end": 1067
+          },
+          {
+            "name": "/_next/static/immutable/chunks/02jy5nkm-tuqk.js",
+            "type": "script",
+            "start": 724,
+            "end": 1143
+          },
+          {
+            "name": "/_next/static/immutable/chunks/0zmcs0m4dck_7.js",
+            "type": "script",
+            "start": 724,
+            "end": 1167
+          },
+          {
+            "name": "/_next/static/immutable/chunks/34oj0f3t09x3i.js",
+            "type": "script",
+            "start": 725,
+            "end": 1165
+          },
+          {
+            "name": "/_next/static/immutable/chunks/1mt_00c8x_m66.js",
+            "type": "script",
+            "start": 725,
+            "end": 1184
+          }
+        ],
+        "longTasks": []
+      }
+    },
+    "4g-phone:home-continue:warm": {
+      "runs": 10,
+      "p50": 926,
+      "p95": 1105,
+      "min": 835,
+      "max": 1145,
+      "firstApiP50": 5,
+      "todayCallsMax": 0,
+      "waterfall": {
+        "requests": [
+          {
+            "name": "/api/v1/attempts",
+            "type": "fetch",
+            "start": 5,
+            "end": 564
+          },
+          {
+            "name": "/play/crownfall",
+            "type": "fetch",
+            "start": 13,
+            "end": 503
+          },
+          {
+            "name": "/api/v1/presence",
+            "type": "fetch",
+            "start": 543,
+            "end": 1240
+          },
+          {
+            "name": "/api/v1/me/learned",
+            "type": "fetch",
+            "start": 549,
+            "end": 1176
+          },
+          {
+            "name": "/_next/static/immutable/chunks/3rcn49-8jac5v.js",
+            "type": "script",
+            "start": 583,
+            "end": 583
+          },
+          {
+            "name": "/api/v1/metrics",
+            "type": "fetch",
+            "start": 600,
+            "end": 1040
+          }
+        ],
+        "longTasks": []
+      }
+    },
+    "4g-phone:next-level": {
+      "runs": 10,
+      "p50": 546,
+      "p95": 797,
+      "min": 503,
+      "max": 841,
+      "firstApiP50": 7,
+      "todayCallsMax": 0,
+      "waterfall": {
+        "requests": [
+          {
+            "name": "/api/v1/attempts",
+            "type": "fetch",
+            "start": 6,
+            "end": 500
+          }
+        ],
+        "longTasks": []
+      }
+    },
+    "4g-phone:library-play:cold": {
+      "runs": 10,
+      "p50": 1223,
+      "p95": 1495,
+      "min": 940,
+      "max": 1592,
+      "firstApiP50": 8,
+      "todayCallsMax": 1,
+      "waterfall": {
+        "requests": [
+          {
+            "name": "/api/v1/attempts",
+            "type": "fetch",
+            "start": 21,
+            "end": 878
+          },
+          {
+            "name": "/_next/static/immutable/chunks/1db8hk-2w905v.js",
+            "type": "script",
+            "start": 454,
+            "end": 547
+          },
+          {
+            "name": "/_next/static/immutable/chunks/40p0-7p_h8p58.js",
+            "type": "script",
+            "start": 455,
+            "end": 564
+          },
+          {
+            "name": "/_next/static/immutable/chunks/2p9kogbhg0o5r.js",
+            "type": "script",
+            "start": 456,
+            "end": 550
+          },
+          {
+            "name": "/_next/static/immutable/chunks/02tc--glx37fh.js",
+            "type": "script",
+            "start": 457,
+            "end": 636
+          },
+          {
+            "name": "/_next/static/immutable/chunks/1a3mwi_hz7s2l.js",
+            "type": "script",
+            "start": 458,
+            "end": 659
+          },
+          {
+            "name": "/_next/static/immutable/chunks/2og4sg83cz9ns.js",
+            "type": "script",
+            "start": 458,
+            "end": 666
+          },
+          {
+            "name": "/_next/static/immutable/chunks/03v2odeyhskx-.js",
+            "type": "script",
+            "start": 790,
+            "end": 802
+          },
+          {
+            "name": "/api/v1/presence",
+            "type": "fetch",
+            "start": 796,
+            "end": 1212
+          },
+          {
+            "name": "/api/v1/today",
+            "type": "fetch",
+            "start": 799,
+            "end": 1172
+          },
+          {
+            "name": "/api/v1/me/learned",
+            "type": "fetch",
+            "start": 800,
+            "end": 1358
+          },
+          {
+            "name": "/_next/static/immutable/chunks/1pkvt6t4yw4zg.js",
+            "type": "script",
+            "start": 920,
+            "end": 1046
+          },
+          {
+            "name": "/api/v1/metrics",
+            "type": "fetch",
+            "start": 940,
+            "end": 1313
+          }
+        ],
+        "longTasks": [
+          {
+            "start": 668,
+            "dur": 78
+          },
+          {
+            "start": 884,
+            "dur": 51
+          }
+        ]
+      }
+    },
+    "4g-phone:library-play:warm": {
+      "runs": 10,
+      "p50": 1000,
+      "p95": 1186,
+      "min": 751,
+      "max": 1254,
+      "firstApiP50": 3,
+      "todayCallsMax": 1,
+      "waterfall": {
+        "requests": [
+          {
+            "name": "/api/v1/attempts",
+            "type": "fetch",
+            "start": 3,
+            "end": 493
+          },
+          {
+            "name": "/play/dusk",
+            "type": "fetch",
+            "start": 308,
+            "end": 718
+          },
+          {
+            "name": "/_next/static/immutable/chunks/1db8hk-2w905v.js",
+            "type": "script",
+            "start": 339,
+            "end": 339
+          },
+          {
+            "name": "/_next/static/immutable/chunks/40p0-7p_h8p58.js",
+            "type": "script",
+            "start": 340,
+            "end": 340
+          },
+          {
+            "name": "/_next/static/immutable/chunks/2p9kogbhg0o5r.js",
+            "type": "script",
+            "start": 341,
+            "end": 341
+          },
+          {
+            "name": "/_next/static/immutable/chunks/02tc--glx37fh.js",
+            "type": "script",
+            "start": 342,
+            "end": 342
+          },
+          {
+            "name": "/_next/static/immutable/chunks/1a3mwi_hz7s2l.js",
+            "type": "script",
+            "start": 342,
+            "end": 342
+          },
+          {
+            "name": "/_next/static/immutable/chunks/2og4sg83cz9ns.js",
+            "type": "script",
+            "start": 343,
+            "end": 343
+          },
+          {
+            "name": "/api/v1/presence",
+            "type": "fetch",
+            "start": 629,
+            "end": 1039
+          },
+          {
+            "name": "/api/v1/today",
+            "type": "fetch",
+            "start": 633,
+            "end": 1020
+          },
+          {
+            "name": "/api/v1/me/learned",
+            "type": "fetch",
+            "start": 637,
+            "end": 1047
+          },
+          {
+            "name": "/_next/static/immutable/chunks/1pkvt6t4yw4zg.js",
+            "type": "script",
+            "start": 668,
+            "end": 668
+          },
+          {
+            "name": "/api/v1/metrics",
+            "type": "fetch",
+            "start": 681,
+            "end": 1355
+          }
+        ],
+        "longTasks": []
+      }
+    },
+    "4g-phone:landing-to-board": {
+      "runs": 10,
+      "p50": 1257,
+      "p95": 1365,
+      "min": 1163,
+      "max": 1371,
+      "firstApiP50": -1,
+      "todayCallsMax": 0,
+      "waterfall": {
+        "requests": [],
+        "longTasks": []
+      }
+    },
+    "4g-phone:landing-steps": {
+      "runs": 10,
+      "p50": 558,
+      "p95": 638,
+      "min": 497,
+      "max": 644,
+      "firstApiP50": -1,
+      "todayCallsMax": 0,
+      "waterfall": {
+        "requests": [
+          {
+            "name": "birth",
+            "type": "step",
+            "start": 0,
+            "end": 243
+          },
+          {
+            "name": "start-choice",
+            "type": "step",
+            "start": 0,
+            "end": 605
+          },
+          {
+            "name": "board",
+            "type": "step",
+            "start": 0,
+            "end": 1163
+          }
+        ],
+        "longTasks": []
+      }
+    },
+    "4g-phone:landing-solved-to-board": {
+      "runs": 10,
+      "p50": 6293,
+      "p95": 6903,
+      "min": 5611,
+      "max": 6955,
+      "firstApiP50": -1,
+      "todayCallsMax": 0,
+      "waterfall": {
+        "requests": [],
+        "longTasks": []
+      }
+    },
+    "4g-phone:landing-solved-steps": {
+      "runs": 10,
+      "p50": 5727,
+      "p95": 6343,
+      "min": 5071,
+      "max": 6399,
+      "firstApiP50": -1,
+      "todayCallsMax": 0,
+      "waterfall": {
+        "requests": [
+          {
+            "name": "birth",
+            "type": "step",
+            "start": 0,
+            "end": 210
+          },
+          {
+            "name": "start-choice",
+            "type": "step",
+            "start": 0,
+            "end": 566
+          },
+          {
+            "name": "nickname",
+            "type": "step",
+            "start": 0,
+            "end": 1302
+          },
+          {
+            "name": "board",
+            "type": "step",
+            "start": 0,
+            "end": 6293
           }
         ],
         "longTasks": []

@@ -1,5 +1,39 @@
 # Changelog
 
+## 1.38.0 (7 November 2026)
+
+### For players
+
+- **Challenge a friend with a link that looks good.** Sharing "Beat my time" sends a short link whose preview on
+  WhatsApp and Instagram shows the game, your time and a "Beat me" card; it says when the challenge runs out.
+- **Story cards.** Every clear can be shared as a 9:16 story card with a "Beat me" link.
+- **Party on the big screen.** A Party room can be shown on a TV or a classroom projector at `/party/<code>/tv`:
+  nicknames, progress and scores only, no chat and no way to play. The host turns it on per room; never for a host
+  under 16.
+- **A free Streak Freeze for signing in.** A guest who saves their streak by signing in gets one Streak Freeze,
+  once.
+- **School and campus leagues** (when switched on by the admins): pick your school or campus and see the weekly
+  school table.
+- **Lab games.** Two Truths and a Lie (all ages, picks only) and Azonto Steps (a dance-memory game with Spuz)
+  join the lab games; each opens only when the admins switch it on.
+- **Family Draw** for players 16 and over (when switched on): Draw It with a preset word list, guessers pick from
+  four words, nobody types. Under-16s are kept out because a drawing can't be checked before others see it.
+
+### For admins
+
+- **Event templates:** seasonal events as drafts (including a 6 March Ghana history quiz), and scheduling from the
+  Events page.
+- **School league table** with CSV export (audited).
+- **Content page:** Two Truths packs (preview, export, import as drafts) and Family Draw words (preview, check).
+- **Metrics:** a "Party TV, streak shields and school leagues" card with CSV, plus the round 2 cards (tap warmth,
+  first clear, practice rounds, D1 and D7 retention, board game results) now backed by the database.
+- **Player detail:** when the sign-in streak shield was granted.
+
+### Behind the scenes
+
+- Pages that read game settings render per request, so switching a lab game on or off applies at once.
+- 15 migrations applied to preview and production (see docs/MIGRATIONS.md).
+
 ## 1.37.2 (7 November 2026)
 
 ### For players

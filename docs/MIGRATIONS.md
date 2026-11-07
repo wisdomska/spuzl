@@ -274,7 +274,9 @@ Without it push stays off and everything else works.
 | `20261130000001_rank_contribution_delta.sql` | `rank_contributions.track` and `delta`: which category a counted round moved and by how much (shown on the end screen) | In the file header |
 | `20261130000002_board_queue_seats.sql`       | `board_queue.seats`: Play live Ludo for 3 or 4 players; only the same table size is grouped                            | In the file header |
 
-## R2 (unreleased)
+## R2 (1.34.0 to 1.38.0)
+
+All applied to preview and production; the last batch (20261202000101 to 20261205005401) on 7 November 2026.
 
 | Migration                                     | What it does                                                                                                                                                                                                                                                                                                                                                                                                             | Rollback           |
 | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------ |
