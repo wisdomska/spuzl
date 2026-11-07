@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.37.1 (7 November 2026)
+
+### For players
+
+- **Losing to the Practice bot says so.** Resigning to it, or being checkmated by it, used to say "It's a draw".
+  It now says "You lost", and the result line names the Practice bot as the winner.
+
 ## 1.37.0 (7 November 2026)
 
 ### For players
