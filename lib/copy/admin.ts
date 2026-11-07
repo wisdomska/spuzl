@@ -937,6 +937,34 @@ export const adminCopy = {
     pending: "pending",
     withdraw: "Withdraw",
     verify: "Verify",
+    /** R2-P5 school and campus leagues */
+    kinds: { school: "School", campus: "Campus" },
+    add: "Add a school",
+    addTitle: "New school or campus",
+    edit: "Edit",
+    editAria: (name: string) => `Edit ${name}`,
+    editTitle: (name: string) => `Edit ${name}`,
+    name: "Name",
+    namePlaceholder: "Achimota School",
+    city: "Town or city",
+    country: "Country",
+    kind: "Kind",
+    create: "Add and verify",
+    save: "Save changes",
+    cancel: "Cancel",
+    created: (name: string) => `Added ${name}, verified. Its school code is ready for teachers.`,
+    saved: (name: string) => `Saved ${name}.`,
+    leagueTitle: "School league",
+    leagueIntro: (on: boolean) =>
+      on
+        ? "This week's table as players see it: school names and averages only, never a player."
+        : "School leagues are off (Game settings, Features). Seed and verify schools first; this is the table players would see.",
+    week: "Week of",
+    metric: (m: string) => (m === "sparks" ? "Average Sparks per active player" : "Average clears per active player"),
+    leagueHead: ["#", "School", "Kind", "Active players", "Total", "Average"],
+    leagueEmpty: (min: number) => `No school has ${min} active players this week yet.`,
+    csv: "CSV",
+    csvAria: "Export the school league as CSV",
   },
 
   flags: {

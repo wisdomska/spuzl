@@ -65,6 +65,7 @@ export const KEY_EVENTS = [
   // R2-P5 (PostHog only for now; the admin Metrics agent decides whether they go first party)
   "party_tv_view", // the big-screen view loaded a room
   "streak_shield", // a guest signed in from "Save your streak" and got the free Streak Freeze
+  "school_join", // a player picked their school or campus league by search
 ] as const;
 export type KeyEvent = (typeof KEY_EVENTS)[number];
 
