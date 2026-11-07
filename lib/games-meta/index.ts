@@ -158,10 +158,17 @@ export function validateCopyLine(v: unknown, what: string): string | null {
   return null;
 }
 
-/** The rule and card copy a player sees: the admin override, else the catalog's. */
+/**
+ * The rule and card copy a player sees: the admin override, else the catalog's. A screen that shows its own copy
+ * instead of the catalog's (the bot screen's full-game rule) keeps it: an override replaces only the catalog text.
+ */
 export function gameCopy(g: Pick<GameMeta, "id" | "rule" | "blurb">, meta: Record<string, GameMetaRow | undefined>) {
   const m = meta[g.id];
-  return { rule: m?.rule ?? g.rule, blurb: m?.blurb ?? g.blurb };
+  const base = GAME_BY_ID[g.id];
+  return {
+    rule: m?.rule !== undefined && (!base || g.rule === base.rule) ? m.rule : g.rule,
+    blurb: m?.blurb !== undefined && (!base || g.blurb === base.blurb) ? m.blurb : g.blurb,
+  };
 }
 
 /** Library search: name, world name, blurb; case and accent insensitive. */

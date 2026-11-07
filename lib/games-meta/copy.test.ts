@@ -35,6 +35,13 @@ describe("per-game rule and card copy overrides (R2-ADMIN)", () => {
     expect(gameCopy(crown, { ...meta, crownfall: { ...meta.crownfall, blurb: "Royal logic." } }).blurb).toBe("Royal logic.");
   });
 
+  it("leaves a screen's own copy alone (the bot screen's full-game rule)", () => {
+    const chess = GAME_BY_ID.chess;
+    const meta = { ...DEFAULT_META, chess: { ...DEFAULT_META.chess, rule: "Checkmate the king." } };
+    expect(gameCopy(chess, meta).rule).toBe("Checkmate the king.");
+    expect(gameCopy({ ...chess, rule: "Play a full game against the bot." }, meta).rule).toBe("Play a full game against the bot.");
+  });
+
   it("merges stored overrides and drops copy that is no longer one valid line", () => {
     const m = mergeMeta([
       { id: "crownfall", typical_sec: null, tags: null, rule: "Crowns everywhere.", blurb: null },
