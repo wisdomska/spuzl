@@ -63,6 +63,20 @@ test("content editor overrides Dusk's rule and card copy; the game shell and wor
   await expect(row(page, "dusk").getByLabel("One-line rule", { exact: true })).toHaveValue(GAME_BY_ID.dusk.rule);
 });
 
+test("practice board preview: the real board, read only, with Show solution and the Settings switch state", async ({ page }) => {
+  await signedIn(page, "content_editor");
+  await page.goto("/admin/library");
+  const preview = row(page, "crownfall").locator("[data-practice-preview]");
+  await preview.getByText("Practice board").click();
+  await expect(preview.getByText("Practice round on")).toBeVisible({ timeout: 15_000 });
+  await expect(preview.getByText(GAME_BY_ID.crownfall.name)).toBeVisible();
+  // Read only: no Play test (no stored puzzle to verify against), but the solution can be shown.
+  await expect(preview.getByRole("button", { name: "Play test" })).toHaveCount(0);
+  await preview.getByRole("button", { name: "Show solution" }).click();
+  await expect(preview.getByRole("button", { name: "Hide solution" })).toHaveAttribute("aria-pressed", "true");
+  await page.screenshot({ path: "docs/qa/screens/r2/r2-admin-practice-preview-1280.png" });
+});
+
 test("roles: a moderator cannot open the Library page (content.read)", async ({ page }) => {
   await signedIn(page, "moderator");
   await page.goto("/admin/library");

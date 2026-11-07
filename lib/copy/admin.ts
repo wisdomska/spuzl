@@ -681,6 +681,12 @@ export const adminCopy = {
     resetCopy: "Use default",
     changed: "Changed",
     iconAria: (name: string) => `${name} icon`,
+    /** Practice board preview (R2-07 practice rounds): read only; the board is a fixed seed in code. */
+    practice: "Practice board",
+    practiceIntro:
+      "The short first try with free hints, the same board for everyone (fixed seed, easy). Read only: it changes in code. Turn a game's practice round off on the Settings page (Practice round off for).",
+    practiceOff: "Practice round off in Settings",
+    practiceOn: "Practice round on",
   },
 
   /** Content calendar: one week of Dailies per game. */

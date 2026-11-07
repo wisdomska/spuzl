@@ -85,6 +85,7 @@ const ROUTES: Route[] = [
   { method: "GET", path: "/api/admin/games/meta", perm: "content.read" },
   { method: "PATCH", path: "/api/admin/games/meta", perm: "content.write" },
   { method: "PUT", path: "/api/admin/games/meta", perm: "content.write" },
+  { method: "GET", path: "/api/admin/games/practice?game=crownfall", perm: "content.read" },
   { method: "GET", path: "/api/admin/events", perm: "events.read" },
   { method: "POST", path: "/api/admin/events", perm: "events.write" },
   { method: "PATCH", path: `/api/admin/events/${NIL}`, perm: "events.write" },
@@ -958,6 +959,22 @@ describe("Library metadata (SPZ-14 admin cascade)", () => {
       method: "PATCH",
       json: { id: "dusk", typicalSec: null, tags: null, rule: null, blurb: null },
     });
+  });
+
+  it("previews a game's practice board read only, with its Settings off switch (R2-ADMIN, R2-07)", async () => {
+    const a = await S.content_editor.aal2("/api/admin/games/practice?game=crownfall");
+    expect(a.status).toBe(200);
+    expect(a.data).toMatchObject({ game: "crownfall", seed: "tutorial:crownfall", off: false });
+    expect(a.data.puzzle).toBeTruthy();
+    // The same board every time: the fixed practice seed.
+    expect((await S.owner.aal2("/api/admin/games/practice?game=crownfall")).data.puzzle).toEqual(a.data.puzzle);
+    expect((await S.content_editor.aal2("/api/admin/games/practice?game=nope")).status).toBe(404);
+    expect((await S.moderator.aal2("/api/admin/games/practice?game=crownfall")).status).toBe(403);
+    // The off switch from Settings shows on the preview.
+    const before = (await S.owner.aal2("/api/admin/settings")).data.rows.find((r: { key: string }) => r.key === "practice.disabled").value;
+    await S.owner.aal2("/api/admin/settings", { method: "PUT", json: { key: "practice.disabled", value: ["crownfall"] } });
+    expect((await S.content_editor.aal2("/api/admin/games/practice?game=crownfall")).data.off).toBe(true);
+    await S.owner.aal2("/api/admin/settings", { method: "PUT", json: { key: "practice.disabled", value: before } });
   });
 
   it("lists retired games, marked, and refuses to change them", async () => {

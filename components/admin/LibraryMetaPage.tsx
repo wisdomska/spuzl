@@ -7,6 +7,8 @@ import { GAME_BY_ID } from "@/lib/catalog";
 import { COPY_MAX, TAGS, durationLabel, validateCopyLine, type GameMetaRow, type Tag } from "@/lib/games-meta";
 import { adminCopy } from "@/lib/copy/admin";
 import { GameIcon3D } from "@/components/world/GameIcon3D";
+import { hasLogic } from "@/games/logic-ids";
+import { PracticeBoardPreview } from "./PuzzlePreview";
 import { Btn, Notice, PageTitle, Pill, RowsSkeleton, inputCls } from "./ui";
 
 const C = adminCopy.library;
@@ -204,7 +206,31 @@ function MetaRow({ row, canWrite, busy, onSave }: { row: Row; canWrite: boolean;
           />
         </div>
       </details>
+      {!row.retired && hasLogic(row.id) && <PracticeBoard id={row.id} />}
     </div>
+  );
+}
+
+/** The game's practice board, read only, loaded when opened (R2-07; the per-game off switch is on Settings). */
+function PracticeBoard({ id }: { id: string }) {
+  const [open, setOpen] = useState(false);
+  const q = useAdminQuery<{ puzzle: unknown; solution: unknown; off: boolean; seed: string }>(
+    ["games-practice", id],
+    open ? `/api/admin/games/practice?game=${encodeURIComponent(id)}` : null,
+  );
+  return (
+    <details data-practice-preview onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}>
+      <summary className="text-muted hover:text-text flex h-11 cursor-pointer items-center gap-2 text-[13px] font-semibold">
+        {C.practice}
+        {q.data && <Pill tone={q.data.off ? "warn" : "ok"}>{q.data.off ? C.practiceOff : C.practiceOn}</Pill>}
+      </summary>
+      <div className="flex flex-col gap-2 pb-1">
+        <p className="text-muted text-[12px]">{C.practiceIntro}</p>
+        {q.isPending && open && <RowsSkeleton rows={1} height={120} />}
+        {q.error && <Notice tone="danger">{errorText(q.error)}</Notice>}
+        {q.data && <PracticeBoardPreview game={id} puzzle={q.data.puzzle} solution={q.data.solution} />}
+      </div>
+    </details>
   );
 }
 

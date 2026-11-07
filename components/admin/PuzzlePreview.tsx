@@ -304,8 +304,16 @@ export function PuzzlePreview({
   );
 }
 
-/** The real Board in a 390 × 680 phone frame, with Show solution and Play test. */
-function BoardFrame({ game, puzzle, solution, puzzleId }: { game: string; puzzle: unknown; solution: unknown; puzzleId: string }) {
+/**
+ * A board that is not a stored puzzle (the practice board, R2-07), read-only: the real Board in the phone frame with
+ * Show solution, but no Play test (there is no stored puzzle for the server to verify against).
+ */
+export function PracticeBoardPreview({ game, puzzle, solution }: { game: string; puzzle: unknown; solution: unknown }) {
+  return <BoardFrame game={game} puzzle={puzzle} solution={solution} puzzleId={null} />;
+}
+
+/** The real Board in a 390 × 680 phone frame, with Show solution and (for a stored puzzle) Play test. */
+function BoardFrame({ game, puzzle, solution, puzzleId }: { game: string; puzzle: unknown; solution: unknown; puzzleId: string | null }) {
   const Board = BOARDS[game];
   const meta = GAME_BY_ID[game];
   const [mode, setMode] = useState<"puzzle" | "solution" | "play">("puzzle");
@@ -322,6 +330,7 @@ function BoardFrame({ game, puzzle, solution, puzzleId }: { game: string; puzzle
   }, [game, puzzle, solution]);
   // Content games send guesses through the guess transport: check them against this stored puzzle.
   useEffect(() => {
+    if (!puzzleId) return; // read-only preview: the board is never played, so it never guesses
     setGuessTransport((_ref, guess) => api(`/api/admin/puzzles/${puzzleId}/guess`, { json: { guess } }));
     return () => setGuessTransport(null);
   }, [puzzleId]);
@@ -330,7 +339,7 @@ function BoardFrame({ game, puzzle, solution, puzzleId }: { game: string; puzzle
     () => ({
       onMove: () => {},
       onSolved: async (state) => {
-        if (mode !== "play") return;
+        if (mode !== "play" || !puzzleId) return;
         try {
           const v = await api<{ ok: boolean; reason: string | null }>(`/api/admin/puzzles/${puzzleId}/verify`, { json: { state } });
           setFeedback(v.ok ? { text: C.verifyOk, tone: "success" } : { text: C.verifyRefused(v.reason), tone: "danger" });
@@ -411,19 +420,21 @@ function BoardFrame({ game, puzzle, solution, puzzleId }: { game: string; puzzle
         >
           {mode === "solution" ? C.hideSolution : C.showSolution}
         </Btn>
-        <Btn
-          size="sm"
-          icon="play"
-          aria-pressed={mode === "play"}
-          onClick={() => {
-            setFeedback(null);
-            setControls([]);
-            setRound((r) => r + 1);
-            setMode("play");
-          }}
-        >
-          {mode === "play" ? C.restartTest : C.playTest}
-        </Btn>
+        {puzzleId && (
+          <Btn
+            size="sm"
+            icon="play"
+            aria-pressed={mode === "play"}
+            onClick={() => {
+              setFeedback(null);
+              setControls([]);
+              setRound((r) => r + 1);
+              setMode("play");
+            }}
+          >
+            {mode === "play" ? C.restartTest : C.playTest}
+          </Btn>
+        )}
       </div>
       <div aria-live="polite" className="sr-only">
         {said}
