@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.38.1 (7 November 2026)
+
+### For players
+
+- **Boards no longer crash with reduce motion on a wide screen.** On a laptop or desktop with reduce motion on,
+  some boards (Crownfall among them) could show "This page couldn't load". The board now fits the screen and stays
+  put.
+
+### Behind the scenes
+
+- The round 2 QA report is done: `docs/qa/QA_REPORT_R2.md` (ticket matrix, before and after latency, Lighthouse,
+  axe, E2E on production and on the seeded boards).
+- E2E fixes from the final runs: Party start waits for everyone to be ready, Beat Tap timing is read every frame,
+  and the pause check reads the board under Radix's modal.
+
 ## 1.38.0 (7 November 2026)
 
 ### For players
