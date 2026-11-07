@@ -16,6 +16,7 @@ import type { ContentRef, GuessContext, GuessLogic, PuzzleRef } from "@/games/_s
 import { createRng, type Rng } from "@/lib/rng";
 import { checkTimedAnswers, READ_FLOOR_MS, rotation, timedScore, type TimedAnswer } from "@/games/_shared/cluecave";
 import { CONTENT, type QuickfireCategory, type QuickfireItem } from "./content";
+import { QUIZ_SETS, quizSetIndex } from "./sets";
 
 export const QUESTIONS = 5;
 export const OPTIONS = 4;
@@ -24,6 +25,11 @@ export const LIMIT_MS = 15000;
 export const NET_SLACK_MS = 3000;
 /** Content indexes from here up are free play boards (FREE_BASE + seed); below are Daily rotation days. */
 export const FREE_BASE = 1_000_000_000;
+/**
+ * Event quiz rounds (R2-P5): SET_BASE + set × 1000 + round. Free boards stop below it (FREE_BASE + seed, seed under
+ * FREE_BASE), so the three ranges never meet.
+ */
+export const SET_BASE = 2_000_000_000;
 
 export interface QuickfireQuestion {
   q: string;
@@ -119,6 +125,7 @@ function freePicks(rng: Rng, difficulty: Difficulty): QuickfireItem[] {
  * reference rebuilds the board, so it is never sent to players as is.
  */
 export function generateAt(index: number, difficulty: Difficulty = "easy"): Generated<QuickfirePuzzle, QuickfireSolution> {
+  if (index >= SET_BASE) return build(setRound(index - SET_BASE), index, difficulty);
   if (index >= FREE_BASE) return build(freePicks(createRng(`qf-free:${index - FREE_BASE}`), difficulty), index, difficulty);
   const picks = rotation(CONTENT.length, QUESTIONS, index, "quickfire");
   return build(
@@ -126,6 +133,31 @@ export function generateAt(index: number, difficulty: Difficulty = "easy"): Gene
     index,
     difficulty,
   );
+}
+
+/** The five questions of one event quiz round (k = set × 1000 + round); an unknown set or round throws. */
+function setRound(k: number): QuickfireItem[] {
+  const set = QUIZ_SETS[Math.floor(k / 1000)];
+  const round = k % 1000;
+  const items = set?.items.slice(round * QUESTIONS, round * QUESTIONS + QUESTIONS) ?? [];
+  if (items.length !== QUESTIONS) throw new Error(`no quiz round ${k}`);
+  return items;
+}
+
+/** How many rounds of five a quiz set holds (0 for an unknown set). */
+export function quizRounds(setId: string): number {
+  const i = quizSetIndex(setId);
+  return i < 0 ? 0 : Math.floor(QUIZ_SETS[i].items.length / QUESTIONS);
+}
+
+/**
+ * A free board from an event's quiz set (lib/events EVENT_QUIZZES): one of its rounds, picked by the seed, so the
+ * attempt's server seed rebuilds the same board at finish. Null for an unknown set.
+ */
+export function quizSetBoard(setId: string, rng: Rng, difficulty: Difficulty): Generated<QuickfirePuzzle, QuickfireSolution> | null {
+  const rounds = quizRounds(setId);
+  if (!rounds) return null;
+  return generateAt(SET_BASE + quizSetIndex(setId) * 1000 + rng.int(0, rounds - 1), difficulty);
 }
 
 /** Free play: a fresh free board from the seed. */

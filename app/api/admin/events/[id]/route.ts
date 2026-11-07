@@ -29,6 +29,7 @@ export const PATCH = handle(async (req: Request, rc: RouteContext<"/api/admin/ev
   if (input.accent !== undefined) patch.accent = input.accent;
   if (input.banner !== undefined) patch.banner = input.banner;
   if (input.quest !== undefined) patch.quest = input.quest;
+  if (input.quiz !== undefined) patch.quiz = input.quiz;
   const { data, error } = await ctx.db.from("events").update(patch).eq("id", id).select(EVENT_COLS).single();
   if (error) throw error;
   await audit(ctx, "event.update", `event:${id}`, { before, after: data });

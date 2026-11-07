@@ -171,8 +171,8 @@ export const SETTINGS = {
     kind: "bool",
     group: "Features",
     label: "Seasonal events",
-    help: "Runs the events made on the Seasonal events page: a small Home banner and a bonus quest in Quests, counted from free-play clears, while an event is live. Off: players see no event and the server counts and pays no event quest.",
-    default: false,
+    help: "Runs the events scheduled on the Seasonal events page: a small Home banner and a bonus quest in Quests, counted from free-play clears, and any Quickfire quiz set the event features, while an event is live. With no live event (or only drafts) players see nothing. Off: players see no event and the server counts and pays no event quest.",
+    default: true,
   },
   "features.adultParty": {
     kind: "bool",

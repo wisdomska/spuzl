@@ -1,4 +1,5 @@
 import "server-only";
+import { activeEventQuiz } from "@/lib/events/server";
 import { getGameSettings } from "@/lib/game-settings/server";
 import { createHash, randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -118,6 +119,12 @@ export async function loadFree(gameId: string, seed: string, difficulty: Difficu
     const { TUTORIAL_PUZZLE, TUTORIAL_SOLUTION } = await import("@/games/crownfall/tutorial");
     return { puzzleId: null, puzzle: TUTORIAL_PUZZLE, solution: TUTORIAL_SOLUTION, difficulty: "easy" };
   }
+  // R2-P5: a seasonal event's Quickfire quiz set (seed quiz:<set>:<uuid>, made by startAttempt while it is live).
+  if (gameId === "quickfire" && seed.startsWith("quiz:")) {
+    const { quizSetBoard } = await import("@/games/quickfire/logic");
+    const g = quizSetBoard(seed.split(":")[1], createRng(seed), difficulty);
+    if (g) return { puzzleId: null, puzzle: g.puzzle, solution: g.solution, difficulty };
+  }
   const logic = await loadLogic(gameId);
   // A game with its own small practice board (Quads) uses it for the guided first play.
   const g = seed === guidedSeed(gameId) && logic.practice ? logic.practice() : logic.generate(createRng(seed), difficulty);
@@ -220,6 +227,11 @@ export async function startAttempt(admin: SupabaseClient, playerId: string, ref:
   } else {
     // Only the tutorial passes a seed (its fixed public board); every other free board gets a fresh server seed.
     seed = ref.mode === "tutorial" && ref.seed ? ref.seed : `free:${meta.id}:${randomUUID()}`;
+    // R2-P5: while a live seasonal event features a quiz set (6 March), Quickfire free play serves its rounds.
+    if (meta.id === "quickfire" && ref.mode === "free") {
+      const quiz = await activeEventQuiz(admin).catch(() => null);
+      if (quiz) seed = `quiz:${quiz}:${randomUUID()}`;
+    }
     loaded = await loadFree(meta.id, seed, ref.difficulty);
   }
   const { data, error } = await admin

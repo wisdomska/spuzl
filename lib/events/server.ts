@@ -4,7 +4,8 @@ import { ApiError } from "@/lib/api/server";
 import { getGameSettings } from "@/lib/game-settings/server";
 import { EVENT_QUEST_ICON, eventQuestDelta, eventQuestId, type EventRow } from "./index";
 
-export const EVENT_COLS = "id, name, starts_at, ends_at, accent, banner, quest, created_at";
+export const EVENT_COLS = "id, name, starts_at, ends_at, accent, banner, quest, created_at, draft, quiz, template";
+const LEGACY_COLS = "id, name, starts_at, ends_at, accent, banner, quest, created_at";
 
 /**
  * The event running now (latest start wins, as `pickActive`), or null. Always null while the admin setting
@@ -13,16 +14,26 @@ export const EVENT_COLS = "id, name, starts_at, ends_at, accent, banner, quest, 
 export async function activeEvent(admin: SupabaseClient, now = new Date()): Promise<EventRow | null> {
   if (!(await getGameSettings())["features.seasonal"]) return null;
   const at = now.toISOString();
-  const { data, error } = await admin
-    .from("events")
-    .select(EVENT_COLS)
-    .lte("starts_at", at)
-    .gt("ends_at", at)
-    .order("starts_at", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(1);
+  const live = (cols: string, drafts: boolean) => {
+    let q = admin.from("events").select(cols);
+    if (drafts) q = q.eq("draft", false);
+    return q
+      .lte("starts_at", at)
+      .gt("ends_at", at)
+      .order("starts_at", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(1);
+  };
+  let { data, error } = await live(EVENT_COLS, true);
+  // Deployed ahead of migration 20261204000401 (no draft, quiz or template columns): every event is scheduled.
+  if (error?.code === "42703") ({ data, error } = await live(LEGACY_COLS, false));
   if (error) throw error;
-  return (data?.[0] as EventRow | undefined) ?? null;
+  return (data?.[0] as unknown as EventRow | undefined) ?? null;
+}
+
+/** The Quickfire quiz set the live event features (R2-P5), or null: Quickfire free play then serves its rounds. */
+export async function activeEventQuiz(admin: SupabaseClient): Promise<string | null> {
+  return (await activeEvent(admin))?.quiz ?? null;
 }
 
 /** Public shape of an event (GET /api/v1/events/current). */

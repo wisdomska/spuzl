@@ -27,6 +27,13 @@ export type EventAccent = (typeof EVENT_ACCENTS)[number];
 export const EVENT_GOALS = ["free_clears", "world_clears", "no_hint_clears"] as const;
 export type EventGoal = (typeof EVENT_GOALS)[number];
 
+/**
+ * Quickfire quiz sets an event can feature (R2-P5; games/quickfire/sets.ts). While such an event is live, Quickfire
+ * free play serves rounds from the set. Same list as the events_quiz check in SQL.
+ */
+export const EVENT_QUIZZES = ["ghana-1957"] as const;
+export type EventQuiz = (typeof EVENT_QUIZZES)[number];
+
 /** Longest event window (matches events_window_check). */
 export const MAX_EVENT_DAYS = 62;
 
@@ -59,9 +66,11 @@ const fields = {
   accent: z.enum(EVENT_ACCENTS),
   banner: text(2, 140),
   quest: EventQuest,
+  /** a Quickfire quiz set to feature, or null for none */
+  quiz: z.enum(EVENT_QUIZZES).nullable(),
 };
 
-export const EventCreate = z.object(fields).strict();
+export const EventCreate = z.object({ ...fields, quiz: fields.quiz.default(null) }).strict();
 export const EventPatch = z.object(fields).partial().strict();
 export type EventInput = z.infer<typeof EventCreate>;
 
@@ -76,6 +85,11 @@ export function windowProblem(startsAt: string, endsAt: string): string | null {
 }
 
 export type EventStatus = "upcoming" | "live" | "ended";
+/** The admin list adds drafts: events made (from a template) that the admin has not scheduled yet. */
+export type AdminEventStatus = EventStatus | "draft";
+
+export const adminEventStatus = (e: { starts_at: string; ends_at: string; draft?: boolean }, now = Date.now()): AdminEventStatus =>
+  e.draft ? "draft" : eventStatus(e, now);
 
 export function eventStatus(e: { starts_at: string; ends_at: string }, now = Date.now()): EventStatus {
   if (now < Date.parse(e.starts_at)) return "upcoming";
@@ -91,6 +105,12 @@ export interface EventRow {
   banner: string;
   quest: EventQuest;
   created_at: string;
+  /** R2-P5: a draft never runs (never active, counts nothing) until the admin schedules it */
+  draft?: boolean;
+  /** R2-P5: the Quickfire quiz set the event features, if any */
+  quiz?: EventQuiz | null;
+  /** R2-P5: the template it was made from, if any */
+  template?: string | null;
 }
 
 /**

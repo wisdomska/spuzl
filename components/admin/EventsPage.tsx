@@ -2,7 +2,16 @@
 
 import { useState, type FormEvent } from "react";
 import { WORLDS } from "@/lib/catalog";
-import { EVENT_ACCENTS, EVENT_GOALS, windowProblem, type EventGoal, type EventQuest, type EventStatus } from "@/lib/events";
+import {
+  EVENT_ACCENTS,
+  EVENT_GOALS,
+  EVENT_QUIZZES,
+  windowProblem,
+  type AdminEventStatus,
+  type EventGoal,
+  type EventQuest,
+} from "@/lib/events";
+import type { EventTemplate, EventTemplateId } from "@/lib/events/templates";
 import { errorText, useAdminAction, useAdminQuery, type AdminPage } from "@/lib/client/admin";
 import { EVENT_SORT } from "@/lib/admin/sorting";
 import { adminCopy } from "@/lib/copy/admin";
@@ -11,7 +20,10 @@ import { SortHead, type HeadCol } from "./SortHeader";
 import { useUrlFilters, useUrlSort } from "./useUrlFilters";
 import { Btn, Empty, Field, Notice, PageTitle, Pill, RowsSkeleton, inputCls, textareaCls } from "./ui";
 
-/** Seasonal events (Phase 5, "features.seasonal"): list, create, edit and delete. The server validates and audits. */
+/**
+ * Seasonal events (Phase 5, "features.seasonal"): list, create, edit and delete; R2-P5 adds ready-made templates
+ * (added as drafts with one click) and Schedule / Back to draft. The server validates and audits.
+ */
 
 interface EventItem {
   id: string;
@@ -21,7 +33,8 @@ interface EventItem {
   accent: string;
   banner: string;
   quest: EventQuest;
-  status: EventStatus;
+  quiz?: string | null;
+  status: AdminEventStatus;
   completed: number;
 }
 
@@ -37,14 +50,21 @@ interface Draft {
   world: string;
   xp: number;
   sparks: number;
+  /** "" for none */
+  quiz: string;
 }
 
 const C = adminCopy.events;
 const GOAL_LABEL: Record<EventGoal, string> = C.goals;
-const STATUS_TONE: Record<EventStatus, "ok" | "warn" | "neutral"> = { live: "ok", upcoming: "warn", ended: "neutral" };
+const STATUS_TONE: Record<AdminEventStatus, "ok" | "warn" | "neutral"> = {
+  live: "ok",
+  upcoming: "warn",
+  ended: "neutral",
+  draft: "neutral",
+};
 const E = adminCopy.events;
 const FILTERS = { status: "" } as const;
-const ALLOWED = { status: ["upcoming", "live", "ended"] };
+const ALLOWED = { status: ["draft", "upcoming", "live", "ended"] };
 const COLS: HeadCol<(typeof EVENT_SORT.keys)[number]>[] = [
   { label: E.head[0], sort: "name" },
   { label: E.head[1], sort: "starts_at" },
@@ -78,6 +98,7 @@ function blank(): Draft {
     world: "logic",
     xp: 100,
     sparks: 50,
+    quiz: "",
   };
 }
 
@@ -94,6 +115,7 @@ function draftOf(e: EventItem): Draft {
     world: e.quest.world ?? "logic",
     xp: e.quest.xp,
     sparks: e.quest.sparks,
+    quiz: e.quiz ?? "",
   };
 }
 
@@ -112,6 +134,7 @@ function payload(d: Draft) {
       xp: d.xp,
       sparks: d.sparks,
     },
+    quiz: (d.quiz || null) as (typeof EVENT_QUIZZES)[number] | null,
   };
 }
 
@@ -133,9 +156,10 @@ export function EventsPage({ canWrite }: { canWrite: boolean }) {
   const create = useAdminAction<ReturnType<typeof payload>>("POST", "/api/admin/events");
   const edit = useAdminAction<ReturnType<typeof payload> & { id: string }>("PATCH", (i) => `/api/admin/events/${i.id}`);
   const remove = useAdminAction<{ id: string }>("DELETE", (i) => `/api/admin/events/${i.id}`);
+  const schedule = useAdminAction<{ id: string; scheduled: boolean }>("POST", (i) => `/api/admin/events/${i.id}/schedule`);
   const [editing, setEditing] = useState<{ id: string | null; draft: Draft } | null>(null);
   const [done, setDone] = useState<string | null>(null);
-  const error = create.error ?? edit.error ?? remove.error;
+  const error = create.error ?? edit.error ?? remove.error ?? schedule.error;
 
   return (
     <div className="flex flex-col gap-3.5 px-6 py-5">
@@ -162,6 +186,7 @@ export function EventsPage({ canWrite }: { canWrite: boolean }) {
           {done}
         </Notice>
       )}
+      {canWrite && !editing && <Templates onAdded={(name) => setDone(C.templateAdded(name))} />}
       {editing && (
         <EventForm
           key={editing.id ?? "new"}
@@ -183,7 +208,7 @@ export function EventsPage({ canWrite }: { canWrite: boolean }) {
           <option value="">{E.anyStatus}</option>
           {ALLOWED.status.map((s) => (
             <option key={s} value={s}>
-              {E.statuses[s as EventStatus]}
+              {E.statuses[s as AdminEventStatus]}
             </option>
           ))}
         </select>
@@ -218,7 +243,7 @@ export function EventsPage({ canWrite }: { canWrite: boolean }) {
                     {C.runs(when(e.starts_at), when(e.ends_at))}
                   </td>
                   <td className="border-line border-t px-3 py-2">
-                    <Pill tone={STATUS_TONE[e.status]}>{e.status}</Pill>
+                    <Pill tone={STATUS_TONE[e.status]}>{E.statuses[e.status]}</Pill>
                   </td>
                   <td className="border-line border-t px-3 py-2 text-[13px]">
                     {e.quest.title}
@@ -228,6 +253,32 @@ export function EventsPage({ canWrite }: { canWrite: boolean }) {
                   <td className="border-line border-t px-3 py-2">
                     {canWrite && (
                       <span className="flex justify-end gap-1">
+                        {e.status === "draft" ? (
+                          <Btn
+                            size="lg"
+                            tone="primary"
+                            icon="calendar-blank"
+                            aria-label={C.scheduleAria(e.name)}
+                            disabled={schedule.isPending}
+                            onClick={() =>
+                              schedule.mutate({ id: e.id, scheduled: true }, { onSuccess: () => setDone(C.scheduled(e.name)) })
+                            }
+                          >
+                            {C.schedule}
+                          </Btn>
+                        ) : e.status !== "ended" ? (
+                          <Btn
+                            size="lg"
+                            tone="ghost"
+                            icon="pause"
+                            aria-label={C.unscheduleAria(e.name)}
+                            disabled={schedule.isPending}
+                            onClick={() => {
+                              if (window.confirm(C.confirmUnschedule(e.name)))
+                                schedule.mutate({ id: e.id, scheduled: false }, { onSuccess: () => setDone(C.unscheduled(e.name)) });
+                            }}
+                          />
+                        ) : null}
                         <Btn
                           size="lg"
                           tone="ghost"
@@ -341,6 +392,16 @@ function EventForm({
           />
         </Field>
       </div>
+      <Field label={C.quiz} htmlFor="ev-quiz" hint={C.quizHint}>
+        <select id="ev-quiz" value={d.quiz} onChange={(e) => set("quiz", e.target.value)} className={inputCls}>
+          <option value="">{C.quizNone}</option>
+          {EVENT_QUIZZES.map((q) => (
+            <option key={q} value={q}>
+              {C.quizzes[q]}
+            </option>
+          ))}
+        </select>
+      </Field>
       <Field label={C.banner} htmlFor="ev-banner" hint={C.bannerCount(d.banner.length)}>
         <textarea
           id="ev-banner"
@@ -407,3 +468,50 @@ function EventForm({
     </form>
   );
 }
+
+/** R2-P5: the ready-made events. "Add as draft" makes an inactive event with the template's next dates. */
+function Templates({ onAdded }: { onAdded: (name: string) => void }) {
+  const q = useAdminQuery<{ rows: (EventTemplate & { startsAt: string; endsAt: string })[] }>(
+    ["event-templates"],
+    "/api/admin/events/templates",
+  );
+  const add = useAdminAction<{ template: EventTemplateId }>("POST", "/api/admin/events/templates");
+  if (!q.data) return null;
+  return (
+    <section aria-labelledby="ev-templates" className="flex flex-col gap-2.5">
+      <h2 id="ev-templates" className="text-[15px] font-bold">
+        {C.templatesTitle}
+      </h2>
+      <p className="text-muted text-[13px]">{C.templatesIntro}</p>
+      {add.error && <Notice tone="danger">{errorText(add.error)}</Notice>}
+      <ul className="grid gap-2.5 sm:grid-cols-2">
+        {q.data.rows.map((t) => (
+          <li
+            key={t.id}
+            className="bg-surface flex flex-col gap-2 rounded-[12px] p-3.5"
+            style={{ boxShadow: `inset 4px 0 0 var(--${t.accent})` }}
+          >
+            <span className="font-semibold">{t.name}</span>
+            <span className="text-muted text-[13px]">{t.blurb}</span>
+            <span className="num text-muted text-[12px]">
+              {t.fixedDates ? C.templateDates(day(t.startsAt), day(t.endsAt)) : C.setDates}
+            </span>
+            <Btn
+              size="lg"
+              icon="plus"
+              className="self-start"
+              aria-label={C.addTemplateAria(t.name)}
+              disabled={add.isPending}
+              onClick={() => add.mutate({ template: t.id }, { onSuccess: () => onAdded(t.name) })}
+            >
+              {C.addTemplate}
+            </Btn>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+const day = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });

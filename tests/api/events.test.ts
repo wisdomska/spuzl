@@ -67,7 +67,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   for (const id of made) await S.owner.aal2(`/api/admin/events/${id}`, { method: "DELETE" });
-  await setSetting("features.seasonal", false);
+  await setSetting("features.seasonal", true); // the default since R2-P5
 });
 
 describe("admin events: roles, validation, audit", () => {
