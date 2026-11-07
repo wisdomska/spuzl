@@ -23,9 +23,12 @@ test("the new-games card counts the new games and opens the Library on New", asy
   const a = (await banner.boundingBox())!;
   const b = (await continueCard(page).boundingBox())!;
   expect(a.y + a.height <= b.y || b.y + b.height <= a.y).toBe(true);
+  // Bring Continue on screen first: elementFromPoint returns null for points outside the viewport.
+  await continueCard(page).scrollIntoViewIfNeeded();
+  const c = (await continueCard(page).boundingBox())!;
   const topAtContinue = await page.evaluate(
-    ([x, y]) => document.elementFromPoint(x, y)?.closest("[data-new-games]") !== null,
-    [b.x + b.width / 2, b.y + b.height / 2],
+    ([x, y]) => !!document.elementFromPoint(x, y)?.closest("[data-new-games]"),
+    [c.x + c.width / 2, c.y + c.height / 2],
   );
   expect(topAtContinue).toBe(false);
 
@@ -51,7 +54,7 @@ test("Continue shows a tiny board and the level it opens", async ({ page }) => {
   await expect(card).toBeVisible();
   // A new guest's first game is Crownfall, which has levels: "Level 1 · Puzzles".
   await expect(card).toContainText(/Level \d+ · /);
-  const thumb = card.locator("[data-board-thumb] svg");
+  const thumb = card.locator("[data-board-thumb] svg").first();
   await expect(thumb).toBeVisible();
   // R2-01 warm-up still targets the Continue link; the thumb is plain SVG (no board image or chunk for it).
   await expect(card).toHaveAttribute("href", /\/play\/[a-z0-9]+\?mode=level/);

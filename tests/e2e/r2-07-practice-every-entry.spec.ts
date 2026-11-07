@@ -59,7 +59,7 @@ for (const [label, vp] of Object.entries(VIEWPORTS)) {
       await onboardGuest(page, { guided: true });
       await page.goto("/library");
       await page.getByRole("searchbox").fill("dusk");
-      await page.getByRole("button", { name: /^Dusk / }).click();
+      await page.getByRole("link", { name: /^Dusk / }).click(); // rows are links since R2-12; a plain click opens the card
       const card = page.getByRole("dialog");
       await expect(card.getByRole("heading", { name: "Dusk" })).toBeVisible();
       const starts = countStarts(page);

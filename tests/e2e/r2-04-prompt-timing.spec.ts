@@ -206,8 +206,11 @@ test.describe("low-data suggestion (R2-04)", () => {
     await expect(page.locator(LOW_DATA)).toHaveCount(0);
   });
 
-  test("shows once on slow 3G after slow loads, then not again this session", async ({ page }) => {
+  test("shows once on slow 3G after slow loads, then not again this session", async ({ browser }) => {
     test.setTimeout(240_000);
+    // No service worker: page loads it answers are not counted (R2-04), and a deployed site has one.
+    const ctx = await browser.newContext({ serviceWorkers: "block", viewport: { width: 1280, height: 800 } });
+    const page = await ctx.newPage();
     await onboardGuest(page, "18+");
     await throttle(page, "slow3g");
     let seen = false;
@@ -229,6 +232,7 @@ test.describe("low-data suggestion (R2-04)", () => {
     await page.goto("/shop", { waitUntil: "load", timeout: 90_000 });
     await page.waitForTimeout(QUIET_WAIT);
     await expect(page.locator(LOW_DATA)).toHaveCount(0);
+    await ctx.close();
   });
 });
 
@@ -248,7 +252,12 @@ test.describe("one prompt queue (R2-04)", () => {
     await page.waitForTimeout(QUIET_WAIT);
     await expect(page.locator(LOW_DATA)).toHaveCount(0); // this screen's slot is spent
     // Next screen (a client-side navigation, then the slow run is measured again): low data gets its turn.
+    // Next screen: low data gets its turn. Clear the synthetic run first: the client-side navigation itself is
+    // measured (a fast load ends a slow run, and the network has recovered), so mark the slow loads once the new
+    // screen has settled, as a slow connection would.
+    await slowLoads(page, 0);
     await clickTo(page, "/me");
+    await page.waitForTimeout(1500);
     await slowLoads(page);
     await expect(page.locator(LOW_DATA)).toBeVisible();
     expect(await maxPrompts(page)).toBe(1);
