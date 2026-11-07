@@ -39,8 +39,8 @@ test("host opens the room to the big screen; a signed-out TV watches it read onl
     const tv = await (await browser.newContext({ viewport: vp })).newPage();
     await tv.goto(`/party/${code}/tv`);
     const frame = tv.getByTestId("party-tv");
-    await expect(frame).toBeVisible({ timeout: 15_000 });
-    await expect(frame.getByText(code).first()).toBeVisible();
+    // <main> holds only a fixed full-screen frame (its own box is 0 × 0), so wait on what the frame shows.
+    await expect(frame.getByText(code).first()).toBeVisible({ timeout: 15_000 });
     await expect(frame.getByRole("list", { name: "Standings" })).toContainText(players[1].nickname);
     // Read only: nothing to type in, no chat.
     await expect(tv.locator("input, textarea")).toHaveCount(0);

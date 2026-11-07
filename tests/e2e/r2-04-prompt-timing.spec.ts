@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { onboardGuest, throttle } from "./harness";
+import { DEFAULTS } from "@/lib/game-settings/schema";
 
 /**
  * R2-04 prompt timing: the notification ask only after a trigger and never on Home, at most once per cooldown;
@@ -33,7 +34,8 @@ async function countPrompts(page: Page) {
     const w = window as unknown as { __maxPrompts: number };
     w.__maxPrompts = 0;
     const check = () => {
-      const n = [...document.querySelectorAll("[data-prompt]")].filter((el) => (el as HTMLElement).offsetParent !== null).length;
+      // prompts are position: fixed, so offsetParent is always null; count what is actually rendered
+      const n = [...document.querySelectorAll("[data-prompt]")].filter((el) => el.getClientRects().length > 0).length;
       if (n > w.__maxPrompts) w.__maxPrompts = n;
     };
     new MutationObserver(check).observe(document, { subtree: true, childList: true, attributes: true });
@@ -226,7 +228,18 @@ test.describe("low-data suggestion (R2-04)", () => {
         break;
       }
     }
-    if (!seen) await expect(page.locator(LOW_DATA)).toBeVisible({ timeout: 15_000 });
+    if (!seen) {
+      // Since R2-01 a deployment's pages can load under the threshold even on emulated slow 3G; then the suggestion
+      // rightly stays away (the synthetic slow-load tests above cover the rule itself).
+      const loads = await page.evaluate(() => JSON.parse(sessionStorage.getItem("spuzl.loads") ?? "[]") as number[]);
+      const threshold = DEFAULTS["prompts.lowDataThresholdMs"];
+      if (loads.length && loads.every((ms) => ms < threshold)) {
+        test.info().annotations.push({ type: "low-data", description: `loads ${loads.join(", ")} ms, all under ${threshold} ms` });
+        await ctx.close();
+        test.skip(true, "pages load under the low-data threshold on slow 3G");
+      }
+      await expect(page.locator(LOW_DATA)).toBeVisible({ timeout: 15_000 });
+    }
     await page.getByRole("status", { name: "Low-data suggestion" }).getByRole("button", { name: "Not now" }).click();
     await expect(page.locator(LOW_DATA)).toHaveCount(0);
     await page.goto("/shop", { waitUntil: "load", timeout: 90_000 });
