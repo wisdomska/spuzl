@@ -12,7 +12,7 @@ import { roundPuzzle } from "./puzzles";
 import { getGameSettings } from "@/lib/game-settings/server";
 import { adultRewardFor, finalizeDuel, finalizeRace } from "./rewards";
 import { knownGames } from "./known";
-import { adultRoundView, isAdultRoom, modeOf, resolveAdult } from "./adult";
+import { adultRoundView, isTurnRoom, modeOf, resolveAdult } from "./adult";
 import type { PartyMode } from "@/lib/party-adult/modes";
 import { bindPuzzle } from "@/lib/game/guess-token";
 import { effectiveBand } from "@/lib/age";
@@ -215,7 +215,7 @@ export async function viewOf(admin: SupabaseClient, l: Loaded, me: string, rewar
   const start = ms(m.round_started_at);
   let puzzle: MatchView["puzzle"] = null;
   const game = m.games[m.round - 1];
-  const adult = isAdultRoom(m);
+  const adult = isTurnRoom(m);
   const countdownMs = await liveCountdownMs();
   // Before a ranked round's countdown: who is new to its game (their rules card shows; the rival waits).
   let rulesFor: string[] | null = null;
@@ -316,7 +316,7 @@ export async function viewOf(admin: SupabaseClient, l: Loaded, me: string, rewar
 }
 
 function requirePlaying(l: Loaded, p: PlayerRow, round: number) {
-  if (isAdultRoom(l.m)) throw new ApiError(409, "not_a_race");
+  if (isTurnRoom(l.m)) throw new ApiError(409, "not_a_race");
   if (p.left_at) throw new ApiError(409, "left_match");
   if (p.spectator) throw new ApiError(403, "spectator");
   if (l.m.status !== "playing") throw new ApiError(409, "not_playing");
@@ -345,7 +345,7 @@ export async function raceRoundPuzzle(
   const p = member(l, playerId);
   if (p.spectator || p.left_at) throw new ApiError(403, "not_racing");
   const start = ms(m.round_started_at);
-  if (isAdultRoom(m) || m.status !== "playing" || start === null || m.set_no !== setNo || m.round !== round || m.games[round - 1] !== game)
+  if (isTurnRoom(m) || m.status !== "playing" || start === null || m.set_no !== setNo || m.round !== round || m.games[round - 1] !== game)
     throw new ApiError(409, "round_over");
   // No answers during the countdown, the same rule as moves and finishes (requirePlaying): input never bleeds in early.
   if (now < start) throw new ApiError(409, "too_early");
@@ -430,7 +430,7 @@ export async function passRound(admin: SupabaseClient, id: string, playerId: str
   const l = await loadMatch(admin, id);
   const p = member(l, playerId);
   await touch(admin, l, playerId);
-  if (l.m.kind !== "race" || isAdultRoom(l.m)) throw new ApiError(409, "cannot_pass", "You can only skip rounds in a Party Race.");
+  if (l.m.kind !== "race" || isTurnRoom(l.m)) throw new ApiError(409, "cannot_pass", "You can only skip rounds in a Party Race.");
   requirePlaying(l, p, round);
   if (l.rounds.some((r) => r.round === round && r.player_id === playerId && r.time_ms !== null))
     throw new ApiError(409, "already_finished", "You already finished this round.");
@@ -450,7 +450,7 @@ export async function resolve(admin: SupabaseClient, id: string, loaded?: Loaded
   const l = loaded ?? (await loadMatch(admin, id));
   if (l.m.status !== "playing") return false;
   if (l.m.kind === "duel") return resolveDuel(admin, l);
-  if (isAdultRoom(l.m)) return resolveAdult(admin, l);
+  if (isTurnRoom(l.m)) return resolveAdult(admin, l);
   return resolveRace(admin, l);
 }
 
@@ -592,11 +592,11 @@ async function resolveRace(admin: SupabaseClient, l: Loaded): Promise<boolean> {
 
 /* ---------------- Tick: time-based transitions any participant can trigger ---------------- */
 
-/** `gate` runs for 18+ party rooms (the age gate), before anything else. */
-export async function tick(admin: SupabaseClient, id: string, playerId: string, gate?: () => Promise<unknown>) {
+/** `gate` runs for turn-based party rooms (their age gate, by mode), before anything else. */
+export async function tick(admin: SupabaseClient, id: string, playerId: string, gate?: (mode: PartyMode) => Promise<unknown>) {
   let l = await loadMatch(admin, id);
   member(l, playerId);
-  if (gate && isAdultRoom(l.m)) await gate();
+  if (gate && isTurnRoom(l.m)) await gate(modeOf(l.m));
   await touch(admin, l, playerId);
   const { m, now } = l;
   const before = { ...m };

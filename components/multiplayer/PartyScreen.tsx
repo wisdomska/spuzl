@@ -31,8 +31,8 @@ import { partyCopy } from "@/lib/copy/party";
 import type { MatchPlayerView, MatchView } from "@/lib/multiplayer/types";
 import type { RealtimeChannel } from "@/lib/realtime/transport";
 import { useGameSettings } from "@/lib/game-settings/client";
-import { canSeeAdultParty } from "@/lib/party-adult/gate";
-import { isAdultMode, type PartyMode } from "@/lib/party-adult/modes";
+import { canSeeAdultParty, canSeeFamilyDraw } from "@/lib/party-adult/gate";
+import { isTurnMode, type PartyMode } from "@/lib/party-adult/modes";
 import { ADULT_REWARD_MIN_PLAYERS } from "@/lib/party-adult/rewards";
 import { adultPartyCopy } from "@/lib/copy/adult-party";
 import { MatchBoard } from "./MatchBoard";
@@ -81,8 +81,10 @@ export function PartyHome() {
   const { toast, show } = useToast();
   // Draw It and Two Truths: only for signed-in 18+ players while the admin switch is on (the server checks again).
   const me = useMe(gate === "ready");
-  const adultOn = useGameSettings()["features.adultParty"];
-  const adult = canSeeAdultParty(me.data, adultOn);
+  const settings = useGameSettings();
+  const adult = canSeeAdultParty(me.data, settings["features.adultParty"]);
+  // Family Draw (R2-P5): signed-in players aged 16 and over while "party.familyDraw" is on.
+  const family = canSeeFamilyDraw(me.data, settings["party.familyDraw"]);
   const [notice, setNotice] = useState<RoomRequest | null>(null);
   if (gate === "loading") return <LoadingScreen />;
   if (gate === "no_profile") return <NeedProfile />;
@@ -95,7 +97,7 @@ export function PartyHome() {
       setBusy(false);
       // The one-time "Adults only" notice: confirm, then open the room.
       if (e instanceof HttpError && e.code === "needs_adult_notice") return setNotice(r);
-      show(isAdultMode(r.mode) ? adultErrorText(e) : partyCopy.host.failed, "bad");
+      show(isTurnMode(r.mode) ? adultErrorText(e) : partyCopy.host.failed, "bad");
     }
   };
   // Any friend's code works here: a Party room, or a Duel or Board Games invite someone typed into the wrong box.
@@ -128,7 +130,7 @@ export function PartyHome() {
         }
       >
         {tab === "host" ? (
-          <HostRoom initialGame={initialGame} busy={busy} onOpen={open} adult={adult} />
+          <HostRoom initialGame={initialGame} busy={busy} onOpen={open} adult={adult} family={family} />
         ) : (
           <JoinRoom onJoin={(c) => void join(c)} />
         )}
@@ -272,8 +274,8 @@ export function PartyRoom({ code: raw }: { code: string }) {
         <Spuz mood="wave" size={130} />
         <h1 className="font-display text-[26px] font-black">{room.host ? `${room.host}'s party` : "Party room"}</h1>
         <p className="text-muted text-[16px]">
-          {room.mode && isAdultMode(room.mode)
-            ? `${modeName(room.mode)}, ${adultPartyCopy.modes.badge}.`
+          {room.mode && isTurnMode(room.mode)
+            ? `${modeName(room.mode)}, ${room.mode === "drawfam" ? adultPartyCopy.modes.badgeFamily : adultPartyCopy.modes.badge}.`
             : `${roomGamesName(room.game, room.chosen)}, 3 games.`}{" "}
           <span className="num">{room.count}</span> of <span className="num">{room.max}</span> in.
         </p>
@@ -336,7 +338,7 @@ function Room({ id, code }: { id: string; code: string }) {
       setPassAsk(false);
     }
   }
-  const raceLive = racing && !!view && !isAdultMode(view.mode);
+  const raceLive = racing && !!view && !isTurnMode(view.mode);
   const chatUi = view && !raceLive && (
     <>
       <ChatPanel chat={chat} me={view.me} onEmote={(e) => emotes.send(e)} />
@@ -360,7 +362,7 @@ function Room({ id, code }: { id: string; code: string }) {
   const wide = useWide();
   const spectating = !!view?.players.find((p) => p.id === view.me)?.spectator;
   const leaveRace = useLeave({
-    policy: leavePolicy({ context: "party", over: !view || !racing || isAdultMode(view.mode) || spectating }),
+    policy: leavePolicy({ context: "party", over: !view || !racing || isTurnMode(view.mode) || spectating }),
     exit: () => router.push("/party"),
     forfeit: ({ keepalive }) => api(`/api/v1/matches/${id}/leave`, { json: {}, keepalive }),
   });
@@ -408,7 +410,7 @@ function Room({ id, code }: { id: string; code: string }) {
   const leaveHome = () => void leave("/");
 
   // Draw It and Two Truths (18+): their own lobby card, rounds and podium; no TV mode or classroom.
-  if (isAdultMode(view.mode))
+  if (isTurnMode(view.mode))
     return (
       <Screen label={`Party ${view.mode} ${phase}`}>
         <MpToast toast={toast} />
@@ -500,7 +502,7 @@ function Room({ id, code }: { id: string; code: string }) {
   else if (view.puzzle) {
     const iFinished = rows.find((r) => r.id === view.me)?.finished ?? false;
     const iPassed = !!view.players.find((p) => p.id === view.me)?.passed && !iFinished;
-    const canPass = phase === "race" && !iFinished && !iPassed && !spectating && !isAdultMode(view.mode);
+    const canPass = phase === "race" && !iFinished && !iPassed && !spectating && !isTurnMode(view.mode);
     const pass = async () => {
       setPassAsk(false);
       try {
@@ -737,7 +739,7 @@ function AdultRoom({
       setKick(null);
     }
   }
-  const mode = isAdultMode(view.mode) ? view.mode : "draw";
+  const mode = isTurnMode(view.mode) ? view.mode : "draw";
   const doKick = async () => {
     const p = kick;
     setKick(null);

@@ -1,11 +1,18 @@
-/** 18+ party games copy: Draw It and Two Truths (admin setting "features.adultParty"). */
+/**
+ * Party drawing and writing games copy: the 18+ Draw It and Two Truths (admin setting "features.adultParty"), and
+ * Family Draw, Draw It for 16+ with preset words and picks (setting "party.familyDraw", R2-P5).
+ */
 export const adultPartyCopy = {
   modes: {
     label: "What are we playing?",
     race: { name: "Puzzle race", hint: "Everyone races the same puzzles" },
     draw: { name: "Draw It", hint: "One draws a secret word, the rest guess" },
     truths: { name: "Two Truths", hint: "Three facts about you. One is a lie" },
+    drawfam: { name: "Family Draw", hint: "One draws a preset word, the rest pick it from four" },
     badge: "18+",
+    /** Family Draw's badge: signed-in players aged 16 and over */
+    badgeFamily: "16+",
+    familyNote: "Family Draw is for signed-in players aged 16 and over. Nobody types: guessers pick the word.",
     adultsNote: "Draw It and Two Truths are for signed-in players aged 18 and over.",
   },
   notice: {
@@ -23,6 +30,10 @@ export const adultPartyCopy = {
     adult_party_blocked: "You can't join 18+ rooms for a while after a report was upheld.",
     kicked: "The host removed you from this room.",
     needs_adult_notice: "Confirm the adults-only notice first.",
+    family_draw_off: "Family Draw is switched off right now.",
+    family_signed_in: "Sign in with an account to play Family Draw.",
+    family_16_plus: "Family Draw is for players aged 16 and over.",
+    already_picked: "You already picked.",
     not_your_turn: "It isn't your turn.",
     round_closed: "That round just closed.",
     already_guessed: "You already got it.",
@@ -40,6 +51,7 @@ export const adultPartyCopy = {
   lobby: {
     line: (mode: string) => `${mode}, everyone takes a turn`,
     sub: "Adults only. Report anything abusive.",
+    subFamily: "16 and over. Preset words, no typing. Report any drawing that isn't okay.",
     remove: (name: string) => `Remove ${name}`,
   },
   round: {
@@ -76,6 +88,11 @@ export const adultPartyCopy = {
     feed: "Guesses",
     wordWas: (w: string) => `The word was ${w}`,
     reportDrawing: "Report drawing",
+    /** Family Draw: guessers pick the word from four */
+    pickLabel: "Which word is it?",
+    pickSay: (word: string) => `Pick ${word}`,
+    picked: "Pick in. Waiting for the others.",
+    pickedWrong: "Not that one. Watch for the reveal.",
     reportGuess: (name: string) => `Report ${name}'s guess`,
   },
   truths: {

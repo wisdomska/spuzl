@@ -22,7 +22,7 @@ export const RoomCreateInput = z.object({
   difficulty: difficulty.default("medium"),
   maxPlayers: z.number().int().min(PARTY_MIN).max(PARTY_MAX).default(PARTY_MAX),
   classroom: z.boolean().default(false),
-  /** "race" or an 18+ party game ("draw", "truths"); the route runs the age gate for those */
+  /** "race", an 18+ party game ("draw", "truths") or Family Draw ("drawfam", 16+); the route runs the gate for those */
   mode: z.enum(PARTY_MODES).default("race"),
   /** the host confirms the one-time "Adults only" notice */
   adultNotice: z.boolean().default(false),

@@ -318,29 +318,34 @@ export function PartyStart({
 
 /**
  * Host tab: game (or Random mix), difficulty, players and Classroom mode. Signed-in 18+ players (with the
- * admin setting "features.adultParty" on) also pick a mode: Puzzle race, Draw It or Two Truths.
+ * admin setting "features.adultParty" on) also pick a mode: Puzzle race, Draw It or Two Truths; signed-in players
+ * aged 16 and over (with "party.familyDraw" on) can pick Family Draw (R2-P5).
  */
 export function HostRoom({
   initialGame = null,
   onOpen,
   busy,
   adult = false,
+  family = false,
 }: {
   initialGame?: string | null;
   onOpen: (r: RoomRequest) => void;
   busy: boolean;
   adult?: boolean;
+  family?: boolean;
 }) {
   const [choice, setChoice] = useState<GameChoice>({ game: initialGame, picks: null });
   const [picked, setMode] = useState<PartyMode>("race");
-  const mode: PartyMode = adult ? picked : "race";
+  // Only a mode this player may host (the server checks the same gates).
+  const allowed = picked === "race" || (picked === "drawfam" ? family : adult);
+  const mode: PartyMode = allowed ? picked : "race";
   const [difficulty, setDifficulty] = useState<Diff>("medium");
   const [size, setSize] = useState(PARTY_MAX);
   const [classroom, setClassroom] = useState(false);
   const race = mode === "race";
   return (
     <>
-      {adult && <ModePicker value={mode} onChange={setMode} />}
+      {(adult || family) && <ModePicker value={mode} onChange={setMode} adult={adult} family={family} />}
       {race && (
         <>
           <span className="text-[15px] font-semibold">{partyCopy.host.game}</span>

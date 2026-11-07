@@ -139,6 +139,15 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   move's name, arrow and shape in a bubble. A drawn or rigged pose per move (an iron in hand, a phone at the ear)
   would read better; the beat is the shared tick and chime sounds, and a recorded Azonto loop would suit it more.
   Azonto's 3D tile uses Phosphor `person-arms-spread`.
+- **R2-P5 part B, Family Draw for under-16s:** not done, on purpose (DECISIONS PD1): drawings can't be checked before
+  others see them. Revisit only with an image classifier or pre-moderation. The owner should also confirm the 16+
+  call itself before switching `party.familyDraw` on.
+- **R2-P5 part B, Family Draw words:** the list lives in code (`lib/party-adult/content.ts`, filtered in
+  `lib/party-adult/family.ts`). The admin Content page previews it, exports it and checks a pasted pack, but cannot
+  save one; storing the list in the database would let the owner edit it without a release.
+- **R2-P5 part B, Family Draw E2E sign-in:** `tests/e2e/r2-p5b-family-draw.spec.ts` signs in email accounts by reading
+  a fresh code from the admin API (`generateLink`) after the app sends one. That works against local Supabase; on a
+  hosted project with email rate limits the spec may need a test sign-in route.
 - **R2-P5 settings delay:** a lab switch reaches players within about 30 s (server settings cache) plus up to 60 s
   (edge cache of `/api/v1/settings/game`); the server refuses a switched-off game as soon as its own cache expires.
 - **Admin cascade audit (R2-ADMIN), left out or partial** (full table: `docs/qa/ADMIN_CASCADE_R2.md`):

@@ -4,6 +4,9 @@
  * Draw It and Two Truths (18+ party modes, admin setting "features.adultParty"). Shown only to signed-in 18+
  * players; the server enforces every rule again (age gate, turns, timers, text filter, stroke caps). Free text
  * and drawings are shown only while their round runs, each with a Report button.
+ * Family Draw (R2-P5, mode "drawfam", setting "party.familyDraw"): the same Draw It rounds for signed-in players
+ * aged 16 and over, with preset words and a pick from four instead of typed guesses; drawings keep their Report
+ * button.
  */
 import { useEffect, useRef, useState, type FormEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -12,7 +15,7 @@ import { api, HttpError } from "@/lib/client/api";
 import { matchKey, useReduce } from "@/lib/client/multiplayer";
 import { adultPartyCopy as C } from "@/lib/copy/adult-party";
 import { TEXT_MAX, partyTextProblem, type PartyTextKind } from "@/lib/party-adult/filter";
-import type { AdultMode, PartyMode } from "@/lib/party-adult/modes";
+import type { PartyMode, TurnMode } from "@/lib/party-adult/modes";
 import { BOARD, PEN_COLORS, PEN_WIDTHS, STROKE_LIMITS, strokePath, toStrokes, type Stroke } from "@/lib/party-adult/strokes";
 import {
   INK,
@@ -52,15 +55,42 @@ export const modeName = (m: PartyMode) => C.modes[m].name;
 
 /* ---------------- Host: mode picker and the one-time notice ---------------- */
 
-export function ModePicker({ value, onChange }: { value: PartyMode; onChange: (m: PartyMode) => void }) {
+/** A mode's age badge: 18+ for the free-text modes, 16+ for Family Draw, none for the puzzle race. */
+const badgeOf = (m: PartyMode) => (m === "race" ? null : m === "drawfam" ? C.modes.badgeFamily : C.modes.badge);
+
+/**
+ * The Host tab's mode picker: Puzzle race, then the 18+ modes for signed-in adults (`adult`) and Family Draw for
+ * signed-in players aged 16 and over (`family`). The server checks the same gates when the room opens.
+ */
+export function ModePicker({
+  value,
+  onChange,
+  adult = true,
+  family = false,
+}: {
+  value: PartyMode;
+  onChange: (m: PartyMode) => void;
+  adult?: boolean;
+  family?: boolean;
+}) {
   const modes: [PartyMode, string][] = [
     ["race", "flag-checkered"],
-    ["draw", "paint-brush"],
-    ["truths", "question"],
+    ...(adult
+      ? ([
+          ["draw", "paint-brush"],
+          ["truths", "question"],
+        ] as [PartyMode, string][])
+      : []),
+    ...(family ? ([["drawfam", "scribble-loop"]] as [PartyMode, string][]) : []),
   ];
+  const note = value === "race" ? (adult ? C.modes.adultsNote : C.modes.familyNote) : C.modes[value].hint;
   return (
     <div className="flex flex-col gap-2">
-      <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label={C.modes.label}>
+      <div
+        className={`grid gap-2 ${modes.length === 4 ? "grid-cols-2" : modes.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}
+        role="radiogroup"
+        aria-label={C.modes.label}
+      >
         {modes.map(([m, icon]) => {
           const on = value === m;
           return (
@@ -69,7 +99,7 @@ export function ModePicker({ value, onChange }: { value: PartyMode; onChange: (m
               type="button"
               role="radio"
               aria-checked={on}
-              aria-label={`${C.modes[m].name}${m === "race" ? "" : `, ${C.modes.badge}`}. ${C.modes[m].hint}`}
+              aria-label={`${C.modes[m].name}${badgeOf(m) ? `, ${badgeOf(m)}` : ""}. ${C.modes[m].hint}`}
               onClick={() => onChange(m)}
               className="press relative flex min-h-[84px] min-w-0 flex-col items-center justify-center gap-1.5 rounded-[18px] px-1"
               style={{
@@ -79,16 +109,16 @@ export function ModePicker({ value, onChange }: { value: PartyMode; onChange: (m
             >
               <Icon name={icon} size={22} />
               <span className="max-w-full truncate text-[14px] font-semibold">{C.modes[m].name}</span>
-              {m !== "race" && (
+              {badgeOf(m) && (
                 <span className="bg-surface-raised text-muted absolute top-1.5 right-1.5 rounded-[6px] px-1.5 text-[12px] font-bold">
-                  {C.modes.badge}
+                  {badgeOf(m)}
                 </span>
               )}
             </button>
           );
         })}
       </div>
-      <p className="text-muted text-[14px]">{value === "race" ? C.modes.adultsNote : C.modes[value].hint}</p>
+      <p className="text-muted text-[14px]">{note}</p>
     </div>
   );
 }
@@ -273,6 +303,8 @@ export function AdultRound({
   const [players, setPlayers] = useState(false);
   const [kick, setKick] = useState<MatchPlayerView | null>(null);
   const r = view.party;
+  // The room's mode names the round: a Family Draw round is a Draw It round with picks.
+  const title = modeName(view.mode === "race" ? (r?.mode ?? "draw") : view.mode);
   const refresh = () => qc.invalidateQueries({ queryKey: matchKey(view.id) });
   const post = <T,>(action: string, json: unknown) => api<T>(`/api/v1/rooms/${code}/party/${action}`, { json });
   if (!r) return null;
@@ -304,11 +336,11 @@ export function AdultRound({
     }
   };
   return (
-    <div className="flex flex-1 flex-col pb-[max(20px,env(safe-area-inset-bottom))]" data-screen-label={`${modeName(r.mode)} round`}>
+    <div className="flex flex-1 flex-col pb-[max(20px,env(safe-area-inset-bottom))]" data-screen-label={`${title} round`}>
       <div className="flex items-center gap-3 px-4 pt-[max(52px,env(safe-area-inset-top))]">
         <TopButton icon="x" label={C.round.leave} onClick={onLeave} />
         <div className="flex min-w-0 flex-1 flex-col">
-          <span className="font-display truncate text-[18px] font-extrabold">{modeName(r.mode)}</span>
+          <span className="font-display truncate text-[18px] font-extrabold">{title}</span>
           <span className="text-muted text-[14px] font-medium">{C.round.of(r.round, r.rounds)}</span>
         </div>
         <TopButton icon="users" label={C.round.players} onClick={() => setPlayers(true)} />
@@ -441,7 +473,13 @@ function DrawIt({ view, r, isLead, name, post, refresh, onToast, onReport, chann
         ink={{ channel, me: view.me, leadId: r.leadId, live: r.phase === "play" && !isLead }}
       />
       {drawing && <p className="text-muted text-[14px]">{C.draw.youDraw}</p>}
-      {!isLead && !revealed && <GuessBox r={r} post={post} refresh={refresh} onToast={onToast} />}
+      {!isLead &&
+        !revealed &&
+        (r.options ? (
+          <PickBox r={r} post={post} refresh={refresh} onToast={onToast} />
+        ) : (
+          <GuessBox r={r} post={post} refresh={refresh} onToast={onToast} />
+        ))}
       <Feed view={view} r={r} name={name} onReport={onReport} />
     </>
   );
@@ -772,6 +810,68 @@ function GuessBox({ r, post, refresh, onToast }: Pick<RoundProps, "r" | "post" |
   );
 }
 
+/**
+ * Family Draw (16+): the guesser picks the word from the round's four preset options, once. Real buttons, the word
+ * as each one's name; nothing is typed. The server judges the pick and closes the round once everyone has picked.
+ */
+function PickBox({ r, post, refresh, onToast }: Pick<RoundProps, "r" | "post" | "refresh" | "onToast">) {
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  if (r.iCorrect)
+    return (
+      <p className="bg-surface text-accent flex min-h-12 items-center gap-2 rounded-[16px] px-4 text-[16px] font-semibold" role="status">
+        <Icon name="check" size={18} />
+        {C.draw.gotIt}
+      </p>
+    );
+  if (r.myPick !== null)
+    return (
+      <p className="bg-surface text-muted flex min-h-12 items-center gap-2 rounded-[16px] px-4 text-[16px] font-semibold" role="status">
+        <Icon name="hourglass" size={18} />
+        {C.draw.pickedWrong}
+      </p>
+    );
+  const pick = async (i: number) => {
+    setBusy(true);
+    setErr(null);
+    try {
+      const res = await post<{ result: "correct" | "wrong" }>("pick", { round: r.round, pick: i });
+      onToast(res.result === "correct" ? C.draw.gotIt : C.draw.picked, res.result === "correct" ? "pass" : "info");
+      await refresh();
+    } catch (e) {
+      setErr(adultErrorText(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="flex flex-col gap-1.5">
+      <p id="party-pick-label" className="text-[15px] font-semibold">
+        {C.draw.pickLabel}
+      </p>
+      <div className="grid grid-cols-2 gap-2" role="group" aria-labelledby="party-pick-label">
+        {(r.options ?? []).map((w, i) => (
+          <button
+            key={w}
+            type="button"
+            disabled={busy}
+            onClick={() => void pick(i)}
+            aria-label={C.draw.pickSay(w)}
+            className="press bg-surface-raised min-h-12 rounded-[14px] px-3 text-[16px] font-semibold capitalize shadow-[0_4px_0_var(--depth)] disabled:opacity-60"
+          >
+            {w}
+          </button>
+        ))}
+      </div>
+      {err && (
+        <p role="alert" className="text-[14px] text-[var(--danger)]">
+          {err}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function Feed({ view, r, name, onReport }: Pick<RoundProps, "view" | "r" | "name" | "onReport">) {
   if (!r.guesses.length) return null;
   return (
@@ -955,6 +1055,10 @@ function WriteForm({ r, post, refresh, onToast }: Pick<RoundProps, "r" | "post" 
 }
 
 /** Mode line for the lobby card. */
-export function adultLobbyLine(mode: AdultMode) {
-  return { icon: mode === "draw" ? "paint-brush" : "question", title: C.lobby.line(C.modes[mode].name), sub: C.lobby.sub };
+export function adultLobbyLine(mode: TurnMode) {
+  return {
+    icon: mode === "truths" ? "question" : mode === "drawfam" ? "scribble-loop" : "paint-brush",
+    title: C.lobby.line(C.modes[mode].name),
+    sub: mode === "drawfam" ? C.lobby.subFamily : C.lobby.sub,
+  };
 }

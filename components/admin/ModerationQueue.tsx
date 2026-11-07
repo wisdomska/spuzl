@@ -527,9 +527,11 @@ function ReportCase({
   );
 }
 
-/** 18+ party content as the room saw it: the drawing (strokes only), the statements or the guess. */
+/** Party content (18+ rooms and the 16+ Family Draw) as the room saw it: the drawing (strokes only), the statements or the guess. */
 interface PartySnapshot {
   mode?: string;
+  /** the room's mode when it differs from the round's (R2-P5: "drawfam", Family Draw for 16+) */
+  room?: string;
   kind?: string;
   code?: string | null;
   round?: number;
@@ -545,7 +547,8 @@ function PartySnapshotView({ s }: { s: PartySnapshot }) {
   return (
     <div className="bg-bg flex flex-col gap-1.5 rounded-[10px] p-3 text-[13px]">
       <span className="num text-muted text-[12px] font-semibold">
-        {P.snapshot}: {P.modes[s.mode ?? ""] ?? s.mode} {P.kinds[s.kind ?? ""]?.toLowerCase() ?? ""}, {P.room(s.code ?? null, s.round ?? 0)}
+        {P.snapshot}: {P.modes[s.room === "drawfam" ? "drawfam" : (s.mode ?? "")] ?? s.mode} {P.kinds[s.kind ?? ""]?.toLowerCase() ?? ""},{" "}
+        {P.room(s.code ?? null, s.round ?? 0)}
       </span>
       {s.word && <span className="text-muted">{P.word(s.word)}</span>}
       {s.text !== undefined && <p className="bg-surface rounded-[8px] px-2.5 py-2 text-[14px] font-medium break-words">{s.text}</p>}

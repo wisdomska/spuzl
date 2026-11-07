@@ -156,7 +156,7 @@ export const adminCopy = {
     },
     party: {
       kinds: { drawing: "Drawing", statements: "Statements", guess: "Guess" } as Record<string, string>,
-      modes: { draw: "Draw It", truths: "Two Truths" } as Record<string, string>,
+      modes: { draw: "Draw It", truths: "Two Truths", drawfam: "Family Draw (16+)" } as Record<string, string>,
       snapshot: "What was shown",
       word: (w: string) => `Secret word: ${w}`,
       lie: "lie",
@@ -172,7 +172,7 @@ export const adminCopy = {
   content: {
     title: "Content",
     views: "Content views",
-    tabs: { items: "Written items", files: "content.ts review" },
+    tabs: { items: "Written items", files: "content.ts review", drawit: "Family Draw words" },
     newItem: "New item",
     emptyItems: "No written items yet.",
     itemsHead: ["Game", "Item", "Status", "Author", "Updated"],
@@ -239,6 +239,28 @@ export const adminCopy = {
       imported: (n: number) => `Imported ${n} ${n === 1 ? "puzzle" : "puzzles"} as drafts.`,
       nothing: "No Quads items to export with these filters.",
       fix: "Fix these and import again. Nothing was saved.",
+    },
+    /** Family Draw (16+ Draw It) words: preview, JSON export and a pack check (R2-P5). */
+    drawit: {
+      title: "Family Draw words",
+      intro: (n: number) =>
+        `${n} preset words for Draw It in 16+ rooms (setting "party.familyDraw"). Guessers pick the word from four, so nobody types. Each word and its other names pass the party text filter.`,
+      search: "Find a word",
+      count: (shown: number, total: number) => (shown === total ? `${total} words` : `${shown} of ${total} words`),
+      also: (names: string) => `also ${names}`,
+      tools: "Family Draw word packs",
+      toolsHint:
+        "Export the word list as JSON, or paste a pack to check it: every problem is listed, and a pack that passes shows the words it adds and drops. The list ships in lib/party-adult/content.ts, so hand a checked pack to a developer.",
+      exportPack: "Export words JSON",
+      importPack: "Check a words pack",
+      importLabel: "Paste a Family Draw words pack",
+      importGo: "Check the pack",
+      exported: (n: number) => `Exported ${n} words.`,
+      checked: (n: number, added: string[], dropped: string[]) =>
+        `The pack is fine: ${n} words.${added.length ? ` Adds ${added.join(", ")}.` : ""}${dropped.length ? ` Drops ${dropped.join(", ")}.` : ""}${
+          !added.length && !dropped.length ? " Same words as now." : ""
+        }`,
+      fix: "Fix these and check again.",
     },
     /** Two Truths and a Lie rounds: preview and JSON packs (R2-P5). */
     twotruths: {

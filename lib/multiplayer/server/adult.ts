@@ -7,8 +7,18 @@ import { getGameSettings } from "@/lib/game-settings/server";
 import { adultPartyCopy } from "@/lib/copy/adult-party";
 import { adultPartyRefusal } from "@/lib/party-adult/gate";
 import { DRAW_WORDS, type DrawWord } from "@/lib/party-adult/content";
+import { FAMILY_DRAW_WORDS, familyDrawRefusal, familyOptions } from "@/lib/party-adult/family";
 import { TEXT_MAX, cleanText, partyTextProblem, type PartyTextKind } from "@/lib/party-adult/filter";
-import { isAdultMode, leadFor, roundsFor, type AdultMode, type PartyMode } from "@/lib/party-adult/modes";
+import {
+  isAdultMode,
+  isFamilyDraw,
+  isTurnMode,
+  leadFor,
+  roundModeOf,
+  roundsFor,
+  type AdultMode,
+  type PartyMode,
+} from "@/lib/party-adult/modes";
 import { addAwards, checkGuess, drawAwards, placesOf, truthsAwards, wordShape, type Awards } from "@/lib/party-adult/scoring";
 import { STROKE_LIMITS, fitsDrawing, pointsIn, type Stroke } from "@/lib/party-adult/strokes";
 import { TIMING } from "../constants";
@@ -19,17 +29,22 @@ import { commit, liveCountdownMs, loadMatch, matchTopic, type Loaded, type Match
 import { finalizeAdult } from "./rewards";
 
 /**
- * Draw It and Two Truths on the server (18+ party modes). Rooms are ordinary Party rooms (matches with
- * party_mode 'draw' or 'truths'); each round lives in party_rounds (server only). Every action checks the
- * age gate, the player's role in the round and the round's phase and clock; free text passes the party text
- * filter. Text and strokes are wiped when the round closes; reports keep a snapshot.
+ * Draw It and Two Truths on the server (18+ party modes), and Draw It for 16+ (R2-P5, party_mode 'drawfam': preset
+ * words, guessers pick one of four, no free text). Rooms are ordinary Party rooms (matches with party_mode 'draw',
+ * 'truths' or 'drawfam'); each round lives in party_rounds (server only; a 16+ round is a 'draw' round with
+ * `options`). Every action checks the room's gate (18+ or 16+), the player's role in the round and the round's
+ * phase and clock; free text passes the party text filter. Text and strokes are wiped when the round closes;
+ * reports keep a snapshot.
  */
 
 const iso = (n: number) => new Date(n).toISOString();
 const ms = (s: string | null | undefined) => (s ? Date.parse(s) : null);
 
 export const modeOf = (m: Pick<MatchRow, "party_mode">): PartyMode => m.party_mode ?? "race";
+/** An 18+ room (Draw It or Two Truths with free text). */
 export const isAdultRoom = (m: Pick<MatchRow, "party_mode">) => isAdultMode(modeOf(m));
+/** A turn-based party room (18+ or the 16+ Draw It): rounds in party_rounds, no puzzle, TV mode or classroom. */
+export const isTurnRoom = (m: Pick<MatchRow, "party_mode">) => isTurnMode(modeOf(m));
 
 /* ---------------- Gate ---------------- */
 
@@ -51,6 +66,27 @@ export async function requireAdult(admin: SupabaseClient, user: User, player: Pl
   return { noticeAt: data.adult_notice_at };
 }
 
+/**
+ * The 16+ gate for Draw It with preset words (lib/party-adult/family.ts): switch on, signed in with an account, 16+,
+ * not blocked after an upheld party report. Throws a 403 otherwise.
+ */
+export async function requireFamilyDraw(admin: SupabaseClient, user: User, player: PlayerCtx["player"]) {
+  const enabled = (await getGameSettings())["party.familyDraw"];
+  const guest = player.is_guest || !!user.is_anonymous;
+  const early = familyDrawRefusal({ ageBand: player.age_band, guest }, enabled);
+  if (early) throw refuse(early);
+  const { data, error } = await admin.from("players").select("adult_party_blocked_until").eq("id", player.id).single();
+  if (error) throw error;
+  const blocked = familyDrawRefusal({ ageBand: player.age_band, guest, blockedUntil: data.adult_party_blocked_until }, enabled);
+  if (blocked) throw refuse(blocked);
+}
+
+/** The gate of a turn-based room's mode: 18+ for Draw It and Two Truths, 16+ for Draw It with preset words. */
+export async function requirePartyMode(admin: SupabaseClient, user: User, player: PlayerCtx["player"], mode: PartyMode) {
+  if (isFamilyDraw(mode)) return requireFamilyDraw(admin, user, player);
+  if (isAdultMode(mode)) return requireAdult(admin, user, player);
+}
+
 /** Records the one-time "Adults only" notice, or refuses to open a room until it is confirmed. */
 export async function confirmNotice(admin: SupabaseClient, playerId: string, noticeAt: string | null, confirmed: boolean) {
   if (noticeAt) return;
@@ -70,6 +106,8 @@ export interface PartyRoundRow {
   mode: AdultMode;
   lead_id: string | null;
   word: string | null;
+  /** 16+ Draw It: the four words guessers pick from (the word among them); null otherwise */
+  options?: string[] | null;
   statements: string[] | null;
   lie: number | null;
   strokes: Stroke[];
@@ -104,26 +142,34 @@ async function getRound(admin: SupabaseClient, m: MatchRow): Promise<PartyRoundR
 }
 
 /** A word not drawn yet this set, picked with server randomness (never derivable from the room id). */
-async function freshWord(admin: SupabaseClient, m: MatchRow): Promise<string> {
+async function freshWord(admin: SupabaseClient, m: MatchRow, list: readonly DrawWord[] = DRAW_WORDS): Promise<string> {
   const { data } = await admin.from("party_rounds").select("word").eq("match_id", m.id).eq("set_no", m.set_no);
   const used = new Set((data ?? []).map((r) => r.word));
-  const left = DRAW_WORDS.filter((w) => !used.has(w.word));
-  const pool = left.length ? left : DRAW_WORDS;
+  const left = list.filter((w) => !used.has(w.word));
+  const pool = left.length ? left : list;
   return pool[randomInt(0, pool.length)].word;
 }
+
+/** Server randomness for the 16+ options' order and decoys. */
+const rand = (n: number) => randomInt(0, n);
 
 /** The current round's row, created once (concurrent callers get the same row). */
 async function ensureRound(admin: SupabaseClient, m: MatchRow, startAt: number): Promise<PartyRoundRow | null> {
   const have = await getRound(admin, m);
   if (have) return have;
-  const mode = modeOf(m);
-  if (!isAdultMode(mode)) return null;
+  const roomMode = modeOf(m);
+  if (!isTurnMode(roomMode)) return null;
+  const mode = roundModeOf(roomMode);
+  const family = isFamilyDraw(roomMode);
   const t = await timings();
+  const word = mode === "draw" ? await freshWord(admin, m, family ? FAMILY_DRAW_WORDS : DRAW_WORDS) : null;
   const row = {
     ...roundKey(m),
     mode,
     lead_id: leadFor(m.party_leads, m.round),
-    word: mode === "draw" ? await freshWord(admin, m) : null,
+    word,
+    // 16+ rooms: guessers pick from four preset words (nobody types)
+    ...(family && word ? { options: familyOptions(word, rand) } : {}),
     phase: mode === "draw" ? "play" : "write",
     started_at: iso(startAt),
     phase_ends_at: iso(startAt + (mode === "draw" ? t.drawMs : t.writeMs)),
@@ -213,13 +259,16 @@ export async function resolveAdult(admin: SupabaseClient, l: Loaded): Promise<bo
     if (r.mode === "draw") {
       const { data: g } = await admin
         .from("party_guesses")
-        .select("player_id, elapsed_ms")
+        .select("player_id, elapsed_ms, correct, pick")
         .eq("match_id", m.id)
         .eq("set_no", m.set_no)
-        .eq("round", m.round)
-        .eq("correct", true);
-      const correct = (g ?? []).map((x) => ({ playerId: x.player_id as string, elapsedMs: x.elapsed_ms as number }));
-      const all = others.every((p) => correct.some((c) => c.playerId === p.player_id));
+        .eq("round", m.round);
+      const correct = (g ?? [])
+        .filter((x) => x.correct)
+        .map((x) => ({ playerId: x.player_id as string, elapsedMs: x.elapsed_ms as number }));
+      // 16+ rooms: one pick each, so the round is done once everyone has picked, right or not.
+      const done = r.options ? (g ?? []).filter((x) => x.pick !== null).map((x) => x.player_id as string) : correct.map((c) => c.playerId);
+      const all = others.every((p) => done.includes(p.player_id));
       if (now >= ends || leadGone || all) changed = await reveal(drawAwards(r.lead_id, correct, ends - Date.parse(r.started_at)));
     } else {
       const { data: v } = await admin
@@ -321,20 +370,20 @@ export async function clearRounds(admin: SupabaseClient, matchId: string) {
 
 export async function adultRoundView(admin: SupabaseClient, l: Loaded, me: string): Promise<AdultRoundView | null> {
   const { m } = l;
-  if (m.status !== "playing" || !isAdultRoom(m)) return null;
+  if (m.status !== "playing" || !isTurnRoom(m)) return null;
   const r = await getRound(admin, m);
   if (!r) return null;
   const [{ data: g }, { data: v }] = await Promise.all([
     r.mode === "draw"
       ? admin
           .from("party_guesses")
-          .select("id, player_id, text, correct")
+          .select("id, player_id, text, correct, pick")
           .eq("match_id", m.id)
           .eq("set_no", m.set_no)
           .eq("round", m.round)
           .order("id", { ascending: false })
           .limit(60)
-      : Promise.resolve({ data: [] as { id: number; player_id: string; text: string | null; correct: boolean }[] }),
+      : Promise.resolve({ data: [] as { id: number; player_id: string; text: string | null; correct: boolean; pick: number | null }[] }),
     r.mode === "truths"
       ? admin.from("party_votes").select("player_id, pick").eq("match_id", m.id).eq("set_no", m.set_no).eq("round", m.round)
       : Promise.resolve({ data: [] as { player_id: string; pick: number }[] }),
@@ -342,6 +391,8 @@ export async function adultRoundView(admin: SupabaseClient, l: Loaded, me: strin
   const lead = r.lead_id === me;
   const revealed = r.phase === "reveal" || r.phase === "done";
   const votes = (v ?? []).map((x) => ({ playerId: x.player_id as string, pick: x.pick as number }));
+  // 16+ Draw It: this player's pick (one per round)
+  const myOption = (g ?? []).find((x) => x.player_id === me && x.pick !== null && x.pick !== undefined)?.pick ?? null;
   const guesses = (g ?? [])
     .map((x) => ({ id: Number(x.id), playerId: x.player_id as string, text: (x.text as string | null) ?? null, correct: !!x.correct }))
     .filter((x) => x.correct || x.text !== null)
@@ -360,7 +411,8 @@ export async function adultRoundView(admin: SupabaseClient, l: Loaded, me: strin
     guesses,
     statements: r.phase === "write" ? null : r.statements,
     lie: revealed || lead ? r.lie : null,
-    myPick: votes.find((x) => x.playerId === me)?.pick ?? null,
+    myPick: r.options ? (myOption as number | null) : (votes.find((x) => x.playerId === me)?.pick ?? null),
+    options: r.options ?? null,
     voters: votes.map((x) => x.playerId),
     votes: revealed ? votes : null,
     awards: revealed ? (r.awards ?? {}) : null,
@@ -383,7 +435,8 @@ async function liveRound(admin: SupabaseClient, matchId: string, playerId: strin
   const me = l.players.find((p) => p.player_id === playerId);
   if (!me || me.left_at) throw new ApiError(403, "not_in_match");
   if (me.spectator) throw new ApiError(403, "spectator");
-  if (modeOf(l.m) !== mode) throw new ApiError(409, "wrong_mode");
+  const roomMode = modeOf(l.m);
+  if (!isTurnMode(roomMode) || roundModeOf(roomMode) !== mode) throw new ApiError(409, "wrong_mode");
   if (l.m.status !== "playing" || l.m.round !== round) throw refuse("round_closed", 409);
   const start = ms(l.m.round_started_at);
   if (start === null || l.now < start) throw new ApiError(409, "too_early");
@@ -444,6 +497,8 @@ const wordEntry = (word: string): DrawWord => DRAW_WORDS.find((w) => w.word === 
 export async function guess(admin: SupabaseClient, matchId: string, playerId: string, input: { round: number; text: string }) {
   const text = checkedText(input.text, "guess");
   const { l, r } = await liveRound(admin, matchId, playerId, input.round, "draw");
+  // 16+ rooms take picks only: nobody types there.
+  if (isFamilyDraw(modeOf(l.m)) || r.options) throw new ApiError(409, "wrong_mode");
   if (r.lead_id === playerId || !l.m.party_leads.includes(playerId)) throw refuse("not_your_turn");
   if (!open(r, "play")) throw refuse("round_closed", 409);
   const result = checkGuess(text, wordEntry(r.word ?? ""));
@@ -462,6 +517,35 @@ export async function guess(admin: SupabaseClient, matchId: string, playerId: st
   await changed(l.m.id, "guess");
   if (result === "correct") await resolveAdult(admin, await loadMatch(admin, matchId));
   return { result };
+}
+
+/**
+ * 16+ Draw It: a guesser picks one of the round's four preset words, once. Right picks score like a right guess
+ * (by speed); the round closes once every guesser has picked. Nothing typed is ever stored.
+ */
+export async function pickWord(admin: SupabaseClient, matchId: string, playerId: string, input: { round: number; pick: number }) {
+  const { l, r } = await liveRound(admin, matchId, playerId, input.round, "draw");
+  if (!isFamilyDraw(modeOf(l.m)) || !r.options) throw new ApiError(409, "wrong_mode");
+  if (r.lead_id === playerId || !l.m.party_leads.includes(playerId)) throw refuse("not_your_turn");
+  if (!open(r, "play")) throw refuse("round_closed", 409);
+  const picked = r.options[input.pick];
+  if (picked === undefined) throw new ApiError(400, "bad_pick");
+  const correct = picked === r.word;
+  const { error } = await admin.from("party_guesses").insert({
+    match_id: l.m.id,
+    set_no: l.m.set_no,
+    round: l.m.round,
+    player_id: playerId,
+    text: null,
+    pick: input.pick,
+    correct,
+    elapsed_ms: Math.max(0, Date.now() - Date.parse(r.started_at)),
+  });
+  if (error?.code === "23505") throw refuse("already_picked", 409);
+  if (error) throw error;
+  await changed(l.m.id, "guess");
+  await resolveAdult(admin, await loadMatch(admin, matchId));
+  return { result: correct ? ("correct" as const) : ("wrong" as const) };
 }
 
 export async function writeStatements(
@@ -552,6 +636,8 @@ export async function reportContent(
   if (!target) throw refuse("content_gone", 410);
   if (target === reporterId) throw new ApiError(400, "self");
   const ref = `${matchId}:${l.m.set_no}:${input.round}:${input.kind}:${input.guessId ?? ""}`;
+  // 16+ rooms (R2-P5) report through the same path; the snapshot says which room kind it came from.
+  const roomMode = modeOf(l.m);
   const { data: dup } = await admin
     .from("reports")
     .select("id")
@@ -571,6 +657,7 @@ export async function reportContent(
     snapshot: {
       ref,
       mode: round.mode,
+      room: roomMode,
       kind: input.kind,
       code: l.m.code,
       matchId,
@@ -585,9 +672,9 @@ export async function reportContent(
   return { ok: true };
 }
 
-/** Host removes a player from an 18+ room. They leave at once and can't rejoin this room. */
+/** Host removes a player from a turn-based room (18+ or 16+). They leave at once and can't rejoin this room. */
 export async function kick(admin: SupabaseClient, l: Loaded, hostId: string, targetId: string) {
-  if (!isAdultRoom(l.m)) throw new ApiError(409, "not_adult_room");
+  if (!isTurnRoom(l.m)) throw new ApiError(409, "not_adult_room");
   if (l.m.host_id !== hostId) throw new ApiError(403, "host_only");
   if (targetId === hostId) throw new ApiError(400, "self");
   const t = l.players.find((p) => p.player_id === targetId);
@@ -600,8 +687,8 @@ export async function kick(admin: SupabaseClient, l: Loaded, hostId: string, tar
 }
 
 /**
- * A moderator actioned a party-content report: block the player from 18+ rooms for the configured days and
- * take them out of any 18+ room they are in now.
+ * A moderator actioned a party-content report: block the player from 18+ rooms (and the 16+ Draw It) for the
+ * configured days and take them out of any such room they are in now.
  */
 export async function blockFromAdultParty(db: SupabaseClient, playerId: string): Promise<string> {
   const days = (await getGameSettings())["adultParty.blockDays"];

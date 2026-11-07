@@ -213,6 +213,13 @@ export const SETTINGS = {
     help: "Adds Draw It and Two Truths to Party for signed-in players whose age band is 18+. Players type and draw freely, so every line passes the text filter and has a Report button (Moderation, Party content tab). Off: the modes are hidden from everyone and the server refuses them, including rooms already open.",
     default: false,
   },
+  "party.familyDraw": {
+    kind: "bool",
+    group: "Features",
+    label: "Draw It for 16+ (preset words, pick the word)",
+    help: "Adds Draw It to Party for signed-in players aged 16 and over: a family-safe word list (preview and export it on the Content page) and guessing by picking one of four words, so nobody types. Drawings still have a Report button (Moderation, Party content tab), and an upheld report keeps the drawer out of party drawing rooms. Under-16s never see it. Timings and rewards are the 18+ party games' settings. Off: hidden from everyone and refused by the server, including rooms already open.",
+    default: false,
+  },
   "adultParty.drawSec": {
     kind: "int",
     group: "18+ party games",

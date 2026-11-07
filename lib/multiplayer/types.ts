@@ -88,7 +88,7 @@ export interface MatchView {
   reward: { xp: number; sparks: number } | null;
   /** Duels with a person: your all-time record against them (this duel included once it's over); null otherwise */
   h2h?: { me: number; them: number; draws: number; played: number } | null;
-  /** Party mode: "race" (puzzles) or an 18+ party game ("draw", "truths") */
+  /** Party mode: "race" (puzzles), an 18+ party game ("draw", "truths") or Draw It for 16+ ("drawfam", R2-P5) */
   mode: PartyMode;
   /** the current 18+ party round as you may see it; null in races and outside a round */
   party: AdultRoundView | null;
@@ -117,7 +117,10 @@ export interface AdultRoundView {
   statements: string[] | null;
   /** the lie's index (writer always; everyone at the reveal) */
   lie: number | null;
+  /** Two Truths: this player's vote; 16+ Draw It: their pick from `options` */
   myPick: number | null;
+  /** 16+ Draw It (R2-P5): the four preset words guessers pick from; null in 18+ rooms (typed guesses) */
+  options: string[] | null;
   /** who has voted; picks only at the reveal */
   voters: string[];
   votes: { playerId: string; pick: number }[] | null;

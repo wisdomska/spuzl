@@ -14,8 +14,8 @@ import { liveCountdownMs, loadMatch, matchTopic, member, touch, viewOf } from ".
 import { readRating } from "./rewards";
 import { knownGames } from "./known";
 import { GAME_BY_ID } from "@/lib/catalog";
-import { isAdultMode, type PartyMode } from "@/lib/party-adult/modes";
-import { clearRounds, isAdultRoom, startAdult } from "./adult";
+import { isTurnMode, type PartyMode } from "@/lib/party-adult/modes";
+import { clearRounds, isTurnRoom, modeOf, startAdult } from "./adult";
 import { requireLivePlay } from "./liveGate";
 import { joinStateFor, requireMayJoin } from "./joinRequests";
 import { recordDuelCreated } from "@/lib/analytics/server";
@@ -266,12 +266,12 @@ export interface RoomInput {
   difficulty: "easy" | "medium" | "hard" | "expert";
   maxPlayers: number;
   classroom: boolean;
-  /** "race" (default) or an 18+ party game; the route checks the age gate before an 18+ room is opened */
+  /** "race" (default) or a turn-based party game; the route checks its gate (18+, or 16+ for "drawfam") first */
   mode?: PartyMode;
 }
 
 export async function createRoom(admin: SupabaseClient, playerId: string, input: RoomInput) {
-  if (isAdultMode(input.mode)) {
+  if (isTurnMode(input.mode)) {
     // Draw It and Two Truths: no puzzle, no classroom; everyone takes a turn.
     const row = await insertWithCode(admin, {
       kind: "race",
@@ -317,10 +317,11 @@ export async function roomMatch(admin: SupabaseClient, code: string) {
 }
 
 /**
- * Age gate for 18+ rooms (Draw It, Two Truths), passed in by the routes: it runs before anything about such a
- * room is shown or changed, so a player who may not see these modes gets a 403 and nothing else.
+ * Age gate for turn-based rooms (18+ Draw It and Two Truths, 16+ Draw It), passed in by the routes with the room's
+ * mode: it runs before anything about such a room is shown or changed, so a player who may not see that mode gets
+ * a 403 and nothing else.
  */
-export type AdultGate = () => Promise<unknown>;
+export type AdultGate = (mode: PartyMode) => Promise<unknown>;
 
 const denyAdult = async () => {
   throw new ApiError(403, "adults_only");
@@ -329,7 +330,7 @@ const denyAdult = async () => {
 /** Public lobby card for someone holding a code (before joining). */
 export async function roomPreview(admin: SupabaseClient, code: string, playerId: string, gate?: AdultGate) {
   const m = await roomMatch(admin, code);
-  if (isAdultRoom(m)) await (gate ?? denyAdult)();
+  if (isTurnRoom(m)) await (gate ?? denyAdult)(modeOf(m));
   const l = await loadMatch(admin, m.id);
   const mine = l.players.find((p) => p.player_id === playerId && !p.left_at);
   if (mine) return { member: true as const, view: await viewOf(admin, l, playerId) };
@@ -358,8 +359,8 @@ export async function roomPreview(admin: SupabaseClient, code: string, playerId:
 
 export async function joinRoom(admin: SupabaseClient, playerId: string, code: string, gate?: AdultGate) {
   const m = await roomMatch(admin, code);
-  // Join-time enforcement: an 18+ room only ever holds signed-in 18+ players.
-  if (isAdultRoom(m)) await (gate ?? denyAdult)();
+  // Join-time enforcement: an 18+ room only ever holds signed-in 18+ players, a 16+ room signed-in 16+ players.
+  if (isTurnRoom(m)) await (gate ?? denyAdult)(modeOf(m));
   const l = await loadMatch(admin, m.id);
   const existing = l.players.find((p) => p.player_id === playerId);
   if (existing?.kicked_at) throw new ApiError(403, "kicked", "The host removed you from this room.");
@@ -400,7 +401,7 @@ export async function setReady(admin: SupabaseClient, playerId: string, code: st
 export async function roomSettings(admin: SupabaseClient, playerId: string, code: string, s: Partial<RoomInput>) {
   const l = await roomForHost(admin, code, playerId, true);
   if (l.m.status !== "lobby") throw new ApiError(409, "not_lobby");
-  if (isAdultRoom(l.m)) throw new ApiError(409, "no_settings");
+  if (isTurnRoom(l.m)) throw new ApiError(409, "no_settings");
   if (s.game && !isRaceGame(s.game)) throw new ApiError(400, "game_not_raceable");
   if (s.games?.some((g) => !isRaceGame(g))) throw new ApiError(400, "game_not_raceable");
   const patch: Record<string, unknown> = {};
@@ -420,7 +421,7 @@ export async function startRoom(admin: SupabaseClient, playerId: string, code: s
   if (racers.length < PARTY_MIN) throw new ApiError(409, "need_players", "Two Spuzlers make a race. Share the code.");
   const waiting = racers.find((p) => !p.ready);
   if (waiting) throw new ApiError(409, "not_ready", `${waiting.players?.nickname ?? "Someone"} is still getting ready.`);
-  if (isAdultRoom(l.m)) {
+  if (isTurnRoom(l.m)) {
     await startAdult(admin, l);
     return { ok: true };
   }
@@ -477,7 +478,7 @@ export async function nextGame(admin: SupabaseClient, playerId: string, code: st
 export async function runItBack(admin: SupabaseClient, playerId: string, code: string) {
   const l = await roomForHost(admin, code, playerId, true);
   if (l.m.status !== "finished" && l.m.status !== "round_end") throw new ApiError(409, "not_finished");
-  if (isAdultRoom(l.m)) await clearRounds(admin, l.m.id);
+  if (isTurnRoom(l.m)) await clearRounds(admin, l.m.id);
   await admin
     .from("match_players")
     .update({ ready: false, points: 0, place: null, progress: 0, mistakes: 0, finished_ms: null, state: null })

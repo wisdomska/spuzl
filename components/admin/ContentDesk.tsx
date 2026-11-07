@@ -11,6 +11,7 @@ import { adminCopy } from "@/lib/copy/admin";
 import { Pagination, usePager, type Pager } from "./Pagination";
 import { QuadsEditor, QuadsPackPanel, QuadsPreview } from "./QuadsEditor";
 import { TruthsPackPanel, TruthsPreview } from "./TruthsEditor";
+import { DrawWordsPanel } from "./DrawWordsPanel";
 import { SortHead, type HeadCol } from "./SortHeader";
 import { useUrlFilters, useUrlSort } from "./useUrlFilters";
 import { Btn, Empty, Field, Notice, PageTitle, Pill, RowsSkeleton, Swatch, Tabs, inputCls, textareaCls, type PillTone } from "./ui";
@@ -53,7 +54,7 @@ const E = C.editorPanel;
 const { common } = adminCopy;
 const FILTERS = { tab: "items", status: "", game: "", show: "todo" } as const;
 const ALLOWED = {
-  tab: ["items", "files"],
+  tab: ["items", "files", "drawit"],
   status: ["draft", "in_review", "approved", "rejected", "scheduled"],
   game: CONTENT_GAMES,
   show: ["todo", "all"],
@@ -69,7 +70,7 @@ const ITEM_COLS: HeadCol<(typeof CONTENT_SORT.keys)[number]>[] = [
 /** Content editor (FR-AD-03): drafts, two-person review, scheduling, and the owner's review of content.ts entries. */
 export function ContentDesk(props: { canWrite: boolean; canApprove: boolean; canSchedule: boolean; isOwner: boolean }) {
   const [filters, setFilters] = useUrlFilters(FILTERS, ALLOWED);
-  const tab = filters.tab as "items" | "files";
+  const tab = filters.tab as "items" | "files" | "drawit";
   const pager = usePager();
   return (
     <div className="flex flex-col gap-3.5 px-6 py-5">
@@ -83,11 +84,18 @@ export function ContentDesk(props: { canWrite: boolean; canApprove: boolean; can
             items={[
               { id: "items", label: C.tabs.items },
               { id: "files", label: C.tabs.files },
+              { id: "drawit", label: C.tabs.drawit },
             ]}
           />
         }
       />
-      {tab === "items" ? <Items {...props} pager={pager} /> : <FileReview isOwner={props.isOwner} pager={pager} />}
+      {tab === "items" ? (
+        <Items {...props} pager={pager} />
+      ) : tab === "drawit" ? (
+        <DrawWordsPanel />
+      ) : (
+        <FileReview isOwner={props.isOwner} pager={pager} />
+      )}
     </div>
   );
 }
