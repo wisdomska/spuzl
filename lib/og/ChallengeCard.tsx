@@ -143,6 +143,20 @@ export function ChallengeCardOG({
       >
         {c.big}
       </div>
+      <div
+        style={{
+          position: "relative",
+          display: "flex",
+          marginTop: 24 * s,
+          fontFamily: "Geist",
+          fontWeight: 600,
+          fontSize: 48 * s,
+          textAlign: "center",
+          justifyContent: "center",
+        }}
+      >
+        {c.line}
+      </div>
       <div style={{ position: "relative", display: "flex", marginTop: "auto" }}>
         <Dare c={c} fs={88 * s} />
       </div>

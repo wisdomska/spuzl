@@ -29,6 +29,10 @@ export async function clearAndChallenge(page: Page): Promise<string> {
   await page.evaluate(() => Object.defineProperty(navigator, "share", { value: undefined, configurable: true }));
   const made = page.waitForResponse((r) => r.url().endsWith("/api/v1/challenges") && r.request().method() === "POST");
   await bar.getByRole("button", { name: "Challenge" }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: /Beat my time/ })
+    .click();
   return ((await (await made).json()) as { code: string }).code;
 }
 

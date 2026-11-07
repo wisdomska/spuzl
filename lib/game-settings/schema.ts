@@ -153,6 +153,13 @@ export const SETTINGS = {
     help: '"Beat my time" links to the exact puzzle of a clear, with a link preview image (game, time, the sender\'s hatted Spuz, "Beat me") and "Send it back" on the result. Links last 7 days. Off: the buttons are hidden, the server refuses new and open challenges, and preview images stop.',
     default: true,
   },
+  "features.storyCards": {
+    kind: "bool",
+    group: "Features",
+    label: "Story cards (9:16)",
+    help: 'Share from a clear makes a 1080 × 1920 story card: Spuz in the player\'s equipped hat, the time, hints and slips, and "Beat me" with a short link to a challenge on the same puzzle (made on the server when the player shares). Needs Friend challenges on. Off: Share uses the older Daily cards and the story image stops.',
+    default: true,
+  },
   "features.seasonal": {
     kind: "bool",
     group: "Features",

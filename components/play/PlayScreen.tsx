@@ -35,10 +35,9 @@ import { SaveStreakPrompt } from "@/components/meta/SaveStreakPrompt";
 import { PhotosensitivityNotice } from "./PhotosensitivityNotice";
 import { finishOrQueue } from "@/lib/offline/queue";
 import { OfflineBanner } from "@/components/pwa/OfflineBanner";
-import { ShareSheet } from "@/components/share/ShareSheet";
+import { useClearShare } from "@/components/share/ClearShare";
 import { dailyShareText } from "@/lib/share/text";
-import { cardUrl } from "@/lib/share/urls";
-import { createChallengeLink, GHOST_GAMES, saveGhostRun } from "@/lib/client/challenge";
+import { GHOST_GAMES, saveGhostRun } from "@/lib/client/challenge";
 import { HowToSheet } from "./HowToSheet";
 import { GuidedPlay } from "./GuidedPlay";
 import { allLearned, learnedGames, needsGuided } from "@/lib/guided";
@@ -61,6 +60,7 @@ import { GAME_BY_ID } from "@/lib/catalog";
 import { track } from "@/lib/analytics/track";
 import { useGameCopy } from "@/lib/games-meta/client";
 import { challengeCopy } from "@/lib/copy/challenge";
+import { storyCopy } from "@/lib/copy/share";
 
 /** five: a Daily Five game (R2-05), played as today's shared Daily; it ends back on the Daily Five, not free play. */
 type Mode = "daily" | "free" | "archive" | "level" | "five";
@@ -112,7 +112,6 @@ export function PlayScreen({
   );
   const moves = useRef(0);
   const [error, setError] = useState<string | null>(null);
-  const [shareOpen, setShareOpen] = useState(false);
   const lastSave = useRef(0);
   const latestState = useRef<unknown>(undefined);
   const elapsedRef = useRef(0);
@@ -485,6 +484,26 @@ export function PlayScreen({
       />
     ) : undefined;
 
+  // Share a clear (R2-P5): the 9:16 story card with a "Beat me" link, or a Daily's own card; and "Beat my time".
+  const clearShare = useClearShare({
+    meta,
+    attemptId: attempt?.attemptId ?? null,
+    cleared: result?.status === "cleared",
+    daily: mode === "daily" || mode === "archive",
+    dailyText: result
+      ? dailyShareText({
+          gameId: meta.id,
+          number: attempt?.date ? dailyNumber(attempt.date) : 0,
+          timeMs: result.timeMs,
+          hints: stats.hints,
+          slips: stats.mistakes,
+          score: result.score ?? null,
+          streak: result.streak?.current,
+        })
+      : "",
+    onNotice: setNotice,
+  });
+
   const label =
     mode === "level" && attempt?.level
       ? levelsCopy.level(attempt.level)
@@ -499,23 +518,7 @@ export function PlayScreen({
   if (phase === "results" && result) {
     return (
       <>
-        <ShareSheet
-          open={shareOpen}
-          onOpenChange={setShareOpen}
-          kind="daily"
-          title={`${meta.name} on SPUZL`}
-          text={dailyShareText({
-            gameId: meta.id,
-            number: attempt?.date ? dailyNumber(attempt.date) : 0,
-            timeMs: result.timeMs,
-            hints: stats.hints,
-            slips: stats.mistakes,
-            score: result.score ?? null,
-            streak: result.streak?.current,
-          })}
-          image={attempt ? cardUrl("daily", attempt.attemptId) : ""}
-          fileName={`spuzl-${meta.id}.png`}
-        />
+        {clearShare.sheet}
         <ResultsScreen
           meta={meta}
           result={result}
@@ -523,24 +526,8 @@ export function PlayScreen({
           mistakes={stats.mistakes}
           relaxed={relaxed}
           color={me.data?.avatar_color ?? "#B8F23A"}
-          onShare={() => setShareOpen(true)}
-          onChallenge={
-            attempt && result.status === "cleared" && settings["features.challenges"]
-              ? async () => {
-                  try {
-                    const url = await createChallengeLink(attempt.attemptId);
-                    const text = challengeCopy.share.fromResult(meta.name);
-                    if (navigator.share) await navigator.share({ text, url });
-                    else {
-                      await navigator.clipboard.writeText(`${text} ${url}`);
-                      setNotice("Challenge link copied. Send it to a friend.");
-                    }
-                  } catch {
-                    /* share sheet dismissed */
-                  }
-                }
-              : undefined
-          }
+          onShare={() => void clearShare.open()}
+          onChallenge={clearShare.beat}
           next={sameGameAction}
           another={nextAction}
           chips={celebrationChips(result)}
@@ -675,6 +662,9 @@ export function PlayScreen({
                   relaxed={relaxed}
                   next={sameGameAction}
                   another={nextAction}
+                  onBeatMyTime={clearShare.beat}
+                  onShare={clearShare.canShare ? () => void clearShare.open() : undefined}
+                  shareBusy={clearShare.busy}
                 />
               </div>
             ) : undefined)
@@ -682,6 +672,7 @@ export function PlayScreen({
         />
       )}
       {mode === "level" && levelSheet}
+      {freeResult && clearShare.sheet}
       <OfflineBanner floating />
       {notice && <Toast text={notice} onDone={() => setNotice(null)} />}
       <HowToSheet open={howTo} meta={meta} onClose={() => setHowTo(false)} />
@@ -837,6 +828,9 @@ function FreeResultBar({
   relaxed,
   next,
   another,
+  onBeatMyTime,
+  onShare,
+  shareBusy = false,
 }: {
   meta: GameMeta;
   timeMs: number;
@@ -845,6 +839,11 @@ function FreeResultBar({
   relaxed: boolean;
   next: { label: string; onClick: () => void; playNav?: boolean };
   another: { label: string; onClick: () => void; playNav?: boolean };
+  /** "Beat my time" in the Challenge sheet (admin "features.challenges") */
+  onBeatMyTime?: () => void;
+  /** the story card share (admin "features.storyCards") */
+  onShare?: () => void;
+  shareBusy?: boolean;
 }) {
   return (
     <div className="bg-surface flex flex-col gap-3 rounded-[22px] p-3.5" role="status" aria-live="polite">
@@ -860,7 +859,14 @@ function FreeResultBar({
       <Button size="md" variant="secondary" className="w-full" onClick={another.onClick} {...(another.playNav ? PLAY_NAV : {})}>
         {another.label}
       </Button>
-      <RaceLiveButton meta={meta} size="md" className="w-full" />
+      <div className="flex gap-2">
+        <RaceLiveButton meta={meta} size="md" className="min-w-0 flex-1" onBeatMyTime={onBeatMyTime} />
+        {onShare && (
+          <Button size="md" variant="secondary" icon="share-fat" className="min-w-0 flex-1" onClick={onShare} disabled={shareBusy}>
+            {storyCopy.shareCta}
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

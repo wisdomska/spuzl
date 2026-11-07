@@ -20,6 +20,8 @@ const base: ChallengeCardInput = {
   gameName: "Crownfall",
   world: "logic",
   senderMs: 72_400,
+  hints: 0,
+  mistakes: 0,
   domain: "spuzl.vercel.app",
 };
 
@@ -40,6 +42,14 @@ describe("challengeCard", () => {
     });
     expect(c.bg).toBe(worldCardColours("logic").bg);
     expect(c.alt).toBe("Ama_K challenges you to beat 1:12 on Crownfall. SPUZL.");
+  });
+
+  it("says the clear's effort on the story line", () => {
+    expect(challengeCard(base).line).toBe("Clean clear. No hints, no slips.");
+    expect(challengeCard({ ...base, hints: 1, mistakes: 0 }).line).toBe("1 hint, no slips.");
+    expect(challengeCard({ ...base, hints: 0, mistakes: 3 }).line).toBe("No hints, 3 slips.");
+    expect(challengeCard({ ...base, hints: 2, mistakes: 1 }).line).toBe("2 hints, 1 slip.");
+    expect(challengeCard({ ...base, hints: -4, mistakes: -1 }).line).toBe("Clean clear. No hints, no slips.");
   });
 
   it("drops hats SpuzOG can't draw and bad colours, and Spuz stands proud without a hat", () => {

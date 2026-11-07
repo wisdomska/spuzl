@@ -2,6 +2,7 @@ import type { SpuzMood } from "@/components/brand/Spuz";
 import type { WorldId } from "@/lib/catalog";
 import { formatShort } from "@/lib/format";
 import { challengeCopy } from "@/lib/copy/challenge";
+import { storyCopy } from "@/lib/copy/share";
 import { CODE_ALPHABET } from "@/lib/multiplayer/roomCode";
 import { STATUS_HATS, worldCardColours } from "./card-model";
 
@@ -45,6 +46,9 @@ export interface ChallengeCardInput {
   /** colour family of the game (lib/catalog toneOf) */
   world: WorldId;
   senderMs: number;
+  /** the clear's hints and slips (the story card's effort line) */
+  hints: number;
+  mistakes: number;
   /** where the card is printed: the share domain (spuzl.vercel.app) */
   domain: string;
 }
@@ -65,6 +69,8 @@ export interface ChallengeCardModel {
   big: string;
   /** "Kofi's time" */
   who: string;
+  /** effort line on the story card: "Clean clear. No hints, no slips." */
+  line: string;
   /** "Beat me" */
   dare: string;
   /** spuzl.vercel.app/c/K7QX2M */
@@ -93,6 +99,7 @@ export function challengeCard(i: ChallengeCardInput): ChallengeCardModel {
     kicker: i.gameName,
     big,
     who: challengeCopy.card.who(i.nickname),
+    line: storyCopy.line(Math.max(0, i.hints), Math.max(0, i.mistakes)),
     dare: challengeCopy.card.dare,
     link: `${i.domain}${challengePath(i.code)}`,
     alt: challengeCopy.card.alt(i.nickname, i.gameName, big),
@@ -114,5 +121,7 @@ export const SAMPLE_CHALLENGE: ChallengeCardModel = challengeCard({
   gameName: "Crownfall",
   world: "logic",
   senderMs: 72_000,
+  hints: 0,
+  mistakes: 0,
   domain: "spuzl.vercel.app",
 });

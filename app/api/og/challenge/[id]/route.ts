@@ -2,6 +2,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { hasSupabase } from "@/lib/supabase/env";
 import { notFoundImage, parseCardQuery, renderChallengeCard } from "@/lib/og/render";
 import { loadChallengeCard } from "@/lib/share/challenge";
+import { getGameSettings } from "@/lib/game-settings/server";
 
 /**
  * GET /api/og/challenge/:code: a friend challenge's link preview (1200 × 630 PNG; `?format=story` for the
@@ -16,6 +17,8 @@ export async function GET(req: Request, ctx: RouteContext<"/api/og/challenge/[id
     const card = await loadChallengeCard(supabaseAdmin(), id);
     if (!card) return notFoundImage();
     const story = new URL(req.url).searchParams.get("format") === "story";
+    // The 9:16 story is its own switch ("features.storyCards"); the link preview only needs challenges on.
+    if (story && !(await getGameSettings())["features.storyCards"]) return notFoundImage();
     return await renderChallengeCard(card, story ? "story" : "og", parseCardQuery(req.url).scale);
   } catch (e) {
     console.error("[og]", e);

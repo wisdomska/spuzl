@@ -16,7 +16,7 @@ export async function loadChallengeCard(admin: SupabaseClient, raw: string): Pro
   if (!(await getGameSettings())["features.challenges"]) return null;
   const { data: c } = await admin
     .from("challenges")
-    .select("code, sender_id, game_id, sender_ms, expires_at")
+    .select("code, sender_id, game_id, sender_ms, hints, mistakes, expires_at")
     .eq("code", code)
     .maybeSingle();
   if (!c || Date.parse(c.expires_at) < Date.now() || !playableGame(c.game_id)) return null;
@@ -31,6 +31,8 @@ export async function loadChallengeCard(admin: SupabaseClient, raw: string): Pro
     gameName: meta.name,
     world: toneOf(meta),
     senderMs: c.sender_ms,
+    hints: c.hints ?? 0,
+    mistakes: c.mistakes ?? 0,
     domain: SHARE_DOMAIN,
   });
 }
