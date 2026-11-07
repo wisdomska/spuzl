@@ -368,3 +368,40 @@ describe("players: list filters, sort and paging", () => {
     expect(row.data?.[0].detail).toMatchObject({ count: 2, ids: 2, with_email: true });
   });
 });
+
+describe("players: ratings, rank from Duels and Parties, board games with house rules (R2-ADMIN)", () => {
+  it("shows the rating tracks, the rounds that moved them and a Ludo match's house rules", async () => {
+    const db = admin();
+    const g = await guest(uniq("pr_"));
+    const other = await guest(uniq("pr2_"));
+    const matchId = crypto.randomUUID();
+    expect((await db.from("ratings").upsert({ player_id: g.userId, track: "logic", rating: 1042.5, games: 3 })).error).toBeNull();
+    expect(
+      (await db.from("rank_contributions").insert({ player_id: g.userId, ref: `${matchId}:1:2`, track: "logic", delta: 12.5 })).error,
+    ).toBeNull();
+    const ludo = await db
+      .from("board_matches")
+      .insert({
+        game_id: "ludo",
+        mode: "async",
+        status: "finished",
+        players: [g.userId, other.userId],
+        seats: 2,
+        turn: 0,
+        state: { opts: { backKick: true, sideKick: true } },
+        seed: "pr-test",
+        winner_id: other.userId,
+        result: "all four home",
+        created_by: g.userId,
+      })
+      .select("id")
+      .single();
+    expect(ludo.error).toBeNull();
+
+    const d = (await S.analyst.aal2(`/api/admin/players/${g.userId}/detail`)).data;
+    expect(d.ratings).toEqual(expect.arrayContaining([expect.objectContaining({ track: "logic", rating: 1042.5, games: 3 })]));
+    expect(d.rankMoves[0]).toMatchObject({ ref: `${matchId.slice(0, 8)} · set 1 · round 2`, track: "logic", delta: 12.5 });
+    expect(d.boardGames[0]).toMatchObject({ id: ludo.data!.id, game_id: "ludo", outcome: "lost", house: ["backKick", "sideKick"] });
+    await db.from("board_matches").delete().eq("id", ludo.data!.id);
+  });
+});

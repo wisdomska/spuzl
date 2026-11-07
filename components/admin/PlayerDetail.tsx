@@ -315,6 +315,69 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
             </Section>
           </div>
 
+          {/* R2-ADMIN: ratings, the Duel and Party rounds that moved them, and recent Board Games with their house rules */}
+          <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
+            <Section title={C.ratings} id="pd-ratings">
+              {!d.ratings?.length ? (
+                <p className="text-muted text-[13px]">{C.noRatings}</p>
+              ) : (
+                <MiniTable head={C.ratingsHead} min={320}>
+                  {d.ratings.map((r) => (
+                    <tr key={r.track}>
+                      <td className={`${td} font-semibold`}>{r.track}</td>
+                      <td className={`${td} num`}>{Math.round(r.rating)}</td>
+                      <td className={`${td} num`}>{fmt(r.games)}</td>
+                      <td className={`${td} num text-muted`}>{age(r.updated_at)}</td>
+                    </tr>
+                  ))}
+                </MiniTable>
+              )}
+            </Section>
+            <Section title={C.rankMoves} id="pd-rank-moves">
+              {!d.rankMoves?.length ? (
+                <p className="text-muted text-[13px]">{C.noRankMoves}</p>
+              ) : (
+                <MiniTable head={C.rankMovesHead} min={360}>
+                  {d.rankMoves.map((r) => (
+                    <tr key={`${r.ref}:${r.created_at}`}>
+                      <td className={`${td} num text-muted`}>{r.ref}</td>
+                      <td className={td}>{r.track ?? C.noEmail}</td>
+                      <td className={`${td} num font-semibold ${(r.delta ?? 0) < 0 ? "text-danger" : "text-accent"}`}>
+                        {r.delta === null ? C.noEmail : `${r.delta > 0 ? "+" : ""}${r.delta.toFixed(1)}`}
+                      </td>
+                      <td className={`${td} num text-muted`}>{age(r.created_at)}</td>
+                    </tr>
+                  ))}
+                </MiniTable>
+              )}
+            </Section>
+          </div>
+
+          <Section title={C.boardGames} id="pd-board">
+            {!d.boardGames?.length ? (
+              <p className="text-muted text-[13px]">{C.noBoardGames}</p>
+            ) : (
+              <MiniTable head={C.boardHead}>
+                {d.boardGames.map((m) => (
+                  <tr key={m.id}>
+                    <td className={`${td} font-semibold`}>{GAME_BY_ID[m.game_id]?.name ?? m.game_id}</td>
+                    <td className={`${td} text-muted`}>
+                      {[m.mode, m.bot ? C.vsBot : null, m.rated ? C.rated : null].filter(Boolean).join(" · ")}
+                    </td>
+                    <td className={td}>
+                      <Pill tone="neutral">{adminCopy.common.statusLabel(m.status)}</Pill>
+                    </td>
+                    <td className={`${td} text-muted`}>{[m.outcome, m.result].filter(Boolean).join(" · ") || C.noEmail}</td>
+                    <td className={td} data-house-rules>
+                      {m.house === null ? C.noEmail : m.house.length ? m.house.map((k) => C.ludoRules[k] ?? k).join(", ") : C.standardRules}
+                    </td>
+                    <td className={`${td} num text-muted`}>{C.ago(age(m.created_at))}</td>
+                  </tr>
+                ))}
+              </MiniTable>
+            )}
+          </Section>
+
           <Section title={C.inventory} id="pd-inv">
             {!d.inventory.length ? (
               <p className="text-muted text-[13px]">{C.noInventory}</p>

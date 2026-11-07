@@ -7,6 +7,7 @@ import { rangeOf, type PageParams } from "./pagination";
 import { accountTypeOf, maskEmail, type AccountType, type PlayerRow, type PlayerSqlFilters } from "./player-filters";
 import { can } from "./roles";
 import { shortRef } from "./moderation";
+import { boardGameRow, roundRef, type BoardMatchRow } from "./player-games";
 import { effectiveBand } from "@/lib/age";
 import type { SortState } from "./sorting";
 
@@ -98,6 +99,9 @@ export async function playerDetail(ctx: AdminCtx, id: string) {
     { data: inventory },
     { data: ledger },
     adminRow,
+    { data: ratings },
+    { data: rankMoves },
+    { data: boardMatches },
   ] = await Promise.all([
     db.auth.admin.getUserById(id),
     db.from("streaks").select("current, best, freezes_held, last_clear_date").eq("player_id", id).maybeSingle(),
@@ -140,6 +144,20 @@ export async function playerDetail(ctx: AdminCtx, id: string) {
       .limit(100),
     db.from("sparks_ledger").select("id, source, amount, created_at").eq("player_id", id).order("id", { ascending: false }).limit(25),
     db.from("admins").select("user_id").eq("user_id", id).maybeSingle(),
+    // R2-ADMIN: ratings per track, the Duel and Party rounds that moved them, and recent Board Games (house rules).
+    db.from("ratings").select("track, rating, games, updated_at").eq("player_id", id).order("updated_at", { ascending: false }).limit(30),
+    db
+      .from("rank_contributions")
+      .select("ref, track, delta, created_at")
+      .eq("player_id", id)
+      .order("created_at", { ascending: false })
+      .limit(25),
+    db
+      .from("board_matches")
+      .select("id, game_id, mode, status, result, winner_id, rated, bot, created_at, opts:state->opts")
+      .contains("players", [id])
+      .order("created_at", { ascending: false })
+      .limit(10),
   ]);
 
   const user = auth?.user ?? null;
@@ -215,6 +233,14 @@ export async function playerDetail(ctx: AdminCtx, id: string) {
       };
     }),
     sparks: ledger ?? [],
+    ratings: (ratings ?? []).map((r) => ({ ...r, rating: Number(r.rating) })),
+    rankMoves: (rankMoves ?? []).map((r) => ({
+      ref: roundRef(r.ref as string),
+      track: (r.track as string | null) ?? null,
+      delta: r.delta === null || r.delta === undefined ? null : Number(r.delta),
+      created_at: r.created_at as string,
+    })),
+    boardGames: ((boardMatches ?? []) as BoardMatchRow[]).map((m) => boardGameRow(m, id)),
   };
 }
 
