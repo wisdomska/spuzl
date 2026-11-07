@@ -18,8 +18,8 @@ const RACE_WORLDS = WORLDS.filter((w) => RACE_GAMES.some((g) => g.world === w.id
 
 /**
  * R2-02: the Duel game picker. A full-height sheet with the Library's search and filters (shared components),
- * "Any game" first, then every race game. Radix Dialog gives the focus trap, Escape, labelling and focus back to
- * the "Game" row on close; with a keyboard or mouse the search box takes focus on open so typing starts at once.
+ * "Any game" first, then every race game. Radix Dialog gives the focus trap, Escape and labelling; focus goes
+ * back to the "Game" row (whatever opened it) on close; with a keyboard or mouse the search box takes focus on open so typing starts at once.
  */
 export function GamePickerSheet({
   open,
@@ -37,6 +37,8 @@ export function GamePickerSheet({
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<GameFilter>("all");
   const search = useRef<HTMLInputElement>(null);
+  // The "Game" row isn't a Radix Trigger, so remember what opened the sheet and hand focus back to it on close.
+  const opener = useRef<HTMLElement | null>(null);
   const list = useMemo(() => filterGames(RACE_GAMES, filter, q, meta), [filter, q, meta]);
   const filtering = filter !== "all" || q.trim() !== "";
   useSheetSound(open);
@@ -50,11 +52,19 @@ export function GamePickerSheet({
         <Dialog.Overlay className="sheet-overlay fixed inset-0 z-50 bg-[rgb(6_7_13/.6)]" />
         <Dialog.Content
           onOpenAutoFocus={(e) => {
+            opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
             // Keyboard and mouse: straight into the search box. Touch: no focus jump, so the on-screen keyboard
             // doesn't cover the list (Radix then focuses the first control, Close).
             if (window.matchMedia("(pointer: coarse)").matches) return;
             e.preventDefault();
             search.current?.focus();
+          }}
+          onCloseAutoFocus={(e) => {
+            const el = opener.current;
+            opener.current = null;
+            if (!el?.isConnected) return;
+            e.preventDefault();
+            el.focus();
           }}
           className="sheet-content bg-bg fixed inset-x-0 top-[max(16px,env(safe-area-inset-top))] bottom-0 z-50 mx-auto flex max-w-[560px] flex-col rounded-t-[28px] lg:max-w-[720px]"
           style={{ boxShadow: "0 -1px 0 var(--line)" }}
