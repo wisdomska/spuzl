@@ -509,6 +509,9 @@ export const adminCopy = {
     share: (n: string, pct: string) => `${n} (${pct})`,
     openPlayers: "Open players",
     openModeration: "Open moderation",
+    /** R2-ADMIN: push alerts (Web Push), one per device a player turned alerts on for. */
+    pushDevices: "Devices with alerts on",
+    pushReached: "Devices a push reached, last 30 days",
   },
 
   /** Seasonal event bonus quests, listed in the Shop and events quest catalogue. */

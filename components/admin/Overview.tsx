@@ -26,6 +26,8 @@ interface OverviewData {
     banned: number;
   };
   kpis: { dau: number; open_reports: number; flagged: number };
+  /** R2-ADMIN: devices with push alerts on, and those a push reached in the last 30 days (absent on older servers). */
+  push?: { devices: number; reached30d: number };
 }
 
 function Tile({ value, label, href }: { value: number; label: string; href?: string }) {
@@ -129,6 +131,12 @@ export function Overview({ canModerate }: { canModerate: boolean }) {
             />
             <Tile value={q.data.players.banned} label={C.banned} href="/admin/players?status=banned" />
           </div>
+          {q.data.push && (
+            <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2">
+              <Tile value={q.data.push.devices} label={C.pushDevices} />
+              <Tile value={q.data.push.reached30d} label={C.pushReached} />
+            </div>
+          )}
           <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-2">
             <Split
               title={C.method}

@@ -45,3 +45,10 @@ test("player detail shows ratings, rank moves from Duels and Parties, and a Ludo
   await page.screenshot({ path: "docs/qa/screens/r2/r2-admin-player-detail-1280.png", fullPage: true });
   await db.from("board_matches").delete().eq("id", m!.id);
 });
+
+test("Overview counts devices with push alerts on", async ({ page }) => {
+  await signedIn(page, "moderator");
+  await page.goto("/admin");
+  await expect(page.getByText("Devices with alerts on")).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText("Devices a push reached, last 30 days")).toBeVisible();
+});

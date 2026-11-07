@@ -405,3 +405,39 @@ describe("players: ratings, rank from Duels and Parties, board games with house 
     await db.from("board_matches").delete().eq("id", ludo.data!.id);
   });
 });
+
+describe("overview: push alerts (R2-ADMIN)", () => {
+  it("counts devices with alerts on and those a push reached in 30 days, test players left out, no endpoints", async () => {
+    const db = admin();
+    const before = (await S.analyst.aal2("/api/admin/overview")).data.push;
+    expect(before).toEqual({ devices: expect.any(Number), reached30d: expect.any(Number) });
+    const real = await guest(uniq("push_"));
+    const tester = await guest(uniq("pusht_"));
+    await db.from("players").update({ is_test: false }).eq("id", real.userId);
+    await db.from("players").update({ is_test: true }).eq("id", tester.userId);
+    const sub = (player: string, n: number, ok: string | null) => ({
+      endpoint: `https://push.example.test/${uniq("ep")}-${n}`,
+      player_id: player,
+      p256dh: "k",
+      auth: "a",
+      last_ok_at: ok,
+    });
+    const rows = [
+      sub(real.userId, 1, new Date().toISOString()),
+      sub(real.userId, 2, null),
+      sub(tester.userId, 3, new Date().toISOString()),
+    ];
+    expect((await db.from("push_subscriptions").insert(rows)).error).toBeNull();
+    const after = (await S.analyst.aal2("/api/admin/overview")).data;
+    expect(after.push.devices - before.devices).toBe(2);
+    expect(after.push.reached30d - before.reached30d).toBe(1);
+    expect(JSON.stringify(after)).not.toContain("push.example.test");
+    await db
+      .from("push_subscriptions")
+      .delete()
+      .in(
+        "endpoint",
+        rows.map((r) => r.endpoint),
+      );
+  });
+});
