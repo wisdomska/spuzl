@@ -1296,4 +1296,26 @@ describe("Metrics added by the admin cascade audit (R2-ADMIN)", () => {
     expect(x.data.csv.split("\r\n")).toContain(`${first},2,1,50,0,0`);
     expect((await lastAudit(S.owner.userId, "metrics.export"))?.target).toBe("metric:retention");
   });
+
+  it("counts board game results with people and vs the bot, with CSV (needs 20261202000701)", async () => {
+    await seed([
+      { name: "game_over", game_id: "chess", mode: "bot", kind: "won" },
+      { name: "game_over", game_id: "chess", mode: "bot", kind: "lost" },
+      { name: "game_over", game_id: "ludo", mode: "bay", kind: "draw" },
+    ]);
+    const d = await metrics();
+    expect(d.total).toMatchObject({ go_bot_won: 1, go_bot_lost: 1, go_bay_draw: 1, go_bay_won: 0 });
+    const x = await S.analyst.aal2("/api/admin/metrics", { json: { metric: "game_over", days: 7, end } });
+    expect(x.data.csv.trimEnd().split("\r\n").at(-1)).toBe("total,0,0,1,1,1,0,50");
+
+    const g = await guest();
+    expect((await g.api("/api/v1/metrics", { json: { name: "game_over", game: "chess", mode: "bot", kind: "won" } })).status).toBe(204);
+    expect((await g.api("/api/v1/metrics", { json: { name: "game_over", game: "chess", mode: "duel", kind: "won" } })).status).toBe(400);
+    expect((await g.api("/api/v1/metrics", { json: { name: "game_over", game: "chess", mode: "bay", kind: "maybe" } })).status).toBe(400);
+    await admin()
+      .from("client_metrics")
+      .delete()
+      .eq("name", "game_over")
+      .gte("created_at", new Date(Date.now() - 60_000).toISOString());
+  });
 });

@@ -243,6 +243,7 @@ export function BotScreen({ meta, game, initialLevel }: { meta: GameMeta; game: 
       {/* The end of the game, made unmissable: the card, the sound and, for a win, confetti */}
       <GameOverBanner
         id={`bot:${key}`}
+        metric={{ game, kind: "bot" }}
         outcome={outcome}
         reason={outcome === "lost" ? t.lost : undefined}
         actionLabel={gameOverCopy.playAgain}

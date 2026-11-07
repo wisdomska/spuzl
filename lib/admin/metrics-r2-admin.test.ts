@@ -145,3 +145,20 @@ describe("D1 and D7 retention cohorts (20261202000601)", () => {
     expect(METRIC_BY_ID.retention.headline(row())).toBe("n/a / n/a");
   });
 });
+
+describe("board game results (20261202000701)", () => {
+  it("shows the players' win rate against the bot and the results with people, with CSV", () => {
+    const total = row({ go_bay_won: 5, go_bay_lost: 4, go_bay_draw: 1, go_bot_won: 3, go_bot_lost: 9, go_bot_draw: 0 });
+    expect(METRIC_BY_ID.game_over.headline(total)).toBe("25%");
+    expect(METRIC_BY_ID.game_over.sub(total)).toBe(
+      "players' win rate vs the bot (12 games) · with people 10 results: 5 won, 4 lost, 1 drawn",
+    );
+    expect(metricCsv("game_over", { rows: [], total }).trimEnd().split("\r\n")).toEqual([
+      "date,people_won,people_lost,people_draw,bot_won,bot_lost,bot_draw,bot_win_pct",
+      "total,5,4,1,3,9,0,25",
+    ]);
+  });
+  it("reads rows from before the migration as no data", () => {
+    expect(METRIC_BY_ID.game_over.headline(row())).toBe("n/a");
+  });
+});

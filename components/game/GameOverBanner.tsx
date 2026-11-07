@@ -6,6 +6,7 @@ import { Spuz } from "@/components/brand/Spuz";
 import { Confetti } from "@/components/fx/Confetti";
 import { Icon } from "@/components/ui/Icon";
 import { play } from "@/lib/audio";
+import { track } from "@/lib/analytics/track";
 import { gameOverCopy as C } from "@/lib/copy/game-over";
 import { prefersReducedMotion, useSettings } from "@/lib/settings/store";
 
@@ -24,6 +25,7 @@ export function GameOverBanner({
   reason,
   actionLabel,
   onAction,
+  metric,
 }: {
   /** unique per game (match id, or bot game key) */
   id: string;
@@ -32,6 +34,8 @@ export function GameOverBanner({
   reason?: string;
   actionLabel?: string;
   onAction?: () => void;
+  /** admin Metrics (R2-ADMIN): the game and where it was played, sent once with the outcome as game_over */
+  metric?: { game: string; kind: "bay" | "bot" };
 }) {
   const reduce = prefersReducedMotion({ reducedMotion: useSettings((s) => s.reducedMotion) });
   // Decided during render (not in an effect): open the first time this game is seen ending in this tab.
@@ -55,6 +59,7 @@ export function GameOverBanner({
   useEffect(() => {
     if (!open) return;
     play(outcome === "won" ? "duelWin" : outcome === "lost" ? "duelLose" : "notify");
+    if (metric && outcome) track("game_over", { game: metric.game, mode: metric.kind, kind: outcome });
     action.current?.focus();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once per opening, not when the outcome prop re-renders
   }, [open]);

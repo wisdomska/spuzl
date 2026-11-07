@@ -152,4 +152,12 @@ describe("cold and warm tap to board (R2-ADMIN)", () => {
       expect(firstPartyBody(e, { game: "dusk" })).toMatchObject({ name: e, game: "dusk" });
     }
   });
+  it("forwards game_over with the game, bay or bot as mode and the outcome as kind", () => {
+    expect(firstPartyBody("game_over", { game: "chess", mode: "bot", kind: "won" })).toMatchObject({
+      name: "game_over",
+      game: "chess",
+      mode: "bot",
+      kind: "won",
+    });
+  });
 });

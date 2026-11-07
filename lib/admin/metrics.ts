@@ -102,6 +102,13 @@ export interface MetricRow {
   ret_d1_kept?: number;
   ret_d7_cohort?: number;
   ret_d7_kept?: number;
+  /** R2-ADMIN (20261202000701): full games ended (game_over), with people (bay) or the bot, by the player's outcome. */
+  go_bay_won?: number;
+  go_bay_lost?: number;
+  go_bay_draw?: number;
+  go_bot_won?: number;
+  go_bot_lost?: number;
+  go_bot_draw?: number;
 }
 
 export interface PracticeCounts {
@@ -151,6 +158,7 @@ export const METRIC_IDS = [
   "first_clear",
   "practice",
   "retention",
+  "game_over",
   "onboarding",
   "first_move",
   "party_first_move",
@@ -230,6 +238,10 @@ function promptsCsv(data: Pick<MetricsData, "rows" | "total">): string {
 /** D1 and D7 retention of a row's cohort days that are due (null until the later day is over). */
 export const d1 = (r: MetricRow) => rate(r.ret_d1_kept ?? 0, r.ret_d1_cohort ?? 0);
 export const d7 = (r: MetricRow) => rate(r.ret_d7_kept ?? 0, r.ret_d7_cohort ?? 0);
+
+/** Full games ended against the bot, and the players' win rate there (game_over, R2-ADMIN). */
+export const botGames = (r: MetricRow) => (r.go_bot_won ?? 0) + (r.go_bot_lost ?? 0) + (r.go_bot_draw ?? 0);
+export const bayGames = (r: MetricRow) => (r.go_bay_won ?? 0) + (r.go_bay_lost ?? 0) + (r.go_bay_draw ?? 0);
 
 /** Practice rounds that showed but were neither solved nor skipped (the player left). Never below 0. */
 export const practiceDropped = (c: PracticeCounts) => Math.max(0, c.started - c.finished - c.skipped);
@@ -336,6 +348,23 @@ export const METRICS: readonly MetricDef[] = [
       { key: "d1_pct", label: "D1 %", value: d1 },
       { key: "d7_kept", label: "Back D7", value: (r) => ((r.ret_d7_cohort ?? 0) > 0 ? (r.ret_d7_kept ?? 0) : null) },
       { key: "d7_pct", label: "D7 %", value: d7 },
+    ],
+  },
+  {
+    id: "game_over",
+    title: "Board game results",
+    note: "Full games (chess, draughts, Ludo, Oware and the other Board Games) as each player's game-over card showed them, once per game per browser tab (client recorded, game_over). With people = a friend or Play live; vs bot = the Practice bot or a bot seat. Every player of a game with people sends their own result, so its wins and losses roughly pair up.",
+    headline: (t) => pct(rate(t.go_bot_won ?? 0, botGames(t))),
+    sub: (t) =>
+      `players' win rate vs the bot (${n(botGames(t))} games) · with people ${n(bayGames(t))} results: ${n(t.go_bay_won ?? 0)} won, ${n(t.go_bay_lost ?? 0)} lost, ${n(t.go_bay_draw ?? 0)} drawn`,
+    cols: [
+      { key: "people_won", label: "People: won", value: (r) => r.go_bay_won ?? 0 },
+      { key: "people_lost", label: "People: lost", value: (r) => r.go_bay_lost ?? 0 },
+      { key: "people_draw", label: "People: draw", value: (r) => r.go_bay_draw ?? 0 },
+      { key: "bot_won", label: "Bot: won", value: (r) => r.go_bot_won ?? 0 },
+      { key: "bot_lost", label: "Bot: lost", value: (r) => r.go_bot_lost ?? 0 },
+      { key: "bot_draw", label: "Bot: draw", value: (r) => r.go_bot_draw ?? 0 },
+      { key: "bot_win_pct", label: "Bot win %", value: (r) => rate(r.go_bot_won ?? 0, botGames(r)) },
     ],
   },
   {

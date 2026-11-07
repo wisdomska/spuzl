@@ -597,6 +597,7 @@ export function BayMatch({ id }: { id: string }) {
   const gameOver = (
     <GameOverBanner
       id={`bay:${v.id}`}
+      metric={{ game: v.game, kind: v.bot ? "bot" : "bay" }}
       outcome={outcome}
       reason={reason}
       actionLabel={gameOverCopy.rematch}

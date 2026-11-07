@@ -6,12 +6,15 @@ const played: string[] = [];
 vi.mock("@/lib/audio", () => ({ play: (n: string) => played.push(n) }));
 vi.mock("@/components/fx/Confetti", () => ({ Confetti: () => <div data-testid="confetti" /> }));
 vi.mock("@/components/brand/Spuz", () => ({ Spuz: () => <div /> }));
+const tracked: unknown[][] = [];
+vi.mock("@/lib/analytics/track", () => ({ track: (...a: unknown[]) => tracked.push(a) }));
 
 import { GameOverBanner } from "@/components/game/GameOverBanner";
 
 beforeEach(() => {
   window.matchMedia ??= ((q: string) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {} })) as never;
   played.length = 0;
+  tracked.length = 0;
   sessionStorage.clear();
 });
 afterEach(cleanup);
@@ -53,5 +56,17 @@ describe("GameOverBanner: the end of a game is unmissable", () => {
     render(<GameOverBanner id="m5" outcome="won" />);
     expect(screen.queryByRole("alertdialog")).toBeNull();
     expect(played).toEqual([]);
+  });
+
+  it("reports the result to the admin Metrics once per game (R2-ADMIN game_over)", () => {
+    const { unmount } = render(<GameOverBanner id="m6" outcome="lost" metric={{ game: "chess", kind: "bot" }} />);
+    expect(tracked).toEqual([["game_over", { game: "chess", mode: "bot", kind: "lost" }]]);
+    fireEvent.click(screen.getAllByRole("button", { name: "See the board" }).at(-1)!);
+    unmount();
+    render(<GameOverBanner id="m6" outcome="lost" metric={{ game: "chess", kind: "bot" }} />);
+    expect(tracked).toHaveLength(1);
+    cleanup();
+    render(<GameOverBanner id="m7" outcome="won" />); // no metric: nothing sent
+    expect(tracked).toHaveLength(1);
   });
 });

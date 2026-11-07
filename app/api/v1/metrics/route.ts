@@ -30,6 +30,8 @@ const Metric = z
       "practice_start",
       "practice_finish",
       "practice_skip",
+      // Full games ended (R2-ADMIN): mode bay or bot, kind won, lost or draw
+      "game_over",
     ]),
     game: z
       .string()
@@ -47,6 +49,12 @@ const Metric = z
   )
   .refine((m) => m.name !== "party_first_move" || m.ms !== undefined, "party_first_move needs ms")
   .refine((m) => !m.name.startsWith("practice_") || m.game !== undefined, "practice events need the game")
+  .refine(
+    (m) =>
+      m.name !== "game_over" ||
+      (m.game !== undefined && (m.mode === "bay" || m.mode === "bot") && ["won", "lost", "draw"].includes(m.kind ?? "")),
+    "game_over needs the game, mode bay or bot, and kind won, lost or draw",
+  )
   .refine((m) => m.name !== "onboarding_step" || isOnboardingStep(m.kind), "onboarding_step needs a known step as kind")
   .refine((m) => !m.name.startsWith("hint_") || m.name === "hint_cancel" || m.kind === "confirm" || m.kind === "direct", {
     message: "hint_request and hint_use need kind confirm or direct",

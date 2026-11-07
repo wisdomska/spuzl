@@ -60,6 +60,8 @@ export const KEY_EVENTS = [
   "practice_start",
   "practice_finish",
   "practice_skip",
+  // Full games (Board Games with a friend, Play live or the bot): { game, mode: "bay" | "bot", kind: "won" | "lost" | "draw" }
+  "game_over",
 ] as const;
 export type KeyEvent = (typeof KEY_EVENTS)[number];
 
@@ -162,6 +164,7 @@ const FIRST_PARTY: ReadonlySet<KeyEvent> = new Set([
   "practice_start",
   "practice_finish",
   "practice_skip",
+  "game_over",
 ]);
 
 /** Pure: the first-party metric body for an event, or null. Exported for tests. */
