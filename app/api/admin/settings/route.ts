@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { ApiError, body, handle, ok } from "@/lib/api/server";
 import { audit, requireAdmin } from "@/lib/admin/auth";
-import { DEFAULTS, SETTINGS, mergeSettings, sameSetting, validateSetting } from "@/lib/game-settings/schema";
+import { DEFAULTS, SETTINGS, SETTING_LIST_MAX, mergeSettings, sameSetting, validateSetting } from "@/lib/game-settings/schema";
 import { invalidateGameSettings } from "@/lib/game-settings/server";
 
 /** GET /api/admin/settings: every tunable with its definition, current value and last change. */
@@ -24,7 +24,7 @@ export const GET = handle(async () => {
 
 const Put = z.object({
   key: z.string().min(3).max(80),
-  value: z.union([z.number(), z.boolean(), z.string().max(40), z.array(z.string().max(32)).max(20)]),
+  value: z.union([z.number(), z.boolean(), z.string().max(40), z.array(z.string().max(32)).max(SETTING_LIST_MAX)]),
 });
 
 /** PUT /api/admin/settings: sets one tunable after validating it against its range (or its options). */

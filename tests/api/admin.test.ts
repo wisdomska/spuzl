@@ -860,6 +860,21 @@ describe("game settings (admin cascade)", () => {
       await S.owner.aal2("/api/admin/settings", { method: "PUT", json: { key: "features.labGames", value: before.value ?? [] } });
     }
   });
+
+  it("turns every game's practice round off at once (more than 20 games, R2-ADMIN)", async () => {
+    const rows = (await S.owner.aal2("/api/admin/settings")).data.rows as {
+      key: string;
+      value: string[];
+      def: { options: { id: string }[] };
+    }[];
+    const row = rows.find((r) => r.key === "practice.disabled")!;
+    const all = row.def.options.map((o) => o.id);
+    expect(all.length).toBeGreaterThan(20);
+    const put = await S.owner.aal2("/api/admin/settings", { method: "PUT", json: { key: "practice.disabled", value: all } });
+    expect(put.status).toBe(200);
+    expect((await lastAudit(S.owner.userId, "setting.update"))?.target).toBe("setting:practice.disabled");
+    await S.owner.aal2("/api/admin/settings", { method: "PUT", json: { key: "practice.disabled", value: row.value } });
+  });
 });
 
 describe("Library metadata (SPZ-14 admin cascade)", () => {

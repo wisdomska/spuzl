@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULTS, SETTINGS, mergeSettings, sameSetting, validateSetting } from "./schema";
+import { DEFAULTS, SETTINGS, SETTING_LIST_MAX, mergeSettings, sameSetting, validateSetting } from "./schema";
 import { LAB_GAMES } from "@/lib/catalog";
 
 describe("game settings schema", () => {
@@ -87,6 +87,22 @@ describe("R2-07: practice.disabled", () => {
     expect(validateSetting("practice.disabled", ["not-a-game"])).toMatch(/Must be a list/);
     expect(validateSetting("practice.disabled", "dusk")).toMatch(/Must be a list/);
     expect(SETTINGS["practice.disabled"].help.length).toBeGreaterThan(40);
+  });
+
+  it("every option of every multi-pick setting can be ticked at once through the admin API (R2-ADMIN)", () => {
+    for (const [key, def] of Object.entries(SETTINGS)) {
+      if (def.kind !== "set") continue;
+      expect(def.options.length, key).toBeLessThanOrEqual(SETTING_LIST_MAX);
+      expect(
+        validateSetting(
+          key,
+          def.options.map((o) => o.id),
+        ),
+        key,
+      ).toBeNull();
+    }
+    // Practice boards today: more games than the old cap of 20.
+    expect(SETTINGS["practice.disabled"].options.length).toBeGreaterThan(20);
   });
 });
 

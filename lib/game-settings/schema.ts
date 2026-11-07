@@ -483,6 +483,9 @@ export type SettingValue = number | boolean | string | readonly string[];
 
 export const DEFAULTS = Object.fromEntries(Object.entries(SETTINGS).map(([k, d]) => [k, d.default])) as unknown as GameSettings;
 
+/** Longest list a multi-pick (set) setting can hold through the admin API: at least every option of every set. */
+export const SETTING_LIST_MAX = 100;
+
 export const isSettingKey = (k: string): k is SettingKey => k in SETTINGS;
 
 /** Validates one value against its definition; returns an error message or null. */
