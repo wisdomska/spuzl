@@ -12,10 +12,11 @@ import { createRng } from "@/lib/rng";
 import { difficultyForDate, type Difficulty } from "@/games/types";
 import { dailyNumber } from "@/lib/format";
 import { CODE_ALPHABET } from "../roomCode";
+import { CHALLENGE_CODE_LENGTH } from "@/lib/share/challenge-card";
 
 /* ---------------- Async challenge (Overlays A1, A2) ---------------- */
 
-export const CHALLENGE_CODE_LENGTH = 6;
+export { CHALLENGE_CODE_LENGTH };
 const challengeCode = () => Array.from({ length: CHALLENGE_CODE_LENGTH }, () => CODE_ALPHABET[randomInt(0, CODE_ALPHABET.length)]).join("");
 
 export interface TimelineSample {
@@ -80,7 +81,14 @@ async function clearedAttempt(admin: SupabaseClient, me: string, attemptId: stri
   };
 }
 
+/** Friend challenges are on (admin setting "features.challenges"): off, every challenge route answers 404. */
+export async function assertChallengesOn() {
+  if (!(await getGameSettings())["features.challenges"])
+    throw new ApiError(404, "challenges_off", "Friend challenges are switched off for now.");
+}
+
 export async function createChallenge(admin: SupabaseClient, me: string, attemptId: string, timeline?: TimelineSample[]) {
+  await assertChallengesOn();
   const a = await clearedAttempt(admin, me, attemptId);
   if (!playableGame(a.game_id)) throw new ApiError(404, "unknown_game");
   const { data: existing } = await admin.from("challenges").select("code").eq("attempt_id", a.id).maybeSingle();
@@ -114,6 +122,7 @@ export async function createChallenge(admin: SupabaseClient, me: string, attempt
 }
 
 async function challengeByCode(admin: SupabaseClient, code: string) {
+  await assertChallengesOn();
   const { data: c } = await admin.from("challenges").select("*").eq("code", code.toUpperCase()).maybeSingle();
   if (!c) throw new ApiError(404, "challenge_not_found");
   // A challenge on a game that has since been retired is refused like an unknown game.

@@ -60,6 +60,7 @@ import { MAX_SCORE } from "@/lib/daily-five";
 import { GAME_BY_ID } from "@/lib/catalog";
 import { track } from "@/lib/analytics/track";
 import { useGameCopy } from "@/lib/games-meta/client";
+import { challengeCopy } from "@/lib/copy/challenge";
 
 /** five: a Daily Five game (R2-05), played as today's shared Daily; it ends back on the Daily Five, not free play. */
 type Mode = "daily" | "free" | "archive" | "level" | "five";
@@ -524,11 +525,11 @@ export function PlayScreen({
           color={me.data?.avatar_color ?? "#B8F23A"}
           onShare={() => setShareOpen(true)}
           onChallenge={
-            attempt && result.status === "cleared"
+            attempt && result.status === "cleared" && settings["features.challenges"]
               ? async () => {
                   try {
                     const url = await createChallengeLink(attempt.attemptId);
-                    const text = `Beat my ${meta.name} time on SPUZL`;
+                    const text = challengeCopy.share.fromResult(meta.name);
                     if (navigator.share) await navigator.share({ text, url });
                     else {
                       await navigator.clipboard.writeText(`${text} ${url}`);

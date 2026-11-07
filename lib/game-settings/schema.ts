@@ -146,6 +146,13 @@ export const SETTINGS = {
     help: 'Shows "Share my status" on Me: a card with the player\'s Spuz, nickname, level, streak, favourite world, games tried and rank. Off: the button is hidden and the card links stop working.',
     default: false,
   },
+  "features.challenges": {
+    kind: "bool",
+    group: "Features",
+    label: "Friend challenges",
+    help: '"Beat my time" links to the exact puzzle of a clear, with a link preview image (game, time, the sender\'s hatted Spuz, "Beat me") and "Send it back" on the result. Links last 7 days. Off: the buttons are hidden, the server refuses new and open challenges, and preview images stop.',
+    default: true,
+  },
   "features.seasonal": {
     kind: "bool",
     group: "Features",

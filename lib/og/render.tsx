@@ -5,6 +5,8 @@ import { ShareCard } from "./ShareCard";
 import { StatusCard } from "./StatusCard";
 import { DuelCardOG } from "./DuelCard";
 import type { DuelShareModel } from "@/lib/share/duel-card";
+import { CHALLENGE_SIZES, type ChallengeCardModel, type ChallengeFormat } from "@/lib/share/challenge-card";
+import { ChallengeCardOG } from "./ChallengeCard";
 
 /** Only layout comes from the query string: which frame, and full or half size (low-data mode). */
 export function parseCardQuery(url: string): { format: CardFormat; scale: 1 | 0.5 } {
@@ -55,6 +57,25 @@ export async function renderStatusCard(card: StatusCardModel, scale: 1 | 0.5 = 1
     fonts: await ogFonts(),
     headers: {
       "cache-control": `public, max-age=${cacheSeconds}, s-maxage=${cacheSeconds * 5}, stale-while-revalidate=3600`,
+      "x-robots-tag": "noindex",
+    },
+  });
+}
+
+/** Friend challenge card: the 1200 × 630 link preview, or the 1080 × 1920 story (full or half size). */
+export async function renderChallengeCard(
+  card: ChallengeCardModel,
+  format: ChallengeFormat,
+  scale: 1 | 0.5 = 1,
+  cacheSeconds = 300,
+): Promise<ImageResponse> {
+  const { width, height } = CHALLENGE_SIZES[format];
+  return new ImageResponse(<ChallengeCardOG card={card} format={format} scale={scale} />, {
+    width: width * scale,
+    height: height * scale,
+    fonts: await ogFonts(),
+    headers: {
+      "cache-control": `public, max-age=${cacheSeconds}, s-maxage=${cacheSeconds * 12}, stale-while-revalidate=86400`,
       "x-robots-tag": "noindex",
     },
   });

@@ -2,6 +2,7 @@
 
 import { api } from "@/lib/client/api";
 import { isRetired } from "@/lib/catalog";
+import { challengePath } from "@/lib/share/challenge-card";
 
 /**
  * Hooks for screens outside multiplayer (Results, FR-RS-02): turn a verified clear into a
@@ -9,7 +10,7 @@ import { isRetired } from "@/lib/catalog";
  */
 export async function createChallengeLink(attemptId: string, timeline?: { ms: number; state: unknown }[]): Promise<string> {
   const { code } = await api<{ code: string }>("/api/v1/challenges", { json: { attemptId, timeline } });
-  return `${window.location.origin}/challenge/${code}`;
+  return `${window.location.origin}${challengePath(code)}`;
 }
 
 /** Rage Ridge games whose runs are kept as ghosts (the server list in lib/multiplayer/server/async.ts), live only. */

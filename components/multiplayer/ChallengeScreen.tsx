@@ -15,6 +15,8 @@ import { useProfileGate, useReduce } from "@/lib/client/multiplayer";
 import { useBackOrHome } from "@/lib/client/nav";
 import { formatClock } from "@/lib/format";
 import { play } from "@/lib/audio";
+import { useGameSettings } from "@/lib/game-settings/client";
+import { CHALLENGE_DAYS, challengeDaysLeft, challengePath } from "@/lib/share/challenge-card";
 import { Avatar, Cta, EASE_OUT, HomeCorner, LoadingScreen, MpToast, NeedProfile, Screen, TopButton, formatTenths, useToast } from "./ui";
 
 export interface ChallengeCardData {
@@ -75,6 +77,9 @@ export function ChallengeCard({ c, onAccept, onLater }: { c: ChallengeCardData; 
           </span>
           <span className="flex items-center gap-1">
             <Icon name="x-circle" size={15} /> {plural(c.mistakes, "slip", "slips")}
+          </span>
+          <span className="flex items-center gap-1" data-testid="challenge-ends">
+            <Icon name="hourglass-medium" size={15} /> {challengeCopy.endsIn(challengeDaysLeft(c.expiresAt))}
           </span>
         </div>
       </div>
@@ -279,9 +284,10 @@ export function ChallengeScreen({ code }: { code: string }) {
   const router = useRouter();
   const back = useBackOrHome();
   const { toast, show } = useToast();
+  const on = useGameSettings()["features.challenges"];
   const q = useQuery({
     queryKey: ["challenge", code],
-    enabled: gate === "ready",
+    enabled: gate === "ready" && on,
     queryFn: () => api<ChallengeCardData>(`/api/v1/challenges/${code}`),
     retry: false,
   });
@@ -330,7 +336,7 @@ export function ChallengeScreen({ code }: { code: string }) {
       if (navigator.share) await navigator.share({ text, url: full });
       else {
         await navigator.clipboard.writeText(`${text} ${full}`);
-        show("Link copied.");
+        show(challengeCopy.share.copied);
       }
     } catch {
       /* cancelled */
@@ -340,9 +346,9 @@ export function ChallengeScreen({ code }: { code: string }) {
     if (!c?.result?.attemptId) return;
     try {
       const att = await api<{ code: string }>("/api/v1/challenges", { json: { attemptId: c.result.attemptId } });
-      await share(`Your turn. Beat ${formatClock(c.result.timeMs)} on SPUZL 😤`, `/challenge/${att.code}`);
+      await share(challengeCopy.share.back(formatClock(c.result.timeMs)), challengePath(att.code));
     } catch {
-      show("Couldn't make the link.", "bad");
+      show(challengeCopy.share.linkFailed, "bad");
     }
   };
 
@@ -352,19 +358,26 @@ export function ChallengeScreen({ code }: { code: string }) {
   if (gate === "loading") return <LoadingScreen />;
   if (gate === "no_profile") return <NeedProfile />;
   if (q.isLoading) return <LoadingScreen />;
-  if (!c)
+  if (!c) {
+    // 410: past its 7 days; 404 challenges_off: the admin switch; any other miss: a bad or unknown link.
+    const err = q.error instanceof HttpError ? q.error : null;
+    const why = !on || err?.code === "challenges_off" ? "off" : err?.status === 410 ? "expired" : "missing";
+    const title = why === "off" ? challengeCopy.offTitle : why === "expired" ? challengeCopy.expiredTitle : challengeCopy.missingTitle;
+    const text =
+      why === "off" ? challengeCopy.offBody : why === "expired" ? challengeCopy.expiredBody(CHALLENGE_DAYS) : challengeCopy.missingBody;
     return (
-      <Screen label="Challenge missing">
+      <Screen label={`Challenge ${why}`}>
         <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
           <Spuz mood="sleepy" size={110} />
-          <h1 className="font-display text-[24px] font-black">This challenge ran out</h1>
-          <p className="text-muted">Challenges last 7 days. Ask for a fresh link.</p>
+          <h1 className="font-display text-[24px] font-black">{title}</h1>
+          <p className="text-muted">{text}</p>
           <Cta onClick={() => router.push("/")} className="w-full max-w-[358px]">
-            Back to The Grid
+            {challengeCopy.backHome}
           </Cta>
         </div>
       </Screen>
     );
+  }
 
   if (play_ && meta && Board)
     return (
@@ -400,7 +413,7 @@ export function ChallengeScreen({ code }: { code: string }) {
           <Cta
             className="mt-auto"
             icon="share-fat"
-            onClick={() => share(`Beat my ${formatClock(c.senderMs)} on ${meta?.name} 😤`, `/challenge/${c.code}`)}
+            onClick={() => share(challengeCopy.share.mine(formatClock(c.senderMs), meta?.name ?? "SPUZL"), challengePath(c.code))}
           >
             Share
           </Cta>
@@ -409,7 +422,7 @@ export function ChallengeScreen({ code }: { code: string }) {
         <ChallengeResult
           c={c}
           onSendBack={sendBack}
-          onShare={() => share(`${c.result!.won ? "I beat" : "I raced"} ${c.sender.nickname} on ${meta?.name} 👻`, `/challenge/${c.code}`)}
+          onShare={() => share(challengeCopy.share.raced(c.result!.won, c.sender.nickname, meta?.name ?? "SPUZL"), challengePath(c.code))}
         />
       ) : (
         <ChallengeCard c={c} onAccept={accept} onLater={() => router.push("/")} />
