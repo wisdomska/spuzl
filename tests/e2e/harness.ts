@@ -39,6 +39,8 @@ import * as daraRules from "@/games/dara/rules";
 import * as five from "@/games/five/logic";
 import * as hilo from "@/games/hilo/logic";
 import * as flagged from "@/games/flagged/logic";
+import * as twotruths from "@/games/twotruths/logic";
+import { REVEAL_MS as TRUTHS_REVEAL_MS } from "@/games/twotruths/rules";
 import { READ_FLOOR_MS } from "@/games/_shared/cluecave";
 
 export type Age = "13-15" | "16-17" | "18+";
@@ -235,6 +237,19 @@ const SOLVERS: Record<string, (page: Page, seed: string, d: Difficulty) => Promi
       // Taps before the reading floor are ignored, and the next round follows the last one's reveal (1.1 s).
       await page.waitForTimeout((i ? 1100 : 0) + READ_FLOOR_MS + 200);
       await answers.getByRole("button", { name: new RegExp(`^${"ABCD"[g.solution.correct[i]]}, `) }).click();
+      await expect(page.getByRole("img", { name: `${i + 1} of ${total} answered` })).toBeVisible();
+    }
+  },
+  async twotruths(page, seed, d) {
+    // The practice round (seed `tutorial:twotruths`) is the game's own practice board, not a seeded one.
+    const g = seed === "tutorial:twotruths" ? twotruths.practice() : twotruths.generate(createRng(seed), d);
+    const total = g.solution.lie.length;
+    await page.getByRole("button", { name: /^Start\b/ }).click();
+    const answers = page.getByRole("group", { name: "Answers" });
+    for (let i = 0; i < total; i++) {
+      // Taps before the reading floor are ignored; the next round follows the reveal (what is true instead).
+      await page.waitForTimeout((i ? TRUTHS_REVEAL_MS : 0) + READ_FLOOR_MS + 200);
+      await answers.getByRole("button", { name: new RegExp(`^${"ABC"[g.solution.lie[i]]}, `) }).click();
       await expect(page.getByRole("img", { name: `${i + 1} of ${total} answered` })).toBeVisible();
     }
   },

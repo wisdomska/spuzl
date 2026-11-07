@@ -4,6 +4,7 @@
  * Copy rule from the brief applies: no em or en dashes in player-facing text.
  */
 import { z } from "zod";
+import { TRUTHS_THEMES } from "@/games/twotruths/rules";
 
 const noDash = (s: string) => !/[–—]/.test(s);
 const text = (max = 200) => z.string().trim().min(1).max(max).refine(noDash, "No em or en dashes");
@@ -112,6 +113,22 @@ export const CONTENT_SCHEMAS = {
       message: "Give who made it and the year, or a hand-written clue",
       path: ["clue"],
     }),
+  // Two Truths and a Lie (R2-P5 lab game): one round, two true statements and a lie, what is true instead, and
+  // where it was checked. Well-established facts only (see games/twotruths/content.ts).
+  twotruths: z
+    .object({
+      id: z.string().regex(/^[a-z0-9-]{2,40}$/, "Lowercase id, letters, digits and hyphens"),
+      theme: z.enum(TRUTHS_THEMES),
+      level: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+      truths: z.tuple([text(110), text(110)]),
+      lie: text(110),
+      fix: text(160),
+      source: text(160),
+    })
+    .refine((e) => new Set([...e.truths, e.lie].map((x) => x.toLowerCase())).size === 3, {
+      message: "The three statements must all be different",
+      path: ["lie"],
+    }),
 } as const;
 
 export type ContentGame = keyof typeof CONTENT_SCHEMAS;
@@ -152,6 +169,7 @@ export const TEMPLATES: Record<ContentGame, unknown> = {
   pixl: { name: "", rows: ["....."] },
   five: "",
   emojihits: { title: "", emoji: "", kind: "song", by: "", year: 2020, from: "ghana", accept: [] },
+  twotruths: { id: "", theme: "ghana", level: 1, truths: ["", ""], lie: "", fix: "", source: "" },
 };
 
 /** Quickfire schedules a set of five questions; everything else schedules one entry. */

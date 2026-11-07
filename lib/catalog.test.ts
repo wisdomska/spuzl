@@ -74,6 +74,20 @@ const KEEP = [
   "fourup",
 ];
 
+/** R2-P5 part B: new games, added after the eleven that came back. */
+const NEW_LAB = ["twotruths"];
+
+describe("R2-P5 part B: new lab games", () => {
+  it("are lab only, in live worlds, with their own rule line", () => {
+    for (const id of NEW_LAB) {
+      expect(isLabGame(id), id).toBe(true);
+      expect(isLiveGame(id), id).toBe(false);
+      expect(isLiveWorld(GAME_BY_ID[id].world), id).toBe(true);
+    }
+    expect(GAME_BY_ID.twotruths).toMatchObject({ world: "word", scoring: "score", content: "curated" });
+  });
+});
+
 describe("catalog: retired games", () => {
   it("keeps exactly the 29 owner-picked games live (28, plus Quads back in R2-14)", () => {
     expect(GAMES.map((g) => g.id).sort()).toEqual([...KEEP].sort());
@@ -84,7 +98,8 @@ describe("catalog: retired games", () => {
   it("retires 21 of the others but keeps them in code (32, less the 11 lab games back in R2-P5)", () => {
     expect(RETIRED_IDS.size).toBe(21);
     expect(RETIRED_GAMES).toHaveLength(21);
-    expect(ALL_GAMES).toHaveLength(61);
+    // 61 before R2-P5 part B, plus its new lab games
+    expect(ALL_GAMES).toHaveLength(61 + NEW_LAB.length);
     for (const id of RETIRED_IDS) {
       expect(GAME_BY_ID[id], id).toBeDefined();
       expect(GAME_BY_ID[id].retired, id).toBe(true);
@@ -192,7 +207,7 @@ describe("R2-P5: lab games behind features.labGames", () => {
   const some = { "features.labGames": ["five", "dara"] };
 
   it("brings the eleven back as lab games, in order, none retired, none live", () => {
-    expect(LAB_GAMES.map((g) => g.id)).toEqual(BACK);
+    expect(LAB_GAMES.map((g) => g.id)).toEqual([...BACK, ...NEW_LAB]);
     for (const id of BACK) {
       expect(isRetired(id), id).toBe(false);
       expect(isLabGame(id), id).toBe(true);

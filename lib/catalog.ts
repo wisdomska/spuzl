@@ -749,6 +749,19 @@ const LAB_LIST: GameMeta[] = [
     "Fill cells so each row and column matches its number clues.",
     { unique: true, minTimeMs: 10000, lab: true },
   ),
+  // R2-P5 part B: new games, lab only until the owner switches them on.
+  // Two Truths and a Lie (all ages): curated statements, pick the lie; answers judged on the server.
+  g(
+    "twotruths",
+    "Two Truths and a Lie",
+    "word",
+    "seal-question",
+    "M3+",
+    "custom",
+    "Two are true. Spot the lie.",
+    "Three statements, two of them true. Tap the lie before the bar runs out.",
+    { content: "curated", scoring: "score", minTimeMs: 8000, lab: true },
+  ),
 ];
 
 /**

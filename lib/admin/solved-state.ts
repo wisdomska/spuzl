@@ -123,6 +123,8 @@ export const SOLVED_STATE: Record<string, Adapter> = {
   penalty: (p: any, s: any) => penaltyShots(p, s),
   beattap: (p: any) => ({ taps: (p.beats as number[]).map((b, i) => b + BEAT_SCATTER[i % BEAT_SCATTER.length]), done: true }),
   dara: (p: any, s: any) => daraLine(p, s),
+  // every lie found, a few seconds in
+  twotruths: (_p, s: any) => ({ answers: (s.lie as number[]).map((pick) => ({ pick, ms: 5000, right: true, answer: pick })) }),
 };
 /* eslint-enable @typescript-eslint/no-explicit-any */
 

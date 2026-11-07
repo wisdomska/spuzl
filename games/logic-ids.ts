@@ -66,6 +66,7 @@ export const LOGIC_IDS: readonly string[] = [
   "lightup",
   "killer",
   "dara",
+  "twotruths",
 ];
 
 const IDS = new Set(LOGIC_IDS);

@@ -10,6 +10,7 @@ import { errorText, useAdminAction, useAdminQuery, type AdminPage } from "@/lib/
 import { adminCopy } from "@/lib/copy/admin";
 import { Pagination, usePager, type Pager } from "./Pagination";
 import { QuadsEditor, QuadsPackPanel, QuadsPreview } from "./QuadsEditor";
+import { TruthsPackPanel, TruthsPreview } from "./TruthsEditor";
 import { SortHead, type HeadCol } from "./SortHeader";
 import { useUrlFilters, useUrlSort } from "./useUrlFilters";
 import { Btn, Empty, Field, Notice, PageTitle, Pill, RowsSkeleton, Swatch, Tabs, inputCls, textareaCls, type PillTone } from "./ui";
@@ -37,6 +38,7 @@ function summary(p: unknown): string {
   if (!p || typeof p !== "object") return "";
   const o = p as Record<string, unknown>;
   if (typeof o.title === "string" && typeof o.emoji === "string") return `${o.emoji} ${o.title}`; // Emoji Hits
+  if (typeof o.lie === "string" && o.lie) return o.lie; // Two Truths: the lie names the round
   for (const k of ["theme", "category", "q", "name", "label", "phrase", "pangram"])
     if (typeof o[k] === "string" && o[k]) return o[k] as string;
   if (Array.isArray(o.words)) return (o.words as string[]).filter(Boolean).join(" ");
@@ -198,6 +200,7 @@ function Items({
         </div>
         {q.data && <Pagination pager={pager} total={q.data.total} />}
         {game === "quads" && <QuadsPackPanel status={status} canWrite={canWrite} />}
+        {game === "twotruths" && <TruthsPackPanel status={status} canWrite={canWrite} />}
       </div>
       {open && (
         <Editor
@@ -331,6 +334,7 @@ function Editor({
         />
       </Field>
       {game === "quads" && parsed.ok && <QuadsPreview value={parsed.value} />}
+      {game === "twotruths" && parsed.ok && <TruthsPreview value={parsed.value} />}
       {err && <Notice tone="danger">{errorText(err)}</Notice>}
       {schedule.data && (
         <Notice tone="ok" icon="check-circle">

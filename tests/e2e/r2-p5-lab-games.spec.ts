@@ -47,8 +47,20 @@ test.afterAll(async () => {
 
 test.describe.configure({ mode: "serial" });
 
-test("the eleven are lab games", () => {
-  expect(ALL).toEqual(["five", "hilo", "penalty", "market", "lightup", "killer", "dara", "pinned", "flagged", "tripwire", "pixl"]);
+test("the eleven are lab games (part B's new games follow them)", () => {
+  expect(ALL.slice(0, 11)).toEqual([
+    "five",
+    "hilo",
+    "penalty",
+    "market",
+    "lightup",
+    "killer",
+    "dara",
+    "pinned",
+    "flagged",
+    "tripwire",
+    "pixl",
+  ]);
 });
 
 test("switched off: a lab game is hidden, not found and refused", async ({ page }) => {

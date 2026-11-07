@@ -385,6 +385,12 @@
         "icon": "dots-three",
         "world": "board",
         "file": "icons/dara.webp"
+      },
+      {
+        "id": "twotruths",
+        "icon": "seal-question",
+        "world": "word",
+        "file": "icons/twotruths.webp"
       }
     ]
   }

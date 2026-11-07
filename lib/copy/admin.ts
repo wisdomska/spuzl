@@ -240,6 +240,24 @@ export const adminCopy = {
       nothing: "No Quads items to export with these filters.",
       fix: "Fix these and import again. Nothing was saved.",
     },
+    /** Two Truths and a Lie rounds: preview and JSON packs (R2-P5). */
+    twotruths: {
+      preview: "Preview",
+      previewHint: "The round as players see it once answered: the lie marked, then what is true instead.",
+      lie: "The lie",
+      source: "Checked in",
+      tools: "Two Truths packs",
+      toolsHint:
+        "Export the listed Two Truths rounds as a JSON pack, or import a pack as drafts for review. Only well-established facts, with a source for each. Approved rounds join the pool once added to games/twotruths/content.ts.",
+      exportPack: "Export Two Truths JSON",
+      importPack: "Import Two Truths JSON",
+      importLabel: "Paste a Two Truths pack",
+      importGo: "Import as drafts",
+      exported: (n: number) => `Exported ${n} ${n === 1 ? "round" : "rounds"}.`,
+      imported: (n: number) => `Imported ${n} ${n === 1 ? "round" : "rounds"} as drafts.`,
+      nothing: "No Two Truths items to export with these filters.",
+      fix: "Fix these and import again. Nothing was saved.",
+    },
   },
 
   shop: {

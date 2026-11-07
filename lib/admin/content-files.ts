@@ -66,6 +66,10 @@ const FILES: Record<ContentGame, () => Promise<{ needsReview: boolean; entries: 
     const m = await import("@/games/emojihits/content");
     return { needsReview: m.needsReview, entries: m.CONTENT };
   },
+  twotruths: async () => {
+    const m = await import("@/games/twotruths/content");
+    return { needsReview: m.needsReview, entries: m.CONTENT };
+  },
 };
 
 export const ITEM_COLS =

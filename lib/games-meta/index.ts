@@ -73,10 +73,11 @@ export const TYPICAL_SEC: Record<string, number> = {
   lightup: 180,
   killer: 300,
   dara: 90,
+  twotruths: 120,
 };
 
 /** Games with a clock pushing you (reaction, action, countdowns) are never "calm". */
-const PRESSURE = new Set(["merge", "quickfire", "flagged", "deadon", "seven"]);
+const PRESSURE = new Set(["merge", "quickfire", "flagged", "deadon", "seven", "twotruths"]);
 
 export function defaultTags(id: string): Tag[] {
   const g = GAME_BY_ID[id];

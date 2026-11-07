@@ -129,6 +129,12 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 - **R2-P5 players' view of a lab game:** a switched-on lab game looks like any other game in All games and on its
   world (no "in testing" mark), and the public `/api/v1/games/meta` lists every lab game's duration and tags (ids
   only) even while it is switched off. A small "New, in testing" tag on the card is a design call for the owner.
+- **R2-P5 part B, Two Truths content review:** `games/twotruths/content.ts` has `needsReview = true`. The 64 rounds
+  were written to well-established facts with a source each, but the owner should read them on the admin Content
+  page (content.ts review) before ticking `twotruths` in `features.labGames`. New rounds come in as drafts through
+  the Two Truths pack import and join the pool once copied into content.ts.
+- **R2-P5 part B, Two Truths in Party:** not a Party race game. Races rank by finish time and take only time-scored
+  live games, so no quiz game (Quickfire, Emoji Hits) races today. A score race mode would let all three join.
 - **R2-P5 settings delay:** a lab switch reaches players within about 30 s (server settings cache) plus up to 60 s
   (edge cache of `/api/v1/settings/game`); the server refuses a switched-off game as soon as its own cache expires.
 - **Admin cascade audit (R2-ADMIN), left out or partial** (full table: `docs/qa/ADMIN_CASCADE_R2.md`):

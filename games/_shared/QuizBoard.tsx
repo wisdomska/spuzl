@@ -46,6 +46,16 @@ export interface QuizVerdict {
   answer: number;
   /** the answer reached the judge after the time ran out: it counts as a timeout */
   late?: boolean;
+  /** a line the judge adds once the answer is in (Two Truths: what is true instead of the lie) */
+  note?: string;
+}
+
+/** A board's own wording of a judged answer (`answer` is the right option's text, `note` the verdict's). */
+export interface VerdictWords {
+  right(answer: string, note?: string): string;
+  wrong(answer: string, note?: string): string;
+  time(answer: string, note?: string): string;
+  late(answer: string, note?: string): string;
 }
 
 /**
@@ -83,6 +93,10 @@ interface Props {
   api: BoardApi<{ answers: QuizAnswer[] }>;
   /** how long the revealed answer stays before the next question appears on its own */
   advanceMs?: number;
+  /** the hint control's label (Quickfire's 50:50 by default) */
+  hintLabel?: string;
+  /** the feedback line for a judged answer, when the board words it its own way */
+  words?: VerdictWords;
 }
 
 /** checking: an answer is with the judge; retry: the judge could not be reached, the answer waits to be sent again */
@@ -111,7 +125,20 @@ async function withRetry<T>(f: () => Promise<T>): Promise<T> {
  * summary ("4 of 5 · 469 pts"). The question clock is the judge's, so it keeps running through a pause.
  * Taps under the reading floor are ignored, since the server rejects them.
  */
-export function QuizBoard({ rounds, judge, limitMs, noun, initial, hint, disabled, mode, api, advanceMs = REVEAL_MS }: Props) {
+export function QuizBoard({
+  rounds,
+  judge,
+  limitMs,
+  noun,
+  initial,
+  hint,
+  disabled,
+  mode,
+  api,
+  advanceMs = REVEAL_MS,
+  hintLabel = t.fiftyFifty,
+  words,
+}: Props) {
   const total = rounds.length;
   const [answers, setAnswers] = useState<QuizAnswer[]>(() => initial ?? []);
   const [phase, setPhase] = useState<Phase>(() => ((initial?.length ?? 0) >= total ? "done" : "ready"));
@@ -241,8 +268,19 @@ export function QuizBoard({ rounds, judge, limitMs, noun, initial, hint, disable
         // a right answer is the palette's small win (the two-note lift)
         play("success");
         api.onMove({ answers: next }, { correctStreak: streak.current });
-        api.feedback(t.right(answerText), "success", "check-circle");
-        api.announce(t.right(answerText));
+        const line = words ? words.right(answerText, v.note) : t.right(answerText);
+        api.feedback(line, "success", "check-circle");
+        api.announce(line);
+      } else if (words) {
+        streak.current = 0;
+        setShakeN((k) => k + 1);
+        api.onMove({ answers: next }, { mistake: true });
+        if (v.late || v.pick === null) {
+          sfx.miss();
+          const line = v.late ? words.late(answerText, v.note) : words.time(answerText, v.note);
+          api.feedback(line, "danger", "timer");
+          api.announce(line);
+        } else api.ruleBreak(words.wrong(answerText, v.note));
       } else {
         streak.current = 0;
         setShakeN((k) => k + 1);
@@ -260,7 +298,7 @@ export function QuizBoard({ rounds, judge, limitMs, noun, initial, hint, disable
       }
       if (!disabledRef.current) scheduleAdvance();
     },
-    [api, rounds, scheduleAdvance],
+    [api, rounds, scheduleAdvance, words],
   );
   useEffect(() => {
     settleRef.current = settle;
@@ -342,9 +380,9 @@ export function QuizBoard({ rounds, judge, limitMs, noun, initial, hint, disable
         tone: phase === "ready" || retrying ? "world" : "default",
         disabled: disabled || (phase !== "ready" && !retrying),
       },
-      { id: "hint", label: t.fiftyFifty, icon: "lightbulb", onPress: () => {}, tone: "gold", disabled: phase !== "asking" },
+      { id: "hint", label: hintLabel, icon: "lightbulb", onPress: () => {}, tone: "gold", disabled: phase !== "asking" },
     ]);
-  }, [api, ask, send, disabled, i, noun, phase, total, answers.length]);
+  }, [api, ask, send, disabled, i, noun, phase, total, answers.length, hintLabel]);
 
   useEffect(() => {
     // A run resumed from autosave keeps its earlier slips, so the results never call it clean.

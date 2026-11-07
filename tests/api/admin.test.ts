@@ -402,6 +402,20 @@ describe("content editor and two-person approval (FR-AD-03)", () => {
     expect((await S.analyst.aal2("/api/admin/content/import", { json: { game: "quads", text } })).status).toBe(403);
     await admin().from("content_items").delete().in("id", r.data.ids);
   });
+
+  it("imports a Two Truths pack as drafts, all or nothing (R2-P5)", async () => {
+    const { CONTENT } = await import("@/games/twotruths/content");
+    const { truthsPackToJson } = await import("@/lib/admin/truths-pack");
+    const text = truthsPackToJson(CONTENT.slice(0, 3));
+    const r = await S.content_editor.aal2("/api/admin/content/import", { json: { game: "twotruths", text } });
+    expect([r.status, r.data.created]).toEqual([200, 3]);
+    const { data: rows } = await admin().from("content_items").select("status, game_id, payload").in("id", r.data.ids);
+    expect(rows?.every((x) => x.status === "draft" && x.game_id === "twotruths")).toBe(true);
+    const bad = truthsPackToJson([{ ...CONTENT[0], lie: CONTENT[0].truths[0] }]);
+    const no = await S.content_editor.aal2("/api/admin/content/import", { json: { game: "twotruths", text: bad } });
+    expect([no.status, no.data.error]).toEqual([422, "invalid_pack"]);
+    await admin().from("content_items").delete().in("id", r.data.ids);
+  });
 });
 
 describe("moderation (FR-AD-05)", () => {
