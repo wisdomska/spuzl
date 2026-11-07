@@ -16,7 +16,7 @@
 --   alter table public.client_metrics add constraint client_metrics_name_check
 --     check (name in ('tap_to_board', 'hint_cancel', 'hint_request', 'hint_use', 'share', 'onboarding_step',
 --                     'duel_created', 'party_first_move', 'prompt_shown', 'prompt_accepted', 'prompt_dismissed', 'daily5_start',
-                    'daily5_complete', 'daily5_share', 'practice_start', 'practice_finish', 'practice_skip', 'game_over'));
+--                     'daily5_complete', 'daily5_share', 'practice_start', 'practice_finish', 'practice_skip', 'game_over'));
 --   delete from supabase_migrations.schema_migrations where version = '20261204000701';
 
 alter table public.client_metrics drop constraint if exists client_metrics_name_check;
