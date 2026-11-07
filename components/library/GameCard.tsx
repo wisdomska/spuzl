@@ -20,7 +20,8 @@ import { isBayGame } from "@/lib/multiplayer/bay";
 import { bayLive } from "@/lib/copy/bay-live";
 import { useSettings } from "@/lib/settings/store";
 import { inviteHref, liveHref } from "@/components/world/LiveEntry";
-import { durationLabel } from "@/lib/games-meta";
+import { durationLabel, gameCopy } from "@/lib/games-meta";
+import { useGamesMeta } from "@/lib/games-meta/client";
 import { formatClock } from "@/lib/format";
 import { libraryCopy as T } from "@/lib/copy/library";
 import { PLAY_NAV } from "@/lib/analytics/play-nav";
@@ -75,6 +76,7 @@ export function GameCard({
     router.push(href as never);
   };
   const world = meta ? WORLD_BY_ID[meta.world] : null;
+  const metaRows = useGamesMeta();
   const race = meta ? isRaceGame(meta.id) : false;
   // Board Bay games: play someone live (matchmaking) or invite a friend.
   const bay = meta ? isBayGame(meta.id) : false;
@@ -116,7 +118,7 @@ export function GameCard({
               </div>
               <Dialog.Description className="bg-surface-raised rounded-[16px] px-4 py-3 text-[15px] leading-[1.45] font-medium">
                 <span className="text-muted block text-[12px] font-bold tracking-[0.04em] uppercase">{T.rule}</span>
-                {meta.rule}
+                {gameCopy(meta, metaRows).rule}
               </Dialog.Description>
 
               <div className="flex flex-col gap-2.5">

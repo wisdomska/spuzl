@@ -59,6 +59,7 @@ import { dailyFiveCopy as FT } from "@/lib/copy/daily-five";
 import { MAX_SCORE } from "@/lib/daily-five";
 import { GAME_BY_ID } from "@/lib/catalog";
 import { track } from "@/lib/analytics/track";
+import { useGameCopy } from "@/lib/games-meta/client";
 
 /** five: a Daily Five game (R2-05), played as today's shared Daily; it ends back on the Daily Five, not free play. */
 type Mode = "daily" | "free" | "archive" | "level" | "five";
@@ -750,6 +751,7 @@ function Toast({ text, onDone }: { text: string; onDone: () => void }) {
  * paint (they are the largest content), and only the timer, tools and board are placeholders.
  */
 function PlayLoading({ meta }: { meta: GameMeta }) {
+  const { rule } = useGameCopy(meta);
   // The game's own colour (lib/catalog colourOf), as GameShell paints it, so the frame does not change hue.
   return (
     <div
@@ -771,15 +773,15 @@ function PlayLoading({ meta }: { meta: GameMeta }) {
           aria-hidden
           className="text-muted wide:line-clamp-2 hidden max-w-[640px] min-w-0 flex-[2] text-center text-[14px] leading-5 font-medium"
         >
-          {meta.rule}
+          {rule}
         </p>
         <Skeleton className="size-11 rounded-[14px]" />
         <Skeleton className="size-11 rounded-[14px]" />
       </div>
       <p aria-hidden className="text-muted short:text-[13px] wide:hidden line-clamp-2 px-4 pb-2 text-[14px] leading-5 font-medium">
-        {meta.rule}
+        {rule}
       </p>
-      <p className="sr-only">{meta.rule}</p>
+      <p className="sr-only">{rule}</p>
       {/* Wide: the board column, with the side panel's width kept free. */}
       <main className="short:py-1 wide:mr-[392px] wide:p-3 flex justify-center px-3 py-2">
         <BoardSkeleton />

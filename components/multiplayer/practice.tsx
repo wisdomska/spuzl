@@ -9,6 +9,8 @@ import { useMe } from "@/lib/client/api";
 import { useMarkLearned } from "@/lib/client/learned";
 import { practiceCopy as P } from "@/lib/copy/practice";
 import { useGameSettings } from "@/lib/game-settings/client";
+import { gameCopy } from "@/lib/games-meta";
+import { useGamesMeta } from "@/lib/games-meta/client";
 import { allLearned, learnedGames, needsHowItWorks } from "@/lib/guided";
 import { hasLogic } from "@/games/logic-ids";
 import { prefersReducedMotion, useSettings } from "@/lib/settings/store";
@@ -93,6 +95,7 @@ export function PracticeFirst({ games, className }: { games: readonly string[]; 
  */
 export function HowItWorks({ game, onDone }: { game: string; onDone: () => void }) {
   const meta = GAME_BY_ID[game];
+  const metaRows = useGamesMeta({ quiet: true });
   const osReduce = useReducedMotion();
   const appReduce = useSettings((s) => s.hydrated && prefersReducedMotion(s));
   const reduce = !!osReduce || appReduce;
@@ -116,7 +119,7 @@ export function HowItWorks({ game, onDone }: { game: string; onDone: () => void 
       transition={{ duration: 0.24, ease: [0.23, 1, 0.32, 1] }}
     >
       <h2 className="font-display text-[18px] leading-6 font-black">{P.howTitle(meta.name)}</h2>
-      <p className="text-[16px] leading-6 font-semibold">{meta.rule}</p>
+      <p className="text-[16px] leading-6 font-semibold">{gameCopy(meta, metaRows).rule}</p>
       <p className="text-muted text-[14px]">{P.howBody}</p>
       <div
         className="bg-line h-1.5 overflow-hidden rounded-full"

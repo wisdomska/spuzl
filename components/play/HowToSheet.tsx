@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { WORLD_BY_ID, colourOf, type GameMeta } from "@/lib/catalog";
 import { useSheetSound } from "@/lib/audio/useSheetSound";
+import { useGameCopy } from "@/lib/games-meta/client";
 
 export interface HowToTip {
   icon: string;
@@ -19,6 +20,7 @@ export interface HowToTip {
 export function HowToSheet({ open, meta, onClose, tips }: { open: boolean; meta: GameMeta; onClose: () => void; tips?: HowToTip[] }) {
   const dailies = useGameSettings()["features.dailies"];
   const world = WORLD_BY_ID[meta.world];
+  const { rule } = useGameCopy(meta);
   useSheetSound(open);
   return (
     <Dialog.Root open={open} onOpenChange={(o) => !o && onClose()}>
@@ -42,7 +44,7 @@ export function HowToSheet({ open, meta, onClose, tips }: { open: boolean; meta:
             </div>
           </div>
           <p id="howto-rule" className="text-[17px] leading-normal font-medium">
-            {meta.rule}
+            {rule}
           </p>
           {tips ? (
             <ul className="text-muted flex flex-col gap-2 text-[15px]">

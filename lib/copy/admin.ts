@@ -647,7 +647,7 @@ export const adminCopy = {
   library: {
     title: "Library",
     intro:
-      "Typical play time (the duration chip) and filter tags per game. The new tag picks the games in Home's new-games banner and the New filter. Players see changes within 5 minutes.",
+      "Typical play time (the duration chip), filter tags, the one-line rule and the card copy per game. The new tag picks the games in Home's new-games banner and the New filter. Players see changes within 5 minutes.",
     exportImport: "Export and import",
     exportIntro: "Only overrides are exported. Import validates every row before saving any.",
     export: "Export",
@@ -668,6 +668,19 @@ export const adminCopy = {
         ? "In testing and switched on: players can find and play it."
         : "In testing and switched off: hidden from players, and the server refuses it.",
     labSwitch: "Switch on Settings",
+    /** Per-game copy (R2-ADMIN): the one-line rule and the card copy, each one line of at most 130 characters. */
+    copy: "Rule and card copy",
+    copyAria: (name: string) => `Rule and card copy for ${name}`,
+    rule: "One-line rule",
+    ruleHelp:
+      "Under the title until the first move, in the game menu, How to play, the Library game card and the Duel and Party How it works card.",
+    blurb: "Card copy",
+    blurbHelp: "The line under the game's name on its world page. Library search matches it too.",
+    chars: (n: number, max: number) => `${n} of ${max}`,
+    copyDefault: (text: string) => `Default: ${text}`,
+    resetCopy: "Use default",
+    changed: "Changed",
+    iconAria: (name: string) => `${name} icon`,
   },
 
   /** Content calendar: one week of Dailies per game. */

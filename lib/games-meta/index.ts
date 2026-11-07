@@ -90,7 +90,11 @@ export function defaultTags(id: string): Tag[] {
   return tags;
 }
 
-export type GameMetaRow = { typicalSec: number; tags: Tag[] };
+/**
+ * One game's Library metadata. `rule` and `blurb` are present only when the admin overrode the catalog's copy
+ * (games.rule, games.blurb); readers fall back to the catalog through `gameCopy()`.
+ */
+export type GameMetaRow = { typicalSec: number; tags: Tag[]; rule?: string; blurb?: string };
 
 /** The default row for any game in code (retired ones too, for the admin Library list). */
 export const defaultMetaFor = (id: string): GameMetaRow => ({ typicalSec: TYPICAL_SEC[id] ?? 180, tags: defaultTags(id) });
@@ -121,7 +125,7 @@ export function parseFilter(v: string | null | undefined): GameFilter {
 export const isTag = (t: unknown): t is Tag => typeof t === "string" && (TAGS as readonly string[]).includes(t);
 
 /** Validates an admin override; returns an error message or null. */
-export function validateMeta(m: { typicalSec?: unknown; tags?: unknown }): string | null {
+export function validateMeta(m: { typicalSec?: unknown; tags?: unknown; rule?: unknown; blurb?: unknown }): string | null {
   if (
     m.typicalSec !== undefined &&
     (typeof m.typicalSec !== "number" || !Number.isInteger(m.typicalSec) || m.typicalSec < 10 || m.typicalSec > 3600)
@@ -129,7 +133,35 @@ export function validateMeta(m: { typicalSec?: unknown; tags?: unknown }): strin
     return "Typical time must be a whole number of seconds between 10 and 3600";
   if (m.tags !== undefined && (!Array.isArray(m.tags) || !m.tags.every(isTag) || new Set(m.tags).size !== m.tags.length))
     return `Tags must be distinct values from: ${TAGS.join(", ")}`;
+  if (m.rule !== undefined) {
+    const e = validateCopyLine(m.rule, "The rule");
+    if (e) return e;
+  }
+  if (m.blurb !== undefined) {
+    const e = validateCopyLine(m.blurb, "The card copy");
+    if (e) return e;
+  }
   return null;
+}
+
+/** Longest one-line rule or card copy: two lines under the title on a 375 px phone (R2-06). */
+export const COPY_MAX = 130;
+
+/** Validates one line of admin copy (a rule or a blurb); returns an error message or null. */
+export function validateCopyLine(v: unknown, what: string): string | null {
+  if (typeof v !== "string") return `${what} must be text`;
+  if (/[\r\n]/.test(v)) return `${what} must be one line`;
+  const t = v.trim();
+  if (!t) return `${what} cannot be empty (reset it to use the default)`;
+  if (t !== v) return `${what} cannot start or end with spaces`;
+  if (t.length > COPY_MAX) return `${what} must be at most ${COPY_MAX} characters (now ${t.length})`;
+  return null;
+}
+
+/** The rule and card copy a player sees: the admin override, else the catalog's. */
+export function gameCopy(g: Pick<GameMeta, "id" | "rule" | "blurb">, meta: Record<string, GameMetaRow | undefined>) {
+  const m = meta[g.id];
+  return { rule: m?.rule ?? g.rule, blurb: m?.blurb ?? g.blurb };
 }
 
 /** Library search: name, world name, blurb; case and accent insensitive. */
@@ -160,6 +192,6 @@ export function filterGames<G extends Pick<GameMeta, "id" | "name" | "world" | "
         if (!meta[g.id]?.tags.includes(filter)) return false;
       } else if (g.world !== filter) return false;
     }
-    return !q || matchesQuery(`${g.name} ${WORLD_BY_ID[g.world].name} ${g.blurb}`, q);
+    return !q || matchesQuery(`${g.name} ${WORLD_BY_ID[g.world].name} ${meta[g.id]?.blurb ?? g.blurb}`, q);
   });
 }

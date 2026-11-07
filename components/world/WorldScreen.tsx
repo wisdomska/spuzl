@@ -20,6 +20,8 @@ import { useLevels } from "@/lib/client/levels";
 import { ChallengeEntry } from "@/components/multiplayer/GameChallenge";
 import { PLAY_NAV } from "@/lib/analytics/play-nav";
 import { resumeNote, useResumeGames } from "@/lib/client/resume";
+import { gameCopy } from "@/lib/games-meta";
+import { useGamesMeta } from "@/lib/games-meta/client";
 
 /** Solo Screens 03 World view: island header in world colour, then each game with today's status. */
 export function WorldScreen({ id }: { id: WorldId }) {
@@ -40,6 +42,8 @@ export function WorldScreen({ id }: { id: WorldId }) {
   const levels = useLevels(games.some((g) => isLadderGame(g.id)));
   // Solo puzzles left part way on this device (lib/client/resume.ts): their card says Resume.
   const resumeGames = useResumeGames();
+  // Card copy: the admin Library override, else the catalog blurb (R2-ADMIN).
+  const metaRows = useGamesMeta();
 
   return (
     <main
@@ -114,7 +118,7 @@ export function WorldScreen({ id }: { id: WorldId }) {
                 <GameIcon3D meta={g} size={64} />
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="font-display text-[18px] font-extrabold">{g.name}</span>
-                  <span className="text-muted text-[14px] leading-[1.35]">{g.blurb}</span>
+                  <span className="text-muted text-[14px] leading-[1.35]">{gameCopy(g, metaRows).blurb}</span>
                 </span>
                 {resume ? (
                   <Chip icon="hourglass-medium" bg="var(--surface-raised)" fg="var(--text)">

@@ -13,6 +13,7 @@ import { GameMenu, type GameMenuEntry } from "./GameMenu";
 import { gameMenuCopy } from "@/lib/copy/game-menu";
 import { prefersReducedMotion, useSettings } from "@/lib/settings/store";
 import { useMe } from "@/lib/client/api";
+import { useGameCopy } from "@/lib/games-meta/client";
 import { BOARD_THEMES } from "@/lib/gamification/cosmetics";
 import { play } from "@/lib/audio";
 import { formatClock } from "@/lib/format";
@@ -166,6 +167,8 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   // The game's own colour (lib/catalog colourOf): moved games keep the hue they were designed in.
   const relaxed = useSettings((s) => s.relaxed);
   const sfx = useSettings((s) => s.sfx);
+  // The one-line rule as players see it: the admin Library override, else the catalog's (R2-ADMIN).
+  const { rule: ruleText } = useGameCopy(meta);
   const haptics = useSettings((s) => s.haptics);
   const setSetting = useSettings((s) => s.set);
   const osReduce = useReducedMotion();
@@ -497,7 +500,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   // and in the screen-reader text). It is there from the first paint, so it never pushes the board down; the first
   // move collapses it (instantly with reduced motion). Wide screens show it in the top bar's empty middle, so the
   // board never moves at all; when the practice banner holds that spot, it heads the side panel instead.
-  const showRule = !started && !solved && !!meta.rule;
+  const showRule = !started && !solved && !!ruleText;
   // R2-16: the board is covered whenever the game is held (Pause, the menu where it pauses, How to play, the hint and
   // leave confirms), first move or not. A cleared board stays on show.
   // R2-15: digits only once the clock runs (or a resumed game carries time); never in a practice round.
@@ -511,7 +514,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
       data-shell-rule
       className={`text-muted line-clamp-2 text-[14px] leading-5 font-medium ${center ? "text-center" : "short:text-[13px] pb-2"}`}
     >
-      {meta.rule}
+      {ruleText}
     </p>
   );
   const foldingRule = (cls: string, center = false) => (
@@ -566,7 +569,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
         open={menuOpen}
         onOpenChange={setMenuOpen}
         sections={menuSections}
-        rule={meta.rule}
+        rule={ruleText}
         note={solved ? undefined : canPause ? M.paused : M.livePaused}
         shield={menuHold}
         triggerRef={menuButton}
@@ -662,7 +665,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
 
   const rule = (
     <p id={`rule-${meta.id}`} className="sr-only">
-      {meta.rule}
+      {ruleText}
     </p>
   );
 

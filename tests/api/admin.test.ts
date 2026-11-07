@@ -921,6 +921,45 @@ describe("Library metadata (SPZ-14 admin cascade)", () => {
       await S.owner.aal2("/api/admin/games/meta", { method: "PATCH", json: { id, typicalSec: null, tags: null } });
   });
 
+  it("overrides a game's one-line rule and card copy: validated, served publicly, audited, exported (R2-ADMIN, needs 20261202000101)", async () => {
+    const tooLong = await S.content_editor.aal2("/api/admin/games/meta", { method: "PATCH", json: { id: "dusk", rule: "x".repeat(131) } });
+    expect([tooLong.status, tooLong.data.error]).toEqual([422, "invalid_meta"]);
+    const twoLines = await S.content_editor.aal2("/api/admin/games/meta", { method: "PATCH", json: { id: "dusk", blurb: "one\ntwo" } });
+    expect(twoLines.status).toBe(422);
+    const empty = await S.content_editor.aal2("/api/admin/games/meta", { method: "PATCH", json: { id: "dusk", rule: "  " } });
+    expect(empty.status).toBe(422);
+    expect((await S.analyst.aal2("/api/admin/games/meta", { method: "PATCH", json: { id: "dusk", rule: "Sun and moon." } })).status).toBe(
+      403,
+    );
+
+    const rule = "Sun and moon in every row, never three alike in a line.";
+    const set = await S.content_editor.aal2("/api/admin/games/meta", {
+      method: "PATCH",
+      json: { id: "dusk", rule, blurb: "Light and dark." },
+    });
+    expect(set.status).toBe(200);
+    const pub = await fetch(`${BASE}/api/v1/games/meta`).then((r) => r.json());
+    expect(pub.dusk).toMatchObject({ rule, blurb: "Light and dark." });
+    expect(pub.crownfall.rule).toBeUndefined(); // no override: players see the catalog's rule
+    const got = (await S.owner.aal2("/api/admin/games/meta")).data;
+    expect(got.rows.find((r: { id: string }) => r.id === "dusk")).toMatchObject({ rule, ruleOverridden: true, blurbOverridden: true });
+    expect(got.export.dusk).toMatchObject({ rule, blurb: "Light and dark." });
+    const log = await lastAudit(S.content_editor.userId, "game_meta.update");
+    expect(log?.target).toBe("game:dusk");
+    expect(log?.detail).toMatchObject({ after: { rule, blurb: "Light and dark." } });
+
+    // Reset, then the export round-trips the copy back in.
+    await S.owner.aal2("/api/admin/games/meta", { method: "PATCH", json: { id: "dusk", rule: null, blurb: null } });
+    expect((await fetch(`${BASE}/api/v1/games/meta`).then((r) => r.json())).dusk.rule).toBeUndefined();
+    const imp = await S.owner.aal2("/api/admin/games/meta", { method: "PUT", json: { rows: { dusk: got.export.dusk } } });
+    expect(imp.status).toBe(200);
+    expect((await fetch(`${BASE}/api/v1/games/meta`).then((r) => r.json())).dusk.rule).toBe(rule);
+    await S.owner.aal2("/api/admin/games/meta", {
+      method: "PATCH",
+      json: { id: "dusk", typicalSec: null, tags: null, rule: null, blurb: null },
+    });
+  });
+
   it("lists retired games, marked, and refuses to change them", async () => {
     const rows = (await S.owner.aal2("/api/admin/games/meta")).data.rows as { id: string; retired: boolean }[];
     expect(rows.find((r) => r.id === "hunch")).toMatchObject({ retired: true });
