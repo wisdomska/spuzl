@@ -90,6 +90,12 @@ const ROUTES: Route[] = [
   { method: "POST", path: "/api/admin/events", perm: "events.write" },
   { method: "PATCH", path: `/api/admin/events/${NIL}`, perm: "events.write" },
   { method: "DELETE", path: `/api/admin/events/${NIL}`, perm: "events.write" },
+  // R2-P5: seasonal templates (drafts), scheduling an event, the school league table and its export
+  { method: "GET", path: "/api/admin/events/templates", perm: "events.read" },
+  { method: "POST", path: "/api/admin/events/templates", perm: "events.write" },
+  { method: "POST", path: `/api/admin/events/${NIL}/schedule`, perm: "events.write" },
+  { method: "GET", path: "/api/admin/schools/league", perm: "schools.read" },
+  { method: "POST", path: "/api/admin/schools/league", perm: "schools.read" },
 ];
 
 const S = {} as Record<Role, AdminSession>;

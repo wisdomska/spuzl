@@ -54,7 +54,7 @@ describe("api: retired games are refused like unknown ones", () => {
       const r = await fetch(BASE + path, { redirect: "manual" });
       // Streamed pages (with a loading state) send 200 before notFound() runs; the body is the not-found page.
       const body = r.status === 404 ? "" : await r.text();
-      expect([path, r.status === 404 || body.includes("This page could not be found")]).toEqual([path, true]);
+      expect([path, r.status === 404 || body.includes("NEXT_HTTP_ERROR_FALLBACK;404")]).toEqual([path, true]);
     }
   });
 

@@ -23,9 +23,10 @@ afterAll(async () => {
 
 const notFound = async (path: string) => {
   const r = await fetch(BASE + path, { redirect: "manual" });
-  // Streamed pages (with a loading state) send 200 before notFound() runs; the body is the not-found page.
+  // Streamed pages (with a loading state) send 200 before notFound() runs; only a real not-found carries the 404
+  // digest (every page embeds the not-found boundary text, so the text alone proves nothing).
   const body = r.status === 404 ? "" : await r.text();
-  return r.status === 404 || body.includes("This page could not be found");
+  return r.status === 404 || body.includes("NEXT_HTTP_ERROR_FALLBACK;404");
 };
 
 describe("api: lab games behind features.labGames", () => {

@@ -21,7 +21,7 @@ describe("api: friend challenge previews", () => {
   it("gives the challenge page a title, description and og:image for WhatsApp and Instagram", async () => {
     const { code } = await clearAndChallenge();
     const html = await (await fetch(`${BASE}/challenge/${code}`, { headers: { "user-agent": "WhatsApp/2.23.20.0" } })).text();
-    expect(html).toMatch(/<title>Beat ch_\d+'s 0:06 on Crownfall · SPUZL<\/title>/);
+    expect(html).toMatch(/<title>Beat ch_\d+(?:'|&#x27;)s 0:06 on Crownfall · SPUZL<\/title>/);
     expect(html).toContain(`property="og:image" content="`);
     expect(html).toContain(`/api/og/challenge/${code}`);
     expect(html).toContain('property="og:image:width" content="1200"');
