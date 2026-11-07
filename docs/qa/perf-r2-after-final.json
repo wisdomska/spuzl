@@ -1,0 +1,217 @@
+{
+  "at": "2026-11-07T21:06:21.944Z",
+  "base": "https://spuzl.vercel.app",
+  "runs": 10,
+  "summary": {
+    "4g-phone:home-continue:cold": {
+      "runs": 1,
+      "p50": 1432,
+      "p95": 1432,
+      "min": 1432,
+      "max": 1432,
+      "firstApiP50": 4,
+      "todayCallsMax": 0,
+      "waterfall": {
+        "requests": [
+          {
+            "name": "/api/v1/attempts",
+            "type": "fetch",
+            "start": 4,
+            "end": 884
+          },
+          {
+            "name": "/play/crownfall",
+            "type": "fetch",
+            "start": 21,
+            "end": 573
+          },
+          {
+            "name": "/world/board",
+            "type": "fetch",
+            "start": 70,
+            "end": 688
+          },
+          {
+            "name": "/world/reflex",
+            "type": "fetch",
+            "start": 90,
+            "end": 845
+          },
+          {
+            "name": "/_next/static/immutable/chunks/1db8hk-2w905v.js",
+            "type": "script",
+            "start": 578,
+            "end": 697
+          },
+          {
+            "name": "/_next/static/immutable/chunks/40p0-7p_h8p58.js",
+            "type": "script",
+            "start": 579,
+            "end": 709
+          },
+          {
+            "name": "/_next/static/immutable/chunks/2p9kogbhg0o5r.js",
+            "type": "script",
+            "start": 580,
+            "end": 782
+          },
+          {
+            "name": "/_next/static/immutable/chunks/02tc--glx37fh.js",
+            "type": "script",
+            "start": 580,
+            "end": 789
+          },
+          {
+            "name": "/_next/static/immutable/chunks/1a3mwi_hz7s2l.js",
+            "type": "script",
+            "start": 582,
+            "end": 804
+          },
+          {
+            "name": "/_next/static/immutable/chunks/2og4sg83cz9ns.js",
+            "type": "script",
+            "start": 582,
+            "end": 901
+          },
+          {
+            "name": "/world/word",
+            "type": "fetch",
+            "start": 607,
+            "end": 1245
+          },
+          {
+            "name": "/world/logic",
+            "type": "fetch",
+            "start": 657,
+            "end": 1282
+          },
+          {
+            "name": "/me",
+            "type": "fetch",
+            "start": 700,
+            "end": 1224
+          },
+          {
+            "name": "/me",
+            "type": "fetch",
+            "start": 880,
+            "end": 1303
+          },
+          {
+            "name": "/_next/static/immutable/chunks/03v2odeyhskx-.js",
+            "type": "script",
+            "start": 962,
+            "end": 983
+          },
+          {
+            "name": "/api/v1/presence",
+            "type": "fetch",
+            "start": 967,
+            "end": 1439
+          },
+          {
+            "name": "/api/v1/me/learned",
+            "type": "fetch",
+            "start": 971,
+            "end": 1589
+          },
+          {
+            "name": "/api/v1/metrics",
+            "type": "fetch",
+            "start": 999,
+            "end": 1775
+          },
+          {
+            "name": "/_next/static/immutable/chunks/3rcn49-8jac5v.js",
+            "type": "script",
+            "start": 1017,
+            "end": 1394
+          },
+          {
+            "name": "/api/v1/metrics",
+            "type": "fetch",
+            "start": 1031,
+            "end": 1853
+          },
+          {
+            "name": "/me",
+            "type": "fetch",
+            "start": 1235,
+            "end": 1712
+          },
+          {
+            "name": "/shop",
+            "type": "fetch",
+            "start": 1254,
+            "end": 1610
+          },
+          {
+            "name": "/friends",
+            "type": "fetch",
+            "start": 1297,
+            "end": 1661
+          }
+        ],
+        "longTasks": []
+      }
+    },
+    "4g-phone:home-continue:warm": {
+      "runs": 1,
+      "p50": 847,
+      "p95": 847,
+      "min": 847,
+      "max": 847,
+      "firstApiP50": 2,
+      "todayCallsMax": 0,
+      "waterfall": {
+        "requests": [
+          {
+            "name": "/api/v1/attempts",
+            "type": "fetch",
+            "start": 2,
+            "end": 513
+          },
+          {
+            "name": "/play/crownfall",
+            "type": "fetch",
+            "start": 10,
+            "end": 363
+          },
+          {
+            "name": "/api/v1/presence",
+            "type": "fetch",
+            "start": 400,
+            "end": 820
+          },
+          {
+            "name": "/_next/static/immutable/chunks/3rcn49-8jac5v.js",
+            "type": "script",
+            "start": 531,
+            "end": 531
+          }
+        ],
+        "longTasks": []
+      }
+    },
+    "4g-phone:next-level": {
+      "runs": 1,
+      "p50": 924,
+      "p95": 924,
+      "min": 924,
+      "max": 924,
+      "firstApiP50": 9,
+      "todayCallsMax": 0,
+      "waterfall": {
+        "requests": [
+          {
+            "name": "/api/v1/attempts",
+            "type": "fetch",
+            "start": 9,
+            "end": 874
+          }
+        ],
+        "longTasks": []
+      }
+    }
+  }
+}
