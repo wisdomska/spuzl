@@ -59,7 +59,6 @@ import { MAX_SCORE } from "@/lib/daily-five";
 import { GAME_BY_ID } from "@/lib/catalog";
 import { track } from "@/lib/analytics/track";
 import { useGameCopy } from "@/lib/games-meta/client";
-import { challengeCopy } from "@/lib/copy/challenge";
 import { storyCopy } from "@/lib/copy/share";
 
 /** five: a Daily Five game (R2-05), played as today's shared Daily; it ends back on the Daily Five, not free play. */

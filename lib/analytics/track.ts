@@ -62,7 +62,7 @@ export const KEY_EVENTS = [
   "practice_skip",
   // Full games (Board Games with a friend, Play live or the bot): { game, mode: "bay" | "bot", kind: "won" | "lost" | "draw" }
   "game_over",
-  // R2-P5 (PostHog only for now; the admin Metrics agent decides whether they go first party)
+  // R2-P5, also first party (admin Metrics "Party TV, streak shields and school leagues")
   "party_tv_view", // the big-screen view loaded a room
   "streak_shield", // a guest signed in from "Save your streak" and got the free Streak Freeze
   "school_join", // a player picked their school or campus league by search
@@ -169,6 +169,9 @@ const FIRST_PARTY: ReadonlySet<KeyEvent> = new Set([
   "practice_finish",
   "practice_skip",
   "game_over",
+  "party_tv_view",
+  "streak_shield",
+  "school_join",
 ]);
 
 /** Pure: the first-party metric body for an event, or null. Exported for tests. */

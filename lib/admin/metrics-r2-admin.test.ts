@@ -162,3 +162,18 @@ describe("board game results (20261202000701)", () => {
     expect(METRIC_BY_ID.game_over.headline(row())).toBe("n/a");
   });
 });
+
+describe("Party TV, streak shields and school leagues (20261204000701)", () => {
+  it("shows the counts, with CSV", () => {
+    const total = row({ gr_tv_views: 7, gr_shields: 3, gr_school_joins: 12 });
+    expect(METRIC_BY_ID.growth.headline(total)).toBe("7");
+    expect(METRIC_BY_ID.growth.sub(total)).toBe("Party TV views · 3 streak shields · 12 school joins");
+    expect(metricCsv("growth", { rows: [], total }).trimEnd().split("\r\n")).toEqual([
+      "date,tv_views,shields,school_joins",
+      "total,7,3,12",
+    ]);
+  });
+  it("reads rows from before the migration as zero", () => {
+    expect(METRIC_BY_ID.growth.headline(row())).toBe("0");
+  });
+});

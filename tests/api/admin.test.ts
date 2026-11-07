@@ -1333,4 +1333,22 @@ describe("Metrics added by the admin cascade audit (R2-ADMIN)", () => {
       .eq("name", "game_over")
       .gte("created_at", new Date(Date.now() - 60_000).toISOString());
   });
+
+  it("counts Party TV views, streak shields and school joins, with CSV (needs 20261204000701)", async () => {
+    await seed([{ name: "party_tv_view" }, { name: "party_tv_view" }, { name: "streak_shield" }, { name: "school_join", kind: "school" }]);
+    const d = await metrics();
+    expect(d.total).toMatchObject({ gr_tv_views: 2, gr_shields: 1, gr_school_joins: 1 });
+    const x = await S.analyst.aal2("/api/admin/metrics", { json: { metric: "growth", days: 7, end } });
+    expect(x.data.csv.trimEnd().split("\r\n").at(-1)).toBe("total,2,1,1");
+
+    const g = await guest();
+    expect((await g.api("/api/v1/metrics", { json: { name: "school_join", kind: "campus" } })).status).toBe(204);
+    expect((await g.api("/api/v1/metrics", { json: { name: "school_join", kind: "office" } })).status).toBe(400);
+    expect((await g.api("/api/v1/metrics", { json: { name: "party_tv_view" } })).status).toBe(204);
+    await admin()
+      .from("client_metrics")
+      .delete()
+      .in("name", ["party_tv_view", "streak_shield", "school_join"])
+      .gte("created_at", new Date(Date.now() - 60_000).toISOString());
+  });
 });

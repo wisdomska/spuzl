@@ -160,4 +160,9 @@ describe("cold and warm tap to board (R2-ADMIN)", () => {
       kind: "won",
     });
   });
+  it("forwards the R2-P5 growth events first party (school kind as kind)", () => {
+    expect(firstPartyBody("party_tv_view", { status: "live" })).toMatchObject({ name: "party_tv_view" });
+    expect(firstPartyBody("streak_shield", { status: "granted" })).toMatchObject({ name: "streak_shield" });
+    expect(firstPartyBody("school_join", { via: "search", kind: "campus" })).toMatchObject({ name: "school_join", kind: "campus" });
+  });
 });
