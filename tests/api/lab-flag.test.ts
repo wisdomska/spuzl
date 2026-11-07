@@ -47,13 +47,19 @@ describe("api: lab games behind features.labGames", () => {
     for (const path of ["/play/five?mode=free", "/play/dara/bot"]) expect([path, await notFound(path)]).toEqual([path, true]);
   });
 
-  it("switched on per game: only the listed games open", async () => {
+  it("switched on per game: only the listed games open", { timeout: 90_000 }, async () => {
     await setSetting(KEY, ["hilo", "dara"]);
     const g = await guest(uniq("labon_"));
     expect((await g.api("/api/v1/attempts", { json: { game: "hilo", mode: "free", difficulty: "easy" } })).status).toBe(200);
     expect((await g.api("/api/v1/guided/hilo")).status).toBe(200);
     expect((await g.api("/api/v1/leaderboards/hilo")).status).toBe(200);
-    expect(await notFound("/play/dara/bot")).toBe(false);
+    // Pages read settings through the server's 30 s cache: wait for the new set to reach them.
+    let hidden = true;
+    for (let i = 0; i < 40 && hidden; i++) {
+      hidden = await notFound("/play/dara/bot");
+      if (hidden) await new Promise((r) => setTimeout(r, 1000));
+    }
+    expect(hidden).toBe(false);
     // Not listed: still refused.
     expect((await g.api("/api/v1/attempts", { json: { game: "pixl", mode: "free", difficulty: "easy" } })).status).toBe(404);
     expect((await g.api("/api/v1/guided/pixl")).status).toBe(404);
