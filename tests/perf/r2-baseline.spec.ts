@@ -198,7 +198,7 @@ for (const profile of PROFILES) {
           const { ctx, page } = await newCtx(browser, profile, state);
           for (const k of ["cold", "warm"] as const) {
             await page.goto("/library");
-            const row = page.locator('main li button[aria-haspopup="dialog"]').nth(1);
+            const row = page.locator("main ul > li > a").nth(1); // rows are links since R2-12; a plain click opens the card
             await row.waitFor({ timeout: 90_000 });
             await page.waitForTimeout(1500);
             await row.click();
