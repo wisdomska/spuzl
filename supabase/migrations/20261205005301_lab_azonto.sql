@@ -9,6 +9,11 @@
 --   delete from public.games where id = 'azonto';
 --   delete from supabase_migrations.schema_migrations where version = '20261205005301';
 
+-- Fresh databases run migrations before the seed (worlds are empty then): insert only when the world exists;
+-- supabase/seed.sql adds the row there.
 insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort)
-values ('azonto', 'reflex', 'Azonto Steps', 'coming_soon', 'M3+', 'custom', 'score', false, 1500, 62)
+select * from (values
+  ('azonto', 'reflex', 'Azonto Steps', 'coming_soon', 'M3+', 'custom', 'score', false, 1500, 62)
+) as v(id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort)
+where exists (select 1 from public.worlds w where w.id = v.world_id)
 on conflict (id) do nothing;

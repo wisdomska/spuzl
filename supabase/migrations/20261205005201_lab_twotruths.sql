@@ -10,6 +10,11 @@
 --   delete from public.games where id = 'twotruths';
 --   delete from supabase_migrations.schema_migrations where version = '20261205005201';
 
+-- Fresh databases run migrations before the seed (worlds are empty then): insert only when the world exists;
+-- supabase/seed.sql adds the row there.
 insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort)
-values ('twotruths', 'word', 'Two Truths and a Lie', 'coming_soon', 'M3+', 'custom', 'score', false, 8000, 61)
+select * from (values
+  ('twotruths', 'word', 'Two Truths and a Lie', 'coming_soon', 'M3+', 'custom', 'score', false, 8000, 61)
+) as v(id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort)
+where exists (select 1 from public.worlds w where w.id = v.world_id)
 on conflict (id) do nothing;
