@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { admin, BASE, guest } from "./helpers";
+import { admin, BASE, guest, uniq } from "./helpers";
 import { adminSession, type AdminSession } from "./admin-helpers";
 
 /**
@@ -20,7 +20,7 @@ afterAll(async () => {
 
 describe("practice.disabled (admin cascade)", () => {
   it("defaults to every game having its practice round", async () => {
-    const g = await guest();
+    const g = await guest(uniq("pr_"));
     expect((await g.api("/api/v1/guided/dusk")).status).toBe(200);
     const pub = await fetch(`${BASE}/api/v1/settings/game`).then((r) => r.json());
     expect(pub["practice.disabled"]).toEqual([]);
@@ -35,7 +35,7 @@ describe("practice.disabled (admin cascade)", () => {
     const pub = await fetch(`${BASE}/api/v1/settings/game`).then((r) => r.json());
     expect(pub["practice.disabled"]).toEqual(["dusk"]);
 
-    const g = await guest();
+    const g = await guest(uniq("pr_"));
     const off = await g.api("/api/v1/guided/dusk");
     expect(off.status).toBe(404);
     expect(off.data.error).toBe("practice_off");
