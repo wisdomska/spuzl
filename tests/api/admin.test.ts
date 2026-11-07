@@ -1204,4 +1204,34 @@ describe("Metrics added by the admin cascade audit (R2-ADMIN)", () => {
     expect(data?.[0]?.warm).toBe(true);
     metricIds.push(...data!.map((r) => r.id));
   });
+
+  it("times landing to first clear for the day's new players (tutorial left out), with CSV", async () => {
+    const db = admin();
+    const a = await guest(uniq("fcA"));
+    const b = await guest(uniq("fcB"));
+    for (const id of [a.userId, b.userId]) await db.from("players").update({ created_at: at(), is_test: false }).eq("id", id);
+    const att = (player: string, mode: string, status: string, doneMs: number) => ({
+      player_id: player,
+      game_id: "dusk",
+      mode,
+      status,
+      hints: 0,
+      started_at: at(doneMs - 30_000),
+      finished_at: at(doneMs),
+    });
+    const ins = await db
+      .from("attempts")
+      .insert([
+        att(a.userId, "tutorial", "cleared", 40_000),
+        att(a.userId, "free", "cleared", 180_000),
+        att(a.userId, "free", "cleared", 900_000),
+        att(b.userId, "free", "abandoned", 120_000),
+      ]);
+    expect(ins.error).toBeNull();
+    const d = await metrics();
+    expect(d.total).toMatchObject({ fc_cohort: 2, fc_cleared: 1, fc_p50: 180_000, fc_p95: 180_000 });
+    expect(d.rows.find((x: { date: string }) => x.date === on)).toMatchObject({ fc_cohort: 2, fc_cleared: 1 });
+    const x = await S.content_editor.aal2("/api/admin/metrics", { json: { metric: "first_clear", days: 7, end } });
+    expect(x.data.csv.trimEnd().split("\r\n").at(-1)).toBe("total,2,1,50,180000,180000");
+  });
 });

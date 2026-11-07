@@ -82,6 +82,11 @@ export interface MetricRow {
   warm_n?: number;
   warm_p50?: number | null;
   warm_p95?: number | null;
+  /** R2-ADMIN (20261202000401): new profiles that day, how many have cleared a board since, and the time to it. */
+  fc_cohort?: number;
+  fc_cleared?: number;
+  fc_p50?: number | null;
+  fc_p95?: number | null;
 }
 
 export interface PromptCounts {
@@ -122,6 +127,7 @@ export function metricRange(days: RangeDays, end: string = todayIso()): { from: 
 export const METRIC_IDS = [
   "tap_to_board",
   "tap_warmth",
+  "first_clear",
   "onboarding",
   "first_move",
   "party_first_move",
@@ -153,6 +159,15 @@ export interface MetricDef {
 
 const ms = (v: number | null) => (v === null ? "n/a" : v >= 10_000 ? `${(v / 1000).toFixed(1)} s` : `${Math.round(v)} ms`);
 const pct = (v: number | null) => (v === null ? "n/a" : `${v}%`);
+/** A long wait in words: seconds, minutes, hours, then days (landing to first clear). */
+export const span = (v: number | null) => {
+  if (v === null) return "n/a";
+  const s = v / 1000;
+  if (s < 60) return `${Math.round(s)} s`;
+  if (s < 3600) return `${Math.round(s / 60)} min`;
+  if (s < 48 * 3600) return `${(s / 3600).toFixed(1)} h`;
+  return `${(s / 86_400).toFixed(1)} d`;
+};
 const n = (v: number) => v.toLocaleString("en-US");
 /**
  * Hint requests that were not used: Cancel on the confirm (requests minus uses), plus `hint_cancel` rows from
@@ -219,6 +234,21 @@ export const METRICS: readonly MetricDef[] = [
       { key: "warm_count", label: "Warm", value: (r) => r.warm_n ?? 0 },
       { key: "warm_p50_ms", label: "Warm p50 ms", value: (r) => r.warm_p50 ?? null },
       { key: "warm_p95_ms", label: "Warm p95 ms", value: (r) => r.warm_p95 ?? null },
+    ],
+  },
+  {
+    id: "first_clear",
+    title: "Landing to first clear",
+    note: "Players whose profile was made that day (the landing: Welcome makes a guest profile on the first visit), how many have cleared a board since (any mode but the onboarding tutorial), and the time from landing to that first clear. Server recorded (players and attempts), test players left out. Recent days keep growing as players come back.",
+    headline: (t) => `${span(t.fc_p50 ?? null)} / ${span(t.fc_p95 ?? null)}`,
+    sub: (t) =>
+      `p50 / p95 · ${n(t.fc_cleared ?? 0)} of ${n(t.fc_cohort ?? 0)} new players cleared one (${pct(rate(t.fc_cleared ?? 0, t.fc_cohort ?? 0))})`,
+    cols: [
+      { key: "new_players", label: "New players", value: (r) => r.fc_cohort ?? 0 },
+      { key: "cleared", label: "Cleared one", value: (r) => r.fc_cleared ?? 0 },
+      { key: "cleared_pct", label: "Cleared %", value: (r) => rate(r.fc_cleared ?? 0, r.fc_cohort ?? 0) },
+      { key: "p50_ms", label: "p50 ms", value: (r) => r.fc_p50 ?? null },
+      { key: "p95_ms", label: "p95 ms", value: (r) => r.fc_p95 ?? null },
     ],
   },
   {

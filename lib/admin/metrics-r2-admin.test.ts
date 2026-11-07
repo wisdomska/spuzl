@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { METRIC_BY_ID, METRIC_IDS, metricCsv, type MetricRow } from "./metrics";
+import { METRIC_BY_ID, METRIC_IDS, metricCsv, span, type MetricRow } from "./metrics";
 
 /** R2-ADMIN: the Metrics cards added by the admin cascade audit (docs/qa/ADMIN_CASCADE_R2.md). */
 const row = (over: Partial<MetricRow> = {}): MetricRow =>
@@ -62,5 +62,28 @@ describe("tap to board, cold and warm (20261202000301)", () => {
   });
   it("reads rows from before the migration as no data", () => {
     expect(METRIC_BY_ID.tap_warmth.headline(row())).toBe("n/a / n/a");
+  });
+});
+
+describe("landing to first clear (20261202000401)", () => {
+  it("writes long waits in words", () => {
+    expect(span(null)).toBe("n/a");
+    expect(span(42_000)).toBe("42 s");
+    expect(span(5 * 60_000)).toBe("5 min");
+    expect(span(3 * 3600_000)).toBe("3.0 h");
+    expect(span(3 * 86_400_000)).toBe("3.0 d");
+  });
+  it("shows p50 / p95 and the share of new players who cleared one, with CSV", () => {
+    const total = row({ fc_cohort: 8, fc_cleared: 6, fc_p50: 95_000, fc_p95: 7_200_000 });
+    expect(METRIC_BY_ID.first_clear.headline(total)).toBe("2 min / 2.0 h");
+    expect(METRIC_BY_ID.first_clear.sub(total)).toBe("p50 / p95 · 6 of 8 new players cleared one (75%)");
+    const csv = metricCsv("first_clear", { rows: [row({ date: "2026-12-02", fc_cohort: 3 })], total })
+      .trimEnd()
+      .split("\r\n");
+    expect(csv).toEqual(["date,new_players,cleared,cleared_pct,p50_ms,p95_ms", "2026-12-02,3,0,0,,", "total,8,6,75,95000,7200000"]);
+  });
+  it("reads rows from before the migration as no data", () => {
+    expect(METRIC_BY_ID.first_clear.headline(row())).toBe("n/a / n/a");
+    expect(METRIC_BY_ID.first_clear.sub(row())).toContain("(n/a)");
   });
 });
