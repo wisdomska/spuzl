@@ -22,7 +22,7 @@ Facts checked against the code on 6 Nov 2026 (release 1.33.0).
 | Pages (`app/**/page.tsx`)              | 59    |                                                                                                     |
 | API route handlers (`app/**/route.ts`) | 141   | `/api/v1/*` player, `/api/admin/*`, `/api/cron/*`, `/api/og/*`                                      |
 | Migrations                             | 60    | `supabase/migrations/*.sql`, indexed with rollback notes in `docs/MIGRATIONS.md`                    |
-| Live games                             | 29    | `GAMES` in `lib/catalog.ts`; `LAB_GAMES` 11 (behind `features.labGames`, R2-P5), `RETIRED_GAMES` 21 |
+| Live games                             | 29    | `GAMES` in `lib/catalog.ts`; `LAB_GAMES` 13 (behind `features.labGames`, R2-P5), `RETIRED_GAMES` 21 |
 | Visible worlds                         | 4     | Puzzles 9, Words & Quiz 9, Arcade 6, Board Games 5 (`WORLDS`, `lib/catalog.ts`)                     |
 
 ## Routing
@@ -101,6 +101,10 @@ There is no shared prompt queue: two prompts can appear in the same screen visit
   sets `round_started_at` 4 s ahead (`lobby.ts:415`, `lib/multiplayer/constants.ts:9`); a countdown number is shown
   (`PartyScreen.tsx:500-509`). Sheets that can be open at round start: `ChatPanel`/`ChatPopup`, `EmoteBar`,
   `RoomSettings`, 18+ `PlayersSheet`. Podium (`party.tsx:899-909`): host sees "Run it back" first, then "Next game".
+- Party turn modes (`lib/party-adult/modes.ts`): the 18+ Draw It and Two Truths (`features.adultParty`) and Family Draw
+  (`drawfam`, R2-P5: Draw It for signed-in 16+ players, preset words, pick from four, `party.familyDraw`). One server
+  path (`lib/multiplayer/server/adult.ts`, gate per mode in `requirePartyMode`), one round UI
+  (`components/multiplayer/adult-party.tsx`), one report path (snapshot in `reports`, Moderation Party content tab).
 - Server: `lib/multiplayer/server/*` (lobby, match, duel, bay, bayQueue, rewards incl. rank from rounds, chat,
   invites, adult); realtime `lib/realtime/*`; push `lib/push/server.ts` + `public/sw.js`.
 
