@@ -27,6 +27,8 @@ import { ShellAsideProvider } from "./ShellAside";
 import { useLeave } from "./useLeave";
 import { LeaveConfirm } from "./LeaveConfirm";
 import { haltClock, newClock, readClock, runClock } from "@/lib/game/shell-clock";
+import { pauseCopy } from "@/lib/copy/pause";
+import { holdState } from "@/lib/game/hold";
 
 /**
  * Wide screens (useBoardSize `isWide`: 900 × 600 and up) split the template into two columns: the board, grown to
@@ -224,7 +226,15 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   const leaveHold = leave.asking && canPause;
 
   // Held: the clock stops and the board is hidden (Pause, the menu, How to play, the hint confirm, the leave confirm).
-  const held = paused || !!pausedExternally || confirmHint || menuHold || leaveHold;
+  const { held, covered } = holdState({
+    paused,
+    external: !!pausedExternally,
+    confirmHint,
+    menuOpen,
+    leaveAsking: leave.asking,
+    canPause,
+    solved,
+  });
   // Timer: starts on the first move (R2-15; Start on boards with a ready screen), stops while held (FR-GP-02).
   const running = started && !solved && !held;
   useEffect(() => {
@@ -488,6 +498,8 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   // move collapses it (instantly with reduced motion). Wide screens show it in the top bar's empty middle, so the
   // board never moves at all; when the practice banner holds that spot, it heads the side panel instead.
   const showRule = !started && !solved && !!meta.rule;
+  // R2-16: the board is covered whenever the game is held (Pause, the menu where it pauses, How to play, the hint and
+  // leave confirms), first move or not. A cleared board stays on show.
   // R2-15: digits only once the clock runs (or a resumed game carries time); never in a practice round.
   const clockShown = !guided && (started || elapsed > 0);
   const ruleExit = reduce
@@ -577,9 +589,29 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
       style={theme ? { background: theme.bg, boxShadow: `inset 0 0 0 2px ${theme.mark}` } : undefined}
       data-board-theme={theme ? boardTheme! : undefined}
       data-shell-slot
+      data-board-hidden={covered || undefined}
       aria-label={`${meta.name} board`}
       aria-describedby={`rule-${meta.id}`}
     >
+      {/* R2-16: while the game is held the board is always covered by an opaque layer (privacy, no free peeks),
+          canvas and Phaser boards included; instant with reduced motion. */}
+      <AnimatePresence initial={false}>
+        {covered && (
+          <motion.div
+            key="cover"
+            aria-hidden
+            data-board-cover
+            className="bg-bg text-muted absolute inset-0 z-30 flex items-center justify-center gap-2 rounded-[inherit] text-[15px] font-semibold"
+            initial={reduce ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, transition: { duration: reduce ? 0 : 0.14 } }}
+            transition={{ duration: reduce ? 0 : 0.12, ease: [0.23, 1, 0.32, 1] }}
+          >
+            <Icon name="eye-slash" size={20} />
+            {pauseCopy.cover}
+          </motion.div>
+        )}
+      </AnimatePresence>
       <Board
         {...extra}
         extra={extra}
@@ -665,7 +697,12 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
             <aside className="flex shrink-0 flex-col gap-3 pt-3 pr-3" style={{ width: asideW }} aria-label={M.panel}>
               {banner && foldingRule("overflow-hidden")}
               {stripZone}
-              <div ref={setAside} className="flex flex-col gap-3 empty:hidden" />
+              {/* The board's side-panel parts (clue lists and the like) hide with it while held (R2-16). */}
+              <div
+                ref={setAside}
+                className={`flex flex-col gap-3 empty:hidden ${covered ? "invisible" : ""}`}
+                data-aside-hidden={covered || undefined}
+              />
               {feedbackZone}
               {toolZone}
             </aside>

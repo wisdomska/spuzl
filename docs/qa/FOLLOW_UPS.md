@@ -111,3 +111,9 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   Hits was a lab game with no tile (the tile landed on 2 November). `GameIcon3D` now falls back to the flat tile
   with the game's Phosphor icon when the image fails, and `lib/catalog.test.ts` checks every live game's icon and
   tiles. If it shows again on a device, clear that site's data and check whether the image request returned 404.
+- **Practice rounds on Challenge and Ghost links (R2-07):** `/challenge/<code>` and `/ghost/<game>` still open the
+  real board on a first try (they race a fixed run, so a practice round would need its own flow). They show the
+  visible rule (R2-06) and the first-move timer (R2-15).
+- **Duel timer vs strip clock (R2-15):** in a live round the header timer starts on the first move, while the
+  opponent strip's "my time" runs from the round start (server time). Both are true; a later pass could show only
+  the server's round time in live matches.
