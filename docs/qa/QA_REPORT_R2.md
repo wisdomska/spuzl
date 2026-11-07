@@ -1,6 +1,6 @@
 # SPUZL round 2: QA report
 
-Release under test: **1.38.0** (production, spuzl.vercel.app, 7 November 2026), built on 1.34.0 to 1.37.2.
+Release under test: **1.38.1** (production, spuzl.vercel.app, 7 November 2026), built on 1.34.0 to 1.38.0.
 Source audit: `docs/audit-r2.md`. Baseline: `docs/qa/BASELINE_R2.md`. Admin cascade: `docs/qa/ADMIN_CASCADE_R2.md`.
 
 ## Summary
@@ -17,12 +17,16 @@ Source audit: `docs/audit-r2.md`. Baseline: `docs/qa/BASELINE_R2.md`. Admin casc
   - build and bundle budget.
 - **Lighthouse on production:** 100 in all four categories on desktop; mobile performance 91 to 98, and 100 in the
   other three.
-- **Production E2E (desktop 1280, one worker):** every spec that can run against a deployment passes, except one
-  that needs a test-controlled admin setting (see "Not run on production").
-- **QA found and fixed two product bugs, released in 1.37.2:**
-  - the tap skeleton never showed for Next `<Link>` game cards;
-  - picker focus was lost after choosing a game.
-- **Test guests:** every guest created by these runs was deleted (production: 73 + 42 + 104). Real players are
+- **E2E:**
+  - On production (desktop 1280, one worker), every spec that can run against a deployment passes, except one that
+    needs a test-controlled admin setting (note 3).
+  - The seeded-board specs pass on a local dev server: 42 of 42.
+- **QA found and fixed three product bugs:**
+  - in 1.37.2, the tap skeleton never showed for Next `<Link>` game cards;
+  - in 1.37.2, picker focus was lost after choosing a game;
+  - in 1.38.1, with reduce motion on at desktop widths, a board could crash ("This page couldn't load") in an endless
+    height-fit loop.
+- **Test guests:** every guest created by these runs was deleted (production: 73 + 42 + 104; preview: 18). Real players are
   untouched: the cleanup script only removes anonymous accounts with no email, from the ids each run logged.
 
 ## Ticket matrix
@@ -34,18 +38,18 @@ Source audit: `docs/audit-r2.md`. Baseline: `docs/qa/BASELINE_R2.md`. Admin casc
 | R2-03  | Party round start: countdown, chat closed, board frozen        | 1.35.0  | yes      | production (8 players) | pass   |
 | R2-04  | Prompt timing and one prompt queue (alerts, low data)          | 1.35.0  | yes      | production             | pass ¹ |
 | R2-05  | Daily Five with share grid                                     | 1.35.0  | yes      | production             | pass   |
-| R2-06  | Visible rules before the first move, every mode                | 1.37.0  | yes      | local (dev board)      | ²      |
+| R2-06  | Visible rules before the first move, every mode                | 1.37.0  | yes      | local (dev board)      | pass ² |
 | R2-07  | Practice round from every entry                                | 1.37.0  | yes      | production             | pass   |
 | R2-08  | Onboarding shortcut (landing demo)                             | 1.36.0  | yes      | production             | pass   |
 | R2-09  | Birth month and year input, validation                         | 1.36.0  | yes      | production             | pass   |
-| R2-10  | Beat Tap count-in, no penalty in practice, sound prompt        | 1.36.0  | yes      | local (dev board)      | ²      |
-| R2-11  | Trotro Jam selected state, drag, swipe, keyboard               | 1.36.0  | yes      | local (dev board)      | ²      |
+| R2-10  | Beat Tap count-in, no penalty in practice, sound prompt        | 1.36.0  | yes      | local (dev board)      | pass ² |
+| R2-11  | Trotro Jam selected state, drag, swipe, keyboard               | 1.36.0  | yes      | local (dev board)      | pass ² |
 | R2-12  | Library rows are links; Play Level N; Emoji Hits tile          | 1.36.0  | yes      | production             | pass   |
 | R2-13  | Friends-only rooms for under-16 hosts                          | 1.35.0  | yes      | production             | pass   |
-| R2-14  | Quads back as a word game                                      | 1.36.0  | yes      | local (dev board)      | ²      |
-| R2-15  | Timers start on the first move                                 | 1.37.0  | yes      | local (dev board)      | ²      |
-| R2-16  | Pause hides the board; menu holds the clock                    | 1.37.0  | yes      | local (dev board)      | ²      |
-| R2-17  | Emoji Hits: one input per mode, hint cleared, clock on Start   | 1.36.0  | yes      | local (dev board)      | ²      |
+| R2-14  | Quads back as a word game                                      | 1.36.0  | yes      | local (dev board)      | pass ² |
+| R2-15  | Timers start on the first move                                 | 1.37.0  | yes      | local (dev board)      | pass ² |
+| R2-16  | Pause hides the board; menu holds the clock                    | 1.37.0  | yes      | local (dev board)      | pass ² |
+| R2-17  | Emoji Hits: one input per mode, hint cleared, clock on Start   | 1.36.0  | yes      | local (dev board)      | pass ² |
 | R2-18  | Home new-games card; Continue thumb and level                  | 1.36.0  | yes      | production             | pass   |
 | R2-19  | Shop marks what you can afford                                 | 1.36.0  | yes      | needs local DB         | ³      |
 | P5     | Challenge links, story cards, Party TV                         | 1.38.0  | yes      | production             | pass   |
@@ -143,7 +147,32 @@ Every axe check in the passing specs returned no violations.
 
 ## Local run (seeded-board specs)
 
-LOCAL_RESULTS
+Run with `pnpm exec next dev -p 3100` against the preview database, desktop-1280 project, one worker, one spec file
+at a time. A production build cannot run in this container (`next build` is killed by its memory limit).
+
+| Spec  | Tests | Result     | Notes                                                                                                                               |
+| ----- | ----: | ---------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| R2-06 |     7 | all passed | The Party test now waits for "2 of 2 ready" before Start (the room rightly refused a start while a player was still getting ready). |
+| R2-10 |     5 | all passed | Beat 1 is watched every frame, and the practice feedback line is read once React has drawn it.                                      |
+| R2-11 |     6 | all passed |                                                                                                                                     |
+| R2-14 |     6 | all passed | Includes axe on Quads in colour-blind mode.                                                                                         |
+| R2-15 |     7 | all passed |                                                                                                                                     |
+| R2-16 |     7 | all passed | The board-centre check skips the sheet animating in, and Radix's `pointer-events: none` on `<body>` is undone and then restored.    |
+| R2-17 |     4 | all passed |                                                                                                                                     |
+
+**A product bug found here, fixed in 1.38.1.** With reduce motion on, at 1280 and 1440 px, the Crownfall board threw
+"Maximum update depth exceeded" and showed "This page couldn't load". The two-column shell's side panel was 5 px
+taller than the screen, and `useFitHeight` kept shrinking the board to fix an overflow the board wasn't causing,
+over 50 synchronous updates in a row.
+
+`useFitHeight` now does two things:
+
+- It stops when a shrink doesn't reduce the overflow: it undoes that step and leaves the board alone until the
+  viewport changes.
+- It never grows back past a size that overflowed.
+
+After the fix, Crownfall, Nine and Dusk all render at 375, 1280 and 1440 px, with and without reduced motion. Unit
+tests cover the new cap in `tests/unit/game/fit-cell.test.ts`.
 
 ## Phase 4 survey (375 and 1280 px)
 
