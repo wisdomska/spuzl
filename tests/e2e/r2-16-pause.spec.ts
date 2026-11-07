@@ -21,8 +21,10 @@ async function openPause(page: Page) {
 /** What sits on top at the board's centre: the cover, never a cell or the canvas. */
 async function topAtBoardCentre(page: Page) {
   return page.evaluate(() => {
-    const slot = document.querySelector("main[data-shell-slot]")!.getBoundingClientRect();
-    const el = document.elementFromPoint(slot.x + slot.width / 2, slot.y + slot.height / 2);
+    const main = document.querySelector("main[data-shell-slot]")!;
+    const slot = main.getBoundingClientRect();
+    // The topmost element inside the board slot (sheets and backdrops above the slot, still animating in, don't count).
+    const el = document.elementsFromPoint(slot.x + slot.width / 2, slot.y + slot.height / 2).find((e) => main.contains(e));
     return el?.closest("[data-board-cover]") ? "cover" : (el?.tagName ?? "none");
   });
 }
@@ -41,10 +43,17 @@ for (const [label, vp] of Object.entries(VIEWPORTS)) {
         await expect(cover(page)).toBeAttached();
         // Under the sheet's dimmed backdrop, the board slot itself is covered (Radix hides it from hit-testing, so
         // read it with the overlay out of the way).
-        await page.evaluate(() =>
-          document.querySelectorAll<HTMLElement>("[data-state=open].fixed").forEach((el) => (el.style.pointerEvents = "none")),
-        );
+        // Radix also sets pointer-events: none on <body> while a modal is open, which hides everything inherited.
+        await page.evaluate(() => {
+          document.querySelectorAll<HTMLElement>("[data-state=open].fixed").forEach((el) => (el.style.pointerEvents = "none"));
+          document.body.style.pointerEvents = "auto";
+        });
         expect(await topAtBoardCentre(page)).toBe("cover");
+        // ...and put the sheet back the way it was, so Resume can be pressed.
+        await page.evaluate(() => {
+          document.querySelectorAll<HTMLElement>("[data-state=open].fixed").forEach((el) => (el.style.pointerEvents = ""));
+          document.body.style.pointerEvents = "";
+        });
         for (const name of [/Colour-blind patterns/, /Text size/, /Reduced motion/, /Hide timer/, /Sound/, /Haptics/])
           await expect(sheet.getByRole("button", { name })).toBeVisible();
         await shot(page, `${game}-paused`, vp.width);

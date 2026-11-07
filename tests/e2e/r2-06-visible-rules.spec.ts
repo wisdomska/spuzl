@@ -103,6 +103,8 @@ test.describe("every mode shows the rule before the first move", () => {
         code,
       );
       await guest.page.getByRole("button", { name: /^Ready$/ }).click();
+      // Start only once the host sees everyone ready (the room refuses a start while someone is still getting ready).
+      await expect(host.page.getByText(/2 of 2 ready/)).toBeVisible({ timeout: 15_000 });
       await host.page.getByRole("button", { name: /^Start/ }).click();
       for (const p of players) await expect(rule(p.page)).toHaveText(CROWNFALL, { timeout: 15_000 });
       await shot(guest.page, "party", 375);

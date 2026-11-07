@@ -55,7 +55,9 @@ async function pressAfterFirstBeat(page: Page, offsets: number[]) {
       await new Promise((r) => setTimeout(r, Math.max(0, first + off - performance.now())));
       pad.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true, pointerType: "touch" }));
     }
-    await new Promise((r) => setTimeout(r, 60));
+    // the feedback line for the last press, once React has drawn it (up to 800 ms on a slow dev server)
+    const until = performance.now() + 800;
+    while (!/No beat there/.test(document.body.innerText) && performance.now() < until) await new Promise((r) => requestAnimationFrame(r));
     return document.body.innerText;
   }, offsets);
 }
@@ -84,8 +86,19 @@ test.describe("R2-10 Beat Tap", () => {
       // the pad counts 1 to 4 (status line and accessible name), a big number in the middle
       for (let n = 1; n <= COUNT_IN; n++) await expect(pad).toHaveAccessibleName(new RegExp(`Count in: ${n}`), { timeout: 3000 });
       await expect(pad.locator("[data-count]")).toBeVisible();
+      // Beat 1 shows for one beat only: watch the label every frame rather than with expect's slower polling.
+      const beat1 = page.waitForFunction(
+        () =>
+          /Beat 1 of \d+/.test(
+            [...document.querySelectorAll("button")]
+              .find((b) => b.getAttribute("aria-label")?.startsWith("Beat pad."))
+              ?.getAttribute("aria-label") ?? "",
+          ),
+        undefined,
+        { polling: "raf", timeout: 3000 },
+      );
       await page.screenshot({ path: `${shots}/R2-10-count-in-${vp.width}.png` });
-      await expect(pad).toHaveAccessibleName(/Beat 1 of \d+/, { timeout: 3000 });
+      await beat1;
       await page.waitForFunction(() => (window as unknown as { __fx: { sound: string }[] }).__fx.some((f) => f.sound === "tick"));
       const fx = await page.evaluate(() => (window as unknown as { __fx: { sound: string; at: number }[] }).__fx);
       const counts = fx.filter((f) => f.sound === "count");
