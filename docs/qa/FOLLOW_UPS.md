@@ -131,3 +131,23 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   only) even while it is switched off. A small "New, in testing" tag on the card is a design call for the owner.
 - **R2-P5 settings delay:** a lab switch reaches players within about 30 s (server settings cache) plus up to 60 s
   (edge cache of `/api/v1/settings/game`); the server refuses a switched-off game as soon as its own cache expires.
+- **Admin cascade audit (R2-ADMIN), left out or partial** (full table: `docs/qa/ADMIN_CASCADE_R2.md`):
+  - **Rule overrides, places still on the catalog text:** the practice round's coaching hint (built on the server in
+    `app/api/v1/guided/[game]/route.ts`), the Duel queue rules card and next-game card (`DuelScreen`), the
+    `/how-to-play` page, the Play page's meta description and the School Cup game picker's card copy. Wiring them needs `loadGamesMeta()` on those server
+    paths (one extra read per hint or page) or `useGameCopy` in the Duel cards.
+  - **Icons:** the Library page previews each tile; editing needs an asset upload and the 3D pre-render
+    (`scripts/prerender-3d.mjs`), so icons still change in code.
+  - **Practice boards:** previewed read only. The board is the fixed seed `tutorial:<game>` (or a game's own
+    practice board) in code; changing it needs a code change, and the per-game off switch is `practice.disabled`.
+  - **Quads pack export** runs in the browser from the content list, so it writes no audit row (reads of the list are
+    not audited either). If exports must be logged, it needs a server export route like the Daily Five one.
+  - **Push count** is devices with alerts on, not distinct players: PostgREST head counts cannot count distinct
+    players, so that needs an `svc_*` function.
+  - **Retention activity** counts attempts (solo, Duel and Party rounds), as Live ops does; Board Games moves
+    (`board_moves`) do not count as a day's activity yet.
+  - **Landing to first clear** starts at profile creation (Welcome's guest profile). Visitors who leave before a
+    profile exists are not in the cohort; that part of the funnel is on the Onboarding completion card.
+  - **Deploy order:** apply `20261202000101` to `20261202000701` before deploying. Until then the copy overrides and
+    the `warm` split fall back quietly, but `practice_*` and `game_over` metrics are refused by the old name check
+    (the client ignores the error, so players see nothing).
