@@ -1,4 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
+import { CONTENT } from "@/games/quads/content";
+import { packToJson } from "@/lib/admin/quads-pack";
 import { admin } from "../../api/helpers";
 import { signedIn } from "./helpers";
 
@@ -99,4 +101,21 @@ test("moderation: the flagged scores tab filters to the Daily Five", async ({ pa
   await expect(source).toBeVisible();
   await source.selectOption("five");
   await expect(page).toHaveURL(/source=five/);
+});
+
+test("Quads packs: a bad pack lists its problems and saves nothing; a good one becomes drafts, audited", async ({ page }) => {
+  const acct = await signedIn(page, "content_editor");
+  await page.goto("/admin/content?game=quads");
+  const tools = page.getByRole("region", { name: "Quads packs" });
+  await expect(tools).toBeVisible({ timeout: 20_000 });
+  await tools.getByRole("button", { name: "Import Quads JSON" }).click();
+  await tools.getByLabel("Paste a Quads pack").fill('{"app":"spuzl","kind":"quads","puzzles":[{}]}');
+  await tools.getByRole("button", { name: "Import as drafts" }).click();
+  await expect(tools.getByText("Fix these and import again. Nothing was saved.")).toBeVisible();
+
+  await tools.getByLabel("Paste a Quads pack").fill(packToJson(CONTENT.slice(0, 1)));
+  await tools.getByRole("button", { name: "Import as drafts" }).click();
+  await expect(tools.getByText("Imported 1 puzzle as drafts.")).toBeVisible();
+  await expect.poll(async () => (await lastAction(acct.userId, "content.import"))?.target).toBe("content:quads");
+  await admin().from("content_items").delete().eq("author_id", acct.userId).eq("notes", "Imported from a Quads pack");
 });
