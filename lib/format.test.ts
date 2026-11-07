@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dailyNumber, dailySeed, formatClock, formatCountdown, formatShort, msToReset, weekStartGmt } from "./format";
+import { dailyNumber, dailySeed, formatClear, formatClock, formatCountdown, formatShort, msToReset, weekStartGmt } from "./format";
 
 describe("format", () => {
   it("formats clocks and countdowns", () => {
@@ -20,5 +20,15 @@ describe("format", () => {
     expect(dailySeed("gauntlet", "2026-11-03")).toBe(dailySeed("gauntlet", "2026-11-08"));
     expect(dailySeed("gauntlet", "2026-11-08")).not.toBe(dailySeed("gauntlet", "2026-11-09"));
     expect(dailySeed("crownfall", "2026-11-03")).toBe("daily:crownfall:2026-11-03");
+  });
+});
+
+describe("formatClear (R2-15)", () => {
+  it("never shows 00:00 for a clear, and rounds up to the second reached", () => {
+    expect(formatClear(0)).toBe("00:01");
+    expect(formatClear(400)).toBe("00:01");
+    expect(formatClear(1_000)).toBe("00:01");
+    expect(formatClear(1_001)).toBe("00:02");
+    expect(formatClear(72_000)).toBe("01:12");
   });
 });

@@ -20,7 +20,8 @@ export function PauseOverlay({
 }: {
   open: boolean;
   title: string;
-  elapsed: number;
+  /** the time so far; null hides it (a practice round, or before the first move: R2-15) */
+  elapsed: number | null;
   onResume: () => void;
   onQuit: () => void;
   onRestart?: () => void;
@@ -62,7 +63,7 @@ export function PauseOverlay({
                 <div className="bg-line h-[5px] w-11 self-center rounded-[3px]" />
                 <div className="flex items-center justify-between">
                   <Dialog.Title className="font-display text-[24px] font-black">Paused</Dialog.Title>
-                  <span className="num text-muted text-[20px] font-semibold">{formatClock(elapsed)}</span>
+                  {elapsed !== null && <span className="num text-muted text-[20px] font-semibold">{formatClock(elapsed)}</span>}
                 </div>
                 <p id="pause-desc" className="text-muted text-[15px]">
                   Board hidden while paused. No peeking, Spuzler.

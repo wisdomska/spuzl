@@ -6,6 +6,8 @@ import { fiveProgressAfter } from "@/lib/daily-five/server";
 const Finish = z.object({
   state: z.unknown().default(null),
   activeMs: z.number().min(0).max(86_400_000),
+  // R2-15: the board on screen before and during play (the clock starts on the first move); the floor reads it
+  boardMs: z.number().min(0).max(86_400_000).optional(),
   mistakes: z.number().int().min(0).max(10_000).default(0),
   deaths: z.number().int().min(0).max(100_000).optional(),
   relaxed: z.boolean().optional(),

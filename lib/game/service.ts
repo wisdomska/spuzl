@@ -24,6 +24,7 @@ import { finalVerdict } from "./guess-check";
 import { bindPuzzle } from "./guess-token";
 import { isLadderGame, isLevel, levelCount, levelDifficulty, levelOpen, nextLevel } from "./levels";
 import { securedLevelSeed } from "./level-seed";
+import { timingFlag } from "./anticheat";
 import { fiveSlot } from "@/lib/daily-five/server";
 
 /** Human floor for one Rage Ridge room played in Levels mode. */
@@ -409,8 +410,10 @@ export async function hintFor(admin: SupabaseClient, playerId: string, id: strin
 
 export interface FinishInput {
   state: unknown;
-  /** client active time (excludes pauses and hidden time) */
+  /** client active time (excludes pauses and hidden time); from the first move since R2-15 */
   activeMs: number;
+  /** R2-15: the board on screen and not paused, from load (the fast-solve floor reads it: lib/game/anticheat.ts) */
+  boardMs?: number;
   mistakes: number;
   deaths?: number;
   relaxed?: boolean;
@@ -435,8 +438,6 @@ export interface FinishResult {
   /** level mode: the level just cleared, the player's highest clear after it, and the next level (null at the end) */
   ladder?: { level: number; top: number; next: number | null; bestMs: number; levels: number | null };
 }
-
-const WALL_SLACK_MS = 3000;
 
 export async function finishAttempt(
   admin: SupabaseClient,
@@ -485,9 +486,10 @@ export async function finishAttempt(
   let flag: string | null = null;
   // The tutorial is played before the profile exists, so its attempt is created after the clear;
   // its reward is fixed and granted once, so wall-clock checks do not apply.
+  // The floor reads the look time and the wall check the play time (R2-15: the client clock starts on the first move).
+  const timing = a.mode === "tutorial" ? null : timingFlag({ activeMs: input.activeMs, boardMs: input.boardMs, wallMs, floorMs });
   if (a.mode === "tutorial") flag = null;
-  else if (timeMs < floorMs) flag = `below human floor (${timeMs} < ${floorMs} ms)`;
-  else if (timeMs > wallMs + WALL_SLACK_MS) flag = `client time ${timeMs} exceeds server wall time ${wallMs}`;
+  else if (timing) flag = timing;
   else if (input.offline && a.mode === "daily" && a.daily_date && finishedAt.toISOString().slice(0, 10) !== a.daily_date)
     flag = "offline clear outside its day";
   else if (suspect) flag = suspect; // the game's own timing check (Penalty King's tap spread)

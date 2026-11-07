@@ -23,7 +23,7 @@ import {
 } from "@/lib/client/api";
 import { readOnboarding } from "@/lib/client/onboarding";
 import { usePresence } from "@/lib/client/social";
-import { dailyNumber, formatClock } from "@/lib/format";
+import { dailyNumber, formatClear, formatClock } from "@/lib/format";
 import { nextInPath, nextLabel } from "@/lib/game/next";
 import { useGameSettings } from "@/lib/game-settings/client";
 import { copy } from "@/lib/copy";
@@ -275,7 +275,7 @@ export function PlayScreen({
   }, [flush]);
 
   const onSolved = useCallback(
-    async (state: unknown, elapsedMs: number, s: { hints: number; mistakes: number }) => {
+    async (state: unknown, elapsedMs: number, s: { hints: number; mistakes: number; boardMs?: number }) => {
       if (!attempt) return;
       // The finish carries the final state; no autosave after it.
       dirty.current = false;
@@ -290,6 +290,7 @@ export function PlayScreen({
           state,
           activeMs: elapsedMs,
           mistakes: s.mistakes,
+          boardMs: s.boardMs,
           relaxed,
           localHour: new Date().getHours(),
         });
@@ -772,7 +773,7 @@ function PlayLoading({ meta }: { meta: GameMeta }) {
         >
           {meta.rule}
         </p>
-        <Skeleton className="h-11 w-[92px] rounded-[14px] max-[359px]:w-[72px]" />
+        <Skeleton className="size-11 rounded-[14px]" />
         <Skeleton className="size-11 rounded-[14px]" />
       </div>
       <p aria-hidden className="text-muted short:text-[13px] wide:hidden line-clamp-2 px-4 pb-2 text-[14px] leading-5 font-medium">
@@ -807,7 +808,7 @@ function LevelResultBar({
     <div className="bg-surface flex flex-col gap-3 rounded-[22px] p-3.5" role="status" aria-live="polite">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-1">
         <span className="font-display text-accent text-[18px] font-black">{levelsCopy.levelCleared(ladder.level)}</span>
-        {!relaxed && <span className="num text-[15px] font-semibold">{formatClock(timeMs)}</span>}
+        {!relaxed && <span className="num text-[15px] font-semibold">{formatClear(timeMs)}</span>}
         {xp > 0 && <span className="num text-[15px] font-semibold">+{xp} XP</span>}
         {!relaxed && ladder.bestMs < timeMs && (
           <span className="text-muted text-[14px]">{levelsCopy.best(formatClock(ladder.bestMs))}</span>
@@ -846,7 +847,7 @@ function FreeResultBar({
     <div className="bg-surface flex flex-col gap-3 rounded-[22px] p-3.5" role="status" aria-live="polite">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-1">
         <span className="font-display text-accent text-[18px] font-black">{copy.play.cleared}</span>
-        {!relaxed && <span className="num text-[15px] font-semibold">{formatClock(timeMs)}</span>}
+        {!relaxed && <span className="num text-[15px] font-semibold">{formatClear(timeMs)}</span>}
         {xp > 0 && <span className="num text-[15px] font-semibold">+{xp} XP</span>}
         <span className="text-muted text-[14px]">{copy.play.accuracy(accuracy)}</span>
       </div>
@@ -881,7 +882,7 @@ function FiveResultBar({
     <div className="bg-surface flex flex-col gap-3 rounded-[22px] p-3.5" role="status" aria-live="polite" data-testid="five-result">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-1">
         <span className="font-display text-accent text-[18px] font-black">{FT.cleared}</span>
-        {!relaxed && <span className="num text-[15px] font-semibold">{formatClock(timeMs)}</span>}
+        {!relaxed && <span className="num text-[15px] font-semibold">{formatClear(timeMs)}</span>}
         {progress && <span className="num text-[15px] font-semibold">{FT.ring(progress.done, progress.total)}</span>}
         {progress && <span className="num text-accent text-[15px] font-bold">{FT.points(progress.score)}</span>}
       </div>

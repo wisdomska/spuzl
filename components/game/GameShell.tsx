@@ -26,6 +26,7 @@ import { useViewportWidth, useWide, wideAside, SLOT_PAD, WIDE_GAP, WIDE_GUTTER, 
 import { ShellAsideProvider } from "./ShellAside";
 import { useLeave } from "./useLeave";
 import { LeaveConfirm } from "./LeaveConfirm";
+import { haltClock, newClock, readClock, runClock } from "@/lib/game/shell-clock";
 
 /**
  * Wide screens (useBoardSize `isWide`: 900 × 600 and up) split the template into two columns: the board, grown to
@@ -56,7 +57,7 @@ export interface GameShellProps<P, St> {
   /** server hint for the current state */
   requestHint?: (state: St | undefined) => Promise<Hint | null>;
   /** board reports solved; resolves when the server has decided */
-  onSolved: (state: St, elapsedMs: number, stats: { hints: number; mistakes: number }) => Promise<void> | void;
+  onSolved: (state: St, elapsedMs: number, stats: { hints: number; mistakes: number; boardMs: number }) => Promise<void> | void;
   onFailed?: (state: St, reason: string, elapsedMs: number) => void;
   onMove?: (state: St, elapsedMs: number, info?: { correctStreak?: number; mistake?: boolean }) => void;
   onExit: () => void;
@@ -198,7 +199,12 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   };
   const hintsUsed = useRef(0);
   const clearPlayed = useRef(false);
-  const clock = useRef({ base: initialElapsed, since: 0 });
+  // R2-15 (lib/game/shell-clock.ts): the play clock starts on the first move; the look clock counts the board on
+  // screen from load (sent with a clear as boardMs for the server's fast-solve floor, never shown).
+  const clock = useRef(newClock(initialElapsed));
+  const look = useRef(newClock());
+  const startedRef = useRef(false);
+  const [tabHidden, setTabHidden] = useState(false);
   // A board with its own clock (fixed-step simulation) replaces the wall clock for display and scoring.
   const boardClock = useRef<(() => number) | null>(null);
   // A board whose view differs from the puzzle layout (Buried after Rotate) words the hint for that view.
@@ -217,30 +223,40 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   // The leave confirm holds the game like the menu does, where the mode can pause.
   const leaveHold = leave.asking && canPause;
 
-  // Timer: starts on first interaction, stops while paused or hidden (FR-GP-02).
-  const running = started && !paused && !solved && !pausedExternally && !confirmHint && !menuHold && !leaveHold;
+  // Held: the clock stops and the board is hidden (Pause, the menu, How to play, the hint confirm, the leave confirm).
+  const held = paused || !!pausedExternally || confirmHint || menuHold || leaveHold;
+  // Timer: starts on the first move (R2-15; Start on boards with a ready screen), stops while held (FR-GP-02).
+  const running = started && !solved && !held;
   useEffect(() => {
     if (!running) return;
     const c = clock.current; // one mutable clock for the shell's lifetime
-    c.since = performance.now();
-    const id = setInterval(() => setElapsed(boardClock.current ? boardClock.current() : c.base + performance.now() - c.since), 200);
+    runClock(c, performance.now()); // already running if the first move started it
+    const id = setInterval(() => setElapsed(boardClock.current ? boardClock.current() : readClock(c, performance.now())), 200);
     return () => {
-      c.base += performance.now() - c.since;
+      haltClock(c, performance.now());
       clearInterval(id);
     };
   }, [running]);
-  const now = useCallback(
-    () =>
-      boardClock.current
-        ? boardClock.current()
-        : running
-          ? clock.current.base + performance.now() - clock.current.since
-          : clock.current.base,
-    [running],
-  );
+  // The look clock: the board on screen and not held, first move or not.
+  const looking = !solved && !held && !locked && !tabHidden;
+  useEffect(() => {
+    if (!looking) return;
+    const c = look.current;
+    runClock(c, performance.now());
+    return () => haltClock(c, performance.now());
+  }, [looking]);
+  const now = useCallback(() => (boardClock.current ? boardClock.current() : readClock(clock.current, performance.now())), []);
+  /** The first move (or Start): the play clock runs from this instant, synchronously. */
+  const begin = useCallback(() => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+    runClock(clock.current, performance.now());
+    setStarted(true);
+  }, []);
 
   useEffect(() => {
     const onVis = () => {
+      setTabHidden(document.hidden);
       if (document.hidden && started && !solved) setPaused(true);
     };
     document.addEventListener("visibilitychange", onVis);
@@ -253,7 +269,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
     () => ({
       onMove(state, info) {
         stateRef.current = state;
-        if (!started) setStarted(true);
+        begin();
         if (info?.mistake) countMistake();
         lastActive.current = performance.now();
         setHint(null);
@@ -269,10 +285,15 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
           clearPlayed.current = true;
           play("clear", { delay: (opts?.clearDelayMs ?? CLEAR_GAP_MS) / 1000 });
         }
+        const at = performance.now();
         const t = now();
+        haltClock(clock.current, at);
         clock.current.base = t;
+        haltClock(look.current, at);
         setElapsed(t);
-        void onSolved(state, t, { hints: hintsUsed.current, mistakes: mistakes.current });
+        // boardMs is never less than the play time (the board was up the whole time the clock ran).
+        const boardMs = Math.max(t, readClock(look.current, at));
+        void onSolved(state, t, { hints: hintsUsed.current, mistakes: mistakes.current, boardMs });
       },
       onFailed(state, reason) {
         stateRef.current = state;
@@ -308,7 +329,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
         boardClock.current = fn;
       },
       start() {
-        if (!started) setStarted(true);
+        begin();
       },
       setHintText(fn) {
         hintText.current = fn;
@@ -317,12 +338,12 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
         mistakes.current = Math.max(mistakes.current, count);
       },
     }),
-    [started, now, onMove, onSolved, onFailed],
+    [begin, now, onMove, onSolved, onFailed],
   );
 
   const spendHint = useCallback(async () => {
     if (hints <= 0 || !requestHint || solved) return;
-    setStarted(true);
+    // A hint is not a move: it never starts the clock (R2-15: the practice round's idle hints ran it before Start).
     const h = await requestHint(stateRef.current);
     if (!h) return;
     hintsUsed.current++;
@@ -467,6 +488,8 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   // move collapses it (instantly with reduced motion). Wide screens show it in the top bar's empty middle, so the
   // board never moves at all; when the practice banner holds that spot, it heads the side panel instead.
   const showRule = !started && !solved && !!meta.rule;
+  // R2-15: digits only once the clock runs (or a resumed game carries time); never in a practice round.
+  const clockShown = !guided && (started || elapsed > 0);
   const ruleExit = reduce
     ? { opacity: 0, height: 0, transition: { duration: 0 } }
     : { opacity: 0, height: 0, transition: { duration: 0.22, ease: [0.23, 1, 0.32, 1] as const } };
@@ -514,14 +537,17 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
       {wide && !banner && (
         <div className="flex max-w-[640px] min-w-0 flex-[2] items-center justify-center">{foldingRule("min-w-0", true)}</div>
       )}
-      {!relaxed && (
+      {/* R2-15: the one header timer. Never in a practice round; before the first move it holds its place with the
+          clock icon only (never "00:00"), and the digits appear once it runs. A resumed game shows its time. */}
+      {!relaxed && !guided && (
         <div
-          className="num bg-surface flex h-11 shrink-0 items-center gap-1.5 rounded-[14px] px-3 text-[20px] font-semibold max-[359px]:px-2 max-[359px]:text-[18px]"
+          className="num bg-surface flex h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-[14px] px-3 text-[20px] font-semibold max-[359px]:px-2 max-[359px]:text-[18px]"
           role="timer"
-          aria-label={`Time ${formatClock(elapsed)}`}
+          aria-label={clockShown ? `Time ${formatClock(elapsed)}` : M.timerWaits}
+          data-timer={clockShown ? "running" : "waiting"}
         >
-          <Icon name="timer" size={16} className="text-muted max-[359px]:hidden" />
-          {formatClock(elapsed)}
+          <Icon name="timer" size={16} className={clockShown ? "text-muted max-[359px]:hidden" : "text-muted"} />
+          {clockShown && formatClock(elapsed)}
         </div>
       )}
       <GameMenu
@@ -653,7 +679,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
         <PauseOverlay
           open={paused}
           title={meta.name}
-          elapsed={elapsed}
+          elapsed={clockShown ? elapsed : null}
           onResume={() => setPaused(false)}
           onRestart={undefined}
           onQuit={() => {

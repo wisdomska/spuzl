@@ -6,6 +6,14 @@ export function formatClock(ms: number): string {
 }
 
 /**
+ * A clear's time on a result (R2-15): never "00:00". The clock starts on the first move, so a puzzle solved by that
+ * move can read under a second; it shows as "00:01", and other times round up to the second they reached.
+ */
+export function formatClear(ms: number): string {
+  return formatClock(Math.max(1000, Math.ceil(ms / 1000) * 1000));
+}
+
+/**
  * 1:12 style, for share text and share cards only (their design format). Rounds down like formatClock, so
  * a shared time never disagrees with the clock. Everything shown in the app uses formatClock.
  */

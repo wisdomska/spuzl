@@ -29,6 +29,8 @@ import { useEffect, useSyncExternalStore } from "react";
 export interface FinishPayload {
   state: unknown;
   activeMs: number;
+  /** R2-15: ms the board was on screen and not paused, first move or not (the fast-solve floor reads it) */
+  boardMs?: number;
   mistakes: number;
   deaths?: number;
   relaxed?: boolean;

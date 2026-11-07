@@ -297,10 +297,10 @@ export function ChallengeScreen({ code }: { code: string }) {
     samples.current.push({ ms: Math.round(ms), state });
   }, []);
   const onSolved = useCallback(
-    async (state: unknown, ms: number, stats: { hints: number; mistakes: number }) => {
+    async (state: unknown, ms: number, stats: { hints: number; mistakes: number; boardMs?: number }) => {
       if (!play_) return;
       try {
-        const fin = await finishAttempt(play_.attemptId, { state, activeMs: ms, mistakes: stats.mistakes });
+        const fin = await finishAttempt(play_.attemptId, { state, activeMs: ms, boardMs: stats.boardMs, mistakes: stats.mistakes });
         if (!fin.ok) return show("That didn't verify. Try again.", "bad");
         const r = await api<ChallengeCardData>(`/api/v1/challenges/${code}/result`, {
           json: { attemptId: play_.attemptId, timeline: samples.current },

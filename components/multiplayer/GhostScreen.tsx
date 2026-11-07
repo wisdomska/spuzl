@@ -65,11 +65,17 @@ export function GhostScreen({ game }: { game: string }) {
   }, [gate, game, run, round]);
 
   const onSolved = useCallback(
-    async (state: unknown, ms: number, stats: { mistakes: number }) => {
+    async (state: unknown, ms: number, stats: { mistakes: number; boardMs?: number }) => {
       if (!start) return;
       const st = state as { deaths?: number; timeMs?: number };
       try {
-        const fin = await finishAttempt(start.attemptId, { state, activeMs: ms, mistakes: stats.mistakes, deaths: st.deaths ?? 0 });
+        const fin = await finishAttempt(start.attemptId, {
+          state,
+          activeMs: ms,
+          boardMs: stats.boardMs,
+          mistakes: stats.mistakes,
+          deaths: st.deaths ?? 0,
+        });
         if (!fin.ok) return show("That run didn't verify.", "bad");
         const saved = await api<{ runId: string }>("/api/v1/ghosts", { json: { attemptId: start.attemptId } }).catch(() => null);
         setDone({ timeMs: st.timeMs ?? ms, deaths: st.deaths ?? 0, runId: saved?.runId ?? null });

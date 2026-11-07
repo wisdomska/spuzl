@@ -6,7 +6,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { Spuz } from "@/components/brand/Spuz";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
-import { formatClock, formatNumber } from "@/lib/format";
+import { formatClear, formatNumber } from "@/lib/format";
 import { play } from "@/lib/audio";
 import type { GameMeta } from "@/lib/catalog";
 import { UI_ACCENT } from "@/lib/catalog";
@@ -74,10 +74,10 @@ export function ResultsScreen({
     : relaxed
       ? `Relaxed clear. ${hints ? `${hints} hint${hints > 1 ? "s" : ""}.` : "No hints."}`
       : hints === 0 && mistakes === 0
-        ? `Clean. ${formatClock(result.timeMs)}, no hints. Who taught you?`
+        ? `Clean. ${formatClear(result.timeMs)}, no hints. Who taught you?`
         : hints === 0
-          ? `${formatClock(result.timeMs)}, no hints. Nice.`
-          : `${formatClock(result.timeMs)} with ${hints} hint${hints > 1 ? "s" : ""}. Next time, solo.`;
+          ? `${formatClear(result.timeMs)}, no hints. Nice.`
+          : `${formatClear(result.timeMs)} with ${hints} hint${hints > 1 ? "s" : ""}. Next time, solo.`;
   const fill = result.level.need ? result.level.into / result.level.need : 0;
   const levelled = result.level.after > result.level.before;
 
@@ -115,7 +115,7 @@ export function ResultsScreen({
             />
           ) : (
             <p className="num text-accent text-[56px] leading-none font-semibold">
-              {relaxed ? "Relaxed" : <CountUp value={result.timeMs} format={formatClock} instant={instant} />}
+              {relaxed ? "Relaxed" : <CountUp value={Math.max(1000, result.timeMs)} format={formatClear} instant={instant} />}
             </p>
           )}
           {result.percentile !== null && !relaxed && (

@@ -200,7 +200,17 @@ export interface FinishRes {
 }
 export function finishAttempt(
   id: string,
-  body: { state: unknown; activeMs: number; mistakes: number; deaths?: number; relaxed?: boolean; offline?: boolean; finishedAt?: string },
+  body: {
+    state: unknown;
+    activeMs: number;
+    /** R2-15: board on screen from load, first move or not (the fast-solve floor) */
+    boardMs?: number;
+    mistakes: number;
+    deaths?: number;
+    relaxed?: boolean;
+    offline?: boolean;
+    finishedAt?: string;
+  },
 ) {
   return api<FinishRes>(`/api/v1/attempts/${id}/finish`, { json: { ...body, localHour: new Date().getHours() } });
 }
