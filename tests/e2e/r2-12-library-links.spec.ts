@@ -25,7 +25,8 @@ test("rows are links: href, Ctrl-click opens a new page, a plain click opens the
 
   // Ctrl/Cmd-click: the browser opens the game in a new page; this page stays on the Library with no card.
   const [popup] = await Promise.all([context.waitForEvent("page"), row.click({ modifiers: ["ControlOrMeta"] })]);
-  await popup.waitForLoadState("domcontentloaded");
+  // The new page starts at about:blank; wait for it to reach the game before reading its URL.
+  await popup.waitForURL((u) => u.pathname === "/play/crownfall", { timeout: 30_000 });
   expect(new URL(popup.url()).pathname).toBe("/play/crownfall");
   await popup.close();
   await expect(page).toHaveURL(/\/library$/);

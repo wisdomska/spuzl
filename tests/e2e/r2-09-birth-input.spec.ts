@@ -64,13 +64,13 @@ for (const [w, viewport] of SIZES) {
       await page.getByLabel("Month", { exact: true }).selectOption("1");
       await year.fill(String(y + 1));
       await go.click();
-      await expect(page.getByRole("alert")).toHaveText("That's in the future. Check the month and year.");
+      await expect(page.locator("main").getByRole("alert")).toHaveText("That's in the future. Check the month and year.");
       await expect(year).toHaveAttribute("aria-invalid", "true");
       await page.screenshot({ path: shot("birth-error", w) });
       expect(await runAxe(page)).toEqual([]);
       await year.fill("1900");
       await go.click();
-      await expect(page.getByRole("alert")).toHaveText("Pick a real month and year.");
+      await expect(page.locator("main").getByRole("alert")).toHaveText("Pick a real month and year.");
       await ctx.close();
     });
 
