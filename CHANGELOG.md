@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.42.0 (8 November 2026)
+
+### For players and visitors
+
+- **A page for every game.** `/games` lists all the games by world, and each game has its own page: what it is, how
+  to play, modes, typical time, a short FAQ, related games and a Play button.
+- **The front door.** Visitors who aren't signed in (and search engines) get the SPUZL landing page at `/`, with the
+  games and an FAQ; players still land straight on their Home.
+- **Worlds open to visitors.** A world page shows its games to visitors too.
+- **Fair play page corrected:** in-game chat is quick phrases and reactions; typing is only on when everyone in the
+  room is 16 or older.
+
+### Search and AI assistants
+
+- Every public page has its own title, description, canonical link and share image; structured data for SPUZL, each
+  game, breadcrumbs and FAQs.
+- Sitemap lists every page and game; robots welcome search and AI crawlers and keep private pages (rooms, duels,
+  profiles, admin) out; `/llms.txt` and `/llms-full.txt` describe SPUZL for AI assistants.
+- New pages are announced to Bing and others through IndexNow.
+
 ## 1.41.2 (8 November 2026)
 
 ### For players
