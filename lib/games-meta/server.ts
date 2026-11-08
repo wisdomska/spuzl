@@ -42,10 +42,22 @@ export async function selectMetaRows(db: SupabaseClient): Promise<GameMetaDbRow[
   return (old.data ?? []) as GameMetaDbRow[];
 }
 
+// 30 s per server instance in production (like game settings); none in development and tests.
+let cache: { at: number; value: Record<string, GameMetaRow> } | null = null;
+const TTL_MS = Number(process.env.SETTINGS_CACHE_MS ?? (process.env.NODE_ENV === "production" ? 30_000 : 0));
+
 export async function loadGamesMeta(): Promise<Record<string, GameMetaRow>> {
+  if (cache && Date.now() - cache.at < TTL_MS) return cache.value;
   try {
-    return mergeMeta(await selectMetaRows(supabaseAdmin()));
+    const value = mergeMeta(await selectMetaRows(supabaseAdmin()));
+    cache = { at: Date.now(), value };
+    return value;
   } catch {
     return DEFAULT_META;
   }
+}
+
+/** Drops the cache after an admin edit so this instance serves the new durations, tags and copy at once. */
+export function invalidateGamesMeta() {
+  cache = null;
 }

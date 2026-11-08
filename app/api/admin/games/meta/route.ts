@@ -4,7 +4,7 @@ import { audit, requireAdmin } from "@/lib/admin/auth";
 import { DEFAULT_META, defaultMetaFor, validateMeta } from "@/lib/games-meta";
 import { GAME_BY_ID, RETIRED_GAMES, isLabGame, isLabOn, isRetired } from "@/lib/catalog";
 import { getGameSettings } from "@/lib/game-settings/server";
-import { mergeMeta, selectMetaRows, type GameMetaDbRow } from "@/lib/games-meta/server";
+import { invalidateGamesMeta, mergeMeta, selectMetaRows, type GameMetaDbRow } from "@/lib/games-meta/server";
 
 const overridden = (r: GameMetaDbRow | undefined) => r?.typical_sec != null || r?.tags != null || r?.rule != null || r?.blurb != null;
 /** The catalog's copy, shown as the default next to an override. */
@@ -107,6 +107,7 @@ async function apply(ctx: Awaited<ReturnType<typeof requireAdmin>>, id: string, 
   const { data: before } = await ctx.db.from("games").select(cols).eq("id", id).maybeSingle();
   const { error } = await ctx.db.from("games").update(patch).eq("id", id);
   if (error) throw error;
+  invalidateGamesMeta();
   await audit(ctx, "game_meta.update", `game:${id}`, { before, after: patch });
 }
 

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { MERGED_WORLDS, WORLD_BY_ID, isLiveWorld, type WorldId } from "@/lib/catalog";
 import { WorldScreen } from "@/components/world/WorldScreen";
+import { SeedQueries } from "@/components/shell/SeedQueries";
 
 export async function generateMetadata({ params }: PageProps<"/world/[id]">): Promise<Metadata> {
   const { id } = await params;
@@ -16,5 +17,9 @@ export default async function World({ params }: PageProps<"/world/[id]">) {
   if (merged && isLiveWorld(merged)) permanentRedirect(`/world/${merged}`);
   // Unknown worlds and worlds whose games are all retired (Number Den) are not found.
   if (!isLiveWorld(id)) notFound();
-  return <WorldScreen id={id as WorldId} />;
+  return (
+    <SeedQueries>
+      <WorldScreen id={id as WorldId} />
+    </SeedQueries>
+  );
 }

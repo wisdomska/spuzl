@@ -1,7 +1,6 @@
-import type { Metadata } from "next";
+import { SeedQueries } from "@/components/shell/SeedQueries";
 
-export const metadata: Metadata = { title: "All games" };
-
-export default function Layout({ children }: { children: React.ReactNode }) {
-  return children;
+/** All games renders with the live durations, tags and lab switches from the first paint (R3: no hydration flash). */
+export default function LibraryLayout({ children }: LayoutProps<"/library">) {
+  return <SeedQueries>{children}</SeedQueries>;
 }
