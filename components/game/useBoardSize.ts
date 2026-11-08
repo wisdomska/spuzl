@@ -35,6 +35,11 @@ export const WIDE_GUTTER = 24;
 export const WIDE_TOP = 72;
 /** Room kept under the board on a wide screen. */
 export const WIDE_BOTTOM = 24;
+/**
+ * The side panel's tallest (CSS): the viewport less the top bar (its top padding, never under 20 px, the 44 px
+ * buttons and 8 px under) and the room kept under the columns, so the panel never makes the page scroll (R3-02).
+ */
+export const WIDE_ASIDE_MAX_H = `calc(100dvh - max(20px, env(safe-area-inset-top)) - ${WIDE_TOP - 20 + WIDE_BOTTOM}px)`;
 /** Largest board, in px, on any screen (a 1920 × 1080 desktop reaches it). */
 export const WIDE_MAX = 960;
 /** A square board stays inside this share of the viewport height. */

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { useCellSize, useFitHeight } from "@/components/game/useBoardSize";
+import { cellCap, GRID_PAD } from "./size";
 import { isKeyedInput, useGridKeys } from "@/components/game/useGridKeys";
 import { sfx } from "@/games/_shared/sfx";
 import { CROWNFALL_COPY } from "@/lib/copy/crownfall";
@@ -42,7 +43,9 @@ export default function CrownfallBoard({ puzzle, initialState, hint, disabled, m
   const painting = useRef<null | { value: number; n: number }>(null);
   // Whatever sits under the grid fits too: the cells step down until the shell does (short laptops and phones).
   const rootRef = useRef<HTMLDivElement>(null);
-  const cell = useFitHeight(useCellSize(n, 0, 6, n <= 4 ? 72 : 64), 36, n, rootRef, "shell");
+  // The grid pads 6 px on each side, so 12 px across and down are not cells (R3-02: counting one side left a wide
+  // board 5 px past the viewport at 1280 × 800).
+  const cell = useFitHeight(useCellSize(n, 0, GRID_PAD * 2, cellCap(n)), 36, n, rootRef, "shell");
   const a = analyze(puzzle, cells);
 
   const commit = useCallback(
@@ -178,9 +181,10 @@ export default function CrownfallBoard({ puzzle, initialState, hint, disabled, m
           aria-rowcount={n}
           aria-colcount={n}
           onKeyDown={keys.onKeyDown}
-          className="grid rounded-[16px] p-1.5"
+          className="grid rounded-[16px]"
           style={{
             gridTemplateColumns: `repeat(${n}, ${cell}px)`,
+            padding: GRID_PAD,
             background: "var(--board-bg)",
             boxShadow: "0 0 0 2px var(--line)",
             perspective: 600,

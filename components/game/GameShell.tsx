@@ -23,7 +23,7 @@ import { track } from "@/lib/analytics/track";
 import { copy } from "@/lib/copy";
 import { leaveCopy } from "@/lib/copy/leave";
 import { leavePolicy, type LeaveContext } from "@/lib/game/leave";
-import { useViewportWidth, useWide, wideAside, SLOT_PAD, WIDE_GAP, WIDE_GUTTER, WIDE_MAX } from "./useBoardSize";
+import { useViewportWidth, useWide, wideAside, SLOT_PAD, WIDE_ASIDE_MAX_H, WIDE_GAP, WIDE_GUTTER, WIDE_MAX } from "./useBoardSize";
 import { ShellAsideProvider } from "./ShellAside";
 import { useLeave } from "./useLeave";
 import { LeaveConfirm } from "./LeaveConfirm";
@@ -697,17 +697,29 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
             {!wide && toolZone}
           </div>
           {wide && (
-            <aside className="flex shrink-0 flex-col gap-3 pt-3 pr-3" style={{ width: asideW }} aria-label={M.panel}>
-              {banner && foldingRule("overflow-hidden")}
-              {stripZone}
-              {/* The board's side-panel parts (clue lists and the like) hide with it while held (R2-16). */}
-              <div
-                ref={setAside}
-                className={`flex flex-col gap-3 empty:hidden ${covered ? "invisible" : ""}`}
-                data-aside-hidden={covered || undefined}
-              />
-              {feedbackZone}
-              {toolZone}
+            // R3-02: the panel never reaches past the viewport (it used to add a few px of page scroll). Spacing
+            // tightens on a short screen; the tools stay pinned at its foot and, as a last resort, the parts above
+            // them scroll inside the panel.
+            <aside
+              className="short:gap-2 flex min-h-0 shrink-0 flex-col gap-3 pt-3 pr-3"
+              style={{ width: asideW, maxHeight: WIDE_ASIDE_MAX_H }}
+              aria-label={M.panel}
+              data-shell-aside
+            >
+              <div className="short:gap-2 -mx-1 flex min-h-0 flex-col gap-3 overflow-y-auto overscroll-contain px-1 pb-1">
+                {banner && foldingRule("shrink-0 overflow-hidden")}
+                {stripZone}
+                {/* The board's side-panel parts (clue lists and the like) hide with it while held (R2-16). */}
+                <div
+                  ref={setAside}
+                  className={`flex flex-col gap-3 empty:hidden ${covered ? "invisible" : ""}`}
+                  data-aside-hidden={covered || undefined}
+                />
+                {feedbackZone}
+                {/* After a clear the end bar (the result sheet) can be tall: it scrolls with the rest. */}
+                {endBar && toolZone}
+              </div>
+              {!endBar && toolZone && <div className="shrink-0">{toolZone}</div>}
             </aside>
           )}
         </div>

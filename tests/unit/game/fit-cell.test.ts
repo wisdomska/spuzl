@@ -1,5 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
-import { cellSize, fitCell, fitStep, SHELL_CHROME, shellContentBottom, SLOT_PAD } from "@/components/game/useBoardSize";
+import {
+  boardBox,
+  cellSize,
+  fitCell,
+  fitStep,
+  SHELL_CHROME,
+  shellContentBottom,
+  SLOT_PAD,
+  WIDE_ASIDE_MAX_H,
+  WIDE_BOTTOM,
+  WIDE_TOP,
+} from "@/components/game/useBoardSize";
+import { crownfallCell, gridSpan, GRID_PAD } from "@/games/crownfall/size";
+import { SIZE_FOR } from "@/games/crownfall/logic";
 import { columnWidth } from "@/games/fourup/Board";
 import { MIN_STAGE_HEIGHT, stageHeight } from "@/phaser/layout";
 
@@ -130,5 +143,37 @@ describe("phone fit", () => {
     const ideal = stageHeight(284, { w: 320, h: 568 });
     expect(MIN_STAGE_HEIGHT).toBeLessThan(ideal);
     expect(MIN_STAGE_HEIGHT).toBeGreaterThanOrEqual(200);
+  });
+});
+
+describe("R3-02: wide boards fit the viewport height", () => {
+  // The grid's room under the top bar: the viewport less the bar, the slot's top padding and the bottom gutter.
+  const room = (vh: number) => boardBox(1280, vh).h;
+  const SCREENS = [
+    [1280, 800],
+    [1440, 900],
+    [1366, 768],
+    [1920, 1080],
+  ] as const;
+
+  it("Crownfall counts its grid padding on both sides, so no size runs past the viewport", () => {
+    for (const [vw, vh] of SCREENS) {
+      for (const n of Object.values(SIZE_FOR)) {
+        const cell = crownfallCell(vw, vh, n);
+        expect(gridSpan(n, cell), `${n} × ${n} at ${vw} × ${vh}`).toBeLessThanOrEqual(room(vh));
+        expect(WIDE_TOP + SLOT_PAD + gridSpan(n, cell) + WIDE_BOTTOM).toBeLessThanOrEqual(vh);
+      }
+    }
+  });
+
+  it("1280 × 800 easy (5 × 5) is the case that overflowed by 5 px with one side of padding", () => {
+    expect(gridSpan(5, crownfallCell(1280, 800, 5))).toBeLessThanOrEqual(room(800));
+    // One side only (the old sum) picked a cell 1 px bigger: 5 px past the room.
+    expect(gridSpan(5, cellSize(1280, 800, 5, 0, GRID_PAD, 64)) - room(800)).toBe(5);
+  });
+
+  it("caps the side panel at the viewport less the top bar and the bottom gutter", () => {
+    expect(WIDE_ASIDE_MAX_H).toBe("calc(100dvh - max(20px, env(safe-area-inset-top)) - 76px)");
+    expect(WIDE_TOP - 20 + WIDE_BOTTOM).toBe(76);
   });
 });
