@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { GAMES, LAUNCH_IDS } from "@/lib/catalog";
-import { continueGame, continueHref, nextInPath, nextLabel } from "./next";
+import { continueGame, continueHref, nextInPath, nextLabel, nextLabelParts } from "./next";
 
 describe("nextInPath", () => {
   const all = () => true;
@@ -23,6 +23,8 @@ describe("nextInPath", () => {
   it("names the destination", () => {
     expect(nextLabel("dusk")).toBe("Next in Puzzles: Dusk");
     expect(nextLabel("gotcha")).toBe("Next in Arcade: Gotcha");
+    // a two-line button: the game, then its category; the full sentence stays the accessible name
+    expect(nextLabelParts("gotcha")).toEqual({ title: "Next: Gotcha", sub: "Arcade", full: "Next in Arcade: Gotcha" });
   });
 });
 

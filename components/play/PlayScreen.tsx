@@ -24,7 +24,7 @@ import {
 import { readOnboarding } from "@/lib/client/onboarding";
 import { usePresence } from "@/lib/client/social";
 import { dailyNumber, formatClear, formatClock } from "@/lib/format";
-import { nextInPath, nextLabel } from "@/lib/game/next";
+import { nextInPath, nextLabelParts } from "@/lib/game/next";
 import { useGameSettings } from "@/lib/game-settings/client";
 import { copy } from "@/lib/copy";
 import { useSettings } from "@/lib/settings/store";
@@ -389,7 +389,9 @@ export function PlayScreen({
   const nextId = nextInPath(meta.id, clearedNow, (id) => (today.data ? readyIds.has(id) : true));
   const nextAction = nextId
     ? {
-        label: nextLabel(nextId),
+        label: nextLabelParts(nextId).title,
+        sub: nextLabelParts(nextId).sub,
+        aria: nextLabelParts(nextId).full,
         playNav: true,
         onClick: () => {
           primeAttempt(playHref(nextId));
@@ -836,8 +838,8 @@ function FreeResultBar({
   xp: number;
   accuracy: number;
   relaxed: boolean;
-  next: { label: string; onClick: () => void; playNav?: boolean };
-  another: { label: string; onClick: () => void; playNav?: boolean };
+  next: { label: string; sub?: string; aria?: string; onClick: () => void; playNav?: boolean };
+  another: { label: string; sub?: string; aria?: string; onClick: () => void; playNav?: boolean };
   /** "Beat my time" in the Challenge sheet (admin "features.challenges") */
   onBeatMyTime?: () => void;
   /** the story card share (admin "features.storyCards") */
@@ -852,10 +854,27 @@ function FreeResultBar({
         {xp > 0 && <span className="num text-[15px] font-semibold">+{xp} XP</span>}
         <span className="text-muted text-[14px]">{copy.play.accuracy(accuracy)}</span>
       </div>
-      <Button size="lg" icon="play" className="w-full" onClick={next.onClick} autoFocus {...(next.playNav ? PLAY_NAV : {})}>
+      <Button
+        size="lg"
+        icon="play"
+        className="w-full"
+        onClick={next.onClick}
+        autoFocus
+        sub={next.sub}
+        aria-label={next.aria}
+        {...(next.playNav ? PLAY_NAV : {})}
+      >
         {next.label}
       </Button>
-      <Button size="md" variant="secondary" className="w-full" onClick={another.onClick} {...(another.playNav ? PLAY_NAV : {})}>
+      <Button
+        size="md"
+        variant="secondary"
+        className="w-full"
+        onClick={another.onClick}
+        sub={another.sub}
+        aria-label={another.aria}
+        {...(another.playNav ? PLAY_NAV : {})}
+      >
         {another.label}
       </Button>
       <div className="flex gap-2">
@@ -883,7 +902,7 @@ function FiveResultBar({
   timeMs: number;
   progress: FinishRes["dailyFive"];
   relaxed: boolean;
-  next: { label: string; onClick: () => void; playNav?: boolean };
+  next: { label: string; sub?: string; aria?: string; onClick: () => void; playNav?: boolean };
   onFive: () => void;
 }) {
   return (

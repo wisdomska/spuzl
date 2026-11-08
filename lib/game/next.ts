@@ -22,6 +22,15 @@ export function nextLabel(id: string): string {
 }
 
 /**
+ * The same, split for a two-line button: the game first ("Next: Emoji Hits"), its category under it
+ * ("Words & Quiz"). `full` stays the button's accessible name.
+ */
+export function nextLabelParts(id: string): { title: string; sub: string; full: string } {
+  const g = GAME_BY_ID[id];
+  return { title: `Next: ${g.name}`, sub: WORLD_BY_ID[g.world].name, full: nextLabel(id) };
+}
+
+/**
  * Home's Continue: the game the player played most recently. A brand-new player (nothing played yet) gets the
  * first Daily that is ready, as before.
  */

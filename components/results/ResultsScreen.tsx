@@ -44,9 +44,9 @@ export function ResultsScreen({
   color: string;
   /** primary: keep playing this game ("Next level of Trotro Jam", or "Another Coil") */
   /** playNav: the action opens another game (tap-to-board metric). */
-  next: { label: string; onClick: () => void; playNav?: boolean };
+  next: { label: string; sub?: string; aria?: string; onClick: () => void; playNav?: boolean };
   /** secondary: the next game in the same category ("Next in Puzzles: Dusk") */
-  another: { label: string; onClick: () => void; playNav?: boolean };
+  another: { label: string; sub?: string; aria?: string; onClick: () => void; playNav?: boolean };
   /** rank ups, badges, streaks: inline chips, never interstitials */
   chips?: { icon: string; label: string }[];
   onShare: () => void;
@@ -186,7 +186,16 @@ export function ResultsScreen({
       )}
       <SaveStreakPrompt className="mx-4 mt-4" />
       <div className="safe-bottom mt-auto grid grid-cols-[1fr_60px] gap-2.5 px-4 pt-4 pb-7">
-        <Button size="lg" icon="play" onClick={next.onClick} className="text-[17px]" autoFocus {...(next.playNav ? PLAY_NAV : {})}>
+        <Button
+          size="lg"
+          icon="play"
+          onClick={next.onClick}
+          className="text-[17px]"
+          autoFocus
+          sub={next.sub}
+          aria-label={next.aria}
+          {...(next.playNav ? PLAY_NAV : {})}
+        >
           {next.label}
         </Button>
         <button
@@ -198,7 +207,7 @@ export function ResultsScreen({
           <Icon name="share-fat" size={22} />
         </button>
         {/* Secondary: another round, then one Challenge sheet for every way to play with others (SPZ-13). */}
-        <Button size="md" variant="secondary" onClick={another.onClick} className="col-span-2">
+        <Button size="md" variant="secondary" onClick={another.onClick} className="col-span-2" sub={another.sub} aria-label={another.aria}>
           {another.label}
         </Button>
         <RaceLiveButton meta={meta} size="md" className="col-span-2 w-full" onBeatMyTime={onChallenge} />
