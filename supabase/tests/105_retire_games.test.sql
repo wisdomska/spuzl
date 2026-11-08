@@ -3,14 +3,14 @@ create extension if not exists pgtap with schema extensions;
 select plan(11);
 
 -- Migrations 20261116000001, 20261125000001 (Gauntlet), 20261201001401 (Quads back) and 20261203005101 (eleven back
--- as lab games, R2-P5), 20261205005201 and 20261205005301 (Two Truths, Azonto Steps: new lab games) plus the seed: 29
--- live games, 21 retired, 13 in the lab.
+-- as lab games, R2-P5), 20261205005201 (Two Truths, a new lab game) and 20261207001401 (the R2-P5 part B dance game
+-- removed, R3-14) plus the seed: 29 live games, 21 retired, 12 in the lab.
 select is((select count(*)::int from public.games where status = 'live'), 29, '29 live games');
 select is((select count(*)::int from public.games where status = 'retired'), 21, '21 retired games');
-select is((select count(*)::int from public.games where status = 'coming_soon'), 13, '13 lab games (R2-P5 part B adds new ones)');
+select is((select count(*)::int from public.games where status = 'coming_soon'), 12, '12 lab games (R2-P5 part B added Two Truths)');
 select set_eq(
   $$select id from public.games where status = 'coming_soon'$$,
-  array['five', 'hilo', 'penalty', 'market', 'lightup', 'killer', 'dara', 'pinned', 'flagged', 'tripwire', 'pixl', 'twotruths', 'azonto'],
+  array['five', 'hilo', 'penalty', 'market', 'lightup', 'killer', 'dara', 'pinned', 'flagged', 'tripwire', 'pixl', 'twotruths'],
   'the eleven games brought back and the new ones are the lab games (R2-P5)'
 );
 select is(
@@ -34,7 +34,7 @@ select throws_ok(
 -- Retired rows stay readable, so old results keep their game name.
 set local role anon;
 select is((select count(*)::int from public.games where status = 'retired'), 21, 'retired rows stay readable');
-select is((select count(*)::int from public.games where status = 'coming_soon'), 13, 'lab rows stay readable');
+select is((select count(*)::int from public.games where status = 'coming_soon'), 12, 'lab rows stay readable');
 reset role;
 
 select * from finish();

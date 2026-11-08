@@ -135,10 +135,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   the Two Truths pack import and join the pool once copied into content.ts.
 - **R2-P5 part B, Two Truths in Party:** not a Party race game. Races rank by finish time and take only time-scored
   live games, so no quiz game (Quickfire, Emoji Hits) races today. A score race mode would let all three join.
-- **R2-P5 part B, Azonto Steps art:** Spuz has no rigged arms, so the "dance" is a spring sway per move with the
-  move's name, arrow and shape in a bubble. A drawn or rigged pose per move (an iron in hand, a phone at the ear)
-  would read better; the beat is the shared tick and chime sounds, and a recorded Azonto loop would suit it more.
-  Azonto's 3D tile uses Phosphor `person-arms-spread`.
 - **R2-P5 part B, Family Draw for under-16s:** not done, on purpose (DECISIONS PD1): drawings can't be checked before
   others see them. Revisit only with an image classifier or pre-moderation. The owner should also confirm the 16+
   call itself before switching `party.familyDraw` on.

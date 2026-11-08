@@ -107,7 +107,7 @@ test("switched on: each lab game opens, runs its practice round and plays in the
   for (const g of LAB_GAMES) {
     await test.step(g.id, async () => {
       await page.goto(`/play/${g.id}?mode=free`);
-      // A photosensitive lab game (Azonto Steps) shows the one-time notice first.
+      // A photosensitive lab game would show the one-time notice first.
       if (g.photosensitive) {
         const notice = page.getByRole("alertdialog").getByRole("button", { name: "Got it" });
         const shown = await notice

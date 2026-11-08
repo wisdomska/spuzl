@@ -74,7 +74,6 @@ export const LOGIC: Record<string, Loader> = {
   killer: () => import("./killer/logic"),
   dara: () => import("./dara/logic"),
   twotruths: () => import("./twotruths/logic"),
-  azonto: () => import("./azonto/logic"),
 };
 
 export async function loadLogic(id: string): Promise<GameLogic<unknown, unknown, unknown>> {

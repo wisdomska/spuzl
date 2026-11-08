@@ -73,8 +73,8 @@ const KEEP = [
   "fourup",
 ];
 
-/** R2-P5 part B: new games, added after the eleven that came back. */
-const NEW_LAB = ["twotruths", "azonto"];
+/** R2-P5 part B: new games, added after the eleven that came back (its dance game was removed in R3-14). */
+const NEW_LAB = ["twotruths"];
 
 describe("R2-P5 part B: new lab games", () => {
   it("are lab only, in live worlds, with their own rule line", () => {
@@ -207,6 +207,8 @@ describe("R2-P5: lab games behind features.labGames", () => {
 
   it("brings the eleven back as lab games, in order, none retired, none live", () => {
     expect(LAB_GAMES.map((g) => g.id)).toEqual([...BACK, ...NEW_LAB]);
+    // R3-14: twelve lab games (the R2-P5 part B dance game is gone).
+    expect(LAB_GAMES).toHaveLength(12);
     for (const id of BACK) {
       expect(isRetired(id), id).toBe(false);
       expect(isLabGame(id), id).toBe(true);

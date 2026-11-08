@@ -198,5 +198,4 @@ come from the runs above: production for production specs, local for seeded-boar
 - **Remaining follow-ups** are in `docs/qa/FOLLOW_UPS.md` under "Round 2":
   - a score-based Party race;
   - Family Draw words in the database;
-  - Azonto dance art;
   - a distinct-player count for push devices.

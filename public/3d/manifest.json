@@ -391,12 +391,6 @@
         "icon": "seal-question",
         "world": "word",
         "file": "icons/twotruths.webp"
-      },
-      {
-        "id": "azonto",
-        "icon": "person-arms-spread",
-        "world": "reflex",
-        "file": "icons/azonto.webp"
       }
     ]
   }

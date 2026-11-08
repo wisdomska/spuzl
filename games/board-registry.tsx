@@ -73,7 +73,6 @@ export const BOARDS: Record<string, AnyBoard> = {
   killer: dynamic(() => import("./killer/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   dara: dynamic(() => import("./dara/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
   twotruths: dynamic(() => import("./twotruths/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
-  azonto: dynamic(() => import("./azonto/Board"), { ssr: false, loading: () => <BoardSkeleton /> }),
 };
 
 /**
@@ -143,7 +142,6 @@ const LOADERS: Record<string, () => Promise<unknown>> = {
   killer: () => import("./killer/Board"),
   dara: () => import("./dara/Board"),
   twotruths: () => import("./twotruths/Board"),
-  azonto: () => import("./azonto/Board"),
 };
 
 const preloaded = new Set<string>();
