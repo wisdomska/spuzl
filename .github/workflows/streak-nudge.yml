@@ -1,0 +1,23 @@
+name: Streak nudge
+
+# Hourly trigger for the streak-at-risk nudge (R3-09): GET /api/cron/streak-nudge with the cron secret. Vercel Hobby
+# runs crons once a day only, so the hourly call comes from here. The endpoint is idempotent (one nudge per player
+# per GMT day) and sends only to players whose local hour is the admin send hour, so a late or repeated run is safe.
+# Needs the repository secret CRON_SECRET (the same value as the Vercel CRON_SECRET). On a Vercel plan with hourly
+# crons, add {"path": "/api/cron/streak-nudge", "schedule": "7 * * * *"} to vercel.json and drop this workflow.
+on:
+  schedule:
+    - cron: "7 * * * *"
+  workflow_dispatch:
+
+jobs:
+  nudge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Production
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then echo "CRON_SECRET is not set; skipping"; exit 0; fi
+          curl -fsS --retry 2 --max-time 70 -H "Authorization: Bearer $CRON_SECRET" https://spuzl.vercel.app/api/cron/streak-nudge

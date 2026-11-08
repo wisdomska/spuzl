@@ -112,6 +112,9 @@ export interface MetricRow {
   /** R2-P5 (20261204000701): Party TV views and sign-in streak shields granted. */
   gr_tv_views?: number;
   gr_shields?: number;
+  /** R3-09 (20261207000901): streak nudges delivered, and how many of those players cleared a board within 3 h. */
+  sn_sent?: number;
+  sn_cleared?: number;
 }
 
 export interface PracticeCounts {
@@ -173,6 +176,7 @@ export const METRIC_IDS = [
   "prompts",
   "daily_five",
   "growth",
+  "streak_nudge",
 ] as const;
 export type MetricId = (typeof METRIC_IDS)[number];
 
@@ -551,6 +555,18 @@ export const METRICS: readonly MetricDef[] = [
     cols: [
       { key: "tv_views", label: "TV views", value: (r) => r.gr_tv_views ?? 0 },
       { key: "shields", label: "Streak shields", value: (r) => r.gr_shields ?? 0 },
+    ],
+  },
+  {
+    id: "streak_nudge",
+    title: "Streak-at-risk nudges",
+    note: "Evening pushes to players whose streak would end at midnight (admin Alerts settings), by the GMT day they went out. Sent = delivered to at least one device. Cleared in 3 h = of those, players who cleared a board within 3 hours of the push. Server recorded; test players left out.",
+    headline: (t) => pct(rate(t.sn_cleared ?? 0, t.sn_sent ?? 0)),
+    sub: (t) => `cleared within 3 h · ${n(t.sn_cleared ?? 0)} of ${n(t.sn_sent ?? 0)} nudges sent`,
+    cols: [
+      { key: "sent", label: "Sent", value: (r) => r.sn_sent ?? 0 },
+      { key: "cleared_3h", label: "Cleared in 3 h", value: (r) => r.sn_cleared ?? 0 },
+      { key: "cleared_pct", label: "Cleared %", value: (r) => rate(r.sn_cleared ?? 0, r.sn_sent ?? 0) },
     ],
   },
 ];

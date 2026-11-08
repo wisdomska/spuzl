@@ -7,13 +7,14 @@ import { alertsSupported, askAlerts, disablePush, pushOn } from "@/lib/client/al
 import Link from "next/link";
 import { Suspense, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSettings, musicEnabled, prefersReducedMotion, type Settings } from "@/lib/settings/store";
 import { api, HttpError, useMe } from "@/lib/client/api";
 import { EmailCodeSignIn } from "@/components/onboarding/EmailCodeSignIn";
 import { GoogleButton } from "@/components/auth/GoogleButton";
 import { copy } from "@/lib/copy";
 import { settingsCopy } from "@/lib/copy/settings";
+import { streakNudgeCopy } from "@/lib/copy/streak-nudge";
 import { emailChangeApplied } from "@/lib/client/save-streak";
 import { useBlocks, usePatchProfile, useUnblock, type MeExtra } from "@/lib/client/social";
 import { supabaseBrowser } from "@/lib/supabase/browser";
@@ -143,7 +144,7 @@ function SettingsScreen() {
         <Row icon="headphones" label="Keep my other audio playing">
           <Switch checked={s.mixOthers} onChange={(v) => save("mixOthers", v)} label="Keep my other audio playing" />
         </Row>
-        <AlertsRow />
+        <AlertsRow me={!!d} />
         <Row icon="vibrate" label="Haptics">
           <Switch
             checked={s.haptics}
@@ -240,7 +241,7 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
  * Alerts on this device: your turn in a board game, a nudge, a friend's invite, as a notification even when SPUZL
  * is closed (where the browser supports push). Turning it on asks the browser once.
  */
-function AlertsRow() {
+function AlertsRow({ me }: { me: boolean }) {
   const [on, setOn] = useState<boolean | null>(null);
   const [blocked, setBlocked] = useState(false);
   useEffect(() => {
@@ -253,25 +254,49 @@ function AlertsRow() {
   // Nothing until the device has been checked (after the first paint), so the server and first client render agree.
   if (on === null || !alertsSupported()) return null;
   return (
-    <Row
-      icon="bell-ringing"
-      label="Turn and invite alerts"
-      hint={blocked ? "Blocked in your browser settings" : "Your turn, nudges and invites, even with SPUZL closed"}
-    >
-      <Switch
-        checked={on}
-        onChange={async (v) => {
-          if (v) {
-            const ok = await askAlerts();
-            setBlocked(!ok);
-            setOn(ok && (await pushOn()));
-          } else {
-            await disablePush();
-            setOn(false);
-          }
-        }}
+    <>
+      <Row
+        icon="bell-ringing"
         label="Turn and invite alerts"
-      />
+        hint={blocked ? "Blocked in your browser settings" : "Your turn, nudges and invites, even with SPUZL closed"}
+      >
+        <Switch
+          checked={on}
+          onChange={async (v) => {
+            if (v) {
+              const ok = await askAlerts();
+              setBlocked(!ok);
+              setOn(ok && (await pushOn()));
+            } else {
+              await disablePush();
+              setOn(false);
+            }
+          }}
+          label="Turn and invite alerts"
+        />
+      </Row>
+      {on && me && <StreakRemindersRow />}
+    </>
+  );
+}
+
+/**
+ * Streak reminders (R3-09): the evening push when a streak is about to end, for every device with alerts on.
+ * Stored on the account (PUT /api/v1/push/prefs), so the hourly job reads the player's choice.
+ */
+function StreakRemindersRow() {
+  const T = streakNudgeCopy.settings;
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: ["push-prefs"], queryFn: () => api<{ streakNudge: boolean }>("/api/v1/push/prefs"), staleTime: 60_000 });
+  const m = useMutation({
+    mutationFn: (streakNudge: boolean) => api<{ streakNudge: boolean }>("/api/v1/push/prefs", { method: "PUT", json: { streakNudge } }),
+    onSuccess: (d) => qc.setQueryData(["push-prefs"], d),
+  });
+  if (!q.data) return null;
+  const checked = m.isPending && m.variables !== undefined ? m.variables : q.data.streakNudge;
+  return (
+    <Row icon="fire" label={T.label} hint={m.isError ? T.failed : T.hint}>
+      <Switch checked={checked} disabled={m.isPending} onChange={(v) => m.mutate(v)} label={T.label} />
     </Row>
   );
 }
