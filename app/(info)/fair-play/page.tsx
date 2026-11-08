@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { seoMeta } from "@/lib/copy/seo";
+import { publicMetadata } from "@/lib/seo/site";
 
-export const metadata: Metadata = { title: "Fair play", description: "How SPUZL keeps boards honest and the game kind." };
+export const metadata: Metadata = publicMetadata({ path: "/fair-play", ...seoMeta.fairPlay });
 
 // Copy for owner review before launch.
 export default function FairPlay() {

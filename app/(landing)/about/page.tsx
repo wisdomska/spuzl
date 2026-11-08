@@ -6,12 +6,15 @@ import { Spuz } from "@/components/brand/Spuz";
 import { Wordmark } from "@/components/brand/Wordmark";
 import { TryIt } from "@/components/landing/TryIt";
 import { NoMusic } from "@/components/landing/NoMusic";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { aboutCopy as T } from "@/lib/copy/about";
+import { SITE_FAQ, landingSeoCopy as S, seoMeta } from "@/lib/copy/seo";
+import { publicMetadata } from "@/lib/seo/site";
+import { faqPage, gameList, graph, organization, webApplication, website } from "@/lib/seo/jsonld";
+import { GAMES } from "@/lib/catalog";
 
-export const metadata: Metadata = {
-  title: { absolute: T.metaTitle },
-  description: T.metaDescription,
-};
+/** Served at "/" to visitors (proxy rewrite) and kept at /about, so both name "/" as the canonical address. */
+export const metadata: Metadata = publicMetadata({ path: "/", ...seoMeta.landing });
 
 const PRIMARY =
   "press bg-accent text-on-accent flex h-14 items-center justify-center gap-2 rounded-full px-7 text-[17px] font-bold shadow-[0_5px_0_var(--accent-depth)]";
@@ -26,13 +29,15 @@ const H2 = "font-display text-[32px] leading-[1.05] font-black tracking-[-0.03em
 export default function Landing() {
   return (
     <div className="safe-top min-h-dvh overflow-x-clip">
+      <JsonLd data={graph(organization(), website(), webApplication(), gameList(S.catalogueTitle, GAMES), faqPage(SITE_FAQ))} />
       <NoMusic />
       {/* Nav */}
       <header className="sticky top-0 z-20 px-4 pt-3">
         <nav className="bg-surface/85 border-line mx-auto flex h-16 max-w-[1160px] items-center justify-between rounded-full border px-4 backdrop-blur-md sm:px-6">
-          <Link href="/" aria-label="SPUZL home" className="flex h-11 items-center">
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- a full page load: a client navigation to "/" renders Home, which sends visitors to the intro */}
+          <a href="/" aria-label="SPUZL home" className="flex h-11 items-center">
             <Wordmark size={26} />
-          </Link>
+          </a>
           <div className="text-muted hidden items-center gap-7 text-[15px] font-semibold md:flex">
             <a href="#how" className="hover:text-text">
               {T.nav.how}
@@ -142,11 +147,26 @@ export default function Landing() {
                       </p>
                     </div>
                   </div>
-                  <p className="text-muted text-[14px] leading-relaxed">{games.map((g) => g.name).join(" · ")}</p>
+                  <ul className="flex flex-wrap gap-x-1 text-[14px] leading-relaxed">
+                    {games.map((g) => (
+                      <li key={g.id}>
+                        <Link
+                          href={`/games/${g.id}`}
+                          className="text-muted hover:text-text inline-flex min-h-11 items-center px-1 underline underline-offset-4"
+                        >
+                          {g.name}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
                 </li>
               );
             })}
           </ul>
+          <Link href="/games" className={`${SECONDARY} mt-8 w-fit gap-2`}>
+            {S.catalogueMore}
+            <Icon name="arrow-right" size={18} />
+          </Link>
         </section>
 
         {/* Friends */}
@@ -178,6 +198,22 @@ export default function Landing() {
               {T.spil.cta}
               <Icon name="arrow-square-out" size={18} />
             </a>
+          </div>
+        </section>
+
+        {/* Questions people (and AI answers) ask, answered from facts in the code (lib/copy/seo.ts) */}
+        <section id="faq" aria-labelledby="faq-title" className="scroll-mt-24 pb-16 sm:pb-24">
+          <p className={EYEBROW}>{S.faqEyebrow}</p>
+          <h2 id="faq-title" className={`${H2} mt-3`}>
+            {S.faqTitle}
+          </h2>
+          <div className="mt-10 grid gap-x-10 gap-y-8 md:grid-cols-2">
+            {SITE_FAQ.map(({ q, a }) => (
+              <div key={q} className="flex flex-col gap-2">
+                <h3 className="font-display text-[20px] leading-tight font-black">{q}</h3>
+                <p className="text-muted text-[16px] leading-relaxed">{a}</p>
+              </div>
+            ))}
           </div>
         </section>
 

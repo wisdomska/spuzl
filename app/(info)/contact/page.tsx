@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { seoMeta } from "@/lib/copy/seo";
+import { publicMetadata } from "@/lib/seo/site";
 
-export const metadata: Metadata = { title: "Contact", description: "Get help with SPUZL, report a problem or ask about your data." };
+export const metadata: Metadata = publicMetadata({ path: "/contact", ...seoMeta.contact });
 
 // OWNER REVIEW: set NEXT_PUBLIC_SUPPORT_EMAIL to the real support inbox before launch.
 const EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL;

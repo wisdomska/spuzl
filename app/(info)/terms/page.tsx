@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { seoMeta } from "@/lib/copy/seo";
+import { publicMetadata } from "@/lib/seo/site";
 
-export const metadata: Metadata = { title: "Terms", description: "The rules for using SPUZL." };
+export const metadata: Metadata = publicMetadata({ path: "/terms", ...seoMeta.terms });
 
 // OWNER LEGAL REVIEW REQUIRED before launch: governing law, liability wording and the operator's legal name are placeholders
 // in plain language, not legal advice.

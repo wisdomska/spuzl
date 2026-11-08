@@ -7,6 +7,5 @@ import { GAME_COUNT, WORLD_COUNT } from "@/lib/catalog";
 export const siteCopy = {
   title: `SPUZL · ${GAME_COUNT} games, one Grid`,
   description: `Puzzles, skill games and classic board games across ${WORLD_COUNT} worlds. Play anytime, duel your friends, keep your streak alive.`,
-  howToPlayDescription: `The rules of all ${GAME_COUNT} SPUZL games, play, streaks and leagues.`,
   howToPlayLede: `${GAME_COUNT} games in ${WORLD_COUNT} worlds. Every game is playable any time, as often as you like.`,
 } as const;

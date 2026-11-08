@@ -25,11 +25,20 @@ describe("folded world redirects", () => {
     expect((await go("/world/rage/?x=1")).headers.get("location")).toBe("http://localhost/world/reflex?x=1");
   });
 
-  it("leaves the live groups, unknown and emptied worlds to the page", async () => {
-    for (const path of [...WORLDS.map((w) => `/world/${w.id}`), "/world/number", "/world/nope", "/world/line/extra"]) {
+  it("leaves the live groups to the page", async () => {
+    for (const path of [...WORLDS.map((w) => `/world/${w.id}`), "/world/line/extra"]) {
       const r = await go(path);
       expect(r.status, path).not.toBe(308);
       expect(r.headers.get("location"), path).toBeNull();
+      expect(r.headers.get("x-middleware-rewrite"), path).toBeNull();
+    }
+  });
+
+  it("answers unknown and emptied worlds with a real 404 (a rewrite to a path no route matches), not a soft 404", async () => {
+    for (const path of ["/world/number", "/world/nope", "/world/puzzles", "/world/Logic"]) {
+      const r = await go(path);
+      expect(r.headers.get("location"), path).toBeNull();
+      expect(r.headers.get("x-middleware-rewrite"), path).toBe("http://localhost/__not-found");
     }
   });
 });

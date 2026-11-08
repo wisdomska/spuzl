@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { seoMeta } from "@/lib/copy/seo";
+import { publicMetadata } from "@/lib/seo/site";
 
-export const metadata: Metadata = {
-  title: "Privacy",
-  description: "What SPUZL collects, why, how long we keep it, and how to export or delete it.",
-};
+export const metadata: Metadata = publicMetadata({ path: "/privacy", ...seoMeta.privacy });
 
 // OWNER LEGAL REVIEW REQUIRED before launch (Ghana Act 843, Nigeria NDPA 2023, GDPR). Copy is plain-language and honest
 // about what the code does today; it is not legal advice.

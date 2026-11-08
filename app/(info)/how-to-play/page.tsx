@@ -1,35 +1,31 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { WORLDS, gamesInWorld, type GameMeta } from "@/lib/catalog";
+import { WORLDS, gamesInWorld } from "@/lib/catalog";
 import { Icon } from "@/components/ui/Icon";
 import { FreePlayRewards } from "@/components/info/FreePlayRewards";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { freePlayCopy } from "@/lib/copy/free-play";
 import { PLAY_NAV } from "@/lib/analytics/play-nav";
 import { siteCopy } from "@/lib/copy/site";
+import { CONTROLS, PHOTOSENSITIVE, SCORING, SITE_FAQ, howToPlaySeoCopy as S, seoMeta } from "@/lib/copy/seo";
+import { publicMetadata } from "@/lib/seo/site";
+import { breadcrumbs, faqPage, graph } from "@/lib/seo/jsonld";
 
-export const metadata: Metadata = {
-  title: "How to play",
-  description: siteCopy.howToPlayDescription,
-};
-
-const CONTROLS: Record<GameMeta["engine"], string> = {
-  grid: "Tap a cell to cycle its marks, drag to mark several. Keyboard: arrows move, Space cycles, Enter confirms.",
-  word: "Tap letters or type on your keyboard. Backspace removes the last letter.",
-  phaser: "Use the on-screen buttons, the arrow keys or a gamepad.",
-  board: "Tap a piece, then tap where it goes. Legal moves light up.",
-  custom: "Follow the buttons on screen. Everything also works with a keyboard.",
-};
-
-const SCORING: Record<GameMeta["scoring"], string> = {
-  time: "Fastest clear wins. Fewer hints, then fewer mistakes, break ties.",
-  score: "Highest score wins. Time breaks ties.",
-  deaths: "Fewest deaths wins, then time.",
-};
+export const metadata: Metadata = publicMetadata({ path: "/how-to-play", ...seoMeta.howToPlay });
 
 // Copy for owner review before launch.
 export default function HowToPlay() {
   return (
     <>
+      <JsonLd
+        data={graph(
+          breadcrumbs([
+            ["SPUZL", "/"],
+            [S.crumb, "/how-to-play"],
+          ]),
+          faqPage(SITE_FAQ),
+        )}
+      />
       <h1>How to play</h1>
       <p className="lede">{siteCopy.howToPlayLede}</p>
 
@@ -80,18 +76,29 @@ export default function HowToPlay() {
               <p>{g.rule}</p>
               <p className="text-muted text-[14px]">{CONTROLS[g.engine]}</p>
               <p className="text-muted text-[14px]">{SCORING[g.scoring]}</p>
-              {g.photosensitive && (
-                <p className="text-gold text-[14px]">
-                  Has fast flashing visuals, kept under 3 flashes a second. You&apos;ll see a notice before you start.
-                </p>
-              )}
-              <Link href={`/play/${g.id}`} className="self-start text-[15px]" {...PLAY_NAV}>
-                Play {g.name}
-              </Link>
+              {g.photosensitive && <p className="text-gold text-[14px]">{PHOTOSENSITIVE}</p>}
+              <div className="flex flex-wrap gap-x-5">
+                <Link href={`/play/${g.id}`} className="text-[15px]" {...PLAY_NAV}>
+                  Play {g.name}
+                </Link>
+                <Link href={`/games/${g.id}`} className="text-[15px]">
+                  {S.more(g.name)}
+                </Link>
+              </div>
             </article>
           ))}
         </section>
       ))}
+
+      <section aria-labelledby="faq" className="flex flex-col gap-3">
+        <h2 id="faq">{S.faqTitle}</h2>
+        {SITE_FAQ.map(({ q, a }) => (
+          <div key={q} className="flex flex-col gap-1">
+            <h3>{q}</h3>
+            <p>{a}</p>
+          </div>
+        ))}
+      </section>
     </>
   );
 }
