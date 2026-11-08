@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.41.0 (8 November 2026)
+
+### For players
+
+- **Your Spuz wears your look everywhere.** The skin and hat you pick in the Shop now show wherever Spuz stands for
+  you: Home, every results screen and celebration, the game-over card, Daily Five, your Duel seat, and a small Spuz
+  on the quick result bar. The hat moves with Spuz (and stays still with reduce motion).
+- **Everyone else's too.** Friends, leaderboards and podiums, leagues, crews, chat, Party seats and standings, Duel
+  strips, challenges and invites show each player's own Spuz in their skin and hat, instead of a letter.
+
+### Behind the scenes
+
+- Player lists and match views now carry each player's `hat` next to their colour (public cosmetics only).
+
 ## 1.40.1 (8 November 2026)
 
 ### For players
