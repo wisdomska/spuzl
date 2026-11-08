@@ -20,6 +20,8 @@
 - **Home is lighter on phones.** Monitoring, analytics, the inbox connection and the desktop side panel load after
   the page is up.
 - **Azonto Steps is gone.**
+- **Long button labels fit.** Buttons keep their padding: long labels wrap onto a second line, a single long
+  word shrinks a little to fit, and the next-game button reads "Next: Emoji Hits" with its category underneath.
 
 ### For admins
 
