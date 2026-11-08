@@ -4,6 +4,7 @@
 
 ### For players
 
+- **The lab tag now just says NEW.**
 - **No more flicker in All games, Home and the worlds.** Game times and switched-on lab games now come from the
   server on the first paint, instead of showing defaults for a moment (Chess said 3 min, then 5 min).
 
@@ -27,7 +28,7 @@
   "Streak reminders" switch in Settings, and quiet hours are respected).
 - **Weekly recap.** Once a week Home shows your last week (clears, best time, streak, rank, Sparks) with a share
   card and a "Play today's Daily" button.
-- **Lab games say so.** Games in testing carry a "New · in testing" tag.
+- **New games say so.** Games in testing carry a "NEW" tag.
 - **Wide screens fit.** On laptops and desktops the game's side panel fits the screen; no more slight scroll.
 - **Home is lighter on phones.** Monitoring, analytics, the inbox connection and the desktop side panel load after
   the page is up.

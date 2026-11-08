@@ -4,7 +4,7 @@ import { LabTag, showsLabTag } from "@/components/ui/LabTag";
 import { GAMES, LAB_GAMES, RETIRED_GAMES } from "@/lib/catalog";
 import { labCopy } from "@/lib/copy/lab";
 
-/** R3-05: switched-on lab games carry a "New · in testing" tag; live games never do. */
+/** R3-05: switched-on lab games carry a "NEW" tag; live games never do. */
 describe("LabTag", () => {
   it("shows on every lab game and on no live or retired game", () => {
     expect(LAB_GAMES.length).toBeGreaterThan(0);
@@ -18,7 +18,6 @@ describe("LabTag", () => {
     const html = renderToStaticMarkup(<LabTag id={LAB_GAMES[0].id} />);
     expect(html).toContain("data-lab-tag");
     expect(html).toContain(labCopy.tag);
-    expect(html).toContain(labCopy.tagMore);
     // Visible words are not hidden from assistive tech; design tokens only.
     expect(html).not.toMatch(/aria-hidden="true"[^>]*>\s*New/);
     expect(html).not.toMatch(/#[0-9a-f]{3,8}\b/i);
@@ -34,7 +33,7 @@ describe("LabTag", () => {
   });
 
   it("copy keeps the house style: short, no em dash", () => {
-    expect(labCopy.tag).toBe("New · in testing");
+    expect(labCopy.tag).toBe("NEW");
     for (const s of Object.values(labCopy)) expect(s).not.toContain("—");
   });
 });

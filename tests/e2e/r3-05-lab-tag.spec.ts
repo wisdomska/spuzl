@@ -5,7 +5,7 @@ import { admin } from "../api/helpers";
 import { onboardGuest, openTestBoard, VIEWPORTS, waitForBoard } from "./harness";
 
 /**
- * R3-05 Lab tag. A switched-on lab game ("features.labGames") carries a small "New · in testing" tag in All games
+ * R3-05 Lab tag. A switched-on lab game ("features.labGames") carries a small "NEW" tag in All games
  * (the Library row and its card), on its world screen tile and in the game header, so players expect changes. Live
  * games never do. The tag's words are part of the row link's accessible name.
  *
@@ -16,7 +16,7 @@ import { onboardGuest, openTestBoard, VIEWPORTS, waitForBoard } from "./harness"
 const KEY = "features.labGames";
 const LAB = LAB_GAMES[0];
 const LIVE = GAMES[0];
-const TAG = /New · in testing/;
+const TAG = /\bNEW\b/;
 const tag = (page: Page) => page.locator("[data-lab-tag]");
 const shot = (page: Page, name: string, w: number) => page.screenshot({ path: `docs/qa/screens/r2/r3-05-${name}-${w}.png` });
 
