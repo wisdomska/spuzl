@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.40.1 (8 November 2026)
+
+### For players
+
+- **No more flicker in All games, Home and the worlds.** Game times and switched-on lab games now come from the
+  server on the first paint, instead of showing defaults for a moment (Chess said 3 min, then 5 min).
+
+### Behind the scenes
+
+- The streak-at-risk reminder runs hourly from the production database (`pg_cron` job `spuzl-streak-nudge`, secret
+  in Vault), since Vercel Hobby allows daily crons only. See docs/OPERATIONS.md.
+
 ## 1.40.0 (8 November 2026)
 
 ### For players
