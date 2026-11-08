@@ -31,7 +31,10 @@ export default function FairPlay() {
 
       <h2>Friendly by design</h2>
       <ul>
-        <li>There is no chat. Friends react with presets only: fire, laugh, GG, wow and clap.</li>
+        <li>
+          In-game chat is quick phrases and reactions. Typing is only on when everyone in the room is 16 or older, and typed lines are
+          filtered; if anyone under 16 is in the room, everyone uses quick phrases.
+        </li>
         <li>Nicknames are filtered. If one gets through, report it and a moderator checks within a day.</li>
         <li>You can block anyone. Blocked players can&apos;t find you, add you or see your activity.</li>
         <li>Players under 16 add friends only by invite link or QR code, and their city never appears on public boards.</li>

@@ -198,10 +198,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 
 ## SEO pass (round 3)
 
-- **Fair play page says "There is no chat."** (`app/(info)/fair-play/page.tsx`, "Friendly by design"). Rooms of 16+
-  players can type chat; any room with a player under 16 gets preset quick phrases only
-  (`lib/multiplayer/server/chat.ts`). The new SEO copy (`lib/copy/seo.ts` SAFETY) states the code's rule; the Fair
-  play wording is safety copy, so it was left for the owner to reword.
 - **Game page "Play" for signed-out visitors** goes `/play/<id>` → `/intro` → Welcome and then to Home, not back to
   that game (`lib/client/onboarding.ts` RETURNS only knows `daily`). A `?return=game:<id>` would close the loop.
 - **Admin copy overrides** (games.rule / games.blurb) don't reach the static `/games/<id>` pages or llms.txt, which use
