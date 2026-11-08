@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { WORLD_BY_ID, playerGames, type GameMeta } from "@/lib/catalog";
 import { Icon } from "@/components/ui/Icon";
+import { LabTag } from "@/components/ui/LabTag";
 import { GameIcon3D } from "@/components/world/GameIcon3D";
 import { GameCard } from "@/components/library/GameCard";
 import { useMe } from "@/lib/client/api";
@@ -127,9 +128,11 @@ export default function Library() {
                   <GameIcon3D meta={g} size={48} />
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span className="font-display truncate text-[16px] font-extrabold">{g.name}</span>
-                    <span className="text-muted flex items-center gap-1.5 text-[13px] font-medium">
+                    <span className="text-muted flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] font-medium">
                       <span aria-hidden className="size-2 rounded-full" style={{ background: WORLD_BY_ID[g.world].color }} />
                       {WORLD_BY_ID[g.world].name}
+                      {/* R3-05: a switched-on lab game says it is new and still being tuned. */}
+                      <LabTag id={g.id} compact />
                     </span>
                   </span>
                   <span className="bg-surface-raised text-muted flex h-7 shrink-0 items-center gap-1 rounded-[10px] px-2 text-[12px] font-semibold">

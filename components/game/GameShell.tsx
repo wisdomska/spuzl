@@ -9,6 +9,7 @@ import type { GameMeta } from "@/lib/catalog";
 import { UI_ACCENT } from "@/lib/catalog";
 import { IconButton } from "@/components/ui/IconButton";
 import { Icon } from "@/components/ui/Icon";
+import { LabTag } from "@/components/ui/LabTag";
 import { GameMenu, type GameMenuEntry } from "./GameMenu";
 import { gameMenuCopy } from "@/lib/copy/game-menu";
 import { prefersReducedMotion, useSettings } from "@/lib/settings/store";
@@ -541,7 +542,11 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
         <h1 className="font-display truncate text-[18px] leading-6 font-black text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]">
           {meta.name}
         </h1>
-        <p className="num text-muted truncate text-[12px] leading-4 font-medium">{label}</p>
+        {/* R3-05: a lab game's tag sits on the label line (16 px), so the top bar keeps its height. */}
+        <div className="flex min-w-0 items-center gap-1.5">
+          <LabTag id={meta.id} compact />
+          <p className="num text-muted min-w-0 truncate text-[12px] leading-4 font-medium">{label}</p>
+        </div>
       </div>
       {/* Wide: the banner (or else the rule) sits inline in the top bar's empty middle, so the board keeps the whole height. */}
       {wide && banner && (

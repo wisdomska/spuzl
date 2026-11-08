@@ -10,6 +10,7 @@ import { WORLD_BY_ID, gamesInWorld, labGamesInWorld, type WorldId, UI_ACCENT } f
 import { useMe, useToday } from "@/lib/client/api";
 import { Island } from "@/components/home/Island";
 import { Icon } from "@/components/ui/Icon";
+import { LabTag } from "@/components/ui/LabTag";
 import { formatClock } from "@/lib/format";
 import { GameIcon3D } from "./GameIcon3D";
 import { BotEntry } from "./BotEntry";
@@ -117,7 +118,11 @@ export function WorldScreen({ id }: { id: WorldId }) {
               >
                 <GameIcon3D meta={g} size={64} />
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="font-display text-[18px] font-extrabold">{g.name}</span>
+                  <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className="font-display text-[18px] font-extrabold">{g.name}</span>
+                    {/* R3-05: a switched-on lab game says it is new and still being tuned. */}
+                    <LabTag id={g.id} />
+                  </span>
                   <span className="text-muted text-[14px] leading-[1.35]">{gameCopy(g, metaRows).blurb}</span>
                 </span>
                 {resume ? (
