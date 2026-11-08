@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { GAME_COUNT } from "@/lib/catalog";
-import { pickBirth } from "./harness";
+import { logGuest, pickBirth } from "./harness";
 
 /** SPZ-15 + SPZ-05: plain start choices, lesson flows into "Make Spuz yours", CTA names the destination, lesson counts today. */
 test("onboarding: lesson, merged celebration, named CTA, counted on Home", async ({ page }, info) => {
@@ -26,6 +26,7 @@ test("onboarding: lesson, merged celebration, named CTA, counted on Home", async
   await page.locator("#nick").fill(`Ob${Date.now() % 1e7}`);
   await page.getByRole("button", { name: "Save my Spuz and open the map" }).click();
   await page.waitForURL((u) => u.pathname === "/", { timeout: 30_000 });
+  await logGuest(page); // so the cleanup step deletes this guest too
   await expect(page.getByRole("link", { name: /(Today's Dailies|Games tried): 1 of \d+/ })).toBeVisible();
   await expect(page.getByText(/streak is sleepy/)).toHaveCount(0);
 });

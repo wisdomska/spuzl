@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { duelVsBot, openPartyRoom, pickBirth, tapCell, waitForBoard } from "./harness";
+import { duelVsBot, logGuest, openPartyRoom, pickBirth, tapCell, waitForBoard } from "./harness";
 import { solve, type CrownfallPuzzle } from "@/games/crownfall/logic";
 
 /**
@@ -36,6 +36,7 @@ test("full journey: guest to clears, social and multiplayer, with no Daily anywh
   await page.locator("#nick").fill(`Jy${Date.now() % 1e7}`);
   await page.getByRole("button", { name: "Save my Spuz and open the map" }).click();
   await page.waitForURL((u) => u.pathname === "/", { timeout: 30_000 });
+  await logGuest(page); // so the cleanup step deletes this guest too
 
   // Home: one Play card counting games tried; the lesson lit the streak.
   const card = page.getByRole("link", { name: /Games tried: 1 of \d+/ });

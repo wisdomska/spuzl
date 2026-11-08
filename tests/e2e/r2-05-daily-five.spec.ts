@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { onboardGuest, pickBirth, tapCell, waitForBoard } from "./harness";
+import { logGuest, onboardGuest, pickBirth, tapCell, waitForBoard } from "./harness";
 import { createRng } from "@/lib/rng";
 
 /**
@@ -145,6 +145,7 @@ test.describe("R2-05 Daily Five", () => {
     await page.locator("#nick").fill(`Qd${Date.now() % 1e7}`);
     await page.getByRole("button", { name: /Enter The Grid|Create my Spuz|Save my Spuz/ }).click();
     await page.waitForURL((u) => u.pathname === "/daily", { timeout: 30_000 });
+    await logGuest(page); // so the cleanup step deletes this guest too
     await expect(page.getByRole("heading", { name: "Daily Five" })).toBeVisible();
     await expect(page.getByRole("list", { name: "Daily Five" }).getByRole("listitem")).toHaveCount(5);
     await ctx.close();
