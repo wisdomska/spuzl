@@ -15,6 +15,7 @@ import {
   swEnabled,
 } from "@/lib/offline/register";
 import { startOfflineSync } from "@/lib/offline/queue";
+import { afterLoadIdle } from "@/lib/perf/idle";
 
 const safe = (fn: () => unknown) => {
   try {
@@ -25,7 +26,9 @@ const safe = (fn: () => unknown) => {
   }
 };
 
-safe(initSentryClient);
+// R3-03: the error monitor and the analytics SDK start after load, on an idle moment (errors before then are kept
+// and sent once it is up; events wait for the SDK), so neither adds to the first screen's main-thread work.
+safe(() => initSentryClient(afterLoadIdle()));
 safe(initAnalytics);
 safe(() => track("app_open", { standalone: window.matchMedia("(display-mode: standalone)").matches }));
 safe(startOfflineSync);

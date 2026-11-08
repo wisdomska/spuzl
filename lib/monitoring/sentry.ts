@@ -33,8 +33,31 @@ export function sentryOptions() {
   };
 }
 
-export async function initSentryClient() {
-  if (!SENTRY_DSN) return;
-  const Sentry = await import("@sentry/nextjs");
-  Sentry.init({ ...sentryOptions(), replaysSessionSampleRate: 0, replaysOnErrorSampleRate: 0 });
+/** Most errors kept from before the SDK starts (a crash loop must not queue thousands). */
+const EARLY_MAX = 20;
+
+/**
+ * Starts browser error monitoring once `ready` resolves (R3-03: after load and an idle moment, so the SDK's download
+ * and set-up never add to the first screen's main-thread work). Errors thrown before then are kept and sent once
+ * it is up, so nothing from the first load is lost.
+ */
+export async function initSentryClient(ready: Promise<void> = Promise.resolve()) {
+  if (!SENTRY_DSN || typeof window === "undefined") return;
+  const early: unknown[] = [];
+  const keep = (err: unknown) => {
+    if (early.length < EARLY_MAX) early.push(err);
+  };
+  const onError = (e: Event) => keep((e as Event & { error?: unknown; message?: string }).error ?? (e as { message?: string }).message);
+  const onRejection = (e: PromiseRejectionEvent) => keep(e.reason);
+  window.addEventListener("error", onError);
+  window.addEventListener("unhandledrejection", onRejection);
+  try {
+    await ready;
+    const Sentry = await import("@sentry/nextjs");
+    Sentry.init({ ...sentryOptions(), replaysSessionSampleRate: 0, replaysOnErrorSampleRate: 0 });
+    for (const err of early.splice(0)) if (err !== undefined) Sentry.captureException(err);
+  } finally {
+    window.removeEventListener("error", onError);
+    window.removeEventListener("unhandledrejection", onRejection);
+  }
 }

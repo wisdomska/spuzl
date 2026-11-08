@@ -27,7 +27,7 @@ import { OfflineBanner } from "@/components/pwa/OfflineBanner";
 import { BannerStack } from "@/components/notify/Banner";
 import { useNotices } from "@/lib/notify/notices";
 import { PLAY_NAV } from "@/lib/analytics/play-nav";
-import { BirthAskOnce } from "@/components/onboarding/BirthAsk";
+import dynamic from "next/dynamic";
 import { DailyFiveCard } from "@/components/daily-five/DailyFiveCard";
 import { NewGamesBanner } from "./NewGamesBanner";
 import { BoardThumb } from "./BoardThumb";
@@ -35,6 +35,20 @@ import { isLadderGame } from "@/lib/game/levels";
 import { useLevels } from "@/lib/client/levels";
 import type { GameMeta } from "@/lib/catalog";
 import { useDailyFive } from "@/lib/client/daily-five";
+
+const BirthAskOnce = dynamic(() => import("@/components/onboarding/BirthAsk").then((m) => m.BirthAskOnce), { ssr: false });
+
+/** The at-risk card's "resets in" countdown: the one part of Home that ticks every second. */
+function ResetsIn() {
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- the local clock starts after hydration
+    setNow(Date.now());
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  return <p className="num text-gold text-[13px] font-medium">{T.resetsIn(formatCountdown(msToReset(new Date(now ?? 0))))}</p>;
+}
 
 export function HomeScreen() {
   const router = useRouter();
@@ -50,8 +64,20 @@ export function HomeScreen() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- starts the local clock after hydration
     setNow(Date.now());
-    const t = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(t);
+    // R3-03: Home only needs the hour (the at-risk card shows from 19:00), so it re-renders once a minute, on the
+    // minute; the card's seconds countdown ticks on its own (ResetsIn), not the whole screen every second.
+    let t: ReturnType<typeof setTimeout>;
+    const tick = () => {
+      t = setTimeout(
+        () => {
+          setNow(Date.now());
+          tick();
+        },
+        60_000 - (Date.now() % 60_000),
+      );
+    };
+    tick();
+    return () => clearTimeout(t);
   }, []);
 
   // No profile yet: first run goes through the intro and onboarding.
@@ -167,7 +193,7 @@ export function HomeScreen() {
               <Spuz mood="sleepy" size={60} still decorative />
               <div className="flex flex-1 flex-col gap-0.5">
                 <p className="text-[16px] leading-[1.3] font-semibold text-pretty">{fiveOpen ? T.sleepyFive(streak) : T.sleepy(streak)}</p>
-                <p className="num text-gold text-[13px] font-medium">{T.resetsIn(formatCountdown(msToReset(new Date(now ?? 0))))}</p>
+                <ResetsIn />
               </div>
             </motion.div>
           )}
@@ -216,7 +242,8 @@ export function HomeScreen() {
         </div>
       </main>
       <SidePanel />
-      <BirthAskOnce me={d} />
+      {/* R3-03: the birth ask (a sheet and its picker) is only downloaded for the players it is for. */}
+      {d.birthSet === false && <BirthAskOnce me={d} />}
     </div>
   );
 }

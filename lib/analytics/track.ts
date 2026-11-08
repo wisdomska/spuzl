@@ -13,6 +13,7 @@
  *   carry personal data (nickname, email, name, ip, token, city, school...) are dropped, as are any
  *   values that look like an email address.
  */
+import { afterLoadIdle } from "@/lib/perf/idle";
 
 export const KEY_EVENTS = [
   "app_open",
@@ -120,7 +121,10 @@ function stripQuery(url: unknown) {
 function load(): Promise<PostHog | null> {
   const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
   if (!key || typeof window === "undefined") return Promise.resolve(null);
-  client ??= import("posthog-js")
+  // R3-03: the SDK downloads and starts after the page's load event and an idle moment, never during hydration;
+  // events tracked before then wait for it.
+  client ??= afterLoadIdle()
+    .then(() => import("posthog-js"))
     .then(({ default: posthog }) => {
       posthog.init(key, {
         api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://eu.i.posthog.com",
@@ -228,7 +232,7 @@ export function setAnalyticsEnabled(on: boolean) {
   else void client?.then((ph) => ph?.opt_in_capturing());
 }
 
-/** Starts PostHog early when configured (instrumentation-client.ts), so the first event is not delayed. */
+/** Starts PostHog when configured (instrumentation-client.ts): after load and an idle moment (R3-03). */
 export function initAnalytics() {
   if (enabled && process.env.NEXT_PUBLIC_POSTHOG_KEY && !optedOut()) void load();
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 /**
  * R2-01: background work (sound effects, music, prefetching other pages) waits until the player's game is on
  * screen and the network has gone quiet, so it never competes with the first board on a slow phone connection.
@@ -63,6 +65,19 @@ export function whenQuiet(): Promise<void> {
     waiters.add(check);
     poll();
   });
+}
+
+/** False until `whenQuiet()` resolves, then true for good (R3-03: optional connections wait for it). */
+export function useQuiet(): boolean {
+  const [quiet, setQuiet] = useState(false);
+  useEffect(() => {
+    let live = true;
+    void whenQuiet().then(() => live && setQuiet(true));
+    return () => {
+      live = false;
+    };
+  }, []);
+  return quiet;
 }
 
 /** A slow or data-saving connection: skip optional downloads altogether. */

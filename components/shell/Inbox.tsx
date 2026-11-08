@@ -10,6 +10,7 @@ import { alertIfAway, enablePush } from "@/lib/client/alerts";
 import { GAME_BY_ID } from "@/lib/catalog";
 import { play } from "@/lib/audio";
 import { noteAlertsTrigger } from "@/lib/prompts/alerts";
+import { useQuiet } from "@/lib/perf/quiet";
 import { AlertsAsk } from "./AlertsAsk";
 
 /** What arrives on a player's own channel (user:<id>) from the server. */
@@ -46,7 +47,10 @@ const gameName = (g: string | null) => (g ? (GAME_BY_ID[g]?.name ?? "a game") : 
  */
 export function Inbox() {
   const me = useMe();
-  const id = me.data?.id ?? null;
+  // R3-03: the live inbox connection (and the push refresh) waits until the screen is quiet (Home and other screens:
+  // a few seconds after load; Play: after the board is up), so neither competes with the first paint on a phone.
+  const quiet = useQuiet();
+  const id = quiet ? (me.data?.id ?? null) : null;
   const { channel } = useChannel(id ? `user:${id}` : null);
   const pathname = usePathname();
   const where = useRef(pathname);
