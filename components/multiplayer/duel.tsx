@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { duelCopy } from "@/lib/copy/duel";
 import { bayLive } from "@/lib/copy/bay-live";
+import { gameMenuCopy } from "@/lib/copy/game-menu";
 import { AnimatePresence, motion } from "motion/react";
 import { Icon } from "@/components/ui/Icon";
 import { AddFriend } from "./AddFriend";
@@ -415,7 +416,8 @@ export function OpponentStrip({
 }: {
   them: { nickname: string; color: string; progress: number; mistakes: number; finished: boolean; bot?: boolean };
   me: { nickname: string; color: string; progress: number };
-  myMs: number;
+  /** your clock by the header timer's rule (`ownClockMs`); null before your first move of the round */
+  myMs: number | null;
   rounds: ("me" | "them" | "draw")[];
   round: number;
   emote: { e: EmoteId; n: number } | null;
@@ -495,7 +497,17 @@ export function OpponentStrip({
         <div className="flex flex-1 flex-col gap-[5px]">
           <div className="flex justify-between text-[14px] font-semibold">
             <span>You</span>
-            <span className="num text-muted">{formatClock(myMs)}</span>
+            {/* R3-07: the same rule as the header timer (from your first move); nothing running before it. */}
+            {myMs === null ? (
+              <span className="text-muted flex items-center" data-strip-clock="waiting">
+                <Icon name="timer" size={14} />
+                <span className="sr-only">{gameMenuCopy.timerWaits}</span>
+              </span>
+            ) : (
+              <span className="num text-muted" data-strip-clock="running">
+                {formatClock(myMs)}
+              </span>
+            )}
           </div>
           <div
             role="progressbar"

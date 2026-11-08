@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { TIMING } from "./constants";
-import { duelPhase, firstRoundStart, inRulesBreak, newToGame, nextRoundStart, rankedPool, roundOutcomes, rulesBreakMs } from "./duel";
+import {
+  duelPhase,
+  firstRoundStart,
+  inRulesBreak,
+  newToGame,
+  nextRoundStart,
+  ownClockMs,
+  rankedPool,
+  roundOutcomes,
+  rulesBreakMs,
+} from "./duel";
 
 describe("ranked mix and rules breaks", () => {
   const known = (a: string[], b: string[]) =>
@@ -61,5 +71,25 @@ describe("roundOutcomes (SPZ-03)", () => {
   });
   it("uses the admin round result time", () => {
     expect(nextRoundStart(0, 3000)).toBe(3000 + 4000);
+  });
+});
+
+describe("one Duel clock rule (R3-07)", () => {
+  const live = { pauseMs: 0, pausedAt: null };
+  it("shows nothing before the first move, then counts from it (not from the round start)", () => {
+    expect(ownClockMs(null, "m:1:1", 10_000, live)).toBeNull();
+    const start = { key: "m:1:1", at: 4_000, pauseMs: 0 };
+    expect(ownClockMs(start, "m:1:1", 4_000, live)).toBe(0);
+    expect(ownClockMs(start, "m:1:1", 10_000, live)).toBe(6_000);
+  });
+  it("starts again each round", () => {
+    expect(ownClockMs({ key: "m:1:1", at: 4_000, pauseMs: 0 }, "m:1:2", 30_000, live)).toBeNull();
+  });
+  it("leaves out pauses after the first move, but not ones before it", () => {
+    const start = { key: "k", at: 10_000, pauseMs: 3_000 };
+    // 2 s of pause since the first move (5 s total, 3 s before it)
+    expect(ownClockMs(start, "k", 20_000, { pauseMs: 5_000, pausedAt: null })).toBe(8_000);
+    // paused right now since 18 s: the clock holds at 8 s
+    expect(ownClockMs(start, "k", 21_000, { pauseMs: 3_000, pausedAt: 18_000 })).toBe(8_000);
   });
 });

@@ -29,8 +29,14 @@ export function MatchBoard({
   onFinished,
   onRejected,
   onFirstMove,
+  onClockStart,
   howItWorks = true,
 }: {
+  /**
+   * R3-07: the header timer started (this screen's first move of the round, a reload included), so a screen can
+   * run its other clocks by the same rule (lib/multiplayer/duel.ts `ownClockMs`). Gets the round key.
+   */
+  onClockStart?: (key: string) => void;
   /**
    * R2-07: a game new to this player gets the 10-second How it works card as the round starts (a live round never
    * waits for a practice round). Off where the server already held a rules break (ranked Duels).
@@ -56,6 +62,8 @@ export function MatchBoard({
   const qc = useQueryClient();
   // The round this player already made a move in (a saved board state counts: they moved before a reload).
   const moved = useRef<string | null>(view.myState != null ? key : null);
+  // The round whose header timer is running in this screen (GameShell starts it on the first move after mounting).
+  const clocked = useRef<string | null>(null);
 
   useEffect(() => {
     mistakes.current = view.players.find((p) => p.id === view.me)?.mistakes ?? 0;
@@ -83,13 +91,17 @@ export function MatchBoard({
     (state: unknown, _ms: number, info?: { mistake?: boolean }) => {
       if (info?.mistake) mistakes.current++;
       lastState.current = state;
+      if (clocked.current !== key) {
+        clocked.current = key;
+        onClockStart?.(key);
+      }
       if (moved.current !== key) {
         moved.current = key;
         onFirstMove?.(puzzle.game);
       }
       send(state, mistakes.current);
     },
-    [send, key, onFirstMove, puzzle.game],
+    [send, key, onFirstMove, onClockStart, puzzle.game],
   );
 
   const onSolved = useCallback(

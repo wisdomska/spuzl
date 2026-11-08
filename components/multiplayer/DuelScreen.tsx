@@ -22,7 +22,7 @@ import { useSettings } from "@/lib/settings/store";
 import { useBackOrHome } from "@/lib/client/nav";
 import { useGameSettings } from "@/lib/game-settings/client";
 import { duelCopy } from "@/lib/copy/duel";
-import { botProgress, duelPhase, inRulesBreak, roundOutcomes, BOT_ID } from "@/lib/multiplayer/duel";
+import { botProgress, duelPhase, inRulesBreak, ownClockMs, roundOutcomes, BOT_ID, type OwnClockStart } from "@/lib/multiplayer/duel";
 import { gameName, raceGameParam } from "@/lib/multiplayer/games";
 import { quickMatchPool } from "@/lib/multiplayer/liveGate";
 import { DUEL_ROUNDS, TIMING, type EmoteId } from "@/lib/multiplayer/constants";
@@ -341,6 +341,16 @@ function DuelMatch({ id }: { id: string }) {
   const [emoteOpen, setEmoteOpen] = useState(false);
   const [rematchWaiting, setRematchWaiting] = useState(false);
   const [wipe, setWipe] = useState(0);
+  // R3-07: when (server clock) the header timer started this round, for the strip's "You" clock.
+  const [clockStart, setClockStart] = useState<OwnClockStart | null>(null);
+  const clockNow = useRef({ now, at: 0, pauseMs: 0 });
+  useEffect(() => {
+    clockNow.current = { now, at: Date.now(), pauseMs: view?.pauseMs ?? 0 };
+  }, [now, view?.pauseMs]);
+  const onClockStart = useCallback((key: string) => {
+    const c = clockNow.current;
+    setClockStart({ key, at: c.now + (Date.now() - c.at), pauseMs: c.pauseMs });
+  }, []);
   // The share sheet for the match-end card: story or square, names shown or hidden (as in SPIL).
   const [shareOpen, setShareOpen] = useState(false);
   const [cardFormat, setCardFormat] = useState<"story" | "square">("story");
@@ -385,6 +395,11 @@ function DuelMatch({ id }: { id: string }) {
     ? duelPhase({ status: view.status, round: view.round, roundStartedAt: start, pausedAt: view.pausedAt }, now, countdown.ms)
     : "versus";
   const elapsed = Math.max(0, now - start - (view?.pauseMs ?? 0) - (view?.pausedAt ? now - view.pausedAt : 0));
+  // R3-07: the strip's "You" clock follows the header timer's rule (from your first move); see `ownClockMs`.
+  // `elapsed` (from the shared round start) still drives the Practice bot, which races the server's clock.
+  const myClockMs = view
+    ? ownClockMs(clockStart, `${view.id}:${view.setNo}:${view.round}`, now, { pauseMs: view.pauseMs, pausedAt: view.pausedAt })
+    : null;
   const botP = view?.isBot && view.bot?.finishMs ? botProgress(elapsed, view.bot.finishMs) : 0;
   const theyFinished = view?.isBot ? !!view.bot?.finishMs && elapsed >= view.bot.finishMs : themP?.finishedMs != null;
   const iFinished = me?.finishedMs != null;
@@ -577,7 +592,7 @@ function DuelMatch({ id }: { id: string }) {
             bot: view.isBot,
           }}
           me={{ nickname: me.nickname, color: me.color, progress: me.progress }}
-          myMs={phase === "countdown" ? 0 : elapsed}
+          myMs={phase === "countdown" ? null : myClockMs}
           rounds={rounds}
           round={view.round}
           emote={theirEmote}
@@ -626,6 +641,7 @@ function DuelMatch({ id }: { id: string }) {
           onExit={leave.request}
           onFinished={onFinished}
           onRejected={onRejected}
+          onClockStart={onClockStart}
         />
         {phase === "countdown" && (
           <CountdownOverlay msToStart={start - now} beats={countdown.beats} dim="soft" line={duelCopy.roundOf(view.round, DUEL_ROUNDS)} />

@@ -171,6 +171,33 @@ export function botTimes(baseMs: number, r: number[]): number[] {
   return speed.map((s, i) => Math.round((baseMs / s) * (0.85 + 0.3 * (r[i] ?? 0.5))));
 }
 
+/**
+ * R3-07: one clock rule in a live Duel round. R2-15 says your timer starts on your first move, so every clock that
+ * shows your time follows it: the header timer (GameShell) and the "You" clock on the opponent strip both count
+ * from your first move of the round (in this screen, so after a reload both restart on your next move), stop while
+ * the match is paused, and show nothing before you move. The rival's time is never shown as a running clock (it
+ * can't be known until they finish: their progress bar and crown say how they're doing). The round result card
+ * still shows the official race times, which the server counts from the shared round start for both players.
+ *
+ * `start` is when (server clock) this player's clock started for round `key`, with the match's pause total then.
+ */
+export interface OwnClockStart {
+  key: string;
+  at: number;
+  pauseMs: number;
+}
+
+export function ownClockMs(
+  start: OwnClockStart | null,
+  key: string,
+  now: number,
+  match: { pauseMs: number; pausedAt: number | null },
+): number | null {
+  if (!start || start.key !== key) return null;
+  const pausedSince = match.pausedAt !== null ? now - Math.max(match.pausedAt, start.at) : 0;
+  return Math.max(0, now - start.at - Math.max(0, match.pauseMs - start.pauseMs) - Math.max(0, pausedSince));
+}
+
 /** Bot progress shown on the strip: a gentle curve that reaches 1 at its finish time. */
 export function botProgress(elapsedMs: number, finishMs: number): number {
   if (elapsedMs <= 0) return 0;
