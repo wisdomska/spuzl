@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.41.2 (8 November 2026)
+
+### For players
+
+- **Cleaner avatars.** Your Spuz sits on its own, with no tinted square behind it, in the Home level ring and in every
+  list; the level ring is now a thin ring round it.
+- **Shades fit.** The lenses cover both eyes at every size, so no eye peeks out at the corner on small avatars.
+
 ## 1.41.1 (8 November 2026)
 
 ### For players
