@@ -181,10 +181,5 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 
 ## Round 3
 
-- **Rivals' board states are readable through the Data API (found in R3-08):** the `match_players_read` policy lets
-  any member of a match select every row of `match_players`, `state` included, so a racer who queries Supabase
-  directly can read a rival's board mid-round (a solved grid, typed Emoji Hits titles, Pinned pins). The API never
-  sends it. Score races keep their answer logs in `match_race_logs` (no client access), but `state` needs a
-  column-level grant like `attempts.free_seed` (20261110300001) or a view, for time and score races alike.
 - **Score games from game cards (R3-08):** the Challenge sheet and Library card offer Party only for time races
   (`isRaceGame`); a score game can be raced only by picking it in the Party Host tab.
