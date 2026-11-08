@@ -10,6 +10,7 @@ import { InviteFriends } from "./InviteFriends";
 import { AddFriend } from "./AddFriend";
 import { useFriends } from "@/lib/client/social";
 import { Spuz, type SpuzMood } from "@/components/brand/Spuz";
+import { SpuzWear } from "@/components/meta/SpuzWear";
 import { play } from "@/lib/audio";
 import { formatClock, formatNumber } from "@/lib/format";
 import { GAME_BY_ID, WORLDS, WORLD_BY_ID, type WorldId } from "@/lib/catalog";
@@ -919,11 +920,11 @@ export function Podium({
               animate={{ opacity: 1, transform: "translateY(0px) scale(1)" }}
               transition={reduce || skip ? { duration: 0.15 } : { ...SPRING_PARTY, delay: [0.3, 0.15, 0.45][rank] }}
             >
-              <Spuz
+              <SpuzWear
                 mood={(rank === 0 ? "party" : p.id === view.me ? "proud" : "cheer") as SpuzMood}
                 size={[110, 90, 84][rank]}
                 color={p.color}
-                decorative
+                hat={p.hat}
               />
               {p.id === view.me ? (
                 <span className="text-accent max-w-full truncate rounded-full px-2.5 text-[16px] font-bold shadow-[inset_0_0_0_2px_var(--accent)]">

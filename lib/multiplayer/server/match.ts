@@ -104,6 +104,7 @@ export interface PlayerRow {
   players: {
     nickname: string;
     avatar_color: string;
+    hat?: string | null;
     level: number;
     country: string | null;
     city: string | null;
@@ -144,7 +145,7 @@ export async function loadMatch(admin: SupabaseClient, id: string): Promise<Load
     admin.from("matches").select("*").eq("id", id).maybeSingle(),
     admin
       .from("match_players")
-      .select("*, players(nickname, avatar_color, level, country, city, age_band, birth_year, birth_month)")
+      .select("*, players(nickname, avatar_color, hat, level, country, city, age_band, birth_year, birth_month)")
       .eq("match_id", id)
       .order("seat"),
   ]);
@@ -242,6 +243,7 @@ export async function viewOf(admin: SupabaseClient, l: Loaded, me: string, rewar
     id: p.player_id,
     nickname: p.players?.nickname ?? "Spuzler",
     color: p.players?.avatar_color ?? "#B8F23A",
+    hat: p.players?.hat ?? null,
     level: p.players?.level ?? 1,
     country: minor(p) ? null : (p.players?.country ?? null),
     city: minor(p) ? null : (p.players?.city ?? null),

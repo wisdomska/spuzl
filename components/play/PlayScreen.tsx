@@ -43,7 +43,7 @@ import { GuidedPlay } from "./GuidedPlay";
 import { allLearned, learnedGames, needsGuided } from "@/lib/guided";
 import { useLearnedSync, useMarkLearned } from "@/lib/client/learned";
 import { hasLogic } from "@/games/logic-ids";
-import { Spuz } from "@/components/brand/Spuz";
+import { MySpuz } from "@/components/meta/MySpuz";
 import { Button } from "@/components/ui/Button";
 import { RaceLiveButton } from "@/components/multiplayer/GameChallenge";
 import { useTapToBoard } from "@/lib/analytics/tap-to-board";
@@ -526,7 +526,6 @@ export function PlayScreen({
           hints={stats.hints}
           mistakes={stats.mistakes}
           relaxed={relaxed}
-          color={me.data?.avatar_color ?? "#B8F23A"}
           onShare={() => void clearShare.open()}
           onChallenge={clearShare.beat}
           next={sameGameAction}
@@ -557,7 +556,7 @@ export function PlayScreen({
   if ((phase === "failed" || phase === "error") && mode === "level") {
     return (
       <main className="mx-auto flex min-h-dvh max-w-[560px] flex-col items-center justify-center gap-4 px-6 text-center">
-        <Spuz mood={phase === "failed" ? "sad" : "shocked"} size={140} decorative />
+        <MySpuz mood={phase === "failed" ? "sad" : "shocked"} size={140} decorative />
         <h1 className="font-display text-[24px] font-black">{phase === "failed" ? levelsCopy.failedTitle : levelsCopy.errorTitle}</h1>
         {phase === "error" && <p className="text-muted text-[16px]">{error ?? levelsCopy.errorBody}</p>}
         <div className="mt-4 flex w-full flex-col gap-3">
@@ -581,7 +580,7 @@ export function PlayScreen({
   if ((phase === "failed" || phase === "error") && mode === "five") {
     return (
       <main className="mx-auto flex min-h-dvh max-w-[560px] flex-col items-center justify-center gap-4 px-6 text-center">
-        <Spuz mood={phase === "failed" ? "sad" : "shocked"} size={140} decorative />
+        <MySpuz mood={phase === "failed" ? "sad" : "shocked"} size={140} decorative />
         <h1 className="font-display text-[24px] font-black">{phase === "failed" ? FT.missed : FT.broke}</h1>
         {phase === "error" && <p className="text-muted text-[16px]">{error ?? FT.tryLater}</p>}
         {fiveResult?.progress && <p className="text-muted num text-[16px]">{FT.score(fiveResult.progress.score, MAX_SCORE)}</p>}
@@ -602,7 +601,7 @@ export function PlayScreen({
   if (phase === "failed" || phase === "error") {
     return (
       <main className="mx-auto flex min-h-dvh max-w-[560px] flex-col items-center justify-center gap-4 px-6 text-center">
-        <Spuz mood={phase === "failed" ? "sad" : "shocked"} size={140} decorative />
+        <MySpuz mood={phase === "failed" ? "sad" : "shocked"} size={140} decorative />
         <h1 className="font-display text-[24px] font-black">{phase === "failed" ? "Not this time" : "Something broke"}</h1>
         <p className="text-muted text-[16px]">
           {phase === "failed" ? "Shake it off. Free play never runs out." : (error ?? "Try again in a moment.")}
@@ -784,6 +783,14 @@ function PlayLoading({ meta }: { meta: GameMeta }) {
 }
 
 /** Levels mode's result bar: the level cleared, time and XP, then the next level and the level map. */
+/**
+ * R3-15: the player's own Spuz (in their Shop look) cheering on the compact result bars. 36 px, pulled into the
+ * header line's height with negative margins so the bar is no taller than before.
+ */
+function ClearSpuz() {
+  return <MySpuz mood="cheer" size={36} decorative className="-my-1.5" />;
+}
+
 function LevelResultBar({
   timeMs,
   xp,
@@ -802,6 +809,7 @@ function LevelResultBar({
   return (
     <div className="bg-surface flex flex-col gap-3 rounded-[22px] p-3.5" role="status" aria-live="polite">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-1">
+        <ClearSpuz />
         <span className="font-display text-accent text-[18px] font-black">{levelsCopy.levelCleared(ladder.level)}</span>
         {!relaxed && <span className="num text-[15px] font-semibold">{formatClear(timeMs)}</span>}
         {xp > 0 && <span className="num text-[15px] font-semibold">+{xp} XP</span>}
@@ -849,6 +857,7 @@ function FreeResultBar({
   return (
     <div className="bg-surface flex flex-col gap-3 rounded-[22px] p-3.5" role="status" aria-live="polite">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-1">
+        <ClearSpuz />
         <span className="font-display text-accent text-[18px] font-black">{copy.play.cleared}</span>
         {!relaxed && <span className="num text-[15px] font-semibold">{formatClear(timeMs)}</span>}
         {xp > 0 && <span className="num text-[15px] font-semibold">+{xp} XP</span>}
@@ -908,6 +917,7 @@ function FiveResultBar({
   return (
     <div className="bg-surface flex flex-col gap-3 rounded-[22px] p-3.5" role="status" aria-live="polite" data-testid="five-result">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-1">
+        <ClearSpuz />
         <span className="font-display text-accent text-[18px] font-black">{FT.cleared}</span>
         {!relaxed && <span className="num text-[15px] font-semibold">{formatClear(timeMs)}</span>}
         {progress && <span className="num text-[15px] font-semibold">{FT.ring(progress.done, progress.total)}</span>}

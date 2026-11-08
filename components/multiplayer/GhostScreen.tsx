@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { GameShell } from "@/components/game/GameShell";
 import { Spuz } from "@/components/brand/Spuz";
+import { MySpuz } from "@/components/meta/MySpuz";
 import { BOARDS } from "@/games/board-registry";
 import { GAME_BY_ID } from "@/lib/catalog";
 import { api, finishAttempt, HttpError } from "@/lib/client/api";
@@ -180,7 +181,7 @@ function GhostResult({
     <Screen label="Ghost result">
       <HomeCorner />
       <div className="flex flex-1 flex-col items-center gap-4 px-5 pt-[max(80px,env(safe-area-inset-top))] pb-[max(28px,env(safe-area-inset-bottom))] text-center">
-        <Spuz mood={beat ? "party" : "shocked"} size={130} />
+        <MySpuz mood={beat ? "party" : "shocked"} size={130} />
         <h1 className="font-display text-[30px] leading-[1.1] font-black" aria-live="polite">
           {title}
         </h1>

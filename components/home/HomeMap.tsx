@@ -6,7 +6,8 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { WORLDS, gamesInWorld, LAUNCH_IDS, type WorldId } from "@/lib/catalog";
 import { Island } from "./Island";
-import { Spuz, type SpuzMood } from "@/components/brand/Spuz";
+import type { SpuzMood } from "@/components/brand/Spuz";
+import { MySpuz } from "@/components/meta/MySpuz";
 import { play } from "@/lib/audio";
 
 /** Island layout: the design's zigzag (x 200/40/220/30, ~77 px rows), one slot per live world (up to 9). */
@@ -79,13 +80,11 @@ export function HomeMap({
   progress,
   current,
   mood,
-  color,
   unit = "Dailies cleared today",
 }: {
   progress: Record<WorldId, WorldProgress>;
   current: WorldId;
   mood: SpuzMood;
-  color: string;
   /** what the island count means, read after it ("games tried") */
   unit?: string;
 }) {
@@ -223,7 +222,7 @@ export function HomeMap({
               // Gravity: each arc decelerates up and accelerates down, so the three hops read as jumps.
               transition={{ duration: 0.7, ease: [UP, DOWN, UP, DOWN, UP, DOWN] }}
             >
-              <Spuz mood={hopTo ? "cheer" : mood} size={64} color={color} decorative />
+              <MySpuz mood={hopTo ? "cheer" : mood} size={64} decorative />
             </motion.div>
           </motion.div>
         </div>

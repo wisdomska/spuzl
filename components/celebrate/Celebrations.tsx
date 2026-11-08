@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { Spuz } from "@/components/brand/Spuz";
+import { MySpuz } from "@/components/meta/MySpuz";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { play, duck } from "@/lib/audio";
@@ -152,7 +152,7 @@ function LevelUp({ c, instant }: { c: Extract<Celebration, { kind: "level" }>; i
         )}
       </div>
       <div className="absolute right-6 bottom-[120px]">
-        <Spuz mood="proud" size={110} decorative />
+        <MySpuz mood="proud" size={110} decorative />
       </div>
     </>
   );
@@ -206,7 +206,7 @@ function RankUp({ c, instant }: { c: Extract<Celebration, { kind: "rank" }>; ins
         ))}
       </ol>
       <div className="absolute right-6 bottom-[120px]">
-        <Spuz mood="proud" size={90} color="#8B7CFF" decorative />
+        <MySpuz mood="proud" size={90} decorative />
       </div>
     </>
   );
@@ -298,7 +298,7 @@ function StreakMilestone({ c, instant }: { c: Extract<Celebration, { kind: "stre
         )}
       </div>
       <div className="absolute bottom-[120px] left-6">
-        <Spuz mood="fire" size={90} decorative />
+        <MySpuz mood="fire" size={90} decorative />
       </div>
     </>
   );
@@ -329,7 +329,7 @@ function FullSpuzl({ c, instant }: { c: Extract<Celebration, { kind: "full" }>; 
           </motion.span>
         ))}
       </div>
-      <Spuz mood="party" size={120} decorative />
+      <MySpuz mood="party" size={120} decorative />
       <div className="flex gap-2.5">
         <Chip icon="sparkle" iconColor="#B8F23A">
           <span className="num text-[#B8F23A]">+{c.xp} XP</span>

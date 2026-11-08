@@ -84,7 +84,7 @@ export async function bayView(admin: SupabaseClient, b: BayRow, me: string): Pro
   const [{ data: cards }, { data: ratings }, moves] = await Promise.all([
     admin
       .from("players")
-      .select("id, nickname, avatar_color")
+      .select("id, nickname, avatar_color, hat")
       .in("id", humans.length ? humans : [BOT_PLAYER]),
     admin
       .from("ratings")
@@ -111,6 +111,7 @@ export async function bayView(admin: SupabaseClient, b: BayRow, me: string): Pro
         id,
         nickname: id === BOT_PLAYER ? "Practice bot" : (c?.nickname ?? "Spuzler"),
         color: id === BOT_PLAYER ? "#A2A6C2" : (c?.avatar_color ?? "#B8F23A"),
+        hat: id === BOT_PLAYER ? null : ((c?.hat as string | null | undefined) ?? null),
         rating: Math.round(Number(ratings?.find((r) => r.player_id === id)?.rating ?? 1000)),
         seat: i,
       };

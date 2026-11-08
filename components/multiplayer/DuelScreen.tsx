@@ -261,6 +261,7 @@ function DuelLobby({
           waitedMs={waited}
           searching={searching}
           color={me.data?.avatar_color ?? "#B8F23A"}
+          hat={me.data?.hat}
           onCancel={cancel}
           botReady={waited >= TIMING.botAfterMs}
           onBot={bot}

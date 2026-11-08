@@ -11,6 +11,8 @@ import { Icon } from "@/components/ui/Icon";
 import { AddFriend } from "./AddFriend";
 import { GamePickerSheet } from "./GamePickerSheet";
 import { Spuz, type SpuzMood } from "@/components/brand/Spuz";
+import { MySpuz } from "@/components/meta/MySpuz";
+import { SpuzWear } from "@/components/meta/SpuzWear";
 import { play } from "@/lib/audio";
 import { formatClock, formatNumber } from "@/lib/format";
 import { gameName, RACE_GAMES } from "@/lib/multiplayer/games";
@@ -124,7 +126,7 @@ export function DuelEntrySheet({
         <TopButton icon="arrow-left" label={duelCopy.back} onClick={onClose} />
       </header>
       <div className="flex min-h-4 flex-1 items-center justify-center py-4 [@media(max-height:640px)]:[&>*]:hidden">
-        <Spuz mood="fire" size={120} decorative />
+        <MySpuz mood="fire" size={120} decorative />
       </div>
       <motion.section
         aria-labelledby="duel-title"
@@ -189,6 +191,7 @@ export function Matchmaking({
   waitedMs,
   searching,
   color,
+  hat,
   onCancel,
   botReady,
   onBot,
@@ -200,6 +203,8 @@ export function Matchmaking({
   waitedMs: number;
   searching: number | null;
   color: string;
+  /** R3-15: the player's Shop hat */
+  hat?: string | null;
   onCancel: () => void;
   botReady: boolean;
   onBot: () => void;
@@ -229,7 +234,7 @@ export function Matchmaking({
         <div className="absolute top-[70px] left-[52px] size-[30px] rounded-[10px] bg-[var(--w-shape)] opacity-70" />
         <div className="absolute top-[196px] left-[222px] size-[26px] rounded-[9px] bg-[var(--w-logic)] opacity-50" />
         <div className="absolute top-[95px] left-[95px]">
-          <Spuz mood="thinking" size={120} color={color} decorative />
+          <SpuzWear mood="thinking" size={120} color={color} hat={hat} />
         </div>
       </div>
       <h1 className="font-display mt-8 text-center text-[26px] font-black" aria-live="polite">
@@ -311,7 +316,15 @@ export function Versus({
   countdownMs?: number;
   beats?: number;
   me: MatchPlayerView;
-  them: { nickname: string; color: string; rating: number; country: string | null; city: string | null; bot?: boolean };
+  them: {
+    nickname: string;
+    color: string;
+    hat?: string | null;
+    rating: number;
+    country: string | null;
+    city: string | null;
+    bot?: boolean;
+  };
   msToStart: number;
   round: number;
   /** a line under the round, e.g. the rival is reading a new game's rule */
@@ -341,7 +354,7 @@ export function Versus({
         className="absolute inset-x-0 bottom-0 h-[460px] bg-[#24151A] [clip-path:polygon(0_22%,100%_0,100%_100%,0_100%)] [[data-theme=light]_&]:bg-[#F6DDE0]"
       />
       <div className="absolute top-[max(70px,env(safe-area-inset-top))] left-6 flex flex-col gap-2.5">
-        <Spuz mood="proud" size={140} color={me.color} decorative />
+        <SpuzWear mood="proud" size={140} color={me.color} hat={me.hat} />
         <span className="font-display text-[30px] font-black">{me.nickname}</span>
         <div className="flex items-center gap-2">
           <RankHex />
@@ -364,7 +377,7 @@ export function Versus({
             </>
           )}
         </div>
-        <Spuz mood={them.bot ? "thinking" : "rage"} size={140} color={them.color} decorative />
+        <SpuzWear mood={them.bot ? "thinking" : "rage"} size={140} color={them.color} hat={them.hat} />
       </div>
       <div className="absolute inset-x-0 top-[380px] flex justify-center">
         {countdown ? (
@@ -548,8 +561,8 @@ export function RoundEnd({
   round: number;
   meWon: boolean;
   draw: boolean;
-  me: { nickname: string; color: string };
-  them: { nickname: string; color: string };
+  me: { nickname: string; color: string; hat?: string | null };
+  them: { nickname: string; color: string; hat?: string | null };
   myMs: number | null;
   theirMs: number | null;
   rounds: ("me" | "them" | "draw")[];
@@ -581,10 +594,16 @@ export function RoundEnd({
       : margin !== null
         ? `You lost by ${margin.toFixed(1)} seconds. Rematch is literally next.`
         : "Close one. Next board is yours.";
-  const card = (who: { nickname: string; color: string }, ms: number | null, winner: boolean, mood: SpuzMood, label: string) => (
+  const card = (
+    who: { nickname: string; color: string; hat?: string | null },
+    ms: number | null,
+    winner: boolean,
+    mood: SpuzMood,
+    label: string,
+  ) => (
     <div className="flex flex-col items-center gap-2" style={{ opacity: winner ? 1 : 0.7 }}>
       {winner && <Icon name="crown-simple" size={34} className="text-gold -mb-3.5" />}
-      <Spuz mood={mood} size={winner ? 130 : 110} color={who.color} decorative />
+      <SpuzWear mood={mood} size={winner ? 130 : 110} color={who.color} hat={who.hat} />
       <span className="text-[16px] font-semibold">{label}</span>
       <span className="num text-[22px] font-semibold" style={{ color: winner ? "var(--accent)" : undefined }}>
         {ms === null ? "DNF" : formatTenths(ms)}
@@ -776,7 +795,7 @@ export function MatchEnd({
 }: {
   view: MatchView;
   me: MatchPlayerView;
-  them: { id: string; nickname: string; color: string; roundsWon: number; bot?: boolean };
+  them: { id: string; nickname: string; color: string; hat?: string | null; roundsWon: number; bot?: boolean };
   onRematch: () => void;
   onShare: () => void;
   onHome: () => void;
@@ -879,8 +898,8 @@ export function MatchEnd({
         </motion.div>
       ) : (
         <div className="mt-6 flex items-end gap-1.5">
-          <Spuz mood={draw ? "thinking" : "sad"} size={110} color={me.color} decorative />
-          <Spuz mood={draw ? "thinking" : "party"} size={110} color={them.color} decorative />
+          <SpuzWear mood={draw ? "thinking" : "sad"} size={110} color={me.color} hat={me.hat} />
+          <SpuzWear mood={draw ? "thinking" : "party"} size={110} color={them.color} hat={them.hat} />
         </div>
       )}
       <p className="mt-3.5 px-4 text-center text-[17px] font-semibold">{line}</p>

@@ -18,6 +18,7 @@ import { HomeMap, nextDaily, worldProgress } from "./HomeMap";
 import { continueGame, continueHref } from "@/lib/game/next";
 import { LevelRing, SparksChip, StreakChip } from "@/components/shell/Hud";
 import { Spuz } from "@/components/brand/Spuz";
+import { MySpuz } from "@/components/meta/MySpuz";
 import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { formatCountdown, msToReset } from "@/lib/format";
@@ -169,13 +170,7 @@ export function HomeScreen() {
           <NewGamesBanner played={d.played ?? []} />
         </div>
         <section aria-label="The Grid" className="relative overflow-y-auto pb-[250px] lg:pb-[200px]">
-          <HomeMap
-            progress={progress}
-            current={currentWorld}
-            mood={mood}
-            color={d.avatar_color}
-            unit={dailiesOn ? T.islandsToday : T.islandsTried}
-          />
+          <HomeMap progress={progress} current={currentWorld} mood={mood} unit={dailiesOn ? T.islandsToday : T.islandsTried} />
         </section>
 
         <div
@@ -192,7 +187,7 @@ export function HomeScreen() {
               className="bg-surface flex items-center gap-1.5 rounded-[22px] py-3 pr-3.5 pl-2"
               style={{ boxShadow: "inset 0 0 0 2px var(--gold)" }}
             >
-              <Spuz mood="sleepy" size={60} still decorative />
+              <MySpuz mood="sleepy" size={60} still decorative />
               <div className="flex flex-1 flex-col gap-0.5">
                 <p className="text-[16px] leading-[1.3] font-semibold text-pretty">{fiveOpen ? T.sleepyFive(streak) : T.sleepy(streak)}</p>
                 <ResetsIn />

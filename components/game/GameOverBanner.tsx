@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Spuz } from "@/components/brand/Spuz";
+import { MySpuz } from "@/components/meta/MySpuz";
 import { Confetti } from "@/components/fx/Confetti";
 import { Icon } from "@/components/ui/Icon";
 import { play } from "@/lib/audio";
@@ -95,7 +95,7 @@ export function GameOverBanner({
             transition={{ type: "spring", stiffness: 420, damping: 26 }}
             style={outcome === "won" ? { boxShadow: "inset 0 0 0 3px var(--accent), 0 24px 60px rgba(0,0,0,.5)" } : undefined}
           >
-            <Spuz mood={outcome === "won" ? "party" : outcome === "lost" ? "sad" : "thinking"} size={88} decorative />
+            <MySpuz mood={outcome === "won" ? "party" : outcome === "lost" ? "sad" : "thinking"} size={88} decorative />
             <h2
               id="game-over-title"
               className="font-display text-[34px] leading-none font-black"

@@ -1,13 +1,20 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { Spuz, type SpuzMood } from "@/components/brand/Spuz";
 
 /**
  * Spuz wearing Shop cosmetics: skin colour plus a hat drawn over the head (Spuz itself only draws the
- * party hat in its party mood). Units are Spuz em (size / 12) so hats scale with any avatar size.
+ * party hat in its party mood). Units are Spuz em (size / 12) so hats scale with any avatar size. The hat
+ * rides inside Spuz's body layer, so it hops, breathes and tilts with the mood and stays put when motion is
+ * reduced or the Spuz is still. The box is always size × size: wearing a hat never shifts layout.
  */
 export type HatId = "party" | "crown" | "kente" | "shades" | "headphones" | "chef" | "beanie" | string;
+
+const HATS = new Set(["party", "crown", "kente", "shades", "headphones", "chef", "beanie"]);
+
+/** Below this size (avatar chips, 24 to 40 px) hats drop their finest details and keep thin lines at 1 px. */
+export const TINY_SPUZ = 48;
 
 export function SpuzWear({
   size,
@@ -26,6 +33,7 @@ export function SpuzWear({
   still?: boolean;
   className?: string;
   style?: CSSProperties;
+  /** an accessible name; without one the Spuz is decorative */
   label?: string;
 }) {
   // Party mood brings its own party hat; swap to cheer so hats never stack.
@@ -36,50 +44,68 @@ export function SpuzWear({
       style={{ width: size, height: size, ...style }}
       role={label ? "img" : undefined}
       aria-label={label}
+      aria-hidden={label ? undefined : true}
     >
-      <Spuz mood={m} size={size} color={color} still={still} decorative />
-      {hat && <Hat id={hat} size={size} />}
+      <Spuz mood={m} size={size} color={color} still={still} decorative wear={hat ? <Hat id={hat} size={size} /> : undefined} />
     </div>
   );
 }
 
+/** The hat layer: a 12 em box over Spuz, tagged with the hat id (`data-hat`) for tests. */
 function Hat({ id, size }: { id: HatId; size: number }) {
+  const known = HATS.has(id) ? id : "party";
+  return (
+    <div aria-hidden data-hat={known} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+      {hatShape(known, size)}
+    </div>
+  );
+}
+
+function hatShape(id: HatId, size: number): ReactNode {
   const em = size / 12;
+  const tiny = size < TINY_SPUZ;
+  /** a thin line: never under 1 px, so it still reads on a small chip */
+  const line = (n: number) => Math.max(1, n * em);
   const box: CSSProperties = { position: "absolute", pointerEvents: "none" };
   if (id === "crown")
     return (
-      <div aria-hidden style={{ ...box, left: 4.4 * em, top: 1.15 * em, width: 3.2 * em, height: 2.2 * em, transform: "rotate(-6deg)" }}>
+      <div style={{ ...box, left: 4.4 * em, top: 1.15 * em, width: 3.2 * em, height: 2.2 * em, transform: "rotate(-6deg)" }}>
         <div
           style={{
             position: "absolute",
             inset: 0,
             clipPath: "polygon(0 100%,0 25%,22% 60%,50% 0,78% 60%,100% 25%,100% 100%)",
             background: "#FFC93C",
-            boxShadow: "inset 0 -0.4em 0 rgba(0,0,0,.18)",
+            boxShadow: tiny ? undefined : "inset 0 -0.4em 0 rgba(0,0,0,.18)",
           }}
         />
-        <div
-          style={{
-            position: "absolute",
-            left: "44%",
-            top: "55%",
-            width: 0.45 * em,
-            height: 0.45 * em,
-            borderRadius: "50%",
-            background: "#FF5A5F",
-          }}
-        />
+        {!tiny && (
+          <div
+            style={{
+              position: "absolute",
+              left: "44%",
+              top: "55%",
+              width: 0.45 * em,
+              height: 0.45 * em,
+              borderRadius: "50%",
+              background: "#FF5A5F",
+            }}
+          />
+        )}
       </div>
     );
   if (id === "kente")
     return (
-      <div aria-hidden style={{ ...box, left: 3.4 * em, top: 1.4 * em, width: 5.2 * em, height: 2.4 * em, transform: "rotate(-5deg)" }}>
+      <div style={{ ...box, left: 3.4 * em, top: 1.4 * em, width: 5.2 * em, height: 2.4 * em, transform: "rotate(-5deg)" }}>
         <div
           style={{
             position: "absolute",
             inset: 0,
             borderRadius: `${2.6 * em}px ${2.6 * em}px ${0.4 * em}px ${0.4 * em}px`,
-            background: "repeating-linear-gradient(90deg,#FFC93C 0 .5em,#167A45 .5em 1em,#C62828 1em 1.25em,#0E0F1A 1.25em 1.5em)",
+            // Tiny: fewer, wider stripes so the cap reads as kente, not as a brown smudge.
+            background: tiny
+              ? "repeating-linear-gradient(90deg,#FFC93C 0 1em,#167A45 1em 2em,#C62828 2em 2.5em)"
+              : "repeating-linear-gradient(90deg,#FFC93C 0 .5em,#167A45 .5em 1em,#C62828 1em 1.25em,#0E0F1A 1.25em 1.5em)",
             fontSize: em,
           }}
         />
@@ -89,7 +115,7 @@ function Hat({ id, size }: { id: HatId; size: number }) {
             left: -0.2 * em,
             right: -0.2 * em,
             bottom: -0.3 * em,
-            height: 0.6 * em,
+            height: line(0.6),
             borderRadius: 0.3 * em,
             background: "#FFC93C",
           }}
@@ -99,13 +125,13 @@ function Hat({ id, size }: { id: HatId; size: number }) {
   // Starter hat: a lime beanie with a ribbed band and a two-leaf sprout on top.
   if (id === "beanie")
     return (
-      <div aria-hidden style={{ ...box, left: 3.1 * em, top: 0.5 * em, width: 5.8 * em, height: 3.3 * em, transform: "rotate(-6deg)" }}>
+      <div style={{ ...box, left: 3.1 * em, top: 0.5 * em, width: 5.8 * em, height: 3.3 * em, transform: "rotate(-6deg)" }}>
         <div
           style={{
             position: "absolute",
             left: 2.55 * em,
             top: 0,
-            width: 0.3 * em,
+            width: line(0.3),
             height: 0.9 * em,
             borderRadius: 0.15 * em,
             background: "#167A45",
@@ -153,7 +179,8 @@ function Hat({ id, size }: { id: HatId; size: number }) {
             bottom: 0,
             height: 0.95 * em,
             borderRadius: 0.4 * em,
-            background: "repeating-linear-gradient(90deg,#B8F23A 0 .35em,#167A45 .35em .5em)",
+            // Tiny: a solid dark band (the 1 px ribs would blur into the lime).
+            background: tiny ? "#167A45" : "repeating-linear-gradient(90deg,#B8F23A 0 .35em,#167A45 .35em .5em)",
             fontSize: em,
           }}
         />
@@ -169,18 +196,18 @@ function Hat({ id, size }: { id: HatId; size: number }) {
       width: w * em,
       height: h * em,
       borderRadius: `${0.45 * em}px ${0.45 * em}px ${1 * em}px ${1 * em}px`,
-      background: "linear-gradient(160deg,#2B2F4A 0 30%,#0E0F1A 30%)",
-      boxShadow: `inset 0 0 0 ${0.16 * em}px #0E0F1A`,
+      background: tiny ? "#0E0F1A" : "linear-gradient(160deg,#2B2F4A 0 30%,#0E0F1A 30%)",
+      boxShadow: tiny ? undefined : `inset 0 0 0 ${0.16 * em}px #0E0F1A`,
     });
     return (
-      <div aria-hidden style={{ ...box, inset: 0, transform: "rotate(-3deg)", transformOrigin: "50% 50%" }}>
+      <div style={{ ...box, inset: 0, transform: "rotate(-3deg)", transformOrigin: "50% 50%" }}>
         <div
           style={{
             position: "absolute",
             left: 1.75 * em,
             top: 5.05 * em,
             width: 7.9 * em,
-            height: 0.32 * em,
+            height: line(0.32),
             borderRadius: 0.16 * em,
             background: "#0E0F1A",
           }}
@@ -193,7 +220,7 @@ function Hat({ id, size }: { id: HatId; size: number }) {
             left: 3.3 * em,
             top: 4.95 * em,
             width: 0.9 * em,
-            height: 0.22 * em,
+            height: line(0.22),
             borderRadius: 0.11 * em,
             background: "#2FD3E0",
             opacity: 0.8,
@@ -211,10 +238,10 @@ function Hat({ id, size }: { id: HatId; size: number }) {
       height: 2.6 * em,
       borderRadius: 0.75 * em,
       background: "#8B7CFF",
-      boxShadow: `inset ${-0.25 * em}px ${-0.3 * em}px 0 rgba(0,0,0,.22), 0 0 0 ${0.14 * em}px #0E0F1A`,
+      boxShadow: tiny ? `0 0 0 1px #0E0F1A` : `inset ${-0.25 * em}px ${-0.3 * em}px 0 rgba(0,0,0,.22), 0 0 0 ${0.14 * em}px #0E0F1A`,
     });
     return (
-      <div aria-hidden style={{ ...box, inset: 0 }}>
+      <div style={{ ...box, inset: 0 }}>
         <div
           style={{
             position: "absolute",
@@ -222,7 +249,7 @@ function Hat({ id, size }: { id: HatId; size: number }) {
             top: 1.75 * em,
             width: 9.6 * em,
             height: 5.2 * em,
-            border: `${0.55 * em}px solid #5B4BD6`,
+            border: `${line(0.55)}px solid #5B4BD6`,
             borderBottom: "none",
             borderRadius: `${4.8 * em}px ${4.8 * em}px 0 0`,
             boxSizing: "border-box",
@@ -230,17 +257,19 @@ function Hat({ id, size }: { id: HatId; size: number }) {
         />
         <div style={cup(0.7)} />
         <div style={cup(9.85)} />
-        <div
-          style={{
-            position: "absolute",
-            left: 10.15 * em,
-            top: 5.55 * em,
-            width: 0.5 * em,
-            height: 0.5 * em,
-            borderRadius: "50%",
-            background: "#B8F23A",
-          }}
-        />
+        {!tiny && (
+          <div
+            style={{
+              position: "absolute",
+              left: 10.15 * em,
+              top: 5.55 * em,
+              width: 0.5 * em,
+              height: 0.5 * em,
+              borderRadius: "50%",
+              background: "#B8F23A",
+            }}
+          />
+        )}
       </div>
     );
   }
@@ -256,7 +285,7 @@ function Hat({ id, size }: { id: HatId; size: number }) {
       boxShadow: `inset ${-0.25 * em}px ${-0.25 * em}px 0 rgba(14,15,26,.10)`,
     });
     return (
-      <div aria-hidden style={{ ...box, inset: 0, transform: "rotate(-5deg)", transformOrigin: "50% 30%" }}>
+      <div style={{ ...box, inset: 0, transform: "rotate(-5deg)", transformOrigin: "50% 30%" }}>
         <div style={puff(3.2, 0.75, 2.4)} />
         <div style={puff(6.1, 0.75, 2.4)} />
         <div style={puff(4.45, -0.05, 2.9)} />
@@ -278,7 +307,7 @@ function Hat({ id, size }: { id: HatId; size: number }) {
             left: 3.6 * em,
             top: 3.0 * em,
             width: 4.6 * em,
-            height: 0.55 * em,
+            height: line(0.55),
             background: "#D9DCEB",
             borderRadius: 0.27 * em,
           }}
@@ -289,7 +318,6 @@ function Hat({ id, size }: { id: HatId; size: number }) {
   // party (default)
   return (
     <div
-      aria-hidden
       style={{
         ...box,
         left: 4.6 * em,
@@ -305,7 +333,9 @@ function Hat({ id, size }: { id: HatId; size: number }) {
           position: "absolute",
           inset: 0,
           clipPath: "polygon(50% 0,100% 100%,0 100%)",
-          background: "repeating-linear-gradient(135deg,#FFC93C 0 .45em,#FF5A5F .45em .9em)",
+          background: tiny
+            ? "repeating-linear-gradient(135deg,#FFC93C 0 .9em,#FF5A5F .9em 1.8em)"
+            : "repeating-linear-gradient(135deg,#FFC93C 0 .45em,#FF5A5F .45em .9em)",
           fontSize: em,
         }}
       />

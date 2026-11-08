@@ -7,6 +7,7 @@ import { useAcceptInvite } from "@/lib/client/social";
 import { savePendingInvite } from "@/lib/client/invite";
 import { readOnboarding } from "@/lib/client/onboarding";
 import { Spuz } from "@/components/brand/Spuz";
+import { MySpuz } from "@/components/meta/MySpuz";
 import { Wordmark } from "@/components/brand/Wordmark";
 
 /** Invite link and QR target: opening it makes you friends with whoever shared it (FR-SO-01). */
@@ -59,7 +60,7 @@ export default function InvitePage({ params }: PageProps<"/i/[code]">) {
         </>
       ) : (
         <>
-          <Spuz mood="cheer" size={140} decorative />
+          <MySpuz mood="cheer" size={140} decorative />
           <h1 className="font-display text-[24px] font-black" role="status">
             You and {who ?? "your friend"} are friends now.
           </h1>

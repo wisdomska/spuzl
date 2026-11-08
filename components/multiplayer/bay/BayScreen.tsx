@@ -13,6 +13,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Icon } from "@/components/ui/Icon";
 import { Spuz } from "@/components/brand/Spuz";
+import { DEFAULT_SKIN, MySpuz } from "@/components/meta/MySpuz";
+import { SpuzWear } from "@/components/meta/SpuzWear";
+import { shopCopy } from "@/lib/copy/shop";
 import { YourMoveInbox, type InboxGame } from "@/components/board/YourMoveInbox";
 import { api, HttpError } from "@/lib/client/api";
 import { useBay, useEmotes, useMatchChat, useProfileGate, useServerNow } from "@/lib/client/multiplayer";
@@ -353,7 +356,14 @@ export function BayMatch({ id }: { id: string }) {
       <Screen label="Bay invite" style={{ ["--world" as string]: "var(--accent)" }}>
         <MpToast toast={toast} />
         <div className="flex flex-1 flex-col items-center gap-4 px-5 pt-[max(80px,env(safe-area-inset-top))] pb-[max(28px,env(safe-area-inset-bottom))] text-center">
-          <Spuz mood="wave" size={120} />
+          {/* The host, wearing their look */}
+          <SpuzWear
+            mood="wave"
+            size={120}
+            color={v.players[0]?.color ?? DEFAULT_SKIN}
+            hat={v.players[0]?.hat}
+            label={v.players[0] ? shopCopy.theirSpuz(v.players[0].nickname) : undefined}
+          />
           <h1 className="font-display text-[26px] font-black">
             {v.players[0]?.nickname} wants a game of {meta?.name}
           </h1>
@@ -606,7 +616,7 @@ export function BayMatch({ id }: { id: string }) {
   );
   const finished = finishedLine && (
     <div className={`bg-surface flex items-center gap-3 rounded-[18px] p-3.5 ${gap}`} role="status">
-      <Spuz mood={v.winnerId === me.id ? "party" : v.winnerId || botWon ? "sad" : "thinking"} size={56} decorative />
+      <MySpuz mood={v.winnerId === me.id ? "party" : v.winnerId || botWon ? "sad" : "thinking"} size={56} decorative />
       <span className="flex-1 text-[16px] font-semibold">{finishedLine}</span>
     </div>
   );

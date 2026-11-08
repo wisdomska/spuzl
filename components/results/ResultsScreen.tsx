@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { Spuz } from "@/components/brand/Spuz";
+import { MySpuz } from "@/components/meta/MySpuz";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { formatClear, formatNumber } from "@/lib/format";
@@ -29,7 +29,6 @@ export function ResultsScreen({
   hints,
   mistakes,
   relaxed,
-  color,
   next,
   another,
   chips = [],
@@ -41,7 +40,6 @@ export function ResultsScreen({
   hints: number;
   mistakes: number;
   relaxed: boolean;
-  color: string;
   /** primary: keep playing this game ("Next level of Trotro Jam", or "Another Coil") */
   /** playNav: the action opens another game (tap-to-board metric). */
   next: { label: string; sub?: string; aria?: string; onClick: () => void; playNav?: boolean };
@@ -100,7 +98,7 @@ export function ResultsScreen({
           animate={{ opacity: 1, transform: "translateY(0px) scale(1)" }}
           transition={instant ? { duration: 0 } : { type: "spring", duration: 0.5, bounce: 0.25 }}
         >
-          <Spuz mood={flagged ? "thinking" : "cheer"} size={140} color={color} decorative />
+          <MySpuz mood={flagged ? "thinking" : "cheer"} size={140} decorative />
         </motion.div>
       </div>
       <section className="flex flex-col gap-3.5 px-5 pt-4">

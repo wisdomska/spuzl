@@ -6,6 +6,8 @@ export interface MatchPlayerView {
   id: string;
   nickname: string;
   color: string;
+  /** R3-15: the Shop hat they wear (a public cosmetic, like the colour), null for none */
+  hat?: string | null;
   level: number;
   country: string | null;
   city: string | null;
@@ -145,6 +147,8 @@ export interface BayPlayerView {
   id: string;
   nickname: string;
   color: string;
+  /** R3-15: the Shop hat they wear, null for none (and for the bot) */
+  hat?: string | null;
   rating: number;
   seat: number;
 }

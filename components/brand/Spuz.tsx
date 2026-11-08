@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 /**
  * Spuz, the mascot. Port of design/Spuz.dc.html (geometry in em, so `size` scales everything).
@@ -91,6 +91,8 @@ export interface SpuzProps {
   style?: CSSProperties;
   /** decorative instances should be hidden from assistive tech */
   decorative?: boolean;
+  /** something worn (a Shop hat from SpuzWear), laid out in the 12 em root box and moving with the body */
+  wear?: ReactNode;
 }
 
 const INK = "#0E0F1A";
@@ -105,6 +107,7 @@ export function Spuz({
   className,
   style,
   decorative,
+  wear,
 }: SpuzProps) {
   const name: SpuzMood = typeof mood === "number" ? MOOD_NAMES[Math.max(0, Math.min(11, Math.round(mood)))] : MOODS[mood] ? mood : "idle";
   const m = MOODS[name];
@@ -517,6 +520,8 @@ export function Spuz({
                 />
               )}
             </div>
+            {/* Worn cosmetics (SpuzWear): drawn in root-box coordinates, riding the body's hop, breath and tilt. */}
+            {wear && <div style={{ left: "-1.5em", top: "-3.05em", width: "12em", height: "12em" }}>{wear}</div>}
           </div>
         </div>
         {m.confetti && (

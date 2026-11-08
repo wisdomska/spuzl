@@ -9,6 +9,7 @@ import { useNow } from "@/components/meta/useNow";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { Spuz } from "@/components/brand/Spuz";
+import { MySpuz } from "@/components/meta/MySpuz";
 import { WORLD_BY_ID } from "@/lib/catalog";
 import { useMe } from "@/lib/client/api";
 import { fiveHref, nextFiveGame, shareFiveGrid, useDailyFive, type FiveGame } from "@/lib/client/daily-five";
@@ -113,7 +114,7 @@ export function DailyFiveScreen() {
           {v.complete && grid ? (
             <section aria-labelledby="five-done" className="bg-surface flex flex-col gap-3 rounded-[20px] p-4">
               <div className="flex items-center gap-3">
-                <Spuz mood="party" size={64} decorative />
+                <MySpuz mood="party" size={64} decorative />
                 <div className="flex flex-col">
                   <h2 id="five-done" className="font-display text-[20px] font-black">
                     {T.allDoneTitle}
