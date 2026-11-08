@@ -20,17 +20,14 @@ export interface SpuzChipProps {
 
 /**
  * R3-16: a player's avatar in lists (friends, leaderboards, leagues, crews, chat, Party seats, Duel strips): a
- * small still Spuz in their skin colour wearing their hat, on a tint of that colour. It replaces the letter
+ * small still Spuz in their skin colour wearing their hat, with no backdrop of its own (owner, 8 Nov). It replaces the letter
  * avatar in the same size × size box, so nothing shifts. Decorative: the nickname beside it is the name.
  * Still (no animation) and memoised, so a 50-row leaderboard or a live race rail stays cheap.
  */
 export const SpuzChip = memo(function SpuzChip({ color, hat, size, radius, me, dim, children }: SpuzChipProps) {
   const r = radius ?? Math.round(size * 0.3);
   const face = (look: { color: string; hat: string | null }) => (
-    <span
-      className="absolute inset-0 overflow-hidden"
-      style={{ borderRadius: r, background: `color-mix(in srgb, ${look.color} 32%, var(--surface-raised))` }}
-    >
+    <span className="absolute inset-0 overflow-hidden" style={{ borderRadius: r }}>
       <SpuzWear size={size} color={look.color} hat={look.hat} still />
     </span>
   );

@@ -27,6 +27,8 @@ export function LevelRing({
       className="relative flex items-center justify-center rounded-full"
       style={{ width: size, height: size, background: `conic-gradient(var(--accent) 0 ${p}%, var(--line) ${p}% 100%)` }}
     >
+      {/* A ring, not a disc: the progress shows in a 3 px band and Spuz sits on the page colour inside it. */}
+      <span aria-hidden className="bg-bg absolute inset-[3px] rounded-full" />
       <SpuzChip color={color} hat={hat} me size={size - 8} radius={12} />
       <span
         className="num bg-accent text-on-accent absolute -right-1 -bottom-1 flex h-[22px] min-w-[22px] items-center justify-center rounded-[8px] px-1 text-[12px] font-bold"

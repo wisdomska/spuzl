@@ -212,8 +212,10 @@ function hatShape(id: HatId, size: number): ReactNode {
             background: "#0E0F1A",
           }}
         />
-        <div style={lens(2.85, 4.55, 3.1, 2.75)} />
-        <div style={lens(6.4, 4.85, 2.25, 2.3)} />
+        {/* Each lens covers its eye with room to spare, rounded corners included (the eyes are at 3.2 to 5.6 × 4.7 to
+            7.3 em and 6.65 to 8.25 × 5.3 to 7.05 em), so no eye peeks out at any size. */}
+        <div style={lens(2.6, 4.4, 3.55, 3.3)} />
+        <div style={lens(6.2, 4.6, 2.75, 2.95)} />
         <div
           style={{
             position: "absolute",
