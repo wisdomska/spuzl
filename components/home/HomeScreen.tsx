@@ -23,6 +23,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { formatCountdown, msToReset } from "@/lib/format";
 import { SidePanel } from "./SidePanel";
 import { EventBanner } from "./EventBanner";
+import { WeeklyRecapCard } from "./WeeklyRecapCard";
 import { OfflineBanner } from "@/components/pwa/OfflineBanner";
 import { BannerStack } from "@/components/notify/Banner";
 import { useNotices } from "@/lib/notify/notices";
@@ -147,6 +148,7 @@ export function HomeScreen() {
         <div className="relative z-10 flex flex-col gap-2 px-3">
           <OfflineBanner context="home" />
           <FirstTips order={HOME_TIPS} />
+          <WeeklyRecapCard />
           <EventBanner />
           {/* Streak at risk has its own designed card below; banners carry new games and league results. */}
           <BannerStack

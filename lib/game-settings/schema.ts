@@ -478,6 +478,13 @@ export const SETTINGS = {
     min: 1,
     max: 5,
   },
+  "weeklyRecap.enabled": {
+    kind: "bool",
+    group: "Features",
+    label: "Weekly recap",
+    help: "On a player's first Home visit of the week (from Monday, GMT), a card sums up last week: games cleared, best time, streak, league result and Sparks earned, with Share and Play today's Daily. Once a week, dismissible, never on play screens, and never alongside another prompt. Off: the card is hidden and the server refuses the recap and its share image.",
+    default: true,
+  },
   "streakNudge.enabled": {
     kind: "bool",
     group: "Alerts",

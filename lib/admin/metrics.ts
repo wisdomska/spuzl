@@ -115,6 +115,11 @@ export interface MetricRow {
   /** R3-09 (20261207000901): streak nudges delivered, and how many of those players cleared a board within 3 h. */
   sn_sent?: number;
   sn_cleared?: number;
+  /** R3-10 (20261207001001): weekly recap cards shown, shared, Play tapped and closed (client recorded). */
+  wr_shown?: number;
+  wr_shared?: number;
+  wr_played?: number;
+  wr_dismissed?: number;
 }
 
 export interface PracticeCounts {
@@ -177,6 +182,7 @@ export const METRIC_IDS = [
   "daily_five",
   "growth",
   "streak_nudge",
+  "weekly_recap",
 ] as const;
 export type MetricId = (typeof METRIC_IDS)[number];
 
@@ -567,6 +573,21 @@ export const METRICS: readonly MetricDef[] = [
       { key: "sent", label: "Sent", value: (r) => r.sn_sent ?? 0 },
       { key: "cleared_3h", label: "Cleared in 3 h", value: (r) => r.sn_cleared ?? 0 },
       { key: "cleared_pct", label: "Cleared %", value: (r) => rate(r.sn_cleared ?? 0, r.sn_sent ?? 0) },
+    ],
+  },
+  {
+    id: "weekly_recap",
+    title: "Weekly recap",
+    note: "Last week's recap card on Home, at most once a week per device (admin Features > Weekly recap). Shown = the card appeared (prompt_shown), Shared = shared or saved from its share sheet (share, kind recap), Played = Play today's Daily tapped, Closed = dismissed. Client recorded, anonymous.",
+    headline: (t) => pct(rate(t.wr_shared ?? 0, t.wr_shown ?? 0)),
+    sub: (t) =>
+      `shared of ${n(t.wr_shown ?? 0)} shown · ${n(t.wr_shared ?? 0)} shares, ${n(t.wr_played ?? 0)} played, ${n(t.wr_dismissed ?? 0)} closed`,
+    cols: [
+      { key: "shown", label: "Shown", value: (r) => r.wr_shown ?? 0 },
+      { key: "shared", label: "Shared", value: (r) => r.wr_shared ?? 0 },
+      { key: "share_pct", label: "Share %", value: (r) => rate(r.wr_shared ?? 0, r.wr_shown ?? 0) },
+      { key: "played", label: "Played", value: (r) => r.wr_played ?? 0 },
+      { key: "closed", label: "Closed", value: (r) => r.wr_dismissed ?? 0 },
     ],
   },
 ];

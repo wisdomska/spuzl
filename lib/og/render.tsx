@@ -7,6 +7,8 @@ import { DuelCardOG } from "./DuelCard";
 import type { DuelShareModel } from "@/lib/share/duel-card";
 import { CHALLENGE_SIZES, type ChallengeCardModel, type ChallengeFormat } from "@/lib/share/challenge-card";
 import { ChallengeCardOG } from "./ChallengeCard";
+import { RECAP_CARD_SIZE, type RecapCardModel } from "@/lib/share/recap-card";
+import { RecapCardOG } from "./RecapCard";
 
 /** Only layout comes from the query string: which frame, and full or half size (low-data mode). */
 export function parseCardQuery(url: string): { format: CardFormat; scale: 1 | 0.5 } {
@@ -73,6 +75,19 @@ export async function renderChallengeCard(
   return new ImageResponse(<ChallengeCardOG card={card} format={format} scale={scale} />, {
     width: width * scale,
     height: height * scale,
+    fonts: await ogFonts(),
+    headers: {
+      "cache-control": `public, max-age=${cacheSeconds}, s-maxage=${cacheSeconds * 12}, stale-while-revalidate=86400`,
+      "x-robots-tag": "noindex",
+    },
+  });
+}
+
+/** Weekly recap story card (1080 × 1920, or half size). A finished week's numbers barely move, so the cache is long. */
+export async function renderRecapCard(card: RecapCardModel, scale: 1 | 0.5 = 1, cacheSeconds = 300): Promise<ImageResponse> {
+  return new ImageResponse(<RecapCardOG card={card} scale={scale} />, {
+    width: RECAP_CARD_SIZE.width * scale,
+    height: RECAP_CARD_SIZE.height * scale,
     fonts: await ogFonts(),
     headers: {
       "cache-control": `public, max-age=${cacheSeconds}, s-maxage=${cacheSeconds * 12}, stale-while-revalidate=86400`,

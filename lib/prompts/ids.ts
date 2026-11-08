@@ -5,10 +5,11 @@
  * Priority (first wins when two prompts want the same screen visit, see `lib/prompts/queue.ts`):
  * 1. `save_streak`: a guest's progress is at stake, and it shows in place on the result they just earned;
  * 2. `alerts`: the notification ask, earned by a social moment or a streak (its trigger waits, so it can yield);
- * 3. `low_data`: the low-data suggestion (once per session, it can wait for the next screen);
- * 4. `event`: the seasonal event banner on Home (ambient; it comes back on the next Home visit).
+ * 3. `weekly_recap`: last week's recap card on Home (R3-10; once a week, from Monday GMT, it can wait for a later visit);
+ * 4. `low_data`: the low-data suggestion (once per session, it can wait for the next screen);
+ * 5. `event`: the seasonal event banner on Home (ambient; it comes back on the next Home visit).
  */
-export const PROMPT_IDS = ["save_streak", "alerts", "low_data", "event"] as const;
+export const PROMPT_IDS = ["save_streak", "alerts", "weekly_recap", "low_data", "event"] as const;
 export type PromptId = (typeof PROMPT_IDS)[number];
 
 /** Highest priority first. */
@@ -25,6 +26,7 @@ export type LowDataTrigger = (typeof LOW_DATA_TRIGGERS)[number];
 export const PROMPT_TRIGGERS = {
   save_streak: ["clears"],
   alerts: ALERTS_TRIGGERS,
+  weekly_recap: ["week"],
   low_data: LOW_DATA_TRIGGERS,
   event: ["live"],
 } as const satisfies Record<PromptId, readonly string[]>;
@@ -33,6 +35,7 @@ export const PROMPT_TRIGGERS = {
 export const PROMPT_LABELS: Record<PromptId, string> = {
   save_streak: "Save your streak",
   alerts: "Notifications",
+  weekly_recap: "Weekly recap",
   low_data: "Low-data mode",
   event: "Event banner",
 };
@@ -44,6 +47,7 @@ export const TRIGGER_LABELS: Record<string, string> = {
   slow_loads: "slow loads in a row",
   slow_net: "2G/3G and a slow load",
   live: "event live",
+  week: "first visit of the week",
 };
 
 /** Every (prompt, trigger) pair, in priority order. */

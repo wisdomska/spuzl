@@ -5,8 +5,8 @@ import { PROMPT_PAIRS, PROMPT_PRIORITY, isPromptTrigger } from "./ids";
 const at = (s: QueueState, now: number) => decide(s, now);
 
 describe("prompt queue (R2-04)", () => {
-  it("documents the priority: save streak, alerts, low data, event", () => {
-    expect(PROMPT_PRIORITY).toEqual(["save_streak", "alerts", "low_data", "event"]);
+  it("documents the priority: save streak, alerts, weekly recap, low data, event", () => {
+    expect(PROMPT_PRIORITY).toEqual(["save_streak", "alerts", "weekly_recap", "low_data", "event"]);
   });
 
   it("grants nothing before the first visit or before the visit settles", () => {
