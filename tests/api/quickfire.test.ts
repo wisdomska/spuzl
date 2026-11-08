@@ -118,11 +118,11 @@ describe("api: Quickfire answers stay on the server", () => {
     expect(r.data).toEqual({ ok: true, verdict: { q: 0, pick: null, ms: LIMIT_MS, right: false, answer: a.correct[0], late: true } });
   });
 
-  it("can't be raced, so no race round ever answers a Quickfire question", async () => {
+  it("can be raced as a points game (round 3); answers stay on the server", async () => {
     const host = await guest(uniq("qfh_"));
     const room = await host.api("/api/v1/rooms", { json: { game: "quickfire", difficulty: "easy", maxPlayers: 2 } });
-    expect(room.status).toBe(400);
-    // Races of other games still answer guesses (tests/api/guess-tokens.test.ts covers the round rules).
+    expect(room.status, JSON.stringify(room.data)).toBe(200);
+    // Score races judge from the server's own answer log (tests/api/r3-08 covers the round rules).
     const ok = await host.api("/api/v1/rooms", { json: { game: "rungs", difficulty: "easy", maxPlayers: 2 } });
     expect(ok.status, JSON.stringify(ok.data)).toBe(200);
   });

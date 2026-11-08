@@ -1438,7 +1438,7 @@ describe("content review queue (round 3, item 12)", () => {
     await admin().from("content_items").delete().eq("source", "content_file").in("source_ref", refs);
   });
   const entries = async (show = "all") =>
-    (await S.analyst.aal2(`/api/admin/content/files?game=${GAME}&show=${show}&pageSize=100`)).data.games[0].entries as {
+    (await S.content_editor.aal2(`/api/admin/content/files?game=${GAME}&show=${show}&pageSize=100`)).data.games[0].entries as {
       index: number;
       state: string;
       edit?: Record<string, unknown>;
@@ -1452,7 +1452,8 @@ describe("content review queue (round 3, item 12)", () => {
     expect(tt).toMatchObject({ codeFlag: true, needsReview: true });
     expect(tt.reviewed).toBeLessThan(tt.total);
     expect(r.data.games.some((g: { game: string }) => g.game === "five")).toBe(false); // owner-approved in code
-    expect((await S.analyst.aal2("/api/admin/content/files")).data.canReview).toBe(false);
+    // content is for owners and content editors only: analysts and moderators are refused
+    expect((await S.analyst.aal2("/api/admin/content/files")).status).toBe(403);
     expect((await S.moderator.aal2("/api/admin/content/files")).status).toBe(403);
   });
 
@@ -1534,10 +1535,10 @@ describe("content review queue (round 3, item 12)", () => {
   });
 
   it("previews the board an entry builds for one-entry games, and the history is append-only", async () => {
-    const b = await S.analyst.aal2("/api/admin/content/files/preview?game=hunch&index=0");
+    const b = await S.content_editor.aal2("/api/admin/content/files/preview?game=hunch&index=0");
     expect(b.status).toBe(200);
     expect(b.data.board.puzzle).toBeTruthy();
-    expect((await S.analyst.aal2(`/api/admin/content/files/preview?game=${GAME}&index=0`)).data.board).toBeNull();
+    expect((await S.content_editor.aal2(`/api/admin/content/files/preview?game=${GAME}&index=0`)).data.board).toBeNull();
     const { error } = await admin().from("content_reviews").delete().in("source_ref", refs);
     expect(error).not.toBeNull();
   });

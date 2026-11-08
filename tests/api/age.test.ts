@@ -177,11 +177,12 @@ describe("age: the gates follow the derived band", () => {
     if (error) throw error;
   };
 
-  it("under 16: no Quick Match, no friend requests by name; both open when the band moves to 16 to 17", async () => {
+  it("under 16: Quick Match in the 13 to 15 pool, no friend requests by name; requests open at 16 to 17", async () => {
     const adult = await guest(uniq("gt_"));
     const kid = await member("13-15");
     const nick = (await admin().from("players").select("nickname").eq("id", adult.userId).single()).data!.nickname;
-    expect((await kid.api("/api/v1/duel/queue", { json: {} })).status).toBe(403);
+    expect((await kid.api("/api/v1/duel/queue", { json: {} })).status).not.toBe(403); // round 3: their own pool
+    await kid.api("/api/v1/duel/queue", { method: "DELETE" });
     expect((await kid.api("/api/v1/friends", { json: { nickname: nick } })).data.error).toBe("invite_only");
     await correct(kid.userId, "16-17");
     expect((await kid.api("/api/v1/me")).data.age_band).toBe("16-17");

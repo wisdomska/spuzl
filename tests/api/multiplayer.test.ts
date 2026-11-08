@@ -196,10 +196,11 @@ describe("api: duel", () => {
     expect(v.bot.name).toBe("Practice bot");
   });
 
-  it("keeps 13 to 15 year olds out of Quick Match", async () => {
+  it("lets 13 to 15 year olds into Quick Match, in their own pool (round 3, owner decision)", async () => {
     const g = await guest();
     await g.api("/api/v1/profile", { json: { nickname: uniq("yg_"), ...birthFor("13-15"), color: "#2FD3E0" } });
-    expect((await g.api("/api/v1/duel/queue", { json: {} })).status).toBe(403);
+    expect((await g.api("/api/v1/duel/queue", { json: {} })).status).not.toBe(403);
+    await g.api("/api/v1/duel/queue", { method: "DELETE" });
   });
 });
 
