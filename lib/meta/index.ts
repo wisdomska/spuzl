@@ -1,18 +1,17 @@
 /**
- * Meta-screen rules: badge progress, quest periods, archive calendar, School Cup, leaderboard scopes, shop.
+ * Meta-screen rules: badge progress, quest periods, archive calendar, leaderboard scopes, shop.
  * Pure functions only (unit tested in lib/meta/meta.test.ts).
  */
-import { GAMES, WORLD_BY_ID, gamesInWorld, type GameMeta, type WorldId } from "@/lib/catalog";
+import { WORLD_BY_ID, gamesInWorld, type WorldId } from "@/lib/catalog";
 import type { BadgeDef } from "@/lib/gamification/badges";
 import type { QuestDef } from "@/lib/gamification/quests";
 
 // ---------- leaderboards ----------
-export const SCOPES = ["friends", "crew", "school", "city", "country", "global"] as const;
+export const SCOPES = ["friends", "crew", "city", "country", "global"] as const;
 export type Scope = (typeof SCOPES)[number];
 export const SCOPE_LABEL: Record<Scope, string> = {
   friends: "Friends",
   crew: "Crew",
-  school: "School",
   city: "City",
   country: "Country",
   global: "Global",
@@ -156,37 +155,7 @@ export function shortDate(date: string): string {
   return d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }).replace(",", "");
 }
 
-// ---------- School Cup ----------
-/**
- * Classroom mode hides the action courses (the Phaser games, once Rage Ridge, now in Arcade) and photosensitive
- * games (T1: "Hidden in classroom mode").
- */
-export function classroomAllowed(g: GameMeta): boolean {
-  return g.engine !== "phaser" && !g.photosensitive;
-}
-export const CLASSROOM_GAMES = GAMES.filter(classroomAllowed);
-export const MAX_CUP_GAMES = 5;
-
-/** A run starts on a Monday, this week or later, and ends within its week. */
-export function validRun(weekStart: string, endsOn: string, today: string): string | null {
-  const ws = new Date(weekStart + "T00:00:00Z");
-  if (Number.isNaN(ws.getTime()) || ws.getUTCDay() !== 1) return "The run starts on a Monday.";
-  const thisMonday = new Date(today + "T00:00:00Z");
-  thisMonday.setUTCDate(thisMonday.getUTCDate() - ((thisMonday.getUTCDay() + 6) % 7));
-  if (ws < thisMonday) return "Pick this week or a later one.";
-  const span = Math.round((Date.parse(endsOn) - ws.getTime()) / 86_400_000);
-  if (!(span >= 0 && span <= 6)) return "The run ends within its week.";
-  return null;
-}
-
-/** Next Monday on or after a date. */
-export function nextMonday(today: string): string {
-  const d = new Date(today + "T00:00:00Z");
-  const add = (8 - d.getUTCDay()) % 7;
-  d.setUTCDate(d.getUTCDate() + add);
-  return d.toISOString().slice(0, 10);
-}
-
+// ---------- dates ----------
 export function addDays(date: string, n: number): string {
   const d = new Date(date + "T00:00:00Z");
   d.setUTCDate(d.getUTCDate() + n);

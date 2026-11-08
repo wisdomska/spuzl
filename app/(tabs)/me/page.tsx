@@ -36,7 +36,7 @@ export default function MePage() {
   const d = me.data;
   const p = q.data;
   const monthName = new Date(month + "-01T00:00:00Z").toLocaleDateString("en-GB", { month: "long", timeZone: "UTC" });
-  const sub = [p?.place.school, p?.place.city, d?.rank.name].filter(Boolean).join(" · ");
+  const sub = [p?.place.city, d?.rank.name].filter(Boolean).join(" · ");
 
   return (
     <TabPage label="Your profile">

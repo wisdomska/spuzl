@@ -109,10 +109,9 @@ export interface MetricRow {
   go_bot_won?: number;
   go_bot_lost?: number;
   go_bot_draw?: number;
-  /** R2-P5 (20261204000701): Party TV views, sign-in streak shields granted, school or campus league joins. */
+  /** R2-P5 (20261204000701): Party TV views and sign-in streak shields granted. */
   gr_tv_views?: number;
   gr_shields?: number;
-  gr_school_joins?: number;
 }
 
 export interface PracticeCounts {
@@ -545,14 +544,13 @@ export const METRICS: readonly MetricDef[] = [
   },
   {
     id: "growth",
-    title: "Party TV, streak shields and school leagues",
-    note: "TV views = times the big-screen Party view loaded a room (party_tv_view). Shields = guests who signed in from Save your streak and got the free Streak Freeze (streak_shield, once per player). School joins = players who picked their school or campus league (school_join). Client recorded, anonymous.",
+    title: "Party TV and streak shields",
+    note: "TV views = times the big-screen Party view loaded a room (party_tv_view). Shields = guests who signed in from Save your streak and got the free Streak Freeze (streak_shield, once per player). Client recorded, anonymous.",
     headline: (t) => n(t.gr_tv_views ?? 0),
-    sub: (t) => `Party TV views · ${n(t.gr_shields ?? 0)} streak shields · ${n(t.gr_school_joins ?? 0)} school joins`,
+    sub: (t) => `Party TV views · ${n(t.gr_shields ?? 0)} streak shields`,
     cols: [
       { key: "tv_views", label: "TV views", value: (r) => r.gr_tv_views ?? 0 },
       { key: "shields", label: "Streak shields", value: (r) => r.gr_shields ?? 0 },
-      { key: "school_joins", label: "School joins", value: (r) => r.gr_school_joins ?? 0 },
     ],
   },
 ];

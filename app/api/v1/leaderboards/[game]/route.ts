@@ -35,7 +35,7 @@ interface Row {
 
 /**
  * GET /api/v1/leaderboards/:game?scope=&date= (game = a game id or "overall").
- * Scopes: friends, crew, school, city, country, global. Verified Daily results only; flagged results,
+ * Scopes: friends, crew, city, country, global. Verified Daily results only; flagged results,
  * banned players and test accounts never show. "You" is always returned for pinning.
  */
 export const GET = handle(async (req: Request, ctx: RouteContext<"/api/v1/leaderboards/[game]">) => {
@@ -52,20 +52,14 @@ export const GET = handle(async (req: Request, ctx: RouteContext<"/api/v1/leader
   const { admin, player } = await requirePlayer();
 
   // Scopes that need something about you first: say what, so the screen can show the right empty state.
-  const { data: me } = await admin.from("players").select("school_id, city, country").eq("id", player.id).single();
+  const { data: me } = await admin.from("players").select("city, country").eq("id", player.id).single();
   let context: string | null = null;
-  let needs: "crew" | "school" | "city" | "country" | null = null;
+  let needs: "crew" | "city" | "country" | null = null;
   if (q.scope === "crew") {
     const { data: cm } = await admin.from("crew_members").select("crews(name)").eq("player_id", player.id).maybeSingle();
     const crew = (cm?.crews as unknown as { name: string } | null)?.name;
     if (!crew) needs = "crew";
     else context = crew;
-  } else if (q.scope === "school") {
-    const { data: s } = me?.school_id
-      ? await admin.from("schools").select("name, verified_by").eq("id", me.school_id).maybeSingle()
-      : { data: null };
-    if (!s?.verified_by) needs = "school";
-    else context = s.name;
   } else if (q.scope === "city") {
     if (!me?.city) needs = "city";
     else context = me.city;

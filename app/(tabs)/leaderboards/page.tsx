@@ -15,12 +15,6 @@ import { PLAY_NAV } from "@/lib/analytics/play-nav";
 
 const NEEDS: Record<NonNullable<BoardRes["needs"]>, { title: string; body: string; href: string; cta: string }> = {
   crew: { title: "No crew yet", body: "Start one or join with a code, then race your crew every day.", href: "/crews", cta: "Find a crew" },
-  school: {
-    title: "No school board yet",
-    body: "Join your class challenge with the code your teacher shares.",
-    href: "/school-cup",
-    cta: "Enter a class code",
-  },
   city: {
     title: "Add your city",
     body: "Pick your city in Settings to see who's fastest near you.",
@@ -46,7 +40,7 @@ function valueLabel(r: BoardRow, scoring: BoardRes["scoring"]) {
   return `time ${formatClock(r.value)}`;
 }
 
-/** S1 Leaderboards: per game per day and overall; friends, crew, school, city, country, global; "you" pinned. */
+/** S1 Leaderboards: per game per day and overall; friends, crew, city, country, global; "you" pinned. */
 export default function LeaderboardsPage() {
   const today = gmtDate();
   const [scope, setScope] = useState<Scope>("friends");

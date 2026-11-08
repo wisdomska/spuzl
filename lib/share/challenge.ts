@@ -7,7 +7,7 @@ import { SHARE_DOMAIN } from "./text";
 
 /**
  * The challenge card for a code, from the challenge row and the sender's player row (nickname, colour, equipped
- * hat; never city, level, school or age). Null while "features.challenges" is off, for an unknown, expired or
+ * hat; never city, level or age). Null while "features.challenges" is off, for an unknown, expired or
  * retired-game challenge, or a banned sender: link previews then fall back to the site card.
  */
 export async function loadChallengeCard(admin: SupabaseClient, raw: string): Promise<ChallengeCardModel | null> {

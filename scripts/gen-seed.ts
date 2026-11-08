@@ -68,7 +68,6 @@ const flags = [
   ["duels", true],
   ["party", true],
   ["board_bay_live", true],
-  ["school_cup", true],
   ["crews", true],
   ["music", true],
   ["maintenance", false],

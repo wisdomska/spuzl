@@ -502,12 +502,6 @@ select {
 [data-motion="reduce"] .claim-pop {
   animation: none;
 }
-/* TV mode (School Cup class board): fixed 1280 × 720 stage scaled to the screen. */
-.tv-stage {
-  width: 1280px;
-  height: 720px;
-  transform-origin: top left;
-}
 /* Static pages (How to play, Fair play, Privacy, Terms, Contact): readable prose column. */
 .info-prose {
   display: flex;

@@ -61,7 +61,7 @@ describe("challengeCard", () => {
 
   it("prints nothing personal beyond the nickname", () => {
     const text = JSON.stringify(challengeCard(base));
-    for (const k of ["city", "level", "school", "birth", "age"]) expect(text).not.toContain(k);
+    for (const k of ["city", "level", "birth", "age"]) expect(text).not.toContain(k);
   });
 
   it("has the link preview and story sizes", () => {

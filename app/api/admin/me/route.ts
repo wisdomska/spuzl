@@ -7,11 +7,10 @@ export const GET = handle(async () => {
   const ctx = await requireAdmin();
   const permissions = (Object.keys(PERMISSIONS) as Permission[]).filter((p) => can(ctx.role, p));
   const head = { count: "exact" as const, head: true };
-  const [puzzles, reports, flagged, schools] = await Promise.all([
+  const [puzzles, reports, flagged] = await Promise.all([
     ctx.db.from("puzzles").select("id", head),
     can(ctx.role, "moderation.read") ? ctx.db.from("reports").select("id", head).eq("status", "open") : null,
     can(ctx.role, "moderation.read") ? ctx.db.from("attempts").select("id", head).eq("status", "flagged") : null,
-    can(ctx.role, "schools.read") ? ctx.db.from("schools").select("id", head).is("verified_by", null) : null,
   ]);
   return ok({
     id: ctx.user.id,
@@ -21,7 +20,6 @@ export const GET = handle(async () => {
     counts: {
       puzzles: puzzles.count ?? 0,
       moderation: reports && flagged ? (reports.count ?? 0) + (flagged.count ?? 0) : null,
-      schools: schools ? (schools.count ?? 0) : null,
     },
   });
 });

@@ -13,7 +13,6 @@ import { Icon } from "@/components/ui/Icon";
 import { formatLeft } from "@/lib/leagues";
 import { LeagueInvite } from "@/components/meta/LeagueInvite";
 import { leaguesCopy } from "@/lib/copy/leagues";
-import { SchoolLeague } from "@/components/leagues/SchoolLeague";
 
 /** L1 Weekly league: 30 players, top 7 promote, bottom 5 demote, arrows on the zones, countdown to reset. */
 export default function LeaguesPage() {
@@ -109,7 +108,6 @@ export default function LeaguesPage() {
           )}
         </>
       )}
-      <SchoolLeague />
       <nav aria-label="Compete" className="flex gap-2 pt-2">
         {dailiesOn && (
           <Link

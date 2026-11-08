@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.39.0 (8 November 2026)
+
+### For players
+
+- **Two Truths and a Lie is on.** Find the lie among three statements; every round tells you what's true instead.
+  All ages, picks only, no typing.
+- **Schools and campuses are gone, everywhere.** School and campus leagues, the School Cup (class challenges with a
+  teacher's code), the school on your profile, the School leaderboard and the "Top of the Class" badge are removed.
+  Nobody had joined a school or a class, so no one loses anything.
+
+### For admins
+
+- The Schools page and the schools permissions are gone from the console, with the league table, its CSV export
+  and the school-join count on Metrics; that Metrics card is now "Party TV and streak shields".
+
+### Behind the scenes
+
+- Migrations `20261206000101_remove_school_leagues` and `20261206000201_remove_schools` drop the league and School
+  Cup functions, the school tables and columns, the School badge and the School Cup flag.
+
 ## 1.38.1 (7 November 2026)
 
 ### For players

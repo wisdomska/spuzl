@@ -14,7 +14,7 @@ interface NavItem {
   label: string;
   icon: string;
   perm: Permission;
-  badge?: "puzzles" | "moderation" | "schools";
+  badge?: "puzzles" | "moderation";
 }
 
 const S = adminCopy.shell;
@@ -31,7 +31,6 @@ const NAV: NavItem[] = [
   { href: "/admin/join-requests", label: N.joinRequests, icon: "hand-waving", perm: "joinlog.read" },
   { href: "/admin/liveops", label: N.liveops, icon: "pulse", perm: "liveops.read" },
   { href: "/admin/metrics", label: N.metrics, icon: "chart-bar", perm: "metrics.read" },
-  { href: "/admin/schools", label: N.schools, icon: "graduation-cap", perm: "schools.read", badge: "schools" },
   { href: "/admin/shop", label: N.shop, icon: "storefront", perm: "catalog.read" },
   { href: "/admin/events", label: N.events, icon: "confetti", perm: "events.read" },
   { href: "/admin/content", label: N.content, icon: "note-pencil", perm: "content.read" },
@@ -42,7 +41,7 @@ const NAV: NavItem[] = [
   { href: "/admin/team", label: N.team, icon: "users-three", perm: "team.manage" },
 ];
 
-const BADGE_COLOR = { puzzles: "text-muted", moderation: "text-danger", schools: "text-gold" } as const;
+const BADGE_COLOR = { puzzles: "text-muted", moderation: "text-danger" } as const;
 
 export function AdminShell({ role, email, children }: { role: Role; email: string | null; children: ReactNode }) {
   const path = usePathname();

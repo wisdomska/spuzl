@@ -61,7 +61,7 @@ export interface BoardRes {
   date: string;
   scope: Scope;
   scoring?: "time" | "score" | "overall";
-  needs: "crew" | "school" | "city" | "country" | null;
+  needs: "crew" | "city" | "country" | null;
   context: string | null;
   rows: BoardRow[];
   me: (BoardRow & { top: number }) | null;
@@ -183,7 +183,7 @@ export interface ProfileRes {
   clears: number;
   duelRating: number | null;
   worlds: { world: string; rating: number | null; rank: { name: string; division: string; emblem: string } | null }[];
-  place: { city: string | null; country: string | null; school: string | null };
+  place: { city: string | null; country: string | null };
   calendar: { month: string; days: { date: string; state: "full" | "played" | "frozen" | "missed" | "future" }[] };
   games: GameStatDTO[];
   badges: BadgesRes;
@@ -210,23 +210,6 @@ export interface CrewPage {
   city: string | null;
   clash: { week: number; endsInMs: number; us: number; them: number; opponent: string } | null;
   carry: { pos: number; id: string; nickname: string; color: string; xp: number; me: boolean }[];
-}
-export interface CupDTO {
-  id: string;
-  className: string;
-  school: string | null;
-  games: string[];
-  weekStart: string;
-  endsOn: string | null;
-  relaxed: boolean;
-  code: string | null;
-}
-export interface CupBoard extends CupDTO {
-  teacher: string | null;
-  endsInMs: number;
-  startsInMs: number;
-  isTeacher: boolean;
-  rows: { pos: number; id: string; nickname: string; color: string; clears: number; timeMs: number; me: boolean }[];
 }
 export interface ArchiveRes {
   game: string;
@@ -264,9 +247,6 @@ export const usePlayer = (nickname: string) =>
 export const useMyCrew = () =>
   useGet<{ crew: { id: string; name: string; color: string; code: string; role: string } | null }>(["crew", "mine"], "/api/v1/crews");
 export const useCrew = (id: string) => useGet<CrewPage>(["crew", id], `/api/v1/crews/${id}`);
-export const useCups = () => useGet<{ canTeach: boolean; teaching: CupDTO[]; joined: CupDTO[] }>(["cups"], "/api/v1/school-cup");
-export const useCup = (id: string, refetchInterval?: number) =>
-  useGet<CupBoard>(["cup", id], `/api/v1/school-cup/${id}`, { refetchInterval });
 export const useArchive = (game: string, month: string) =>
   useGet<ArchiveRes>(["archive", game, month], `/api/v1/archive?game=${game}&month=${month}`);
 
@@ -379,13 +359,6 @@ export const useCreateCrew = () =>
   useAct((name: string) => api<{ id: string; code: string }>("/api/v1/crews", { json: { name } }), [["crew"]]);
 export const useJoinCrew = () => useAct((code: string) => api<{ id: string }>("/api/v1/crews/join", { json: { code } }), [["crew"]]);
 export const useLeaveCrew = () => useAct(() => api("/api/v1/crews/leave", { method: "POST" }), [["crew"]]);
-export const useCreateCup = () =>
-  useAct(
-    (input: { schoolCode: string; className: string; games: string[]; weekStart: string; endsOn: string; relaxed: boolean }) =>
-      api<{ id: string; code: string }>("/api/v1/school-cup", { json: input }),
-    [["cups"]],
-  );
-export const useJoinCup = () => useAct((code: string) => api<{ id: string }>("/api/v1/school-cup/join", { json: { code } }), [["cups"]]);
 export const usePatchProfile = () =>
   useAct(
     (input: { settings?: Record<string, unknown>; hideActivity?: boolean; country?: string | null; city?: string | null }) =>

@@ -6,7 +6,6 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { playableGame } from "@/lib/catalog";
 import { isOnboardingStep } from "@/lib/analytics/onboarding";
 import { isPromptTrigger } from "@/lib/prompts/ids";
-import { SCHOOL_KINDS } from "@/lib/schools";
 
 const label = z.string().regex(/^[a-z_]{1,16}$/);
 const Metric = z
@@ -33,10 +32,9 @@ const Metric = z
       "practice_skip",
       // Full games ended (R2-ADMIN): mode bay or bot, kind won, lost or draw
       "game_over",
-      // R2-P5: Party TV views, sign-in streak shields, school league joins (kind school or campus)
+      // R2-P5: Party TV views and sign-in streak shields
       "party_tv_view",
       "streak_shield",
-      "school_join",
     ]),
     game: z
       .string()
@@ -59,10 +57,6 @@ const Metric = z
       m.name !== "game_over" ||
       (m.game !== undefined && (m.mode === "bay" || m.mode === "bot") && ["won", "lost", "draw"].includes(m.kind ?? "")),
     "game_over needs the game, mode bay or bot, and kind won, lost or draw",
-  )
-  .refine(
-    (m) => m.name !== "school_join" || m.kind === undefined || (SCHOOL_KINDS as readonly string[]).includes(m.kind),
-    "school_join kind is school or campus",
   )
   .refine((m) => m.name !== "onboarding_step" || isOnboardingStep(m.kind), "onboarding_step needs a known step as kind")
   .refine((m) => !m.name.startsWith("hint_") || m.name === "hint_cancel" || m.kind === "confirm" || m.kind === "direct", {

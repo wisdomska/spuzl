@@ -11,7 +11,7 @@ export interface AdminMe {
   email: string | null;
   role: Role;
   permissions: Permission[];
-  counts: { puzzles: number; moderation: number | null; schools: number | null };
+  counts: { puzzles: number; moderation: number | null };
 }
 export const useAdminMe = () => useQuery({ queryKey: ["admin", "me"], queryFn: () => api<AdminMe>("/api/admin/me"), staleTime: 60_000 });
 

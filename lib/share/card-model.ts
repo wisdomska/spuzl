@@ -325,7 +325,7 @@ export function favouriteWorld(stats: { game: string; clears: number }[]): World
 
 /**
  * The player's status card. Pure: the loader fills the input from database rows. Privacy rules live here so
- * the image and the share text agree: nickname only (never city, school, email or age), no level or rank for
+ * the image and the share text agree: nickname only (never city, email or age), no level or rank for
  * under-16s, no streak or favourite world while activity is hidden.
  */
 export function statusCard(i: StatusCardInput): StatusCardModel {

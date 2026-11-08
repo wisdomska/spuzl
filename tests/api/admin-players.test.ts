@@ -134,13 +134,13 @@ describe("players: personal data", () => {
     expect(partial.data.total).toBe(0);
   });
 
-  it("never returns location or school", async () => {
+  it("never returns location", async () => {
     await admin().from("players").update({ city: "Kumasi", country: "GH" }).eq("id", p.userId);
     const d = await S.owner.aal2(`/api/admin/players/${p.userId}/detail`);
     const l = await S.owner.aal2(`/api/admin/players?q=${p.nickname}`);
     for (const body of [JSON.stringify(d.data), JSON.stringify(l.data)]) {
       expect(body).not.toContain("Kumasi");
-      expect(body).not.toMatch(/"(city|country|school_id)"/);
+      expect(body).not.toMatch(/"(city|country)"/);
     }
   });
 });

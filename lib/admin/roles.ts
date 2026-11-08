@@ -32,8 +32,6 @@ export const PERMISSIONS = {
   "moderation.write": MOD,
   /** R2-13: the join-approval log for under-16 hosts' friends-only rooms (who asked, host, room, outcome, time). */
   "joinlog.read": MOD,
-  "schools.read": MOD,
-  "schools.write": MOD,
   "liveops.read": ["owner", "analyst", "moderator", "content_editor"],
   "flags.read": ["owner", "content_editor", "analyst"],
   "flags.write": ["owner"],

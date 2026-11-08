@@ -76,7 +76,7 @@ select is((select x ->> 'email' from jsonb_array_elements(pg_temp.list('{"accoun
 select is((select x ->> 'email' from jsonb_array_elements(pg_temp.list('{"account": "email"}', 'joined', 'desc', true) -> 'rows') x),
   'jane.doe@example.com', 'full email with it');
 select ok(not exists (select 1 from jsonb_array_elements(pg_temp.list('{}', 'joined', 'desc', true) -> 'rows') x
-  where x ? 'city' or x ? 'country' or x ? 'school_id' or x ? 'email_raw'), 'no place, school or raw email fields in the list');
+  where x ? 'city' or x ? 'country' or x ? 'email_raw'), 'no place or raw email fields in the list');
 
 -- ---------- actions and their audit rows ----------
 select is((public.svc_admin_grant_sparks('00000000-0000-0000-0000-0000000d0001', '00000000-0000-0000-0000-0000000d0009', 250, 'support refund') ->> 'after')::int,

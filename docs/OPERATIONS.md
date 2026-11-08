@@ -121,7 +121,7 @@ Notes:
 | -------------- | ------------------------------------------------------------------------------------------------------ |
 | owner          | Everything, including Sparks prices, feature flags, the team and approving `content.ts` entries.       |
 | content_editor | Calendar (approve, lock, regenerate, Swap Daily, schedule), content editor and review, quests, badges. |
-| moderator      | Reports, nicknames, flagged scores, bans and resets, school verification.                              |
+| moderator      | Reports, nicknames, flagged scores, bans and resets.                                                   |
 | analyst        | Live ops, audit log, read-only calendar, flags and catalogue.                                          |
 
 The server checks the role on every `/api/admin` route; the UI only hides what a role cannot do.

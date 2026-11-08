@@ -153,7 +153,7 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 - **Admin cascade audit (R2-ADMIN), left out or partial** (full table: `docs/qa/ADMIN_CASCADE_R2.md`):
   - **Rule overrides, places still on the catalog text:** the practice round's coaching hint (built on the server in
     `app/api/v1/guided/[game]/route.ts`), the Duel queue rules card and next-game card (`DuelScreen`), the
-    `/how-to-play` page, the Play page's meta description and the School Cup game picker's card copy. Wiring them needs `loadGamesMeta()` on those server
+    `/how-to-play` page, the Play page's meta description. Wiring them needs `loadGamesMeta()` on those server
     paths (one extra read per hint or page) or `useGameCopy` in the Duel cards.
   - **Icons:** the Library page previews each tile; editing needs an asset upload and the 3D pre-render
     (`scripts/prerender-3d.mjs`), so icons still change in code.
@@ -176,8 +176,5 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 - **Share images for free play (R2-P5):** before the story card, Share on a free-play clear pointed at the Daily card,
   which 404s for anything but Daily and archive clears. Story cards fix it while `features.storyCards` is on; with it
   off, free play still has no image to share.
-- **School league policy (R2-P5):** under-16s join a school only through a class code, and the public table drops
-  schools with fewer than `schoolLeagues.minPlayers` active players. Whether a small school's average is still too
-  revealing (for example 3 players in one class) is a policy call for the owner.
 - **Party TV for under-16 hosts (R2-P5):** the big-screen view is refused for hosts under 16 (their rooms are friends
   only, R2-13). If teachers under 16 ever host classroom rooms, this needs a product decision.

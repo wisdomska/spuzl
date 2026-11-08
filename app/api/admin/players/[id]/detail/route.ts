@@ -8,7 +8,7 @@ const Id = z.string().uuid();
 /**
  * GET /api/admin/players/:id/detail: the player detail page (profile, account type and linked identities, stats,
  * recent attempts, reports made and received, moderation history, league, inventory, Sparks ledger and the audit
- * trail). Email masked unless the role holds players.pii; no location or school.
+ * trail). Email masked unless the role holds players.pii; no location.
  */
 export const GET = handle(async (_req: Request, rc: RouteContext<"/api/admin/players/[id]/detail">) => {
   const ctx = await requireAdmin("players.read");

@@ -347,21 +347,14 @@ function FriendsTab({ minor }: { minor: boolean }) {
               </ul>
             </section>
           )}
-          <nav aria-label="Groups" className="grid grid-cols-2 gap-2 pt-1">
+          <nav aria-label="Groups" className="grid grid-cols-1 gap-2 pt-1">
             <Link href="/crews" className="press bg-surface flex h-14 items-center gap-2.5 rounded-[16px] px-3.5 text-[15px] font-semibold">
               <Icon name="users-three" size={20} className="text-accent" />
               Crew
             </Link>
             <Link
-              href="/school-cup"
-              className="press bg-surface flex h-14 items-center gap-2.5 rounded-[16px] px-3.5 text-[15px] font-semibold"
-            >
-              <Icon name="graduation-cap" size={20} className="text-accent" />
-              School Cup
-            </Link>
-            <Link
               href="/bay"
-              className="press bg-surface col-span-2 flex min-h-14 items-center gap-2.5 rounded-[16px] px-3.5 py-2 text-[15px] font-semibold"
+              className="press bg-surface flex min-h-14 items-center gap-2.5 rounded-[16px] px-3.5 py-2 text-[15px] font-semibold"
             >
               <Icon name="horse" size={20} className="text-accent" />
               <span className="flex min-w-0 flex-1 flex-col">

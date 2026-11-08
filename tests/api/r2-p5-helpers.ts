@@ -4,7 +4,7 @@ import { createRng } from "@/lib/rng";
 import type { Difficulty } from "@/games/types";
 import { admin, BASE, guest, uniq } from "./helpers";
 
-/** Shared helpers for the R2-P5 API tests (challenges, story cards, streak shield, school leagues). */
+/** Shared helpers for the R2-P5 API tests (challenges, story cards, streak shield). */
 
 export async function png(path: string) {
   const res = await fetch(BASE + path);

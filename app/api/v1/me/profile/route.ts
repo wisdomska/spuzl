@@ -55,7 +55,7 @@ export const GET = handle(async (req: Request) => {
     })),
     admin.from("xp_ledger").select("ref_id").eq("player_id", player.id).eq("source", "full_spuzl").gte("ref_id", first).lte("ref_id", last),
     admin.from("streak_frozen_days").select("day").eq("player_id", player.id).gte("day", first).lte("day", last),
-    admin.from("players").select("city, country, schools(name, verified_by)").eq("id", player.id).single(),
+    admin.from("players").select("city, country").eq("id", player.id).single(),
   ]);
   const playedSet = new Set((played.data ?? []).map((r) => r.date as string));
   const fullSet = new Set((full.data ?? []).map((r) => r.ref_id as string));
@@ -73,7 +73,6 @@ export const GET = handle(async (req: Request) => {
             : "missed";
     return { date, state };
   });
-  const school = place.data?.schools as unknown as { name: string; verified_by: string | null } | null;
   const pinned = badges.families
     .flatMap((f) => f.badges)
     .filter((b) => b.earned)
@@ -84,7 +83,7 @@ export const GET = handle(async (req: Request) => {
     clears: badges.stats.clears,
     duelRating: ranks.duel,
     worlds: ranks.worlds,
-    place: { city: place.data?.city ?? null, country: place.data?.country ?? null, school: school?.verified_by ? school.name : null },
+    place: { city: place.data?.city ?? null, country: place.data?.country ?? null },
     calendar: { month, days },
     games,
     badges: { families: badges.families, earned: badges.earned, total: badges.total, secretsLeft: badges.secretsLeft },

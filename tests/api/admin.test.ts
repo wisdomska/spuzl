@@ -66,8 +66,6 @@ const ROUTES: Route[] = [
   { method: "POST", path: "/api/admin/players/bulk", perm: "players.moderate" },
   { method: "POST", path: "/api/admin/players/export", perm: "players.export" },
   { method: "GET", path: "/api/admin/overview", perm: "players.read" },
-  { method: "GET", path: "/api/admin/schools", perm: "schools.read" },
-  { method: "POST", path: `/api/admin/schools/${NIL}`, perm: "schools.write" },
   { method: "GET", path: "/api/admin/liveops", perm: "liveops.read" },
   { method: "GET", path: "/api/admin/metrics", perm: "metrics.read" },
   { method: "POST", path: "/api/admin/metrics", perm: "metrics.read" },
@@ -90,12 +88,10 @@ const ROUTES: Route[] = [
   { method: "POST", path: "/api/admin/events", perm: "events.write" },
   { method: "PATCH", path: `/api/admin/events/${NIL}`, perm: "events.write" },
   { method: "DELETE", path: `/api/admin/events/${NIL}`, perm: "events.write" },
-  // R2-P5: seasonal templates (drafts), scheduling an event, the school league table and its export
+  // R2-P5: seasonal templates (drafts) and scheduling an event
   { method: "GET", path: "/api/admin/events/templates", perm: "events.read" },
   { method: "POST", path: "/api/admin/events/templates", perm: "events.write" },
   { method: "POST", path: `/api/admin/events/${NIL}/schedule`, perm: "events.write" },
-  { method: "GET", path: "/api/admin/schools/league", perm: "schools.read" },
-  { method: "POST", path: "/api/admin/schools/league", perm: "schools.read" },
 ];
 
 const S = {} as Record<Role, AdminSession>;
@@ -523,16 +519,6 @@ describe("moderation (FR-AD-05)", () => {
     const { data } = await admin().from("reports").select("id, status, handled_by").in("id", reports);
     expect(data!.find((r) => r.id === reports[0])).toMatchObject({ status: "actioned", handled_by: S.moderator.userId });
   });
-
-  it("verifies schools", async () => {
-    const { data: s } = await admin()
-      .from("schools")
-      .insert({ name: uniq("Test College "), code: uniq("C").toUpperCase() })
-      .select("id")
-      .single();
-    expect((await S.moderator.aal2(`/api/admin/schools/${s!.id}`, { json: { decision: "verify" } })).status).toBe(200);
-    expect((await S.owner.aal2(`/api/admin/schools/${s!.id}`, { json: { decision: "unverify" } })).status).toBe(200);
-  });
 });
 
 describe("live ops, flags, catalogue, audit and team (FR-AD-04, 06, 07, 08)", () => {
@@ -629,7 +615,6 @@ describe("pagination on every admin list", () => {
     { path: "/api/admin/content", who: "content_editor" },
     { path: "/api/admin/content/files?game=quads", who: "content_editor" },
     { path: "/api/admin/puzzles", who: "content_editor" },
-    { path: "/api/admin/schools", who: "moderator" },
     { path: "/api/admin/flags", who: "owner" },
     { path: "/api/admin/catalog/quests", who: "content_editor" },
     { path: "/api/admin/catalog/badges", who: "content_editor" },
@@ -773,10 +758,9 @@ describe("pagination on every admin list", () => {
     expect((await S.content_editor.aal2("/api/admin/content/files?game=quads&show=maybe")).status).toBe(400);
   });
 
-  it("puzzles, schools, flags and the catalogue page without repeats", async () => {
+  it("puzzles, flags and the catalogue page without repeats", async () => {
     const cases: { path: string; who: Role }[] = [
       { path: "/api/admin/puzzles", who: "owner" },
-      { path: "/api/admin/schools", who: "owner" },
       { path: "/api/admin/flags", who: "owner" },
       { path: "/api/admin/catalog/badges", who: "owner" },
       { path: "/api/admin/team", who: "owner" },
@@ -1354,21 +1338,20 @@ describe("Metrics added by the admin cascade audit (R2-ADMIN)", () => {
       .gte("created_at", new Date(Date.now() - 60_000).toISOString());
   });
 
-  it("counts Party TV views, streak shields and school joins, with CSV (needs 20261204000701)", async () => {
-    await seed([{ name: "party_tv_view" }, { name: "party_tv_view" }, { name: "streak_shield" }, { name: "school_join", kind: "school" }]);
+  it("counts Party TV views and streak shields, with CSV (needs 20261204000701)", async () => {
+    await seed([{ name: "party_tv_view" }, { name: "party_tv_view" }, { name: "streak_shield" }]);
     const d = await metrics();
-    expect(d.total).toMatchObject({ gr_tv_views: 2, gr_shields: 1, gr_school_joins: 1 });
+    expect(d.total).toMatchObject({ gr_tv_views: 2, gr_shields: 1 });
     const x = await S.analyst.aal2("/api/admin/metrics", { json: { metric: "growth", days: 7, end } });
-    expect(x.data.csv.trimEnd().split("\r\n").at(-1)).toBe("total,2,1,1");
+    expect(x.data.csv.trimEnd().split("\r\n").at(-1)).toBe("total,2,1");
 
     const g = await guest();
-    expect((await g.api("/api/v1/metrics", { json: { name: "school_join", kind: "campus" } })).status).toBe(204);
-    expect((await g.api("/api/v1/metrics", { json: { name: "school_join", kind: "office" } })).status).toBe(400);
+    expect((await g.api("/api/v1/metrics", { json: { name: "school_join", kind: "campus" } })).status).toBe(400); // removed
     expect((await g.api("/api/v1/metrics", { json: { name: "party_tv_view" } })).status).toBe(204);
     await admin()
       .from("client_metrics")
       .delete()
-      .in("name", ["party_tv_view", "streak_shield", "school_join"])
+      .in("name", ["party_tv_view", "streak_shield"])
       .gte("created_at", new Date(Date.now() - 60_000).toISOString());
   });
 });

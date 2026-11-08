@@ -51,7 +51,7 @@ describe("statusCard", () => {
   });
 
   it("never carries anything personal beyond the nickname", () => {
-    const withExtras = { ...base, city: "Accra", email: "a@b.c", school: "Achimota", ageBand: "16-17" } as StatusCardInput;
+    const withExtras = { ...base, city: "Accra", email: "a@b.c", ageBand: "16-17" } as StatusCardInput;
     expect(JSON.stringify(statusCard(withExtras))).not.toMatch(/Accra|a@b\.c|Achimota|16-17/);
   });
 

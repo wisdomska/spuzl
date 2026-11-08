@@ -124,16 +124,6 @@ export const BADGES: BadgeDef[] = [
     rule: { kind: "beat_friend", n: 10 },
   },
   {
-    id: "social-school",
-    family: "social",
-    tier: "gold",
-    name: "Top of the Class",
-    description: "Top your school board for a day.",
-    sparks: 50,
-    icon: "graduation-cap",
-    rule: { kind: "school_top", n: 1 },
-  },
-  {
     id: "duel-10",
     family: "duel",
     tier: "silver",

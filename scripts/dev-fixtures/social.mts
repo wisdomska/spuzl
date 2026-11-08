@@ -1,5 +1,5 @@
 /**
- * Local demo data for the social and meta screens (friends, feed, leagues, leaderboards, crews, School Cup,
+ * Local demo data for the social and meta screens (friends, feed, leagues, leaderboards, crews,
  * quests, badges, streak calendar). Dev only: refuses to run against anything but a local Supabase.
  *
  *   pnpm tsx scripts/dev-fixtures/social.mts <viewer-user-id> [--ceremony]
@@ -103,26 +103,6 @@ console.log(`demo players: ${others.length}`);
 
 // Viewer: a believable mid-game profile.
 must(await sb.from("players").update({ country: "GH", city: "Accra", sparks: 1284, xp: 9800, level: 15 }).eq("id", viewer), "viewer");
-
-// School + School Cup
-const { data: school } = await sb.from("schools").select("id").eq("code", "ACHI24").maybeSingle();
-const schoolId =
-  school?.id ??
-  must(
-    await sb
-      .from("schools")
-      .insert({ name: "Achimota School", city: "Accra", country: "GH", code: "ACHI24", verified_by: viewer })
-      .select("id")
-      .single(),
-    "school",
-  ).id;
-must(
-  await sb
-    .from("players")
-    .update({ school_id: schoolId })
-    .in("id", [viewer, ...others.slice(0, 12)]),
-  "school members",
-);
 
 // Friends: 4 accepted (with presence), 2 incoming requests.
 for (const n of ["Kofi", "Efua", "Yaw", "Zainab", "Kwame", "Adaeze"]) {
@@ -365,28 +345,4 @@ await sb.from("player_quests").upsert(
   { onConflict: "player_id,quest_id,period" },
 );
 
-// A class challenge the viewer teaches, with students from the school.
-const { data: cup } = await sb.from("school_cups").select("id").eq("teacher_id", viewer).eq("class_name", "Form 2B").maybeSingle();
-const cupId =
-  cup?.id ??
-  must(
-    await sb
-      .from("school_cups")
-      .insert({
-        school_id: schoolId,
-        teacher_id: viewer,
-        class_name: "Form 2B",
-        games: ["crownfall", "quads", "deadon"],
-        week_start: monday,
-        ends_on: new Date(Date.parse(monday) + 4 * 86_400_000).toISOString().slice(0, 10),
-        join_code: "FRM2BQ",
-      })
-      .select("id")
-      .single(),
-    "cup",
-  ).id;
-await sb.from("school_cup_members").upsert(
-  ["Kwame", "Akosua", "Kofi", "Adaeze", "Yaw", "Efua", "Zainab"].map((n) => ({ cup_id: cupId, player_id: ids[n] })),
-  { ignoreDuplicates: true },
-);
-console.log(`done. league ${leagueId}, cup ${cupId}`);
+console.log(`done. league ${leagueId}`);

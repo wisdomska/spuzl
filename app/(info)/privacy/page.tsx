@@ -41,9 +41,6 @@ export default function Privacy() {
           publicly.
         </li>
         <li>
-          <strong>School</strong>, only if you join a class challenge with a teacher&apos;s code.
-        </li>
-        <li>
           <strong>Your games.</strong> Times, hints, mistakes and the moves you made, so we can check clears and rank results fairly.
         </li>
         <li>

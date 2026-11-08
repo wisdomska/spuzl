@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BADGES } from "@/lib/gamification/badges";
-import { ALL_WORLDS, GAME_BY_ID, WORLDS, WORLD_BY_ID, gamesInWorld, isLiveWorld, type WorldId } from "@/lib/catalog";
+import { ALL_WORLDS, WORLDS, WORLD_BY_ID, gamesInWorld, isLiveWorld, type WorldId } from "@/lib/catalog";
 import { DAILY_POOL, WEEKLY_CHAIN } from "@/lib/gamification/quests";
 import {
   addDays,
@@ -8,15 +8,12 @@ import {
   badgeFamilies,
   badgeProgress,
   chainStates,
-  classroomAllowed,
   monthGrid,
-  nextMonday,
   purchaseState,
   canAfford,
   shortDate,
   tabOf,
   topPercent,
-  validRun,
   type BadgeStats,
 } from "./index";
 
@@ -117,20 +114,8 @@ describe("archive", () => {
   });
 });
 
-describe("School Cup", () => {
-  it("hides the action courses and photosensitive games in classroom mode", () => {
-    expect(classroomAllowed(GAME_BY_ID.crownfall)).toBe(true);
-    // The courses moved from Rage Ridge to Arcade; they stay hidden, and Arcade's calm games stay allowed.
-    for (const id of ["gotcha", "dash", "gauntlet"]) expect(classroomAllowed(GAME_BY_ID[id]), id).toBe(false);
-    expect(classroomAllowed(GAME_BY_ID.twins)).toBe(true);
-  });
-  it("validates the run", () => {
-    expect(validRun("2026-11-02", "2026-11-06", "2026-10-31")).toBeNull();
-    expect(validRun("2026-11-03", "2026-11-06", "2026-10-31")).toMatch(/Monday/);
-    expect(validRun("2026-10-19", "2026-10-23", "2026-10-31")).toMatch(/later/);
-    expect(validRun("2026-11-02", "2026-11-09", "2026-10-31")).toMatch(/within/);
-    expect(nextMonday("2026-10-31")).toBe("2026-11-02");
-    expect(nextMonday("2026-11-02")).toBe("2026-11-02");
+describe("dates", () => {
+  it("adds days", () => {
     expect(addDays("2026-11-02", 4)).toBe("2026-11-06");
   });
 });

@@ -66,7 +66,7 @@ export async function isAdminAccount(ctx: AdminCtx, id: string): Promise<boolean
 const MODERATION_ACTIONS = /^(player\.(ban|ban_void|unban|revoke_ranking|restore_ranking|reset|rename|signout|birth_correct)|flagged\.)/;
 
 /**
- * Everything the player detail page shows. Location (city, country) and school are never read: under-16s keep them
+ * Everything the player detail page shows. Location (city, country) is never read: under-16s keep them
  * private everywhere, and the console doesn't need them for anyone. The email is masked unless the role holds
  * players.pii; identity provider data (names, avatars, provider emails) is never returned.
  */

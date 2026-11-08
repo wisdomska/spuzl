@@ -34,7 +34,6 @@ import {
 } from "./catalog";
 import { ICONS } from "@/components/ui/icons.generated";
 import { RACE_GAMES, PARTY_GAME_IDS, isRaceGame, pickGames } from "./multiplayer/games";
-import { CLASSROOM_GAMES } from "./meta";
 import { DEFAULT_META } from "./games-meta";
 import { aboutCopy } from "./copy/about";
 import { libraryCopy } from "./copy/library";
@@ -276,7 +275,6 @@ describe("catalog: derived lists", () => {
     expect(retired(LAUNCH_IDS)).toEqual([]);
     expect(retired(RACE_GAMES.map((g) => g.id))).toEqual([]);
     expect(retired(PARTY_GAME_IDS)).toEqual([]);
-    expect(retired(CLASSROOM_GAMES.map((g) => g.id))).toEqual([]);
     expect(retired(Object.keys(DEFAULT_META))).toEqual([]);
     expect(isRaceGame("quilt")).toBe(false);
     // The random mix never deals a retired game, even when asked for one.

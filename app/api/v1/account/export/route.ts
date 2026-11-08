@@ -25,8 +25,6 @@ const OWNED: [string, string][] = [
   ["challenges", "sender_id"],
   ["challenge_results", "player_id"],
   ["ghost_runs", "player_id"],
-  ["school_cups", "teacher_id"],
-  ["school_cup_members", "player_id"],
 ];
 
 /**

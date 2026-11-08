@@ -11,7 +11,7 @@ import { favouriteWorld, statusCard, type StatusCardModel } from "./card-model";
 /**
  * The status card for one player, from live rows (the card route and GET /api/v1/me/status-card share it).
  * Null when the player is unknown or banned. Reads nickname, colour, hat, level, age band and the hide-activity
- * switch; never city, school, email or anything else personal.
+ * switch; never city, email or anything else personal.
  */
 export async function loadStatusCard(admin: SupabaseClient, playerId: string): Promise<StatusCardModel | null> {
   const [{ data: p }, { data: streak }, { data: ratings }, stats, settings] = await Promise.all([

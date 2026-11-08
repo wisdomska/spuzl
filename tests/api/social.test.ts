@@ -1,8 +1,7 @@
 import { WORLDS } from "@/lib/catalog";
 import { randomUUID } from "node:crypto";
-import { createClient } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
-import { ANON, BASE, SB_URL, admin, birthFor, guest, uniq } from "./helpers";
+import { BASE, admin, birthFor, guest, uniq } from "./helpers";
 
 /** Social and meta routes against the running dev server (API_BASE) and local Supabase. */
 const today = () => new Date().toISOString().slice(0, 10);
@@ -13,30 +12,6 @@ async function minor(nickname: string) {
   const r = await g.api("/api/v1/profile", { json: { nickname, ...birthFor("13-15"), color: "#FF8A3D" } });
   if (r.status !== 200) throw new Error(`profile ${r.status}`);
   return g;
-}
-
-/** A signed-in (non-anonymous) adult, for flows that need a real account. */
-async function member(nickname: string) {
-  const email = `${nickname.toLowerCase()}@spuzl.test`;
-  const { data, error } = await admin().auth.admin.createUser({ email, password: "pass-" + nickname, email_confirm: true });
-  if (error) throw error;
-  const sb = createClient(SB_URL, ANON, { auth: { persistSession: false } });
-  const { data: s, error: e2 } = await sb.auth.signInWithPassword({ email, password: "pass-" + nickname });
-  if (e2) throw e2;
-  const token = s.session!.access_token;
-  const api = async (path: string, init: RequestInit & { json?: unknown } = {}) => {
-    const res = await fetch(BASE + path, {
-      ...init,
-      method: init.method ?? (init.json !== undefined ? "POST" : "GET"),
-      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
-      body: init.json !== undefined ? JSON.stringify(init.json) : undefined,
-    });
-    const text = await res.text();
-    return { status: res.status, data: text ? JSON.parse(text) : null };
-  };
-  const r = await api("/api/v1/profile", { json: { nickname, ...birthFor("18+"), color: "#8B7CFF" } });
-  if (r.status !== 200) throw new Error(`profile ${r.status} ${JSON.stringify(r.data)}`);
-  return { api, userId: data.user.id };
 }
 
 describe("api: friends, blocks and reports", () => {
@@ -313,54 +288,6 @@ describe("api: crews", () => {
     expect((await a.api("/api/v1/crews/leave", { method: "POST" })).status).toBe(200);
     expect((await b.api("/api/v1/crews")).data.crew).toMatchObject({ role: "captain" });
     expect((await a.api("/api/v1/crews", { json: { name: "ab" } })).status).toBe(400);
-  });
-});
-
-describe("api: School Cup", () => {
-  it("lets a signed-in adult set up a class and students join by code", async () => {
-    const g = await guest(uniq("gs_"));
-    expect((await g.api("/api/v1/school-cup")).data.canTeach).toBe(false);
-    const teacher = await member(uniq("tch_"));
-    const code = uniq("SC")
-      .toUpperCase()
-      .replace(/[^A-Z0-9]/g, "");
-    await admin().from("schools").insert({ name: "Demo School", city: "Accra", country: "GH", code, verified_by: teacher.userId });
-    const monday = (() => {
-      const d = new Date();
-      d.setUTCDate(d.getUTCDate() + ((8 - d.getUTCDay()) % 7 || 7));
-      return d.toISOString().slice(0, 10);
-    })();
-    const friday = new Date(Date.parse(monday) + 4 * 86_400_000).toISOString().slice(0, 10);
-    const bad = await teacher.api("/api/v1/school-cup", {
-      json: { schoolCode: code, className: "Form 2B", games: ["gotcha"], weekStart: monday, endsOn: friday },
-    });
-    expect(bad.status).toBe(422);
-    expect(
-      (
-        await g.api("/api/v1/school-cup", {
-          json: { schoolCode: code, className: "Form 2B", games: ["crownfall"], weekStart: monday, endsOn: friday },
-        })
-      ).status,
-    ).toBe(403);
-    const cup = await teacher.api("/api/v1/school-cup", {
-      json: {
-        schoolCode: code,
-        className: "Form 2B",
-        games: ["crownfall", "coil", "weave"],
-        weekStart: monday,
-        endsOn: friday,
-        relaxed: true,
-      },
-    });
-    expect(cup.status).toBe(200);
-    const kid = await minor(uniq("st_"));
-    expect((await kid.api("/api/v1/school-cup/join", { json: { code: cup.data.code } })).status).toBe(200);
-    const board = await kid.api(`/api/v1/school-cup/${cup.data.id}`);
-    expect(board.data).toMatchObject({ className: "Form 2B", relaxed: true, code: null, isTeacher: false });
-    expect(board.data.rows.map((r: { id: string }) => r.id)).toEqual([kid.userId]);
-    expect((await g.api(`/api/v1/school-cup/${cup.data.id}`)).status).toBe(404);
-    const { data: p } = await admin().from("players").select("school_id").eq("id", kid.userId).single();
-    expect(p!.school_id).toBeTruthy();
   });
 });
 

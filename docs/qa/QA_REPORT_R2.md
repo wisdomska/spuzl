@@ -54,7 +54,7 @@ Source audit: `docs/audit-r2.md`. Baseline: `docs/qa/BASELINE_R2.md`. Admin casc
 | R2-19  | Shop marks what you can afford                                 | 1.36.0  | yes      | needs local DB         | ³      |
 | P5     | Challenge links, story cards, Party TV                         | 1.38.0  | yes      | production             | pass   |
 | P5     | Streak shield for guests who sign in                           | 1.38.0  | yes      | needs a test setting   | ³      |
-| P5     | School leagues, event templates, lab games, Family Draw        | 1.38.0  | yes      | off by default ⁴       | API    |
+| P5     | Event templates, lab games, Family Draw                        | 1.38.0  | yes      | off by default ⁴       | API    |
 | ADMIN  | Admin cascade (settings, audit, roles, Metrics with CSV)       | 1.37.0+ | yes      | admin specs (local)    | API    |
 | —      | Game-over card (chess, draughts, Ludo, Oware, bot)             | 1.37.1  | yes      | —                      | unit   |
 
