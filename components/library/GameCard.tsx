@@ -13,7 +13,6 @@ import { useRouter } from "next/navigation";
 import { Dialog } from "radix-ui";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
-import { LabTag } from "@/components/ui/LabTag";
 import { GameIcon3D } from "@/components/world/GameIcon3D";
 import { WORLD_BY_ID, type GameMeta, UI_ACCENT } from "@/lib/catalog";
 import { isRaceGame } from "@/lib/multiplayer/games";
@@ -108,8 +107,6 @@ export function GameCard({
                       <Icon name="timer" size={14} />
                       {durationLabel(typicalSec ?? 180)}
                     </span>
-                    {/* R3-05: a switched-on lab game says it is new and still being tuned. */}
-                    <LabTag id={meta.id} />
                   </span>
                 </div>
                 <Dialog.Close

@@ -10,7 +10,6 @@ import { WORLD_BY_ID, gamesInWorld, labGamesInWorld, type WorldId, UI_ACCENT } f
 import { useMe, useToday } from "@/lib/client/api";
 import { Island } from "@/components/home/Island";
 import { Icon } from "@/components/ui/Icon";
-import { LabTag } from "@/components/ui/LabTag";
 import { formatClock } from "@/lib/format";
 import { GameIcon3D } from "./GameIcon3D";
 import { BotEntry } from "./BotEntry";
@@ -51,9 +50,15 @@ export function WorldScreen({ id }: { id: WorldId }) {
       className="bg-bg mx-auto min-h-dvh max-w-[560px] lg:max-w-[1180px]"
       style={{ ["--world" as string]: UI_ACCENT, ["--world-ink" as string]: UI_ACCENT }}
     >
+      {/* The banner wears its world's own colour (owner, 8 Nov): Arcade red, Puzzles blue... The rest of the screen
+          (status chips, buttons) keeps the lime interface colour. */}
       <header
         className="dotgrid relative overflow-hidden pb-5"
-        style={{ backgroundColor: `color-mix(in srgb, ${UI_ACCENT} 10%, var(--bg))` }}
+        style={{
+          backgroundColor: `color-mix(in srgb, ${world.color} 18%, var(--bg))`,
+          ["--banner" as string]: world.color,
+          ["--banner-ink" as string]: world.ink,
+        }}
       >
         {/* z-10: the scaled island below would otherwise sit on top of the button and swallow taps */}
         <div className="safe-top relative z-10 px-4">
@@ -76,8 +81,8 @@ export function WorldScreen({ id }: { id: WorldId }) {
         </motion.div>
         <div className="px-5">
           <h1
-            className="font-display text-[32px] font-black [[data-theme=light]_&]:text-[var(--world-ink)]"
-            style={{ color: "var(--world)" }}
+            className="font-display text-[32px] font-black [[data-theme=light]_&]:text-[var(--banner-ink)]"
+            style={{ color: "var(--banner)" }}
           >
             {world.name}
           </h1>
@@ -120,8 +125,6 @@ export function WorldScreen({ id }: { id: WorldId }) {
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <span className="font-display text-[18px] font-extrabold">{g.name}</span>
-                    {/* R3-05: a switched-on lab game says it is new and still being tuned. */}
-                    <LabTag id={g.id} />
                   </span>
                   <span className="text-muted text-[14px] leading-[1.35]">{gameCopy(g, metaRows).blurb}</span>
                 </span>
