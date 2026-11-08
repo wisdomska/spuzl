@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.41.1 (8 November 2026)
+
+### For players
+
+- **World banners wear their world's colour.** Arcade's banner is red, Words & Quiz green, Board Games brown and so on,
+  with the world's name in that colour; buttons and status chips stay lime.
+- **The gold NEW tag is gone.** New games keep the green "New" pill on their cards.
+
 ## 1.41.0 (8 November 2026)
 
 ### For players
