@@ -38,6 +38,40 @@ Check the jobs: `select action, detail, created_at from audit_log where action l
 
 Rules of thumb that keep usage low: one realtime channel per match or room, progress throttled to 2 messages a second, Presence only in lobbies, Dailies pre-generated and cached, 3D art pre-rendered at build time.
 
+## Search and AI discovery (SEO and GEO)
+
+What crawlers see: visitors with no session cookie get the landing page at `/` (proxy.ts), every live game has a
+static page at `/games/<id>` (catalogue at `/games`), worlds show a public page with links to their games, and
+`/llms.txt` and `/llms-full.txt` describe SPUZL for AI assistants. All of it is generated from `lib/catalog.ts` and
+`lib/copy/seo.ts`, so adding or retiring a game updates the pages, sitemap and llms.txt on the next deploy. Lab
+games never get a public page.
+
+Environment variables (Vercel, Production; all optional):
+
+| Variable                               | What it does                                                                                                                      |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SITE_URL`                 | Canonical host for canonicals, sitemap, robots and JSON-LD. Defaults to `https://spuzl.vercel.app`.                               |
+| `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` | Google Search Console HTML-tag token. Defaults to the current property's token (the older `GOOGLE_SITE_VERIFICATION` also works). |
+| `NEXT_PUBLIC_BING_SITE_VERIFICATION`   | Bing Webmaster Tools `msvalidate.01` token. The tag is rendered only when set.                                                    |
+| `INDEXNOW_KEY`                         | IndexNow key (8 to 128 letters, digits or dashes). The site then serves `/<key>.txt`; unset, that path is a 404.                  |
+
+After a deploy that adds or changes public pages:
+
+1. **IndexNow** (Bing, Yandex and others): `INDEXNOW_KEY=<same key as Vercel> node scripts/seo/indexnow.mjs` (add
+   `--dry-run` to see the URL list first, `--site <url>` for another host). It checks the key file is live, reads
+   `/sitemap.xml` and posts every URL to `https://api.indexnow.org/indexnow`. 200 or 202 means received.
+2. **Google Search Console**: Sitemaps, submit `https://spuzl.vercel.app/sitemap.xml` (once; Google re-reads it). Use
+   URL Inspection, Request indexing for `/`, `/games` and a few `/games/<id>` pages. Check Enhancements for FAQ and
+   breadcrumb errors.
+3. **Bing Webmaster Tools**: add the site (or import it from Search Console), set `NEXT_PUBLIC_BING_SITE_VERIFICATION`,
+   redeploy, verify, then submit the sitemap.
+4. Spot checks: Google's Rich Results Test on a game page; `curl -A GPTBot https://spuzl.vercel.app/` shows the landing
+   page (h1 and JSON-LD), not a redirect.
+
+`robots.txt` allows everyone on public pages, names the main AI crawlers (GPTBot, OAI-SearchBot, ChatGPT-User,
+ClaudeBot, PerplexityBot, Google-Extended, Applebot-Extended, CCBot and others) with their own allow group, and keeps
+`/admin`, `/api/`, player, room, challenge, invite, dev and auth paths out. Those pages also carry `noindex`.
+
 ## Monitoring checklist (weekly)
 
 1. Vercel usage and function errors.

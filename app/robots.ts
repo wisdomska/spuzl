@@ -1,11 +1,14 @@
 import type { MetadataRoute } from "next";
+import { absoluteUrl } from "@/lib/seo/site";
+import { AI_CRAWLERS, PRIVATE_PATHS } from "@/lib/seo/crawlers";
 
-const site = process.env.NEXT_PUBLIC_SITE_URL || "https://spuzl.vercel.app";
-
-/** Crawl the public pages; keep the admin console, the API and per-player pages out of search results. */
+/** Crawl the public pages; keep the admin console, the API and per-player pages out. AI crawlers are welcome (GEO). */
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: { userAgent: "*", allow: "/", disallow: ["/admin", "/api/", "/u/", "/bay/", "/party/", "/duel/", "/challenge/", "/i/"] },
-    sitemap: `${site}/sitemap.xml`,
+    rules: [
+      { userAgent: "*", allow: "/", disallow: PRIVATE_PATHS },
+      { userAgent: AI_CRAWLERS, allow: ["/", "/llms.txt", "/llms-full.txt"], disallow: PRIVATE_PATHS },
+    ],
+    sitemap: absoluteUrl("/sitemap.xml"),
   };
 }
