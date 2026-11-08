@@ -189,3 +189,9 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   `Avatar` (Duel HUD, Party seats and standings, chat, invites, Board Bay seats), plus the Home header `LevelRing`.
   Turning those into tiny hatted Spuz needs a design call and `hat` in the friends, leaderboard, crew, chat and TV
   payloads (`SpuzWear` already draws legibly at 24 to 40 px).
+- **Hydration warning on All games, production build only (found 8 Nov, 1.40.1):** React error #418 (text mismatch)
+  on `/library` on every visit after the first in a tab, with or without the service worker; not seen on the dev
+  server, even on repeat visits. 1.40.1 fixed the visible part (durations and lab games now come from the server,
+  `components/shell/SeedQueries.tsx`; server and browser rows match), and React recovers silently, so players see no
+  change. Next step: a local production build (needs more memory than the QA container has) with React's
+  development error messages, to name the text node.
