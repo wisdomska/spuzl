@@ -4,6 +4,7 @@
  * longest wait. Pure, so the server and the tests share it.
  */
 import { TIMING } from "./constants";
+import type { QuickPool } from "./liveGate";
 
 export interface QueueEntry {
   playerId: string;
@@ -12,6 +13,8 @@ export interface QueueEntry {
   rating: number;
   region: string | null;
   enqueuedAt: number;
+  /** R3-06: the age-band pool ("u16" for 13 to 15, "open" for 16+); entries in different pools never pair */
+  pool: QuickPool;
 }
 
 /** Allowed rating gap after waiting `waitMs`: 100 at first, +25 per second, capped at 600. */
@@ -30,6 +33,8 @@ export function agreedGame(a: string | null, b: string | null): string | null {
 
 export function compatible(me: QueueEntry, other: QueueEntry, now: number): boolean {
   if (me.playerId === other.playerId) return false;
+  // Under-16s only ever meet under-16s, adults only adults: no rating window or wait widens this.
+  if (me.pool !== other.pool) return false;
   if (!gamesCompatible(me.gameId, other.gameId)) return false;
   // Either player's (wider) window is enough, so a long-waiting player can still be found.
   const window = Math.max(ratingWindow(now - me.enqueuedAt), ratingWindow(now - other.enqueuedAt));

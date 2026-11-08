@@ -9,7 +9,7 @@ import { Sheet } from "@/components/meta/Sheet";
 import { useMe } from "@/lib/client/api";
 import { useSettings } from "@/lib/settings/store";
 import { challengeLinks, isRaceGame } from "@/lib/multiplayer/games";
-import { canPlayLive } from "@/lib/multiplayer/liveGate";
+import { quickMatchPool } from "@/lib/multiplayer/liveGate";
 import { partyCopy } from "@/lib/copy/party";
 
 /*
@@ -36,21 +36,15 @@ export function GameChallengeSheet({
   onBeatMyTime?: () => void;
 }) {
   const me = useMe();
-  const youngster = !!me.data && !canPlayLive(me.data);
+  // R3-06: 13 to 15 year olds may Quick Match too; the server pairs them with players their age only.
+  const teen = !!me.data && quickMatchPool(me.data) === "u16";
   const live = useCanChallenge(meta);
   const links = challengeLinks(meta.id);
   const c = partyCopy.challenge;
   const liveRows = [
-    { key: "friend", href: links.friend, icon: "user-plus", title: c.friend, hint: c.friendHint, locked: false },
-    {
-      key: "quick",
-      href: links.quick,
-      icon: "lightning",
-      title: c.quick,
-      hint: youngster ? c.quickLocked : c.quickHint,
-      locked: youngster,
-    },
-    { key: "party", href: links.party, icon: "confetti", title: c.party, hint: c.partyHint, locked: false },
+    { key: "friend", href: links.friend, icon: "user-plus", title: c.friend, hint: c.friendHint },
+    { key: "quick", href: links.quick, icon: "lightning", title: c.quick, hint: teen ? c.quickHintTeen : c.quickHint },
+    { key: "party", href: links.party, icon: "confetti", title: c.party, hint: c.partyHint },
   ];
   const rows = live ? liveRows : [];
   return (
@@ -77,34 +71,24 @@ export function GameChallengeSheet({
             </button>
           </li>
         )}
-        {rows.map((r) => {
-          const inner = (
-            <>
+        {rows.map((r) => (
+          <li key={r.key}>
+            <Link
+              href={r.href}
+              onClick={onClose}
+              className="press bg-surface-raised flex min-h-16 items-center gap-3 rounded-[20px] p-3 text-left"
+            >
               <span className="bg-surface flex size-11 flex-none items-center justify-center rounded-[14px]">
-                <Icon name={r.icon} size={22} className={r.locked ? "text-muted" : "text-accent"} />
+                <Icon name={r.icon} size={22} className="text-accent" />
               </span>
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="font-display text-[17px] font-black">{r.title}</span>
                 <span className="text-muted text-[14px] font-medium">{r.hint}</span>
               </span>
-              {!r.locked && <Icon name="caret-right" size={18} className="text-muted" />}
-            </>
-          );
-          const cls = "flex min-h-16 items-center gap-3 rounded-[20px] bg-surface-raised p-3 text-left";
-          return (
-            <li key={r.key}>
-              {r.locked ? (
-                <div className={`${cls} opacity-70`} aria-disabled>
-                  {inner}
-                </div>
-              ) : (
-                <Link href={r.href} onClick={onClose} className={`press ${cls}`}>
-                  {inner}
-                </Link>
-              )}
-            </li>
-          );
-        })}
+              <Icon name="caret-right" size={18} className="text-muted" />
+            </Link>
+          </li>
+        ))}
       </ul>
       <Button variant="ghost" className="mt-1 w-full" onClick={onClose}>
         {c.close}

@@ -24,7 +24,7 @@ import { useGameSettings } from "@/lib/game-settings/client";
 import { duelCopy } from "@/lib/copy/duel";
 import { botProgress, duelPhase, inRulesBreak, roundOutcomes, BOT_ID } from "@/lib/multiplayer/duel";
 import { gameName, raceGameParam } from "@/lib/multiplayer/games";
-import { canPlayLive } from "@/lib/multiplayer/liveGate";
+import { quickMatchPool } from "@/lib/multiplayer/liveGate";
 import { DUEL_ROUNDS, TIMING, type EmoteId } from "@/lib/multiplayer/constants";
 import type { MatchView } from "@/lib/multiplayer/types";
 import { GAME_BY_ID } from "@/lib/catalog";
@@ -314,7 +314,8 @@ function DuelLobby({
           onCode={() => setMode("code")}
           onClose={back}
           friendName={friendName}
-          live={me.data ? canPlayLive(me.data) : null}
+          live={me.data ? quickMatchPool(me.data) !== null : null}
+          teen={!!me.data && quickMatchPool(me.data) === "u16"}
         />
       )}
     </Screen>

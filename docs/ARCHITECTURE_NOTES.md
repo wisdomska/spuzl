@@ -92,8 +92,9 @@ There is no shared prompt queue: two prompts can appear in the same screen visit
 
 ## Multiplayer
 
-- Duel: `components/multiplayer/DuelScreen.tsx`, `duel.tsx`. Under-16 check client side at `DuelScreen.tsx:283`,
-  `GameChallenge.tsx:38`; `DuelEntrySheet` disables Quick Match (`duel.tsx:150,163`). Game picker is a 3-column
+- Duel: `components/multiplayer/DuelScreen.tsx`, `duel.tsx`. R3-06: Quick Match is open to every known band, paired
+  by pool (`quickMatchPool` in `lib/multiplayer/liveGate.ts`: 13 to 15 only meet 13 to 15; enforced in `pollQueue`,
+  `pickOpponent` and `svc_mm_claim`); Board Bay Play live stays 16+ (`canPlayLive`). Game picker is a 3-column
   grid in an inner scroll box `max-h-[180px]` (`duel.tsx:122`). Server: 403 `age_restricted` in
   `lib/multiplayer/server/lobby.ts:47` and `bayQueue.ts:76` (raw `age_band`), while `match.ts:215` uses
   `effectiveBand`: the two should agree (R2-02).

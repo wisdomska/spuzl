@@ -43,7 +43,8 @@ export const partyCopy = {
     friendHint: "Send a link. Best of 3, unranked.",
     quick: "Quick Match",
     quickHint: "Ranked. We find you a rival.",
-    quickLocked: "Opens at 16. Duel a friend.",
+    /** R3-06: 13 to 15 year olds are paired with players their age only */
+    quickHintTeen: "Ranked. We find you a rival aged 13 to 15.",
     party: "Host a party",
     partyHint: "2 to 8 players race with a room code.",
     close: "Close",

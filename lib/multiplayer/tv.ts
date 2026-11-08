@@ -12,7 +12,7 @@ export const TV_POLL_MS = 2000;
 export const tvPath = (code: string) => `/party/${code.toUpperCase()}/tv`;
 
 /**
- * Who may open their room to spectators: hosts 16 and over (the same line as Quick Match). An under-16 host's
+ * Who may open their room to spectators: hosts 16 and over (the same line as Board Bay Play live). An under-16 host's
  * room is friends only (R2-13), so it is never shown to anyone holding the code.
  */
 export function canHostTv(host: { age_band?: string | null; birth_year?: number | null; birth_month?: number | null } | null): boolean {

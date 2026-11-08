@@ -22,11 +22,10 @@ export const duelCopy = {
   quick: "Quick Match",
   quickSub: "Ranked. Best of 3.",
   quickRating: "Rating",
-  /** under 16: Quick Match shows as a muted, locked note, never as a button */
-  quickLocked: "Opens at 16",
-  quickLockedLabel: "Quick Match opens at 16",
-  /** the server's answer when an under-16 account asks for Quick Match anyway */
-  quickRefused: "Quick Match opens at 16. Challenge a friend instead.",
+  /** R3-06: 13 to 15 year olds only meet players their own age in Quick Match */
+  quickTeen: "You only meet players aged 13 to 15.",
+  /** the server's answer when an account with no known age band asks for Quick Match */
+  quickRefused: "Quick Match needs your age band. Challenge a friend instead.",
   friend: "Challenge a friend",
   friendNamed: (name: string) => `Challenge ${name}`,
   friendSub: "Unranked. Send them a code or link.",

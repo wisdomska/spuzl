@@ -40,7 +40,17 @@ describe("matchmaking", () => {
     rating,
     region: "GH",
     enqueuedAt: 0,
+    pool: "open",
     ...o,
+  });
+  it("never pairs across age-band pools, whatever the wait (R3-06)", () => {
+    const kid = e("kid", 1400, { pool: "u16" });
+    expect(compatible(kid, e("adult", 1400), 0)).toBe(false);
+    expect(compatible(e("adult", 1400), kid, 10 * 60_000)).toBe(false);
+    expect(compatible(kid, e("kid2", 1400, { pool: "u16" }), 0)).toBe(true);
+    // The only rival waiting is an adult: nobody is found, however close the rating or long the wait.
+    expect(pickOpponent(kid, [e("adult", 1400, { enqueuedAt: -60_000 })], 0)).toBeNull();
+    expect(pickOpponent(kid, [e("adult", 1400), e("kid2", 1700, { pool: "u16" })], 60_000)?.playerId).toBe("kid2");
   });
   it("widens the rating window the longer you wait", () => {
     expect(ratingWindow(0)).toBe(100);

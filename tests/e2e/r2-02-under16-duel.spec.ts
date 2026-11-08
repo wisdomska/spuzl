@@ -3,10 +3,11 @@ import { expect, test, type Page } from "@playwright/test";
 import { onboardGuest, VIEWPORTS } from "./harness";
 
 /**
- * R2-02: the Duel entry for a 15-year-old. Challenge a friend is the primary action and makes a code in two taps
- * from Home (Duel, then Challenge a friend); Quick Match is a muted "Opens at 16" note, never a (disabled) button;
- * the game row opens a full-height picker with the Library's search and filters, keyboard and screen-reader
- * friendly. Needs the dev server and a database (the lead runs it).
+ * R2-02: the Duel entry for a 15-year-old. Challenge a friend makes a code in two taps from Home (Duel, then
+ * Challenge a friend); the game row opens a full-height picker with the Library's search and filters, keyboard and
+ * screen-reader friendly. R3-06 (owner decision, 8 Nov 2026): Quick Match is open to 13 to 15 year olds too, and the
+ * server pairs them only with other 13 to 15 players (tests/api/r2-02-under16-duel.test.ts proves the pairing).
+ * Needs the dev server and a database (the lead runs it).
  */
 test.describe.configure({ mode: "serial" });
 
@@ -44,21 +45,33 @@ test("a 15-year-old creates a friend duel in two taps: Duel, then Challenge a fr
 });
 
 for (const [label, size] of Object.entries(VIEWPORTS))
-  test(`under 16 at ${size.width} px: Challenge a friend is primary, Quick Match is a locked note, nothing looks disabled`, async ({
+  test(`under 16 at ${size.width} px (R3-06): Quick Match is the primary action, says who they meet, nothing is locked`, async ({
     page,
   }, info) => {
     await page.setViewportSize(size);
     await onboardGuest(page, "13-15");
     await page.goto("/duel");
     await expect(entry(page)).toBeVisible();
+    await expect(entry(page).getByRole("button", { name: /Quick Match/ })).toBeEnabled();
+    await expect(entry(page).getByRole("button", { name: /Quick Match/ })).toContainText("You only meet players aged 13 to 15.");
     await expect(entry(page).getByRole("button", { name: /Challenge a friend/ })).toBeEnabled();
-    // Quick Match is not a button at all for under-16s, so it can never read as a disabled primary action.
-    await expect(entry(page).getByRole("button", { name: /Quick Match/ })).toHaveCount(0);
-    await expect(entry(page).getByText("Opens at 16")).toBeVisible();
+    await expect(entry(page).getByText("Opens at 16")).toHaveCount(0);
     await expect(entry(page).locator("button:disabled, [aria-disabled='true']")).toHaveCount(0);
-    expect(await primaryActions(page)).toEqual([expect.stringMatching(/^Challenge a friend/)]);
+    expect(await primaryActions(page)).toEqual([expect.stringMatching(/^Quick Match/)]);
     await info.attach(`duel-entry-under16-${label}.png`, { body: await page.screenshot({ fullPage: true }), contentType: "image/png" });
   });
+
+test("under 16 (R3-06): Quick Match searches; the server keeps the search to players aged 13 to 15", async ({ page }) => {
+  await onboardGuest(page, "13-15");
+  await page.goto("/duel");
+  await entry(page)
+    .getByRole("button", { name: /Quick Match/ })
+    .click();
+  // A rules card may come first for a game never cleared; either way a search (or its rules) shows, never a refusal.
+  await expect(page.getByText(/Finding a rival|New to .*Here's the rule/).first()).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText(/opens at 16/i)).toHaveCount(0);
+  await page.screenshot({ path: "docs/qa/screens/r2/r3-06-under16-quick-375.png" });
+});
 
 test("16+ keeps Quick Match as the primary action, enabled with Any game", async ({ page }) => {
   await onboardGuest(page, "16-17");

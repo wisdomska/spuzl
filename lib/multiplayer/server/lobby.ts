@@ -16,7 +16,9 @@ import { knownGames } from "./known";
 import { GAME_BY_ID } from "@/lib/catalog";
 import { isTurnMode, type PartyMode } from "@/lib/party-adult/modes";
 import { clearRounds, isTurnRoom, modeOf, startAdult } from "./adult";
-import { requireLivePlay } from "./liveGate";
+import { requireQuickPool } from "./liveGate";
+import type { QuickPool } from "../liveGate";
+import { effectiveBand } from "@/lib/age";
 import { joinStateFor, requireMayJoin } from "./joinRequests";
 import { recordDuelCreated } from "@/lib/analytics/server";
 import { duelCopy } from "@/lib/copy/duel";
@@ -50,8 +52,11 @@ async function addPlayer(admin: SupabaseClient, matchId: string, playerId: strin
 
 /* ---------------- Duel: matchmaking ---------------- */
 
-export async function enqueue(admin: SupabaseClient, player: { id: string; age_band: string }, game: string | null, rulesSeen = false) {
-  requireLivePlay(player, duelCopy.quickRefused);
+type BandedPlayer = { id: string; age_band: string; birth_year?: number | null; birth_month?: number | null };
+
+export async function enqueue(admin: SupabaseClient, player: BandedPlayer, game: string | null, rulesSeen = false) {
+  // R3-06: every known band may search, inside its own pool (13 to 15 only meet 13 to 15; 16+ only 16+).
+  const pool = requireQuickPool(player, duelCopy.quickRefused);
   if (game && !isRaceGame(game)) throw new ApiError(400, "game_not_duelable");
   // A ranked game the player has never cleared or learned: read the rules first (the client shows a 20 s rules card).
   if (game && !rulesSeen && !(await knownGames(admin, [player.id], [game])).get(player.id)?.has(game))
@@ -67,24 +72,38 @@ export async function enqueue(admin: SupabaseClient, player: { id: string; age_b
     game_id: game,
     rating: rating.toFixed(2),
     region: me?.country ?? null,
+    pool,
     enqueued_at: iso(Date.now()),
     match_id: null,
   });
-  return pollQueue(admin, player.id, player.age_band);
+  return pollQueue(admin, player);
 }
 
-/** `band`: the polling player's effective band, recorded with the duel when this poll pairs them (admin Metrics). */
-export async function pollQueue(admin: SupabaseClient, playerId: string, band: string) {
+/**
+ * One poll of a Quick Match search. The pool is read again from the polling player's effective band, so a stored
+ * queue row never decides on its own who a player may meet; only rows in that pool are even loaded, `pickOpponent`
+ * checks the pool again, and `svc_mm_claim` refuses a pair across pools (20261207000601). The band is recorded with
+ * the duel when this poll pairs them (admin Metrics, "Duels created by age band").
+ */
+export async function pollQueue(admin: SupabaseClient, player: BandedPlayer) {
+  const playerId = player.id;
+  const pool = requireQuickPool(player, duelCopy.quickRefused);
   const { data: mine } = await admin.from("matchmaking_queue").select("*").eq("player_id", playerId).maybeSingle();
   if (!mine) return { status: "idle" as const };
   const rating = Math.round(Number(mine.rating));
   const waited = Date.now() - Date.parse(mine.enqueued_at);
   if (mine.match_id) return { status: "matched" as const, matchId: mine.match_id as string, rating, waitedMs: waited };
+  // A birthday moved this player to the other pool since they queued: search again in the right one.
+  if (mine.pool !== pool) {
+    await admin.from("matchmaking_queue").update({ pool }).eq("player_id", playerId).is("match_id", null);
+    mine.pool = pool;
+  }
   const now = Date.now();
   const { data: others } = await admin
     .from("matchmaking_queue")
     .select("*")
     .is("match_id", null)
+    .eq("pool", pool)
     .neq("player_id", playerId)
     .gte("enqueued_at", iso(now - 2 * 60_000))
     .order("enqueued_at")
@@ -95,14 +114,17 @@ export async function pollQueue(admin: SupabaseClient, playerId: string, band: s
     rating: number;
     region: string | null;
     enqueued_at: string;
+    pool: QuickPool;
   }): QueueEntry => ({
     playerId: r.player_id,
     gameId: r.game_id,
     rating: Number(r.rating),
     region: r.region,
     enqueuedAt: Date.parse(r.enqueued_at),
+    pool: r.pool,
   });
   const me = toEntry(mine);
+  const band = effectiveBand(player);
   const opp = pickOpponent(me, (others ?? []).map(toEntry), now);
   if (opp) {
     const matchId = await createDuel(admin, [me.playerId, opp.playerId], me.gameId ?? opp.gameId, { rated: true, claim: true });

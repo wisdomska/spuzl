@@ -78,9 +78,9 @@ function DuelOption({
 
 /**
  * R2-02: the Duel entry. "Game: <name> ▸" opens the full-height game picker (Any game by default, so the
- * buttons are never disabled). 16+: Quick Match is the primary action and Challenge a friend the second. Under 16
- * (and while the age band is unknown): Challenge a friend is the primary action and Quick Match is only a muted
- * note with a lock, "Opens at 16", never a button. The server refuses Quick Match to under-16s whatever the screen.
+ * buttons are never disabled). Quick Match is the primary action and Challenge a friend the second (Challenge a
+ * friend leads while the profile loads). R3-06: 13 to 15 year olds get Quick Match too, with a line saying they
+ * only meet players their age; the server pairs them only with other 13 to 15 players, whatever the screen.
  */
 export function DuelEntrySheet({
   game,
@@ -91,8 +91,11 @@ export function DuelEntrySheet({
   onCode,
   onClose,
   live,
+  teen = false,
   friendName,
 }: {
+  /** R3-06: a 13 to 15 player (Quick Match pairs them with players their age only) */
+  teen?: boolean;
   /** a race game, or null for Any game */
   game: string | null;
   setGame: (g: string | null) => void;
@@ -104,7 +107,7 @@ export function DuelEntrySheet({
   /** open the friend's-code box */
   onCode: () => void;
   onClose: () => void;
-  /** may play Quick Match (16+); null while the profile loads */
+  /** may play Quick Match (any known band, in its own pool); null while the profile loads */
   live: boolean | null;
 }) {
   const reduce = useReduce();
@@ -156,22 +159,13 @@ export function DuelEntrySheet({
             sub={
               <>
                 {duelCopy.quickSub} {duelCopy.quickRating} <span className="num">{formatNumber(rating)}</span>.
+                {teen && <> {duelCopy.quickTeen}</>}
               </>
             }
           />
         )}
         <DuelOption primary={!quickFirst} icon="user-plus" title={friendTitle} sub={duelCopy.friendSub} onClick={onFriend} />
         <DuelOption primary={false} icon="keyboard" title={duelCopy.code.open} sub={duelCopy.code.openSub} onClick={onCode} />
-        {live === false && !friendName && (
-          // Not a button and not styled like one: a quiet note so nobody reads it as a broken primary action.
-          <p className="text-muted flex min-h-11 items-center gap-2.5 px-1 text-[15px]">
-            <Icon name="lock-simple" size={20} className="shrink-0" />
-            <span className="flex min-w-0 flex-1 flex-col">
-              <span className="font-semibold">{duelCopy.quick}</span>
-              <span className="text-[13px] font-medium">{duelCopy.quickLocked}</span>
-            </span>
-          </p>
-        )}
         {/* Board games are played in Board Bay, not Duel: point there for live chess, draughts and the rest. */}
         <Link href="/bay" className="press flex min-h-11 items-center gap-2.5 rounded-[14px] px-1 text-[15px] font-semibold">
           <Icon name="horse" size={20} className="text-accent" />
