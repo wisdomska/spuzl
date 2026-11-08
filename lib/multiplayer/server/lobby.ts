@@ -21,6 +21,8 @@ import { joinStateFor, requireMayJoin } from "./joinRequests";
 import { recordDuelCreated } from "@/lib/analytics/server";
 import { duelCopy } from "@/lib/copy/duel";
 import { tvDefault } from "../tv";
+import { readiness } from "../readiness";
+import { partyCopy } from "@/lib/copy/party";
 
 const iso = (n: number) => new Date(n).toISOString();
 const secureRandom = () => randomInt(0, CODE_ALPHABET.length) / CODE_ALPHABET.length;
@@ -414,13 +416,31 @@ export async function roomSettings(admin: SupabaseClient, playerId: string, code
   return { ok: true };
 }
 
-export async function startRoom(admin: SupabaseClient, playerId: string, code: string) {
+/**
+ * The host starts the set. Everyone present must be ready, unless the host asks for `readyOnly` ("Start without
+ * them", R3-01): then the players not ready yet sit this set out as spectators (`sat_out`), so they watch, can't
+ * play or score, and are back in the race on Run it back. At least PARTY_MIN ready racers are still needed.
+ */
+export async function startRoom(admin: SupabaseClient, playerId: string, code: string, o: { readyOnly?: boolean } = {}) {
   const l = await roomForHost(admin, code, playerId, true);
   if (l.m.status !== "lobby") throw new ApiError(409, "not_lobby");
-  const racers = l.players.filter((p) => !p.left_at && !p.spectator);
-  if (racers.length < PARTY_MIN) throw new ApiError(409, "need_players", "Two Spuzlers make a race. Share the code.");
-  const waiting = racers.find((p) => !p.ready);
-  if (waiting) throw new ApiError(409, "not_ready", `${waiting.players?.nickname ?? "Someone"} is still getting ready.`);
+  const r = readiness(
+    l.players.map((p) => ({ ...p, id: p.player_id, nickname: p.players?.nickname ?? partyCopy.results.someone, left: !!p.left_at })),
+  );
+  if (r.racers.length < PARTY_MIN) throw new ApiError(409, "need_players", partyCopy.lobby.needPlayers);
+  if (r.waiting.length && !o.readyOnly) throw new ApiError(409, "not_ready", partyCopy.lobby.notReady(r.waiting[0].nickname));
+  if (r.ready.length < PARTY_MIN) throw new ApiError(409, "need_ready", partyCopy.lobby.needReady);
+  if (r.waiting.length) {
+    const out = r.waiting.map((p) => p.player_id);
+    const { error } = await admin
+      .from("match_players")
+      .update({ spectator: true, sat_out: true, ready: false })
+      .eq("match_id", l.m.id)
+      .in("player_id", out);
+    if (error) throw error;
+    // The loaded room follows, so a turn-based start below leaves them out too.
+    for (const p of l.players) if (out.includes(p.player_id)) Object.assign(p, { spectator: true, sat_out: true });
+  }
   if (isTurnRoom(l.m)) {
     await startAdult(admin, l);
     return { ok: true };
@@ -483,6 +503,9 @@ export async function runItBack(admin: SupabaseClient, playerId: string, code: s
     .from("match_players")
     .update({ ready: false, points: 0, place: null, progress: 0, mistakes: 0, finished_ms: null, state: null })
     .eq("match_id", l.m.id);
+  // R3-01: players the host started without are back in the race for the new set.
+  if (l.players.some((p) => p.sat_out))
+    await admin.from("match_players").update({ spectator: false, sat_out: false }).eq("match_id", l.m.id).eq("sat_out", true);
   await admin.from("match_players").update({ ready: true }).eq("match_id", l.m.id).eq("player_id", playerId);
   const { data } = await admin
     .from("matches")

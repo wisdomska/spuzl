@@ -63,7 +63,7 @@ for (const n of [2, 8]) {
       const reader = guests[0].page;
       await reader.getByRole("button", { name: /^Chat/ }).click();
       await expect(chatSheet(reader)).toBeVisible();
-      await host.page.getByRole("button", { name: /^Start/ }).click();
+      await host.page.getByRole("button", { name: /^Start(?! without)/ }).click();
 
       // Every player at once: the countdown runs over the board and no sheet is open.
       await Promise.all(players.map((p) => expect(countdown(p.page)).toBeVisible({ timeout: 10_000 })));
@@ -112,7 +112,7 @@ test("results: Next game (2 of 3) is primary until the set ends, then Run it bac
   try {
     await pickCrownfall(host.page, code);
     await everyoneReady(players);
-    await host.page.getByRole("button", { name: /^Start/ }).click();
+    await host.page.getByRole("button", { name: /^Start(?! without)/ }).click();
 
     for (let game = 1; game <= 3; game++) {
       // Everyone skips the game once it has started: it ends at once, and the results show.

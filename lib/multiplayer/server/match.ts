@@ -95,6 +95,8 @@ export interface PlayerRow {
   kicked_at?: string | null;
   /** the Party round this player sat out, if any */
   passed_round?: number | null;
+  /** R3-01 (20261207000101): the host started this set without them; they spectate until Run it back */
+  sat_out?: boolean;
   players: {
     nickname: string;
     avatar_color: string;
@@ -250,6 +252,7 @@ export async function viewOf(admin: SupabaseClient, l: Loaded, me: string, rewar
     left: !!p.left_at,
     stale: !p.left_at && isStale(p, now),
     passed: p.passed_round === m.round,
+    satOut: !!p.sat_out,
     rematch: p.rematch,
     ratingBefore: p.rating_before === null ? null : Number(p.rating_before),
     ratingAfter: p.rating_after === null ? null : Number(p.rating_after),

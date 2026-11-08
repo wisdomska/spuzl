@@ -111,7 +111,7 @@ test.describe("other entries", () => {
       await expect(offer).toHaveCount(0); // learned now
       // The host never practised: the round starts and the How it works card shows instead, then closes.
       await guest.page.getByRole("button", { name: /^Ready$/ }).click();
-      await host.page.getByRole("button", { name: /^Start/ }).click();
+      await host.page.getByRole("button", { name: /^Start(?! without)/ }).click();
       const how = host.page.getByRole("region", { name: "How Crownfall works" });
       await expect(how).toBeVisible({ timeout: 15_000 });
       await expect(how).toContainText(GAME_BY_ID.crownfall.rule);

@@ -50,6 +50,26 @@ export const partyCopy = {
     beat: "Beat my time",
     beatHint: "Send this exact puzzle. They race your time.",
   },
+  /** R3-01: the lobby's Start and who is still getting ready */
+  lobby: {
+    start: "Start",
+    readyCount: (ready: number, of: number) => `${ready} of ${of} ready`,
+    shareCode: "Share the code",
+    waitingClass: "Waiting for the class",
+    waitingFor: (names: string[], more: number) => {
+      const list = more > 0 ? [...names, `${more} more`] : names;
+      const line = list.length <= 1 ? list.join("") : `${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`;
+      return `Waiting for ${line}`;
+    },
+    startWithout: "Start without them",
+    startWithoutHint: "They watch this set and join the next one.",
+    /** server refusals */
+    notReady: (name: string) => `${name} is still getting ready.`,
+    needReady: "Two ready Spuzlers make a race.",
+    needPlayers: "Two Spuzlers make a race. Share the code.",
+    /** a player the host started without */
+    satOut: "The race started without you. Watch this set; you're in for the next one.",
+  },
   /** the round-start countdown (Duel's 3-2-1-SPUZL!) over the board */
   countdown: {
     line: (game: number, of: number) => `Game ${game} of ${of}. Same puzzle for everyone. Go!`,

@@ -562,3 +562,62 @@ describe("api: ghost race track", () => {
     }
   });
 });
+
+describe("api: Party start readiness (R3-01)", () => {
+  it("refuses a plain Start while someone is not ready; Start without them seats them as spectators until Run it back", async () => {
+    const host = await guest(uniq("rr_"));
+    const room = await host.api("/api/v1/rooms", { json: { game: "crownfall", difficulty: "easy", maxPlayers: 4 } });
+    const code: string = room.data.code;
+    const id: string = room.data.matchId;
+    const p2 = await guest(uniq("r2r_"));
+    const p3 = await guest(uniq("r3r_"));
+    await p2.api(`/api/v1/rooms/${code}/join`, { json: {} });
+    await p3.api(`/api/v1/rooms/${code}/join`, { json: {} });
+
+    // Only the host is ready: no plain start, and too few ready players to start without the rest.
+    const plain = await host.api(`/api/v1/rooms/${code}/start`, { json: {} });
+    expect([plain.status, plain.data.error]).toEqual([409, "not_ready"]);
+    const tooFew = await host.api(`/api/v1/rooms/${code}/start`, { json: { readyOnly: true } });
+    expect([tooFew.status, tooFew.data.error]).toEqual([409, "need_ready"]);
+
+    await p2.api(`/api/v1/rooms/${code}/ready`, { json: { ready: true } });
+    expect((await host.api(`/api/v1/rooms/${code}/start`, { json: {} })).status).toBe(409);
+    // only the host may ask for it, and only with a real flag
+    expect((await p2.api(`/api/v1/rooms/${code}/start`, { json: { readyOnly: true } })).status).toBe(403);
+    expect((await host.api(`/api/v1/rooms/${code}/start`, { json: { readyOnly: "yes" } })).status).toBe(400);
+
+    expect((await host.api(`/api/v1/rooms/${code}/start`, { json: { readyOnly: true } })).status).toBe(200);
+    const live = (await p3.api(`/api/v1/matches/${id}`)).data;
+    expect(live.status).toBe("playing");
+    expect(live.players.find((p: { id: string }) => p.id === p3.userId)).toMatchObject({ spectator: true, satOut: true });
+    // the sat-out player can't race this set
+    await startNow(id);
+    const s = solve(id, live.setNo, 1, "easy").state;
+    expect((await p3.api(`/api/v1/matches/${id}/finish`, { json: { round: 1, state: s, mistakes: 0 } })).status).toBe(403);
+
+    // Run it back: everyone races again.
+    await admin().from("matches").update({ status: "finished" }).eq("id", id);
+    expect((await host.api(`/api/v1/rooms/${code}/reset`, { json: {} })).status).toBe(200);
+    const lobby = (await p3.api(`/api/v1/matches/${id}`)).data;
+    expect(lobby.players.find((p: { id: string }) => p.id === p3.userId)).toMatchObject({ spectator: false, satOut: false });
+  });
+
+  it("keeps a classroom host a spectator through Start without them and Run it back", async () => {
+    const host = await guest(uniq("rc_"));
+    const room = await host.api("/api/v1/rooms", {
+      json: { game: "crownfall", difficulty: "easy", maxPlayers: 4, classroom: true },
+    });
+    const code: string = room.data.code;
+    const id: string = room.data.matchId;
+    const [a, b, c] = [await guest(uniq("rca_")), await guest(uniq("rcb_")), await guest(uniq("rcc_"))];
+    for (const p of [a, b, c]) await p.api(`/api/v1/rooms/${code}/join`, { json: {} });
+    await a.api(`/api/v1/rooms/${code}/ready`, { json: { ready: true } });
+    await b.api(`/api/v1/rooms/${code}/ready`, { json: { ready: true } });
+    expect((await host.api(`/api/v1/rooms/${code}/start`, { json: { readyOnly: true } })).status).toBe(200);
+    await admin().from("matches").update({ status: "finished" }).eq("id", id);
+    expect((await host.api(`/api/v1/rooms/${code}/reset`, { json: {} })).status).toBe(200);
+    const v = (await a.api(`/api/v1/matches/${id}`)).data;
+    expect(v.players.find((p: { id: string }) => p.id === host.userId).spectator).toBe(true);
+    expect(v.players.find((p: { id: string }) => p.id === c.userId).spectator).toBe(false);
+  });
+});

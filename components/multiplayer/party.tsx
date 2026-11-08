@@ -18,6 +18,7 @@ import { RACE_GAMES, roomGamesName } from "@/lib/multiplayer/games";
 import { partyCopy } from "@/lib/copy/party";
 import { overtakes, raceOrder, standingOrder } from "@/lib/multiplayer/race";
 import { countdownBeat } from "@/lib/multiplayer/duel";
+import { readiness, shortNames } from "@/lib/multiplayer/readiness";
 import { PARTY_GAMES, PARTY_MAX, PARTY_MIN, PARTY_PICK_MAX, PARTY_PICK_MIN, type EmoteId } from "@/lib/multiplayer/constants";
 import type { MatchPlayerView, MatchView } from "@/lib/multiplayer/types";
 import { useReduce } from "@/lib/client/multiplayer";
@@ -497,7 +498,8 @@ export function Lobby({
   onChat?: () => void;
   unread?: number;
   onReady: (r: boolean) => void;
-  onStart: () => void;
+  /** `readyOnly`: "Start without them" (R3-01), the server seats the players not ready yet as spectators */
+  onStart: (readyOnly?: boolean) => void;
   onLeave: () => void;
   onSettings: () => void;
   onTv: () => void;
@@ -506,8 +508,11 @@ export function Lobby({
   const here = view.players.filter((p) => !p.left && !p.spectator);
   const me = view.players.find((p) => p.id === view.me)!;
   const host = view.hostId === view.me;
-  const ready = here.filter((p) => p.ready).length;
-  const all = here.length >= 2 && ready === here.length;
+  const r = readiness(here);
+  const ready = r.ready.length;
+  const all = r.all;
+  const waitingNames = shortNames(r.waiting.map((p) => (p.id === view.me ? partyCopy.results.you : p.nickname)));
+  const L = partyCopy.lobby;
   const slots = Array.from({ length: view.maxPlayers }, (_, i) => here[i] ?? null);
   const gameLine = partyCopy.host.gamesLine(roomGamesName(view.gameId, view.chosenGames), PARTY_GAMES);
   return (
@@ -610,24 +615,33 @@ export function Lobby({
         <EmoteBar onSend={onEmote} onChat={onChat} unread={unread} />
       </div>
       <div className="mx-4 mt-auto pt-4">
-        {view.classroom && host ? (
-          <Cta
-            className="w-full"
-            onClick={onStart}
-            disabled={!all}
-            sub={all ? `${ready} of ${here.length} ready` : "Waiting for the class"}
-          >
-            Start
-          </Cta>
-        ) : host ? (
-          <Cta
-            className="w-full"
-            onClick={onStart}
-            tone={all ? "accent" : "raised"}
-            sub={all ? `${ready} of ${here.length} ready` : here.length < 2 ? "Share the code" : `${ready} of ${here.length} ready`}
-          >
-            Start
-          </Cta>
+        {/* R3-01: who is still getting ready, by name (compact), so the host knows who to wait for. */}
+        {here.length >= 2 && r.waiting.length > 0 && (
+          <p className="text-muted mb-3 truncate text-center text-[14px] font-medium" aria-live="polite" data-testid="lobby-waiting">
+            {L.waitingFor(waitingNames.shown, waitingNames.more)}
+          </p>
+        )}
+        {host ? (
+          <div className="flex flex-col gap-3">
+            <Cta
+              className="w-full"
+              onClick={() => onStart()}
+              disabled={!all}
+              sub={here.length < 2 ? L.shareCode : all || !view.classroom ? L.readyCount(ready, here.length) : L.waitingClass}
+            >
+              {L.start}
+            </Cta>
+            {r.canStartWithout && (
+              <button
+                type="button"
+                onClick={() => onStart(true)}
+                className="press bg-surface flex min-h-11 w-full flex-col items-center justify-center rounded-[16px] px-4 py-2"
+              >
+                <span className="text-[15px] font-semibold">{L.startWithout}</span>
+                <span className="text-muted text-[13px]">{L.startWithoutHint}</span>
+              </button>
+            )}
+          </div>
         ) : (
           <Cta
             className="w-full"

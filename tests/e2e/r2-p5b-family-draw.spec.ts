@@ -94,7 +94,7 @@ test("a Family Draw round: preset word, four options to pick from, no typing, a 
   await expect(guesser.page.getByText("Family Draw, 16+.")).toBeVisible();
   await guesser.page.getByRole("button", { name: /^Join$/ }).click();
   await guesser.page.getByRole("button", { name: /^Ready$/ }).click();
-  await host.page.getByRole("button", { name: /^Start/ }).click();
+  await host.page.getByRole("button", { name: /^Start(?! without)/ }).click();
 
   // The host (seat 0) draws first and sees the word.
   const word = (await host.page

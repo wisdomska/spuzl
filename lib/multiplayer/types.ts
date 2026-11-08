@@ -25,6 +25,8 @@ export interface MatchPlayerView {
   stale: boolean;
   /** sat out the current Party round ("Skip this round") */
   passed: boolean;
+  /** R3-01: the host started this set without them (spectating until Run it back) */
+  satOut?: boolean;
   rematch: boolean;
   ratingBefore: number | null;
   ratingAfter: number | null;

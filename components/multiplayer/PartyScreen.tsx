@@ -26,6 +26,7 @@ import { normalizeRoomCode } from "@/lib/multiplayer/roomCode";
 import { partyPhase } from "@/lib/multiplayer/race";
 import { raceGameParam, roomGamesName } from "@/lib/multiplayer/games";
 import { PARTY_PICK_MIN } from "@/lib/multiplayer/constants";
+import { readiness } from "@/lib/multiplayer/readiness";
 import { canHostTv, tvPath } from "@/lib/multiplayer/tv";
 import { partyCopy } from "@/lib/copy/party";
 import type { MatchPlayerView, MatchView } from "@/lib/multiplayer/types";
@@ -397,6 +398,7 @@ function Room({ id, code }: { id: string; code: string }) {
   const host = view.hostId === view.me;
   const present = new Set(members.map((m) => m.key));
   const rows = rowsOf(view);
+  const lobbyReady = readiness(view.players);
   const start = view.roundStartedAt ?? now;
   const elapsed = Math.max(0, now - start);
   const err = (e: unknown, fallback: string) => show(e instanceof HttpError && e.message !== e.code ? e.message : fallback, "bad");
@@ -448,13 +450,34 @@ function Room({ id, code }: { id: string; code: string }) {
           beats={countdown.beats}
         />
         {me.spectator && host && phase === "lobby" && (
-          <button
-            type="button"
-            onClick={() => act("start").catch((e) => err(e, "Can't start yet."))}
-            className="toy bg-accent text-on-accent font-display fixed right-6 bottom-6 h-[60px] rounded-[20px] px-8 text-[20px] font-black [--btn-depth:var(--accent-depth)]"
+          // R3-01: the classroom host's Start opens once the class is ready; "Start without them" goes with the ready ones.
+          <div className="fixed right-6 bottom-6 flex items-center gap-3">
+            {lobbyReady.canStartWithout && (
+              <button
+                type="button"
+                onClick={() => act("start", { readyOnly: true }).catch((e) => err(e, "Can't start yet."))}
+                className="press bg-surface h-[60px] rounded-[20px] px-6 text-[17px] font-semibold"
+              >
+                {partyCopy.lobby.startWithout}
+              </button>
+            )}
+            <button
+              type="button"
+              disabled={!lobbyReady.all}
+              onClick={() => act("start").catch((e) => err(e, "Can't start yet."))}
+              className="toy bg-accent text-on-accent font-display h-[60px] rounded-[20px] px-8 text-[20px] font-black [--btn-depth:var(--accent-depth)] disabled:bg-[var(--surface-raised)] disabled:text-[var(--text-muted)]"
+            >
+              {partyCopy.lobby.start}
+            </button>
+          </div>
+        )}
+        {me.satOut && !host && phase !== "lobby" && (
+          <p
+            className="bg-surface fixed inset-x-4 bottom-6 mx-auto max-w-[480px] rounded-[16px] px-4 py-3 text-center text-[15px] font-semibold"
+            role="status"
           >
-            Start
-          </button>
+            {partyCopy.lobby.satOut}
+          </p>
         )}
         {me.spectator && host && phase === "podium" && (
           <button
@@ -480,7 +503,7 @@ function Room({ id, code }: { id: string; code: string }) {
         onChat={() => chat.setOpen(true)}
         unread={chat.unread}
         onReady={(r) => act("ready", { ready: r }).catch((e) => err(e, "Couldn't update."))}
-        onStart={() => act("start").catch((e) => err(e, "Can't start yet."))}
+        onStart={(readyOnly) => act("start", readyOnly ? { readyOnly: true } : {}).catch((e) => err(e, "Can't start yet."))}
         onLeave={leave}
         onSettings={() => setSettings(true)}
         onTv={() => router.push(`/party/${code}?view=tv`)}
@@ -763,7 +786,7 @@ function AdultRoom({
         onChat={onChat}
         unread={unread}
         onReady={(r) => act("ready", { ready: r }).catch((e) => err(e, "Couldn't update."))}
-        onStart={() => act("start").catch((e) => err(e, "Can't start yet."))}
+        onStart={(readyOnly) => act("start", readyOnly ? { readyOnly: true } : {}).catch((e) => err(e, "Can't start yet."))}
         onLeave={onLeave}
         onSettings={() => setPlayers(true)}
         onTv={() => setPlayers(true)}
