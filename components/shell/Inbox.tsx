@@ -12,6 +12,7 @@ import { play } from "@/lib/audio";
 import { noteAlertsTrigger } from "@/lib/prompts/alerts";
 import { useQuiet } from "@/lib/perf/quiet";
 import { AlertsAsk } from "./AlertsAsk";
+import { SpuzChip } from "@/components/meta/SpuzChip";
 
 /** What arrives on a player's own channel (user:<id>) from the server. */
 interface TurnMsg {
@@ -20,7 +21,8 @@ interface TurnMsg {
 }
 export interface InviteMsg {
   id: string;
-  from: { nickname: string; color: string };
+  /** R3-16: the inviter's look (skin colour and Shop hat) for the card's Spuz */
+  from: { nickname: string; color: string; hat?: string | null };
   kind: "duel" | "party" | "bay";
   game: string | null;
   href: string;
@@ -35,6 +37,8 @@ interface Card {
   color: string;
   icon: string;
   ms: number;
+  /** a friend's invite: their Spuz (in their look) stands on the card, the kind's icon as a badge */
+  who?: { color: string; hat: string | null };
 }
 
 const gameName = (g: string | null) => (g ? (GAME_BY_ID[g]?.name ?? "a game") : "a game");
@@ -114,6 +118,7 @@ export function Inbox() {
           color: v.from.color,
           icon: v.kind === "duel" ? "sword" : v.kind === "party" ? "users-three" : "horse",
           ms: 45_000,
+          who: { color: v.from.color, hat: v.from.hat ?? null },
         });
       }),
     ];
@@ -141,12 +146,23 @@ export function Inbox() {
             exit={{ opacity: 0, y: -24 }}
             transition={{ duration: 0.24, ease: [0.23, 1, 0.32, 1] }}
           >
-            <span
-              className="flex size-11 flex-none items-center justify-center rounded-[14px]"
-              style={{ background: card.color, color: "#0E0F1A" }}
-            >
-              <Icon name={card.icon} size={22} />
-            </span>
+            {card.who ? (
+              <SpuzChip color={card.who.color} hat={card.who.hat} size={44} radius={14}>
+                <span
+                  className="bg-accent text-on-accent absolute -right-1.5 -bottom-1.5 flex size-6 items-center justify-center rounded-full"
+                  style={{ boxShadow: "0 0 0 2px var(--surface-raised)" }}
+                >
+                  <Icon name={card.icon} size={14} />
+                </span>
+              </SpuzChip>
+            ) : (
+              <span
+                className="flex size-11 flex-none items-center justify-center rounded-[14px]"
+                style={{ background: card.color, color: "#0E0F1A" }}
+              >
+                <Icon name={card.icon} size={22} />
+              </span>
+            )}
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="font-display truncate text-[16px] font-black">{card.title}</span>
               <span className="text-muted truncate text-[14px]">{card.body}</span>

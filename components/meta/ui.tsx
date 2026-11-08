@@ -7,7 +7,7 @@ import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Button } from "@/components/ui/Button";
 import { Spuz, type SpuzMood } from "@/components/brand/Spuz";
-import { initial } from "@/lib/social";
+import { SpuzChip } from "@/components/meta/SpuzChip";
 
 export const HEX = "polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)";
 export const INK = "#0E0F1A";
@@ -56,36 +56,31 @@ export function Hex({
   );
 }
 
-/** Initial chip in the player's Spuz colour (rows), with an optional presence dot. */
+/**
+ * A player's chip in rows (R3-16): their still Spuz in their skin colour and Shop hat (`SpuzChip`), with an
+ * optional presence dot. Decorative: the nickname beside it is the name. `me` wears the signed-in player's live look.
+ */
 export function AvatarChip({
-  nickname,
   color,
+  hat,
+  me,
   size = 30,
   radius,
   online,
   ring = "var(--bg)",
 }: {
+  /** the player's nickname (shown beside the chip, which is decorative) */
   nickname: string;
   color: string;
+  hat?: string | null;
+  me?: boolean;
   size?: number;
   radius?: number;
   online?: boolean | null;
   ring?: string;
 }) {
   return (
-    <span
-      aria-hidden
-      className="font-display relative flex shrink-0 items-center justify-center font-black"
-      style={{
-        width: size,
-        height: size,
-        borderRadius: radius ?? Math.round(size * 0.3),
-        background: color,
-        color: INK,
-        fontSize: Math.round(size * 0.4),
-      }}
-    >
-      {initial(nickname)}
+    <SpuzChip color={color} hat={hat} me={me} size={size} radius={radius}>
       {online !== undefined && online !== null && (
         <span
           className="absolute rounded-full"
@@ -99,7 +94,7 @@ export function AvatarChip({
           }}
         />
       )}
-    </span>
+    </SpuzChip>
   );
 }
 

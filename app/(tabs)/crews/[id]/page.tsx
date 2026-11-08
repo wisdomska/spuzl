@@ -108,7 +108,7 @@ export default function CrewPage({ params }: PageProps<"/crews/[id]">) {
                     aria-label={`${r.pos}, ${r.me ? "you" : r.nickname}, ${formatNumber(r.xp)} XP this week`}
                   >
                     <span className="num text-muted w-5 text-[14px] font-semibold">{r.pos}</span>
-                    <AvatarChip nickname={r.nickname} color={r.color} size={30} radius={9} />
+                    <AvatarChip nickname={r.nickname} color={r.color} hat={r.hat} me={r.me} size={30} radius={9} />
                     <span className={`flex-1 truncate text-[15px] ${r.me ? "font-bold" : "font-medium"}`}>{r.me ? "You" : r.nickname}</span>
                     <span className="num text-[15px] font-semibold">{formatNumber(r.xp)}</span>
                   </Link>

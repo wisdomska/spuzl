@@ -65,7 +65,7 @@ export function InviteFriends({ kind, target, collapsible = false }: { kind: Inv
             return (
               <li key={f.id} className="bg-surface flex items-center gap-3 rounded-[16px] p-2 pr-2.5">
                 <span className="relative">
-                  <Avatar name={f.nickname} color={f.color} size={40} />
+                  <Avatar name={f.nickname} color={f.color} hat={f.hat} size={40} />
                   {f.presence.online && (
                     <span
                       aria-hidden

@@ -24,6 +24,8 @@ export interface ChatMessage {
   from: string;
   nickname: string;
   color: string;
+  /** R3-16: the sender's Shop hat, for their chat chip (null for none) */
+  hat?: string | null;
   kind: "text" | "quick";
   body: string;
   at: number;

@@ -565,7 +565,15 @@ export function Lobby({
                 style={{ boxShadow: p.ready ? "inset 0 0 0 2px var(--accent)" : undefined }}
                 aria-label={`${p.id === view.me ? "You" : p.nickname}${p.host ? ", host" : ""}, ${p.ready ? "ready" : "not ready"}${present.size && !present.has(p.id) ? ", away" : ""}`}
               >
-                <Avatar name={p.nickname} color={p.color} size={44} radius={14} dim={present.size > 0 && !present.has(p.id)} />
+                <Avatar
+                  name={p.nickname}
+                  color={p.color}
+                  hat={p.hat}
+                  me={p.id === view.me}
+                  size={44}
+                  radius={14}
+                  dim={present.size > 0 && !present.has(p.id)}
+                />
                 <span className="max-w-full truncate px-1 text-[14px] font-semibold">{p.id === view.me ? "You" : p.nickname}</span>
                 {p.ready && (
                   <span className="bg-accent absolute top-1.5 right-1.5 flex size-[22px] items-center justify-center rounded-[8px] text-[var(--on-accent)]">
@@ -680,6 +688,7 @@ export interface RailRow {
   id: string;
   nickname: string;
   color: string;
+  hat?: string | null;
   progress: number;
   finished: boolean;
   gone: boolean;
@@ -700,6 +709,7 @@ export function rowsOf(view: MatchView): RailRow[] {
       id: p.id,
       nickname: p.nickname,
       color: p.color,
+      hat: p.hat ?? null,
       progress: timeMs !== null ? 1 : p.progress,
       finished: timeMs !== null,
       gone: p.left || p.stale,
@@ -776,7 +786,7 @@ export function RaceRail({
               >
                 {placeLabel(i + 1)}
               </span>
-              <Avatar name={r.nickname} color={r.color} size={22} radius={7} />
+              <Avatar name={r.nickname} color={r.color} hat={r.hat} me={me} size={22} radius={7} />
               <span className={`w-[58px] truncate text-[14px] ${me ? "text-accent" : ""}`} style={{ fontWeight: me ? 700 : 500 }}>
                 {me ? partyCopy.results.you : r.nickname}
               </span>
@@ -819,7 +829,7 @@ function PartyAddFriends({ view }: { view: MatchView }) {
       <ul className="flex flex-col gap-1.5">
         {others.map((p) => (
           <li key={p.id} className="bg-surface flex items-center gap-2.5 rounded-[14px] p-2 pl-3">
-            <Avatar name={p.nickname} color={p.color} size={28} radius={9} />
+            <Avatar name={p.nickname} color={p.color} hat={p.hat} size={28} radius={9} />
             <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">{p.nickname}</span>
             <AddFriend id={p.id} nickname={p.nickname} />
           </li>
@@ -965,7 +975,7 @@ export function Podium({
               aria-label={R.placeLine(i + 4, mine ? R.you : p.nickname, p.points)}
             >
               <span className="num text-muted w-[22px] text-[15px] font-semibold">{i + 4}</span>
-              <Avatar name={p.nickname} color={p.color} size={28} radius={9} />
+              <Avatar name={p.nickname} color={p.color} hat={p.hat} me={mine} size={28} radius={9} />
               <span className={`flex-1 text-[16px] ${mine ? "text-accent font-bold" : "font-medium"}`}>{mine ? R.you : p.nickname}</span>
               <span className="num text-[15px] font-semibold">{formatNumber(p.points)}</span>
             </li>

@@ -60,10 +60,14 @@ export async function sendGameInvite(
     game = b.game_id as string;
   }
 
-  const { data: card } = await admin.from("players").select("nickname, avatar_color").eq("id", me).single();
+  const { data: card } = await admin.from("players").select("nickname, avatar_color, hat").eq("id", me).single();
   await serverBroadcast(`user:${input.to}`, "invite", {
     id: randomUUID(),
-    from: { nickname: card?.nickname ?? "A friend", color: card?.avatar_color ?? "#B8F23A" },
+    from: {
+      nickname: card?.nickname ?? "A friend",
+      color: card?.avatar_color ?? "#B8F23A",
+      hat: (card?.hat as string | null | undefined) ?? null,
+    },
     kind: input.kind,
     game,
     href,

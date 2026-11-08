@@ -144,7 +144,7 @@ async function challengeByCode(admin: SupabaseClient, code: string) {
 export async function getChallenge(admin: SupabaseClient, me: string, code: string) {
   const c = await challengeByCode(admin, code);
   const [{ data: sender }, { data: mine }] = await Promise.all([
-    admin.from("player_cards").select("id, nickname, avatar_color, level, city").eq("id", c.sender_id).maybeSingle(),
+    admin.from("player_cards").select("id, nickname, avatar_color, hat, level, city").eq("id", c.sender_id).maybeSingle(),
     admin.from("challenge_results").select("*").eq("challenge_id", c.id).eq("player_id", me).maybeSingle(),
   ]);
   return {
@@ -155,6 +155,7 @@ export async function getChallenge(admin: SupabaseClient, me: string, code: stri
       id: c.sender_id,
       nickname: sender?.nickname ?? "Spuzler",
       color: sender?.avatar_color ?? "#B8F23A",
+      hat: (sender?.hat as string | null | undefined) ?? null,
       level: sender?.level ?? 1,
       city: sender?.city ?? null,
     },

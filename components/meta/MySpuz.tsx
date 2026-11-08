@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext, type CSSProperties } from "react";
+import { useContext, type CSSProperties, type ReactNode } from "react";
 import { QueryClientContext } from "@tanstack/react-query";
 import type { SpuzMood } from "@/components/brand/Spuz";
 import { SpuzWear } from "@/components/meta/SpuzWear";
@@ -51,4 +51,23 @@ function Look({ mood, size, still, decorative, label, className, style, color, h
       label={decorative ? undefined : (label ?? shopCopy.yourSpuz)}
     />
   );
+}
+
+export interface SpuzLook {
+  color: string;
+  hat: string | null;
+}
+
+/**
+ * R3-16: the signed-in player's live look for list rows that stand for them (a leaderboard row, a lobby seat).
+ * The cached profile wins, so a hat changed in the Shop shows at once; until it loads, or outside the query
+ * provider, the row's own payload look (`fallback`) is used.
+ */
+export function WithMyLook({ fallback, children }: { fallback: SpuzLook; children: (look: SpuzLook) => ReactNode }) {
+  return useContext(QueryClientContext) ? <SignedLook fallback={fallback}>{children}</SignedLook> : <>{children(fallback)}</>;
+}
+
+function SignedLook({ fallback, children }: { fallback: SpuzLook; children: (look: SpuzLook) => ReactNode }) {
+  const me = useMe().data;
+  return <>{children(me ? { color: me.avatar_color || fallback.color, hat: me.hat ?? null } : fallback)}</>;
 }

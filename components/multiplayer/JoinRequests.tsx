@@ -14,7 +14,7 @@ import { Avatar, Cta } from "./ui";
 /** Must match JOIN_REQUEST_EVENT in lib/multiplayer/server/joinRequests.ts (the room's match channel). */
 const EVENT = "join_request";
 
-type Pending = { id: string; nickname: string; color: string | null; at: number };
+type Pending = { id: string; nickname: string; color: string | null; hat?: string | null; at: number };
 
 /**
  * R2-13, host side: the room's pending requests to join, with Let in and Say no. Refreshed the moment one arrives
@@ -73,7 +73,7 @@ export function HostJoinRequests({ matchId, channel }: { matchId: string; channe
           <ul className="flex flex-col gap-2">
             {requests.map((r) => (
               <li key={r.id} className="flex items-center gap-2.5">
-                <Avatar name={r.nickname} color={r.color ?? "var(--accent)"} size={36} radius={12} />
+                <Avatar name={r.nickname} color={r.color ?? "var(--accent)"} hat={r.hat} size={36} radius={12} />
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="truncate text-[15px] font-semibold">{r.nickname}</span>
                   <span className="text-muted text-[13px]">{C.wantsIn}</span>

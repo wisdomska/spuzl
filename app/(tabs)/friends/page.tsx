@@ -209,7 +209,7 @@ function AddByName({ minor }: { minor: boolean }) {
               const done = p.status === "friends" || p.status === "requested";
               return (
                 <li key={p.id} className={`flex h-14 items-center gap-2.5 px-2.5 ${i ? "border-line border-t" : ""}`}>
-                  <AvatarChip nickname={p.nickname} color={p.color} size={36} radius={11} />
+                  <AvatarChip nickname={p.nickname} color={p.color} hat={p.hat} size={36} radius={11} />
                   <Link href={`/u/${p.nickname}`} className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate text-[15px] font-semibold">{p.nickname}</span>
                     <span className="text-muted truncate text-[12px] font-medium">
@@ -260,7 +260,7 @@ function FriendsTab({ minor }: { minor: boolean }) {
               <h2 className="text-[15px] font-bold">Requests · {d!.incoming.length}</h2>
               {d!.incoming.map((r) => (
                 <div key={r.id} className="bg-surface flex h-14 items-center gap-2.5 rounded-[16px] px-2.5">
-                  <AvatarChip nickname={r.nickname} color={r.color} size={36} radius={11} />
+                  <AvatarChip nickname={r.nickname} color={r.color} hat={r.hat} size={36} radius={11} />
                   <Link href={`/u/${r.nickname}`} className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate text-[15px] font-semibold">{r.nickname}</span>
                     <span className="text-muted text-[12px] font-medium">
@@ -301,7 +301,7 @@ function FriendsTab({ minor }: { minor: boolean }) {
                 {d!.friends.map((f) => (
                   <li key={f.id} className="flex h-[52px] items-center gap-2.5 px-1">
                     <Link href={`/u/${f.nickname}`} className="flex min-w-0 flex-1 items-center gap-2.5">
-                      <AvatarChip nickname={f.nickname} color={f.color} size={36} radius={11} online={f.presence.online} />
+                      <AvatarChip nickname={f.nickname} color={f.color} hat={f.hat} size={36} radius={11} online={f.presence.online} />
                       <span className="flex min-w-0 flex-col">
                         <span className="truncate text-[15px] font-semibold">{f.nickname}</span>
                         <span className="text-muted truncate text-[13px] font-medium">{f.presence.label}</span>
@@ -327,7 +327,7 @@ function FriendsTab({ minor }: { minor: boolean }) {
                 {d!.outgoing.map((o) => (
                   <li key={o.id} className="flex h-[52px] items-center gap-2.5 px-1">
                     <Link href={`/u/${o.nickname}`} className="flex min-w-0 flex-1 items-center gap-2.5">
-                      <AvatarChip nickname={o.nickname} color={o.color} size={36} radius={11} />
+                      <AvatarChip nickname={o.nickname} color={o.color} hat={o.hat} size={36} radius={11} />
                       <span className="flex min-w-0 flex-col">
                         <span className="truncate text-[15px] font-semibold">{o.nickname}</span>
                         <span className="text-muted truncate text-[13px] font-medium">Waiting for them to accept</span>
@@ -399,7 +399,14 @@ function ActivityTab() {
           return (
             <li key={it.id} className="bg-surface flex flex-col gap-2.5 rounded-[18px] px-3.5 py-3">
               <div className="flex items-center gap-2.5">
-                <AvatarChip nickname={it.player.nickname} color={it.player.color} size={36} radius={11} />
+                <AvatarChip
+                  nickname={it.player.nickname}
+                  color={it.player.color}
+                  hat={it.player.hat}
+                  me={it.player.me}
+                  size={36}
+                  radius={11}
+                />
                 <p className="flex-1 text-[15px] leading-[1.35] font-medium">{line}</p>
                 <span className="text-muted self-start text-[12px] font-medium">
                   <time dateTime={it.at}>{agoShort(it.at)}</time>

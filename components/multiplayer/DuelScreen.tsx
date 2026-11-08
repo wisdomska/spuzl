@@ -371,6 +371,7 @@ function DuelMatch({ id }: { id: string }) {
             id: BOT_ID,
             nickname: "Practice bot",
             color: "#A2A6C2",
+            hat: null,
             rating: 0,
             country: null,
             city: null,
@@ -549,7 +550,7 @@ function DuelMatch({ id }: { id: string }) {
         round={prev}
         meWon={res === "me"}
         draw={res === "draw"}
-        me={{ nickname: me.nickname, color: me.color }}
+        me={{ nickname: me.nickname, color: me.color, hat: me.hat }}
         them={them}
         myMs={mine?.timeMs ?? null}
         theirMs={view.isBot ? (res === "them" ? (view.bot?.times[prev - 1] ?? null) : null) : (theirs?.timeMs ?? null)}
@@ -569,6 +570,7 @@ function DuelMatch({ id }: { id: string }) {
       <OppDisconnected
         name={them.nickname}
         color={them.color}
+        hat={them.hat}
         progress={themP?.progress ?? 0}
         msLeft={TIMING.reconnectMs - pausedFor}
         gameId={view.games[view.round - 1] ?? view.gameId}
@@ -587,12 +589,13 @@ function DuelMatch({ id }: { id: string }) {
           them={{
             nickname: them.nickname,
             color: them.color,
+            hat: them.hat,
             progress: view.isBot ? (theyFinished ? 1 : botP) : (themP?.progress ?? 0),
             mistakes: view.isBot ? 0 : (themP?.mistakes ?? 0),
             finished: theyFinished,
             bot: view.isBot,
           }}
-          me={{ nickname: me.nickname, color: me.color, progress: me.progress }}
+          me={{ nickname: me.nickname, color: me.color, hat: me.hat, progress: me.progress }}
           myMs={phase === "countdown" ? null : myClockMs}
           rounds={rounds}
           round={view.round}

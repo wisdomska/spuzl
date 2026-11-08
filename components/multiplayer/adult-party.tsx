@@ -238,7 +238,7 @@ export function PlayersSheet({
       <ul className="flex flex-col gap-1.5">
         {here.map((p) => (
           <li key={p.id} className="bg-surface-raised flex min-h-12 items-center gap-2.5 rounded-[14px] pr-1 pl-3">
-            <Avatar name={p.nickname} color={p.color} size={28} radius={9} />
+            <Avatar name={p.nickname} color={p.color} hat={p.hat} me={p.id === view.me} size={28} radius={9} />
             <span className="min-w-0 flex-1 truncate text-[16px] font-medium">{p.id === view.me ? "You" : p.nickname}</span>
             <span className="num text-[15px] font-semibold">{C.round.points(p.points)}</span>
             {host && p.id !== view.me ? (
@@ -420,7 +420,14 @@ function Awards({ view, r }: { view: MatchView; r: AdultRoundView }) {
         const p = view.players.find((x) => x.id === id);
         return (
           <li key={id} className="bg-surface flex min-h-11 items-center gap-2.5 rounded-[14px] px-3">
-            <Avatar name={p?.nickname ?? "?"} color={p?.color ?? "var(--surface-raised)"} size={26} radius={8} />
+            <Avatar
+              name={p?.nickname ?? "?"}
+              color={p?.color ?? "var(--surface-raised)"}
+              hat={p?.hat}
+              me={id === view.me}
+              size={26}
+              radius={8}
+            />
             <span className="min-w-0 flex-1 truncate text-[15px] font-medium">{id === view.me ? "You" : (p?.nickname ?? "Spuzler")}</span>
             <span className="num text-accent text-[16px] font-bold">{C.round.plus(pts)}</span>
           </li>

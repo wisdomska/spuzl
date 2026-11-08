@@ -3,19 +3,21 @@
 import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { formatNumber } from "@/lib/format";
+import { SpuzChip } from "@/components/meta/SpuzChip";
 
 /** Home HUD: level ring (conic progress), streak chip, Sparks chip. Lime chrome only. */
 export function LevelRing({
   level,
   pct,
   color,
-  initial,
+  hat,
   size = 48,
 }: {
   level: number;
   pct: number;
+  /** the player's skin colour and Shop hat (R3-16: their Spuz sits in the ring, live from the cached profile) */
   color: string;
-  initial: string;
+  hat?: string | null;
   size?: number;
 }) {
   const p = Math.max(0, Math.min(100, pct));
@@ -25,13 +27,7 @@ export function LevelRing({
       className="relative flex items-center justify-center rounded-full"
       style={{ width: size, height: size, background: `conic-gradient(var(--accent) 0 ${p}%, var(--line) ${p}% 100%)` }}
     >
-      <span
-        aria-hidden
-        className="font-display flex items-center justify-center rounded-[12px] text-[18px] font-black text-[#0E0F1A]"
-        style={{ width: size - 8, height: size - 8, background: color }}
-      >
-        {initial}
-      </span>
+      <SpuzChip color={color} hat={hat} me size={size - 8} radius={12} />
       <span
         className="num bg-accent text-on-accent absolute -right-1 -bottom-1 flex h-[22px] min-w-[22px] items-center justify-center rounded-[8px] px-1 text-[12px] font-bold"
         style={{ boxShadow: "0 0 0 3px var(--bg)" }}

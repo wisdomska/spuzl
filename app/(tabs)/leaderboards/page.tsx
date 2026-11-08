@@ -170,7 +170,7 @@ export default function LeaderboardsPage() {
               aria-label={`You are ${ordinal(d.me.pos)} of ${d.total}, top ${d.me.top} percent, ${valueLabel(d.me, d.scoring)}`}
             >
               <span className="num text-accent w-[26px] text-[14px] font-semibold">{d.me.pos}</span>
-              <AvatarChip nickname={d.me.nickname} color={d.me.color} size={30} radius={9} />
+              <AvatarChip nickname={d.me.nickname} color={d.me.color} hat={d.me.hat} me size={30} radius={9} />
               <span className="flex-1 text-[15px] font-bold">You</span>
               <span className="text-muted text-[13px] font-medium">top {d.me.top}%</span>
               <span className="num text-[15px] font-semibold">{valueText(d.me, d.scoring)}</span>
@@ -246,7 +246,7 @@ function Row({ r, scoring }: { r: BoardRow; scoring: BoardRes["scoring"] }) {
       aria-label={`${ordinal(r.pos)}, ${r.me ? "you" : r.nickname}, ${valueLabel(r, scoring)}`}
     >
       <span className="num text-muted w-[26px] text-[14px] font-semibold">{r.pos}</span>
-      <AvatarChip nickname={r.nickname} color={r.color} size={30} radius={9} />
+      <AvatarChip nickname={r.nickname} color={r.color} hat={r.hat} me={r.me} size={30} radius={9} />
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate text-[15px] font-semibold">{r.me ? "You" : r.nickname}</span>
         {r.sub && <span className="text-muted truncate text-[12px] font-medium">{r.sub}</span>}
@@ -279,17 +279,8 @@ function Podium({ rows, scoring }: { rows: BoardRow[]; scoring: BoardRes["scorin
             aria-hidden
             tabIndex={-1}
           >
-            <span
-              className="font-display flex items-center justify-center rounded-[18px] text-[20px] font-black"
-              style={{
-                width: POD[i].size,
-                height: POD[i].size,
-                background: r.color,
-                color: "#0E0F1A",
-                boxShadow: `0 0 0 3px var(--bg), 0 0 0 6px ${POD[i].ring}`,
-              }}
-            >
-              {r.nickname[0]?.toUpperCase()}
+            <span className="flex rounded-[18px]" style={{ boxShadow: `0 0 0 3px var(--bg), 0 0 0 6px ${POD[i].ring}` }}>
+              <AvatarChip nickname={r.nickname} color={r.color} hat={r.hat} me={r.me} size={POD[i].size} radius={18} />
             </span>
             <span className="max-w-full truncate text-[14px] font-semibold">{r.me ? "You" : r.nickname}</span>
           </Link>

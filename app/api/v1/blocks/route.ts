@@ -13,7 +13,7 @@ export const GET = handle(async () => {
     admin,
     (data ?? []).map((b) => b.blocked_id),
   );
-  return ok({ blocked: [...people.values()].map(({ id, nickname, color }) => ({ id, nickname, color })) });
+  return ok({ blocked: [...people.values()].map(({ id, nickname, color, hat }) => ({ id, nickname, color, hat })) });
 });
 
 const Block = z.object({ playerId: z.uuid() });

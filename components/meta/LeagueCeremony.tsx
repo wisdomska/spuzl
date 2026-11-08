@@ -135,7 +135,16 @@ export function LeagueCeremony({ c, onDone }: { c: Ceremony; onDone: () => void 
                   animate={mine ? (reduce ? {} : { transform: rest }) : {}}
                   transition={instant ? { duration: 0 } : { duration: 0.75, ease: IN_OUT }}
                 >
-                  <LeagueRow pos={r.pos} nickname={r.nickname} color={r.color} points={r.points} zone={r.zone} me={mine} tall={mine} />
+                  <LeagueRow
+                    pos={r.pos}
+                    nickname={r.nickname}
+                    color={r.color}
+                    hat={r.hat}
+                    points={r.points}
+                    zone={r.zone}
+                    me={mine}
+                    tall={mine}
+                  />
                 </motion.div>
               );
             })}

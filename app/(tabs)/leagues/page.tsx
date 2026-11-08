@@ -80,7 +80,7 @@ export default function LeaguesPage() {
               m ? (
                 <li key={m.id}>
                   <Link href={m.me ? "/me" : `/u/${m.nickname}`} className="block rounded-[12px]">
-                    <LeagueRow pos={m.pos} nickname={m.nickname} color={m.color} points={m.points} zone={m.zone} me={m.me} />
+                    <LeagueRow pos={m.pos} nickname={m.nickname} color={m.color} hat={m.hat} points={m.points} zone={m.zone} me={m.me} />
                   </Link>
                 </li>
               ) : (

@@ -53,6 +53,7 @@ async function table(admin: Parameters<typeof cards>[0], leagueId: string, me: s
       id: c.id,
       nickname: c.nickname,
       color: c.color,
+      hat: c.hat,
       points: r.points,
       // zones follow each player's own tier (a merged group holds more than one)
       zone: zoneFor(pos, n, r.home_tier ?? tier),

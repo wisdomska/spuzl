@@ -134,12 +134,7 @@ export function HomeScreen() {
           className="safe-top sticky top-0 z-10 flex items-center justify-between px-4 pb-3 lg:pt-6"
           style={{ background: "linear-gradient(var(--bg) 70%, transparent)" }}
         >
-          <LevelRing
-            level={d.level}
-            pct={(d.xpInto / d.xpNeed) * 100}
-            color={d.avatar_color}
-            initial={d.nickname.slice(0, 1).toUpperCase()}
-          />
+          <LevelRing level={d.level} pct={(d.xpInto / d.xpNeed) * 100} color={d.avatar_color} hat={d.hat} />
           <div className="flex gap-2">
             <StreakChip streak={streak} atRisk={atRisk} />
             <SparksChip sparks={d.sparks} />

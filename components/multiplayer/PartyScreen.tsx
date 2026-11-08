@@ -665,7 +665,7 @@ function RaceCountdown({ view, msToStart, beats }: { view: MatchView; msToStart:
         {view.players
           .filter((p) => !p.spectator && !p.left)
           .map((p) => (
-            <Avatar key={p.id} name={p.nickname} color={p.color} size={52} radius={16} />
+            <Avatar key={p.id} name={p.nickname} color={p.color} hat={p.hat} me={p.id === view.me} size={52} radius={16} />
           ))}
       </div>
     </CountdownOverlay>

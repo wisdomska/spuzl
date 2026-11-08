@@ -424,7 +424,7 @@ export function BayMatch({ id }: { id: string }) {
     const diff = chess ? (p.seat === 0 ? -chess.diff : chess.diff) : 0;
     return (
       <div className="flex items-center gap-2.5 px-3">
-        <Avatar name={p.nickname} color={p.color} size={44} radius={14}>
+        <Avatar name={p.nickname} color={p.color} hat={p.hat} me={mine} size={44} radius={14}>
           {!mine && (
             <EmoteBubble
               emote={emotes.last && emotes.last.from !== meId ? emotes.last.e : null}

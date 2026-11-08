@@ -455,7 +455,7 @@ function PrivacySheet({ open, onClose }: { open: boolean; onClose: () => void })
         {blocks.data?.blocked.length ? (
           blocks.data.blocked.map((b) => (
             <div key={b.id} className="flex items-center gap-2.5">
-              <AvatarChip nickname={b.nickname} color={b.color} size={32} radius={10} />
+              <AvatarChip nickname={b.nickname} color={b.color} hat={b.hat} size={32} radius={10} />
               <span className="flex-1 text-[15px] font-semibold">{b.nickname}</span>
               <button
                 onClick={() => unblock.mutate(b.id)}

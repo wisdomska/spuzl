@@ -15,6 +15,7 @@ type Seat = {
   players: {
     nickname: string;
     avatar_color: string | null;
+    hat: string | null;
     age_band: string | null;
     birth_year: number | null;
     birth_month: number | null;
@@ -24,7 +25,7 @@ type Seat = {
 /** A chat room: a Duel or Party match, or a Board Games match. */
 export type ChatRoom = { kind: "match" | "bay"; id: string };
 
-const PLAYER_COLS = "nickname, avatar_color, age_band, birth_year, birth_month";
+const PLAYER_COLS = "nickname, avatar_color, hat, age_band, birth_year, birth_month";
 
 async function seats(admin: SupabaseClient, room: ChatRoom): Promise<Seat[]> {
   if (!/^[0-9a-f-]{36}$/i.test(room.id)) throw new ApiError(404, "match_not_found");
@@ -72,6 +73,7 @@ export async function listChat(admin: SupabaseClient, room: ChatRoom, me: string
     from: r.player_id as string,
     nickname: who.get(r.player_id as string)?.nickname ?? "Spuzler",
     color: who.get(r.player_id as string)?.avatar_color ?? "#B8F23A",
+    hat: who.get(r.player_id as string)?.hat ?? null,
     kind: r.kind as "text" | "quick",
     body: r.body as string,
     at: Date.parse(r.created_at as string),

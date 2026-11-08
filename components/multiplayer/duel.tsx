@@ -427,8 +427,8 @@ export function OpponentStrip({
   myEmote,
   stale,
 }: {
-  them: { nickname: string; color: string; progress: number; mistakes: number; finished: boolean; bot?: boolean };
-  me: { nickname: string; color: string; progress: number };
+  them: { nickname: string; color: string; hat?: string | null; progress: number; mistakes: number; finished: boolean; bot?: boolean };
+  me: { nickname: string; color: string; hat?: string | null; progress: number };
   /** your clock by the header timer's rule (`ownClockMs`); null before your first move of the round */
   myMs: number | null;
   rounds: ("me" | "them" | "draw")[];
@@ -464,7 +464,7 @@ export function OpponentStrip({
         animate={them.finished && !reduce ? { transform: ["scale(1)", "scale(1.06)", "scale(1)"] } : undefined}
         transition={{ ...SPRING_PARTY, duration: 0.4 }}
       >
-        <Avatar name={them.nickname} color={stale ? "#5A5E78" : them.color} dim={stale}>
+        <Avatar name={them.nickname} color={stale ? "#5A5E78" : them.color} hat={them.hat} dim={stale}>
           <EmoteBubble emote={emote?.e ?? null} n={emote?.n ?? 0} className="-top-[34px] -left-1.5" />
           <AnimatePresence>
             {them.finished && (
@@ -504,7 +504,7 @@ export function OpponentStrip({
         <RoundDots rounds={rounds} current={round} oppColor={them.color} />
       </motion.div>
       <div className="flex items-center gap-2.5">
-        <Avatar name={me.nickname} color={me.color}>
+        <Avatar name={me.nickname} color={me.color} hat={me.hat} me>
           <EmoteBubble emote={myEmote?.e ?? null} n={myEmote?.n ?? 0} className="-top-[34px] -left-1.5" />
         </Avatar>
         <div className="flex flex-1 flex-col gap-[5px]">
@@ -667,6 +667,7 @@ export function RoundEnd({
 export function OppDisconnected({
   name,
   color,
+  hat,
   progress,
   msLeft,
   onClaim,
@@ -674,6 +675,7 @@ export function OppDisconnected({
 }: {
   name: string;
   color: string;
+  hat?: string | null;
   progress: number;
   msLeft: number;
   onClaim: () => void;
@@ -686,7 +688,7 @@ export function OppDisconnected({
   return (
     <div className="flex flex-1 flex-col" data-screen-label="M3 Opp disconnected">
       <div className="bg-surface flex items-center gap-2.5 px-3 pt-[max(50px,env(safe-area-inset-top))] pb-3">
-        <Avatar name={name} color={color} dim />
+        <Avatar name={name} color={color} hat={hat} dim />
         <div className="flex flex-1 flex-col gap-1">
           <span className="flex items-center gap-1.5 text-[14px] font-semibold">
             {name} <Icon name="wifi-slash" size={14} className="text-gold" />

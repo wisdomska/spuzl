@@ -93,7 +93,7 @@ export function ChatPanel({ chat, me, onEmote }: { chat: MatchChat; me: string; 
                   const mine = m.from === me;
                   return (
                     <li key={m.id} className={`flex items-end gap-2 ${mine ? "flex-row-reverse" : ""}`}>
-                      {!mine && <Avatar name={m.nickname} color={m.color} size={28} />}
+                      {!mine && <Avatar name={m.nickname} color={m.color} hat={m.hat} size={28} />}
                       <div
                         className={`max-w-[78%] rounded-[16px] px-3 py-2 text-[15px] leading-snug ${mine ? "bg-accent text-on-accent rounded-br-[6px]" : "bg-surface-raised rounded-bl-[6px]"}`}
                       >
@@ -177,7 +177,7 @@ export function ChatPopup({ chat }: { chat: MatchChat }) {
           exit={{ opacity: 0, y: -12 }}
           transition={{ duration: 0.2 }}
         >
-          <Avatar name={chat.incoming.nickname} color={chat.incoming.color} size={30} />
+          <Avatar name={chat.incoming.nickname} color={chat.incoming.color} hat={chat.incoming.hat} size={30} />
           <span className="min-w-0 truncate text-[14px]">
             <span className="font-semibold">{chat.incoming.nickname}: </span>
             {chat.incoming.body}

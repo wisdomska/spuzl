@@ -44,7 +44,7 @@ export const GET = handle(async (_req: Request, ctx: RouteContext<"/api/v1/crews
     };
   }
   const carry = [...people.values()]
-    .map((c) => ({ id: c.id, nickname: c.nickname, color: c.color, xp: xp.get(c.id) ?? 0, me: c.id === player.id }))
+    .map((c) => ({ id: c.id, nickname: c.nickname, color: c.color, hat: c.hat, xp: xp.get(c.id) ?? 0, me: c.id === player.id }))
     .sort((a, b) => b.xp - a.xp || a.nickname.localeCompare(b.nickname))
     .map((r, i) => ({ ...r, pos: i + 1 }));
 

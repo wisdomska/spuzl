@@ -9,6 +9,7 @@ type Row = {
   id: string;
   nickname: string;
   avatar_color: string | null;
+  hat: string | null;
   level: number | null;
   title: string | null;
   age_band: string | null;
@@ -28,7 +29,7 @@ export const GET = handle(async (req: Request) => {
   const q = (new URL(req.url).searchParams.get("q") ?? "").replace(/[^A-Za-z0-9_]/g, "").slice(0, 16);
   if (q.length < 2) return ok({ players: [] });
   const esc = q.replace(/[%_\\]/g, "\\$&");
-  const cols = "id, nickname, avatar_color, level, title, age_band, birth_year, birth_month";
+  const cols = "id, nickname, avatar_color, hat, level, title, age_band, birth_year, birth_month";
   const base = () => admin.from("players").select(cols).is("banned_at", null).eq("is_test", false).neq("id", player.id);
   const [{ data: starts }, { data: contains }, blocked] = await Promise.all([
     base().ilike("nickname", `${esc}%`).order("nickname").limit(20),
@@ -60,6 +61,7 @@ export const GET = handle(async (req: Request) => {
       id: r.id,
       nickname: r.nickname,
       color: r.avatar_color ?? "#B8F23A",
+      hat: r.hat ?? null,
       level: r.level ?? 1,
       title: r.title,
       status: statusOf(r.id),

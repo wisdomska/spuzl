@@ -14,6 +14,7 @@ export function LeagueRow({
   pos,
   nickname,
   color,
+  hat,
   points,
   zone,
   me,
@@ -22,6 +23,7 @@ export function LeagueRow({
   pos: number;
   nickname: string;
   color: string;
+  hat?: string | null;
   points: number;
   zone: Zone;
   me?: boolean;
@@ -41,7 +43,7 @@ export function LeagueRow({
       <span className="num w-6 text-[14px] font-semibold" style={{ color: z.fg }} aria-hidden>
         {pos}
       </span>
-      <AvatarChip nickname={nickname} color={color} size={28} radius={9} />
+      <AvatarChip nickname={nickname} color={color} hat={hat} me={me} size={28} radius={9} />
       <span className={`min-w-0 flex-1 truncate text-[15px] ${me ? "font-bold" : "font-medium"}`} aria-hidden>
         {me ? "You" : nickname}
       </span>

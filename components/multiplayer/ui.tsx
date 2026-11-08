@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { Icon } from "@/components/ui/Icon";
 import { Spuz } from "@/components/brand/Spuz";
+import { SpuzChip } from "@/components/meta/SpuzChip";
 import { play } from "@/lib/audio";
 import { haptic, LEVELS } from "@/lib/haptics";
 import { COUNTDOWN_BEATS, EMOTES, EMOTE_LABELS, countdownBeats, type EmoteId } from "@/lib/multiplayer/constants";
@@ -18,40 +19,33 @@ export const SPRING_PRESS = { type: "spring", stiffness: 600, damping: 30 } as c
 /** Podium colours (gold, silver, bronze) and the rail position chips. Board materials, same in both themes. */
 export const PODIUM = ["var(--pos-1)", "var(--pos-2)", "var(--pos-3)"] as const;
 
-/** Player tile: the initial on their Spuz colour, ink text (never colour alone: the name sits beside it). */
+/**
+ * Player tile (R3-16): their Spuz in their skin colour and Shop hat (`SpuzChip`), still and decorative; the name
+ * always sits beside it. `me` wears the signed-in player's live look.
+ */
 export function Avatar({
-  name,
   color,
+  hat,
+  me,
   size = 40,
   radius,
   dim,
   children,
 }: {
+  /** the player's nickname (shown beside the tile, which is decorative) */
   name: string;
   color: string;
+  hat?: string | null;
+  me?: boolean;
   size?: number;
   radius?: number;
   dim?: boolean;
   children?: ReactNode;
 }) {
   return (
-    <span
-      aria-hidden
-      className="font-display relative flex flex-none items-center justify-center font-black"
-      style={{
-        width: size,
-        height: size,
-        borderRadius: radius ?? Math.round(size * 0.3),
-        background: color,
-        color: "#0E0F1A",
-        fontSize: Math.round(size * 0.4),
-        opacity: dim ? 0.4 : 1,
-        boxShadow: "inset -3px -3px 0 rgba(0,0,0,.18)",
-      }}
-    >
-      {name.slice(0, 1).toUpperCase()}
+    <SpuzChip color={color} hat={hat} me={me} size={size} radius={radius} dim={dim}>
       {children}
-    </span>
+    </SpuzChip>
   );
 }
 

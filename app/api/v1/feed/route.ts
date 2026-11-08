@@ -67,7 +67,7 @@ export const GET = handle(async (req: Request) => {
       game: e.game_id,
       payload: { ...((e.payload as object | null) ?? {}), ...detail(e) },
       at: e.created_at,
-      player: { id: c.id, nickname: c.nickname, color: c.color, me: c.id === player.id },
+      player: { id: c.id, nickname: c.nickname, color: c.color, hat: c.hat, me: c.id === player.id },
       counts,
       mine: (mine.find((r) => r.player_id === player.id)?.reaction as Reaction | undefined) ?? null,
     };

@@ -23,7 +23,7 @@ export interface ChallengeCardData {
   code: string;
   game: string;
   label: string;
-  sender: { id: string; nickname: string; color: string; level: number; city: string | null };
+  sender: { id: string; nickname: string; color: string; hat?: string | null; level: number; city: string | null };
   senderMs: number;
   hints: number;
   mistakes: number;
@@ -49,7 +49,7 @@ export function ChallengeCard({ c, onAccept, onLater }: { c: ChallengeCardData; 
       <div className="relative flex flex-col items-center gap-3 overflow-hidden rounded-[32px] bg-[#1B1835] p-6 text-[#F4F5FB]">
         <div aria-hidden className="absolute inset-0 bg-[radial-gradient(#2E2858_1.5px,transparent_1.5px)] bg-[size:20px_20px]" />
         <div className="relative flex items-center gap-3">
-          <Avatar name={c.sender.nickname} color={c.sender.color} size={64} radius={20} />
+          <Avatar name={c.sender.nickname} color={c.sender.color} hat={c.sender.hat} me={c.mine} size={64} radius={20} />
           <div className="flex flex-col">
             <span className="font-display text-[20px] font-extrabold">{c.sender.nickname}</span>
             <span className="text-[14px] font-medium text-[#C9C4FF]">

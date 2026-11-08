@@ -38,7 +38,7 @@ export interface FeedItem {
   game: string | null;
   payload: Record<string, unknown>;
   at: string;
-  player: { id: string; nickname: string; color: string; me: boolean };
+  player: { id: string; nickname: string; color: string; hat: string | null; me: boolean };
   counts: Record<Reaction, number>;
   mine: Reaction | null;
 }
@@ -72,6 +72,8 @@ export interface LeagueMember {
   id: string;
   nickname: string;
   color: string;
+  /** R3-16: the Shop hat their row's Spuz wears (null for none) */
+  hat: string | null;
   points: number;
   zone: Zone;
   me: boolean;
@@ -209,7 +211,7 @@ export interface CrewPage {
   max: number;
   city: string | null;
   clash: { week: number; endsInMs: number; us: number; them: number; opponent: string } | null;
-  carry: { pos: number; id: string; nickname: string; color: string; xp: number; me: boolean }[];
+  carry: { pos: number; id: string; nickname: string; color: string; hat: string | null; xp: number; me: boolean }[];
 }
 export interface ArchiveRes {
   game: string;
@@ -234,7 +236,8 @@ export const useFriends = (enabled = true) => useGet<FriendsRes>(["friends"], "/
 export const useInvite = () =>
   useGet<{ code: string; url: string; nickname: string }>(["invite"], "/api/v1/friends/invite", { staleTime: Infinity });
 export const useFeed = () => useGet<{ items: FeedItem[]; next: number | null }>(["feed"], "/api/v1/feed");
-export const useBlocks = () => useGet<{ blocked: { id: string; nickname: string; color: string }[] }>(["blocks"], "/api/v1/blocks");
+export const useBlocks = () =>
+  useGet<{ blocked: { id: string; nickname: string; color: string; hat: string | null }[] }>(["blocks"], "/api/v1/blocks");
 export const useBoard = (game: string, scope: Scope, date: string) =>
   useGet<BoardRes>(["board", game, scope, date], `/api/v1/leaderboards/${game}?scope=${scope}&date=${date}`, { staleTime: 30_000 });
 export const useLeague = () => useGet<LeagueRes>(["league"], "/api/v1/leagues/current");
@@ -263,6 +266,7 @@ export interface PlayerHit {
   id: string;
   nickname: string;
   color: string;
+  hat: string | null;
   level: number;
   title: string | null;
   status: "friends" | "requested" | "incoming" | "none";

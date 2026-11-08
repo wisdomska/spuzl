@@ -55,7 +55,7 @@ export function SidePanelBody() {
               style={{ background: `conic-gradient(var(--accent) 0 ${pct}%, var(--line) ${pct}% 100%)` }}
               aria-hidden
             >
-              <AvatarChip nickname={d.nickname} color={d.avatar_color} size={46} radius={14} />
+              <AvatarChip nickname={d.nickname} color={d.avatar_color} hat={d.hat} me size={46} radius={14} />
             </span>
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="font-display truncate text-[17px] font-extrabold">{d.nickname}</span>
@@ -163,7 +163,7 @@ export function SidePanelBody() {
               {online.map((f) => (
                 <li key={f.id} className="flex items-center gap-2.5">
                   <Link href={`/u/${f.nickname}`} className="flex min-w-0 flex-1 items-center gap-2.5">
-                    <AvatarChip nickname={f.nickname} color={f.color} size={34} radius={11} online ring="var(--surface)" />
+                    <AvatarChip nickname={f.nickname} color={f.color} hat={f.hat} size={34} radius={11} online ring="var(--surface)" />
                     <span className="flex min-w-0 flex-col">
                       <span className="truncate text-[14px] font-semibold">{f.nickname}</span>
                       <span className="text-muted truncate text-[12px] font-medium">{f.presence.label}</span>
