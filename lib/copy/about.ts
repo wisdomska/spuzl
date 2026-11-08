@@ -9,8 +9,9 @@ const spelled = (n: number) => SPELLED[n] ?? String(n);
  * Game and world counts come from the catalog (live games only), never typed by hand.
  */
 export const aboutCopy = {
-  metaTitle: `SPUZL: ${GAME_COUNT} puzzle games, duels and leagues`,
-  metaDescription: `SPUZL is a free web app with ${GAME_COUNT} short puzzle, word, reflex and board games. Play any time as a guest, duel friends and climb weekly leagues.`,
+  /** Search title and description of "/" (under 60 and 155 characters; lib/copy/seo.ts seoMeta.landing) */
+  metaTitle: `SPUZL: ${GAME_COUNT} free puzzle games to play online`,
+  metaDescription: `Play ${GAME_COUNT} free puzzle, word, arcade and board games in your browser. No download, no sign-up. Duel friends and climb weekly leagues.`,
   name: "SPUZL",
   nav: { how: "How it works", worlds: "Games", friends: "Friends", signIn: "Sign in", play: "Play" },
   eyebrow: `${GAME_COUNT} free games · ${WORLD_COUNT} worlds`,
