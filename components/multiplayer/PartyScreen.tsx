@@ -24,7 +24,7 @@ import { useBackOrHome } from "@/lib/client/nav";
 import { codeHref } from "@/lib/client/codes";
 import { normalizeRoomCode } from "@/lib/multiplayer/roomCode";
 import { partyPhase } from "@/lib/multiplayer/race";
-import { raceGameParam, roomGamesName } from "@/lib/multiplayer/games";
+import { isScoreRaceGame, raceGameParam, roomGamesName } from "@/lib/multiplayer/games";
 import { PARTY_PICK_MIN } from "@/lib/multiplayer/constants";
 import { readiness } from "@/lib/multiplayer/readiness";
 import { canHostTv, tvPath } from "@/lib/multiplayer/tv";
@@ -651,7 +651,16 @@ function Room({ id, code }: { id: string; code: string }) {
 /** The Party round-start countdown: Duel's 3-2-1-SPUZL! overlay, with the racers above it. Covers the whole board. */
 function RaceCountdown({ view, msToStart, beats }: { view: MatchView; msToStart: number; beats: number }) {
   return (
-    <CountdownOverlay msToStart={msToStart} beats={beats} blocking line={partyCopy.countdown.line(view.round, view.games.length)}>
+    <CountdownOverlay
+      msToStart={msToStart}
+      beats={beats}
+      blocking
+      line={
+        isScoreRaceGame(view.games[view.round - 1])
+          ? partyCopy.scoreRace.countdown(view.round, view.games.length)
+          : partyCopy.countdown.line(view.round, view.games.length)
+      }
+    >
       <div className="flex flex-wrap justify-center gap-2.5 px-4">
         {view.players
           .filter((p) => !p.spectator && !p.left)

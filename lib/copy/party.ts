@@ -71,6 +71,15 @@ export const partyCopy = {
     /** a player the host started without */
     satOut: "The race started without you. Watch this set; you're in for the next one.",
   },
+  /** R3-08: score races (score games in a Party: most points wins, then the faster finish) */
+  scoreRace: {
+    badge: "Points",
+    tileLabel: (game: string) => `${game}, most points wins`,
+    rule: "Most points wins",
+    finished: (name: string) => `${name} finished.`,
+    countdown: (game: number, of: number) => `Game ${game} of ${of}. Same round for everyone. Most points wins!`,
+    roundScore: (n: number) => (n === 1 ? "1 point" : `${n} points`),
+  },
   /** the round-start countdown (Duel's 3-2-1-SPUZL!) over the board */
   countdown: {
     line: (game: number, of: number) => `Game ${game} of ${of}. Same puzzle for everyone. Go!`,

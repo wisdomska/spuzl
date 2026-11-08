@@ -334,6 +334,23 @@ export const SETTINGS = {
     min: 2,
     max: 5,
   },
+  "party.scoreRaces": {
+    kind: "bool",
+    group: "Duel and Party",
+    label: "Score races in Party",
+    help: "Lets hosts pick score games in a Party (Quickfire, Emoji Hits, Two Truths and a Lie and the other all-ages score games that aren't photosensitive). Everyone plays the same seeded round; most points wins, then the faster finish. Answers are judged on the server as in solo play. Lab games join only while Lab games has them. Never in Duels. Off: score games leave the picker and the server refuses them, including rooms already open (their next Start fails).",
+    default: true,
+  },
+  "party.scoreRaceSeconds": {
+    kind: "int",
+    group: "Duel and Party",
+    label: "Score race: time limit",
+    help: "The longest a score game in a Party may run, in seconds. The round ends when everyone has finished or at this limit; anyone still playing then is scored from what the server has seen so far. Most score games end on their own well within 3 minutes.",
+    default: 180,
+    min: 60,
+    max: 600,
+    unit: "s",
+  },
   "rooms.under16FriendsOnly": {
     kind: "bool",
     group: "Rooms",

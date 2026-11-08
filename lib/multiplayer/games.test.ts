@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { GAMES } from "@/lib/catalog";
-import { PARTY_GAME_IDS, RACE_GAMES, challengeLinks, isRaceGame, pickGames, raceGameParam, roomGamesName } from "./games";
+import { PARTY_GAME_IDS, RACE_GAMES, SCORE_RACE_GAMES, challengeLinks, isRaceGame, pickGames, raceGameParam, roomGamesName } from "./games";
 import { createRng } from "@/lib/rng";
 import { PARTY_GAMES, PARTY_PICK_MAX } from "./constants";
 import { RoomCreateInput, RoomSettingsInput } from "./roomInput";
@@ -12,10 +12,12 @@ describe("Party game picker (SPZ-13)", () => {
     expect(PARTY_GAME_IDS.every(isRaceGame)).toBe(true);
   });
 
-  it("the rooms API accepts exactly what the picker offers", () => {
+  it("the rooms API accepts exactly what the picker can offer (time races, and score races: R3-08)", () => {
     for (const id of PARTY_GAME_IDS) expect(RoomCreateInput.safeParse({ game: id }).success).toBe(true);
     expect(RoomCreateInput.safeParse({ game: null }).success).toBe(true);
-    const offered = new Set(PARTY_GAME_IDS);
+    // Score games pass the body check; the lobby then checks "party.scoreRaces" and the lab switch (isPartyGame).
+    for (const g of SCORE_RACE_GAMES) expect(RoomCreateInput.safeParse({ game: g.id }).success).toBe(true);
+    const offered = new Set([...PARTY_GAME_IDS, ...SCORE_RACE_GAMES.map((g) => g.id)]);
     for (const g of GAMES.filter((x) => !offered.has(x.id))) {
       expect(RoomCreateInput.safeParse({ game: g.id }).success).toBe(false);
       expect(RoomSettingsInput.safeParse({ game: g.id }).success).toBe(false);

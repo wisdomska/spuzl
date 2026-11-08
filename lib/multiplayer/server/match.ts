@@ -5,7 +5,11 @@ import { ApiError } from "@/lib/api/server";
 import { serverBroadcast } from "@/lib/realtime/server";
 import { TIMING, countdownMsFor } from "../constants";
 import { BOT_ID, matchState, newToGame, nextRoundStart, resolveRound, rulesBreakMs, type Finisher } from "../duel";
-import { placeRace, raceOver, nextHost, type Racer } from "../race";
+import { placeRace, raceOver, nextHost, type Placed, type Racer } from "../race";
+import { placeScoreRace, scoreRaceOver, scoreRun, type ScoreRacer } from "../scoreRace";
+import { isScoreRaceGame } from "../games";
+import { checkGuessWith, samePuzzleRef } from "@/lib/game/guess-check";
+import type { GuessLogic } from "@/games/_shared/guess";
 import { validateProgress } from "../progress";
 import type { MatchPlayerView, MatchRoundView, MatchView } from "../types";
 import { roundPuzzle } from "./puzzles";
@@ -119,6 +123,8 @@ export interface RoundRow {
   place: number | null;
   points: number;
   won: boolean;
+  /** R3-08: a score race round's points from the server (null or absent for time races) */
+  score?: number | null;
 }
 
 export interface Loaded {
@@ -145,7 +151,8 @@ export async function loadMatch(admin: SupabaseClient, id: string): Promise<Load
   if (!m) throw new ApiError(404, "match_not_found");
   const { data: rounds } = await admin
     .from("match_rounds")
-    .select("round, player_id, game_id, time_ms, mistakes, progress, place, points, won")
+    // "*": `score` (R3-08, 20261207000801) when the column exists
+    .select("*")
     .eq("match_id", id)
     .eq("set_no", m.set_no)
     .order("round");
@@ -266,6 +273,7 @@ export async function viewOf(admin: SupabaseClient, l: Loaded, me: string, rewar
     place: r.place,
     points: r.points,
     won: r.won,
+    score: r.score ?? null,
   }));
   const mine = l.players.find((p) => p.player_id === me);
   // Head-to-head, for duels between two people: shown at the start (versus) and the end, so read only then.
@@ -343,6 +351,10 @@ export async function raceRoundPuzzle(
   round: number,
   game: string,
 ) {
+  return (await raceRound(admin, playerId, matchId, setNo, round, game)).r;
+}
+
+async function raceRound(admin: SupabaseClient, playerId: string, matchId: string, setNo: number, round: number, game: string) {
   const l = await loadMatch(admin, matchId);
   const { m, now } = l;
   const p = member(l, playerId);
@@ -352,7 +364,57 @@ export async function raceRoundPuzzle(
     throw new ApiError(409, "round_over");
   // No answers during the countdown, the same rule as moves and finishes (requirePlaying): input never bleeds in early.
   if (now < start) throw new ApiError(409, "too_early");
-  return roundPuzzle(m.id, m.set_no, m.round, game, m.difficulty);
+  return { l, r: await roundPuzzle(m.id, m.set_no, m.round, game, m.difficulty) };
+}
+
+/** R3-08: a racer's judged-answer log for one score race round (public.match_race_logs, server only). */
+async function raceLog(admin: SupabaseClient, m: MatchRow, playerId: string, round: number): Promise<unknown[]> {
+  if (!isScoreRaceGame(m.games[round - 1])) return [];
+  const { data, error } = await admin
+    .from("match_race_logs")
+    .select("log")
+    .eq("match_id", m.id)
+    .eq("player_id", playerId)
+    .eq("set_no", m.set_no)
+    .eq("round", round)
+    .maybeSingle();
+  if (error) throw error;
+  return Array.isArray(data?.log) ? (data.log as unknown[]) : [];
+}
+
+/**
+ * The guess transport for a race round (lib/game/guess-token.ts context `m`). In a Party score race (R3-08) the
+ * round is judged like the player's own solo attempt: the game sees this racer's board state and the log of what
+ * the server already judged for them this round, and what it records goes on that log (svc_race_log) before the
+ * answer is sent, so finish can audit the run. Anywhere else (time races, Duels) a guess has no context, so
+ * requests that would give an answer away are refused.
+ */
+export async function raceGuess(
+  admin: SupabaseClient,
+  playerId: string,
+  tok: { m: string; s: number; r: number; game: string; ref: { game: string; i: number; d: string } },
+  guess: unknown,
+  checker: Pick<GuessLogic, "checkGuess" | "record">,
+) {
+  const { l, r } = await raceRound(admin, playerId, tok.m, tok.s, tok.r, tok.game);
+  if (!samePuzzleRef(r.puzzle, tok.ref)) throw new ApiError(409, "round_over");
+  if (l.m.kind !== "race" || !isScoreRaceGame(tok.game)) return checker.checkGuess(r.puzzle, r.solution, guess, null);
+  const me = member(l, playerId);
+  const log = await raceLog(admin, l.m, playerId, tok.r);
+  const out = checkGuessWith(checker, r.puzzle, r.solution, guess, { kind: "attempt", state: me.state, log });
+  if (out.entry) {
+    const { data: kept, error } = await admin.rpc("svc_race_log", {
+      p_match: l.m.id,
+      p_player: playerId,
+      p_round: tok.r,
+      p_len: log.length,
+      p_entry: out.entry,
+    });
+    if (error) throw error;
+    // Another answer landed first (or the round closed): nothing is given away.
+    if (!kept) throw new ApiError(409, "guess_conflict");
+  }
+  return out.result;
 }
 
 export async function submitProgress(
@@ -400,11 +462,16 @@ export async function submitFinish(
   const game = l.m.games[l.m.round - 1];
   const r = await roundPuzzle(l.m.id, l.m.set_no, l.m.round, game, l.m.difficulty);
   let ok = false;
-  try {
-    ok = r.logic.verify(r.puzzle, r.solution, input.state).ok;
-  } catch {
-    ok = false;
-  }
+  if (l.m.kind === "race" && isScoreRaceGame(game)) {
+    // R3-08: a score run is over and stands (the game's verify gives it a score, and its audit matches the answers
+    // the server judged); the score itself is worked out again from the stored state when the round is placed.
+    ok = scoreRun(r.logic, r.puzzle, r.solution, input.state, await raceLog(admin, l.m, playerId, input.round)).ok;
+  } else
+    try {
+      ok = r.logic.verify(r.puzzle, r.solution, input.state).ok;
+    } catch {
+      ok = false;
+    }
   if (!ok) throw new ApiError(422, "not_solved");
   const mistakes = Math.max(p.mistakes, Math.min(input.mistakes, p.mistakes + 10));
   await admin.from("match_players").update({ state: input.state, mistakes }).eq("match_id", id).eq("player_id", playerId);
@@ -550,6 +617,7 @@ async function resolveRace(admin: SupabaseClient, l: Loaded): Promise<boolean> {
   const { m, now } = l;
   const start = ms(m.round_started_at)!;
   if (now < start) return false;
+  if (isScoreRaceGame(m.games[m.round - 1])) return resolveScoreRace(admin, l, start);
   const racers: Racer[] = l.players
     .filter((p) => !p.spectator)
     .map((p) => {
@@ -564,7 +632,52 @@ async function resolveRace(admin: SupabaseClient, l: Loaded): Promise<boolean> {
       };
     });
   if (!raceOver(racers, start, ms(m.round_first_at), now)) return false;
-  const placed = placeRace(racers);
+  return commitRace(admin, l, placeRace(racers));
+}
+
+/**
+ * R3-08: places a score race round. Every racer is scored by the server from the board state it holds and the
+ * answers it judged for them (`scoreRun`); the client never names a score. Most points first, then the faster
+ * finish. The round waits for everyone, up to the "party.scoreRaceSeconds" limit.
+ */
+async function resolveScoreRace(admin: SupabaseClient, l: Loaded, start: number): Promise<boolean> {
+  const { m, now } = l;
+  const base = l.players
+    .filter((p) => !p.spectator)
+    .map((p) => {
+      const r = l.rounds.find((x) => x.round === m.round && x.player_id === p.player_id);
+      return {
+        p,
+        timeMs: r?.time_ms ?? null,
+        gone: !!p.left_at || isStale(p, now, TIMING.reconnectMs),
+        passed: p.passed_round === m.round && r?.time_ms == null,
+      };
+    });
+  const limitMs = (await getGameSettings())["party.scoreRaceSeconds"] * 1000;
+  if (!scoreRaceOver(base, start, now, limitMs)) return false;
+  const game = m.games[m.round - 1];
+  const round = await roundPuzzle(m.id, m.set_no, m.round, game, m.difficulty);
+  const racers: ScoreRacer[] = [];
+  for (const b of base) {
+    const run = b.passed
+      ? { score: 0 }
+      : scoreRun(round.logic, round.puzzle, round.solution, b.p.state, await raceLog(admin, m, b.p.player_id, m.round));
+    racers.push({
+      id: b.p.player_id,
+      score: run.score,
+      timeMs: b.timeMs,
+      progress: b.timeMs !== null ? 1 : b.p.progress,
+      mistakes: b.p.mistakes,
+      gone: b.gone,
+      passed: b.passed,
+    });
+  }
+  return commitRace(admin, l, placeScoreRace(racers), true);
+}
+
+/** Commits a placed Party round: round rows, running totals and places, then the podium or the final. */
+async function commitRace(admin: SupabaseClient, l: Loaded, placed: (Placed & { score?: number })[], scored = false): Promise<boolean> {
+  const { m } = l;
   const last = m.round >= m.games.length;
   const totals = new Map(l.players.map((p) => [p.player_id, p.points]));
   for (const r of placed) totals.set(r.id, (totals.get(r.id) ?? 0) + r.points);
@@ -584,12 +697,14 @@ async function resolveRace(admin: SupabaseClient, l: Loaded): Promise<boolean> {
       progress: r.progress,
       place: r.place,
       points: r.points,
-      won: r.place === 1 && r.timeMs !== null,
+      won: r.place === 1 && (scored ? (r.score ?? 0) > 0 || r.timeMs !== null : r.timeMs !== null),
+      ...(scored ? { score: r.score ?? 0 } : {}),
     })),
   });
   if (!applied) return false;
   await serverBroadcast(matchTopic(m.id), "changed", { reason: last ? "final" : "podium" });
-  if (last) await finalizeRace(admin, await loadMatch(admin, m.id), placed);
+  // The photo-finish badge is about time: a score round passes no times.
+  if (last) await finalizeRace(admin, await loadMatch(admin, m.id), scored ? [] : placed);
   return true;
 }
 

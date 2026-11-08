@@ -102,6 +102,11 @@ There is no shared prompt queue: two prompts can appear in the same screen visit
   sets `round_started_at` 4 s ahead (`lobby.ts:415`, `lib/multiplayer/constants.ts:9`); a countdown number is shown
   (`PartyScreen.tsx:500-509`). Sheets that can be open at round start: `ChatPanel`/`ChatPopup`, `EmoteBar`,
   `RoomSettings`, 18+ `PlayersSheet`. Podium (`party.tsx:899-909`): host sees "Run it back" first, then "Next game".
+- Party score races (R3-08): `SCORE_RACE_GAMES` / `isPartyGame` in `lib/multiplayer/games.ts` (settings
+  `party.scoreRaces`, `party.scoreRaceSeconds`, lab games via `features.labGames`), scoring and placing in
+  `lib/multiplayer/scoreRace.ts`, the per-racer answer log in `match_race_logs` (`raceGuess`, `resolveScoreRace` in
+  `lib/multiplayer/server/match.ts`). Start readiness (R3-01): `lib/multiplayer/readiness.ts`, "Start without them"
+  seats the unready as spectators (`match_players.sat_out`) until Run it back.
 - Party turn modes (`lib/party-adult/modes.ts`): the 18+ Draw It and Two Truths (`features.adultParty`) and Family Draw
   (`drawfam`, R2-P5: Draw It for signed-in 16+ players, preset words, pick from four, `party.familyDraw`). One server
   path (`lib/multiplayer/server/adult.ts`, gate per mode in `requirePartyMode`), one round UI

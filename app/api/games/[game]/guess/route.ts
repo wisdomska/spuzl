@@ -6,7 +6,7 @@ import { PRACTICE, type GuessLogic } from "@/games/_shared/guess";
 import { assertGameOpen, attemptPuzzle, guidedSeed, loadFree, logAttemptMove } from "@/lib/game/service";
 import { checkGuessWith, samePuzzleRef } from "@/lib/game/guess-check";
 import { openGuessToken } from "@/lib/game/guess-token";
-import { raceRoundPuzzle } from "@/lib/multiplayer/server/match";
+import { raceGuess } from "@/lib/multiplayer/server/match";
 
 const Guess = z.object({
   /** the token the server sent in the puzzle's `ref` (a bare content reference is refused) */
@@ -23,7 +23,8 @@ const Guess = z.object({
  *   admin-scheduled custom items work), its autosaved state and its server move log; whatever the game records
  *   (a shown answer, a committed shot) is stored on the attempt before the result is sent;
  * - the current round of a race or duel the player races in: checked against the round puzzle; requests that
- *   give an answer away are refused;
+ *   give an answer away are refused, except in a Party score race (R3-08), judged like an attempt on a server log
+ *   per racer and round;
  * - the public guided practice board: checked as practice.
  * A bare content reference, a forged, expired or someone else's token, or one used outside its context is
  * refused. Rate limited per player.
@@ -62,9 +63,9 @@ export const POST = handle(async (req: Request, ctx: RouteContext<"/api/games/[g
   if (attemptId) throw new ApiError(400, "wrong_attempt");
 
   if (c.k === "m") {
-    const r = await raceRoundPuzzle(admin, player.id, c.m, c.s, c.r, game);
-    if (!samePuzzleRef(r.puzzle, { game: tok.g, i: tok.i, d: tok.d })) throw new ApiError(409, "round_over");
-    return ok(checker.checkGuess(r.puzzle, r.solution, guess, null));
+    // A Party score race round (R3-08) is judged like a solo attempt, on a server log per racer and round.
+    const ref = { game: tok.g, i: tok.i, d: tok.d };
+    return ok(await raceGuess(admin, player.id, { m: c.m, s: c.s, r: c.r, game, ref }, guess, checker));
   }
 
   // Practice: only the guided board was ever given a practice token; checked again against it all the same.

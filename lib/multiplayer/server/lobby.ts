@@ -7,7 +7,8 @@ import { serverBroadcast } from "@/lib/realtime/server";
 import { createRng } from "@/lib/rng";
 import { DUEL_ROUNDS, PARTY_GAMES, PARTY_MIN } from "../constants";
 import { botTimes, firstRoundStart, newToGame, partyRoundStart, rankedPool, rulesBreakMs } from "../duel";
-import { isRaceGame, pickGames } from "../games";
+import { isPartyGame, isRaceGame, pickGames } from "../games";
+import { getGameSettings } from "@/lib/game-settings/server";
 import { pickOpponent, type QueueEntry } from "../matchmaking";
 import { CODE_ALPHABET, makeRoomCode, roomExpired } from "../roomCode";
 import { liveCountdownMs, loadMatch, matchTopic, member, touch, viewOf } from "./match";
@@ -283,6 +284,23 @@ export async function rematch(admin: SupabaseClient, id: string, playerId: strin
 
 /* ---------------- Party rooms ---------------- */
 
+/**
+ * R3-08: every game a room asks for must be a Party game now: a time race, or a score race while
+ * "party.scoreRaces" is on (a lab one only while "features.labGames" has it).
+ */
+async function requirePartyGames(
+  game: string | null | undefined,
+  games: readonly string[] | null | undefined,
+  code = "game_not_raceable",
+  status = 400,
+) {
+  const ids = [...(game ? [game] : []), ...(games ?? [])];
+  if (!ids.length) return;
+  if (ids.every(isRaceGame)) return;
+  const s = await getGameSettings();
+  if (ids.some((g) => !isPartyGame(g, s))) throw new ApiError(status, code);
+}
+
 export interface RoomInput {
   game: string | null;
   /** hand-picked games (2 to 8); when set, each set races PARTY_GAMES of them and `game` is ignored */
@@ -311,8 +329,7 @@ export async function createRoom(admin: SupabaseClient, playerId: string, input:
     await addPlayer(admin, row.id, playerId, 0, { ready: true });
     return { matchId: row.id, code: row.code };
   }
-  if (input.game && !isRaceGame(input.game)) throw new ApiError(400, "game_not_raceable");
-  if (input.games?.some((g) => !isRaceGame(g))) throw new ApiError(400, "game_not_raceable");
+  await requirePartyGames(input.game, input.games);
   const picks = input.games?.length ? input.games : [];
   const game = picks.length ? null : input.game;
   const row = await insertWithCode(admin, {
@@ -426,8 +443,7 @@ export async function roomSettings(admin: SupabaseClient, playerId: string, code
   const l = await roomForHost(admin, code, playerId, true);
   if (l.m.status !== "lobby") throw new ApiError(409, "not_lobby");
   if (isTurnRoom(l.m)) throw new ApiError(409, "no_settings");
-  if (s.game && !isRaceGame(s.game)) throw new ApiError(400, "game_not_raceable");
-  if (s.games?.some((g) => !isRaceGame(g))) throw new ApiError(400, "game_not_raceable");
+  await requirePartyGames(s.game, s.games);
   const patch: Record<string, unknown> = {};
   if (s.game !== undefined) Object.assign(patch, { game_id: s.game, mix: !s.game, chosen_games: [] });
   if (s.games?.length) Object.assign(patch, { game_id: null, mix: true, chosen_games: s.games });
@@ -452,6 +468,9 @@ export async function startRoom(admin: SupabaseClient, playerId: string, code: s
   if (r.racers.length < PARTY_MIN) throw new ApiError(409, "need_players", partyCopy.lobby.needPlayers);
   if (r.waiting.length && !o.readyOnly) throw new ApiError(409, "not_ready", partyCopy.lobby.notReady(r.waiting[0].nickname));
   if (r.ready.length < PARTY_MIN) throw new ApiError(409, "need_ready", partyCopy.lobby.needReady);
+  // R3-08: a score game the admin switched off since the room opened (or a lab game no longer on) can't start.
+  // Checked before anyone is seated out, so a refused start changes nothing.
+  if (!isTurnRoom(l.m)) await requirePartyGames(l.m.game_id, l.m.chosen_games, "game_unavailable", 409);
   if (r.waiting.length) {
     const out = r.waiting.map((p) => p.player_id);
     const { error } = await admin
@@ -468,7 +487,10 @@ export async function startRoom(admin: SupabaseClient, playerId: string, code: s
     return { ok: true };
   }
   // One game every round, PARTY_GAMES of the host's picks (shuffled per set), or a random mix.
-  const games = pickGames(createRng(`party:${l.m.id}:${l.m.set_no}`), l.m.game_id, PARTY_GAMES, l.m.chosen_games);
+  const settings = await getGameSettings();
+  const games = pickGames(createRng(`party:${l.m.id}:${l.m.set_no}`), l.m.game_id, PARTY_GAMES, l.m.chosen_games, (id) =>
+    isPartyGame(id, settings),
+  );
   const countdownMs = await liveCountdownMs();
   await admin
     .from("match_players")

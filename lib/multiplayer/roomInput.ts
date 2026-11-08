@@ -5,10 +5,14 @@
  */
 import { z } from "zod";
 import { PARTY_MAX, PARTY_MIN, PARTY_PICK_MAX, PARTY_PICK_MIN } from "./constants";
-import { isRaceGame } from "./games";
+import { isRaceGame, isScoreRaceGame } from "./games";
 import { PARTY_MODES } from "@/lib/party-adult/modes";
 
-const partyGame = z.string().max(24).refine(isRaceGame, { message: "game_not_raceable" });
+// R3-08: score race games pass here too; the lobby checks them against the settings ("party.scoreRaces", lab games).
+const partyGame = z
+  .string()
+  .max(24)
+  .refine((g) => isRaceGame(g) || isScoreRaceGame(g), { message: "game_not_raceable" });
 const difficulty = z.enum(["easy", "medium", "hard", "expert"]);
 const partyPicks = z
   .array(partyGame)

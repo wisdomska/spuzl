@@ -9,6 +9,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { matchAction, matchKey } from "@/lib/client/multiplayer";
 import { throttle } from "@/lib/multiplayer/progress";
 import { TIMING } from "@/lib/multiplayer/constants";
+import { isScoreRaceGame } from "@/lib/multiplayer/games";
 import type { MatchView } from "@/lib/multiplayer/types";
 import { HowItWorks, useNewToGame } from "./practice";
 
@@ -139,6 +140,9 @@ export function MatchBoard({
         initialState={(view.myState ?? undefined) as never}
         onMove={onMove}
         onSolved={onSolved}
+        // R3-08: in a Party score race a run that ends without a clear (Higher or Lower out of slips) still scores:
+        // it is handed in like a finish, and the server decides what it is worth.
+        onFailed={view.kind === "race" && isScoreRaceGame(puzzle.game) ? (state: unknown) => void onSolved(state) : undefined}
         onExit={onExit}
         // The Duel and Party screens own leaving for the whole match (confirm, back-gesture guard, Escape, the
         // leave call), between rounds too; every way out of the shell asks them.

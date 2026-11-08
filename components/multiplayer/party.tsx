@@ -14,7 +14,8 @@ import { play } from "@/lib/audio";
 import { formatClock, formatNumber } from "@/lib/format";
 import { GAME_BY_ID, WORLDS, WORLD_BY_ID, type WorldId } from "@/lib/catalog";
 import { useSettings } from "@/lib/settings/store";
-import { RACE_GAMES, roomGamesName } from "@/lib/multiplayer/games";
+import { isScoreRaceGame, partyGames, roomGamesName } from "@/lib/multiplayer/games";
+import { useGameSettings } from "@/lib/game-settings/client";
 import { partyCopy } from "@/lib/copy/party";
 import { overtakes, raceOrder, standingOrder } from "@/lib/multiplayer/race";
 import { countdownBeat } from "@/lib/multiplayer/duel";
@@ -126,18 +127,21 @@ export type GameChoice = { game: string | null; picks: string[] | null };
 /** A choice the rooms API accepts: picking mode needs at least PARTY_PICK_MIN games. */
 export const choiceReady = (c: GameChoice) => c.picks === null || c.picks.length >= PARTY_PICK_MIN;
 
-/** Worlds that have at least one race game, in catalog order: the picker's filter chips. */
-const PARTY_WORLDS = WORLDS.filter((w) => RACE_GAMES.some((g) => g.world === w.id));
-
 /**
  * Random mix, any one race game, or several hand-picked ones (filtered by world so every race game fits a phone without
  * a long scroll). Picking mode turns the game tiles into checkboxes; each set races PARTY_GAMES of the picks.
+ * R3-08: score games join the list (marked "Most points") while "party.scoreRaces" is on, lab ones only while
+ * "features.labGames" has them; the rooms API checks the same rule (`isPartyGame`).
  */
 export function GamePicker({ value, onChange }: { value: GameChoice; onChange: (c: GameChoice) => void }) {
+  const settings = useGameSettings();
+  const all = useMemo(() => partyGames(settings), [settings]);
+  // Worlds that have at least one Party game, in catalog order: the picker's filter chips.
+  const worlds = useMemo(() => WORLDS.filter((w) => all.some((g) => g.world === w.id)), [all]);
   const picks = value.picks;
   const first = value.game ?? picks?.[0];
-  const [world, setWorld] = useState<WorldId>(() => RACE_GAMES.find((g) => g.id === first)?.world ?? PARTY_WORLDS[0].id);
-  const games = RACE_GAMES.filter((g) => g.world === world);
+  const [world, setWorld] = useState<WorldId>(() => all.find((g) => g.id === first)?.world ?? worlds[0].id);
+  const games = all.filter((g) => g.world === world);
   const toggle = (id: string) =>
     picks && onChange({ game: null, picks: picks.includes(id) ? picks.filter((x) => x !== id) : [...picks, id] });
   const tile = (on: boolean) => ({
@@ -147,9 +151,9 @@ export function GamePicker({ value, onChange }: { value: GameChoice; onChange: (
   return (
     <div className="flex flex-col gap-2.5">
       <div className="-mx-5 flex gap-1.5 overflow-x-auto px-5 pb-0.5" role="group" aria-label={partyCopy.host.worlds}>
-        {PARTY_WORLDS.map((w) => {
+        {worlds.map((w) => {
           const on = w.id === world;
-          const n = RACE_GAMES.filter((g) => g.world === w.id).length;
+          const n = all.filter((g) => g.world === w.id).length;
           return (
             <button
               key={w.id}
@@ -207,17 +211,27 @@ export function GamePicker({ value, onChange }: { value: GameChoice; onChange: (
         </button>
         {games.map((g) => {
           const on = picks ? picks.includes(g.id) : value.game === g.id;
+          const scored = isScoreRaceGame(g.id);
           return (
             <button
               key={g.id}
               type="button"
               role={picks ? "checkbox" : "radio"}
               aria-checked={on}
+              aria-label={scored ? partyCopy.scoreRace.tileLabel(g.name) : undefined}
               disabled={!!picks && !on && picks.length >= PARTY_PICK_MAX}
               onClick={() => (picks ? toggle(g.id) : onChange({ game: g.id, picks: null }))}
-              className="press flex h-[84px] min-w-0 flex-col items-center justify-center gap-1.5 rounded-[18px] px-1"
+              className="press relative flex h-[84px] min-w-0 flex-col items-center justify-center gap-1.5 rounded-[18px] px-1"
               style={tile(on)}
             >
+              {scored && (
+                <span
+                  className="bg-surface-raised text-muted absolute top-1.5 right-1.5 rounded-[6px] px-1 text-[11px] font-bold"
+                  aria-hidden
+                >
+                  {partyCopy.scoreRace.badge}
+                </span>
+              )}
               <span
                 className="flex size-10 items-center justify-center rounded-[12px] text-[var(--ink-on-bright)]"
                 style={{ background: WORLD_BY_ID[g.world].color }}
@@ -707,6 +721,7 @@ export function RaceRail({
   onToast: (t: string, kind: "pass" | "info") => void;
 }) {
   const reduce = useReduce();
+  const scoreRound = isScoreRaceGame(view.games[view.round - 1]);
   const order = rows.map((r) => r.id);
   const prev = useRef<string[]>(order);
   const prevDone = useRef(new Set(rows.filter((r) => r.finished).map((r) => r.id)));
@@ -722,7 +737,7 @@ export function RaceRail({
     for (const r of rows)
       if (r.finished && !prevDone.current.has(r.id)) {
         prevDone.current.add(r.id);
-        if (r.id !== view.me) onToast(`${r.nickname} cleared it.`, "info");
+        if (r.id !== view.me) onToast(scoreRound ? partyCopy.scoreRace.finished(r.nickname) : `${r.nickname} cleared it.`, "info");
       }
     prev.current = order;
   }, [order.join(",")]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -733,6 +748,8 @@ export function RaceRail({
         <span>
           Game {view.round} of {view.games.length}
         </span>
+        {/* R3-08: a score game: places go by points, worked out by the server when the round ends. */}
+        {scoreRound && <span className="text-accent font-semibold">{partyCopy.scoreRace.rule}</span>}
       </div>
       <ol className="relative" style={{ height: n * ROW }} aria-label="Race standings">
         {rows.map((r, i) => {

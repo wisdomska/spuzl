@@ -41,6 +41,8 @@ export interface MatchRoundView {
   place: number | null;
   points: number;
   won: boolean;
+  /** R3-08: a score race round's points, from the server (null for time races) */
+  score?: number | null;
 }
 
 export interface MatchView {
