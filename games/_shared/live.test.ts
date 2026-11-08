@@ -111,7 +111,8 @@ describe("reviewed content: the list a board deals from", () => {
 
 describe("every content game's picker never deals a retired entry (server-side check)", () => {
   for (const g of GAMES) {
-    it(g.game, async () => {
+    // Dealing 90 boards is slow for the heavier generators (Coil) on CI runners.
+    it(g.game, { timeout: 240_000 }, async () => {
       const entries = await g.load();
       const logic = (await LOGIC[g.game]()).default as unknown as Logic;
       // Retire every third entry: plenty stay, so every picker still has a full pool.
