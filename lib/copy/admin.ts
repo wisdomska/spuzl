@@ -635,6 +635,13 @@ export const adminCopy = {
     /** R2-ADMIN: push alerts (Web Push), one per device a player turned alerts on for. */
     pushDevices: "Devices with alerts on",
     pushReached: "Devices a push reached, last 30 days",
+    pushDevicesHint: "One per phone or browser. A player with two devices counts twice.",
+    pushReachedHint: "Devices where a push went through in the last 30 days.",
+    /** Round 3 item 13: the same two numbers per player. */
+    pushPlayers: "Players with alerts on",
+    pushPlayersHint: "Players with at least one device with alerts on, each counted once. Test players left out.",
+    pushPlayersReached: "Players a push reached, last 30 days",
+    pushPlayersReachedHint: "Players with a push through to at least one device in the last 30 days. Test players left out.",
   },
 
   /** Seasonal event bonus quests, listed in the Shop and events quest catalogue. */

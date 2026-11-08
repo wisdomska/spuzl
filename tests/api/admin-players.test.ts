@@ -406,11 +406,17 @@ describe("players: ratings, rank from Duels and Parties, board games with house 
   });
 });
 
-describe("overview: push alerts (R2-ADMIN)", () => {
-  it("counts devices with alerts on and those a push reached in 30 days, test players left out, no endpoints", async () => {
+describe("overview: push alerts (R2-ADMIN; players, round 3 item 13)", () => {
+  it("counts devices and distinct players with alerts on and those a push reached in 30 days, test players left out, no endpoints", async () => {
     const db = admin();
     const before = (await S.analyst.aal2("/api/admin/overview")).data.push;
-    expect(before).toEqual({ devices: expect.any(Number), reached30d: expect.any(Number) });
+    // round 3 item 13: the distinct players behind each device count (svc_admin_push_players, migration 20261207001301)
+    expect(before).toEqual({
+      devices: expect.any(Number),
+      reached30d: expect.any(Number),
+      players: expect.any(Number),
+      playersReached30d: expect.any(Number),
+    });
     const real = await guest(uniq("push_"));
     const tester = await guest(uniq("pusht_"));
     await db.from("players").update({ is_test: false }).eq("id", real.userId);
@@ -431,6 +437,9 @@ describe("overview: push alerts (R2-ADMIN)", () => {
     const after = (await S.analyst.aal2("/api/admin/overview")).data;
     expect(after.push.devices - before.devices).toBe(2);
     expect(after.push.reached30d - before.reached30d).toBe(1);
+    // one real player with two devices (one reached), each counted once; the test player never
+    expect(after.push.players - before.players).toBe(1);
+    expect(after.push.playersReached30d - before.playersReached30d).toBe(1);
     expect(JSON.stringify(after)).not.toContain("push.example.test");
     await db
       .from("push_subscriptions")

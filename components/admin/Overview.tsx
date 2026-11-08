@@ -26,15 +26,19 @@ interface OverviewData {
     banned: number;
   };
   kpis: { dau: number; open_reports: number; flagged: number };
-  /** R2-ADMIN: devices with push alerts on, and those a push reached in the last 30 days (absent on older servers). */
-  push?: { devices: number; reached30d: number };
+  /**
+   * R2-ADMIN: devices with push alerts on, and those a push reached in the last 30 days (absent on older servers);
+   * round 3 item 13: the distinct players behind each (null until the database has svc_admin_push_players).
+   */
+  push?: { devices: number; reached30d: number; players?: number | null; playersReached30d?: number | null };
 }
 
-function Tile({ value, label, href }: { value: number; label: string; href?: string }) {
+function Tile({ value, label, href, hint }: { value: number; label: string; href?: string; hint?: string }) {
   const body = (
     <>
       <span className="num text-[26px] font-semibold tracking-[-0.01em]">{fmt(value)}</span>
       <span className="text-muted text-[13px] font-medium">{label}</span>
+      {hint && <span className="text-muted text-[12px]">{hint}</span>}
     </>
   );
   const cls = "bg-surface flex min-h-[88px] flex-col justify-between gap-1 rounded-[12px] p-4";
@@ -132,9 +136,15 @@ export function Overview({ canModerate }: { canModerate: boolean }) {
             <Tile value={q.data.players.banned} label={C.banned} href="/admin/players?status=banned" />
           </div>
           {q.data.push && (
-            <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2">
-              <Tile value={q.data.push.devices} label={C.pushDevices} />
-              <Tile value={q.data.push.reached30d} label={C.pushReached} />
+            <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2 xl:grid-cols-4">
+              <Tile value={q.data.push.devices} label={C.pushDevices} hint={C.pushDevicesHint} />
+              {typeof q.data.push.players === "number" && (
+                <Tile value={q.data.push.players} label={C.pushPlayers} hint={C.pushPlayersHint} />
+              )}
+              <Tile value={q.data.push.reached30d} label={C.pushReached} hint={C.pushReachedHint} />
+              {typeof q.data.push.playersReached30d === "number" && (
+                <Tile value={q.data.push.playersReached30d} label={C.pushPlayersReached} hint={C.pushPlayersReachedHint} />
+              )}
             </div>
           )}
           <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-2">
