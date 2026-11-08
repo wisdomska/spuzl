@@ -9,12 +9,14 @@ import { difficultyForDate, type ContentLogic, type Difficulty, type GameLogic, 
 import { decodeSolution, encodeSolution } from "@/lib/game/solution-codec";
 import { ApiError } from "@/lib/api/server";
 import { solvedStates } from "./solved-state";
+import { syncContentReview } from "./content-review-server";
 
 export type AnyLogic = GameLogic<unknown, unknown, unknown> & Partial<ContentLogic<unknown, unknown, unknown>>;
 
 export async function logicFor(gameId: string): Promise<AnyLogic> {
   const l = LOGIC[gameId];
   if (!l) throw new ApiError(404, "game_not_ready");
+  await syncContentReview(gameId); // round 3 item 12: admin regenerations deal reviewed content too
   return (await l()).default as AnyLogic;
 }
 

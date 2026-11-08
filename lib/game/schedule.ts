@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { GAME_BY_ID, openGame } from "@/lib/catalog";
 import { getGameSettings } from "@/lib/game-settings/server";
 import { LOGIC } from "@/games/logic-registry";
+import { syncContentReview } from "@/lib/admin/content-review-server";
 import { createRng } from "@/lib/rng";
 import { difficultyForDate, type ContentLogic, type GameLogic } from "@/games/types";
 import { dailyNumber, dailySeed } from "@/lib/format";
@@ -34,6 +35,7 @@ export async function fillSchedule(db: SupabaseClient, { days = 60, budgetMs = 4
         pending++;
         continue;
       }
+      await syncContentReview(game); // round 3 item 12: retired content is never scheduled
       const logic = (await LOGIC[game]()).default as GameLogic<unknown, unknown, unknown> &
         Partial<ContentLogic<unknown, unknown, unknown>>;
       const difficulty = game === "gauntlet" ? "hard" : difficultyForDate(date);

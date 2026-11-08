@@ -7,6 +7,7 @@
 import type { Difficulty, Generated, Hint, VerifyResult } from "@/games/types";
 import type { GuessLogic } from "@/games/_shared/guess";
 import { createRng, type Rng } from "@/lib/rng";
+import { liveContent } from "@/games/_shared/live";
 import { CONTENT } from "./content";
 import { PRACTICE_GROUPS, PRACTICE_INDEX, PRACTICE_ORDER } from "./practice";
 import {
@@ -31,8 +32,10 @@ export function grade(entryIndex: number, d: Difficulty, words: string[]): numbe
 }
 
 export function generateAt(index: number, difficulty: Difficulty): Generated<QuadsPuzzle, QuadsSolution> {
-  const i = ((index % contentCount) + contentCount) % contentCount;
-  const entry = CONTENT[i];
+  // Round 3 item 12: the reviewed list (retired entries left out, edited ones swapped in).
+  const list = liveContent("quads", CONTENT);
+  const i = ((index % list.length) + list.length) % list.length;
+  const entry = list[i];
   const rng = createRng(`quads:${i}:${difficulty}`);
   const words = rng.shuffle(entry.groups.flatMap((g) => g.words.slice()));
   const puzzle: QuadsPuzzle = { ref: { game: "quads", i, d: difficulty }, words };
@@ -42,7 +45,7 @@ export function generateAt(index: number, difficulty: Difficulty): Generated<Qua
 }
 
 export function generate(rng: Rng, difficulty: Difficulty): Generated<QuadsPuzzle, QuadsSolution> {
-  return generateAt(rng.int(0, contentCount - 1), difficulty);
+  return generateAt(rng.int(0, liveContent("quads", CONTENT).length - 1), difficulty);
 }
 
 /** The guided first play's board: two plain groups in a fixed order (lib/game/service.ts loadFree). */

@@ -5,6 +5,7 @@
 import type { ContentLogic, Difficulty, Generated, Hint, VerifyResult } from "@/games/types";
 import { createRng, type Rng } from "@/lib/rng";
 import { checkTimedAnswers, puzzleKey, rotation, seal, timedScore, type TimedAnswer } from "@/games/_shared/cluecave";
+import { liveContent } from "@/games/_shared/live";
 import { CONTENT, type Country, type FlagSpec } from "./content";
 
 export const ROUNDS = 10;
@@ -39,18 +40,21 @@ export interface FlaggedState {
 
 export const sealKey = (ref: string) => puzzleKey("flagged", ref);
 
-const POOLS: Record<RoundKind, Country[]> = {
-  flag: CONTENT.filter((c) => c.flag),
-  capital: CONTENT.filter((c) => c.capital),
-  currency: CONTENT.filter((c) => c.currency),
-};
+/**
+ * The countries per round kind, from the reviewed list (round 3 item 12: retired ones are never asked about nor
+ * offered as a wrong option; edited ones swapped in).
+ */
+function pools(): Record<RoundKind, readonly Country[]> {
+  const list = liveContent("flagged", CONTENT);
+  return { flag: list.filter((c) => c.flag), capital: list.filter((c) => c.capital), currency: list.filter((c) => c.currency) };
+}
 
 const answerOf = (kind: RoundKind, c: Country) => (kind === "flag" ? c.name : kind === "capital" ? c.capital! : c.currency!);
 
 /** Three distinct wrong options, from the same continent first so rounds are not giveaways. */
 function distractors(kind: RoundKind, c: Country, rng: Rng): string[] {
   const right = answerOf(kind, c);
-  const others = rng.shuffle(POOLS[kind].filter((o) => o !== c));
+  const others = rng.shuffle(pools()[kind].filter((o) => o !== c));
   const near = others.filter((o) => o.continent === c.continent);
   const out: string[] = [];
   for (const o of [...near, ...others]) {
@@ -91,6 +95,7 @@ export const contentCount = DAYS;
 /** Daily: each pool rotates on its own permutation; the rounds are then mixed in a seeded order. */
 export function generateAt(index: number, difficulty: Difficulty = "medium"): Generated<FlaggedPuzzle, FlaggedSolution> {
   const items: [RoundKind, Country][] = [];
+  const POOLS = pools();
   for (const kind of ["flag", "capital", "currency"] as RoundKind[]) {
     for (const i of rotation(POOLS[kind].length, MIX[kind], index, `flagged:${kind}`)) items.push([kind, POOLS[kind][i]]);
   }
@@ -107,6 +112,7 @@ export function generate(rng: Rng, difficulty: Difficulty): Generated<FlaggedPuz
     currency: 3 + Math.max(0, Math.min(1, hard - 1)),
   };
   const items: [RoundKind, Country][] = [];
+  const POOLS = pools();
   for (const kind of ["flag", "capital", "currency"] as RoundKind[]) {
     for (const c of rng.shuffle(POOLS[kind].slice()).slice(0, mix[kind])) items.push([kind, c]);
   }

@@ -6,6 +6,7 @@ import type { Difficulty, Generated, Hint, VerifyResult } from "@/games/types";
 import type { GuessLogic } from "@/games/_shared/guess";
 import { isWord } from "@/games/_shared/words";
 import { createRng, type Rng } from "@/lib/rng";
+import { liveContent } from "@/games/_shared/live";
 import { CONTENT } from "./content";
 import { isAnagram, ROUNDS, type RemixCheck, type RemixGuess, type RemixPuzzle, type RemixSolution, type RemixState } from "./rules";
 
@@ -31,8 +32,10 @@ export function grade(words: string[], d: Difficulty): number {
 }
 
 export function generateAt(index: number, difficulty: Difficulty): Generated<RemixPuzzle, RemixSolution> {
-  const i = ((index % contentCount) + contentCount) % contentCount;
-  const words = CONTENT[i].words.slice();
+  // Round 3 item 12: the reviewed list (retired entries left out, edited ones swapped in).
+  const list = liveContent("remix", CONTENT);
+  const i = ((index % list.length) + list.length) % list.length;
+  const words = list[i].words.slice();
   const rng = createRng(`remix:${i}:${difficulty}`);
   const puzzle: RemixPuzzle = { ref: { game: "remix", i, d: difficulty }, rounds: words.map((w) => ({ letters: scramble(w, rng) })) };
   if (difficulty === "easy") puzzle.starts = words.map((w) => w[0]);
@@ -40,7 +43,7 @@ export function generateAt(index: number, difficulty: Difficulty): Generated<Rem
 }
 
 export function generate(rng: Rng, difficulty: Difficulty): Generated<RemixPuzzle, RemixSolution> {
-  return generateAt(rng.int(0, contentCount - 1), difficulty);
+  return generateAt(rng.int(0, liveContent("remix", CONTENT).length - 1), difficulty);
 }
 
 /** The day's word, or any real word from exactly the same letters. */

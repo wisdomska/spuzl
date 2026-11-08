@@ -1,5 +1,5 @@
 import "server-only";
-import { loadLogic } from "@/games/logic-registry";
+import { loadServedLogic as loadLogic } from "@/lib/game/served-logic";
 import type { Difficulty, GameLogic } from "@/games/types";
 import { createRng } from "@/lib/rng";
 import { roundSeed } from "../games";

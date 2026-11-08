@@ -2,12 +2,13 @@ import "server-only";
 import { createHash } from "node:crypto";
 import type { Difficulty, Generated } from "@/games/types";
 import { rotation } from "@/games/_shared/cluecave";
+import { withContentReview } from "@/games/_shared/live";
 import { ApiError } from "@/lib/api/server";
 import { logicFor } from "./puzzles";
 import { SCHEDULABLE, type ContentGame } from "./content-schemas";
 
 /** The content.ts modules, loaded on demand. Each exports `needsReview` and its entry array. */
-const FILES: Record<ContentGame, () => Promise<{ needsReview: boolean; entries: unknown[] }>> = {
+export const FILES: Record<ContentGame, () => Promise<{ needsReview: boolean; entries: unknown[] }>> = {
   coil: async () => {
     const m = await import("@/games/coil/content");
     return { needsReview: m.needsReview, entries: m.CONTENT };
@@ -127,7 +128,8 @@ export async function buildFromItem(game: ContentGame, payload: unknown, difficu
   const saved = slots.map((s) => arr[s]);
   try {
     slots.forEach((s, k) => (arr[s] = items[k]));
-    return logic.generateAt(0, difficulty);
+    // The whole list as written (no reviewed state), so generateAt(0) reads the swapped slots.
+    return withContentReview(game, null, () => logic.generateAt!(0, difficulty));
   } finally {
     slots.forEach((s, k) => (arr[s] = saved[k]));
   }

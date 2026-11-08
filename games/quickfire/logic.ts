@@ -15,6 +15,7 @@ import type { Difficulty, Generated, Hint, VerifyResult } from "@/games/types";
 import type { ContentRef, GuessContext, GuessLogic, PuzzleRef } from "@/games/_shared/guess";
 import { createRng, type Rng } from "@/lib/rng";
 import { checkTimedAnswers, READ_FLOOR_MS, rotation, timedScore, type TimedAnswer } from "@/games/_shared/cluecave";
+import { liveContent } from "@/games/_shared/live";
 import { CONTENT, type QuickfireCategory, type QuickfireItem } from "./content";
 import { QUIZ_SETS, quizSetIndex } from "./sets";
 
@@ -110,7 +111,7 @@ export const contentCount = Math.floor(CONTENT.length / QUESTIONS);
 /** Five questions at the difficulty's levels, at most two from one category. */
 function freePicks(rng: Rng, difficulty: Difficulty): QuickfireItem[] {
   const levels = LEVELS_FOR[difficulty] ?? LEVELS_FOR.easy;
-  const pool = rng.shuffle(CONTENT.filter((it) => levels.includes(it.level)));
+  const pool = rng.shuffle(liveContent("quickfire", CONTENT).filter((it) => levels.includes(it.level)));
   const picked: QuickfireItem[] = [];
   for (const it of pool) {
     if (picked.length === QUESTIONS) break;
@@ -127,9 +128,10 @@ function freePicks(rng: Rng, difficulty: Difficulty): QuickfireItem[] {
 export function generateAt(index: number, difficulty: Difficulty = "easy"): Generated<QuickfirePuzzle, QuickfireSolution> {
   if (index >= SET_BASE) return build(setRound(index - SET_BASE), index, difficulty);
   if (index >= FREE_BASE) return build(freePicks(createRng(`qf-free:${index - FREE_BASE}`), difficulty), index, difficulty);
-  const picks = rotation(CONTENT.length, QUESTIONS, index, "quickfire");
+  const list = liveContent("quickfire", CONTENT); // round 3 item 12: retired questions left out, edited ones swapped in
+  const picks = rotation(list.length, QUESTIONS, index, "quickfire");
   return build(
-    picks.map((i) => CONTENT[i]),
+    picks.map((i) => list[i]),
     index,
     difficulty,
   );

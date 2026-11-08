@@ -174,3 +174,7 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   off, free play still has no image to share.
 - **Party TV for under-16 hosts (R2-P5):** the big-screen view is refused for hosts under 16 (their rooms are friends
   only, R2-13). If teachers under 16 ever host classroom rooms, this needs a product decision.
+- **Retired content and boards built before the retire (round 3, item 12):** every board built after a retire leaves
+  the entry out, but Dailies and Daily Five days already generated (up to 60 days ahead) keep the puzzle they were
+  built with, and an in-memory duel round cache may hold a board for a few minutes. Swap an affected Daily from the
+  calendar, or add a "rebuild unlocked days for this game" action if retiring becomes common.

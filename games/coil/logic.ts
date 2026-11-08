@@ -7,6 +7,7 @@ import type { Difficulty, Generated, Hint, VerifyResult } from "@/games/types";
 import type { GuessLogic } from "@/games/_shared/guess";
 import { isWord } from "@/games/_shared/words";
 import { createRng, type Rng } from "@/lib/rng";
+import { liveContent } from "@/games/_shared/live";
 import { CONTENT } from "./content";
 import {
   adjacent,
@@ -215,8 +216,10 @@ export function grade(paths: number[][], cols: number): number {
 /* ---------------- Generation ---------------- */
 
 export function generateAt(index: number, difficulty: Difficulty): Generated<CoilPuzzle, CoilSolution> {
-  const i = ((index % contentCount) + contentCount) % contentCount;
-  const entry = CONTENT[i];
+  // Round 3 item 12: the reviewed list (retired entries left out, edited ones swapped in).
+  const list = liveContent("coil", CONTENT);
+  const i = ((index % list.length) + list.length) % list.length;
+  const entry = list[i];
   const rng = createRng(`coil:${i}:${difficulty}`);
   // Prefer a layout where every theme word can be traced in exactly one spot; otherwise keep the one with
   // the fewest ambiguous words (a second spot answers "right word, lives somewhere else").
@@ -246,7 +249,7 @@ export function generateAt(index: number, difficulty: Difficulty): Generated<Coi
 }
 
 export function generate(rng: Rng, difficulty: Difficulty): Generated<CoilPuzzle, CoilSolution> {
-  return generateAt(rng.int(0, contentCount - 1), difficulty);
+  return generateAt(rng.int(0, liveContent("coil", CONTENT).length - 1), difficulty);
 }
 
 /* ---------------- Guesses and verification ---------------- */

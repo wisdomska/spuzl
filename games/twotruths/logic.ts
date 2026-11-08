@@ -14,6 +14,7 @@ import type { Difficulty, Generated, Hint, VerifyResult } from "@/games/types";
 import type { ContentRef, GuessContext, GuessLogic } from "@/games/_shared/guess";
 import { checkTimedAnswers, READ_FLOOR_MS, rotation, timedScore } from "@/games/_shared/cluecave";
 import { createRng, type Rng } from "@/lib/rng";
+import { liveContent } from "@/games/_shared/live";
 import { CONTENT, PRACTICE, type TruthsRound } from "./content";
 import {
   FREE_BASE,
@@ -66,7 +67,7 @@ export function build(rounds: TruthsRound[], i: number, d: Difficulty): Generate
 /** Free play: five rounds at the difficulty's levels, at most two from one theme. */
 function freePicks(rng: Rng, difficulty: Difficulty): TruthsRound[] {
   const levels = LEVELS_FOR[difficulty] ?? LEVELS_FOR.easy;
-  const pool = rng.shuffle(CONTENT.filter((r) => levels.includes(r.level)));
+  const pool = rng.shuffle(liveContent("twotruths", CONTENT).filter((r) => levels.includes(r.level)));
   const picked: TruthsRound[] = [];
   for (const r of pool) {
     if (picked.length === ROUNDS) break;
@@ -86,9 +87,10 @@ export const contentCount = Math.floor(CONTENT.length / ROUNDS);
 export function generateAt(index: number, difficulty: Difficulty = "easy"): Generated<TruthsPuzzle, TruthsSolution> {
   if (index === PRACTICE_INDEX) return build(PRACTICE, index, "easy");
   if (index >= FREE_BASE) return build(freePicks(createRng(`tt-free:${index - FREE_BASE}`), difficulty), index, difficulty);
-  const picks = rotation(CONTENT.length, ROUNDS, index, "twotruths");
+  const list = liveContent("twotruths", CONTENT); // round 3 item 12: retired rounds left out, edited ones swapped in
+  const picks = rotation(list.length, ROUNDS, index, "twotruths");
   return build(
-    picks.map((k) => CONTENT[k]),
+    picks.map((k) => list[k]),
     index,
     difficulty,
   );

@@ -5,6 +5,7 @@
 import type { Difficulty, Generated, Hint, VerifyResult } from "@/games/types";
 import type { GuessLogic } from "@/games/_shared/guess";
 import { createRng, type Rng } from "@/lib/rng";
+import { liveContent } from "@/games/_shared/live";
 import { CONTENT } from "./content";
 import {
   changedAt,
@@ -50,8 +51,10 @@ export function grade(words: string[], d: Difficulty): number {
 }
 
 export function generateAt(index: number, difficulty: Difficulty): Generated<RungsPuzzle, RungsSolution> {
-  const i = ((index % contentCount) + contentCount) % contentCount;
-  const e = CONTENT[i];
+  // Round 3 item 12: the reviewed list (retired entries left out, edited ones swapped in).
+  const list = liveContent("rungs", CONTENT);
+  const i = ((index % list.length) + list.length) % list.length;
+  const e = list[i];
   const rng = createRng(`rungs:${i}:${difficulty}`);
   // shuffle the trivia rungs, never in ladder order or its reverse
   let display = [1, 2, 3, 4, 5];
@@ -70,7 +73,7 @@ export function generateAt(index: number, difficulty: Difficulty): Generated<Run
 }
 
 export function generate(rng: Rng, difficulty: Difficulty): Generated<RungsPuzzle, RungsSolution> {
-  return generateAt(rng.int(0, contentCount - 1), difficulty);
+  return generateAt(rng.int(0, liveContent("rungs", CONTENT).length - 1), difficulty);
 }
 
 /** 0 when `order` (display ids top to bottom) is the ladder, 1 when it is the ladder upside down, -1 otherwise. */

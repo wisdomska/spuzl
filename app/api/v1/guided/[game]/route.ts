@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { ApiError, body, handle, ok, rateLimit, requirePlayer } from "@/lib/api/server";
 import { assertGameOpen, gameOr404, guidedSeed, loadFree } from "@/lib/game/service";
-import { hasLogic, loadLogic } from "@/games/logic-registry";
+import { hasLogic } from "@/games/logic-registry";
+import { loadServedLogic as loadLogic } from "@/lib/game/served-logic";
 import { guidedCopy } from "@/lib/copy/guided";
 import { bindPuzzle } from "@/lib/game/guess-token";
 import { getGameSettings } from "@/lib/game-settings/server";

@@ -8,6 +8,7 @@ import type { GuessContext, GuessLogic } from "@/games/_shared/guess";
 import { isWord } from "@/games/_shared/words";
 import { FIVE_COPY } from "@/lib/copy/five";
 import { createRng, type Rng } from "@/lib/rng";
+import { liveContent } from "@/games/_shared/live";
 import { ANSWERS } from "./content";
 import {
   HIT,
@@ -30,13 +31,20 @@ const DAY_WEIGHT: Record<Difficulty, number> = { easy: 10, medium: 25, hard: 40,
 
 const distinct = (w: string) => new Set(w).size === w.length;
 
-/** Easy days only use words with five different letters; every other day may repeat a letter. */
-const POOLS: Record<Difficulty, readonly string[]> = (() => {
-  const easy = ANSWERS.filter(distinct);
+/**
+ * Easy days only use words with five different letters; every other day may repeat a letter. Built from the reviewed
+ * list (round 3 item 12: retired words left out, edited ones swapped in), once per list.
+ */
+let pooled: { from: readonly string[]; pools: Record<Difficulty, readonly string[]> } | null = null;
+function poolsOf(): Record<Difficulty, readonly string[]> {
+  const answers = liveContent("five", ANSWERS);
+  if (pooled?.from === answers) return pooled.pools;
+  const easy = answers.filter(distinct);
   const shuffle = (list: readonly string[], salt: string) => createRng(`five:order:${salt}`).shuffle(list.slice());
-  const all = shuffle(ANSWERS, "all");
-  return { easy: shuffle(easy, "easy"), medium: all, hard: all, expert: all, mega: all };
-})();
+  const all = shuffle(answers, "all");
+  pooled = { from: answers, pools: { easy: shuffle(easy, "easy"), medium: all, hard: all, expert: all, mega: all } };
+  return pooled.pools;
+}
 
 export function grade(word: string, d: Difficulty): number {
   const rarity = [...word].reduce((a, ch) => a + COMMON.indexOf(ch), 0) / word.length;
@@ -45,8 +53,9 @@ export function grade(word: string, d: Difficulty): number {
 }
 
 export function generateAt(index: number, difficulty: Difficulty): Generated<FivePuzzle, FiveSolution> {
-  const i = ((index % contentCount) + contentCount) % contentCount;
-  const pool = POOLS[difficulty];
+  const n = liveContent("five", ANSWERS).length;
+  const i = ((index % n) + n) % n;
+  const pool = poolsOf()[difficulty];
   const answer = pool[i % pool.length];
   return {
     puzzle: { ref: { game: "five", i, d: difficulty }, len: LEN, tries: TRIES },
@@ -56,7 +65,7 @@ export function generateAt(index: number, difficulty: Difficulty): Generated<Fiv
 }
 
 export function generate(rng: Rng, difficulty: Difficulty): Generated<FivePuzzle, FiveSolution> {
-  return generateAt(rng.int(0, contentCount - 1), difficulty);
+  return generateAt(rng.int(0, liveContent("five", ANSWERS).length - 1), difficulty);
 }
 
 /** A counted guess: five letters and a dictionary word. */

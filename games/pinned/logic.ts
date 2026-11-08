@@ -6,6 +6,7 @@
 import type { ContentLogic, Difficulty, Generated, Hint, VerifyResult } from "@/games/types";
 import { createRng, type Rng } from "@/lib/rng";
 import { puzzleKey, rotation, seal } from "@/games/_shared/cluecave";
+import { liveContent } from "@/games/_shared/live";
 import { CONTENT, type Landmark } from "./content";
 import { VIEWS } from "./geo";
 
@@ -48,10 +49,11 @@ export function pointsFor(km: number, map: PinnedRound["map"]) {
   return Math.round(1000 * Math.exp(-km / VIEWS[map].scaleKm));
 }
 
-const POOLS = {
-  africa: CONTENT.filter((l) => l.map === "africa"),
-  world: CONTENT.filter((l) => l.map === "world"),
-};
+/** The landmarks per map, from the reviewed list (round 3 item 12: retired ones left out, edited ones swapped in). */
+function pools() {
+  const list = liveContent("pinned", CONTENT);
+  return { africa: list.filter((l) => l.map === "africa"), world: list.filter((l) => l.map === "world") };
+}
 
 function build(items: Landmark[], ref: string, grade: number): Generated<PinnedPuzzle, PinnedSolution> {
   const spots = items.map((l) => [l.lat, l.lon] as LatLon);
@@ -72,6 +74,7 @@ export function gradeOf(items: Landmark[]) {
 export const contentCount = DAYS;
 
 export function generateAt(index: number): Generated<PinnedPuzzle, PinnedSolution> {
+  const POOLS = pools();
   const africa = rotation(POOLS.africa.length, AFRICA_PER_DAY, index, "pinned:africa").map((i) => POOLS.africa[i]);
   const world = rotation(POOLS.world.length, ROUNDS - AFRICA_PER_DAY, index, "pinned:world").map((i) => POOLS.world[i]);
   const items = createRng(`pinned-order:${index}`).shuffle([...world, ...africa]);
@@ -81,6 +84,7 @@ export function generateAt(index: number): Generated<PinnedPuzzle, PinnedSolutio
 /** Free play: easy days lean on the Africa map, expert days are all world rounds. */
 export function generate(rng: Rng, difficulty: Difficulty): Generated<PinnedPuzzle, PinnedSolution> {
   const africaCount = { easy: 3, medium: 2, hard: 1, expert: 0, mega: 1 }[difficulty];
+  const POOLS = pools();
   const items = rng.shuffle([
     ...rng.shuffle(POOLS.africa.slice()).slice(0, africaCount),
     ...rng.shuffle(POOLS.world.slice()).slice(0, ROUNDS - africaCount),

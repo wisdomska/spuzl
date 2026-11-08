@@ -49,7 +49,10 @@ const ROUTES: Route[] = [
   { method: "PATCH", path: `/api/admin/content/${NIL}`, perm: "content.write" },
   { method: "POST", path: `/api/admin/content/${NIL}/review`, perm: "content.approve" },
   { method: "GET", path: "/api/admin/content/files", perm: "content.read" },
-  { method: "POST", path: "/api/admin/content/files", perm: "content.owner_review" },
+  // Round 3 item 12: the Review queue (content.write reviews, content.read views)
+  { method: "POST", path: "/api/admin/content/files", perm: "content.write" },
+  { method: "POST", path: "/api/admin/content/files/edit", perm: "content.write" },
+  { method: "GET", path: "/api/admin/content/files/preview?game=hunch&index=0", perm: "content.read" },
   { method: "POST", path: "/api/admin/content/import", perm: "content.write" },
   // Round 3 item 11: Family Draw words in the database
   { method: "GET", path: "/api/admin/content/draw-words", perm: "content.read" },
@@ -377,21 +380,22 @@ describe("content editor and two-person approval (FR-AD-03)", () => {
     expect([200, 422]).toContain(g.status);
   });
 
-  it("lists content.ts entries flagged needsReview and records the owner's approval", async () => {
+  it("lists content.ts entries flagged needsReview and records a reviewer's approval (round 3 item 12: editors review)", async () => {
     const list = await S.content_editor.aal2("/api/admin/content/files?game=quads");
-    expect(list.data.canApprove).toBe(false);
+    expect(list.data.canReview).toBe(true);
     const g = list.data.games[0];
     expect(list.data).toMatchObject({ page: 1, pageSize: 25, total: g.total });
     expect(g.entries.length).toBe(Math.min(g.total, 25));
     expect(g.entries.map((e: { index: number }) => e.index)).toEqual(Array.from({ length: g.entries.length }, (_, i) => i));
-    const r = await S.owner.aal2("/api/admin/content/files", {
+    const r = await S.content_editor.aal2("/api/admin/content/files", {
       json: { game: "quads", indexes: [0, 1], decision: "approve", notes: "read through" },
     });
     expect(r.status).toBe(200);
     const after = await S.owner.aal2("/api/admin/content/files?game=quads");
     expect(after.data.games[0].entries.slice(0, 2).map((e: { state: string }) => e.state)).toEqual(["approved", "approved"]);
     const { data } = await admin().from("content_items").select("status, reviewer_id, source").eq("source_ref", "quads:0").single();
-    expect(data).toMatchObject({ status: "approved", reviewer_id: S.owner.userId, source: "content_file" });
+    expect(data).toMatchObject({ status: "approved", reviewer_id: S.content_editor.userId, source: "content_file" });
+    await admin().from("content_items").delete().eq("source", "content_file").in("source_ref", ["quads:0", "quads:1"]);
   });
 
   it("imports a Quads pack as drafts, all or nothing, audited and for editors only (R2-14)", async () => {
@@ -1424,5 +1428,117 @@ describe("Family Draw words in the database (round 3, item 11)", () => {
     made.push(...(rows ?? []).map((x) => x.id));
     expect((await lastAudit(S.content_editor.userId, "drawword.import"))?.detail).toMatchObject({ added: [word], count: 2 });
     expect((await S.analyst.aal2("/api/admin/content/draw-words/import", { json: { text } })).status).toBe(403);
+  });
+});
+
+describe("content review queue (round 3, item 12)", () => {
+  const GAME = "twotruths";
+  const refs = [`${GAME}:0`, `${GAME}:1`, `${GAME}:2`];
+  afterAll(async () => {
+    await admin().from("content_items").delete().eq("source", "content_file").in("source_ref", refs);
+  });
+  const entries = async (show = "all") =>
+    (await S.analyst.aal2(`/api/admin/content/files?game=${GAME}&show=${show}&pageSize=100`)).data.games[0].entries as {
+      index: number;
+      state: string;
+      edit?: Record<string, unknown>;
+      reviewer: string | null;
+    }[];
+
+  it("summarises every game in the queue with progress and a needsReview flag derived from the reviews", async () => {
+    const r = await S.content_editor.aal2("/api/admin/content/files");
+    expect(r.status).toBe(200);
+    const tt = r.data.games.find((g: { game: string }) => g.game === GAME);
+    expect(tt).toMatchObject({ codeFlag: true, needsReview: true });
+    expect(tt.reviewed).toBeLessThan(tt.total);
+    expect(r.data.games.some((g: { game: string }) => g.game === "five")).toBe(false); // owner-approved in code
+    expect((await S.analyst.aal2("/api/admin/content/files")).data.canReview).toBe(false);
+    expect((await S.moderator.aal2("/api/admin/content/files")).status).toBe(403);
+  });
+
+  it("approves, edits and retires entries with who and when, keeps the history, audits, and lets content readers only view", async () => {
+    const approve = await S.content_editor.aal2("/api/admin/content/files", { json: { game: GAME, indexes: [0], decision: "approve" } });
+    expect(approve.status).toBe(200);
+    expect((await lastAudit(S.content_editor.userId, "content_file.approve"))?.detail).toMatchObject({ indexes: [0] });
+
+    const { CONTENT } = await import("@/games/twotruths/content");
+    const fixed = { ...CONTENT[1], fix: `${CONTENT[1].fix.slice(0, 140)} (checked)` };
+    const bad = await S.owner.aal2("/api/admin/content/files/edit", { json: { game: GAME, index: 1, payload: { ...fixed, lie: "" } } });
+    expect([bad.status, bad.data.error]).toEqual([422, "invalid_payload"]);
+    const same = await S.owner.aal2("/api/admin/content/files/edit", { json: { game: GAME, index: 1, payload: CONTENT[1] } });
+    expect([same.status, same.data.error]).toEqual([409, "no_change"]);
+    const edit = await S.owner.aal2("/api/admin/content/files/edit", {
+      json: { game: GAME, index: 1, payload: fixed, notes: "softer fix" },
+    });
+    expect(edit.status).toBe(200);
+    expect((await lastAudit(S.owner.userId, "content_file.edit"))?.detail).toMatchObject({ index: 1, after: { fix: fixed.fix } });
+
+    const retire = await S.owner.aal2("/api/admin/content/files", {
+      json: { game: GAME, indexes: [2], decision: "retire", notes: "dated" },
+    });
+    expect(retire.status).toBe(200);
+    expect((await lastAudit(S.owner.userId, "content_file.retire"))?.detail).toMatchObject({ indexes: [2], notes: "dated" });
+
+    const list = await entries();
+    expect(list.slice(0, 3).map((e) => e.state)).toEqual(["approved", "edited", "retired"]);
+    expect(list[1].edit).toMatchObject({ fix: fixed.fix });
+    expect(list[0].reviewer).toBeTruthy();
+    expect((await entries("retired")).map((e) => e.index)).toContain(2);
+    expect((await entries("todo")).some((e) => e.index < 3)).toBe(false);
+
+    const { data: rows } = await admin()
+      .from("content_items")
+      .select("source_ref, status, reviewer_id")
+      .in("source_ref", refs)
+      .order("source_ref");
+    expect(rows).toEqual([
+      { source_ref: refs[0], status: "approved", reviewer_id: S.content_editor.userId },
+      { source_ref: refs[1], status: "approved", reviewer_id: S.owner.userId },
+      { source_ref: refs[2], status: "retired", reviewer_id: S.owner.userId },
+    ]);
+    const { data: history } = await admin()
+      .from("content_reviews")
+      .select("source_ref, decision, reviewer_id")
+      .in("source_ref", refs)
+      .order("id", { ascending: false })
+      .limit(3);
+    expect(history?.map((h) => h.decision)).toEqual(["retire", "edit", "approve"]);
+
+    // Restore: approving a retired entry brings it back, recorded as a restore.
+    expect(
+      (await S.content_editor.aal2("/api/admin/content/files", { json: { game: GAME, indexes: [2], decision: "approve" } })).status,
+    ).toBe(200);
+    const { data: last } = await admin()
+      .from("content_reviews")
+      .select("decision")
+      .eq("source_ref", refs[2])
+      .order("id", { ascending: false })
+      .limit(1);
+    expect(last?.[0]?.decision).toBe("restore");
+
+    for (const [path, json] of [
+      ["/api/admin/content/files", { game: GAME, indexes: [0], decision: "approve" }],
+      ["/api/admin/content/files/edit", { game: GAME, index: 1, payload: fixed }],
+    ] as const) {
+      expect((await S.analyst.aal2(path, { json })).status, path).toBe(403);
+      expect((await S.moderator.aal2(path, { json })).status, path).toBe(403);
+    }
+  });
+
+  it("refuses to retire so much that a game can no longer deal full boards", async () => {
+    const all = (await S.owner.aal2(`/api/admin/content/files?game=${GAME}&pageSize=100`)).data.games[0];
+    const indexes = Array.from({ length: Math.min(all.total, 200) }, (_, i) => i);
+    const r = await S.owner.aal2("/api/admin/content/files", { json: { game: GAME, indexes, decision: "retire" } });
+    expect([r.status, r.data.error]).toEqual([409, "too_few_left"]);
+    expect((await entries("retired")).length).toBe(0);
+  });
+
+  it("previews the board an entry builds for one-entry games, and the history is append-only", async () => {
+    const b = await S.analyst.aal2("/api/admin/content/files/preview?game=hunch&index=0");
+    expect(b.status).toBe(200);
+    expect(b.data.board.puzzle).toBeTruthy();
+    expect((await S.analyst.aal2(`/api/admin/content/files/preview?game=${GAME}&index=0`)).data.board).toBeNull();
+    const { error } = await admin().from("content_reviews").delete().in("source_ref", refs);
+    expect(error).not.toBeNull();
   });
 });

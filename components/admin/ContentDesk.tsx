@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { GAME_BY_ID } from "@/lib/catalog";
 import { CONTENT_GAMES, SCHEDULABLE, TEMPLATES, validatePayload, type ContentGame } from "@/lib/admin/content-schemas";
+import { REVIEW_SHOW, type ReviewShow } from "@/lib/admin/content-review";
 import { addDays, age, dayMonth, todayIso } from "@/lib/admin/dates";
 import { CONTENT_SORT } from "@/lib/admin/sorting";
 import { errorText, useAdminAction, useAdminQuery, type AdminPage } from "@/lib/client/admin";
@@ -12,6 +13,7 @@ import { Pagination, usePager, type Pager } from "./Pagination";
 import { QuadsEditor, QuadsPackPanel, QuadsPreview } from "./QuadsEditor";
 import { TruthsPackPanel, TruthsPreview } from "./TruthsEditor";
 import { DrawWordsPanel } from "./DrawWordsPanel";
+import { ReviewQueue } from "./ReviewQueue";
 import { SortHead, type HeadCol } from "./SortHeader";
 import { useUrlFilters, useUrlSort } from "./useUrlFilters";
 import { Btn, Empty, Field, Notice, PageTitle, Pill, RowsSkeleton, Swatch, Tabs, inputCls, textareaCls, type PillTone } from "./ui";
@@ -54,10 +56,10 @@ const E = C.editorPanel;
 const { common } = adminCopy;
 const FILTERS = { tab: "items", status: "", game: "", show: "todo" } as const;
 const ALLOWED = {
-  tab: ["items", "files", "drawit"],
+  tab: ["items", "review", "drawit"],
   status: ["draft", "in_review", "approved", "rejected", "scheduled"],
   game: CONTENT_GAMES,
-  show: ["todo", "all"],
+  show: [...REVIEW_SHOW],
 };
 const ITEM_COLS: HeadCol<(typeof CONTENT_SORT.keys)[number]>[] = [
   { label: C.itemsHead[0], sort: "game" },
@@ -67,10 +69,13 @@ const ITEM_COLS: HeadCol<(typeof CONTENT_SORT.keys)[number]>[] = [
   { label: C.itemsHead[4], sort: "updated_at" },
 ];
 
-/** Content editor (FR-AD-03): drafts, two-person review, scheduling, and the owner's review of content.ts entries. */
-export function ContentDesk(props: { canWrite: boolean; canApprove: boolean; canSchedule: boolean; isOwner: boolean }) {
+/**
+ * Content editor (FR-AD-03): drafts, two-person review and scheduling; the Review queue of content.ts entries (round 3,
+ * item 12); the Family Draw words (round 3, item 11).
+ */
+export function ContentDesk(props: { canWrite: boolean; canApprove: boolean; canSchedule: boolean }) {
   const [filters, setFilters] = useUrlFilters(FILTERS, ALLOWED);
-  const tab = filters.tab as "items" | "files" | "drawit";
+  const tab = filters.tab as "items" | "review" | "drawit";
   const pager = usePager();
   return (
     <div className="flex flex-col gap-3.5 px-6 py-5">
@@ -83,7 +88,7 @@ export function ContentDesk(props: { canWrite: boolean; canApprove: boolean; can
             onChange={(t) => setFilters({ tab: t })}
             items={[
               { id: "items", label: C.tabs.items },
-              { id: "files", label: C.tabs.files },
+              { id: "review", label: C.tabs.review },
               { id: "drawit", label: C.tabs.drawit },
             ]}
           />
@@ -94,7 +99,13 @@ export function ContentDesk(props: { canWrite: boolean; canApprove: boolean; can
       ) : tab === "drawit" ? (
         <DrawWordsPanel canWrite={props.canWrite} />
       ) : (
-        <FileReview isOwner={props.isOwner} pager={pager} />
+        <ReviewQueue
+          canWrite={props.canWrite}
+          game={(filters.game || null) as ContentGame | null}
+          show={filters.show as ReviewShow}
+          setFilters={setFilters}
+          pager={pager}
+        />
       )}
     </div>
   );
@@ -426,177 +437,5 @@ function Editor({
         </Link>
       )}
     </aside>
-  );
-}
-
-interface FileGame {
-  game: ContentGame;
-  total: number;
-  approved: number;
-  rejected: number;
-  entries?: { index: number; entry: unknown; state: "pending" | "approved" | "rejected" | "changed"; notes: string | null }[];
-}
-const FILE_TONE: Record<string, PillTone> = { pending: "warn", changed: "warn", approved: "ok", rejected: "danger" };
-
-function FileReview({ isOwner, pager }: { isOwner: boolean; pager: Pager }) {
-  const [filters, setFilters] = useUrlFilters(FILTERS, ALLOWED);
-  const game = (filters.game || null) as ContentGame | null;
-  const only = filters.show as "todo" | "all";
-  const [picked, setPicked] = useState<Set<number>>(new Set());
-  const sum = useAdminQuery<{ games: FileGame[] }>(["files"], "/api/admin/content/files");
-  const one = useAdminQuery<{ games: FileGame[]; total?: number }>(
-    ["files", game, only, pager.query],
-    game ? `/api/admin/content/files?game=${game}&show=${only}&${pager.query}` : null,
-    { keepPrevious: true },
-  );
-  const act = useAdminAction<{ game: string; indexes: number[]; decision: "approve" | "reject" }>("POST", "/api/admin/content/files");
-  const shown = one.data?.games[0]?.game === game ? one.data : undefined;
-  const entries = shown?.games[0]?.entries ?? [];
-
-  return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[280px_1fr]">
-      <div className="bg-surface flex flex-col gap-1 rounded-[12px] p-2">
-        {sum.isPending ? (
-          <RowsSkeleton rows={8} />
-        ) : (
-          sum.data?.games.map((g) => (
-            <button
-              key={g.game}
-              type="button"
-              aria-pressed={game === g.game}
-              onClick={() => (setFilters({ game: g.game }), setPicked(new Set()))}
-              className={`flex h-11 items-center gap-2 rounded-[10px] px-2.5 text-left text-[14px] font-semibold ${game === g.game ? "bg-surface-raised" : "hover:bg-surface-raised/60"}`}
-            >
-              <Swatch world={GAME_BY_ID[g.game]?.world ?? "word"} />
-              <span className="flex-1">{GAME_BY_ID[g.game]?.name ?? g.game}</span>
-              <span className="num text-muted text-[12px]">
-                {g.approved}/{g.total}
-              </span>
-            </button>
-          ))
-        )}
-      </div>
-      <div className="flex min-w-0 flex-col gap-3">
-        {!game ? (
-          <Notice icon="info">
-            {C.filesIntro} {isOwner ? C.filesOwner : C.filesNotOwner}
-          </Notice>
-        ) : (
-          <>
-            <div className="flex flex-wrap items-center gap-2">
-              <Tabs
-                label={C.show}
-                value={only}
-                onChange={(v) => setFilters({ show: v })}
-                items={[
-                  { id: "todo", label: C.showTabs.todo },
-                  { id: "all", label: C.showTabs.all },
-                ]}
-              />
-              {isOwner && (
-                <div className="ml-auto flex gap-2">
-                  <Btn
-                    disabled={!picked.size || act.isPending}
-                    onClick={() =>
-                      act.mutate({ game, indexes: [...picked], decision: "reject" }, { onSuccess: () => setPicked(new Set()) })
-                    }
-                  >
-                    {C.reject(picked.size)}
-                  </Btn>
-                  <Btn
-                    tone="primary"
-                    disabled={!picked.size || act.isPending}
-                    onClick={() =>
-                      act.mutate({ game, indexes: [...picked], decision: "approve" }, { onSuccess: () => setPicked(new Set()) })
-                    }
-                  >
-                    {C.approve(picked.size)}
-                  </Btn>
-                </div>
-              )}
-            </div>
-            {act.error && <Notice tone="danger">{errorText(act.error)}</Notice>}
-            <div className="bg-surface overflow-x-auto rounded-[12px]">
-              {one.error ? (
-                <div className="p-3">
-                  <Notice tone="danger">{errorText(one.error)}</Notice>
-                </div>
-              ) : !shown ? (
-                <RowsSkeleton />
-              ) : !entries.length ? (
-                <Empty>{C.nothingLeft(GAME_BY_ID[game]?.name ?? game)}</Empty>
-              ) : (
-                <table className="w-full border-collapse text-[14px]">
-                  <thead>
-                    <tr className="bg-surface-raised num text-muted text-left text-[12px]">
-                      {isOwner && (
-                        <th scope="col" className="w-11 px-3 py-2.5">
-                          <input
-                            type="checkbox"
-                            aria-label={C.selectAll}
-                            checked={entries.every((e) => picked.has(e.index))}
-                            onChange={(e) => {
-                              const n = new Set(picked);
-                              for (const x of entries) {
-                                if (e.target.checked) n.add(x.index);
-                                else n.delete(x.index);
-                              }
-                              setPicked(n);
-                            }}
-                            className="size-5 accent-[var(--accent)]"
-                          />
-                        </th>
-                      )}
-                      <th scope="col" className="w-14 px-3 py-2.5 font-semibold">
-                        {C.entryHead.index}
-                      </th>
-                      <th scope="col" className="px-3 py-2.5 font-semibold">
-                        {C.entryHead.entry}
-                      </th>
-                      <th scope="col" className="w-28 px-3 py-2.5 font-semibold">
-                        {C.entryHead.state}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {entries.map((e) => (
-                      <tr key={e.index} className="border-line border-t align-top">
-                        {isOwner && (
-                          <td className="px-3 py-2">
-                            <input
-                              type="checkbox"
-                              aria-label={C.selectEntry(e.index)}
-                              checked={picked.has(e.index)}
-                              onChange={(ev) => {
-                                const n = new Set(picked);
-                                if (ev.target.checked) n.add(e.index);
-                                else n.delete(e.index);
-                                setPicked(n);
-                              }}
-                              className="size-5 accent-[var(--accent)]"
-                            />
-                          </td>
-                        )}
-                        <td className="num text-muted px-3 py-2 text-[13px]">{e.index}</td>
-                        <td className="px-3 py-2">
-                          <span className="font-semibold">{summary(e.entry)}</span>
-                          <pre className="num text-muted mt-1 max-h-24 overflow-auto text-[12px] leading-[1.35] whitespace-pre-wrap">
-                            {JSON.stringify(e.entry)}
-                          </pre>
-                        </td>
-                        <td className="px-3 py-2">
-                          <Pill tone={FILE_TONE[e.state]}>{C.entryStates[e.state]}</Pill>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-            {shown?.total !== undefined && <Pagination pager={pager} total={shown.total} />}
-          </>
-        )}
-      </div>
-    </div>
   );
 }

@@ -5,6 +5,7 @@
  */
 import type { Difficulty, GameLogic, Generated, Hint, VerifyResult } from "@/games/types";
 import type { Rng } from "@/lib/rng";
+import { liveContent } from "@/games/_shared/live";
 import { ART, artCells } from "./art";
 
 export const EMPTY = 0;
@@ -302,7 +303,10 @@ function blankLines(w: number, h: number, cells: number[]) {
 export function generate(rng: Rng, difficulty: Difficulty): Generated<PixlPuzzle, PixlSolution> {
   const size = SIZE_FOR[difficulty];
   // Library first (when a picture of this size exists), mirrored at random for variety.
-  const lib = ART.map(artCells).filter((a) => a.w === size && a.h === size);
+  // Round 3 item 12: the reviewed pictures (retired ones left out, edited ones swapped in).
+  const lib = liveContent("pixl", ART)
+    .map(artCells)
+    .filter((a) => a.w === size && a.h === size);
   if (lib.length && rng.chance(0.5)) {
     const a = rng.pick(lib);
     const flip = rng.chance(0.5);

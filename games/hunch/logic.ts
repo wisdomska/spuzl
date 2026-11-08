@@ -5,6 +5,7 @@
 import type { ContentLogic, Difficulty, Generated, Hint, VerifyResult } from "@/games/types";
 import type { Rng } from "@/lib/rng";
 import { closeEnough, normaliseGuess, puzzleKey, rotation, seal } from "@/games/_shared/cluecave";
+import { liveContent } from "@/games/_shared/live";
 import { CONTENT, type HunchSet } from "./content";
 
 export const CLUES = 5;
@@ -85,14 +86,17 @@ export const contentCount = CONTENT.length;
 
 /** Daily: one set per day from a fixed permutation, so consecutive days never repeat. Every set suits any weekday. */
 export function generateAt(index: number): Generated<HunchPuzzle, HunchSolution> {
-  const i = rotation(CONTENT.length, 1, index, "hunch")[0];
-  return build(CONTENT[i], i);
+  const list = liveContent("hunch", CONTENT); // round 3 item 12: retired sets left out, edited ones swapped in
+  const i = rotation(list.length, 1, index, "hunch")[0];
+  return build(list[i], i);
 }
 
 /** Free play: any set whose tier suits the difficulty. */
 export function generate(rng: Rng, difficulty: Difficulty): Generated<HunchPuzzle, HunchSolution> {
   const tiers = TIER_FOR[difficulty];
-  const pool = CONTENT.map((s, i) => [s, i] as const).filter(([s]) => tiers.includes(s.tier));
+  const pool = liveContent("hunch", CONTENT)
+    .map((s, i) => [s, i] as const)
+    .filter(([s]) => tiers.includes(s.tier));
   const [set, i] = rng.pick(pool);
   return build(set, i);
 }

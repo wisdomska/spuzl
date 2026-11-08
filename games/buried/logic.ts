@@ -8,6 +8,7 @@ import type { Difficulty, Generated, Hint, VerifyResult } from "@/games/types";
 import type { GuessLogic } from "@/games/_shared/guess";
 import { isWord } from "@/games/_shared/words";
 import { createRng, type Rng } from "@/lib/rng";
+import { liveContent } from "@/games/_shared/live";
 import { CONTENT } from "./content";
 import { BURIED_COPY } from "@/lib/copy/buried";
 import {
@@ -121,8 +122,10 @@ export function grade(rows: number, dirs: number, words: number, d: Difficulty):
 }
 
 export function generateAt(index: number, difficulty: Difficulty): Generated<BuriedPuzzle, BuriedSolution> {
-  const i = ((index % contentCount) + contentCount) % contentCount;
-  const e = CONTENT[i];
+  // Round 3 item 12: the reviewed list (retired entries left out, edited ones swapped in).
+  const list = liveContent("buried", CONTENT);
+  const i = ((index % list.length) + list.length) % list.length;
+  const e = list[i];
   const rows = ROWS_FOR[difficulty],
     cols = COLS,
     dirs = DIRS_FOR[difficulty];
@@ -153,7 +156,7 @@ export function generateAt(index: number, difficulty: Difficulty): Generated<Bur
 }
 
 export function generate(rng: Rng, difficulty: Difficulty): Generated<BuriedPuzzle, BuriedSolution> {
-  return generateAt(rng.int(0, contentCount - 1), difficulty);
+  return generateAt(rng.int(0, liveContent("buried", CONTENT).length - 1), difficulty);
 }
 
 const sameSet = (a: number[], b: number[]) => a.length === b.length && a.every((x) => b.includes(x));

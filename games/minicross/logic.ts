@@ -5,6 +5,7 @@
 import type { Difficulty, Generated, Hint, VerifyResult } from "@/games/types";
 import type { GuessLogic } from "@/games/_shared/guess";
 import { createRng, type Rng } from "@/lib/rng";
+import { liveContent } from "@/games/_shared/live";
 import { CONTENT } from "./content";
 import {
   numberGrid,
@@ -30,8 +31,10 @@ export function grade(grid: string[], d: Difficulty): number {
 }
 
 export function generateAt(index: number, difficulty: Difficulty): Generated<MinicrossPuzzle, MinicrossSolution> {
-  const i = ((index % contentCount) + contentCount) % contentCount;
-  const e = CONTENT[i];
+  // Round 3 item 12: the reviewed list (retired entries left out, edited ones swapped in).
+  const list = liveContent("minicross", CONTENT);
+  const i = ((index % list.length) + list.length) % list.length;
+  const e = list[i];
   const grid = e.rows.join("").split("");
   const blocks = grid.map((x) => x === "#");
   const { across, down } = numberGrid(blocks, SIZE);
@@ -51,7 +54,7 @@ export function generateAt(index: number, difficulty: Difficulty): Generated<Min
 }
 
 export function generate(rng: Rng, difficulty: Difficulty): Generated<MinicrossPuzzle, MinicrossSolution> {
-  return generateAt(rng.int(0, contentCount - 1), difficulty);
+  return generateAt(rng.int(0, liveContent("minicross", CONTENT).length - 1), difficulty);
 }
 
 const full = (p: MinicrossPuzzle, cells: string[]) => cells.every((ch, i) => p.blocks[i] || ch !== "");

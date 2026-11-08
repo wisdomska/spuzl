@@ -17,7 +17,6 @@ export default async function Page() {
       canWrite={can(role, "content.write")}
       canApprove={can(role, "content.approve")}
       canSchedule={can(role, "calendar.write")}
-      isOwner={can(role, "content.owner_review")}
     />
   );
 }

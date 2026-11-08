@@ -7,6 +7,7 @@ import type { Difficulty, Generated, Hint, VerifyResult } from "@/games/types";
 import type { GuessLogic } from "@/games/_shared/guess";
 import { wordSet } from "@/games/_shared/words";
 import { type Rng } from "@/lib/rng";
+import { liveContent } from "@/games/_shared/live";
 import { CONTENT } from "./content";
 import {
   answersFrom,
@@ -34,8 +35,10 @@ export function grade(total: number, d: Difficulty): number {
 }
 
 export function generateAt(index: number, difficulty: Difficulty): Generated<SevenPuzzle, SevenSolution> {
-  const i = ((index % contentCount) + contentCount) % contentCount;
-  const e = CONTENT[i];
+  // Round 3 item 12: the reviewed list (retired entries left out, edited ones swapped in).
+  const list = liveContent("seven", CONTENT);
+  const i = ((index % list.length) + list.length) % list.length;
+  const e = list[i];
   const letters = e.letters.split("");
   const words = answersFrom(wordSet(), e.centre, letters);
   const max = maxScore(words, e.centre, letters);
@@ -51,7 +54,7 @@ export function generateAt(index: number, difficulty: Difficulty): Generated<Sev
 }
 
 export function generate(rng: Rng, difficulty: Difficulty): Generated<SevenPuzzle, SevenSolution> {
-  return generateAt(rng.int(0, contentCount - 1), difficulty);
+  return generateAt(rng.int(0, liveContent("seven", CONTENT).length - 1), difficulty);
 }
 
 /** Pure check of one word (uppercase). `found` lets the server flag repeats. */

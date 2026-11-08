@@ -6,7 +6,7 @@ import { loadDaily, loadFree, solutionHash } from "@/lib/game/service";
 import { decodeSolution, encodeSolution } from "@/lib/game/solution-codec";
 import { bindPuzzle } from "@/lib/game/guess-token";
 import { getGameSettings } from "@/lib/game-settings/server";
-import { loadLogic } from "@/games/logic-registry";
+import { loadServedLogic as loadLogic } from "@/lib/game/served-logic";
 import { playableGame } from "@/lib/catalog";
 import { createRng } from "@/lib/rng";
 import { difficultyForDate, type Difficulty } from "@/games/types";

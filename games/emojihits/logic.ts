@@ -13,6 +13,7 @@ import type { GuessContext, GuessLogic } from "@/games/_shared/guess";
 import { rotation } from "@/games/_shared/cluecave";
 import { EMOJI_COPY } from "@/lib/copy/emojihits";
 import { createRng, type Rng } from "@/lib/rng";
+import { liveContent } from "@/games/_shared/live";
 import { CONTENT, type HitEntry } from "./content";
 import {
   isTry,
@@ -47,7 +48,7 @@ export function clueFor(e: HitEntry): string {
 /** Three wrong titles of the same kind, never one that would also match the answer. */
 function distractors(e: HitEntry, rng: Rng): string[] {
   const out: string[] = [];
-  const same = rng.shuffle(CONTENT.filter((o) => o !== e && o.kind === e.kind));
+  const same = rng.shuffle(liveContent("emojihits", CONTENT).filter((o) => o !== e && o.kind === e.kind));
   for (const o of same) {
     if (titleMatches(o.title, [e.title, ...(e.accept ?? [])])) continue;
     out.push(o.title);
@@ -64,8 +65,10 @@ export function grade(entries: HitEntry[], d: Difficulty): number {
 }
 
 export function generateAt(index: number, difficulty: Difficulty): Generated<EmojiPuzzle, EmojiSolution> {
-  const i = ((index % contentCount) + contentCount) % contentCount;
-  const entries = rotation(contentCount, ROUNDS, i, "emojihits").map((k) => CONTENT[k]);
+  // Round 3 item 12: the reviewed list (retired entries left out, edited ones swapped in).
+  const list = liveContent("emojihits", CONTENT);
+  const i = ((index % list.length) + list.length) % list.length;
+  const entries = rotation(list.length, ROUNDS, i, "emojihits").map((k) => list[k]);
   const rng = createRng(`emojihits:${i}:${difficulty}`);
   const rounds = entries.map((e) => {
     const round: EmojiPuzzle["rounds"][number] = { emoji: e.emoji, kind: e.kind, words: wordsIn(e.title) };
@@ -80,7 +83,7 @@ export function generateAt(index: number, difficulty: Difficulty): Generated<Emo
 }
 
 export function generate(rng: Rng, difficulty: Difficulty): Generated<EmojiPuzzle, EmojiSolution> {
-  return generateAt(rng.int(0, contentCount - 1), difficulty);
+  return generateAt(rng.int(0, liveContent("emojihits", CONTENT).length - 1), difficulty);
 }
 
 /** One try against one round: typed text (forgiving) or, in practice on easy, a picked option. */
