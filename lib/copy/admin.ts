@@ -239,21 +239,60 @@ export const adminCopy = {
       nothing: "No Quads items to export with these filters.",
       fix: "Fix these and import again. Nothing was saved.",
     },
-    /** Family Draw (16+ Draw It) words: preview, JSON export and a pack check (R2-P5). */
+    /** Family Draw (16+ Draw It) words: the stored list (round 3, item 11) with add, edit, retire, preview and packs. */
     drawit: {
       title: "Family Draw words",
       intro: (n: number) =>
-        `${n} preset words for Draw It in 16+ rooms (setting "party.familyDraw"). Guessers pick the word from four, so nobody types. Each word and its other names pass the party text filter.`,
+        `${n} active words for Draw It in 16+ rooms (setting "party.familyDraw"). Guessers pick the word from four, so nobody types. Every word and its other names must be letters and spaces and pass the party text filter.`,
+      fallback:
+        "Rounds are using the built-in list right now, because the stored list has fewer than four active words. Add or restore words to use your own.",
+      readOnly: "Your role can view this list. Content editors and the owner change it.",
       search: "Find a word",
       count: (shown: number, total: number) => (shown === total ? `${total} words` : `${shown} of ${total} words`),
       also: (names: string) => `also ${names}`,
+      show: "Show",
+      showTabs: { active: "Active", retired: "Retired", all: "All" },
+      retiredPill: "retired",
+      add: "Add a word",
+      word: "Word",
+      wordHint: "Lower-case letters and single spaces, 2 to 30 characters.",
+      alt: "Other names (optional)",
+      altHint: "Separate with commas, up to six. A guess was accepted for these in typed rounds.",
+      addGo: "Add word",
+      added: (w: string) => `Added ${w}.`,
+      edit: "Edit",
+      editWord: (w: string) => `Edit ${w}`,
+      save: "Save",
+      cancel: "Cancel",
+      retire: "Retire",
+      retireWord: (w: string) => `Retire ${w}`,
+      restore: "Restore",
+      restoreWord: (w: string) => `Restore ${w}`,
+      minNote: (min: number) => `At least ${min} words stay active.`,
+      preview: "Preview",
+      previewWord: (w: string) => `Preview ${w}`,
+      previewHint: (w: string) => `How guessers see a round for "${w}": the word and three others, in a random order.`,
+      shuffle: "Shuffle",
+      emptyList: "No words match.",
+      retireMissing: "Retire the active words this pack leaves out",
       tools: "Family Draw word packs",
       toolsHint:
-        "Export the word list as JSON, or paste a pack to check it: every problem is listed, and a pack that passes shows the words it adds and drops. The list ships in lib/party-adult/content.ts, so hand a checked pack to a developer.",
+        "Export the active words as JSON, or import a pack: every problem is listed first and nothing is saved until the whole pack passes. New words are added, stored words take the pack's other names, and retired ones come back.",
       exportPack: "Export words JSON",
-      importPack: "Check a words pack",
+      importPack: "Import words JSON",
+      checkPack: "Check a words pack",
       importLabel: "Paste a Family Draw words pack",
-      importGo: "Check the pack",
+      importGo: "Import the pack",
+      checkGo: "Check the pack",
+      imported: (r: { added: string[]; updated: string[]; restored: string[]; retired: string[] }) =>
+        [
+          r.added.length ? `Added ${r.added.length}.` : "",
+          r.updated.length ? `Updated ${r.updated.length}.` : "",
+          r.restored.length ? `Restored ${r.restored.length}.` : "",
+          r.retired.length ? `Retired ${r.retired.length}.` : "",
+        ]
+          .filter(Boolean)
+          .join(" ") || "No changes: the list already matches the pack.",
       exported: (n: number) => `Exported ${n} words.`,
       checked: (n: number, added: string[], dropped: string[]) =>
         `The pack is fine: ${n} words.${added.length ? ` Adds ${added.join(", ")}.` : ""}${dropped.length ? ` Drops ${dropped.join(", ")}.` : ""}${

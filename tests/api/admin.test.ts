@@ -51,6 +51,11 @@ const ROUTES: Route[] = [
   { method: "GET", path: "/api/admin/content/files", perm: "content.read" },
   { method: "POST", path: "/api/admin/content/files", perm: "content.owner_review" },
   { method: "POST", path: "/api/admin/content/import", perm: "content.write" },
+  // Round 3 item 11: Family Draw words in the database
+  { method: "GET", path: "/api/admin/content/draw-words", perm: "content.read" },
+  { method: "POST", path: "/api/admin/content/draw-words", perm: "content.write" },
+  { method: "PATCH", path: `/api/admin/content/draw-words/${NIL}`, perm: "content.write" },
+  { method: "POST", path: "/api/admin/content/draw-words/import", perm: "content.write" },
   { method: "GET", path: "/api/admin/moderation", perm: "moderation.read" },
   { method: "GET", path: `/api/admin/moderation/reports/${NIL}`, perm: "moderation.read" },
   { method: "POST", path: `/api/admin/moderation/reports/${NIL}`, perm: "moderation.write" },
@@ -1353,5 +1358,71 @@ describe("Metrics added by the admin cascade audit (R2-ADMIN)", () => {
       .delete()
       .in("name", ["party_tv_view", "streak_shield"])
       .gte("created_at", new Date(Date.now() - 60_000).toISOString());
+  });
+});
+
+describe("Family Draw words in the database (round 3, item 11)", () => {
+  const made: string[] = [];
+  /** A fresh word: letters only, so it passes the word rule. */
+  const freshWord = () => `zz ${Array.from({ length: 10 }, () => "abcdefghijklmnopqrstuvwxy"[Math.floor(Math.random() * 25)]).join("")}`;
+  afterAll(async () => {
+    if (made.length) await admin().from("family_draw_words").delete().in("id", made);
+  });
+
+  it("lists the seeded words for every Content reader, and only editors change them, audited", async () => {
+    const list = await S.content_editor.aal2("/api/admin/content/draw-words");
+    expect(list.status).toBe(200);
+    expect(list.data.source).toBe("db");
+    expect(list.data.active).toBeGreaterThanOrEqual(list.data.min);
+    expect(list.data.rows.some((r: { word: string }) => r.word === "banku")).toBe(true);
+
+    const word = freshWord();
+    const add = await S.content_editor.aal2("/api/admin/content/draw-words", {
+      json: { word: ` ${word.toUpperCase()} `, alt: ["Paper Kite"] },
+    });
+    expect(add.status).toBe(200);
+    made.push(add.data.id);
+    expect(add.data).toMatchObject({ word, alt: ["paper kite"], retired_at: null, created_by: S.content_editor.userId });
+    expect((await lastAudit(S.content_editor.userId, "drawword.add"))?.target).toBe(`drawword:${add.data.id}`);
+
+    const again = await S.owner.aal2("/api/admin/content/draw-words", { json: { word } });
+    expect([again.status, again.data.error]).toEqual([409, "word_taken"]);
+    for (const bad of ["x", "call 0244123456", "shit", "kite-tail"]) {
+      const r = await S.owner.aal2("/api/admin/content/draw-words", { json: { word: bad } });
+      expect([r.status, r.data.error], bad).toEqual([422, "invalid_word"]);
+    }
+    expect((await S.analyst.aal2("/api/admin/content/draw-words", { json: { word: freshWord() } })).status).toBe(403);
+    expect((await S.moderator.aal2("/api/admin/content/draw-words")).status).toBe(403);
+
+    const edit = await S.owner.aal2(`/api/admin/content/draw-words/${add.data.id}`, { method: "PATCH", json: { alt: ["kite string"] } });
+    expect(edit.data.alt).toEqual(["kite string"]);
+    expect((await lastAudit(S.owner.userId, "drawword.edit"))?.detail).toMatchObject({ before: { word, alt: ["paper kite"] } });
+
+    const retire = await S.owner.aal2(`/api/admin/content/draw-words/${add.data.id}`, { method: "PATCH", json: { retired: true } });
+    expect(retire.data.retired_at).not.toBeNull();
+    expect((await lastAudit(S.owner.userId, "drawword.retire"))?.target).toBe(`drawword:${add.data.id}`);
+    const back = await S.content_editor.aal2(`/api/admin/content/draw-words/${add.data.id}`, { method: "PATCH", json: { retired: false } });
+    expect(back.data.retired_at).toBeNull();
+    expect((await S.owner.aal2(`/api/admin/content/draw-words/${NIL}`, { method: "PATCH", json: { retired: true } })).status).toBe(404);
+  });
+
+  it("imports a pack all or nothing, never retires below the minimum, and audits what changed", async () => {
+    const word = freshWord();
+    const text = JSON.stringify({ app: "spuzl", kind: "drawit", version: 1, words: [{ word }, { word: "banku" }] });
+    const bad = await S.content_editor.aal2("/api/admin/content/draw-words/import", { json: { text: JSON.stringify([word, "x"]) } });
+    expect([bad.status, bad.data.error]).toEqual([422, "invalid_pack"]);
+    const { data: none } = await admin().from("family_draw_words").select("id").eq("word", word);
+    expect(none).toEqual([]);
+
+    const tooFew = await S.content_editor.aal2("/api/admin/content/draw-words/import", { json: { text, retireMissing: true } });
+    expect([tooFew.status, tooFew.data.error]).toEqual([409, "too_few_words"]);
+
+    const r = await S.content_editor.aal2("/api/admin/content/draw-words/import", { json: { text } });
+    expect(r.status).toBe(200);
+    expect(r.data).toMatchObject({ added: [word], retired: [] });
+    const { data: rows } = await admin().from("family_draw_words").select("id").eq("word", word);
+    made.push(...(rows ?? []).map((x) => x.id));
+    expect((await lastAudit(S.content_editor.userId, "drawword.import"))?.detail).toMatchObject({ added: [word], count: 2 });
+    expect((await S.analyst.aal2("/api/admin/content/draw-words/import", { json: { text } })).status).toBe(403);
   });
 });

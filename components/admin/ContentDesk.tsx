@@ -92,7 +92,7 @@ export function ContentDesk(props: { canWrite: boolean; canApprove: boolean; can
       {tab === "items" ? (
         <Items {...props} pager={pager} />
       ) : tab === "drawit" ? (
-        <DrawWordsPanel />
+        <DrawWordsPanel canWrite={props.canWrite} />
       ) : (
         <FileReview isOwner={props.isOwner} pager={pager} />
       )}

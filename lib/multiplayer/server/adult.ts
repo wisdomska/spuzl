@@ -7,7 +7,8 @@ import { getGameSettings } from "@/lib/game-settings/server";
 import { adultPartyCopy } from "@/lib/copy/adult-party";
 import { adultPartyRefusal } from "@/lib/party-adult/gate";
 import { DRAW_WORDS, type DrawWord } from "@/lib/party-adult/content";
-import { FAMILY_DRAW_WORDS, familyDrawRefusal, familyOptions } from "@/lib/party-adult/family";
+import { familyDrawRefusal, familyOptions } from "@/lib/party-adult/family";
+import { familyWords } from "@/lib/party-adult/family-words";
 import { TEXT_MAX, cleanText, partyTextProblem, type PartyTextKind } from "@/lib/party-adult/filter";
 import {
   isAdultMode,
@@ -162,14 +163,16 @@ async function ensureRound(admin: SupabaseClient, m: MatchRow, startAt: number):
   const mode = roundModeOf(roomMode);
   const family = isFamilyDraw(roomMode);
   const t = await timings();
-  const word = mode === "draw" ? await freshWord(admin, m, family ? FAMILY_DRAW_WORDS : DRAW_WORDS) : null;
+  // 16+ rooms deal from the admin's word list (public.family_draw_words, round 3 item 11; code list as fallback).
+  const list = family ? (await familyWords(admin)).words : DRAW_WORDS;
+  const word = mode === "draw" ? await freshWord(admin, m, list) : null;
   const row = {
     ...roundKey(m),
     mode,
     lead_id: leadFor(m.party_leads, m.round),
     word,
     // 16+ rooms: guessers pick from four preset words (nobody types)
-    ...(family && word ? { options: familyOptions(word, rand) } : {}),
+    ...(family && word ? { options: familyOptions(word, rand, list) } : {}),
     phase: mode === "draw" ? "play" : "write",
     started_at: iso(startAt),
     phase_ends_at: iso(startAt + (mode === "draw" ? t.drawMs : t.writeMs)),

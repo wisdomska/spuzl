@@ -106,7 +106,10 @@ describe("Family Draw: a round", () => {
     const gv = (await guesser.api(`/api/v1/matches/${matchId}`)).data;
     expect(hv.mode).toBe("drawfam");
     const word = hv.party.word as string;
-    expect(FAMILY_DRAW_WORDS.some((w) => w.word === word)).toBe(true);
+    // Round 3 item 11: dealt from the stored list (public.family_draw_words), the code list only as the fallback.
+    const { data: stored } = await admin().from("family_draw_words").select("word").is("retired_at", null);
+    const dealt = stored && stored.length >= 4 ? stored.map((w) => w.word) : FAMILY_DRAW_WORDS.map((w) => w.word);
+    expect(dealt).toContain(word);
     expect(gv.party.word).toBeNull();
     expect(gv.party.options).toHaveLength(4);
     expect(gv.party.options).toContain(word);

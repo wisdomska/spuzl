@@ -1,7 +1,8 @@
 /**
  * Draw It for 16+ (R2-P5, party mode "drawfam"). The same rounds as the 18+ Draw It (vector strokes only, wiped when
  * the round closes, reports keep a snapshot), with three differences:
- *   - the words come from FAMILY_DRAW_WORDS, a preset family-safe list the admin Content page previews and exports;
+ *   - the words come from a preset family-safe list: since round 3 (item 11) public.family_draw_words, managed on the
+ *     admin Content page (./family-words.ts reads it), with FAMILY_DRAW_WORDS below as the seed and the fallback;
  *   - guessers pick the word from four preset options, once per round: nobody types anything in the room;
  *   - the gate is 16+ instead of 18+: the admin switch "party.familyDraw" is on, the player is signed in with an
  *     account (not an anonymous guest), their age band is 16-17 or 18+, and no moderator block is running.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { FAMILY_DRAW_WORDS } from "@/lib/party-adult/family";
-import { drawPackDiff, drawPackToJson, MAX_DRAW_PACK, parseDrawPack } from "./draw-pack";
+import { activeAfter, checkDrawWord, drawPackDiff, drawPackToJson, MAX_DRAW_PACK, parseDrawPack, planDrawImport } from "./draw-pack";
 
 describe("Family Draw word packs (admin export and check, R2-P5)", () => {
   it("round-trips the whole list: export, check, export gives the same file", () => {
@@ -37,5 +37,44 @@ describe("Family Draw word packs (admin export and check, R2-P5)", () => {
     expect(parseDrawPack(JSON.stringify(Array.from({ length: MAX_DRAW_PACK + 1 }, (_, i) => `word ${"abcdefghij"[i % 10]}`))).ok).toBe(
       false,
     );
+  });
+});
+
+describe("Family Draw words in the database: one word and a pack import (round 3, item 11)", () => {
+  it("checks one word like a pack entry: letters and single spaces, tidied, family-safe, distinct other names", () => {
+    expect(checkDrawWord({ word: " Talking  Drum " })).toEqual({ ok: false, errors: expect.any(Array) });
+    expect(checkDrawWord({ word: " Talking Drum ", alt: ["Drum"] })).toEqual({ ok: true, value: { word: "talking drum", alt: ["drum"] } });
+    expect(checkDrawWord("mango")).toEqual({ ok: true, value: { word: "mango" } });
+    for (const bad of ["x", "mango2", "call 0244123456", "a".repeat(31), "shit", "kite-tail"])
+      expect(checkDrawWord(bad).ok, bad).toBe(false);
+    expect(checkDrawWord({ word: "kite", alt: ["kite"] }).ok).toBe(false);
+    expect(checkDrawWord({ word: "kite", alt: Array.from({ length: 7 }, (_, i) => `kite ${"abcdefg"[i]}`) }).ok).toBe(false);
+  });
+
+  const stored = [
+    { id: "1", word: "mango", alt: [], retired_at: null },
+    { id: "2", word: "kente", alt: ["kente cloth"], retired_at: null },
+    { id: "3", word: "tent", alt: [], retired_at: "2026-11-08T00:00:00Z" },
+    { id: "4", word: "yam", alt: [], retired_at: null },
+  ];
+
+  it("adds new words, updates other names, restores retired words, and leaves the rest alone", () => {
+    const plan = planDrawImport(stored, [{ word: "mango" }, { word: "kente" }, { word: "tent" }, { word: "zebra", alt: ["horse"] }]);
+    expect(plan.add).toEqual([{ word: "zebra", alt: ["horse"] }]);
+    expect(plan.update).toEqual([
+      { id: "2", word: "kente", alt: [], restore: false },
+      { id: "3", word: "tent", alt: [], restore: true },
+    ]);
+    expect(plan.retire).toEqual([]);
+    expect(activeAfter(stored, plan)).toBe(5);
+  });
+
+  it("retires only the active words a pack leaves out, and only when asked", () => {
+    const plan = planDrawImport(stored, [{ word: "mango" }], true);
+    expect(plan.retire.map((r) => r.word)).toEqual(["kente", "yam"]);
+    expect(activeAfter(stored, plan)).toBe(1);
+    expect(planDrawImport(stored, [{ word: "mango" }]).retire).toEqual([]);
+    const same = planDrawImport(stored, [{ word: "mango" }, { word: "kente", alt: ["kente cloth"] }, { word: "yam" }], true);
+    expect(same).toEqual({ add: [], update: [], retire: [] });
   });
 });
