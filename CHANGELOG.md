@@ -1,5 +1,41 @@
 # Changelog
 
+## 1.40.0 (8 November 2026)
+
+### For players
+
+- **Party Start waits for everyone.** The lobby names who isn't ready yet, Start opens when everyone is, and the
+  host can "Start without them": players who weren't ready watch that set and are back in on Run it back.
+- **Points games in Party.** Quickfire, Emoji Hits, Seven, Twins, Beat Tap and the switched-on lab games (Two Truths
+  and a Lie among them) can be raced in Party: highest points wins, faster finish breaks a tie, scored by the server.
+- **Quick Match for 13 to 15.** Players aged 13 to 15 can use Duel Quick Match and are only ever paired with other
+  13 to 15 players. Chat for them stays preset phrases only.
+- **One Duel clock rule.** Your clock in the Duel strip starts on your first move, like the header timer.
+- **Evening streak reminder.** If your streak is at risk, an evening alert reminds you (only with alerts on; a
+  "Streak reminders" switch in Settings, and quiet hours are respected).
+- **Weekly recap.** Once a week Home shows your last week (clears, best time, streak, rank, Sparks) with a share
+  card and a "Play today's Daily" button.
+- **Lab games say so.** Games in testing carry a "New · in testing" tag.
+- **Wide screens fit.** On laptops and desktops the game's side panel fits the screen; no more slight scroll.
+- **Home is lighter on phones.** Monitoring, analytics, the inbox connection and the desktop side panel load after
+  the page is up.
+- **Azonto Steps is gone.**
+
+### For admins
+
+- **Content review queue:** approve, edit or retire each entry of a game marked for review; retired entries are
+  never dealt to players. Two Truths, Pinned, Flagged and Pixl are in it.
+- **Family Draw words** live in the database: add, edit, retire, import and export from the Content page.
+- **Overview:** players with alerts on, and players a push reached in the last 30 days, next to the device counts.
+- **Metrics:** new "Streak-at-risk nudges" and "Weekly recap" cards with CSV.
+- **Settings:** score races (on, round length), streak nudge (on, hour, minimum streak), alert quiet hours, weekly
+  recap (on).
+
+### Behind the scenes
+
+- Security: rivals' saved boards in a match are no longer readable through the database API.
+- 11 migrations (see docs/MIGRATIONS.md).
+
 ## 1.39.0 (8 November 2026)
 
 ### For players
