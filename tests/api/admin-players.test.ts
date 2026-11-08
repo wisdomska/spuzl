@@ -417,8 +417,8 @@ describe("overview: push alerts (R2-ADMIN; players, round 3 item 13)", () => {
       players: expect.any(Number),
       playersReached30d: expect.any(Number),
     });
-    const real = await guest(uniq("push_"));
-    const tester = await guest(uniq("pusht_"));
+    const real = await guest(uniq("pa_")); // neutral prefixes: digits read as letters by the name filter
+    const tester = await guest(uniq("pb_"));
     await db.from("players").update({ is_test: false }).eq("id", real.userId);
     await db.from("players").update({ is_test: true }).eq("id", tester.userId);
     const sub = (player: string, n: number, ok: string | null) => ({
