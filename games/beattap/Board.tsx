@@ -85,7 +85,8 @@ export default function BeatTapBoard({ puzzle, initialState, disabled, mode, api
   const finishTimer = useRef<number | null>(null);
   useEffect(() => () => void (finishTimer.current && window.clearTimeout(finishTimer.current)), []);
 
-  const j = judge(puzzle.beats, taps, puzzle.perfectMs, puzzle.goodMs, penalty);
+  // The board re-renders every frame while the song plays; the judgement only changes with a tap.
+  const j = useMemo(() => judge(puzzle.beats, taps, puzzle.perfectMs, puzzle.goodMs, penalty), [puzzle, taps, penalty]);
 
   // First play: ask once to turn sound on, only when it's off or the browser hasn't allowed audio yet.
   const [ask, setAsk] = useState<null | "off" | "locked">(null);
@@ -154,9 +155,11 @@ export default function BeatTapBoard({ puzzle, initialState, disabled, mode, api
         play("tick", { gain: 0.7, silentHaptic: true });
         ticked.current++;
       }
-      const jj = judge(puzzle.beats, tapsRef.current, puzzle.perfectMs, puzzle.goodMs, penalty);
+      // Judged only on a frame where a beat's window closes (a few times a song), never on every frame.
+      let jj: ReturnType<typeof judge> | null = null;
       for (let b = reportedMiss.current + 1; b < total && puzzle.beats[b] + puzzle.goodMs < el; b++) {
         reportedMiss.current = b;
+        jj ??= judge(puzzle.beats, tapsRef.current, puzzle.perfectMs, puzzle.goodMs, penalty);
         if (jj.marks[b] === "miss") {
           setLastMark("miss");
           api.feedback(t.missFeedback, "danger", "x");
