@@ -11,6 +11,7 @@ import { ShellAside } from "@/components/game/ShellAside";
 import { useBoardBox, useViewportHeight } from "@/components/game/useBoardSize";
 import { changedAt, diffCount, LEN, RUNGS, type RungsCheck, type RungsGuess, type RungsPuzzle, type RungsState } from "./rules";
 import { rungsLayout } from "./layout";
+import { wordBoards } from "@/lib/copy/word-boards";
 
 type Active = { kind: "rung"; k: number } | { kind: "cap"; c: 0 | 1 } | null;
 
@@ -28,6 +29,8 @@ export default function RungsBoard({ puzzle, initialState, hint, disabled, mode,
   const [locked, setLocked] = useState(() => !!initialState?.answers?.every(Boolean) && ladderOk(initialState.answers, initialState.order));
   const [shake, setShake] = useState<{ key: string; n: number } | null>(null);
   const [busy, setBusy] = useState(false);
+  /** the ladder looked right but its check never came back (no connection): Check ladder sends it again */
+  const [lockFailed, setLockFailed] = useState(false);
   const [drag, setDrag] = useState<{ id: number; from: number; dy: number } | null>(null);
   const [done, setDone] = useState(() => !!initialState?.caps?.every(Boolean));
   const streak = useRef(0);
@@ -71,7 +74,19 @@ export default function RungsBoard({ puzzle, initialState, hint, disabled, mode,
       setBusy(true);
       const res = await sendGuess<RungsCheck>(puzzle.ref, { kind: "order", order: o } satisfies RungsGuess).catch(() => null);
       setBusy(false);
-      if (!res?.ok) return;
+      // Never a silent dead end: a ladder that looks right but was not confirmed says why and how to go on.
+      if (!res) {
+        setLockFailed(true);
+        api.feedback(wordBoards.rungs.lockOffline, "danger", "wifi-slash");
+        api.announce(wordBoards.rungs.lockOffline);
+        return;
+      }
+      setLockFailed(false);
+      if (!res.ok) {
+        api.feedback(wordBoards.rungs.lockRefused, "info", "info");
+        api.announce(wordBoards.rungs.lockRefused);
+        return;
+      }
       const fixed = res.reversed ? o.slice().reverse() : o;
       setOrder(fixed);
       setLocked(true);
@@ -189,9 +204,21 @@ export default function RungsBoard({ puzzle, initialState, hint, disabled, mode,
   useEffect(() => {
     api.setControls([
       { id: "clear", label: "Clear", icon: "eraser", onPress: () => setEntry(""), disabled: !entry || off },
+      ...(lockFailed && !locked
+        ? [
+            {
+              id: "check",
+              label: wordBoards.rungs.checkLadder,
+              icon: "arrow-clockwise",
+              onPress: () => void tryLock(answers, order),
+              disabled: off,
+              tone: "world" as const,
+            },
+          ]
+        : []),
       { id: "hint", label: "Hint", icon: "lightbulb", onPress: () => {}, tone: "gold" },
     ]);
-  }, [api, entry, off]);
+  }, [api, entry, off, lockFailed, locked, tryLock, answers, order]);
 
   // pointer drag on a handle
   const onHandleDown = (id: number) => (e: React.PointerEvent) => {
