@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.43.1 (9 November 2026)
+
+### For visitors
+
+- The landing page FAQ now fills the page width like the sections around it.
+
 ## 1.43.0 (9 November 2026)
 
 ### For players and visitors
