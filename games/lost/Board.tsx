@@ -9,7 +9,8 @@ import { sfx } from "@/games/_shared/sfx";
 import { nudge } from "@/games/_shared/nudge";
 import { BIT, DIR_NAME, step } from "@/games/_shared/grid";
 import { LineStyles } from "@/games/_shared/LineStyles";
-import { canMove, distances, replay, visibleFrom, type LostPuzzle, type LostState } from "./logic";
+import { canMove, distances, maxMoves, replay, visibleFrom, walkStatus, type LostPuzzle, type LostState } from "./logic";
+import { puzzleBoards } from "@/lib/copy/puzzle-boards";
 
 const VIEW = 7;
 const PAD = 6;
@@ -87,6 +88,17 @@ export default function LostBoard({ puzzle, initialState, hint, disabled, mode, 
       // Each step hums higher the closer it gets to the exit.
       sfx.trace(Math.round(Math.max(0, closer) * 24));
       const { r, c } = rc(next);
+      const walk = walkStatus(puzzle, log.length);
+      if (next === puzzle.exit && walk === "over") {
+        // The server would refuse this log: say so now instead of a clear that silently fails.
+        setDone(true);
+        const why = puzzleBoards.lost.tooLong(maxMoves(puzzle));
+        api.feedback(why, "danger", "warning");
+        api.announce(why);
+        api.onMove({ moves: log });
+        api.onFailed?.({ moves: log }, puzzleBoards.lost.tooLongReason);
+        return;
+      }
       if (next === puzzle.exit) {
         setDone(true);
         api.feedback("Out of the fog. You found the exit.", "success", "check-circle");
@@ -96,7 +108,14 @@ export default function LostBoard({ puzzle, initialState, hint, disabled, mode, 
         return;
       }
       api.announce(`Row ${r + 1}, column ${c + 1}. Open ${openDirs(next).join(", ")}.`);
-      api.feedback(`${log.length} moves`, "info", "sneaker-move");
+      if (walk === "ok") api.feedback(`${log.length} moves`, "info", "sneaker-move");
+      else {
+        // Near (or past) the cap: the line keeps saying how many moves are left, and says it out loud once.
+        const left = Math.max(0, maxMoves(puzzle) - log.length);
+        const line = puzzleBoards.lost.longWalk(left);
+        api.feedback(line, "danger", "warning");
+        if (walkStatus(puzzle, log.length - 1) === "ok" || left === 0) api.announce(line);
+      }
       api.onMove({ moves: log });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps

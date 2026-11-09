@@ -9,6 +9,13 @@ export const puzzleBoards = {
     /** read after a cell's name: where walls block the path (sides 0 up, 1 right, 2 down, 3 left) */
     walls: (sides: number[]) => (sides.length ? `, wall ${sides.map((d) => SIDE[d]).join(" and ")}` : ""),
   },
+  lost: {
+    /** the walk is near the cap the server accepts (games/lost/logic.ts walkStatus) */
+    longWalk: (left: number) => `Long walk. ${left} more ${left === 1 ? "move" : "moves"} and this maze can't count, so head for the exit.`,
+    /** reached the exit after the cap */
+    tooLong: (cap: number) => `You found the exit, but the walk passed ${cap} moves, too long to count. Try a new maze.`,
+    tooLongReason: "walk too long",
+  },
   flowline: {
     /** every plant has water but the board is not done yet: some pipe is dry or has an open end */
     plantsDone: (dry: number, leaks: number) =>

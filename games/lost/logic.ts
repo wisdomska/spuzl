@@ -26,6 +26,17 @@ export interface LostState {
 export const SIZE_FOR: Record<Difficulty, number> = { easy: 8, medium: 10, hard: 12, expert: 14, mega: 16 };
 /** a generous cap on log length so a replay stays cheap */
 export const maxMoves = (p: LostPuzzle) => p.rows * p.cols * 8;
+/** From this share of the cap on, the board warns that the walk is getting too long to count. */
+export const WARN_SHARE = 0.8;
+
+/**
+ * Where a walk of `count` logged moves stands against the cap: "ok", "warn" (at WARN_SHARE of the cap or more,
+ * still counts) or "over" (past the cap: the server will not accept it, so the exit cannot clear the board).
+ */
+export function walkStatus(p: LostPuzzle, count: number): "ok" | "warn" | "over" {
+  const cap = maxMoves(p);
+  return count > cap ? "over" : count >= Math.ceil(cap * WARN_SHARE) ? "warn" : "ok";
+}
 
 export const canMove = (p: LostPuzzle, at: number, d: number) => (p.cells[at] & BIT[d]) !== 0 && step(p.rows, p.cols, at, d) >= 0;
 

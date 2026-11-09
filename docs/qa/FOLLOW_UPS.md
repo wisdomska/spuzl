@@ -226,8 +226,6 @@ Seven, Minicross, Buried, Remix, Quickfire, Emoji Hits) and Two Truths. Found in
   (server-judged), so this needs a reveal call like Emoji Hits' `reveal`.
 - **Quads word size:** tiles shrink long words to 9.5 to 13 px (`fontFor`) to fit four across at 320 px; a two-line
   layout for 9+ letters would keep them at 14 px.
-- **Lost move cap:** `maxMoves` (8 × cells) makes a very long wander fail verify silently at the clear. Unlikely, but
-  the board could warn near the cap or the cap could go.
 - **Rungs keyboard:** a keyboard user cannot choose which blank rung to type into (rung cells are tabIndex -1 and the
   active rung only moves on in order); clicking works. Cap rows are clickable rows with no keyboard path either.
 - **Emoji Hits:** a wrong typed try is cleared from the box and not listed, so the player cannot see what they already

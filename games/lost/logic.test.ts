@@ -7,6 +7,8 @@ import logic, {
   grade,
   hint,
   maxMoves,
+  walkStatus,
+  WARN_SHARE,
   replay,
   route,
   SIZE_FOR,
@@ -133,5 +135,14 @@ describe("lost", () => {
     expect(m.grade).toBeGreaterThan(h.grade);
     expect(grade(e.puzzle, e.solution)).toBe(e.grade);
     expect(m.grade).toBeLessThanOrEqual(100);
+  });
+  it("warns as a wander nears the move cap and calls it over past the cap", () => {
+    const { puzzle } = generate(createRng("walk-cap"), "easy");
+    const cap = maxMoves(puzzle);
+    expect(walkStatus(puzzle, 10)).toBe("ok");
+    expect(walkStatus(puzzle, Math.ceil(cap * WARN_SHARE) - 1)).toBe("ok");
+    expect(walkStatus(puzzle, Math.ceil(cap * WARN_SHARE))).toBe("warn");
+    expect(walkStatus(puzzle, cap)).toBe("warn");
+    expect(walkStatus(puzzle, cap + 1)).toBe("over");
   });
 });
