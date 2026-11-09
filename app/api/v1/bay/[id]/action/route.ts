@@ -8,6 +8,7 @@ const Action = z.object({
     "draw_offer",
     "draw_accept",
     "draw_decline",
+    "draw_withdraw",
     "takeback_request",
     "takeback_accept",
     "takeback_decline",
@@ -16,7 +17,7 @@ const Action = z.object({
   ]),
 });
 
-/** POST /api/v1/bay/:id/action: resign, draw offers, takebacks (unranked only), nudges (async, after 12 h), rematch. */
+/** POST /api/v1/bay/:id/action: resign, draw offers (and withdrawing your own), takebacks (unranked only), nudges (async, after 12 h), rematch. */
 export const POST = handle(async (req: Request, ctx: RouteContext<"/api/v1/bay/[id]/action">) => {
   const { id } = await ctx.params;
   const { admin, player } = await requirePlayer();

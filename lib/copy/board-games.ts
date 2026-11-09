@@ -54,6 +54,10 @@ export const boardGames = {
     yourMove: "Your move",
     theirMove: "Their move",
     waiting: "Waiting",
+    /** your draw offer to a person, while they decide */
+    drawPending: (name: string) => `Draw offered. Waiting for ${name}.`,
+    withdraw: "Withdraw",
+    drawWithdrawn: "Draw offer withdrawn.",
   },
   bot: {
     /** entry under the game card (World view, Play anytime) */

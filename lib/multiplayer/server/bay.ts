@@ -355,6 +355,7 @@ export type BayAction =
   | "draw_offer"
   | "draw_accept"
   | "draw_decline"
+  | "draw_withdraw"
   | "takeback_request"
   | "takeback_accept"
   | "takeback_decline"
@@ -408,6 +409,13 @@ export async function bayAction(admin: SupabaseClient, me: string, id: string, a
       if (b.draw_offer === null || b.draw_offer === seat) throw new ApiError(409, "no_offer");
       await end(null, "agreed draw");
       break;
+    case "draw_withdraw": {
+      // Only your own pending offer, and only if it is still standing (an accept may have just ended the game).
+      active();
+      if (b.draw_offer !== seat) throw new ApiError(409, "no_offer");
+      await admin.from("board_matches").update({ draw_offer: null }).eq("id", id).eq("draw_offer", seat);
+      break;
+    }
     case "draw_decline":
       await admin.from("board_matches").update({ draw_offer: null }).eq("id", id);
       break;

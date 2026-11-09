@@ -602,8 +602,21 @@ export function BayMatch({ id }: { id: string }) {
       </button>
     </div>
   );
-  // Resign, or a draw the bot will take: one more tap to be sure (it used to end the game on the first tap).
   const M = boardGames.match;
+  // Your own draw offer, still standing: say so, and let it be taken back (the server checks it is yours).
+  const myOffer = v.status === "active" && !v.bot && v.drawOffer === seat && (
+    <div className={`bg-surface flex items-center gap-2 rounded-[16px] p-3 ${gap}`} role="status" data-bay-my-offer>
+      <span className="flex-1 text-[15px] font-medium">{M.drawPending(opp?.nickname ?? "them")}</span>
+      <button
+        type="button"
+        className="press bg-surface-raised min-h-11 rounded-[12px] px-3 text-[14px] font-bold"
+        onClick={() => action("draw_withdraw", M.drawWithdrawn)}
+      >
+        {M.withdraw}
+      </button>
+    </div>
+  );
+  // Resign, or a draw the bot will take: one more tap to be sure (it used to end the game on the first tap).
   const confirm = ask && v.status === "active" && (
     <div className={`bg-surface-raised flex flex-wrap items-center gap-2 rounded-[16px] p-3 ${gap}`} role="alert" data-bay-confirm={ask}>
       <span className="min-w-0 flex-1 basis-[180px] text-[15px] font-medium">
@@ -797,6 +810,7 @@ export function BayMatch({ id }: { id: string }) {
             {!wide && moves}
             {!wide && confirm}
             {!wide && offer}
+            {!wide && myOffer}
             {!wide && finished}
             {!wide && addFriends}
             {!wide && emoteBar}
@@ -811,6 +825,7 @@ export function BayMatch({ id }: { id: string }) {
               {moves}
               {confirm}
               {offer}
+              {myOffer}
               {finished}
               {addFriends}
               {emoteBar}

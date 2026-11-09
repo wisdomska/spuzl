@@ -465,7 +465,12 @@ describe("api: board bay", () => {
     expect(tb.data.ply).toBe(1);
     expect(tb.data.turn).toBe(1);
 
-    // Draw offer and resign.
+    // Draw offer, withdrawn by the one who made it only, then offered again; then resign.
+    await a.api(`/api/v1/bay/${m.data.id}/action`, { json: { action: "draw_offer" } });
+    expect((await b.api(`/api/v1/bay/${m.data.id}/action`, { json: { action: "draw_withdraw" } })).status).toBe(409);
+    const wd = await a.api(`/api/v1/bay/${m.data.id}/action`, { json: { action: "draw_withdraw" } });
+    expect(wd.data.drawOffer).toBeNull();
+    expect((await b.api(`/api/v1/bay/${m.data.id}/action`, { json: { action: "draw_accept" } })).status).toBe(409);
     await a.api(`/api/v1/bay/${m.data.id}/action`, { json: { action: "draw_offer" } });
     expect((await a.api(`/api/v1/bay/${m.data.id}/action`, { json: { action: "draw_accept" } })).status).toBe(409);
     const r = await b.api(`/api/v1/bay/${m.data.id}/action`, { json: { action: "resign" } });
