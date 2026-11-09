@@ -49,6 +49,13 @@ select {
   outline: none;
   box-shadow: var(--focus-ring);
 }
+/* Board cells, pads and tool buttons draw their depth and state with an inline box-shadow, which beats the ring
+   above, so keyboard focus was invisible on them (Echo pads, Twins cards, chess squares, the shell's tool row). An
+   outline follows the corners and never fights the inline shadow. */
+[style*="box-shadow"]:focus-visible {
+  outline: 3px solid var(--text) !important;
+  outline-offset: 2px;
+}
 
 /* In-app reduced motion toggle mirrors the OS media query from the tokens */
 [data-motion="reduce"] *,
