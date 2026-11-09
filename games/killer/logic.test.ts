@@ -107,7 +107,8 @@ describe("killer sums", () => {
         expect(values).toEqual(g.solution);
       }
     expect(reasons.size).toBeGreaterThan(0);
-  }, 120000);
+    // 40 full step-by-step solves: about a minute locally, over two on a busy shared CI runner.
+  }, 300000);
 
   it("the 45 rule finds innies and outies", () => {
     // 6 x 6: row 1 is 1 2 4 3 5 6 (adds to 21). Cages 0-1 (3) and 2-3-4 (12) sit inside it; cage 5-11 (6 + 4)
