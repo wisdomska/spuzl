@@ -27,6 +27,8 @@ const OWNED: [string, string][] = [
   ["ghost_runs", "player_id"],
   ["alert_prefs", "player_id"],
   ["streak_nudges", "player_id"],
+  // R4-02: the feedback messages they sent from /contact (with the email they chose to leave, if any)
+  ["feedback", "player_id"],
 ];
 
 /**

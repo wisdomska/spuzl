@@ -99,5 +99,7 @@ export const aboutCopy = {
     ["/privacy", "Privacy"],
     ["/terms", "Terms"],
     ["/contact", "Contact"],
+    // R4-02: the feedback form on /contact, noting the visitor came from the landing page
+    ["/contact?from=/", "Feedback"],
   ] as const,
 } as const;

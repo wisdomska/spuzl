@@ -194,7 +194,7 @@ export const seoMeta = {
   },
   contact: {
     title: "Contact SPUZL: help and support",
-    description: "Get help with SPUZL, report a problem or a player, or ask about your data.",
+    description: "Send SPUZL feedback, report a bug, a puzzle that looks wrong or a player, or ask about your data.",
   },
   world: (name: string, tagline: string, n: number) => ({
     title: `${name}: ${n} free online games | SPUZL`,

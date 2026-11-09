@@ -59,6 +59,10 @@ export const PERMISSIONS = {
   "players.delete": ["owner"],
   /** CSV export of the player list. */
   "players.export": ["owner"],
+  /** R4-02: feedback from the /contact form: list, filter and CSV export (the email masked without players.pii). */
+  "feedback.read": ["owner", "moderator", "content_editor", "analyst"],
+  /** Mark feedback read or done (audited). */
+  "feedback.write": MOD,
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Permission = keyof typeof PERMISSIONS;

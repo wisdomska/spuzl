@@ -15,6 +15,8 @@ import { EmailCodeSignIn } from "@/components/onboarding/EmailCodeSignIn";
 import { GoogleButton } from "@/components/auth/GoogleButton";
 import { copy } from "@/lib/copy";
 import { settingsCopy } from "@/lib/copy/settings";
+import { contactCopy } from "@/lib/copy/contact";
+import { feedbackHref } from "@/lib/feedback";
 import { streakNudgeCopy } from "@/lib/copy/streak-nudge";
 import { emailChangeApplied } from "@/lib/client/save-streak";
 import { useBlocks, usePatchProfile, useUnblock, type MeExtra } from "@/lib/client/social";
@@ -183,6 +185,7 @@ function SettingsScreen() {
         <LinkRow icon="shield-check" label="Privacy policy" href="/privacy" />
         <LinkRow icon="clipboard-text" label="Terms" href="/terms" />
         <LinkRow icon="envelope" label="Contact" href="/contact" />
+        <LinkRow icon="chat-circle-text" label={contactCopy.entry} href={feedbackHref("/settings")} />
       </Group>
 
       <Choice

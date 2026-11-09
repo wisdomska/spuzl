@@ -14,7 +14,7 @@ const PAGES: [string, string, string][] = [
   ["/fair-play", "Fair play", "how every clear is checked on the server and how boards stay honest"],
   ["/privacy", "Privacy policy", "what SPUZL collects, why, and how to download or delete it"],
   ["/terms", "Terms of use", "the rules for using SPUZL"],
-  ["/contact", "Contact", "help, reports and data questions"],
+  ["/contact", "Contact", "feedback, help, reports and data questions"],
 ];
 
 const link = (path: string, name: string, note?: string) => `- [${name}](${absoluteUrl(path)})${note ? `: ${note}` : ""}`;

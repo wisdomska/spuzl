@@ -66,6 +66,10 @@ const ROUTES: Route[] = [
   { method: "POST", path: `/api/admin/moderation/flagged/${NIL}`, perm: "moderation.write" },
   { method: "GET", path: "/api/admin/join-requests", perm: "joinlog.read" },
   { method: "POST", path: "/api/admin/join-requests", perm: "joinlog.read" },
+  // R4-02: feedback from the /contact form (list and audited CSV for every reading role; marks for owner and moderator)
+  { method: "GET", path: "/api/admin/feedback", perm: "feedback.read" },
+  { method: "POST", path: "/api/admin/feedback", perm: "feedback.read" },
+  { method: "POST", path: `/api/admin/feedback/${NIL}`, perm: "feedback.write" },
   { method: "GET", path: `/api/admin/players/${NIL}`, perm: "moderation.read" },
   { method: "POST", path: `/api/admin/players/${NIL}`, perm: "moderation.write" },
   { method: "GET", path: "/api/admin/players", perm: "players.read" },

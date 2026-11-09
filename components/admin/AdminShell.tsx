@@ -29,6 +29,7 @@ const NAV: NavItem[] = [
   { href: "/admin/puzzles", label: N.puzzles, icon: "puzzle-piece", perm: "calendar.read", badge: "puzzles" },
   { href: "/admin/moderation", label: N.moderation, icon: "shield-check", perm: "moderation.read", badge: "moderation" },
   { href: "/admin/join-requests", label: N.joinRequests, icon: "hand-waving", perm: "joinlog.read" },
+  { href: "/admin/feedback", label: N.feedback, icon: "chat-circle-text", perm: "feedback.read" },
   { href: "/admin/liveops", label: N.liveops, icon: "pulse", perm: "liveops.read" },
   { href: "/admin/metrics", label: N.metrics, icon: "chart-bar", perm: "metrics.read" },
   { href: "/admin/shop", label: N.shop, icon: "storefront", perm: "catalog.read" },

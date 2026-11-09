@@ -1,42 +1,46 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
+import { FeedbackForm, FeedbackFormFromQuery } from "@/components/contact/FeedbackForm";
+import { FALLBACK_SUPPORT_EMAIL, contactCopy as C } from "@/lib/copy/contact";
 import { seoMeta } from "@/lib/copy/seo";
 import { publicMetadata } from "@/lib/seo/site";
 
 export const metadata: Metadata = publicMetadata({ path: "/contact", ...seoMeta.contact });
 
-// OWNER REVIEW: set NEXT_PUBLIC_SUPPORT_EMAIL to the real support inbox before launch.
-const EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL;
+/** The support inbox: NEXT_PUBLIC_SUPPORT_EMAIL when set, else the owner's public address (the one SPIL lists). */
+const EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || FALLBACK_SUPPORT_EMAIL;
 
+/**
+ * R4-02: the feedback form first (SPIL's way), then where to go for each kind of problem. Only the form reads
+ * `?from=`, inside Suspense, so the rest of the page stays prerendered.
+ */
 export default function Contact() {
   return (
     <>
-      <h1>Contact</h1>
-      <p className="lede">We read everything. Here is the fastest way to reach us for each kind of problem.</p>
+      <h1>{C.title}</h1>
+      <p className="lede">{C.lede}</p>
 
-      <h2>Someone is being unkind or cheating</h2>
+      <Suspense fallback={<FeedbackForm from={null} />}>
+        <FeedbackFormFromQuery />
+      </Suspense>
+
       <p>
-        Open their profile or tap the three dots on their activity, then Report. Pick a reason and, if you like, block them in the same
-        step. A moderator checks every report within a day.
+        {C.orEmail} <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
       </p>
 
-      <h2>A puzzle looks broken</h2>
-      <p>Tell us the game and the date{EMAIL ? " by email" : ""}. If a puzzle is broken we can fix it.</p>
+      <h2>{C.sections.unkindTitle}</h2>
+      <p>{C.sections.unkind}</p>
 
-      <h2>Your data or account</h2>
+      <h2>{C.sections.puzzleTitle}</h2>
+      <p>{C.sections.puzzle}</p>
+
+      <h2>{C.sections.dataTitle}</h2>
       <p>
-        You can download or delete everything yourself in <Link href="/settings#account">Settings, Account</Link>. Parents and teachers who
-        need a young player&apos;s account removed can write to us.
+        {C.sections.dataBefore}
+        <Link href="/settings#account">{C.sections.dataLink}</Link>
+        {C.sections.dataAfter}
       </p>
-
-      <h2>Email</h2>
-      {EMAIL ? (
-        <p>
-          <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
-        </p>
-      ) : (
-        <p>Our support inbox opens at launch. Until then, please use Report in the app.</p>
-      )}
     </>
   );
 }

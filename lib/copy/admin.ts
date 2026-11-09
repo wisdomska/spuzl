@@ -18,6 +18,7 @@ export const adminCopy = {
     metrics: { title: "Metrics", what: "metrics" },
     moderation: { title: "Moderation", what: "moderation" },
     joinRequests: { title: "Join requests", what: "the join-request log" },
+    feedback: { title: "Feedback", what: "player feedback" },
     puzzles: { title: "Puzzles", what: "the puzzle library" },
     settings: { title: "Game settings", what: "game settings" },
     shop: { title: "Shop and events", what: "the shop and events" },
@@ -401,6 +402,37 @@ export const adminCopy = {
     head: ["Asked (GMT)", "Who asked", "Host", "Room", "Outcome", "Decided (GMT)"],
   },
 
+  /** R4-02: messages from the /contact feedback form. */
+  feedback: {
+    title: "Feedback",
+    intro:
+      "Messages from the contact form, newest first. Emails are only there when the sender chose to leave one for a reply, and show in full only to roles that can see personal data. Marks and exports are audited.",
+    status: "Status",
+    anyStatus: "Any status",
+    statuses: { new: "New", read: "Read", done: "Done" } as Record<string, string>,
+    kind: "About",
+    anyKind: "Anything",
+    kinds: { bug: "Bug", puzzle: "Puzzle looks wrong", idea: "Idea", other: "Something else" } as Record<string, string>,
+    csv: "Export CSV",
+    exporting: "Exporting…",
+    exported: (n: number, total: number) =>
+      n < total ? `Exported ${n} of ${total} rows. Narrow the filters for the rest.` : `Exported ${n} rows.`,
+    empty: "No feedback matches.",
+    from: "From",
+    age: "Age",
+    email: "Email",
+    noEmail: "No email",
+    masked: "masked",
+    player: "Player",
+    signedOut: "Signed out",
+    device: "Device",
+    markRead: "Mark read",
+    markDone: "Done",
+    reopen: "Mark new",
+    saving: "Saving…",
+    markAria: (action: string, when: string) => `${action}: message sent ${when}`,
+  },
+
   audit: {
     title: "Audit log",
     intro: "Every admin action, newest first. Append-only.",
@@ -642,6 +674,8 @@ export const adminCopy = {
     pushPlayersHint: "Players with at least one device with alerts on, each counted once. Test players left out.",
     pushPlayersReached: "Players a push reached, last 30 days",
     pushPlayersReachedHint: "Players with a push through to at least one device in the last 30 days. Test players left out.",
+    /** R4-02: contact-form messages still marked new. */
+    newFeedback: "New feedback",
   },
 
   /** Seasonal event bonus quests, listed in the Shop and events quest catalogue. */
@@ -679,6 +713,7 @@ export const adminCopy = {
       puzzles: "Puzzles",
       moderation: "Moderation",
       joinRequests: "Join requests",
+      feedback: "Feedback",
       liveops: "Live ops",
       metrics: "Metrics",
       shop: "Shop and events",

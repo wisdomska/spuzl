@@ -12,6 +12,8 @@ import { StatusShare } from "@/components/share/StatusShare";
 import { Icon } from "@/components/ui/Icon";
 import { GAME_BY_ID, WORLD_BY_ID, type WorldId } from "@/lib/catalog";
 import { formatNumber, formatClock, gmtDate } from "@/lib/format";
+import { contactCopy } from "@/lib/copy/contact";
+import { feedbackHref } from "@/lib/feedback";
 
 const CAL: Record<string, { bg: string; icon?: string; label: string }> = {
   full: { bg: "var(--accent)", icon: "star-four", label: "Full Spuzl" },
@@ -252,6 +254,16 @@ export default function MePage() {
             <h2 className="text-[16px] font-bold">Badges</h2>
             <BadgeGrid data={p!.badges} />
           </section>
+
+          {/* R4-02: feedback from the profile, noting it came from here */}
+          <Link href={feedbackHref("/me")} className="bg-surface flex min-h-[52px] items-center gap-3 rounded-[16px] px-3.5 py-2">
+            <Icon name="chat-circle-text" size={20} className="text-muted shrink-0" />
+            <span className="flex flex-1 flex-col">
+              <span className="text-[15px] font-semibold">{contactCopy.entry}</span>
+              <span className="text-muted text-[13px]">{contactCopy.entryHint}</span>
+            </span>
+            <Icon name="caret-right" size={14} className="text-muted" />
+          </Link>
         </>
       )}
     </TabPage>

@@ -31,6 +31,8 @@ interface OverviewData {
    * round 3 item 13: the distinct players behind each (null until the database has svc_admin_push_players).
    */
   push?: { devices: number; reached30d: number; players?: number | null; playersReached30d?: number | null };
+  /** R4-02: contact-form messages still marked new (null without the role or the table; absent on older servers). */
+  newFeedback?: number | null;
 }
 
 function Tile({ value, label, href, hint }: { value: number; label: string; href?: string; hint?: string }) {
@@ -122,7 +124,7 @@ export function Overview({ canModerate }: { canModerate: boolean }) {
               href={`/admin/players?activeFrom=${daysAgo(6)}&sort=last_active&dir=desc`}
             />
           </div>
-          <div className="grid grid-cols-1 gap-2.5 md:grid-cols-3">
+          <div className={`grid grid-cols-1 gap-2.5 ${typeof q.data.newFeedback === "number" ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
             <Tile
               value={q.data.kpis.open_reports}
               label={C.openReports}
@@ -134,6 +136,9 @@ export function Overview({ canModerate }: { canModerate: boolean }) {
               href={canModerate ? "/admin/moderation?tab=flagged" : "/admin/players?status=flagged"}
             />
             <Tile value={q.data.players.banned} label={C.banned} href="/admin/players?status=banned" />
+            {typeof q.data.newFeedback === "number" && (
+              <Tile value={q.data.newFeedback} label={C.newFeedback} href="/admin/feedback?status=new" />
+            )}
           </div>
           {q.data.push && (
             <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2 xl:grid-cols-4">
