@@ -12,7 +12,8 @@ import { fitRow, useBoardBox } from "@/components/game/useBoardSize";
 import { usePhysicalKeyboard } from "@/components/game/useInputMode";
 import { ShellAside } from "@/components/game/ShellAside";
 import { TypingKeys } from "@/games/_shared/LetterKeyboard";
-import { ROUNDS, type RemixCheck, type RemixPuzzle, type RemixState } from "./rules";
+import { ROUNDS, SLOT_GAP, slotWidth, type RemixCheck, type RemixPuzzle, type RemixState } from "./rules";
+import { wordBoards } from "@/lib/copy/word-boards";
 
 const INK = "var(--ink-on-bright)";
 
@@ -39,6 +40,8 @@ export default function RemixBoard({ puzzle, initialState, hint, disabled, mode,
   const letters = puzzle.rounds[round].letters;
   const word = picks.map((i) => letters[i]).join("");
   const start = puzzle.starts?.[round];
+  // A full row that is not being checked: its check did not go through (no connection), so it can be sent again.
+  const full = picks.length === letters.length && !busy && !flash && !done;
 
   useEffect(() => {
     api.feedback(
@@ -57,7 +60,9 @@ export default function RemixBoard({ puzzle, initialState, hint, disabled, mode,
         res = await sendGuess<RemixCheck>(puzzle.ref, { round, word: w });
       } catch {
         setBusy(false);
-        api.feedback("No connection. Press Enter to try again.", "danger", "wifi-slash");
+        // The full row stays: Check (or Enter) sends it again.
+        api.feedback(wordBoards.remix.offline, "danger", "wifi-slash");
+        api.announce(wordBoards.remix.offline);
         return;
       }
       setBusy(false);
@@ -116,6 +121,11 @@ export default function RemixBoard({ puzzle, initialState, hint, disabled, mode,
         setPicks((p) => p.slice(0, -1));
         return;
       }
+      if (e.key === "Enter" && picks.length === letters.length) {
+        e.preventDefault();
+        void submit(picks.map((k) => letters[k]).join(""));
+        return;
+      }
       const k = e.key.toUpperCase();
       if (k.length !== 1) return;
       const i = order.find((x) => letters[x] === k && !picks.includes(x));
@@ -126,7 +136,7 @@ export default function RemixBoard({ puzzle, initialState, hint, disabled, mode,
     };
     window.addEventListener("keydown", on);
     return () => window.removeEventListener("keydown", on);
-  }, [off, order, letters, picks, pick]);
+  }, [off, order, letters, picks, pick, submit]);
 
   const shuffle = useCallback(() => {
     setOrder((o) => {
@@ -144,9 +154,22 @@ export default function RemixBoard({ puzzle, initialState, hint, disabled, mode,
     api.setControls([
       { id: "shuffle", label: "Shuffle", icon: "shuffle", onPress: shuffle, disabled: off },
       { id: "clear", label: "Clear", icon: "eraser", onPress: () => setPicks([]), disabled: !picks.length || off },
+      // A full row checks itself; Check only shows when that check could not be sent, so it can go again.
+      ...(full
+        ? [
+            {
+              id: "submit",
+              label: wordBoards.remix.check,
+              icon: "check",
+              onPress: () => void submit(word),
+              disabled: off,
+              tone: "world" as const,
+            },
+          ]
+        : []),
       { id: "hint", label: "Hint", icon: "lightbulb", onPress: () => {}, tone: "gold" },
     ]);
-  }, [api, shuffle, picks.length, off]);
+  }, [api, shuffle, picks.length, off, full, submit, word]);
 
   const hintPrefix =
     (hint?.target as { round?: number; prefix?: string } | undefined)?.round === round ? (hint!.target as { prefix: string }).prefix : "";
@@ -154,6 +177,8 @@ export default function RemixBoard({ puzzle, initialState, hint, disabled, mode,
   const box = useBoardBox();
   const tile = box.wide ? fitRow(Math.min(box.w, 760), letters.length, 12, 24, 48, 112) : fitRow(box.w, letters.length, 8, 24, 48, 60);
   const physical = usePhysicalKeyboard();
+  // The answer row never runs past the board (seven letters on a 320 px phone).
+  const slot = slotWidth(box.wide ? Math.min(box.w, 760) : box.w, letters.length, tile);
 
   return (
     <div
@@ -184,10 +209,10 @@ export default function RemixBoard({ puzzle, initialState, hint, disabled, mode,
 
       {/* answer slots */}
       <div
-        className={`flex gap-1.5 ${shakeN && !flash ? (shakeN % 2 ? "cell-shake-a" : "cell-shake-b") : ""}`}
+        className={`flex ${shakeN && !flash ? (shakeN % 2 ? "cell-shake-a" : "cell-shake-b") : ""}`}
         role="group"
         aria-label={`Your word: ${word || "empty"}`}
-        style={{ perspective: 600 }}
+        style={{ perspective: 600, gap: SLOT_GAP }}
       >
         {letters.map((_, k) => {
           const ch = picks[k] !== undefined ? letters[picks[k]] : "";
@@ -204,7 +229,7 @@ export default function RemixBoard({ puzzle, initialState, hint, disabled, mode,
               className={`font-display flex items-center justify-center rounded-[12px] font-extrabold ${ch && k === picks.length - 1 && !quiet ? (tapN % 2 ? "cell-pop-a" : "cell-pop-b") : ""}`}
 
               style={{
-                width: tile - 4,
+                width: slot,
                 height: tile + 4,
                 fontSize: Math.round(tile * 0.46),
                 background: flash ? "var(--world)" : ch ? "var(--surface-raised)" : "transparent",

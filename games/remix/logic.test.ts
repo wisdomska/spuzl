@@ -4,7 +4,7 @@ import type { Difficulty } from "@/games/types";
 import { isWord } from "@/games/_shared/words";
 import logic, { checkGuess, contentCount, generate, generateAt, grade, hint, progress, scramble, verify } from "./logic";
 import { CONTENT, needsReview } from "./content";
-import { isAnagram, sortLetters } from "./rules";
+import { isAnagram, SLOT_GAP, slotWidth, sortLetters } from "./rules";
 
 const DIFFS: Difficulty[] = ["easy", "medium", "hard", "expert", "mega"];
 
@@ -86,5 +86,15 @@ describe("remix guesses and verification", () => {
     expect(hint(puzzle, solution, { answers: w })).toBeNull();
     expect(hint(puzzle, solution, null as never)).not.toBeNull();
     expect(logic.id).toBe("remix");
+  });
+});
+
+describe("remix answer slots", () => {
+  it("fit the row on the narrowest phone and stay a touch narrower than the tiles elsewhere", () => {
+    // 320 px phone: 296 px for the board; seven 48 px tiles would need 344 px of slots
+    const w = slotWidth(296, 7, 48);
+    expect(7 * w + SLOT_GAP * 6).toBeLessThanOrEqual(296);
+    expect(slotWidth(351, 5, 48)).toBe(44);
+    expect(slotWidth(760, 7, 96)).toBe(92);
   });
 });

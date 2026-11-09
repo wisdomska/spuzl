@@ -33,3 +33,14 @@ export const sortLetters = (w: string | string[]) => [...w].sort().join("");
 export function isAnagram(letters: string[], word: string): boolean {
   return typeof word === "string" && /^[A-Z]+$/.test(word) && sortLetters(letters) === sortLetters(word);
 }
+
+/** Gap between answer slots, px. */
+export const SLOT_GAP = 6;
+
+/**
+ * Width of one answer slot: a little narrower than a letter tile, and never so wide that the row of `n` slots
+ * runs past `avail` px (seven slots on a 320 px phone).
+ */
+export function slotWidth(avail: number, n: number, tile: number): number {
+  return Math.max(24, Math.min(tile - 4, Math.floor((avail - SLOT_GAP * (n - 1)) / Math.max(1, n))));
+}
