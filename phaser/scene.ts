@@ -21,6 +21,12 @@ export interface StageOptions<S> {
 
 export interface Stage {
   resize(width: number, height: number): void;
+  /**
+   * Stops (false) or restarts (true) the render loop: the board is covered (Pause, the menu, a confirm), so nothing
+   * on it is seen. The sim keeps no time of its own while asleep (the controller only steps on frames, and the shell
+   * clock is the source of truth), so waking never jumps.
+   */
+  setAwake(awake: boolean): void;
   destroy(): void;
 }
 
@@ -29,6 +35,7 @@ export function startStage<S>(Phaser: PhaserModule, o: StageOptions<S>): Stage {
   let w = Math.round(o.width * dpr),
     h = Math.round(o.height * dpr);
   let game: PhaserNS.Game | null = null;
+  let asleep = false;
 
   class RageScene extends Phaser.Scene {
     gfx!: PhaserNS.GameObjects.Graphics;
@@ -91,6 +98,8 @@ export function startStage<S>(Phaser: PhaserModule, o: StageOptions<S>): Stage {
       this.bg.clear();
       o.painter.draw(ctx, sim, ghost);
       for (const [k, t] of this.labels) if (!used.has(k)) t.setVisible(false);
+      // Asked to sleep before the loop was running (Phaser starts it after boot): draw this one frame, then stop.
+      if (asleep) this.game.loop.sleep();
     }
   }
 
@@ -126,6 +135,13 @@ export function startStage<S>(Phaser: PhaserModule, o: StageOptions<S>): Stage {
       h = Math.round(height * dpr);
       game?.scale.resize(w, h);
       styleCanvas();
+    },
+    setAwake(awake) {
+      asleep = !awake;
+      const loop = game?.loop;
+      if (!loop) return;
+      if (asleep && loop.running) loop.sleep();
+      else if (!asleep && !loop.running && loop.started) loop.wake(true);
     },
     destroy() {
       game?.destroy(true);

@@ -101,6 +101,7 @@ export function RageBoard<S extends SimCore>({
   puzzle,
   initialState,
   disabled,
+  covered,
   api,
   spec,
   ghost,
@@ -291,7 +292,8 @@ export function RageBoard<S extends SimCore>({
     };
   }, [spec.tall]);
 
-  // Lazy Phaser.
+  // Lazy Phaser. A stage that boots while the board is covered starts asleep.
+  const coveredRef = useRef(!!covered);
   const stageRef = useRef<Stage | null>(null);
   const sizeRef = useRef({ w: size.w, h: stageH });
   useEffect(() => {
@@ -309,7 +311,7 @@ export function RageBoard<S extends SimCore>({
         gold: 0xffc93c,
         accent: 0xb8f23a,
       };
-      stageRef.current = startStage(Phaser, {
+      const stage = startStage(Phaser, {
         parent: canvasRef.current,
         width: sizeRef.current.w,
         height: sizeRef.current.h,
@@ -322,6 +324,8 @@ export function RageBoard<S extends SimCore>({
           return { sim: ctl.sim, ghost: ctl.ghost ? { sim: ctl.ghost.sim, name: ctl.ghost.name } : null };
         },
       });
+      stage.setAwake(!coveredRef.current);
+      stageRef.current = stage;
     })();
     return () => {
       dead = true;
@@ -332,6 +336,11 @@ export function RageBoard<S extends SimCore>({
   useEffect(() => {
     stageRef.current?.resize(size.w, stageH);
   }, [size.w, stageH]);
+  // Covered by the shell (Pause, the menu, a confirm): the render loop sleeps, so a paused game costs no frames.
+  useEffect(() => {
+    coveredRef.current = !!covered;
+    stageRef.current?.setAwake(!covered);
+  }, [covered]);
 
   const dismissNotice = useCallback(() => {
     setNotice(false);

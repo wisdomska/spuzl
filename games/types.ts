@@ -94,6 +94,8 @@ export interface BoardProps<P = unknown, St = unknown> {
   hint?: Hint | null;
   /** Locked after clear, during countdowns and while paused */
   disabled?: boolean;
+  /** The shell covers the board (Pause, the menu, a confirm): nothing on it is seen, so canvas boards can stop drawing. */
+  covered?: boolean;
   api: BoardApi<St>;
   /** Mode-specific props passed through by the shell, e.g. `ghost` for Ghost Race boards. */
   extra?: Record<string, unknown>;

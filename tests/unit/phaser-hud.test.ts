@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sameHud, type Hud } from "./hud";
+import { sameHud, type Hud } from "@/phaser/hud";
 
 const base: Hud = {
   deaths: 0,

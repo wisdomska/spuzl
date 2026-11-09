@@ -637,6 +637,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
         initialState={initialState}
         hint={hint}
         disabled={locked || paused || solved || pausedExternally || menuHold || leaveHold}
+        covered={covered}
         api={api}
       />
     </main>

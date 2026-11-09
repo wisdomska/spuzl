@@ -210,9 +210,6 @@ again on a failed start; Echo's pause between rounds; Beat Tap and Rage Ridge pe
 taps on the live Draughts, Oware and Four Up boards; Resign and the bot draw ask first; bot thinking in Board Bay;
 the Duel loss line. Still open:
 
-- **Phaser keeps drawing at 60 fps under the Pause cover.** Boards don't know they are covered (only `disabled`,
-  which is also true during a Duel countdown, before the first frame). A `covered` board prop would let
-  `phaser/scene.ts` sleep the loop.
 - **Rage Ridge painter:** still four small closures per frame and about 270 dots for the background grid
   (`phaser/render/platformer.ts`); a pre-drawn dot texture would cut the draw calls. Profile on a mid phone first.
 - **Live boards have no roving keyboard focus** (`components/multiplayer/bay/boards.tsx`): chess and draughts are 64
