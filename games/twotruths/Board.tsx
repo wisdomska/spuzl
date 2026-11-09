@@ -6,7 +6,7 @@ import { QuizBoard, type QuizJudge, type QuizRound, type VerdictWords } from "@/
 import { sendGuess } from "@/games/_shared/guess";
 import { twoTruths as t, TRUTHS_THEME_LABEL } from "@/lib/copy/twotruths";
 // Rules and types only: content.ts and logic.ts hold the lies and must stay out of the client bundle.
-import { REVEAL_MS, type TruthsCheck, type TruthsGuess, type TruthsPuzzle, type TruthsState } from "./rules";
+import { REVEAL_MS, revealMsFor, type TruthsCheck, type TruthsGuess, type TruthsPuzzle, type TruthsState } from "./rules";
 
 const WORDS: VerdictWords = {
   right: (_lie, fix = "") => t.right(fix),
@@ -64,6 +64,7 @@ export default function TwoTruthsBoard({ puzzle, initialState, hint, disabled, m
       mode={mode}
       api={api}
       advanceMs={REVEAL_MS}
+      revealMs={revealMsFor}
       hintLabel={t.hint}
       words={WORDS}
     />

@@ -97,6 +97,11 @@ interface Props {
   hintLabel?: string;
   /** the feedback line for a judged answer, when the board words it its own way */
   words?: VerdictWords;
+  /**
+   * How long a judged answer stays for its feedback line, when that varies (Two Truths: long enough to read the
+   * lie and what is true instead). Without it every answer stays `advanceMs`.
+   */
+  revealMs?: (line: string) => number;
 }
 
 /** checking: an answer is with the judge; retry: the judge could not be reached, the answer waits to be sent again */
@@ -138,6 +143,7 @@ export function QuizBoard({
   advanceMs = REVEAL_MS,
   hintLabel = t.fiftyFifty,
   words,
+  revealMs,
 }: Props) {
   const total = rounds.length;
   const [answers, setAnswers] = useState<QuizAnswer[]>(() => initial ?? []);
@@ -246,10 +252,12 @@ export function QuizBoard({
     ask();
   }, [api, ask, limitMs, total]);
 
+  /** how long the current reveal stays (set per answer when the board passes `revealMs`) */
+  const hold = useRef(advanceMs);
   const scheduleAdvance = useCallback(() => {
     stop();
-    timer.current = window.setTimeout(advance, advanceMs);
-  }, [advance, advanceMs]);
+    timer.current = window.setTimeout(advance, hold.current);
+  }, [advance]);
 
   /** Shows a judged answer and moves on. */
   const settle = useCallback(
@@ -263,12 +271,14 @@ export function QuizBoard({
       setAnswers(next);
       go("reveal");
       const answerText = rounds[q].choices[v.answer] ?? "";
+      const keep = (line: string) => (hold.current = revealMs ? revealMs(line) : advanceMs);
       if (v.right) {
         streak.current++;
         // a right answer is the palette's small win (the two-note lift)
         play("success");
         api.onMove({ answers: next }, { correctStreak: streak.current });
         const line = words ? words.right(answerText, v.note) : t.right(answerText);
+        keep(line);
         api.feedback(line, "success", "check-circle");
         api.announce(line);
       } else if (words) {
@@ -278,14 +288,20 @@ export function QuizBoard({
         if (v.late || v.pick === null) {
           sfx.miss();
           const line = v.late ? words.late(answerText, v.note) : words.time(answerText, v.note);
+          keep(line);
           api.feedback(line, "danger", "timer");
           api.announce(line);
-        } else api.ruleBreak(words.wrong(answerText, v.note));
+        } else {
+          const line = words.wrong(answerText, v.note);
+          keep(line);
+          api.ruleBreak(line);
+        }
       } else {
         streak.current = 0;
         setShakeN((k) => k + 1);
         // The mistake flag also feeds race and duel mistake counts (MatchBoard), so it stays on every miss.
         api.onMove({ answers: next }, { mistake: true });
+        hold.current = advanceMs;
         if (v.late) {
           sfx.miss();
           api.feedback(t.late(answerText), "danger", "timer");
@@ -298,7 +314,7 @@ export function QuizBoard({
       }
       if (!disabledRef.current) scheduleAdvance();
     },
-    [api, rounds, scheduleAdvance, words],
+    [advanceMs, api, revealMs, rounds, scheduleAdvance, words],
   );
   useEffect(() => {
     settleRef.current = settle;

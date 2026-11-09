@@ -22,7 +22,8 @@ import logic, {
   verify,
 } from "./logic";
 import { CONTENT, PRACTICE, needsReview } from "./content";
-import { NET_SLACK_MS, TRUTHS_THEMES, type TruthsCheck, type TruthsGuess } from "./rules";
+import { NET_SLACK_MS, REVEAL_MAX_MS, REVEAL_MS, revealMsFor, TRUTHS_THEMES, type TruthsCheck, type TruthsGuess } from "./rules";
+import { twoTruths } from "@/lib/copy/twotruths";
 
 const D: Difficulty[] = ["easy", "medium", "hard", "expert", "mega"];
 const DASH = /[–—]/;
@@ -218,5 +219,16 @@ describe("two truths server judging (guess transport)", () => {
         log,
       ),
     ).toMatch(/never judged/);
+  });
+});
+
+describe("two truths reveal hold (UX pass)", () => {
+  it("keeps a short line for the usual beat and a long one long enough to read, within a cap", () => {
+    expect(revealMsFor(twoTruths.right("Short."))).toBe(REVEAL_MS);
+    const row = CONTENT.reduce((a, b) => (a.lie.length + a.fix.length >= b.lie.length + b.fix.length ? a : b));
+    const long = twoTruths.wrong(row.lie, row.fix);
+    expect(revealMsFor(long)).toBeGreaterThan(REVEAL_MS);
+    expect(revealMsFor(long)).toBeGreaterThanOrEqual(long.length * 45);
+    expect(revealMsFor("x".repeat(1000))).toBe(REVEAL_MAX_MS);
   });
 });

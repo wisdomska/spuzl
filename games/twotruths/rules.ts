@@ -15,6 +15,16 @@ export const LIMIT_MS = 20000;
 export const NET_SLACK_MS = 3000;
 /** how long the answered round (with what is true instead) stays before the next one */
 export const REVEAL_MS = 3200;
+/** The longest the answered round waits before the next one, however long its line. */
+export const REVEAL_MAX_MS = 9000;
+
+/**
+ * How long the answered round stays: long enough to read its line (the lie and what is true instead, about
+ * 20 characters a second plus a beat to find it), never less than REVEAL_MS nor more than REVEAL_MAX_MS.
+ */
+export function revealMsFor(line: string): number {
+  return Math.max(REVEAL_MS, Math.min(REVEAL_MAX_MS, 1200 + line.length * 50));
+}
 /** Content indexes from here up are free play boards (FREE_BASE + seed); below are Daily rotation days. */
 export const FREE_BASE = 1_000_000_000;
 /** The practice board's content index (just under FREE_BASE, a Daily day no schedule reaches; generateAt checks it first). */
