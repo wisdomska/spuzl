@@ -27,6 +27,15 @@ export const CROWNFALL_COPY = {
     emptiesLine: (line: string) => `A crown here would leave ${line} with no room, so this cell is out.`,
     reveal: (line: string) => `Every other spot in ${line} leads to a dead end, so its crown goes here.`,
   },
+  /** Board feedback line and announcements (games/crownfall/Board.tsx). */
+  board: {
+    startTutorial: "Tap once for X, twice for a crown.",
+    lastSpotTutorial: "One spot left that breaks no rule. Find the glow.",
+    crowns: (placed: number, n: number) => `${placed} of ${n} crowns`,
+    cleared: "Clean. Board cleared.",
+    clearedShort: "Board cleared.",
+    undone: (placed: number, n: number) => `Undone. ${placed} of ${n} crowns.`,
+  },
   row: (r: number) => `row ${r + 1}`,
   column: (c: number) => `column ${c + 1}`,
   cellState: { crown: "crown", mark: "marked empty", empty: "empty", bad: ", breaks a rule" },

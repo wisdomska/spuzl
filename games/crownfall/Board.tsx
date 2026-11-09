@@ -13,6 +13,7 @@ import { PatternsOffer } from "./PatternsOffer";
 import { ShellAside } from "@/components/game/ShellAside";
 
 type Tool = "crown" | "x";
+const T = CROWNFALL_COPY;
 /** Region edge (each side of a boundary, so a boundary reads 4 px) and the hairline inside a region. */
 const EDGE = 2;
 const EDGE_COLOUR = "var(--text)";
@@ -75,8 +76,8 @@ export default function CrownfallBoard({ puzzle, initialState, hint, disabled, m
       } else if (after.clear) {
         setDone(true);
         sfx.place(streak.current + 1);
-        api.feedback("Clean. Board cleared.", "success", "check-circle");
-        api.announce("Board cleared.");
+        api.feedback(T.board.cleared, "success", "check-circle");
+        api.announce(T.board.clearedShort);
       } else {
         if (value === CROWN) streak.current++;
         // A dragged X is texture under the finger; taking a mark off is soft; anything placed blips.
@@ -85,8 +86,8 @@ export default function CrownfallBoard({ puzzle, initialState, hint, disabled, m
         else sfx.place(streak.current);
         api.announce(CROWNFALL_COPY.cellLabel(r - 1, c - 1, CROWNFALL_COPY.regionName(puzzle.regions[i]), markName));
         if (after.bad.size === 0) {
-          const tip = mode === "tutorial" && after.crowns === n - 1 ? "One spot left that breaks no rule. Find the glow." : null;
-          api.feedback(tip ?? `${after.crowns} of ${n} crowns`, "info", tip ? "hand-pointing" : "crown-simple");
+          const tip = mode === "tutorial" && after.crowns === n - 1 ? T.board.lastSpotTutorial : null;
+          api.feedback(tip ?? T.board.crowns(after.crowns, n), "info", tip ? "hand-pointing" : "crown-simple");
         }
       }
       api.onMove(next, { correctStreak: streak.current, mistake: broke });
@@ -105,15 +106,17 @@ export default function CrownfallBoard({ puzzle, initialState, hint, disabled, m
   );
 
   const undo = useCallback(() => {
-    setHist((h) => {
-      if (!h.length) return h;
-      const prev = h[h.length - 1];
-      cellsRef.current = prev;
-      setCells(prev);
-      api.onMove(prev);
-      return h.slice(0, -1);
-    });
-  }, [api]);
+    if (!hist.length || done) return;
+    const prev = hist[hist.length - 1];
+    cellsRef.current = prev;
+    setCells(prev);
+    setHist(hist.slice(0, -1));
+    api.onMove(prev);
+    // Say what the board holds now, so an undo is never silent (feedback line and screen reader).
+    const placed = prev.filter((v) => v === CROWN).length;
+    api.feedback(T.board.crowns(placed, n), "info", "crown-simple");
+    api.announce(T.board.undone(placed, n));
+  }, [api, done, hist, n]);
 
   // Controls row (design: Undo · Crown · Mark X · Hint)
   useEffect(() => {
@@ -132,8 +135,8 @@ export default function CrownfallBoard({ puzzle, initialState, hint, disabled, m
   }, [api, undo, hist.length, done, tool]);
 
   useEffect(() => {
-    if (mode === "tutorial") api.feedback("Tap once for X, twice for a crown.", "info", "hand-pointing");
-    else api.feedback(`0 of ${n} crowns`, "info", "crown-simple");
+    if (mode === "tutorial") api.feedback(T.board.startTutorial, "info", "hand-pointing");
+    else api.feedback(T.board.crowns(0, n), "info", "crown-simple");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -160,7 +163,6 @@ export default function CrownfallBoard({ puzzle, initialState, hint, disabled, m
   const hintTarget = typeof hint?.target === "number" ? hint.target : -1;
   const tutorialGlow = mode === "tutorial" && !done && a.crowns === n - 1 && a.bad.size === 0;
 
-  const T = CROWNFALL_COPY;
   const regionAt = (r: number, c: number) => (r < 0 || c < 0 || r >= n || c >= n ? -1 : puzzle.regions[r * n + c]);
   const cornerRadius = (r: number, c: number) => {
     const at = (rr: number, cc: number) => (r === rr && c === cc ? CORNER : 0);
@@ -188,6 +190,8 @@ export default function CrownfallBoard({ puzzle, initialState, hint, disabled, m
             background: "var(--board-bg)",
             boxShadow: "0 0 0 2px var(--line)",
             perspective: 600,
+            // With Mark X on, a drag paints X across cells: the page must not scroll or zoom under the finger.
+            touchAction: tool === "x" && !done ? "none" : undefined,
           }}
         >
           {Array.from({ length: n }, (_, r) => (
