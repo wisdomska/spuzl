@@ -45,6 +45,18 @@ textarea,
 select {
   font-size: max(16px, 1rem);
 } /* no zoom on focus (iOS) */
+/* The game play area (board, side panel, tools): a long press never selects board text or raises the iOS
+   callout (copy, look up, share) over letters, numbers or emoji. Typing fields inside keep normal selection. */
+[data-shell] {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+[data-shell] :is(input, textarea, [contenteditable="true"]) {
+  -webkit-touch-callout: default;
+  -webkit-user-select: text;
+  user-select: text;
+}
 :focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);

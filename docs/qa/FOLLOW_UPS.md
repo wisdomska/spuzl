@@ -220,10 +220,6 @@ the Duel loss line. Still open:
 Puzzles (Crownfall, Dusk, Sixer, Nine, Weave, Flowline, Pairup, Lost, Trotro Jam), Words & Quiz (Coil, Rungs, Quads,
 Seven, Minicross, Buried, Remix, Quickfire, Emoji Hits) and Two Truths. Found in the audit, not fixed in this pass:
 
-- **Long-press callout (shell, all worlds):** `app/globals.css` sets `user-select: none` on buttons and gridcells but
-  not `-webkit-touch-callout: none`; text that is not a gridcell (Emoji Hits' emoji row, word lists, the Seven word
-  line) can still raise the iOS callout on a long press. A `[data-shell-slot] { -webkit-touch-callout: none }` rule
-  would cover every board; left for the shell owner to avoid clashing edits.
 - **Minicross wrong full grid:** "Not quite. One or more squares are off." never says where. The check (`MinicrossCheck`)
   only returns ok; naming the wrong word(s) would need the server to return them, which is a hint and should cost one.
 - **Quads out of slips:** the run ends on "out of slips" without showing the groups left; the board never holds them
