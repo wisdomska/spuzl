@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.43.3 (9 November 2026)
+
+### For visitors
+
+- **Every public page uses the full width:** on wide screens no section sits in a narrower column than the others.
+  - Landing: "Accounts and your data" has its heading on the left and the text on the right.
+  - Game pages: the rule, how to play, ways to play and questions on the left; Quick facts and Play stay on screen on
+    the right.
+  - How to play: the basics and the game cards sit in a three-column grid.
+
 ## 1.43.2 (9 November 2026)
 
 ### For visitors
