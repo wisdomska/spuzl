@@ -1,5 +1,56 @@
 # Changelog
 
+## 1.44.0 (9 November 2026)
+
+A full usability pass over every game and the game screen.
+
+### Playing any game
+
+- **Restart asks first** once you have made moves, in the game menu and in bot games. A board you haven't touched
+  restarts at once.
+- **Keyboard players** see where focus is on board cells, pads and tool buttons.
+- A long press on the board no longer selects text or opens the iPhone pop-up menu.
+- A game that fails to start offers **Try again**, and says so when you are offline.
+- Text and icons on gold are easier to read in both themes and the colour-blind modes.
+- **Nine on a laptop with reduced motion:** the board and number pad now fit the screen with no scrolling.
+
+### Puzzles
+
+- **Crownfall:** dragging to paint X marks no longer scrolls the page, and Restart clears every mark.
+- **Undo says where you stand:** Dusk, Sixer, Nine, Trotro Jam and Crownfall announce the count after an undo.
+- **Weave** names the walls around every cell, so it can be played with a screen reader.
+- **Flowline:** with every plant watered, the line says what is left; watered plants get a drop badge.
+- **Lost** warns as you near the move limit, and explains why an exit past it can't count.
+- **Dusk, Trotro Jam, Weave, Flowline and Pairup** fit short phones without scrolling.
+- **Escape** lets go of a traced path in Coil, Buried and Pairup.
+
+### Words & Quiz
+
+- **Minicross:** a full grid with mistakes marks the words to check, without giving away letters.
+- **Quads:** running out of mistakes shows the groups you missed.
+- **Rungs:** move between rows with the Up and Down keys. A failed check offers Check ladder again instead of
+  stopping.
+- **Remix:** answer slots fit a 320 px phone, and a check lost to a dropped connection can be sent again.
+- **Seven:** pressing Enter twice no longer counts a word twice.
+- **Emoji Hits** lists the round's wrong guesses under the answer box.
+- **Two Truths and a Lie** keeps the answered round up long enough to read.
+- In-game text in word games is never smaller than 14 px.
+
+### Arcade
+
+- **Echo** pauses between rounds. **Flinch and Beat Tap** ignore right and middle clicks.
+- **Gotcha and Dash** pause their game loop while the board is covered, and run smoother.
+
+### Board games and friends
+
+- **Chess and draughts:** play with the arrow keys and Enter. The moved piece stays put while the move sends.
+  Draughts shows both routes when two captures land on the same square.
+- **Draughts, Oware and Four Up** mark the last move and explain a refused tap.
+- **Board Bay:** withdraw a draw offer, rows say Your move or Their move, Takeback says why it's off, and Resign or
+  a draw with the bot asks first.
+- **Duel and Race:** switching tabs no longer brings up the Pause sheet; you get a note when you come back.
+  A lost Duel round names the next round.
+
 ## 1.43.3 (9 November 2026)
 
 ### For visitors
