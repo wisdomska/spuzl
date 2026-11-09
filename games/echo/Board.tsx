@@ -6,6 +6,7 @@ import { Icon } from "@/components/ui/Icon";
 import { useGridKeys } from "@/components/game/useGridKeys";
 import { useBoardBox } from "@/components/game/useBoardSize";
 import { play } from "@/lib/audio";
+import { echoCopy as t } from "@/lib/copy/echo";
 import { IDLE_MS, padName, unfinished, type EchoPuzzle, type EchoRound, type EchoState } from "./logic";
 
 const INK = "#0E0F1A";
@@ -57,11 +58,11 @@ export default function EchoBoard({ puzzle, initialState, disabled, mode, api }:
       setLit(null);
       setPhase("over");
       const best = bestRef.current;
-      if (tone === "danger") api.ruleBreak(`${why} You repeated ${best} ${best === 1 ? "step" : "steps"}.`);
+      if (tone === "danger") api.ruleBreak(t.slipEnd(why, best));
       else {
-        api.feedback(`${why} ${best} steps.`, "success", "check-circle");
+        api.feedback(t.clearEnd(why, best), "success", "check-circle");
       }
-      api.announce(`Run over. Longest sequence ${best}.`);
+      api.announce(t.runOverAnnounce(best));
       // after a slip, let the buzz finish before the run's closing arpeggio
       api.onSolved(state, tone === "danger" ? { clearDelayMs: 420 } : undefined);
     },
@@ -70,7 +71,7 @@ export default function EchoBoard({ puzzle, initialState, disabled, mode, api }:
 
   const armIdle = useCallback(() => {
     if (idle.current) window.clearTimeout(idle.current);
-    idle.current = window.setTimeout(() => finish({ rounds: roundsRef.current }, "Too slow.", "danger"), IDLE_MS);
+    idle.current = window.setTimeout(() => finish({ rounds: roundsRef.current }, t.tooSlow, "danger"), IDLE_MS);
   }, [finish]);
 
   /** Starts round `r` (0-based): plays the first start + r steps, then opens input. */
@@ -83,8 +84,8 @@ export default function EchoBoard({ puzzle, initialState, disabled, mode, api }:
       setRounds(next);
       setPhase("watch");
       setPos(0);
-      api.feedback(`Watch. Round ${r + 1}, ${n} ${n === 1 ? "step" : "steps"}.`, "info", "eye");
-      api.announce(`Round ${r + 1}. Watch ${n} steps.`);
+      api.feedback(t.watch(r + 1, n), "info", "eye");
+      api.announce(t.watchAnnounce(r + 1, n));
       for (let i = 0; i < n; i++) {
         const pad = puzzle.seq[i];
         later(
@@ -104,8 +105,8 @@ export default function EchoBoard({ puzzle, initialState, disabled, mode, api }:
           setPhase("input");
           setPos(0);
           opened.current = performance.now();
-          api.feedback(`Your turn, 1 of ${n}`, "info", "hand-pointing");
-          api.announce(`Your turn. Repeat ${n} steps.`);
+          api.feedback(t.yourTurn(1, n), "info", "hand-pointing");
+          api.announce(t.yourTurnAnnounce(n));
           armIdle();
         },
         LEAD_IN_MS + (n - 1) * puzzle.stepMs + puzzle.onMs + 250,
@@ -138,17 +139,17 @@ export default function EchoBoard({ puzzle, initialState, disabled, mode, api }:
       if (!right) {
         setWrongPad(pad);
         api.onMove(state, { mistake: true });
-        finish(state, "Wrong pad.", "danger");
+        finish(state, t.wrongPad, "danger");
         return;
       }
       play("chime", { step: NOTE[pad] });
-      api.announce(`${padName(pad)}, ${i + 1} of ${n}`);
+      api.announce(t.tapAnnounce(padName(pad), i + 1, n));
       if (i + 1 === n) {
         bestRef.current = n;
         setBest(n);
         api.onMove(state, { correctStreak: n });
         if (n >= puzzle.seq.length) {
-          finish(state, "Full sequence.", "success");
+          finish(state, t.fullSequence, "success");
           return;
         }
         if (idle.current) window.clearTimeout(idle.current);
@@ -156,12 +157,12 @@ export default function EchoBoard({ puzzle, initialState, disabled, mode, api }:
         // round repeated: the small win, after the last pad's note
         play("success", { delay: 0.12 });
 
-        api.feedback(`${n} ${n === 1 ? "step" : "steps"}. One more next round.`, "success", "check-circle");
+        api.feedback(t.roundDone(n), "success", "check-circle");
         later(() => playRound(r + 1), 600);
       } else {
         setPos(i + 1);
         api.onMove(state, { correctStreak: i + 1 });
-        api.feedback(`Your turn, ${i + 2} of ${n}`, "info", "hand-pointing");
+        api.feedback(t.yourTurn(i + 2, n), "info", "hand-pointing");
         armIdle();
       }
     },
@@ -199,7 +200,16 @@ export default function EchoBoard({ puzzle, initialState, disabled, mode, api }:
     api.setControls([
       {
         id: "start",
-        label: phase === "over" ? "Run over" : phase === "watch" ? "Watch" : phase === "input" ? "Your turn" : resume ? "Resume" : "Start",
+        label:
+          phase === "over"
+            ? t.tool.over
+            : phase === "watch"
+              ? t.tool.watch
+              : phase === "input"
+                ? t.tool.input
+                : resume
+                  ? t.tool.resume
+                  : t.tool.start,
         icon: phase === "over" ? "flag-checkered" : phase === "watch" ? "eye" : phase === "input" ? "hand-tap" : "play",
         onPress: resume ? () => playRound(rounds.length) : start,
         tone: phase === "idle" ? "world" : "default",
@@ -209,11 +219,7 @@ export default function EchoBoard({ puzzle, initialState, disabled, mode, api }:
   }, [api, disabled, phase, playRound, rounds.length, start]);
 
   useEffect(() => {
-    api.feedback(
-      mode === "tutorial" ? "Watch the pads light up, then tap them back in order." : "Press Start, then watch the pads.",
-      "info",
-      "hand-pointing",
-    );
+    api.feedback(mode === "tutorial" ? t.introTutorial : t.intro, "info", "hand-pointing");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -230,21 +236,21 @@ export default function EchoBoard({ puzzle, initialState, disabled, mode, api }:
   });
   const status =
     phase === "watch"
-      ? "Watch"
+      ? t.status.watch
       : phase === "input"
-        ? `Your turn, ${Math.min(done + 1, len)} of ${len}`
+        ? t.yourTurn(Math.min(done + 1, len), len)
         : phase === "over"
-          ? `Best ${best}`
+          ? t.status.best(best)
           : rounds.length
-            ? "Paused"
-            : "Ready";
+            ? t.status.paused
+            : t.status.ready;
 
   return (
     <div
       className="flex w-[min(358px,calc(100vw-36px))] flex-col items-center gap-3.5 rounded-[20px] p-4"
       style={{ background: "var(--board-bg)", ...(pad ? { width: pad * 2 + 12 + 32 } : null) }}
     >
-      <div className="flex max-w-full flex-wrap justify-center gap-[5px]" role="img" aria-label={`Sequence of ${len}, round ${round + 1}`}>
+      <div className="flex max-w-full flex-wrap justify-center gap-[5px]" role="img" aria-label={t.sequence(len, round + 1)}>
         {dots.map((d, i) => (
           <span
             key={i}
@@ -258,7 +264,7 @@ export default function EchoBoard({ puzzle, initialState, disabled, mode, api }:
       </div>
       <div
         role="grid"
-        aria-label="Echo pads"
+        aria-label={t.pads}
         aria-rowcount={2}
         aria-colcount={2}
         aria-disabled={phase !== "input" || disabled}
@@ -279,7 +285,7 @@ export default function EchoBoard({ puzzle, initialState, disabled, mode, api }:
                   role="gridcell"
                   data-i={i}
                   tabIndex={keys.focus === i ? 0 : -1}
-                  aria-label={`${padName(i)} pad${on ? ", lit" : ""}`}
+                  aria-label={t.pad(padName(i), on)}
                   onPointerDown={(e) => {
                     e.preventDefault();
                     keys.setFocus(i);
