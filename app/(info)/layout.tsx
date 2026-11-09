@@ -11,11 +11,11 @@ const LINKS = [
   ["/contact", "Contact"],
 ] as const;
 
-/** Static pages: readable column (max 680 px), back to the Grid, footer links. */
+/** Static pages: a readable 680 px column for prose; a page that marks an element `data-wide` (How to play, a card catalogue) gets the full 1112 px public width. */
 export default function InfoLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="safe-top min-h-dvh px-4 pt-6 pb-16">
-      <div className="mx-auto flex max-w-[680px] flex-col gap-6">
+      <div className="mx-auto flex max-w-[680px] flex-col gap-6 has-[[data-wide]]:max-w-[1112px]">
         <header className="flex items-center justify-between">
           <Link href="/" aria-label="Back to SPUZL" className="flex h-11 items-center">
             <Wordmark size={28} />

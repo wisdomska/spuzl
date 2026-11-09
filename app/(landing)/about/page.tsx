@@ -234,12 +234,16 @@ export default function Landing() {
         </section>
 
         {/* Accounts and data (required by Google's OAuth branding review) */}
-        <section aria-labelledby="data" className="border-line max-w-[760px] border-t pt-10 pb-12">
-          <h2 id="data" className="font-display flex items-center gap-2 text-[22px] font-black">
+        {/* Full width like every other section: heading left, text right on wide screens, stacked on phones */}
+        <section
+          aria-labelledby="data"
+          className="border-line grid gap-4 border-t pt-10 pb-12 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] md:gap-10"
+        >
+          <h2 id="data" className="font-display flex items-center gap-2 self-start text-[22px] font-black">
             <Icon name="shield-check" size={22} className="text-accent" />
             {T.accountTitle}
           </h2>
-          <div className="text-muted mt-4 flex flex-col gap-3 text-[15px] leading-relaxed">
+          <div className="text-muted flex flex-col gap-3 text-[15px] leading-relaxed">
             {T.account.map((p) => (
               <p key={p}>{p}</p>
             ))}
