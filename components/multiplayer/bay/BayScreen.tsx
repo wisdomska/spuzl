@@ -24,7 +24,7 @@ import { useBay, useEmotes, useMatchChat, useProfileGate, useServerNow } from "@
 import { GAME_BY_ID } from "@/lib/catalog";
 import { formatClock, formatNumber } from "@/lib/format";
 import { play } from "@/lib/audio";
-import { BAY_GAMES, isBayGame, loadRules, type AnyRules, type BayGame, type BayRulesGame } from "@/lib/multiplayer/bay";
+import { BAY_GAMES, isBayGame, loadRules, takebackPlies, type AnyRules, type BayGame, type BayRulesGame } from "@/lib/multiplayer/bay";
 import { bayLive } from "@/lib/copy/bay-live";
 import { playBayMove } from "@/lib/audio/boardMoves";
 import { useSettings } from "@/lib/settings/store";
@@ -527,6 +527,8 @@ export function BayMatch({ id }: { id: string }) {
           i: "arrow-u-up-left",
           c: "var(--text-muted)",
           on: () => action("takeback_request", v.bot ? undefined : "Takeback asked."),
+          // Nothing of yours to take back yet: off, and it says why (the server refuses it too).
+          off: takebackPlies(v.moves, seat) === 0 ? boardGames.match.noTakeback : undefined,
         }
       : null,
     { l: "Draw", i: "handshake", c: "var(--text)", on: () => (v.bot ? setAsk("draw") : action("draw_offer", "Draw offered.")) },
@@ -537,7 +539,7 @@ export function BayMatch({ id }: { id: string }) {
     !v.bot
       ? { l: chat.unread ? `Chat (${chat.unread})` : "Chat", i: "chat-circle-text", c: "var(--accent)", on: () => chat.setOpen(true) }
       : null,
-  ].filter(Boolean) as { l: string; i: string; c: string; on: () => void }[];
+  ].filter(Boolean) as { l: string; i: string; c: string; on: () => void; off?: string }[];
 
   const oppRow = row(opp, false);
   const meRow = row(me, true);
@@ -738,12 +740,20 @@ export function BayMatch({ id }: { id: string }) {
           <button
             key={t.l}
             type="button"
-            onClick={t.on}
-            className="toy bg-surface-raised flex h-[60px] flex-col items-center justify-center gap-[3px] rounded-[18px] px-1 [--btn-depth:var(--depth)]"
-            style={{ boxShadow: "0 5px 0 var(--depth)", color: t.c }}
+            // An unavailable tool stays focusable (aria-disabled) so its reason is read out, and a tap shows it.
+            onClick={t.off ? () => show(t.off!) : t.on}
+            aria-disabled={t.off ? true : undefined}
+            aria-describedby={t.off ? `bay-tool-off-${t.l}` : undefined}
+            className={`toy flex h-[60px] flex-col items-center justify-center gap-[3px] rounded-[18px] px-1 [--btn-depth:var(--depth)] ${t.off ? "toy-disabled" : "bg-surface-raised"}`}
+            style={t.off ? undefined : { boxShadow: "0 5px 0 var(--depth)", color: t.c }}
           >
             <Icon name={t.i} size={22} />
             <span className="text-[13px] font-semibold">{t.l}</span>
+            {t.off && (
+              <span id={`bay-tool-off-${t.l}`} className="sr-only">
+                {t.off}
+              </span>
+            )}
           </button>
         ))
       )}

@@ -58,6 +58,8 @@ export const boardGames = {
     drawPending: (name: string) => `Draw offered. Waiting for ${name}.`,
     withdraw: "Withdraw",
     drawWithdrawn: "Draw offer withdrawn.",
+    /** Takeback before you have moved */
+    noTakeback: "No move of yours to take back yet.",
   },
   bot: {
     /** entry under the game card (World view, Play anytime) */
