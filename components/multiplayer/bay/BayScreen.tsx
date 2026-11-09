@@ -12,6 +12,8 @@ import { sidePanel } from "@/lib/copy/side-panel";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Icon } from "@/components/ui/Icon";
+import { Button } from "@/components/ui/Button";
+import { boardGames } from "@/lib/copy/board-games";
 import { Spuz } from "@/components/brand/Spuz";
 import { DEFAULT_SKIN, MySpuz } from "@/components/meta/MySpuz";
 import { SpuzWear } from "@/components/meta/SpuzWear";
@@ -242,6 +244,8 @@ export function BayMatch({ id }: { id: string }) {
   const [busy, setBusy] = useState(false);
   const [live, setLive] = useState("");
   const [emoteOpen, setEmoteOpen] = useState(false);
+  // Resign (and a draw offer to the bot, which it always takes) ends the game, so it asks first.
+  const [asking, setAsking] = useState<{ id: string; kind: "resign" | "draw" } | null>(null);
   const meId = v && v.mySeat !== null ? v.players[v.mySeat]?.id : undefined;
   const emotes = useEmotes(channel, meId);
   // Chat with the other players (not with the Practice bot), from the moment the game starts.
@@ -390,6 +394,9 @@ export function BayMatch({ id }: { id: string }) {
     );
 
   const opp = v.players.find((p) => p.seat !== seat) ?? null;
+  // A confirm belongs to this match only (a rematch opens a new one on the same screen).
+  const ask = asking?.id === v.id ? asking.kind : null;
+  const setAsk = (kind: "resign" | "draw" | null) => setAsking(kind ? { id: v.id, kind } : null);
   const me = v.players[seat];
   const myTurn = v.status === "active" && v.turn === seat;
   const clock = (s: number) => {
@@ -445,6 +452,12 @@ export function BayMatch({ id }: { id: string }) {
             <span className="truncate">
               {mine ? "You" : p.nickname} · <span className="num">{p.id.startsWith("00000000") ? "Bot" : formatNumber(p.rating)}</span>
             </span>
+            {!mine && busy && v.bot && v.status === "active" && (
+              <span className="text-muted flex flex-none items-center gap-1.5 text-[13px] font-semibold" role="status">
+                <span aria-hidden className="bay-tick size-2 rounded-full bg-current" />
+                {boardGames.match.thinking}
+              </span>
+            )}
             {mine && active && (
               <span
                 key={v.turnStartedAt ?? 0}
@@ -508,8 +521,8 @@ export function BayMatch({ id }: { id: string }) {
           on: () => action("takeback_request", v.bot ? undefined : "Takeback asked."),
         }
       : null,
-    { l: "Draw", i: "handshake", c: "var(--text)", on: () => action("draw_offer", v.bot ? undefined : "Draw offered.") },
-    { l: "Resign", i: "flag", c: "var(--danger)", on: () => action("resign") },
+    { l: "Draw", i: "handshake", c: "var(--text)", on: () => (v.bot ? setAsk("draw") : action("draw_offer", "Draw offered.")) },
+    { l: "Resign", i: "flag", c: "var(--danger)", on: () => setAsk("resign") },
     v.mode === "async" && !myTurn
       ? { l: "Nudge", i: "bell-ringing", c: "var(--text)", on: () => action("nudge", "Nudged.") }
       : { l: "Emote", i: "smiley", c: "var(--accent)", on: () => setEmoteOpen((o) => !o) },
@@ -530,6 +543,10 @@ export function BayMatch({ id }: { id: string }) {
       lastMove={lastMove}
       onMove={move}
       announce={setLive}
+      explain={(text) => {
+        play("buzz");
+        show(text, "bad");
+      }}
       names={[...v.players].sort((a, b) => a.seat - b.seat).map((p) => p.nickname)}
     />
   );
@@ -575,6 +592,31 @@ export function BayMatch({ id }: { id: string }) {
       >
         Decline
       </button>
+    </div>
+  );
+  // Resign, or a draw the bot will take: one more tap to be sure (it used to end the game on the first tap).
+  const M = boardGames.match;
+  const confirm = ask && v.status === "active" && (
+    <div className={`bg-surface-raised flex flex-wrap items-center gap-2 rounded-[16px] p-3 ${gap}`} role="alert" data-bay-confirm={ask}>
+      <span className="min-w-0 flex-1 basis-[180px] text-[15px] font-medium">
+        {ask === "draw" ? M.drawAskBot : v.bot ? M.resignAskBot : M.resignAsk(opp?.nickname ?? "They")}
+      </span>
+      <div className="flex gap-2">
+        <Button
+          size="md"
+          variant={ask === "resign" ? "danger" : "primary"}
+          icon={ask === "resign" ? "flag" : "handshake"}
+          onClick={() => {
+            setAsk(null);
+            void action(ask === "resign" ? "resign" : "draw_offer");
+          }}
+        >
+          {ask === "resign" ? M.resign : M.draw}
+        </Button>
+        <Button size="md" variant="secondary" autoFocus onClick={() => setAsk(null)}>
+          {M.keep}
+        </Button>
+      </div>
     </div>
   );
   // The end of the game, made unmissable (owner: "I just won a game of chess and didn't even know").
@@ -745,6 +787,7 @@ export function BayMatch({ id }: { id: string }) {
             {gameOver}
             {!wide && meRow}
             {!wide && moves}
+            {!wide && confirm}
             {!wide && offer}
             {!wide && finished}
             {!wide && addFriends}
@@ -758,6 +801,7 @@ export function BayMatch({ id }: { id: string }) {
                 {meRow}
               </div>
               {moves}
+              {confirm}
               {offer}
               {finished}
               {addFriends}
