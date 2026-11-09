@@ -237,7 +237,7 @@ export default function Landing() {
           <h2 id="faq-title" className={`${H2} mt-3`}>
             {S.faqTitle}
           </h2>
-          <FaqAccordion items={SITE_FAQ} className="mt-10 max-w-[860px]" />
+          <FaqAccordion items={SITE_FAQ} className="mt-10" />
         </section>
 
         {/* Final call to action */}
