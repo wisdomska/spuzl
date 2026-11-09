@@ -223,16 +223,16 @@ export function SudokuBoard({
   }, [api, locked, place, push, selected]);
 
   const undo = useCallback(() => {
-    setHist((h) => {
-      if (!h.length) return h;
-      const prev = h[h.length - 1];
-      stRef.current = prev;
-      setSt(prev);
-      api.onMove(prev);
-      sayStatus(prev.values);
-      return h.slice(0, -1);
-    });
-  }, [api, sayStatus]);
+    if (!hist.length) return;
+    const prev = hist[hist.length - 1];
+    stRef.current = prev;
+    setSt(prev);
+    setHist(hist.slice(0, -1));
+    api.onMove(prev);
+    sayStatus(prev.values);
+    // The status line is not read out; the screen reader hears the undo and where the board stands.
+    api.announce(t.undone(prev.values.filter(Boolean).length, n * n));
+  }, [api, hist, n, sayStatus]);
 
   useEffect(() => {
     api.setControls([

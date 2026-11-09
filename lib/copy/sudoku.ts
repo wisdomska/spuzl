@@ -15,6 +15,7 @@ export const sudoku = {
   clearedShort: "Board cleared.",
   placed: (filled: number, total: number) => `${filled} of ${total} placed`,
   cellCleared: "cleared",
+  undone: (filled: number, total: number) => `Undone. ${filled} of ${total} placed.`,
   noteToggled: (d: number, on: boolean) => `note ${d} ${on ? "added" : "removed"}`,
   notesCleared: "notes cleared",
   pad: "Number pad",
