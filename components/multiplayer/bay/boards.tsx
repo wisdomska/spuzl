@@ -6,7 +6,7 @@ import { Icon } from "@/components/ui/Icon";
 import { boardGames } from "@/lib/copy/board-games";
 import { fitRow, isWide, useCellSize, useViewportHeight, useViewportWidth, wideCell } from "@/components/game/useBoardSize";
 import { BayStyles, BEVEL, SQUARE, draughtsDisc } from "@/games/_shared/BayStyles";
-import { parseFen, parseSq, toRows, inCheck, kingSquare } from "@/games/chess/engine";
+import { fromUci, make, parseFen, parseSq, toRows, inCheck, kingSquare } from "@/games/chess/engine";
 import { CH_N, Piece, useSprites } from "@/games/chess/Piece";
 import { PromotionPicker, type PromotionPiece } from "@/games/chess/Promotion";
 import { ColourBadge, Die3D, LUDO_LOOK, LudoTable } from "@/games/ludo/look";
@@ -38,7 +38,11 @@ export interface LiveBoardProps {
   legal: unknown[];
   disabled: boolean;
   lastMove: unknown;
-  onMove: (m: unknown) => void;
+  /**
+   * Hands the chosen move to the parent. Board Bay sends it to the server and resolves false when the server refuses
+   * it (the parent explains why), so a board that showed the move early puts it back.
+   */
+  onMove: (m: unknown) => void | Promise<boolean>;
   announce: (t: string) => void;
   /** chess: show file and rank labels on the edge squares (vs bot) */
   coords?: boolean;
@@ -186,11 +190,25 @@ function ChessLive({ state, seat, legal, disabled, lastMove, onMove, announce, c
   const [pending, setPromo] = useState<{ fen: string; move: string } | null>(null);
   const promo = pending?.fen === s.fen ? pending.move : null;
   const flipped = seat === 1;
-  const pos = useMemo(() => parseFen(s.fen), [s.fen]);
+  // A move on its way to the server shows on the board at once (for this position only): the piece stays where it
+  // was put. If the server refuses it, the parent says why and the piece goes back.
+  const [sent, setSent] = useState<{ fen: string; move: string } | null>(null);
+  const sending = sent?.fen === s.fen ? sent.move : null;
+  const pos = useMemo(() => {
+    const p = parseFen(s.fen);
+    const m = sending ? fromUci(p, sending) : null;
+    return m ? make(p, m) : p;
+  }, [s.fen, sending]);
   const rows = toRows(pos.b);
   const moves = legal as string[];
   const targets = sel ? moves.filter((m) => m.startsWith(sel)).map((m) => m.slice(2, 4)) : [];
-  const last = typeof lastMove === "string" ? [lastMove.slice(0, 2), lastMove.slice(2, 4)] : [];
+  const shownLast = sending ?? lastMove;
+  const last = typeof shownLast === "string" ? [shownLast.slice(0, 2), shownLast.slice(2, 4)] : [];
+  const send = (m: string) => {
+    setSent({ fen: s.fen, move: m });
+    const r = onMove(m);
+    if (r instanceof Promise) void r.then((ok) => !ok && setSent(null));
+  };
   const checkSq = inCheck(pos) ? sqName(kingSquare(pos.b, pos.turn)) : null;
   const tap = (sq: number) => {
     if (disabled) return;
@@ -209,7 +227,7 @@ function ChessLive({ state, seat, legal, disabled, lastMove, onMove, announce, c
         announce(tc.choosePromotion);
         return;
       }
-      onMove(options[0]);
+      send(options[0]);
       setSel(null);
       return;
     }
@@ -225,7 +243,7 @@ function ChessLive({ state, seat, legal, disabled, lastMove, onMove, announce, c
     setPromo(null);
     setSel(null);
     announce(tc.promoted(CH_N[p.toUpperCase()]));
-    onMove(m);
+    send(m);
   };
   return (
     <div className="flex flex-col items-center gap-3">

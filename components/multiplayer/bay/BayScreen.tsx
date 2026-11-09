@@ -303,14 +303,16 @@ export function BayMatch({ id }: { id: string }) {
   }, [turnIsMine]); // eslint-disable-line react-hooks/exhaustive-deps
   const [alertsOn, setAlertsOn] = useState(() => alertsAllowed());
 
+  /** Sends a move; resolves false when the server refused it (the toast says why), so the board can put it back. */
   const move = useCallback(
-    async (m: unknown) => {
-      if (!v || busy) return;
+    async (m: unknown): Promise<boolean> => {
+      if (!v || busy) return false;
       setBusy(true);
       try {
         const next = await api<BayView>(`/api/v1/bay/${v.id}/move`, { json: { ply: v.ply, move: m } });
         set(next);
         playBayMove(v.game, v.state, next.state, m);
+        return true;
       } catch (e) {
         const code = e instanceof HttpError ? e.code : "";
         if (code === "illegal_move") {
@@ -320,6 +322,7 @@ export function BayMatch({ id }: { id: string }) {
         else if (code === "not_your_turn") show("Not your turn yet.", "bad");
         else show("Couldn't send that move.", "bad");
         void refetch();
+        return false;
       } finally {
         setBusy(false);
       }
