@@ -234,8 +234,8 @@ the Duel loss line. Still open:
 - **Echo board copy is inline** (`games/echo/Board.tsx`); move it to `lib/copy` with the rest.
 - **Not measured here (no dev server in this pass):** fit at 320×568 for Flinch and Beat Tap (square pad plus rounds
   row) and the Duel round result (`pt-[90px]` plus 130 px cards). Run the viewport harness on them.
-Puzzles (Crownfall, Dusk, Sixer, Nine, Weave, Flowline, Pairup, Lost, Trotro Jam), Words & Quiz (Coil, Rungs, Quads,
-Seven, Minicross, Buried, Remix, Quickfire, Emoji Hits) and Two Truths. Found in the audit, not fixed in this pass:
+  Puzzles (Crownfall, Dusk, Sixer, Nine, Weave, Flowline, Pairup, Lost, Trotro Jam), Words & Quiz (Coil, Rungs, Quads,
+  Seven, Minicross, Buried, Remix, Quickfire, Emoji Hits) and Two Truths. Found in the audit, not fixed in this pass:
 
 - **Restart and Reset have no confirm (shell):** Weave, Pairup and Trotro Jam put Restart/Reset in the game menu
   (`splitTools`), and the menu runs it at once; after it Undo cannot bring the board back. One shell-level confirm on
