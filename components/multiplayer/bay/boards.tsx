@@ -23,6 +23,7 @@ import { DaraGrid } from "@/games/dara/DaraGrid";
 import { inDropPhase, threeThrough, type DaraMatch, type DaraMove } from "@/games/dara/rules";
 import { dara as td } from "@/lib/copy/dara";
 import { useReduce } from "@/lib/client/multiplayer";
+import { draughtsTapReason, owareTapReason } from "@/lib/multiplayer/board-explain";
 
 /**
  * Live shared boards for Board Bay matches (Board Games B3 and B8). Each one shows the shared state,
@@ -42,6 +43,11 @@ export interface LiveBoardProps {
   coords?: boolean;
   /** players' names by seat (Ludo says who rolled and whose turn it is) */
   names?: string[];
+  /**
+   * Says on screen why a tap did nothing (a compulsory capture, an empty pit), where the player can see it; the
+   * board also announces it. Without it the reason is only announced.
+   */
+  explain?: (text: string) => void;
 }
 
 export function LiveBoard(p: LiveBoardProps) {
@@ -269,18 +275,31 @@ function ChessLive({ state, seat, legal, disabled, lastMove, onMove, announce, c
 
 /* ---------------- Draughts ---------------- */
 
-function DraughtsLive({ state, seat, legal, disabled, onMove }: LiveBoardProps) {
+const tdr = boardGames.draughts;
+
+function DraughtsLive({ state, seat, legal, disabled, lastMove, onMove, announce, explain }: LiveBoardProps) {
   const s = state as DraughtsMatch;
   const cell = useCellSize(8, 0, 10, 48);
   const [sel, setSel] = useState<number | null>(null);
   const paths = legal as number[][];
   const ends = sel === null ? [] : paths.filter((m) => m[0] === sel).map((m) => m[m.length - 1]);
+  // The last move's squares (start, each landing): tinted, and named for screen readers.
+  const lastPath = Array.isArray(lastMove) ? (lastMove as number[]) : [];
   const tap = (sq: number) => {
     if (disabled) return;
     if (sel !== null && ends.includes(sq)) {
       onMove(paths.find((m) => m[0] === sel && m[m.length - 1] === sq));
       setSel(null);
-    } else setSel(paths.some((m) => m[0] === sq) ? sq : null);
+      return;
+    }
+    // Your own man that can't move: say which rule (a compulsory capture elsewhere, or simply blocked).
+    const why = draughtsTapReason(s.board, paths, sq, seat ?? 0);
+    if (why) {
+      const text = why === "capture" ? tdr.mustCapture : tdr.blocked;
+      announce(text);
+      explain?.(text);
+    }
+    setSel(paths.some((m) => m[0] === sq) ? sq : null);
   };
   return (
     <Grid8
@@ -299,10 +318,10 @@ function DraughtsLive({ state, seat, legal, disabled, onMove }: LiveBoardProps) 
             type="button"
             role="gridcell"
             onClick={() => tap(sq)}
-            aria-label={`Square ${sq}${p ? `, ${mine ? "light" : "dark"} ${king ? "king" : "man"}` : ""}${ends.includes(sq) ? ", legal move" : ""}`}
+            aria-label={`${sqName(sq)}${p ? `, ${mine ? "light" : "dark"} ${king ? "king" : "man"}` : ""}${ends.includes(sq) ? ", legal move" : ""}${lastPath.includes(sq) ? `, ${tdr.lastMove}` : ""}`}
             className="relative flex items-center justify-center"
             style={{
-              background: dark ? SQUARE.draughtsDark : SQUARE.light,
+              background: dark ? (lastPath.includes(sq) ? SQUARE.lastDark : SQUARE.draughtsDark) : SQUARE.light,
               boxShadow: sel === sq ? "inset 0 0 0 3px var(--accent)" : undefined,
             }}
           >
@@ -331,12 +350,25 @@ function DraughtsLive({ state, seat, legal, disabled, onMove }: LiveBoardProps) 
 
 /* ---------------- Oware (B5) ---------------- */
 
-function OwareLive({ state, seat, legal, disabled, onMove }: LiveBoardProps) {
+const tow = boardGames.oware;
+
+function OwareLive({ state, seat, legal, disabled, lastMove, onMove, announce, explain }: LiveBoardProps) {
   const s = state as OwareMatch;
   const pits = legal as number[];
   const rows = seat === 1 ? [BOTTOM_ROW, TOP_ROW].map((r) => [...r].reverse()) : [TOP_ROW, BOTTOM_ROW];
   const me = seat ?? 0;
   const pitPx = useOwarePit();
+  const lastPit = typeof lastMove === "number" ? lastMove : -1;
+  const tap = (pit: number) => {
+    if (disabled) return;
+    if (pits.includes(pit)) return onMove(pit);
+    // Your own pit, on your turn, that you can't sow: say which rule (it used to do nothing at all).
+    const why = owareTapReason(s.pits, pits, pit, me);
+    if (!why) return;
+    const text = why === "empty" ? tow.empty : tow.feed;
+    announce(text);
+    explain?.(text);
+  };
   return (
     <div className="flex flex-col items-center gap-3">
       <ScorePill label="Them" n={s.scores[1 - me]} />
@@ -349,15 +381,19 @@ function OwareLive({ state, seat, legal, disabled, onMove }: LiveBoardProps) {
           <div key={ri} className="flex gap-2" role="row">
             {row.map((pit) => {
               const can = pits.includes(pit) && !disabled;
+              // Your own pits stay tappable on your turn, so a pit you can't sow can say why.
+              const asks = !disabled && pits.length > 0 && (me === 0 ? pit < 6 : pit >= 6);
+              const last = pit === lastPit;
               return (
                 <button
                   key={pit}
                   type="button"
                   role="gridcell"
-                  disabled={!can}
-                  onClick={() => onMove(pit)}
-                  aria-label={`Pit ${pit + 1}, ${s.pits[pit]} seeds${can ? ", sow" : ""}`}
-                  className="num flex flex-col items-center justify-center rounded-full font-semibold"
+                  disabled={!can && !asks}
+                  aria-disabled={!can || undefined}
+                  onClick={() => tap(pit)}
+                  aria-label={`Pit ${pit + 1}, ${s.pits[pit]} seeds${can ? ", sow" : ""}${last ? `, ${tow.lastSown}` : ""}`}
+                  className="num relative flex flex-col items-center justify-center rounded-full font-semibold"
                   style={{
                     width: pitPx,
                     height: pitPx,
@@ -368,6 +404,14 @@ function OwareLive({ state, seat, legal, disabled, onMove }: LiveBoardProps) {
                   }}
                 >
                   {s.pits[pit]}
+                  {/* The pit sown last: a small bar under the count (a shape, not colour alone). */}
+                  {last && (
+                    <span
+                      aria-hidden
+                      className="absolute bottom-[12%] h-1 w-[30%] rounded-full"
+                      style={{ background: "var(--bay-pit-ink)", opacity: 0.7 }}
+                    />
+                  )}
                 </button>
               );
             })}
@@ -394,6 +438,9 @@ function FourUpLive({ state, legal, disabled, onMove }: LiveBoardProps) {
   const cols = legal as number[];
   const reduce = useReduce();
   const cell = useFourUpCell();
+  // The disc dropped last keeps a ring after its pop, so the last move stays readable.
+  const lastCol = s.moves[s.moves.length - 1];
+  const lastRow = lastCol === undefined ? -1 : firstFilled(s, lastCol);
   return (
     <div
       className="grid gap-1 rounded-[18px] p-2 shadow-[inset_0_-6px_0_rgba(0,0,0,.2)]"
@@ -413,11 +460,12 @@ function FourUpLive({ state, legal, disabled, onMove }: LiveBoardProps) {
         >
           {Array.from({ length: FU_ROWS }, (_, r) => {
             const v = s.grid[r * FU_COLS + c];
+            const last = !!v && c === lastCol && r === lastRow;
             return (
               <span
                 key={r}
                 role="gridcell"
-                aria-label={v ? (v === 1 ? "star disc" : "ring disc") : "empty"}
+                aria-label={`${v ? (v === 1 ? "star disc" : "ring disc") : "empty"}${last ? `, ${boardGames.fourup.lastDisc}` : ""}`}
                 className="flex items-center justify-center rounded-full text-[var(--square-ink)]"
                 style={{
                   width: cell,
@@ -425,6 +473,8 @@ function FourUpLive({ state, legal, disabled, onMove }: LiveBoardProps) {
                   background: v === 1 ? "var(--bay-disc-light)" : v === 2 ? "var(--bay-disc-dark)" : "var(--bay-well)",
                   boxShadow: v === 2 ? "inset 0 0 0 3px var(--accent)" : "inset 0 3px 0 rgba(0,0,0,.3)",
                   color: v === 2 ? "var(--accent)" : "var(--square-ink)",
+                  outline: last ? "2px solid var(--text)" : undefined,
+                  outlineOffset: last ? 1 : undefined,
                   animation:
                     !reduce && v && s.moves[s.moves.length - 1] === c && r === firstFilled(s, c)
                       ? "bay-pop 180ms var(--ease-out)"

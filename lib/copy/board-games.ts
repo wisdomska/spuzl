@@ -15,6 +15,35 @@ export const boardGames = {
     promoted: (piece: string) => `Promoted to ${piece}.`,
     promotionCancelled: "Promotion cancelled.",
   },
+  /** Live draughts board: why a tap on your own man did nothing, and the last move's squares */
+  draughts: {
+    mustCapture: "Captures are compulsory. Take with an outlined piece.",
+    blocked: "That piece is blocked. Outlined pieces can move.",
+    lastMove: "last move",
+  },
+  /** Live Oware board: why a tap on your own pit did nothing, and the pit sown last */
+  oware: {
+    empty: "That pit is empty. Pick one with seeds.",
+    feed: "Their side is empty, so you must sow seeds across to them. Outlined pits do that.",
+    lastSown: "sown last",
+  },
+  /** Live Four Up board: the disc dropped last */
+  fourup: {
+    lastDisc: "dropped last",
+  },
+  /** Board Bay match screen (friends, Play live, the Practice bot) */
+  match: {
+    /** one tap on Resign used to end the game at once: it asks first */
+    resignAsk: (winner: string) => `Resign this game? ${winner} wins.`,
+    resignAskBot: "Resign this game? The bot wins.",
+    resign: "Resign",
+    /** the Practice bot takes every draw offer, so a draw ends the game: it asks first */
+    drawAskBot: "Offer a draw? The bot always takes it, so the game ends here.",
+    draw: "Draw",
+    keep: "Keep playing",
+    /** the move is on its way and the Practice bot answers in the same trip */
+    thinking: "Thinking…",
+  },
   bot: {
     /** entry under the game card (World view, Play anytime) */
     entry: "Play a full game vs bot",

@@ -153,6 +153,16 @@ export default function BotBoard({ puzzle, disabled, api, extra }: BoardProps<Bo
     [rules, state, disabled, over, turn, ludo, api],
   );
 
+  // A tap the rules refuse (a compulsory capture, an empty pit): the reason in the feedback line, with the slip
+  // sound. Not a counted mistake: nothing is scored here.
+  const explain = useCallback(
+    (text: string) => {
+      play("buzz");
+      api.feedback(text, "danger", "warning");
+    },
+    [api],
+  );
+
   const undo = useCallback(() => {
     if (!history.length || over) return;
     setState(history[history.length - 1]);
@@ -189,6 +199,7 @@ export default function BotBoard({ puzzle, disabled, api, extra }: BoardProps<Bo
           lastMove={last}
           onMove={move}
           announce={api.announce}
+          explain={explain}
           coords
         />
       ) : (
