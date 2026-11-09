@@ -373,7 +373,15 @@ export default function CoilBoard({ puzzle, initialState, hint, disabled, mode, 
             aria-label={`Coil letter grid, ${vRows} rows by ${vCols} columns. Theme ${puzzle.theme}.`}
             aria-rowcount={vRows}
             aria-colcount={vCols}
-            onKeyDown={keys.onKeyDown}
+            onKeyDown={(e) => {
+              // Escape lets go of the traced path (like Clear).
+              if (e.key === "Escape" && pathRef.current.length) {
+                e.preventDefault();
+                clear();
+                return;
+              }
+              keys.onKeyDown(e);
+            }}
             onPointerDown={onDown}
             onPointerMove={onMoveP}
             onPointerUp={onUp}

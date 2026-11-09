@@ -8,6 +8,7 @@ import { adjacent } from "@/games/_shared/grid";
 import { LineStyles } from "@/games/_shared/LineStyles";
 import { useFitCell } from "@/games/_shared/useFitCell";
 import { analyze, endpoints, type PairupPuzzle, type PairupState } from "./logic";
+import { puzzleBoards } from "@/lib/copy/puzzle-boards";
 
 const GAP = 3;
 const PAD = 6;
@@ -338,7 +339,16 @@ export default function PairupBoard({ puzzle, initialState, hint, disabled, mode
         aria-label={`Pairup board, ${n} by ${n}, ${K} pairs`}
         aria-rowcount={n}
         aria-colcount={n}
-        onKeyDown={keys.onKeyDown}
+        onKeyDown={(e) => {
+          // Escape lets go of the line being drawn; Space or Enter on a dot picks one again.
+          if (e.key === "Escape" && active !== null) {
+            e.preventDefault();
+            setActive(null);
+            api.announce(puzzleBoards.pairup.letGo);
+            return;
+          }
+          keys.onKeyDown(e);
+        }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}

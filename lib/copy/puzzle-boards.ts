@@ -9,6 +9,10 @@ export const puzzleBoards = {
     /** read after a cell's name: where walls block the path (sides 0 up, 1 right, 2 down, 3 left) */
     walls: (sides: number[]) => (sides.length ? `, wall ${sides.map((d) => SIDE[d]).join(" and ")}` : ""),
   },
+  pairup: {
+    /** Escape while a line is picked */
+    letGo: "Line let go.",
+  },
   lost: {
     /** the walk is near the cap the server accepts (games/lost/logic.ts walkStatus) */
     longWalk: (left: number) => `Long walk. ${left} more ${left === 1 ? "move" : "moves"} and this maze can't count, so head for the exit.`,

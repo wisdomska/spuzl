@@ -232,8 +232,6 @@ Seven, Minicross, Buried, Remix, Quickfire, Emoji Hits) and Two Truths. Found in
   tried; a small "tried: …" line would help with three tries per round.
 - **Duel ink on gold:** `components/multiplayer/duel.tsx` (round badge and win badge) still uses a raw `#0E0F1A` on
   `--gold`; switch it to `text-on-gold` (the new token, 5.6:1 in the light theme) when that file is next free.
-- **Coil, Buried, Pairup keyboard:** Escape does not drop the traced path / line start / active line (Clear, Space on
-  the start or a dot does). Minor.
 - **Not measured here:** the fit at 320 × 568 and 375 × 667 and landscape phones was reasoned from the sizing code
   (no browser in this pass). Dusk and Trotro Jam now use `useFitHeight` like the others; Weave, Flowline and Pairup
   (square boards, about 296 px at 320 wide) still rely on width-only sizing and should be checked in the E2E run.

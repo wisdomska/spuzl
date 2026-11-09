@@ -322,7 +322,17 @@ export default function BuriedBoard({ puzzle, initialState, hint, disabled, mode
             aria-rowcount={vRows}
             aria-colcount={vCols}
             aria-busy={busy}
-            onKeyDown={keys.onKeyDown}
+            onKeyDown={(e) => {
+              // Escape drops the line start (like Clear).
+              if (e.key === "Escape" && anchor !== null) {
+                e.preventDefault();
+                setAnchor(null);
+                setLine([]);
+                api.announce("Line cleared.");
+                return;
+              }
+              keys.onKeyDown(e);
+            }}
             onPointerDown={onDown}
             onPointerMove={onMove}
             onPointerUp={onUp}
