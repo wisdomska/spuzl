@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.43.0 (9 November 2026)
+
+### For players and visitors
+
+- **Send us feedback.** A form on Contact (what it's about, an optional email for a reply, your message), reachable
+  from Settings, Me and the landing page footer. Or email wisdomska@gmail.com.
+- **FAQ as an accordion** on the landing page, How to play and every game page; the teen safety answer is now a list.
+- **SPIL, our party game,** has a proper card on the landing page: what it is, ten games, up to 12 players, free.
+- **"Designed & Developed by Senya"** links to wisdomska.site from every page's footer, the Library and Settings.
+
+### For admins
+
+- **Feedback** page: every message with its topic and page, mark read or done (audited), CSV export; a "New
+  feedback" tile on the Overview. Roles: feedback.read and feedback.write.
+
+### Behind the scenes
+
+- Migration `20261209000201_feedback.sql`. Structured data and llms.txt name Senya as the maker.
+
 ## 1.42.1 (9 November 2026)
 
 ### Behind the scenes
