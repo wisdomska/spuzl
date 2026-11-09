@@ -894,7 +894,7 @@ function ToolButton({ c, badge, extra, slim }: { c: ControlSpec; badge?: string;
       {badge !== undefined && (
         <span
           aria-hidden
-          className="num bg-gold text-on-accent absolute -top-1.5 right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[12px] font-bold"
+          className="num bg-gold text-on-gold absolute -top-1.5 right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[12px] font-bold"
         >
           {badge}
         </span>

@@ -11,6 +11,7 @@
   --accent-depth: #6f9a1c;
   --on-accent: #0e0f1a;
   --gold: #ffc93c;
+  --on-gold: #0e0f1a; /* text and icons on a gold fill: 11.9:1 on #ffc93c */
   --danger: #ff5a5f;
   --danger-depth: #9e2a2e;
   --freeze: #6fb6ff;
@@ -187,6 +188,7 @@
   --accent-depth: #2b5000;
   --on-accent: #ffffff;
   --gold: #8f5e00; /* was #A86F00: 4.2:1 → 5.6:1 on white */
+  --on-gold: #ffffff; /* 5.6:1 on #8f5e00 (ink on it was 3.4:1) */
   --danger: #c62828;
   --danger-depth: #8a1c1c;
   --freeze: #1f6fc2;
@@ -214,6 +216,7 @@
   --danger: #ffb000;
   --accent: #b8f23a;
   --gold: #ffc93c;
+  --on-gold: #0e0f1a;
   --w-clue: #ff9e3d;
   --w-rage: #ffb000;
 }
@@ -226,6 +229,7 @@
 [data-cb="tritan"] {
   --danger: #ff4f9a;
   --gold: #ff9e7a;
+  --on-gold: #0e0f1a; /* 9.6:1 on #ff9e7a */
   --w-line: #3ddcc0;
   --w-reflex: #8b7cff;
 }

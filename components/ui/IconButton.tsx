@@ -20,7 +20,7 @@ export function IconButton({
     >
       <Icon name={icon} size={20} />
       {badge !== undefined && (
-        <span className="num bg-gold absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-[7px] text-[12px] font-bold text-[#0E0F1A]">
+        <span className="num bg-gold text-on-gold absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-[7px] text-[12px] font-bold">
           {badge}
         </span>
       )}

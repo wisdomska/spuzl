@@ -360,7 +360,7 @@ export default function BuriedBoard({ puzzle, initialState, hint, disabled, mode
                         height: cell,
                         // 19 px on a phone; on a big screen the letters grow with the cell.
                         fontSize: Math.max(19, Math.round(cell * 0.42)),
-                        color: lo >= 0 ? INK : "var(--text)",
+                        color: lo >= 0 ? "var(--on-gold)" : "var(--text)",
                         boxShadow:
                           anchor === i ? "inset 0 0 0 3px var(--text)" : i === hinted && !done ? "inset 0 0 0 3px var(--gold)" : undefined,
                       }}

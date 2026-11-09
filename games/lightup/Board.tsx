@@ -233,7 +233,7 @@ export default function LightUpBoard({ puzzle, initialState, hint, disabled, mod
                     width: cell,
                     height: cell,
                     background: v === LAMP ? "var(--gold)" : lit ? LIT_FILL : WHITE_FILL,
-                    color: v === LAMP ? "var(--square-ink)" : "var(--text-muted)",
+                    color: v === LAMP ? "var(--on-gold)" : "var(--text-muted)",
                     boxShadow: glow ? "inset 0 0 0 3px var(--accent)" : bad ? "inset 0 0 0 3px var(--danger)" : undefined,
                     transition: "background-color 120ms var(--ease-out)",
                     transitionDelay: beam ? `${beam}ms` : undefined,
