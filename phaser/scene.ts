@@ -34,6 +34,9 @@ export function startStage<S>(Phaser: PhaserModule, o: StageOptions<S>): Stage {
     gfx!: PhaserNS.GameObjects.Graphics;
     bg!: PhaserNS.GameObjects.Graphics;
     labels = new Map<string, PhaserNS.GameObjects.Text>();
+    /** Per-frame scratch, made once and reused, so a frame allocates nothing for the garbage collector. */
+    used = new Set<string>();
+    ctx!: DrawCtx;
     constructor() {
       super("rage");
     }
@@ -41,18 +44,15 @@ export function startStage<S>(Phaser: PhaserModule, o: StageOptions<S>): Stage {
       this.bg = this.add.graphics();
       this.bg.setDepth(-2);
       this.gfx = this.add.graphics();
-    }
-    update(_time: number, delta: number) {
-      const { sim, ghost } = o.frame(delta);
-      const used = new Set<string>();
-      const ctx: DrawCtx = {
+      const used = this.used;
+      this.ctx = {
         g: this.gfx,
         bg: this.bg,
         w,
         h,
         dpr,
-        now: performance.now(),
-        reduced: o.reduced(),
+        now: 0,
+        reduced: false,
         palette: o.palette,
         label: (key, text, x, y, st: LabelStyle) => {
           used.add(key);
@@ -76,6 +76,17 @@ export function startStage<S>(Phaser: PhaserModule, o: StageOptions<S>): Stage {
           t.setVisible(true);
         },
       };
+    }
+    update(_time: number, delta: number) {
+      const { sim, ghost } = o.frame(delta);
+      const used = this.used;
+      used.clear();
+      const ctx = this.ctx;
+      // the size can change between frames (resize), the rest is read fresh each frame
+      ctx.w = w;
+      ctx.h = h;
+      ctx.now = performance.now();
+      ctx.reduced = o.reduced();
       this.gfx.clear();
       this.bg.clear();
       o.painter.draw(ctx, sim, ghost);

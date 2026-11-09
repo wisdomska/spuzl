@@ -86,18 +86,14 @@ export function createPlatformerPainter(opts: PainterOptions = {}): Painter<Plat
       const y0 = Math.max(0, Math.floor(camY / TILE_PX) - 1),
         y1 = Math.min(lvl.h - 1, Math.ceil((camY + viewH) / TILE_PX) + 1);
       const gap = Math.max(1, s);
+      // One rounded-top radius for the whole frame (Phaser reads it at once), not a new object per block.
+      const topR = { tl: 4 * s, tr: 4 * s, bl: 0, br: 0 };
       const solidAt = (cx: number, cy: number) => cy >= 0 && cy < lvl.h && cx >= 0 && cx < lvl.w && world.solidCell(cx, cy);
 
       const block = (cx: number, cy: number, color: number, alpha = 1, dy = 0) => {
         const top = !solidAt(cx, cy - 1);
         g.fillStyle(color, alpha);
-        g.fillRoundedRect(
-          X(cx * TILE_PX) + gap / 2,
-          Y(cy * TILE_PX) + dy + (top ? 0 : 0),
-          T - gap,
-          T,
-          top ? { tl: 4 * s, tr: 4 * s, bl: 0, br: 0 } : 0,
-        );
+        g.fillRoundedRect(X(cx * TILE_PX) + gap / 2, Y(cy * TILE_PX) + dy + (top ? 0 : 0), T - gap, T, top ? topR : 0);
       };
       const spike = (cx: number, cy: number, dir: number, color: number, alpha: number, k = 1, outline = false) => {
         const bx = X(cx * TILE_PX),
@@ -105,11 +101,16 @@ export function createPlatformerPainter(opts: PainterOptions = {}): Painter<Plat
         const half = 7 * s * k,
           hh = 12 * s * k;
         const mid = bx + T / 2;
-        if (outline) g.lineStyle(Math.max(1, s), color, alpha);
-        else g.fillStyle(color, alpha);
-        const draw = outline ? g.strokeTriangle.bind(g) : g.fillTriangle.bind(g);
-        if (dir > 0) draw(mid - half, by + T, mid + half, by + T, mid, by + T - hh);
-        else draw(mid - half, by, mid + half, by, mid, by + hh);
+        // Called for every spike on screen every frame: plain calls, no bound function per spike.
+        const base = dir > 0 ? by + T : by;
+        const tip = dir > 0 ? by + T - hh : by + hh;
+        if (outline) {
+          g.lineStyle(Math.max(1, s), color, alpha);
+          g.strokeTriangle(mid - half, base, mid + half, base, mid, tip);
+        } else {
+          g.fillStyle(color, alpha);
+          g.fillTriangle(mid - half, base, mid + half, base, mid, tip);
+        }
       };
 
       for (let cy = y0; cy <= y1; cy++) {
@@ -124,7 +125,7 @@ export function createPlatformerPainter(opts: PainterOptions = {}): Painter<Plat
               Y(cy * TILE_PX),
               T + 1,
               T + (cy < lvl.h - 1 ? 1 : 0),
-              top && cy < lvl.h - 2 ? { tl: 8 * s * 0.5, tr: 8 * s * 0.5, bl: 0, br: 0 } : 0,
+              top && cy < lvl.h - 2 ? topR : 0,
             );
           } else if (c === Cell.Solid) block(cx, cy, solidAt(cx, cy - 1) ? SCENE.groundDeep : SCENE.ground);
           else if (c === Cell.Ledge) {
@@ -213,7 +214,7 @@ export function createPlatformerPainter(opts: PainterOptions = {}): Painter<Plat
       const running = world.exitRunning();
       const hop = running && !reduced ? -Math.abs(Math.sin(now / 60)) * 3 * s : 0;
       g.fillStyle(SCENE.spuz, 1);
-      g.fillRoundedRect(exX, exY + hop, dw, dh, { tl: 4 * s, tr: 4 * s, bl: 0, br: 0 });
+      g.fillRoundedRect(exX, exY + hop, dw, dh, topR);
       g.lineStyle(Math.max(1.5, 1.6 * s), SCENE.ink, 1);
       g.strokeRoundedRect(exX + 0.8 * s, exY + hop + 0.8 * s, dw - 1.6 * s, dh - 0.8 * s, 3 * s);
       g.fillStyle(SCENE.ink, 1);
@@ -267,7 +268,8 @@ export function createPlatformerPainter(opts: PainterOptions = {}): Painter<Plat
         drawSpuz(g, { x: cxp, feet, size: 14 * s, facing: b.facing, up: b.g, scaleY, color: SCENE.spuz, alpha: fade, mood });
       }
       // particles live in world px; draw them through the camera
-      parts = parts.filter((p) => now - p.born < 500);
+      // a new array only when a particle has burnt out (most frames have none to drop, or none at all)
+      if (parts.length && now - parts[0].born >= 500) parts = parts.filter((p) => now - p.born < 500);
       if (!reduced) {
         for (const p of parts) {
           const t = (now - p.born) / 1000;

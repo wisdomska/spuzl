@@ -37,6 +37,7 @@ import { useOnScreenKeys } from "@/components/game/useInputMode";
 import { Kbd } from "@/games/_shared/LetterKeyboard";
 import { keyboardCopy as KC } from "@/lib/copy/keyboard";
 import { posterStyle } from "./RagePoster";
+import { sameHud, type Hud } from "./hud";
 
 export type ControlsKind = "dpad" | "tap" | "hold" | "lr" | "drag";
 
@@ -95,19 +96,6 @@ const mono: CSSProperties = {
   fontSize: 18,
   fontVariantNumeric: "tabular-nums",
 };
-
-interface Hud {
-  deaths: number;
-  metres: number;
-  score: number;
-  progress: number;
-  ghostProgress: number;
-  delta: number | null;
-  level: string;
-  cleared: number;
-  started: boolean;
-  finished: boolean;
-}
 
 export function RageBoard<S extends SimCore>({
   puzzle,
@@ -274,9 +262,12 @@ export function RageBoard<S extends SimCore>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // HUD refresh at 10 Hz.
+  // HUD refresh at 10 Hz; an unchanged read keeps the old object, so an idle or paused board never re-renders.
   useEffect(() => {
-    const id = setInterval(() => setHud(readHud()), 100);
+    const id = setInterval(() => {
+      const next = readHud();
+      setHud((h) => (sameHud(h, next) ? h : next));
+    }, 100);
     return () => clearInterval(id);
   }, [readHud]);
 
