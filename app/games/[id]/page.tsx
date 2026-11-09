@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { FaqAccordion } from "@/components/seo/FaqAccordion";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -157,14 +158,7 @@ export default async function GamePage({ params }: PageProps<"/games/[id]">) {
           <h2 id="faq" className={H2}>
             {T.faqTitle(g.name)}
           </h2>
-          <div className="flex flex-col gap-4">
-            {f.faq.map(({ q, a }) => (
-              <div key={q} className="flex flex-col gap-1">
-                <h3 className="text-[17px] font-bold">{q}</h3>
-                <p className="text-muted text-[16px] leading-relaxed">{a}</p>
-              </div>
-            ))}
-          </div>
+          <FaqAccordion items={f.faq} />
         </section>
 
         <div className="bg-surface-raised flex flex-col items-start gap-3 rounded-[24px] p-6">

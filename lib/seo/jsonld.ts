@@ -4,7 +4,7 @@
  * XSS guard the Next.js JSON-LD guide asks for).
  */
 import { GAME_COUNT, WORLD_BY_ID, type GameMeta } from "@/lib/catalog";
-import { WORLD_GENRES, type QA } from "@/lib/copy/seo";
+import { WORLD_GENRES, qaText, type QA } from "@/lib/copy/seo";
 import { siteCopy } from "@/lib/copy/site";
 import { aboutCopy } from "@/lib/copy/about";
 import { SITE_URL, absoluteUrl } from "./site";
@@ -97,7 +97,7 @@ export const breadcrumbs = (items: readonly (readonly [string, string])[]): Thin
 
 export const faqPage = (qas: readonly QA[]): Thing => ({
   "@type": "FAQPage",
-  mainEntity: qas.map(({ q, a }) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+  mainEntity: qas.map((qa) => ({ "@type": "Question", name: qa.q, acceptedAnswer: { "@type": "Answer", text: qaText(qa) } })),
 });
 
 /** A list of game pages (the /games catalogue and world pages). */

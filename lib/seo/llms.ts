@@ -98,7 +98,7 @@ export function llmsFullTxt(): string {
     }
   }
   out.push("", "## Frequently asked questions", "");
-  for (const { q, a } of SITE_FAQ) out.push(`### ${q}`, "", a, "");
+  for (const qa of SITE_FAQ) out.push(`### ${qa.q}`, "", qa.a, ...(qa.points ?? []).map((p) => `- ${p}`), "");
   out.push("## Safety for players aged 13 to 15", "", SAFETY.minAge, "", ...SAFETY.teen.map((t) => `- ${t}`), "");
   out.push("## Links", "", link("/games", "All games"));
   for (const [path, name] of PAGES) out.push(link(path, name));

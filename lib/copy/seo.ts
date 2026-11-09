@@ -123,7 +123,11 @@ export const SAFETY = {
 } as const;
 
 /** One question and answer. */
-export type QA = { q: string; a: string };
+/** One question and answer; `points` (optional) follow the answer as a list. */
+export type QA = { q: string; a: string; points?: readonly string[] };
+
+/** The answer as one plain paragraph (structured data and plain text): the answer, then each point. */
+export const qaText = ({ a, points }: QA) => (points?.length ? `${a} ${points.join(" ")}` : a);
 
 /** The site-wide FAQ (landing page, How to play, llms-full.txt). */
 export const SITE_FAQ: QA[] = [
@@ -145,7 +149,8 @@ export const SITE_FAQ: QA[] = [
   },
   {
     q: "Is SPUZL safe for teens?",
-    a: `${SAFETY.minAge} For players aged 13 to 15: ${SAFETY.teen.map((t) => t.charAt(0).toLowerCase() + t.slice(1)).join(" ")}`,
+    a: `${SAFETY.minAge} For players aged 13 to 15:`,
+    points: SAFETY.teen,
   },
   {
     q: "How many games are on SPUZL?",

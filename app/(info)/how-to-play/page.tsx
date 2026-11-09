@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { FaqAccordion } from "@/components/seo/FaqAccordion";
 import Link from "next/link";
 import { WORLDS, gamesInWorld } from "@/lib/catalog";
 import { Icon } from "@/components/ui/Icon";
@@ -92,12 +93,7 @@ export default function HowToPlay() {
 
       <section aria-labelledby="faq" className="flex flex-col gap-3">
         <h2 id="faq">{S.faqTitle}</h2>
-        {SITE_FAQ.map(({ q, a }) => (
-          <div key={q} className="flex flex-col gap-1">
-            <h3>{q}</h3>
-            <p>{a}</p>
-          </div>
-        ))}
+        <FaqAccordion items={SITE_FAQ} className="not-prose" />
       </section>
     </>
   );

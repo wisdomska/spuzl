@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { FaqAccordion } from "@/components/seo/FaqAccordion";
 import Link from "next/link";
 import { WORLDS, gamesInWorld } from "@/lib/catalog";
 import { Icon } from "@/components/ui/Icon";
@@ -207,14 +208,7 @@ export default function Landing() {
           <h2 id="faq-title" className={`${H2} mt-3`}>
             {S.faqTitle}
           </h2>
-          <div className="mt-10 grid gap-x-10 gap-y-8 md:grid-cols-2">
-            {SITE_FAQ.map(({ q, a }) => (
-              <div key={q} className="flex flex-col gap-2">
-                <h3 className="font-display text-[20px] leading-tight font-black">{q}</h3>
-                <p className="text-muted text-[16px] leading-relaxed">{a}</p>
-              </div>
-            ))}
-          </div>
+          <FaqAccordion items={SITE_FAQ} className="mt-10 max-w-[860px]" />
         </section>
 
         {/* Final call to action */}

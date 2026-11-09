@@ -510,36 +510,36 @@ select {
   font-size: 16px;
   line-height: 1.55;
 }
-.info-prose h1 {
+.info-prose h1:not(.not-prose *) {
   font-family: var(--font-display);
   font-weight: 900;
   font-size: 30px;
   line-height: 1.1;
   letter-spacing: -0.02em;
 }
-.info-prose h2 {
+.info-prose h2:not(.not-prose *) {
   font-family: var(--font-display);
   font-weight: 800;
   font-size: 19px;
   margin-top: 14px;
 }
-.info-prose h3 {
+.info-prose h3:not(.not-prose *) {
   font-weight: 700;
   font-size: 16px;
 }
-.info-prose p,
-.info-prose li {
+.info-prose p:not(.not-prose *),
+.info-prose li:not(.not-prose *) {
   color: var(--text);
   text-wrap: pretty;
 }
-.info-prose ul {
+.info-prose ul:not(.not-prose *) {
   display: flex;
   flex-direction: column;
   gap: 6px;
   padding-left: 20px;
   list-style: disc;
 }
-.info-prose a {
+.info-prose a:not(.not-prose *) {
   color: var(--accent);
   font-weight: 600;
   text-decoration: underline;
