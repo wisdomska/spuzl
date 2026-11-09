@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type Poin
 import { useReducedMotion } from "motion/react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
-import { useCellSize } from "@/components/game/useBoardSize";
+import { useCellSize, useFitHeight } from "@/components/game/useBoardSize";
 import { useGridKeys } from "@/components/game/useGridKeys";
 import { ShellAside } from "@/components/game/ShellAside";
 import { play } from "@/lib/audio";
@@ -90,7 +90,9 @@ export default function TrotroBoard({ puzzle, initialState, hint, disabled, mode
   const gridRef = useRef<HTMLDivElement>(null);
   const suppressClick = useRef(false);
   const reduce = useReducedMotion() || reducedMotion();
-  const cell = useCellSize(n, GAP, PAD * 2 + EXIT_PAD, 60);
+  // Short phones: the lot steps down (to 36 px cells) until the shell, slide pad and tool bar included, fits.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const cell = useFitHeight(useCellSize(n, GAP, PAD * 2 + EXIT_PAD, 60), 36, n, rootRef, "shell");
   const pitch = cell + GAP;
   const pos = replay(puzzle, moves) ?? puzzle.start;
   const occ = occupancy(puzzle, pos);
@@ -309,7 +311,7 @@ export default function TrotroBoard({ puzzle, initialState, hint, disabled, mode
   const exitTop = PAD + puzzle.exitRow * pitch;
 
   return (
-    <div className={`flex w-full flex-col items-center gap-3 ${done ? "board-pulse" : ""}`}>
+    <div ref={rootRef} className={`flex w-full flex-col items-center gap-3 ${done ? "board-pulse" : ""}`}>
       <div className="relative" style={{ paddingRight: EXIT_PAD }}>
         <div
           ref={gridRef}

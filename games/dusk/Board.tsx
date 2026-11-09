@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
-import { useCellSize } from "@/components/game/useBoardSize";
+import { useCellSize, useFitHeight } from "@/components/game/useBoardSize";
 import { isKeyedInput, useGridKeys, viaKeys } from "@/components/game/useGridKeys";
 import { sfx } from "@/games/_shared/sfx";
 import { popClass, shakeClass, waveStyle } from "@/games/_shared/logiclab/fx";
@@ -55,7 +55,9 @@ export default function DuskBoard({ puzzle, initialState, hint, disabled, api }:
   const pending = useRef<{ i: number; before: DuskState; timer: number } | null>(null);
   /** Taps on one cell closer together than this are one gesture (a double-tap). */
   const settleMs = useGameSettings()["dusk.doubleTapMs"];
-  const cell = useCellSize(n, GAP, PAD * 2, 56);
+  // Short phones: the cells step down (to 32 px) until the whole shell, down to its tool bar, fits the screen.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const cell = useFitHeight(useCellSize(n, GAP, PAD * 2, 56), 32, n, rootRef, "shell");
   const a = analyze(puzzle, settled);
   const given = (i: number) => puzzle.givens[i] !== EMPTY;
 
@@ -207,7 +209,7 @@ export default function DuskBoard({ puzzle, initialState, hint, disabled, api }:
   const step = cell + GAP;
 
   return (
-    <div className={`overflow-x-auto ${done ? "board-pulse" : ""}`} style={{ maxWidth: "100%" }}>
+    <div ref={rootRef} className={`overflow-x-auto ${done ? "board-pulse" : ""}`} style={{ maxWidth: "100%" }}>
       <div
         role="grid"
         aria-label={t.boardLabel(n)}
