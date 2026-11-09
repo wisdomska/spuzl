@@ -88,6 +88,9 @@ export const boardGames = {
     over: (reason: string) => `Game over: ${reason}.`,
     undo: "Undo",
     restart: "Restart",
+    /** Restart mid-game asks first */
+    restartAsk: "Start a new game? This one ends here.",
+    keep: "Keep playing",
     playAgain: "Play again",
     tryLevel: (level: keyof typeof LEVEL) => `Try ${LEVEL[level]}`,
     back: "Back to Board Bay",

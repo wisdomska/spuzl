@@ -214,7 +214,6 @@ the Duel loss line. Still open:
   (`phaser/render/platformer.ts`); a pre-drawn dot texture would cut the draw calls. Profile on a mid phone first.
 - **Four Up, Oware and Flip live boards have no roving keyboard focus** (`components/multiplayer/bay/boards.tsx`);
   Four Up wraps gridcells in a column button. Chess and draughts have it now (`Grid8`, `lib/multiplayer/grid-nav.ts`).
-- **Bot games:** Restart (menu) starts over mid-game without asking.
 - **Flinch and Beat Tap pads** react to any mouse button (`onPointerDown`), right-click included.
 - **Echo board copy is inline** (`games/echo/Board.tsx`); move it to `lib/copy` with the rest.
 - **Not measured here (no dev server in this pass):** fit at 320×568 for Flinch and Beat Tap (square pad plus rounds

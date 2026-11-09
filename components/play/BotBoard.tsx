@@ -8,6 +8,7 @@ import { loadBot, type AnyBot, type BotGame, type BotLevel } from "@/lib/bot";
 import { createRng, type Rng } from "@/lib/rng";
 import { play } from "@/lib/audio";
 import { boardGames } from "@/lib/copy/board-games";
+import { Button } from "@/components/ui/Button";
 import type { LudoOpts } from "@/games/ludo/engine";
 
 const t = boardGames.bot;
@@ -115,6 +116,9 @@ export default function BotBoard({ puzzle, disabled, api, extra }: BoardProps<Bo
   }, [bot, state, over, turn, disabled, puzzle.level, api, ludo]);
 
   const thinking = !!bot && !!state && !over && turn !== ME && !disabled;
+  // Restart confirm (Restart is in the game menu); a game with a move in it is worth asking about.
+  const [askRestart, setAskRestart] = useState(false);
+  const [moved, setMoved] = useState(false);
 
   const legal = useMemo(() => {
     if (!rules || !state || over || turn !== ME) return [];
@@ -126,6 +130,7 @@ export default function BotBoard({ puzzle, disabled, api, extra }: BoardProps<Bo
       if (!rules || !state || !rng.current || disabled || over || turn !== ME || !rules.isLegal(state, ME, m)) return;
       const next = rules.apply(state, ME, m, rng.current);
       plies.current++;
+      setMoved(true);
       play(isRoll(m) ? "tick" : "clack");
       // Undo goes back to the start of the player's move (Ludo has dice, so no undo there).
       if (!ludo && !isRoll(m)) setHistory((h) => [...h, state]);
@@ -174,9 +179,10 @@ export default function BotBoard({ puzzle, disabled, api, extra }: BoardProps<Bo
   useEffect(() => {
     api.setControls([
       ...(ludo ? [] : [{ id: "undo", label: t.undo, icon: "arrow-counter-clockwise", onPress: undo, disabled: !history.length || over }]),
-      { id: "restart", label: t.restart, icon: "arrows-clockwise", onPress: () => onRestart?.() },
+      // Mid-game, Restart asks first (as Resign does in Board Bay); before the first move or after the end it just goes.
+      { id: "restart", label: t.restart, icon: "arrows-clockwise", onPress: () => (moved && !over ? setAskRestart(true) : onRestart?.()) },
     ]);
-  }, [api, undo, history.length, over, ludo, onRestart]);
+  }, [api, undo, history.length, over, ludo, onRestart, moved]);
 
   useEffect(() => {
     api.feedback(ludo ? t.yourRoll : t.yourMove, "info", "hand-pointing");
@@ -189,6 +195,30 @@ export default function BotBoard({ puzzle, disabled, api, extra }: BoardProps<Bo
       <ShellAside>
         <Seats game={puzzle.game} state={state} turn={over ? -1 : turn} thinking={thinking} seats={puzzle.seats ?? 2} />
       </ShellAside>
+      {askRestart && !over && (
+        <div
+          className="bg-surface-raised flex w-full flex-wrap items-center gap-2 rounded-[16px] p-3"
+          role="alert"
+          data-bot-restart-confirm
+        >
+          <span className="min-w-0 flex-1 basis-[180px] text-[15px] font-medium">{t.restartAsk}</span>
+          <div className="flex gap-2">
+            <Button
+              size="md"
+              icon="arrows-clockwise"
+              onClick={() => {
+                setAskRestart(false);
+                onRestart?.();
+              }}
+            >
+              {t.restart}
+            </Button>
+            <Button size="md" variant="secondary" autoFocus onClick={() => setAskRestart(false)}>
+              {t.keep}
+            </Button>
+          </div>
+        </div>
+      )}
       {bot && state ? (
         <LiveBoard
           game={puzzle.game}
