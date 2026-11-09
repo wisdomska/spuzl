@@ -6,7 +6,7 @@
  */
 import type { Difficulty, GameLogic, Generated, Hint, VerifyResult } from "@/games/types";
 import type { Rng } from "@/lib/rng";
-import { adjacent, edgeKey, neighbours, randomHamiltonianPath } from "@/games/_shared/grid";
+import { adjacent, edgeKey, neighbours, randomHamiltonianPath, step } from "@/games/_shared/grid";
 
 export interface WeavePuzzle {
   size: number;
@@ -38,6 +38,18 @@ export const RULE_COPY: Record<WeaveBreak, string> = {
 
 export const maxClue = (p: WeavePuzzle) => p.clues.reduce((m, v) => Math.max(m, v), 0);
 export const wallSet = (p: WeavePuzzle) => new Set(p.walls.map(([a, b]) => edgeKey(a, b)));
+
+/**
+ * Sides of cell `i` that have a wall to a neighbouring cell (0 up, 1 right, 2 down, 3 left), so a cell's
+ * name can say where the path is blocked (screen-reader play; the board edge is not a wall).
+ */
+export function wallSides(p: WeavePuzzle, i: number, walls = wallSet(p)): number[] {
+  const n = p.size;
+  return [0, 1, 2, 3].filter((d) => {
+    const j = step(n, n, i, d);
+    return j >= 0 && walls.has(edgeKey(i, j));
+  });
+}
 
 /**
  * Can `path` legally take one more step into `to`? Returns the broken rule, or null when the step is fine.

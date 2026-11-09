@@ -1,13 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
 import { useFitCell } from "@/games/_shared/useFitCell";
 import { useGridKeys } from "@/components/game/useGridKeys";
 import { sfx } from "@/games/_shared/sfx";
 import { adjacent, dirBetween, edgeKey, step } from "@/games/_shared/grid";
 import { LineStyles } from "@/games/_shared/LineStyles";
-import { checkPath, maxClue, nextClue, RULE_COPY, stepError, wallSet, type WeavePuzzle, type WeaveState } from "./logic";
+import { checkPath, maxClue, nextClue, RULE_COPY, stepError, wallSet, wallSides, type WeavePuzzle, type WeaveState } from "./logic";
+import { puzzleBoards } from "@/lib/copy/puzzle-boards";
 
 const GAP = 3;
 const PAD = 6;
@@ -29,6 +30,11 @@ export default function WeaveBoard({ puzzle, initialState, hint, disabled, mode,
   const N = n * n;
   const top = maxClue(puzzle);
   const walls = useRef(wallSet(puzzle)).current;
+  // Each cell's walled sides, read in its name so the walls are not only drawn (screen-reader play).
+  const wallSay = useMemo(() => {
+    const set = wallSet(puzzle);
+    return puzzle.clues.map((_, i) => puzzleBoards.weave.walls(wallSides(puzzle, i, set)));
+  }, [puzzle]);
   const [path, setPath] = useState<WeaveState>(() => (initialState && checkPath(puzzle, initialState).valid ? initialState.slice() : []));
   const pathRef = useRef(path);
   const [bad, setBad] = useState(-1);
@@ -302,7 +308,7 @@ export default function WeaveBoard({ puzzle, initialState, hint, disabled, mode,
                   role="gridcell"
                   data-i={i}
                   tabIndex={keys.focus === i ? 0 : -1}
-                  aria-label={`Row ${r + 1}, column ${c + 1}${num ? `, number ${num}` : ""}${lit ? `, path step ${path.indexOf(i) + 1}` : ", empty"}${i === head ? ", head" : ""}`}
+                  aria-label={`Row ${r + 1}, column ${c + 1}${num ? `, number ${num}` : ""}${lit ? `, path step ${path.indexOf(i) + 1}` : ", empty"}${i === head ? ", head" : ""}${wallSay[i]}`}
                   aria-selected={lit}
                   className={`relative flex cursor-pointer items-center justify-center rounded-[8px] outline-none focus-visible:z-10 focus-visible:shadow-[var(--focus-ring)] ${anim} ${glow ? "hint-ring" : ""}`}
                   style={{

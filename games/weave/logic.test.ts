@@ -12,6 +12,7 @@ import logic, {
   solveAll,
   stepError,
   verify,
+  wallSides,
   type WeavePuzzle,
 } from "./logic";
 import type { Difficulty } from "@/games/types";
@@ -134,4 +135,20 @@ describe("weave", () => {
       expect(g.grade).toBeLessThanOrEqual(100);
     }
   }, 30000);
+  it("names the walled sides of a cell, never the board edge", () => {
+    // 3 by 3: a wall between 0 and 1 (right of 0) and between 4 and 7 (below 4)
+    const p: WeavePuzzle = {
+      size: 3,
+      clues: [1, 0, 0, 0, 0, 0, 0, 0, 2],
+      walls: [
+        [0, 1],
+        [4, 7],
+      ],
+    } as WeavePuzzle;
+    expect(wallSides(p, 0)).toEqual([1]);
+    expect(wallSides(p, 1)).toEqual([3]);
+    expect(wallSides(p, 4)).toEqual([2]);
+    expect(wallSides(p, 7)).toEqual([0]);
+    expect(wallSides(p, 8)).toEqual([]);
+  });
 });
