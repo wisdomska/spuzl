@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.43.2 (9 November 2026)
+
+### For visitors
+
+- **The SPIL card is a proper section again:** a compact bordered card ("From the same studio · Prefer party
+  games?") with a Play SPIL button, matching SPIL's own card for SPUZL.
+- **Forced dark modes** (Opera GX, Chrome Auto Dark) no longer repaint the landing page: the site now declares its
+  own dark and light designs.
+
 ## 1.43.1 (9 November 2026)
 
 ### For visitors
