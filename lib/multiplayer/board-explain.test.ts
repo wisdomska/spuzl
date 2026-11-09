@@ -1,7 +1,40 @@
 import { describe, expect, it } from "vitest";
 import { initialBoard, legalMoves } from "@/games/draughts/engine";
 import { legalPits } from "@/games/oware/engine";
-import { draughtsTapReason, isCapturePath, owareTapReason } from "./board-explain";
+import { draughtsTapReason, isCapturePath, narrowRoute, owareTapReason } from "./board-explain";
+
+describe("narrowRoute (two captures ending on one square)", () => {
+  // From 0, two routes land on 20: through 2 or through 18 (squares only, the rules are not checked here).
+  const paths = [
+    [0, 2, 20],
+    [0, 18, 20],
+    [0, 18, 36],
+    [5, 7],
+  ];
+  it("moves at once when one path ends there", () => {
+    expect(narrowRoute(paths, [0], 36)).toEqual({ move: [0, 18, 36] });
+  });
+  it("offers the hops that tell the paths apart", () => {
+    expect(narrowRoute(paths, [0], 20)).toEqual({
+      prefix: [0],
+      hops: [2, 18],
+      paths: [
+        [0, 2, 20],
+        [0, 18, 20],
+      ],
+    });
+  });
+  it("picks the path once a hop is chosen", () => {
+    expect(narrowRoute(paths, [0, 18], 20)).toEqual({ move: [0, 18, 20] });
+  });
+  it("skips landings every path shares", () => {
+    const long = [
+      [0, 2, 4, 20],
+      [0, 2, 6, 20],
+    ];
+    expect(narrowRoute(long, [0], 20)).toEqual({ prefix: [0, 2], hops: [4, 6], paths: long });
+  });
+});
 
 describe("isCapturePath", () => {
   it("tells a jump from a step", () => {

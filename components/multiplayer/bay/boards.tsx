@@ -24,7 +24,7 @@ import { DaraGrid } from "@/games/dara/DaraGrid";
 import { inDropPhase, threeThrough, type DaraMatch, type DaraMove } from "@/games/dara/rules";
 import { dara as td } from "@/lib/copy/dara";
 import { useReduce } from "@/lib/client/multiplayer";
-import { draughtsTapReason, owareTapReason } from "@/lib/multiplayer/board-explain";
+import { draughtsTapReason, narrowRoute, owareTapReason } from "@/lib/multiplayer/board-explain";
 
 /**
  * Live shared boards for Board Bay matches (Board Games B3 and B8). Each one shows the shared state,
@@ -348,17 +348,34 @@ function DraughtsLive({ state, seat, legal, disabled, lastMove, onMove, announce
   const s = state as DraughtsMatch;
   const cell = useCellSize(8, 0, 10, 48);
   const [sel, setSel] = useState<number | null>(null);
+  /** Two or more capture paths end on the chosen square: the landings picked so far and that end square. */
+  const [routeAt, setRoute] = useState<{ prefix: number[]; end: number } | null>(null);
   const paths = legal as number[][];
   const ends = sel === null ? [] : paths.filter((m) => m[0] === sel).map((m) => m[m.length - 1]);
+  const route = routeAt && sel !== null && routeAt.prefix[0] === sel ? narrowRoute(paths, routeAt.prefix, routeAt.end) : null;
+  const choosing = route && "hops" in route ? route : null;
+  const hops = choosing?.hops ?? [];
+  const onRoute = new Set(choosing?.paths.flat() ?? []);
   // The last move's squares (start, each landing): tinted, and named for screen readers.
   const lastPath = Array.isArray(lastMove) ? (lastMove as number[]) : [];
+  const finish = (path: number[]) => {
+    onMove(path);
+    setSel(null);
+    setRoute(null);
+  };
+  /** Narrow to one path (and move), or ask for the next hop that tells the paths apart. */
+  const pick = (prefix: number[], end: number) => {
+    const r = narrowRoute(paths, prefix, end);
+    if ("move" in r) return finish(r.move);
+    setRoute({ prefix: r.prefix, end });
+    announce(tdr.chooseRoute);
+    explain?.(tdr.chooseRoute);
+  };
   const tap = (sq: number) => {
     if (disabled) return;
-    if (sel !== null && ends.includes(sq)) {
-      onMove(paths.find((m) => m[0] === sel && m[m.length - 1] === sq));
-      setSel(null);
-      return;
-    }
+    if (choosing && routeAt && hops.includes(sq)) return pick([...choosing.prefix, sq], routeAt.end);
+    if (sel !== null && ends.includes(sq)) return pick([sel], sq);
+    setRoute(null);
     // Your own man that can't move: say which rule (a compulsory capture elsewhere, or simply blocked).
     const why = draughtsTapReason(s.board, paths, sq, seat ?? 0);
     if (why) {
@@ -376,6 +393,7 @@ function DraughtsLive({ state, seat, legal, disabled, lastMove, onMove, announce
       onEscape={() => {
         if (sel === null) return false;
         setSel(null);
+        setRoute(null);
         announce(tdr.putDown);
         return true;
       }}
@@ -393,11 +411,17 @@ function DraughtsLive({ state, seat, legal, disabled, lastMove, onMove, announce
             role="gridcell"
             aria-selected={sel === sq}
             onClick={() => tap(sq)}
-            aria-label={`${sqName(sq)}${p ? `, ${mine ? "light" : "dark"} ${king ? "king" : "man"}` : ""}${ends.includes(sq) ? ", legal move" : ""}${lastPath.includes(sq) ? `, ${tdr.lastMove}` : ""}`}
+            aria-label={`${sqName(sq)}${p ? `, ${mine ? "light" : "dark"} ${king ? "king" : "man"}` : ""}${hops.includes(sq) ? `, ${tdr.nextHop}` : ends.includes(sq) ? ", legal move" : ""}${lastPath.includes(sq) ? `, ${tdr.lastMove}` : ""}`}
             className="relative flex items-center justify-center"
             style={{
               background: dark ? (lastPath.includes(sq) ? SQUARE.lastDark : SQUARE.draughtsDark) : SQUARE.light,
-              boxShadow: sel === sq ? "inset 0 0 0 3px var(--accent)" : undefined,
+              // the man, the landings chosen so far, and (while choosing) the squares that pick a route
+              boxShadow:
+                sel === sq || choosing?.prefix.includes(sq) || hops.includes(sq)
+                  ? "inset 0 0 0 3px var(--accent)"
+                  : onRoute.has(sq)
+                    ? "inset 0 0 0 2px color-mix(in srgb, var(--accent) 50%, transparent)"
+                    : undefined,
             }}
           >
             {p ? (

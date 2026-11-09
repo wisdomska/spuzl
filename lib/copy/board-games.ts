@@ -24,6 +24,9 @@ export const boardGames = {
     blocked: "That piece is blocked. Outlined pieces can move.",
     lastMove: "last move",
     putDown: "Piece put down.",
+    /** two capture routes end on the same square */
+    chooseRoute: "Two ways to take there. Tap the next square to pick your route.",
+    nextHop: "next square on a route",
   },
   /** Live Oware board: why a tap on your own pit did nothing, and the pit sown last */
   oware: {

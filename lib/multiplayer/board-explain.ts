@@ -32,3 +32,27 @@ export function owareTapReason(pits: readonly number[], legal: readonly number[]
   if (!legal.length || !mine || legal.includes(pit)) return null;
   return pits[pit] ? "feed" : "empty";
 }
+
+/**
+ * Draughts: several capture paths from one man can end on the same square (they take different pieces). Given the
+ * landings chosen so far (`prefix`, starting with the man) and the end square, either the one path left (`move`), or
+ * the squares that tell the paths apart next (`hops`), with the prefix carried over the landings every path shares.
+ */
+export function narrowRoute(
+  paths: readonly (readonly number[])[],
+  prefix: readonly number[],
+  end: number,
+): { move: number[] } | { prefix: number[]; hops: number[]; paths: number[][] } {
+  const starts = (m: readonly number[], pre: readonly number[]) => pre.every((x, i) => m[i] === x);
+  const cands = paths.filter((m) => m[m.length - 1] === end && starts(m, prefix)).map((m) => [...m]);
+  if (cands.length <= 1) return { move: cands[0] ?? [...prefix] };
+  const pre = [...prefix];
+  for (;;) {
+    const next = new Set(cands.map((m) => m[pre.length]));
+    if (next.size !== 1) break;
+    const [n] = next;
+    if (n === undefined || n === end) break;
+    pre.push(n);
+  }
+  return { prefix: pre, hops: [...new Set(cands.map((m) => m[pre.length]))], paths: cands };
+}
