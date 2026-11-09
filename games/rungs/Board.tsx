@@ -247,6 +247,49 @@ export default function RungsBoard({ puzzle, initialState, hint, disabled, mode,
     sfx.select();
     setActive({ kind: "rung", k: id });
   };
+  /** Choose a cap row to type into (only once the ladder is locked). */
+  const pickCap = (c: 0 | 1) => {
+    if (!locked || caps[c] || off || (active?.kind === "cap" && active.c === c)) return;
+    sfx.select();
+    setActive({ kind: "cap", c });
+  };
+
+  /* ---------- keyboard: one Tab stop on the ladder; Up and Down move between rows, a blank row takes the typing ---------- */
+  const rowKeys = ["c0", ...order.map((id) => `r${id}`), "c1"];
+  const [focusRow, setFocusRow] = useState<string | null>(null);
+  // The roving Tab stop: the row in focus, else the row being typed into, else the top rung.
+  const tabRow = focusRow ?? (active ? (active.kind === "rung" ? `r${active.k}` : `c${active.c}`) : `r${order[0]}`);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const pickRow = (key: string) => {
+    if (key[0] === "c") pickCap(Number(key[1]) as 0 | 1);
+    else {
+      const id = Number(key.slice(1));
+      pick(id, answers[id], active?.kind === "rung" && active.k === id);
+    }
+  };
+  const onLadderKey = (e: React.KeyboardEvent) => {
+    const t = e.target as HTMLElement;
+    if (t.getAttribute("role") !== "gridcell") return; // the drag handles keep Up and Down for moving rungs
+    const at = rowKeys.indexOf(t.dataset.row ?? "");
+    if (at < 0) return;
+    if (e.key === "ArrowUp" || e.key === "ArrowDown" || e.key === "Home" || e.key === "End") {
+      e.preventDefault();
+      const to =
+        e.key === "Home"
+          ? 0
+          : e.key === "End"
+            ? rowKeys.length - 1
+            : Math.max(0, Math.min(rowKeys.length - 1, at + (e.key === "ArrowUp" ? -1 : 1)));
+      const key = rowKeys[to];
+      setFocusRow(key);
+      gridRef.current?.querySelector<HTMLElement>(`[data-row="${key}"]`)?.focus();
+      // Arriving on a blank row makes it the one you type into.
+      pickRow(key);
+    } else if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      pickRow(rowKeys[at]);
+    }
+  };
 
   /* ---------- rendering ---------- */
   const cell = (ch: string, opts: { bg: string; fg?: string; ring?: string; placeholder?: string; key: string; mark?: boolean }) => (
@@ -281,17 +324,17 @@ export default function RungsBoard({ puzzle, initialState, hint, disabled, mode,
       <div
         role="row"
         key={key}
-        onClick={() => {
-          if (!locked || word || off || isActive) return;
-          sfx.select();
-          setActive({ kind: "cap", c });
-        }}
+        onClick={() => pickCap(c)}
         className={`flex items-center gap-2.5 ${shake?.key === key ? (shake.n % 2 ? "cell-shake-a" : "cell-shake-b") : ""} ${hinted ? "hint-ring" : ""}`}
       >
         <div
           role="gridcell"
+          data-row={key}
+          tabIndex={tabRow === key ? 0 : -1}
+          onFocus={() => setFocusRow(key)}
+          aria-selected={isActive}
+          className="flex gap-1 rounded-[12px] outline-none focus-visible:shadow-[var(--focus-ring)]"
           aria-label={`${c === 0 ? "Top" : "Bottom"} word. ${locked ? puzzle.caps[c] : "Crack it last"}. ${word || (text ? `typed ${text}` : "blank")}`}
-          className="flex gap-1"
         >
           {Array.from({ length: LEN }, (_, i) =>
             cell(text[i] ?? "", {
@@ -320,8 +363,10 @@ export default function RungsBoard({ puzzle, initialState, hint, disabled, mode,
   return (
     <div className="wide:gap-3 flex w-full flex-col items-center gap-2">
       <div
+        ref={gridRef}
         role="grid"
-        aria-label="Rungs ladder"
+        aria-label={wordBoards.rungs.ladder}
+        onKeyDown={onLadderKey}
         className={`flex w-full flex-col rounded-[20px] [--hl:var(--world)] [[data-theme=light]_&]:[--hl:var(--world-ink)] ${done ? "board-pulse" : ""}`}
         style={{ background: "var(--board-bg)", maxWidth: L.maxW, gap: L.gap, padding: L.pad }}
       >
@@ -356,10 +401,13 @@ export default function RungsBoard({ puzzle, initialState, hint, disabled, mode,
               >
                 <div
                   role="gridcell"
-                  tabIndex={-1}
+                  data-row={key}
+                  tabIndex={tabRow === key ? 0 : -1}
+                  onFocus={() => setFocusRow(key)}
+                  aria-selected={isActive}
                   aria-label={`Rung ${pos + 1}. ${puzzle.clues[id]}. ${word ? word : text ? `typed ${text}` : "blank"}${broken ? `. Changes ${diffCount(above, word)} letters from ${above}` : ""}`}
                   onClick={() => pick(id, word, isActive)}
-                  className="flex cursor-pointer gap-1"
+                  className="flex cursor-pointer gap-1 rounded-[12px] outline-none focus-visible:shadow-[var(--focus-ring)]"
                 >
                   {Array.from({ length: LEN }, (_, i) =>
                     cell(text[i] ?? "", {

@@ -226,8 +226,6 @@ Seven, Minicross, Buried, Remix, Quickfire, Emoji Hits) and Two Truths. Found in
   (server-judged), so this needs a reveal call like Emoji Hits' `reveal`.
 - **Quads word size:** tiles shrink long words to 9.5 to 13 px (`fontFor`) to fit four across at 320 px; a two-line
   layout for 9+ letters would keep them at 14 px.
-- **Rungs keyboard:** a keyboard user cannot choose which blank rung to type into (rung cells are tabIndex -1 and the
-  active rung only moves on in order); clicking works. Cap rows are clickable rows with no keyboard path either.
 - **Emoji Hits:** a wrong typed try is cleared from the box and not listed, so the player cannot see what they already
   tried; a small "tried: …" line would help with three tries per round.
 - **Duel ink on gold:** `components/multiplayer/duel.tsx` (round badge and win badge) still uses a raw `#0E0F1A` on

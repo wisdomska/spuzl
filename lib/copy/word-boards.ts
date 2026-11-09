@@ -9,6 +9,8 @@ export const wordBoards = {
     /** a valid-looking order the server did not accept (content keeps one ladder, so this is rare) */
     lockRefused: "Every step changes one letter, but this is not the ladder. Try another order.",
     checkLadder: "Check ladder",
+    /** the ladder grid's name, with how to play it from a keyboard */
+    ladder: "Rungs ladder. Up and down move between rows; a blank row takes what you type.",
   },
   remix: {
     /** the answer row is full but its check never came back */
