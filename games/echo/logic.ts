@@ -64,6 +64,12 @@ export interface Replay {
   over: boolean;
 }
 
+/** True when the last round is still being played (fewer taps than its length); false for none or a full one. */
+export function unfinished(rounds: EchoRound[], start: number): boolean {
+  const r = rounds.length - 1;
+  return r >= 0 && rounds[r].taps.length < start + r;
+}
+
 /** Replays the tap log against the seeded sequence. */
 export function replay(p: EchoPuzzle, state: EchoState): Replay {
   const fail = (reason: string): Replay => ({ ok: false, reason, best: 0, over: false });

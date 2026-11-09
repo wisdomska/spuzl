@@ -10,6 +10,7 @@ import logic, {
   padName,
   PADS,
   START_FOR,
+  unfinished,
   verify,
   type EchoPuzzle,
   type EchoRound,
@@ -130,5 +131,41 @@ describe("echo verify", () => {
     expect(stdev([])).toBe(0);
     expect(stdev([2, 4, 4, 4, 5, 5, 7, 9])).toBe(2);
     expect(FLASH_PERIOD_MS).toBe(500);
+  });
+});
+
+describe("unfinished (a pause voids only a round still being played)", () => {
+  it("is false with no rounds and for a round repeated in full", () => {
+    expect(unfinished([], 2)).toBe(false);
+    expect(
+      unfinished(
+        [
+          {
+            taps: [
+              [0, 300],
+              [1, 700],
+            ],
+          },
+        ],
+        2,
+      ),
+    ).toBe(false);
+  });
+  it("is true for a round with fewer taps than its length", () => {
+    expect(unfinished([{ taps: [] }], 1)).toBe(true);
+    expect(
+      unfinished(
+        [
+          {
+            taps: [
+              [0, 300],
+              [1, 700],
+            ],
+          },
+          { taps: [[0, 300]] },
+        ],
+        2,
+      ),
+    ).toBe(true);
   });
 });

@@ -6,7 +6,7 @@ import { Icon } from "@/components/ui/Icon";
 import { useGridKeys } from "@/components/game/useGridKeys";
 import { useBoardBox } from "@/components/game/useBoardSize";
 import { play } from "@/lib/audio";
-import { IDLE_MS, padName, type EchoPuzzle, type EchoRound, type EchoState } from "./logic";
+import { IDLE_MS, padName, unfinished, type EchoPuzzle, type EchoRound, type EchoState } from "./logic";
 
 const INK = "#0E0F1A";
 type Phase = "idle" | "watch" | "input" | "over";
@@ -182,7 +182,9 @@ export default function EchoBoard({ puzzle, initialState, disabled, mode, api }:
     if (disabled && (phase === "watch" || phase === "input")) {
       setLit(null);
       setPhase("idle");
-      setRounds((rs) => rs.slice(0, -1));
+      // Only an unfinished round is void. A pause in the short gap after a round was repeated in full keeps it,
+      // so the score shown ("You repeated N steps") and the one the server replays stay the same.
+      setRounds((rs) => (unfinished(rs, puzzle.start) ? rs.slice(0, -1) : rs));
     }
   }
   useEffect(() => {
