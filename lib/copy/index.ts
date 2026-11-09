@@ -73,6 +73,15 @@ export const en = {
     badge: (name: string) => `Badge: ${name}`,
     streak: (days: number, sparks: number) => (sparks ? `${days}-day streak, +${sparks} Sparks` : `${days}-day streak`),
     fullSpuzl: "Full Spuzl!",
+    /** the puzzle could not start: same game and mode again */
+    tryAgain: "Try again",
+    brokeTitle: "Something broke",
+    brokeBody: "Try again in a moment.",
+    offlineTitle: "You're offline",
+    offlineBody: "This puzzle needs a connection to start. Connect and try again.",
+    failedTitle: "Not this time",
+    failedBody: "Shake it off. Free play never runs out.",
+    freePlay: "Free play",
   },
   welcome: {
     helloTitle: "Akwaaba! Ready to play?",

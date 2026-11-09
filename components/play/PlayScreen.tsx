@@ -135,6 +135,8 @@ export function PlayScreen({
   }, [router, meta.world]);
 
   const beginRef = useRef<(m: Mode, d?: Difficulty, n?: number, fresh?: boolean) => Promise<void>>(async () => {});
+  /** The last start asked for, so the error screen's Try again repeats exactly that one. */
+  const [lastStart, setLastStart] = useState<[Mode, Difficulty?, number?, boolean?] | null>(null);
   /**
    * Starts (or resumes) an attempt. Free play and levels pick up the puzzle left part way on this device
    * (lib/client/resume.ts) unless `fresh` (Another puzzle, another level of difficulty).
@@ -142,6 +144,7 @@ export function PlayScreen({
   const begin = useCallback(
     async (m: Mode, d?: Difficulty, n?: number, fresh = false): Promise<void> => {
       if (fresh) dropResume(meta.id);
+      setLastStart([m, d, n, fresh]);
       setPhase("loading");
       setResult(null);
       setHolding(false);
@@ -599,16 +602,25 @@ export function PlayScreen({
   }
 
   if (phase === "failed" || phase === "error") {
+    const P = copy.play;
+    // Offline or a server blip: the same puzzle again is the obvious next step, not a switch to Free play.
+    const offline = phase === "error" && typeof navigator !== "undefined" && navigator.onLine === false;
+    const retry = phase === "error" ? lastStart : null;
     return (
       <main className="mx-auto flex min-h-dvh max-w-[560px] flex-col items-center justify-center gap-4 px-6 text-center">
         <MySpuz mood={phase === "failed" ? "sad" : "shocked"} size={140} decorative />
-        <h1 className="font-display text-[24px] font-black">{phase === "failed" ? "Not this time" : "Something broke"}</h1>
-        <p className="text-muted text-[16px]">
-          {phase === "failed" ? "Shake it off. Free play never runs out." : (error ?? "Try again in a moment.")}
-        </p>
+        <h1 className="font-display text-[24px] font-black">
+          {phase === "failed" ? P.failedTitle : offline ? P.offlineTitle : P.brokeTitle}
+        </h1>
+        <p className="text-muted text-[16px]">{phase === "failed" ? P.failedBody : offline ? P.offlineBody : (error ?? P.brokeBody)}</p>
         <div className="mt-4 flex w-full flex-col gap-3">
-          <Button size="lg" onClick={() => void begin("free")}>
-            Free play
+          {retry && (
+            <Button size="lg" icon="arrow-clockwise" onClick={() => void begin(...retry)}>
+              {P.tryAgain}
+            </Button>
+          )}
+          <Button size="lg" variant={retry ? "secondary" : "primary"} onClick={() => void begin("free")}>
+            {P.freePlay}
           </Button>
           <Button size="lg" variant="secondary" onClick={() => router.push("/")}>
             Back to the Grid
