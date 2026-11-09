@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.42.1 (9 November 2026)
+
+### Behind the scenes
+
+- The favicon (Spuz) moved to `app/favicon.ico`, the App Router convention, so Vercel shows it as the project
+  avatar instead of the framework logo. Browsers see the same icon as before.
+
 ## 1.42.0 (8 November 2026)
 
 ### For players and visitors

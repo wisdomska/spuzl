@@ -20,10 +20,8 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
   // Plain files in /public (not generated routes), so hosts like the Vercel dashboard can find the site icon.
   icons: {
-    icon: [
-      { url: "/favicon.ico", sizes: "48x48" },
-      { url: "/icon.png", type: "image/png", sizes: "192x192" },
-    ],
+    // app/favicon.ico (the App Router file convention, which Vercel also reads for the project avatar) adds its own tag.
+    icon: [{ url: "/icon.png", type: "image/png", sizes: "192x192" }],
   },
   appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "SPUZL" },
   // No og:url here: each public page sets its own (lib/seo/site.ts publicMetadata), and a page without one must not
