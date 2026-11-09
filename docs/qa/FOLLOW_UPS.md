@@ -202,3 +202,35 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   that game (`lib/client/onboarding.ts` RETURNS only knows `daily`). A `?return=game:<id>` would close the loop.
 - **Admin copy overrides** (games.rule / games.blurb) don't reach the static `/games/<id>` pages or llms.txt, which use
   the catalog's copy until the next deploy.
+
+## UX pass (9 Nov)
+
+Arcade, Board Games and the shared game shell. Fixed in this pass: keyboard focus on cells, pads and tools; Try
+again on a failed start; Echo's pause between rounds; Beat Tap and Rage Ridge per-frame work; last move and refused
+taps on the live Draughts, Oware and Four Up boards; Resign and the bot draw ask first; bot thinking in Board Bay;
+the Duel loss line. Still open:
+
+- **Tab hidden in a live Duel or Race opens the Pause sheet** (`GameShell` sets `paused` on `visibilitychange`
+  whatever `canPause` says). The match keeps running, so "Paused" with Resume is misleading; it should say the
+  match went on without you. Needs a call on reflex boards (Echo, Flinch) whose timers would then run on in the
+  background.
+- **Phaser keeps drawing at 60 fps under the Pause cover.** Boards don't know they are covered (only `disabled`,
+  which is also true during a Duel countdown, before the first frame). A `covered` board prop would let
+  `phaser/scene.ts` sleep the loop.
+- **Rage Ridge painter:** still four small closures per frame and about 270 dots for the background grid
+  (`phaser/render/platformer.ts`); a pre-drawn dot texture would cut the draw calls. Profile on a mid phone first.
+- **Live boards have no roving keyboard focus** (`components/multiplayer/bay/boards.tsx`): chess and draughts are 64
+  Tab stops, Four Up wraps gridcells in a column button. `useGridKeys` as the solo boards use would fix keyboard and
+  screen-reader play.
+- **Board Bay chess move is not optimistic:** the piece drops back to its square for the round trip, then jumps. Show
+  the move pending (and the bot's reply after it) instead.
+- **Draughts: two capture paths that end on the same square** can't be told apart; `paths.find` takes the first.
+- **Async chess with no clock:** the opponent's row never says "Their move"; only your own "Your turn" pill shows
+  the turn.
+- **A draw offer to a person can't be withdrawn**, and Takeback with no move to take back answers with a generic
+  error toast.
+- **Bot games:** Restart (menu) starts over mid-game without asking.
+- **Flinch and Beat Tap pads** react to any mouse button (`onPointerDown`), right-click included.
+- **Echo board copy is inline** (`games/echo/Board.tsx`); move it to `lib/copy` with the rest.
+- **Not measured here (no dev server in this pass):** fit at 320×568 for Flinch and Beat Tap (square pad plus rounds
+  row) and the Duel round result (`pt-[90px]` plus 130 px cards). Run the viewport harness on them.
