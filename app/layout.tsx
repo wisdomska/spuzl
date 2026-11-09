@@ -49,6 +49,9 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  // Tells browsers the page already has a dark design (and a light one), so forced-dark modes (Opera GX, Chrome
+  // Auto Dark) leave its colours alone instead of repainting light cards dark.
+  colorScheme: "dark light",
   themeColor: [
     { media: "(prefers-color-scheme: dark)", color: "#0E0F1A" },
     { media: "(prefers-color-scheme: light)", color: "#F5F6FA" },
