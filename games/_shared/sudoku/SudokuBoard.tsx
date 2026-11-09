@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from "react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
-import { fitCell, useFitHeight, useViewportHeight, useViewportWidth } from "@/components/game/useBoardSize";
+import { fitCell, isWide, useFitHeight, useViewportHeight, useViewportWidth, wideCell } from "@/components/game/useBoardSize";
 import { isKeyedInput, useGridKeys, viaKeys } from "@/components/game/useGridKeys";
 import { sfx } from "@/games/_shared/sfx";
 import { popClass, shakeClass, waveStyle } from "@/games/_shared/logiclab/fx";
@@ -29,10 +29,17 @@ function useSudokuCell(size: number, boxW: number, pad: RefObject<HTMLElement | 
   const vw = useViewportWidth();
   const vh = useViewportHeight();
   const overhead = gapTotal(size, boxW, gapFor(size), LINE) + PAD * 2;
-  // The two-column shell on a wide screen: the grid grows into its column, then steps down until the pad fits.
-  const wide = fitCell(vw, size, overhead, size > 6 ? 40 : 44, 56, 560, vh);
+  // The two-column shell on a wide screen: the grid grows into its column, with the number pad's row (one row of
+  // keys under the grid) counted in the height from the start, so the board and pad fit on the first paint
+  // (R3-02). The height fit below is only a safety net.
+  const wide = isWide(vw, vh)
+    ? wideCell(vw, vh, size, overhead, 56, size, overhead + padBlock(size))
+    : fitCell(vw, size, overhead, size > 6 ? 40 : 44, 56, 560);
   return useFitHeight(wide, size > 6 ? 28 : 44, size, pad, "shell");
 }
+
+/** Height under the grid on a wide screen: the gap, one row of number keys (44 px Nine, 48 px Sixer) and their 5 px depth. */
+const padBlock = (size: number) => 8 + (size > 6 ? 44 : 48) + 5;
 
 /** Killer Sums cage outline: dotted, inset this many px inside the cells, in a muted ink. */
 const CAGE_INSET = 3;

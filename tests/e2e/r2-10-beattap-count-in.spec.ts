@@ -114,13 +114,38 @@ test.describe("R2-10 Beat Tap", () => {
   test("the Start tap and taps along with the count are never off beat", async ({ page }) => {
     await asked(page);
     const pad = await open(page);
+    await page.evaluate(() => ((window as unknown as { __fx: unknown[] }).__fx.length = 0));
+    // Watch for Beat 1 every frame from now on: it shows for one beat only (expect's polling can miss it).
+    const beat1 = page.waitForFunction(
+      () =>
+        /Beat 1 of \d+/.test(
+          [...document.querySelectorAll("button")]
+            .find((b) => b.getAttribute("aria-label")?.startsWith("Beat pad."))
+            ?.getAttribute("aria-label") ?? "",
+        ),
+      undefined,
+      { polling: "raf", timeout: 15_000 },
+    );
     await pad.click();
-    // tap along with the whole count
-    for (let n = 1; n <= COUNT_IN; n++) {
-      await expect(pad).toHaveAccessibleName(new RegExp(`Count in: ${n}`), { timeout: 3000 });
-      await pad.click();
-    }
-    await expect(pad).toHaveAccessibleName(/Beat 1 of \d+/, { timeout: 3000 });
+    // Tap along with the whole count, in page: a press right after each count click (no CDP round trip, which on
+    // a slow dev server could miss a one-beat label).
+    const taps = await page.evaluate(async (n) => {
+      const w = window as unknown as { __fx: { sound: string }[] };
+      const pad = [...document.querySelectorAll("button")].find((b) => b.getAttribute("aria-label")?.startsWith("Beat pad."))!;
+      let done = 0;
+      const until = performance.now() + 10_000;
+      while (done < n && performance.now() < until) {
+        const counts = w.__fx.filter((f) => f.sound === "count").length;
+        if (counts > done) {
+          pad.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true, pointerType: "touch" }));
+          done++;
+        }
+        await new Promise((r) => requestAnimationFrame(r));
+      }
+      return done;
+    }, COUNT_IN);
+    expect(taps).toBe(COUNT_IN);
+    await beat1;
     expect(await tally(page, "Off beat")).toBe(0);
     await expect(page.getByText(/No beat there/)).toHaveCount(0);
   });
