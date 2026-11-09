@@ -89,6 +89,15 @@ export function analyze(p: FlowlinePuzzle, masks: number[]): FlowAnalysis {
   return { lit, dist, leaks, plantsLit, solved: lit.size === rows * cols && leaks.size === 0 };
 }
 
+/**
+ * What still stands between the player and the clear once every plant has water (the rule line says "water every
+ * plant", but the clear also needs every pipe wet and no open ends). Null while a plant is still dry or when solved.
+ */
+export function afterPlants(p: FlowlinePuzzle, a: FlowAnalysis): { dry: number; leaks: number } | null {
+  if (a.solved || a.plantsLit < p.plants.length) return null;
+  return { dry: p.rows * p.cols - a.lit.size, leaks: a.leaks.size };
+}
+
 /* ---------------- Solver ---------------- */
 
 /**

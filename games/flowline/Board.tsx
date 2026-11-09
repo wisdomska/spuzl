@@ -8,7 +8,8 @@ import { useGridKeys } from "@/components/game/useGridKeys";
 import { sfx } from "@/games/_shared/sfx";
 import { BIT, DIR_NAME } from "@/games/_shared/grid";
 import { LineStyles } from "@/games/_shared/LineStyles";
-import { analyze, masksOf, type FlowlinePuzzle, type FlowlineState } from "./logic";
+import { afterPlants, analyze, masksOf, type FlowlinePuzzle, type FlowlineState } from "./logic";
+import { puzzleBoards } from "@/lib/copy/puzzle-boards";
 
 const GAP = 3;
 const PAD = 6;
@@ -68,10 +69,13 @@ export default function FlowlineBoard({ puzzle, initialState, hint, disabled, mo
         return;
       }
 
-      api.announce(
-        `Row ${r}, column ${c}, opens ${opens}, ${after.lit.has(i) ? "wet" : "dry"}. ${after.plantsLit} of ${puzzle.plants.length} plants watered.`,
-      );
-      api.feedback(`${after.plantsLit} of ${puzzle.plants.length} plants watered`, "info", "drop");
+      // Every plant wet but not cleared: say what is left (dry pipes or open ends), never a silent "8 of 8".
+      const left = afterPlants(puzzle, after);
+      const status = left
+        ? puzzleBoards.flowline.plantsDone(left.dry, left.leaks)
+        : `${after.plantsLit} of ${puzzle.plants.length} plants watered`;
+      api.announce(`Row ${r}, column ${c}, opens ${opens}, ${after.lit.has(i) ? "wet" : "dry"}. ${status}`);
+      api.feedback(status, "info", left ? "warning-circle" : "drop");
       api.onMove(next, { correctStreak: streak.current });
     },
     [api, cols, puzzle],
@@ -215,7 +219,7 @@ export default function FlowlineBoard({ puzzle, initialState, hint, disabled, mo
                   role="gridcell"
                   data-i={i}
                   tabIndex={keys.focus === i ? 0 : -1}
-                  aria-label={`Row ${r + 1}, column ${c + 1}, ${kind}, opens ${opens}, ${wet ? "wet" : "dry"}${isLocked ? ", fixed" : ""}`}
+                  aria-label={`Row ${r + 1}, column ${c + 1}, ${kind}, opens ${opens}, ${wet ? (isPlant ? puzzleBoards.flowline.watered : "wet") : "dry"}${isLocked ? ", fixed" : ""}`}
                   aria-selected={wet}
                   onClick={() => {
                     keys.setFocus(i);
@@ -263,6 +267,16 @@ export default function FlowlineBoard({ puzzle, initialState, hint, disabled, mo
                       }}
                     >
                       <Icon name="plant" size={Math.round(cs * 0.36)} />
+                      {/* A watered plant also wears a drop badge, so wet never relies on colour alone. */}
+                      {(wet || done) && (
+                        <span
+                          aria-hidden
+                          className="absolute -right-1 -bottom-1 flex items-center justify-center rounded-full"
+                          style={{ width: cs * 0.26, height: cs * 0.26, background: "var(--world)", color: "var(--ink-on-bright)" }}
+                        >
+                          <Icon name="drop" size={Math.round(cs * 0.18)} />
+                        </span>
+                      )}
                     </span>
                   )}
                   {isLocked && (

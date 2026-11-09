@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createRng } from "@/lib/rng";
 import logic, {
+  afterPlants,
   analyze,
   countSolutions,
   generate,
@@ -169,5 +170,20 @@ describe("flowline", () => {
     expect(grade(e.puzzle, e.solution)).toBe(e.grade);
     expect(grade(e.puzzle)).toBeGreaterThanOrEqual(0);
     expect(mega.grade).toBeLessThanOrEqual(100);
+  });
+  it("says what is left once every plant is wet but the board is not done", () => {
+    const { puzzle, solution } = generate(createRng("after-plants"), "easy");
+    const done = analyze(puzzle, solution);
+    expect(done.solved).toBe(true);
+    expect(afterPlants(puzzle, done)).toBeNull();
+    // every cell lit, but one tile is reported as leaking: the plants are wet and the leak is what is left
+    const leaky = { ...done, solved: false, leaks: new Set([puzzle.source]) };
+    expect(afterPlants(puzzle, leaky)).toEqual({ dry: 0, leaks: 1 });
+    // a dry plant: nothing to say yet
+    const dryPlant = { ...done, solved: false, plantsLit: puzzle.plants.length - 1 };
+    expect(afterPlants(puzzle, dryPlant)).toBeNull();
+    // all plants wet, two pipes dry
+    const lit = new Set([...done.lit].slice(2));
+    expect(afterPlants(puzzle, { ...done, solved: false, lit, leaks: new Set() })).toEqual({ dry: 2, leaks: 0 });
   });
 });
