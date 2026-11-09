@@ -180,7 +180,14 @@ export default function BotBoard({ puzzle, disabled, api, extra }: BoardProps<Bo
     api.setControls([
       ...(ludo ? [] : [{ id: "undo", label: t.undo, icon: "arrow-counter-clockwise", onPress: undo, disabled: !history.length || over }]),
       // Mid-game, Restart asks first (as Resign does in Board Bay); before the first move or after the end it just goes.
-      { id: "restart", label: t.restart, icon: "arrows-clockwise", onPress: () => (moved && !over ? setAskRestart(true) : onRestart?.()) },
+      // `confirms`: this board asks itself (below), so the shell's Restart confirm stays out of the way (no double ask).
+      {
+        id: "restart",
+        label: t.restart,
+        icon: "arrows-clockwise",
+        confirms: true,
+        onPress: () => (moved && !over ? setAskRestart(true) : onRestart?.()),
+      },
     ]);
   }, [api, undo, history.length, over, ludo, onRestart, moved]);
 
