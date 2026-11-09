@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Wordmark } from "@/components/brand/Wordmark";
 import { aboutCopy } from "@/lib/copy/about";
 import { gamesCopy as T } from "@/lib/copy/seo";
+import { MakerCredit } from "@/components/seo/MakerCredit";
 
 /**
  * Frame of the public, crawlable pages (the game catalogue, game pages, public world pages): the landing page's nav
@@ -42,7 +43,10 @@ export function PublicShell({ children }: { children: ReactNode }) {
       <footer className="border-line border-t px-4 py-8 sm:px-6">
         <div className="mx-auto flex max-w-[1160px] flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col gap-1.5">
-            <Wordmark size={22} />
+            <div className="flex flex-wrap items-center gap-x-3">
+              <Wordmark size={22} />
+              <MakerCredit />
+            </div>
             <span className="text-muted text-[13px]">{aboutCopy.made}</span>
           </div>
           <nav aria-label={T.nav.footer} className="flex flex-wrap gap-x-5 gap-y-1">

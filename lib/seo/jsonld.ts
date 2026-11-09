@@ -15,6 +15,11 @@ const CONTEXT = "https://schema.org";
 
 const ORG_ID = `${SITE_URL}/#organization`;
 const SITE_ID = `${SITE_URL}/#website`;
+const MAKER_ID = `${SITE_URL}/#maker`;
+
+/** The maker: Senya, credited on every page and linked to their own site (owner, 9 Nov). */
+export const maker = (): Thing => ({ "@type": "Person", "@id": MAKER_ID, name: "Senya", url: aboutCopy.creditUrl });
+const MAKER_REF = { "@type": "Person", "@id": MAKER_ID, name: "Senya", url: aboutCopy.creditUrl };
 
 /** The publisher: SPUZL itself, with its app icon as the logo. */
 export const organization = (): Thing => ({
@@ -24,6 +29,7 @@ export const organization = (): Thing => ({
   url: absoluteUrl("/"),
   logo: { "@type": "ImageObject", url: absoluteUrl("/icon.png"), width: 192, height: 192 },
   sameAs: [aboutCopy.creditUrl],
+  founder: MAKER_REF,
 });
 
 export const website = (): Thing => ({
@@ -52,6 +58,8 @@ export const webApplication = (): Thing => ({
   isAccessibleForFree: true,
   offers: FREE_OFFER,
   publisher: { "@id": ORG_ID },
+  creator: MAKER_REF,
+  author: MAKER_REF,
 });
 
 /** One game page: a free web browser game. */
@@ -76,6 +84,8 @@ export function videoGame(f: GameFacts): Thing {
     isPartOf: { "@type": "WebSite", "@id": SITE_ID, name: "SPUZL" },
     about: WORLD_BY_ID[g.world].name,
     publisher: { "@type": "Organization", "@id": ORG_ID, name: "SPUZL", url: absoluteUrl("/") },
+    creator: MAKER_REF,
+    author: MAKER_REF,
   };
 }
 

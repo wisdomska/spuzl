@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Wordmark } from "@/components/brand/Wordmark";
+import { MakerCredit } from "@/components/seo/MakerCredit";
 
 const LINKS = [
   ["/games", "All games"],
@@ -24,12 +25,15 @@ export default function InfoLayout({ children }: LayoutProps<"/">) {
           </Link>
         </header>
         <main className="info-prose">{children}</main>
-        <footer className="border-line flex flex-wrap gap-x-4 gap-y-2 border-t pt-5">
-          {LINKS.map(([href, label]) => (
-            <Link key={href} href={href} className="text-muted flex h-11 items-center text-[14px] font-medium">
-              {label}
-            </Link>
-          ))}
+        <footer className="border-line flex flex-col gap-2 border-t pt-5">
+          <nav aria-label="Footer" className="flex flex-wrap gap-x-4 gap-y-2">
+            {LINKS.map(([href, label]) => (
+              <Link key={href} href={href} className="text-muted flex h-11 items-center text-[14px] font-medium">
+                {label}
+              </Link>
+            ))}
+          </nav>
+          <MakerCredit className="self-start" />
         </footer>
       </div>
     </div>

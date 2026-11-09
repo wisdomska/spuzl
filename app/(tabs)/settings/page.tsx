@@ -1,5 +1,6 @@
 "use client";
 
+import { MakerCredit } from "@/components/seo/MakerCredit";
 import { MUSIC_ON } from "@/components/shell/MusicDirector";
 
 import { alertsSupported, askAlerts, disablePush, pushOn } from "@/lib/client/alerts";
@@ -224,6 +225,9 @@ function SettingsScreen() {
           }}
         />
       )}
+      <div className="flex justify-center pt-2 pb-4">
+        <MakerCredit />
+      </div>
     </TabPage>
   );
 }
