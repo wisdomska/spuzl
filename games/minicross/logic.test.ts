@@ -81,7 +81,7 @@ describe("minicross guesses and verification", () => {
     const wrong = answer.slice();
     const k = wrong.findIndex(Boolean);
     wrong[k] = wrong[k] === "A" ? "B" : "A";
-    expect(checkGuess(puzzle, solution, { cells: wrong })).toEqual({ ok: false });
+    expect(checkGuess(puzzle, solution, { cells: wrong })).toMatchObject({ ok: false, wrong: expect.any(Array) });
     const part = answer.slice();
     part[k] = "";
     expect(checkGuess(puzzle, solution, { cells: part })).toEqual({ ok: false });
@@ -124,5 +124,26 @@ describe("minicross guesses and verification", () => {
     expect(clueAt(puzzle, first.r * SIZE + first.c, "across")).toBe(first);
     expect(clueAt(puzzle, -1, "down")).toBeUndefined();
     expect(logic.id).toBe("minicross");
+  });
+});
+
+describe("minicross wrong entries (UX pass)", () => {
+  it("names the entries with a wrong letter, whole words only, and nothing on a partial grid", () => {
+    const { puzzle, solution } = generateAt(0, "medium");
+    const answer = solution.grid.map((x) => (x === "#" ? "" : x));
+    const i = answer.findIndex((x) => x);
+    const wrong = answer.slice();
+    wrong[i] = wrong[i] === "A" ? "B" : "A";
+    const res = checkGuess(puzzle, solution, { cells: wrong });
+    expect(res.ok).toBe(false);
+    // the changed square sits in at most one across and one down entry, and the check names exactly those
+    const across = puzzle.across.filter((cl) => cellsOf(cl, "across", puzzle.size).includes(i)).map((cl) => ({ n: cl.n, d: "across" }));
+    const down = puzzle.down.filter((cl) => cellsOf(cl, "down", puzzle.size).includes(i)).map((cl) => ({ n: cl.n, d: "down" }));
+    expect(res.wrong).toEqual([...across, ...down]);
+    // never a square index or a letter
+    expect(JSON.stringify(res)).not.toMatch(/"cells"|"letter"|"i"/);
+    const part = answer.slice();
+    part[i] = "";
+    expect(checkGuess(puzzle, solution, { cells: part })).toEqual({ ok: false });
   });
 });

@@ -33,7 +33,16 @@ export interface MinicrossState {
 }
 
 export type MinicrossGuess = MinicrossState;
-export type MinicrossCheck = { ok: boolean };
+/** An entry by its clue: number and direction. */
+export interface EntryRef {
+  n: number;
+  d: "across" | "down";
+}
+/**
+ * A full grid's check: right, or which entries (whole words, never single squares) have a wrong letter, so the
+ * board can mark them without the check becoming a letter-by-letter oracle.
+ */
+export type MinicrossCheck = { ok: boolean; wrong?: EntryRef[] };
 
 export type Dir = "across" | "down";
 

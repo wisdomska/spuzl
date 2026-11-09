@@ -10,7 +10,18 @@ import { LetterKeyboard } from "@/games/_shared/LetterKeyboard";
 import { keyboardCopy } from "@/lib/copy/keyboard";
 import { ShellAside, useShellWide } from "@/components/game/ShellAside";
 import { ClueList } from "@/games/_shared/ClueList";
-import { cellsOf, clueAt, numberGrid, type Clue, type Dir, type MinicrossCheck, type MinicrossPuzzle, type MinicrossState } from "./rules";
+import { wordBoards } from "@/lib/copy/word-boards";
+import {
+  cellsOf,
+  clueAt,
+  numberGrid,
+  type EntryRef,
+  type Clue,
+  type Dir,
+  type MinicrossCheck,
+  type MinicrossPuzzle,
+  type MinicrossState,
+} from "./rules";
 
 const GAP = 2;
 const INK = "var(--ink-on-bright)";
@@ -35,6 +46,8 @@ export default function MinicrossBoard({ puzzle, initialState, hint, disabled, m
   const [dir, setDir] = useState<Dir>("across");
   const [revealed, setRevealed] = useState<number[]>([]);
   const [wrongN, setWrongN] = useState(0);
+  /** entries the last full-grid check found a wrong letter in; one goes as soon as a square in it changes */
+  const [offEntries, setOffEntries] = useState<EntryRef[]>([]);
   const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
   const [tapN, setTapN] = useState(0);
@@ -94,6 +107,13 @@ export default function MinicrossBoard({ puzzle, initialState, hint, disabled, m
 
   const commit = useCallback(
     async (next: string[], at: number) => {
+      const before = cellsRef.current;
+      setOffEntries((o) =>
+        o.filter((e) => {
+          const cl = (e.d === "across" ? puzzle.across : puzzle.down).find((x) => x.n === e.n);
+          return !cl || !cellsOf(cl, e.d, size).some((i) => before[i] !== next[i]);
+        }),
+      );
       cellsRef.current = next;
       setCells(next);
       api.onMove({ cells: next }, { correctStreak: streak.current });
@@ -118,11 +138,17 @@ export default function MinicrossBoard({ puzzle, initialState, hint, disabled, m
       } else {
         streak.current = 0;
         setWrongN((w) => w + 1);
-        api.ruleBreak("Not quite. One or more squares are off.");
+        const off = res.wrong ?? [];
+        setOffEntries(off);
+        api.ruleBreak(
+          off.length
+            ? wordBoards.minicross.off(off.map((e) => wordBoards.minicross.entry(e.n, e.d)))
+            : "Not quite. One or more squares are off.",
+        );
         api.onMove({ cells: next }, { mistake: true });
       }
     },
-    [api, blocks, puzzle.ref],
+    [api, blocks, puzzle.across, puzzle.down, puzzle.ref, size],
   );
 
   const nextClueStart = useCallback(
@@ -265,6 +291,12 @@ export default function MinicrossBoard({ puzzle, initialState, hint, disabled, m
   }, [cur]);
 
   const tint = `color-mix(in srgb, var(--world) 22%, ${PAPER})`;
+  const offCells = new Set(
+    offEntries.flatMap((e) => {
+      const cl = (e.d === "across" ? puzzle.across : puzzle.down).find((x) => x.n === e.n);
+      return cl ? cellsOf(cl, e.d, size) : [];
+    }),
+  );
   const lastR = Math.floor(cur / size),
     lastC = cur % size;
 
@@ -408,11 +440,12 @@ export default function MinicrossBoard({ puzzle, initialState, hint, disabled, m
                         style={{ borderTop: "10px solid var(--gold)", borderLeft: "10px solid transparent", borderTopRightRadius: 6 }}
                       />
                     )}
+                    {offCells.has(i) && !done && <span aria-hidden className="hatch absolute inset-0 rounded-[6px]" />}
                     <span aria-hidden className="relative">
                       {cells[i]}
                     </span>
                     {/* The cell's name comes from this text (clue, place, letter), not an aria-label. */}
-                    <span className="sr-only">{`${nums[i] > 0 ? `${nums[i]} ` : ""}${(clueAt(puzzle, i, dir) ?? clueAt(puzzle, i, dir === "across" ? "down" : "across"))?.text ?? ""}. Row ${r + 1}, column ${c + 1}, ${cells[i] || "blank"}${isGiven ? ", given" : revealed.includes(i) ? ", revealed" : ""}`}</span>
+                    <span className="sr-only">{`${nums[i] > 0 ? `${nums[i]} ` : ""}${(clueAt(puzzle, i, dir) ?? clueAt(puzzle, i, dir === "across" ? "down" : "across"))?.text ?? ""}. Row ${r + 1}, column ${c + 1}, ${cells[i] || "blank"}${isGiven ? ", given" : revealed.includes(i) ? ", revealed" : ""}${offCells.has(i) && !done ? wordBoards.minicross.offCell : ""}`}</span>
                   </div>
                 );
               })}
@@ -420,6 +453,29 @@ export default function MinicrossBoard({ puzzle, initialState, hint, disabled, m
           ))}
         </div>
       </div>
+
+      {/* After a wrong full grid: the entries to check, as buttons that jump to them (the squares are hatched too). */}
+      {offEntries.length > 0 && !done && (
+        <ul className="m-0 flex flex-wrap justify-center gap-1.5 p-0" aria-label={wordBoards.minicross.offList}>
+          {offEntries.map((e) => {
+            const cl = (e.d === "across" ? puzzle.across : puzzle.down).find((x) => x.n === e.n);
+            if (!cl) return null;
+            return (
+              <li key={`${e.n}${e.d}`} className="list-none">
+                <button
+                  type="button"
+                  onClick={() => select(cl.r * size + cl.c, e.d)}
+                  className="press flex min-h-11 items-center gap-1.5 rounded-[12px] px-3 text-[14px] font-semibold"
+                  style={{ background: "var(--danger-tint)", color: "var(--text)", boxShadow: "inset 0 0 0 2px var(--danger)" }}
+                >
+                  <Icon name="warning" size={14} style={{ color: "var(--danger)" }} />
+                  {wordBoards.minicross.entry(e.n, e.d)}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
 
       {!wide && keyboard}
     </div>

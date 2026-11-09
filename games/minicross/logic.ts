@@ -1,6 +1,7 @@
 /**
  * Minicross: a 5 × 5 crossword. The client gets the grid shape, numbers and clues only; the letters stay
- * on the server. A full grid is checked with checkGuess (right or not, never which squares).
+ * on the server. A full grid is checked with checkGuess: right, or which entries (whole words) are off, never which
+ * squares, so a check can't be used to try letters one square at a time.
  */
 import type { Difficulty, Generated, Hint, VerifyResult } from "@/games/types";
 import type { GuessLogic } from "@/games/_shared/guess";
@@ -8,6 +9,7 @@ import { createRng, type Rng } from "@/lib/rng";
 import { liveContent } from "@/games/_shared/live";
 import { CONTENT } from "./content";
 import {
+  cellsOf,
   numberGrid,
   SIZE,
   validCells,
@@ -63,7 +65,17 @@ const solvedBy = (s: MinicrossSolution, cells: string[]) => s.grid.every((x, i) 
 /** Pure check of a full grid: right or not. Partial or malformed grids are never right. */
 export function checkGuess(p: MinicrossPuzzle, s: MinicrossSolution, guess: MinicrossGuess): MinicrossCheck {
   if (!guess || !validCells(p, guess.cells) || !full(p, guess.cells)) return { ok: false };
-  return { ok: solvedBy(s, guess.cells) };
+  if (solvedBy(s, guess.cells)) return { ok: true };
+  return { ok: false, wrong: wrongEntries(p, s, guess.cells) };
+}
+
+/** Entries (across, then down, in clue order) with at least one wrong letter. */
+export function wrongEntries(p: MinicrossPuzzle, s: MinicrossSolution, cells: string[]) {
+  const off = (d: "across" | "down") =>
+    (d === "across" ? p.across : p.down)
+      .filter((cl) => cellsOf(cl, d, p.size).some((i) => cells[i] !== s.grid[i]))
+      .map((cl) => ({ n: cl.n, d }));
+  return [...off("across"), ...off("down")];
 }
 
 export function progress(p: MinicrossPuzzle, s: MinicrossSolution, state: MinicrossState): number {
