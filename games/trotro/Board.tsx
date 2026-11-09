@@ -189,6 +189,7 @@ export default function TrotroBoard({ puzzle, initialState, hint, disabled, mode
     setMoves(next);
     api.onMove({ moves: next });
     api.feedback(T.tally(next.length, puzzle.par), "info", "steering-wheel");
+    api.announce(T.undone(next.length, puzzle.par));
   }, [api, done, puzzle.par]);
 
   const reset = useCallback(() => {
@@ -198,6 +199,7 @@ export default function TrotroBoard({ puzzle, initialState, hint, disabled, mode
     setSel(-1);
     api.onMove({ moves: [] });
     api.feedback(T.reset(puzzle.par), "info", "arrows-clockwise");
+    api.announce(T.reset(puzzle.par));
   }, [api, done, puzzle.par]);
 
   useEffect(() => {

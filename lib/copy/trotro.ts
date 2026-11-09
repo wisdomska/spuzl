@@ -49,6 +49,8 @@ export const TROTRO_COPY = {
   moved: (name: string, dir: Dir, n: number) => `${cap(name)} moved ${dir} ${n} ${n === 1 ? "space" : "spaces"}.`,
   wrongAxis: (name: string, axis: "h" | "v") => `${cap(name)} only slides ${axis === "h" ? "left and right" : "up and down"}.`,
   reset: (par: number) => `Back to the start. Par ${par}.`,
+  undone: (moves: number, par: number) =>
+    `Undone. ${moves} ${moves === 1 ? "move" : "moves"}, ${moves <= par ? `par ${par}` : `${moves - par} over par`}.`,
   out: (moves: number, par: number) =>
     moves <= par
       ? `Trotro is out in ${moves} moves, on par. Next stop, Circle!`
