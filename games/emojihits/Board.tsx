@@ -468,6 +468,26 @@ export default function EmojiHitsBoard({ puzzle, initialState, hint, disabled, m
               </button>
             </form>
           )}
+          {/* This round's wrong typed tries, so a guess is never repeated by accident. */}
+          {!picking && phase === "asking" && tries.some((x) => typeof x === "string") && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-muted text-[14px] font-medium">{t.tried}</span>
+              <ul className="m-0 flex flex-wrap gap-1.5 p-0" aria-label={t.tried}>
+                {tries
+                  .filter((x): x is string => typeof x === "string")
+                  .map((x, k) => (
+                    <li
+                      key={`${k}:${x}`}
+                      className="flex h-8 list-none items-center gap-1 rounded-[10px] px-2.5 text-[14px] font-semibold line-through"
+                      style={{ background: "var(--surface-raised)", boxShadow: "inset 0 0 0 2px var(--danger)" }}
+                    >
+                      <Icon name="x" size={12} className="text-[var(--danger)]" label={t.wrongTry} />
+                      {x}
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          )}
           <div className="text-muted flex items-center justify-between text-[14px] font-medium">
             <span>{phase === "asking" ? t.triesLeft(triesLeft) : ""}</span>
             <span className="flex gap-[5px]" aria-hidden>

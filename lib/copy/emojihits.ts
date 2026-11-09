@@ -32,6 +32,9 @@ export const EMOJI_COPY = {
   inputPlaceholder: "Type the title…",
   options: "Pick a title",
   triesLeft: (n: number) => `${n} ${plural(n, "try", "tries")} left`,
+  /** the round's wrong typed tries, listed under the box so the player can see what they already tried */
+  tried: "Already tried",
+  wrongTry: "wrong",
   checking: "Checking…",
   offline: "We couldn't check that. Check your connection and try again.",
   empty: "Type a title first.",
