@@ -9,6 +9,7 @@ export const logicGames = {
     cleared: "Balanced. Board cleared.",
     clearedAnnounce: "Board cleared.",
     filled: (filled: number, total: number) => `${filled} of ${total} filled`,
+    undone: (filled: number, total: number) => `Undone. ${filled} of ${total} filled.`,
     boardLabel: (n: number) => `Dusk board, ${n} by ${n}. Space cycles a cell; S places a sun, M a moon, Delete clears.`,
     cellPrefix: (row: number, col: number) => `Row ${row}, column ${col}`,
     mark: { sun: "sun", moon: "moon", empty: "empty" },

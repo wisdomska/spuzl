@@ -173,7 +173,11 @@ export default function DuskBoard({ puzzle, initialState, hint, disabled, api }:
     setCells(prev);
     setSettled(prev);
     api.onMove(prev);
-  }, [api, settle]);
+    // Never a silent undo: the line and the screen reader say where the board stands now.
+    const filled = prev.filter((v) => v !== EMPTY).length;
+    api.feedback(t.filled(filled, n * n), "info", "sun-horizon");
+    api.announce(t.undone(filled, n * n));
+  }, [api, n, settle]);
 
   useEffect(() => {
     api.setControls([
