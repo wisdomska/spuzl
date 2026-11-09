@@ -31,3 +31,9 @@ export function stdev(xs: number[]) {
   const m = xs.reduce((a, b) => a + b, 0) / xs.length;
   return Math.sqrt(xs.reduce((a, b) => a + (b - m) ** 2, 0) / xs.length);
 }
+
+/**
+ * A press that counts on a reflex pad: any touch or pen contact, or the main mouse button. Right and middle clicks
+ * (and the context menu they bring) never tap the pad.
+ */
+export const isPrimaryPress = (e: { pointerType: string; button: number }) => e.pointerType !== "mouse" || e.button === 0;

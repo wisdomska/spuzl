@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { sfx } from "@/games/_shared/sfx";
+import { isPrimaryPress } from "@/games/_shared/reflex";
 
 import { useGameSettings } from "@/lib/game-settings/client";
 import { logicGames } from "@/lib/copy/logic-games";
@@ -220,8 +221,10 @@ export default function FlinchBoard({ puzzle, initialState, disabled, mode, api 
         disabled={disabled || phase === "over"}
         onPointerDown={(e) => {
           e.preventDefault();
-          press(performance.now());
+          // right and middle clicks never tap the pad
+          if (isPrimaryPress(e)) press(performance.now());
         }}
+        onContextMenu={(e) => e.preventDefault()}
         onKeyDown={(e) => {
           if (e.key === " " || e.key === "Enter") {
             e.preventDefault();

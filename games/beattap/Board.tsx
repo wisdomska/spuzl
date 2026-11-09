@@ -9,7 +9,7 @@ import { sfx } from "@/games/_shared/sfx";
 
 import { prefersReducedMotion, useSettings } from "@/lib/settings/store";
 import { BEATTAP_COPY as t } from "@/lib/copy/beattap";
-import { HUMAN_FLOOR_MS } from "@/games/_shared/reflex";
+import { HUMAN_FLOOR_MS, isPrimaryPress } from "@/games/_shared/reflex";
 import {
   clockAtStart,
   COUNT_IN,
@@ -329,8 +329,10 @@ export default function BeatTapBoard({ puzzle, initialState, disabled, mode, api
         disabled={disabled || phase === "over"}
         onPointerDown={(e) => {
           e.preventDefault();
-          press(performance.now());
+          // right and middle clicks never tap the pad
+          if (isPrimaryPress(e)) press(performance.now());
         }}
+        onContextMenu={(e) => e.preventDefault()}
         onKeyDown={(e) => {
           if (e.key === " " || e.key === "Enter") {
             e.preventDefault();
