@@ -234,3 +234,33 @@ the Duel loss line. Still open:
 - **Echo board copy is inline** (`games/echo/Board.tsx`); move it to `lib/copy` with the rest.
 - **Not measured here (no dev server in this pass):** fit at 320×568 for Flinch and Beat Tap (square pad plus rounds
   row) and the Duel round result (`pt-[90px]` plus 130 px cards). Run the viewport harness on them.
+Puzzles (Crownfall, Dusk, Sixer, Nine, Weave, Flowline, Pairup, Lost, Trotro Jam), Words & Quiz (Coil, Rungs, Quads,
+Seven, Minicross, Buried, Remix, Quickfire, Emoji Hits) and Two Truths. Found in the audit, not fixed in this pass:
+
+- **Restart and Reset have no confirm (shell):** Weave, Pairup and Trotro Jam put Restart/Reset in the game menu
+  (`splitTools`), and the menu runs it at once; after it Undo cannot bring the board back. One shell-level confirm on
+  the menu's Restart entry (`components/game/GameShell.tsx` `restartEntry`) would cover every board. Crownfall, Dusk,
+  Flowline and the sudoku boards have no restart at all (Undo only), so a long board can only be cleared undo by undo.
+- **Long-press callout (shell, all worlds):** `app/globals.css` sets `user-select: none` on buttons and gridcells but
+  not `-webkit-touch-callout: none`; text that is not a gridcell (Emoji Hits' emoji row, word lists, the Seven word
+  line) can still raise the iOS callout on a long press. A `[data-shell-slot] { -webkit-touch-callout: none }` rule
+  would cover every board; left for the shell owner to avoid clashing edits.
+- **Minicross wrong full grid:** "Not quite. One or more squares are off." never says where. The check (`MinicrossCheck`)
+  only returns ok; naming the wrong word(s) would need the server to return them, which is a hint and should cost one.
+- **Quads out of slips:** the run ends on "out of slips" without showing the groups left; the board never holds them
+  (server-judged), so this needs a reveal call like Emoji Hits' `reveal`.
+- **Quads word size:** tiles shrink long words to 9.5 to 13 px (`fontFor`) to fit four across at 320 px; a two-line
+  layout for 9+ letters would keep them at 14 px.
+- **Lost move cap:** `maxMoves` (8 × cells) makes a very long wander fail verify silently at the clear. Unlikely, but
+  the board could warn near the cap or the cap could go.
+- **Rungs keyboard:** a keyboard user cannot choose which blank rung to type into (rung cells are tabIndex -1 and the
+  active rung only moves on in order); clicking works. Cap rows are clickable rows with no keyboard path either.
+- **Emoji Hits:** a wrong typed try is cleared from the box and not listed, so the player cannot see what they already
+  tried; a small "tried: …" line would help with three tries per round.
+- **Light theme contrast on gold:** Buried's secret-phrase cells and Crownfall's solved crowns put ink on `--gold`;
+  in the light theme (`#8f5e00`) that is about 3.4:1, under 4.5:1. Needs an on-gold token.
+- **Coil, Buried, Pairup keyboard:** Escape does not drop the traced path / line start / active line (Clear, Space on
+  the start or a dot does). Minor.
+- **Not measured here:** the fit at 320 × 568 and 375 × 667 and landscape phones was reasoned from the sizing code
+  (no browser in this pass). Dusk and Trotro Jam now use `useFitHeight` like the others; Weave, Flowline and Pairup
+  (square boards, about 296 px at 320 wide) still rely on width-only sizing and should be checked in the E2E run.
