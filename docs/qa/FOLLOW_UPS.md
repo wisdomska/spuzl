@@ -216,13 +216,10 @@ the Duel loss line. Still open:
   Four Up wraps gridcells in a column button. Chess and draughts have it now (`Grid8`, `lib/multiplayer/grid-nav.ts`).
 - **Not measured here (no dev server in this pass):** fit at 320×568 for Flinch and Beat Tap (square pad plus rounds
   row) and the Duel round result (`pt-[90px]` plus 130 px cards). Run the viewport harness on them.
-  Puzzles (Crownfall, Dusk, Sixer, Nine, Weave, Flowline, Pairup, Lost, Trotro Jam), Words & Quiz (Coil, Rungs, Quads,
-  Seven, Minicross, Buried, Remix, Quickfire, Emoji Hits) and Two Truths. Found in the audit, not fixed in this pass:
 
-- **Restart and Reset have no confirm (shell):** Weave, Pairup and Trotro Jam put Restart/Reset in the game menu
-  (`splitTools`), and the menu runs it at once; after it Undo cannot bring the board back. One shell-level confirm on
-  the menu's Restart entry (`components/game/GameShell.tsx` `restartEntry`) would cover every board. Crownfall, Dusk,
-  Flowline and the sudoku boards have no restart at all (Undo only), so a long board can only be cleared undo by undo.
+Puzzles (Crownfall, Dusk, Sixer, Nine, Weave, Flowline, Pairup, Lost, Trotro Jam), Words & Quiz (Coil, Rungs, Quads,
+Seven, Minicross, Buried, Remix, Quickfire, Emoji Hits) and Two Truths. Found in the audit, not fixed in this pass:
+
 - **Long-press callout (shell, all worlds):** `app/globals.css` sets `user-select: none` on buttons and gridcells but
   not `-webkit-touch-callout: none`; text that is not a gridcell (Emoji Hits' emoji row, word lists, the Seven word
   line) can still raise the iOS callout on a long press. A `[data-shell-slot] { -webkit-touch-callout: none }` rule

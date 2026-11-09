@@ -151,6 +151,11 @@ export interface ControlSpec {
   tone?: "default" | "world" | "gold";
   /** The board plays this control's sound itself (a step, a move), so the generic press tap stays off. */
   quiet?: boolean;
+  /**
+   * Restart / Reset only: the board asks before starting over itself (its own confirm), so the game menu's
+   * Restart runs it straight away instead of showing the shell's confirm too.
+   */
+  confirms?: boolean;
 }
 
 /* ---------- Content games (Word Woods, Clue Cave) ---------- */

@@ -11,6 +11,13 @@ export const gameMenuCopy = {
   /** read before the rule line at the top of the menu (R2-06) */
   rule: "The rule",
   restart: "Restart",
+  /** the menu's Restart (or Reset) once the board has moves on it (components/game/RestartConfirm.tsx) */
+  restartConfirm: {
+    title: "Start this puzzle over?",
+    body: "Your moves on this board are cleared, and Undo can't bring them back.",
+    keep: "Keep playing",
+    restart: "Start over",
+  },
   newPuzzle: "New puzzle",
   difficulty: "Difficulty",
   levels: { easy: "Easy", medium: "Medium", hard: "Hard", expert: "Expert", mega: "Mega" } as Record<string, string>,

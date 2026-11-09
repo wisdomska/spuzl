@@ -27,6 +27,7 @@ import { useViewportWidth, useWide, wideAside, SLOT_PAD, WIDE_ASIDE_MAX_H, WIDE_
 import { ShellAsideProvider } from "./ShellAside";
 import { useLeave } from "./useLeave";
 import { LeaveConfirm } from "./LeaveConfirm";
+import { RestartConfirm } from "./RestartConfirm";
 import { haltClock, newClock, readClock, runClock } from "@/lib/game/shell-clock";
 import { pauseCopy } from "@/lib/copy/pause";
 import { holdState, onTabHidden } from "@/lib/game/hold";
@@ -182,6 +183,8 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   const [started, setStarted] = useState(false);
   const [paused, setPaused] = useState(false);
   const [solved, setSolved] = useState(false);
+  /** the menu's Restart waiting on the player's confirm (the action to run if they say yes) */
+  const [askRestart, setAskRestart] = useState<(() => void) | null>(null);
   const [hints, setHints] = useState(hintsLeft);
   const [hint, setHint] = useState<Hint | null>(null);
   const [controls, setControls] = useState<ControlSpec[]>([]);
@@ -453,10 +456,20 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
       window.location.assign(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(window.location.href)}`);
     else window.open("/contact", "_blank", "noopener");
   };
+  // Starting over can't be undone, so once the board has moves on it (this visit, or a resumed board) the menu's
+  // Restart asks first. An untouched board restarts at once; a board with its own confirm (`confirms`) is not asked
+  // twice.
+  const touched = started || initialState != null;
+  const asking =
+    (run: () => void, ownConfirm = false) =>
+    () => {
+      if (!touched || ownConfirm) return run();
+      setAskRestart(() => run);
+    };
   const restartEntry = restart
-    ? { onSelect: restart.onPress, disabled: restart.disabled }
+    ? { onSelect: asking(restart.onPress, restart.confirms), disabled: restart.disabled }
     : onRestart && !solved
-      ? { onSelect: onRestart, disabled: false }
+      ? { onSelect: asking(onRestart), disabled: false }
       : null;
   const menuSections: GameMenuEntry[][] = [
     [
@@ -638,6 +651,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
         hint={hint}
         disabled={locked || paused || solved || pausedExternally || menuHold || leaveHold}
         covered={covered}
+        disabled={locked || paused || solved || pausedExternally || menuHold || leaveHold || askRestart !== null}
         api={api}
       />
     </main>
@@ -770,6 +784,19 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
             rememberHintConfirmed(meta.id);
             setConfirmHint(false);
             void spendHint();
+          }}
+        />
+        <RestartConfirm
+          open={askRestart !== null}
+          onKeep={() => setAskRestart(null)}
+          onRestart={() => {
+            const run = askRestart;
+            setAskRestart(null);
+            run?.();
+          }}
+          onCloseAutoFocus={(e) => {
+            e.preventDefault();
+            menuButton.current?.focus();
           }}
         />
         {policy.kind !== "none" && (
