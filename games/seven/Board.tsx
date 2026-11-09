@@ -51,6 +51,8 @@ export default function SevenBoard({ puzzle, initialState, hint, disabled, mode,
   const letterEls = useRef<(HTMLSpanElement | null)[]>([]);
   const listRef = useRef<HTMLDivElement>(null);
   const streak = useRef(0);
+  /** a found word is flying to the list: Enter again (or more letters) must not add it twice or change it mid-air */
+  const flying = useRef(false);
   const off = disabled || done;
 
   const score = useMemo(
@@ -78,7 +80,7 @@ export default function SevenBoard({ puzzle, initialState, hint, disabled, mode,
 
   const add = useCallback(
     (l: string) => {
-      if (off || word.length >= 15) return;
+      if (off || flying.current || word.length >= 15) return;
       setWord((w) => w + l);
       setBad(false);
       sfx.select();
@@ -87,6 +89,7 @@ export default function SevenBoard({ puzzle, initialState, hint, disabled, mode,
     [off, word, api],
   );
   const del = useCallback(() => {
+    if (flying.current) return;
     setWord((w) => w.slice(0, -1));
     setBad(false);
   }, []);
@@ -118,7 +121,7 @@ export default function SevenBoard({ puzzle, initialState, hint, disabled, mode,
   );
 
   const submit = useCallback(async () => {
-    if (off || !word) return;
+    if (off || !word || flying.current) return;
     const w = word;
     const fail = (reason: keyof typeof REASON_COPY) => {
       streak.current = 0;
@@ -154,11 +157,16 @@ export default function SevenBoard({ puzzle, initialState, hint, disabled, mode,
     );
     api.announce(`${w}, ${pts} points. Score ${score + pts}. Rank ${rankFor(score + pts, maxScore).name}.`);
     api.onMove({ found: next }, { correctStreak: ++streak.current });
-    await flyLetters(
-      w.split("").map((_, k) => letterEls.current[k]),
-      listRef.current,
-      w.split(""),
-    );
+    flying.current = true;
+    try {
+      await flyLetters(
+        w.split("").map((_, k) => letterEls.current[k]),
+        listRef.current,
+        w.split(""),
+      );
+    } finally {
+      flying.current = false;
+    }
     setFound(next);
     setPopKey(w);
     setWord("");
