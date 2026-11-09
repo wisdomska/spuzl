@@ -29,7 +29,7 @@ import { useLeave } from "./useLeave";
 import { LeaveConfirm } from "./LeaveConfirm";
 import { haltClock, newClock, readClock, runClock } from "@/lib/game/shell-clock";
 import { pauseCopy } from "@/lib/copy/pause";
-import { holdState } from "@/lib/game/hold";
+import { holdState, onTabHidden } from "@/lib/game/hold";
 
 /**
  * Wide screens (useBoardSize `isWide`: 900 × 600 and up) split the template into two columns: the board, grown to
@@ -267,14 +267,25 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
     setStarted(true);
   }, []);
 
+  // Tab hidden: solo play pauses; a live match can't, so it never shows the Pause sheet and says so on return.
+  const wasAway = useRef(false);
   useEffect(() => {
     const onVis = () => {
       setTabHidden(document.hidden);
-      if (document.hidden && started && !solved) setPaused(true);
+      if (document.hidden) {
+        const what = onTabHidden({ canPause, started, solved });
+        if (what === "pause") setPaused(true);
+        else if (what === "away") wasAway.current = true;
+      } else if (wasAway.current) {
+        wasAway.current = false;
+        if (solved) return;
+        setFeedback((f) => ({ text: pauseCopy.away, tone: "info", icon: "clock-countdown", n: f.n + 1 }));
+        setLive(pauseCopy.away);
+      }
     };
     document.addEventListener("visibilitychange", onVis);
     return () => document.removeEventListener("visibilitychange", onVis);
-  }, [started, solved]);
+  }, [started, solved, canPause]);
 
   // A new puzzle remounts the shell (parents pass key={puzzleKey}), which resets all per-puzzle state.
 

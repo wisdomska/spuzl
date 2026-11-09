@@ -210,10 +210,6 @@ again on a failed start; Echo's pause between rounds; Beat Tap and Rage Ridge pe
 taps on the live Draughts, Oware and Four Up boards; Resign and the bot draw ask first; bot thinking in Board Bay;
 the Duel loss line. Still open:
 
-- **Tab hidden in a live Duel or Race opens the Pause sheet** (`GameShell` sets `paused` on `visibilitychange`
-  whatever `canPause` says). The match keeps running, so "Paused" with Resume is misleading; it should say the
-  match went on without you. Needs a call on reflex boards (Echo, Flinch) whose timers would then run on in the
-  background.
 - **Phaser keeps drawing at 60 fps under the Pause cover.** Boards don't know they are covered (only `disabled`,
   which is also true during a Duel countdown, before the first frame). A `covered` board prop would let
   `phaser/scene.ts` sleep the loop.

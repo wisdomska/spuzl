@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { holdState, type HoldInput } from "./hold";
+import { holdState, onTabHidden, type HoldInput } from "./hold";
 
 const base: HoldInput = {
   paused: false,
@@ -34,5 +34,15 @@ describe("held and covered boards (R2-16)", () => {
   it("a cleared board is never covered (it is held up for the result)", () => {
     expect(holdState({ ...base, solved: true, menuOpen: true })).toEqual({ held: false, covered: false });
     expect(holdState({ ...base, solved: true, paused: true }).covered).toBe(false);
+  });
+});
+
+describe("onTabHidden", () => {
+  it("pauses solo play once it has started", () => expect(onTabHidden({ canPause: true, started: true, solved: false })).toBe("pause"));
+  it("never pauses a live match: it notes the time away", () =>
+    expect(onTabHidden({ canPause: false, started: true, solved: false })).toBe("away"));
+  it("does nothing before the first move or after the end", () => {
+    expect(onTabHidden({ canPause: true, started: false, solved: false })).toBe("none");
+    expect(onTabHidden({ canPause: false, started: true, solved: true })).toBe("none");
   });
 });

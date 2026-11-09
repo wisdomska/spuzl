@@ -18,3 +18,13 @@ export function holdState(o: HoldInput): { held: boolean; covered: boolean } {
   const held = o.paused || o.external || o.confirmHint || (o.canPause && ((o.menuOpen && !o.solved) || o.leaveAsking));
   return { held, covered: held && !o.solved };
 }
+
+/**
+ * What hiding the tab does (owner decision, 9 Nov): solo play pauses itself; a live Duel or Race can't pause (the
+ * opponent and the server clock go on), so it never shows the Pause sheet and says "the round kept going" on return.
+ * Nothing before the first move or after the end.
+ */
+export function onTabHidden(o: { canPause: boolean; started: boolean; solved: boolean }): "pause" | "away" | "none" {
+  if (!o.started || o.solved) return "none";
+  return o.canPause ? "pause" : "away";
+}

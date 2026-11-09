@@ -10,4 +10,6 @@ export const pauseCopy = {
   howToValue: "20 s",
   quit: "Quit puzzle",
   quitValue: "Progress saved",
+  /** back from another tab during a live Duel or Race, which never pauses */
+  away: "You were away. The round kept going.",
 } as const;
