@@ -118,7 +118,22 @@ export default function CrownfallBoard({ puzzle, initialState, hint, disabled, m
     api.announce(T.board.undone(placed, n));
   }, [api, done, hist, n]);
 
-  // Controls row (design: Undo · Crown · Mark X · Hint)
+  // Start over: every mark off. It sits in the game menu (Restart), which asks first once the board has moves.
+  const marked = cells.some((v) => v !== EMPTY);
+  const restart = useCallback(() => {
+    if (done || !cellsRef.current.some((v) => v !== EMPTY)) return;
+    const empty = new Array<number>(n * n).fill(EMPTY);
+    cellsRef.current = empty;
+    setCells(empty);
+    setHist([]);
+    setLast(-1);
+    streak.current = 0;
+    api.onMove(empty);
+    api.feedback(T.board.crowns(0, n), "info", "crown-simple");
+    api.announce(T.board.restarted(n));
+  }, [api, done, n]);
+
+  // Controls row (design: Undo · Crown · Mark X · Hint); Restart goes to the game menu.
   useEffect(() => {
     api.setControls([
       { id: "undo", label: "Undo", icon: "arrow-counter-clockwise", onPress: undo, disabled: !hist.length || done },
@@ -131,8 +146,9 @@ export default function CrownfallBoard({ puzzle, initialState, hint, disabled, m
       },
       { id: "x", label: "Mark X", icon: "x", onPress: () => setTool((t) => (t === "x" ? null : "x")), active: tool === "x" },
       { id: "hint", label: "Hint", icon: "lightbulb", onPress: () => {}, tone: "gold" },
+      { id: "restart", label: "Restart", icon: "arrow-clockwise", onPress: restart, disabled: !marked || done },
     ]);
-  }, [api, undo, hist.length, done, tool]);
+  }, [api, undo, restart, marked, hist.length, done, tool]);
 
   useEffect(() => {
     if (mode === "tutorial") api.feedback(T.board.startTutorial, "info", "hand-pointing");

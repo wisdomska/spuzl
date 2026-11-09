@@ -35,6 +35,7 @@ export const CROWNFALL_COPY = {
     cleared: "Clean. Board cleared.",
     clearedShort: "Board cleared.",
     undone: (placed: number, n: number) => `Undone. ${placed} of ${n} crowns.`,
+    restarted: (n: number) => `Board cleared of marks. 0 of ${n} crowns.`,
   },
   row: (r: number) => `row ${r + 1}`,
   column: (c: number) => `column ${c + 1}`,
