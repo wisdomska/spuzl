@@ -185,20 +185,49 @@ export default function Landing() {
           </ul>
         </section>
 
-        {/* Sister app: SPIL, for players who'd rather play party and card games */}
+        {/* R4-01 sister app: SPIL, the party game, as a paper card (mirrors SPIL's own "Also by Senya" section) */}
         <section aria-labelledby="spil" className="pb-16 sm:pb-24">
-          <div className="bg-surface border-line flex flex-col gap-5 rounded-[28px] border p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
-            <div className="flex max-w-[560px] flex-col gap-2">
-              <p className={EYEBROW}>{T.spil.eyebrow}</p>
-              <h2 id="spil" className="font-display text-[26px] leading-[1.1] font-black tracking-[-0.03em] sm:text-[32px]">
-                {T.spil.title}
+          <div className="paper grid gap-10 rounded-[36px] p-6 sm:p-10 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] md:gap-14 md:p-14">
+            <div className="flex flex-col items-start gap-4">
+              <p className="paper-soft font-mono text-[13px] font-semibold tracking-[0.18em] uppercase">{T.spil.eyebrow}</p>
+              <h2 id="spil" className="font-display text-[clamp(44px,7vw,72px)] leading-[0.92] font-black tracking-[-0.04em]">
+                {T.spil.name}
               </h2>
-              <p className="text-muted text-[16px] leading-relaxed">{T.spil.body}</p>
+              <p className="font-display text-[20px] leading-tight font-black text-balance sm:text-[24px]">{T.spil.tagline}</p>
+              <p className="paper-soft max-w-[480px] text-[16px] leading-relaxed">{T.spil.body}</p>
+              <a
+                href={T.spil.url}
+                target="_blank"
+                rel="noopener"
+                className="press paper-cta mt-2 flex h-14 items-center gap-2 rounded-full px-7 text-[17px] font-bold"
+              >
+                {T.spil.cta}
+                <Icon name="arrow-square-out" size={18} />
+                <span className="sr-only">{T.spil.newTab}</span>
+              </a>
+              <p className="paper-soft text-[14px] font-medium">{T.spil.note}</p>
             </div>
-            <a href={T.spil.url} target="_blank" rel="noopener" className={`${SECONDARY} shrink-0 gap-2`}>
-              {T.spil.cta}
-              <Icon name="arrow-square-out" size={18} />
-            </a>
+            <div className="flex flex-col gap-8">
+              <dl aria-label={T.spil.statsLabel} className="grid grid-cols-3 gap-2 sm:gap-3">
+                {T.spil.stats.map(([value, label]) => (
+                  <div key={label} className="paper-tile flex flex-col-reverse gap-1 rounded-[20px] px-3 py-4 sm:px-4">
+                    <dt className="paper-soft text-[13px] leading-tight font-semibold">{label}</dt>
+                    <dd className="font-display text-[20px] leading-none font-black sm:text-[26px]">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+              <div className="flex flex-col gap-3">
+                <h3 className="paper-soft font-mono text-[13px] font-semibold tracking-[0.18em] uppercase">{T.spil.featuresLabel}</h3>
+                <ul className="flex flex-col">
+                  {T.spil.features.map(([title, body]) => (
+                    <li key={title} className="paper-rule flex flex-col gap-1 py-3.5 first:pt-0 last:pb-0">
+                      <p className="text-[16px] leading-snug font-bold">{title}</p>
+                      <p className="paper-soft text-[15px] leading-relaxed">{body}</p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           </div>
         </section>
 

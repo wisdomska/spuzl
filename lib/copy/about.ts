@@ -61,12 +61,32 @@ export const aboutCopy = {
   ] as const,
   privacy: "Privacy policy",
   terms: "Terms of use",
+  /**
+   * R4-01: the sister app card, mirroring SPIL's own "Also by Senya" section. Facts only from the owner's SPIL
+   * launch copy; don't add claims here that SPIL itself doesn't make.
+   */
   spil: {
-    eyebrow: "From the same studio",
-    title: "Prefer card and party games?",
-    body: "SPIL is our party game for friends: answer in private, guess each other's scores, then watch them spill. Made for a room full of phones.",
+    eyebrow: "Also by Senya",
+    name: "SPIL",
+    tagline: "Your friends think they know you. Prove it.",
+    body: 'Ten free party games you play on your own phones in the browser. One person starts a room, friends join with a four character code. Answer "Have you ever" questions in private, guess each other\'s score, then watch it spill.',
     cta: "Play SPIL",
+    newTab: "(opens in a new tab)",
+    note: "No app, no signup.",
     url: "https://spil-party.vercel.app",
+    statsLabel: "SPIL at a glance",
+    stats: [
+      ["10", "party games"],
+      ["Up to 12", "players"],
+      ["Free", "to play"],
+    ] as const,
+    featuresLabel: "What's inside",
+    features: [
+      ["Spill Score", 'Private "Have you ever" answers. Guess each other\'s score before the reveal.'],
+      ["Most Likely To, Hot Takes, Imposter", "Vote on who in the room fits best, share your hot takes and catch the imposter."],
+      ["Today's Spill", "One question a day for everyone, with a streak."],
+      ["Made for mixed rooms", "Ages 13 and up. 18+ packs only show when everyone in the room is 18 or older."],
+    ] as const,
   },
   ctaTitle: "Your first puzzle takes 30 seconds.",
   ctaBody: "No sign-up, no download. Just tap and play.",
