@@ -46,6 +46,17 @@ export const duelCopy = {
   },
   roundTitle: (round: number, who: "me" | "them" | "draw", them: string) =>
     who === "draw" ? `Round ${round}: dead level` : who === "me" ? `Round ${round}: you win` : `Round ${round}: ${them} wins`,
+  /** the line under a round's result (it used to promise a "Rematch" when the next round was coming) */
+  roundLine: (who: "me" | "them" | "draw", margin: number | null) =>
+    who === "draw"
+      ? "Same tenth, same slips. Nobody scores."
+      : who === "me"
+        ? margin !== null
+          ? `You won by ${margin.toFixed(1)} seconds. They felt it.`
+          : "They saw your board land. They felt it."
+        : margin !== null
+          ? `You lost by ${margin.toFixed(1)} seconds. Next board is yours.`
+          : "Close one. Next board is yours.",
   nextRound: "Next round",
   decider: "Decider",
   nextRoundLabel: (decider: boolean) => (decider ? "Decider coming up" : "Next round coming up"),

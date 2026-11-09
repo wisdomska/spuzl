@@ -585,15 +585,7 @@ export function RoundEnd({
   const decider = won === 1 && lost === 1;
   const margin = myMs !== null && theirMs !== null ? Math.abs(myMs - theirMs) / 1000 : null;
   const title = duelCopy.roundTitle(round, draw ? "draw" : meWon ? "me" : "them", them.nickname);
-  const line = draw
-    ? "Same tenth, same slips. Nobody scores."
-    : meWon
-      ? margin !== null
-        ? `You won by ${margin.toFixed(1)} seconds. They felt it.`
-        : "They saw your board land. They felt it."
-      : margin !== null
-        ? `You lost by ${margin.toFixed(1)} seconds. Rematch is literally next.`
-        : "Close one. Next board is yours.";
+  const line = duelCopy.roundLine(draw ? "draw" : meWon ? "me" : "them", margin);
   const card = (
     who: { nickname: string; color: string; hat?: string | null },
     ms: number | null,
