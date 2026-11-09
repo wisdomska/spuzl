@@ -10,7 +10,7 @@ import { sendGuess } from "@/games/_shared/guess";
 import { reducedMotion } from "@/games/_shared/fly";
 import { quick } from "@/lib/copy/quick";
 import { Icon } from "@/components/ui/Icon";
-import { groupCount, LEVELS, setKey, SLIPS, type QuadsCheck, type QuadsPuzzle, type QuadsState, type SolvedGroup } from "./rules";
+import { groupCount, LEVELS, setKey, SLIPS, wordFont, type QuadsCheck, type QuadsPuzzle, type QuadsState, type SolvedGroup } from "./rules";
 
 const INK = "var(--quad-ink)";
 const EASE = [0.23, 1, 0.32, 1] as const;
@@ -28,9 +28,6 @@ const LEVEL_SHAPE = ["circle", "triangle", "square", "diamond"] as const;
 const levelOf = (g: SolvedGroup) => Math.max(0, Math.min(LEVELS - 1, g.level));
 type Feedback = { kind: "correct" | "one-away" | "wrong"; ms: number; n: number };
 
-const fontFor = (w: string) =>
-  w.length >= 11 ? 9.5 : w.length >= 10 ? 10 : w.length >= 9 ? 10.5 : w.length >= 8 ? 11 : w.length >= 7 ? 12 : 13;
-
 /**
  * Quads board (Game Boards: Quads). 4 × 4 word tiles (2 × 4 on the practice round); tap four to lift them, then
  * Submit. The lifted four show a "checking" state at once while the server answers. Solved groups become bars
@@ -42,6 +39,8 @@ const fontFor = (w: string) =>
 export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode, api }: BoardProps<QuadsPuzzle, QuadsState>) {
   const [order, setOrder] = useState<string[]>(() => puzzle.words.slice());
   const [solved, setSolved] = useState<SolvedGroup[]>([]);
+  /** out of slips: the groups the player did not find, shown by the server after the last slip */
+  const [missed, setMissed] = useState<SolvedGroup[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
   const [slips, setSlips] = useState(SLIPS);
   const [shakeN, setShakeN] = useState(0);
@@ -57,7 +56,7 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
   const [reduce] = useState(() => reducedMotion());
   const locked = disabled || over || busy;
 
-  const remaining = order.filter((w) => !solved.some((g) => g.words.includes(w)));
+  const remaining = order.filter((w) => !solved.some((g) => g.words.includes(w)) && !missed.some((g) => g.words.includes(w)));
 
   const apply = useCallback((res: QuadsCheck, words: string[], live: boolean) => {
     if (res.ok) {
@@ -184,7 +183,7 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
       }
       return;
     }
-    if (res.invalid) {
+    if ("invalid" in res && res.invalid) {
       api.feedback("");
       return;
     }
@@ -198,11 +197,18 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
     api.onMove(state, { mistake: true });
     if (left <= 0) {
       setOver(true);
-      api.feedback(t.outOfSlips, "danger", "warning");
-      api.announce(t.outOfSlips);
+      // Show what was missed: the server answers only now the slips are spent (and logs it, so the run can't
+      // then be cleared). Asked before the run is closed; with no answer the groups stay hidden.
+      const shown = await sendGuess<QuadsCheck>(puzzle.ref, { reveal: true }).catch(() => null);
+      const got = new Set(solved.map((g) => g.label));
+      const rest = shown && "reveal" in shown ? shown.reveal.filter((g) => !got.has(g.label)) : [];
+      setMissed(rest);
+      const line = rest.length ? t.outOfSlipsShown(rest.length) : t.outOfSlips;
+      api.feedback(line, "danger", "warning");
+      api.announce(rest.length ? `${line} ${rest.map((g) => t.missedSay(g.label, t.levels[levelOf(g)], g.words)).join(" ")}` : line);
       api.onFailed?.(state, "out of slips");
     }
-  }, [api, apply, locked, puzzle.ref, selected, slips, solved.length, total]);
+  }, [api, apply, locked, puzzle.ref, selected, slips, solved, total]);
 
   const shuffle = useCallback(() => {
     setOrder((o) => {
@@ -252,7 +258,7 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
       data-feedback-n={fb?.n ?? 0}
     >
       <AnimatePresence initial={false}>
-        {solved.map((g) => {
+        {[...solved.map((g) => ({ g, miss: false })), ...missed.map((g) => ({ g, miss: true }))].map(({ g, miss }) => {
           const level = t.levels[levelOf(g)];
           return (
             <motion.div
@@ -263,12 +269,19 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
               transition={{ duration: dur, ease: EASE }}
               // Announced once by the board when found; the bar itself is a labelled group, not a live region.
               role="group"
-              aria-label={t.groupSay(g.label, level, g.words)}
+              aria-label={miss ? t.missedSay(g.label, level, g.words) : t.groupSay(g.label, level, g.words)}
               data-level={levelOf(g)}
               data-quad={levelOf(g)}
-              className="flex h-[52px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-[12px] px-2 text-center"
+              data-missed={miss || undefined}
+              className="relative flex min-h-[52px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-[12px] px-2 py-1 text-center"
               // backgroundColor, not background: the colour-blind pattern (a background-image) layers on top.
-              style={{ backgroundColor: LEVEL_BG[levelOf(g)], color: INK }}
+              // A missed group keeps its level colour (and colour-blind pattern) under a dashed ink outline.
+              style={{
+                backgroundColor: LEVEL_BG[levelOf(g)],
+                color: INK,
+                outline: miss ? `2px dashed color-mix(in srgb, ${INK} 55%, transparent)` : undefined,
+                outlineOffset: miss ? -5 : undefined,
+              }}
             >
               <span className="flex max-w-full min-w-0 items-center gap-1.5 text-[14px] leading-tight font-extrabold">
                 <span
@@ -277,8 +290,8 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
                   className="flex flex-none items-center gap-1 rounded-full px-1.5 text-[10px] leading-[16px] font-bold tracking-[.06em] uppercase"
                   style={{ background: `color-mix(in srgb, ${INK} 16%, transparent)` }}
                 >
-                  <Icon name={LEVEL_SHAPE[levelOf(g)]} size={10} />
-                  {level}
+                  <Icon name={miss ? "x" : LEVEL_SHAPE[levelOf(g)]} size={10} />
+                  {miss ? `${level} · ${t.missed}` : level}
                 </span>
                 <span aria-hidden className="truncate" style={{ fontFamily: "var(--font-display)" }}>
                   {g.label}
@@ -322,7 +335,7 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
                   keys.setFocus(i);
                   toggle(w);
                 }}
-                className={`flex h-[52px] min-w-0 cursor-pointer items-center justify-center rounded-[12px] px-[5px] outline-none ${shake ? (shakeN % 2 ? "cell-shake-a" : "cell-shake-b") : ""} ${hinted.includes(w) ? "hint-ring" : ""}`}
+                className={`flex min-h-[52px] min-w-0 cursor-pointer items-center justify-center rounded-[12px] px-[5px] outline-none ${shake ? (shakeN % 2 ? "cell-shake-a" : "cell-shake-b") : ""} ${hinted.includes(w) ? "hint-ring" : ""}`}
                 style={{
                   background: sel ? "var(--text)" : "var(--surface-raised)",
                   color: sel ? "var(--bg)" : "var(--text)",
@@ -335,8 +348,9 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
                 }}
               >
                 <span
-                  className="block max-w-full text-center leading-[1.15] font-bold tracking-[0.01em] whitespace-nowrap"
-                  style={{ fontSize: fontFor(w) }}
+                  // Never under 14 px: a long word breaks onto a second line (hyphenated where the browser can).
+                  className="block max-w-full text-center leading-[1.1] font-bold tracking-[0.01em] [overflow-wrap:anywhere] hyphens-auto"
+                  style={{ fontSize: wordFont(w) }}
                 >
                   {w}
                 </span>

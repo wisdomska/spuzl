@@ -60,7 +60,13 @@ export const quick = {
       `Group found: ${label}, ${level}: ${words.join(", ")}. ${n >= of ? `${allGroups(of)} found.` : `${n} of ${of} groups.`}`,
     oneAway: (left: number) => `One away. ${left} ${plural(left, "slip")} left.`,
     notGroup: (left: number) => `Not a group. ${left} ${plural(left, "slip")} left.`,
+    /** the groups could not be fetched (no connection, or a run that can't show them) */
     outOfSlips: "Out of slips. The groups stay hidden this time.",
+    /** out of slips: the groups not found are shown, marked as missed */
+    outOfSlipsShown: (n: number) => `Out of slips. Here ${n === 1 ? "is the group" : `are the ${n} groups`} you missed.`,
+    /** printed on a missed group's level tag, after the level */
+    missed: "missed",
+    missedSay: (label: string, level: string, words: string[]) => `Missed, ${level} group: ${label}. ${words.join(", ")}.`,
     lifted: (w: string, n: number) => `${w} lifted. ${n} of 4.`,
     putDown: (w: string, n: number) => `${w} put down. ${n} of 4 lifted.`,
     fourLifted: "Four already lifted. Submit or put one down.",

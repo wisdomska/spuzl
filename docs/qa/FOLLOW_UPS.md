@@ -222,10 +222,6 @@ Seven, Minicross, Buried, Remix, Quickfire, Emoji Hits) and Two Truths. Found in
 
 - **Minicross wrong full grid:** "Not quite. One or more squares are off." never says where. The check (`MinicrossCheck`)
   only returns ok; naming the wrong word(s) would need the server to return them, which is a hint and should cost one.
-- **Quads out of slips:** the run ends on "out of slips" without showing the groups left; the board never holds them
-  (server-judged), so this needs a reveal call like Emoji Hits' `reveal`.
-- **Quads word size:** tiles shrink long words to 9.5 to 13 px (`fontFor`) to fit four across at 320 px; a two-line
-  layout for 9+ letters would keep them at 14 px.
 - **Emoji Hits:** a wrong typed try is cleared from the box and not listed, so the player cannot see what they already
   tried; a small "tried: …" line would help with three tries per round.
 - **Duel ink on gold:** `components/multiplayer/duel.tsx` (round badge and win badge) still uses a raw `#0E0F1A` on

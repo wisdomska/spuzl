@@ -1,7 +1,21 @@
 import { describe, expect, it } from "vitest";
 import { createRng } from "@/lib/rng";
 import type { Difficulty } from "@/games/types";
-import logic, { checkGuess, contentCount, generate, generateAt, grade, hint, practice, progress, replay, verify } from "./logic";
+import logic, {
+  audit,
+  checkGuess,
+  record,
+  contentCount,
+  generate,
+  generateAt,
+  grade,
+  hint,
+  practice,
+  progress,
+  replay,
+  verify,
+} from "./logic";
+import { WORD_MIN_PX, wordFont } from "./rules";
 import { CONTENT, needsReview } from "./content";
 import { PRACTICE_GROUPS, PRACTICE_INDEX } from "./practice";
 import { groupCount, SLIPS, validGuess } from "./rules";
@@ -127,5 +141,45 @@ describe("quads guesses and verification", () => {
     const wrongs = [0, 1, 2, 3].map((k) => [g[0].words[k], g[1].words[k], g[2].words[k], g[3].words[k]]);
     expect(hint(puzzle, solution, { guesses: wrongs })).toBeNull();
     expect(logic.id).toBe("quads");
+  });
+});
+
+describe("quads out of slips (UX pass)", () => {
+  const { puzzle, solution } = generateAt(0, "medium");
+  const g = solution.groups;
+  const wrong = [
+    [g[0].words[0], g[1].words[0], g[2].words[0], g[3].words[0]],
+    [g[0].words[1], g[1].words[1], g[2].words[1], g[3].words[1]],
+    [g[0].words[2], g[1].words[2], g[2].words[2], g[3].words[2]],
+    [g[0].words[3], g[1].words[3], g[2].words[3], g[3].words[3]],
+  ];
+
+  it("logs each wrong set once and reveals the groups only after the last slip", () => {
+    const log: unknown[] = [];
+    const attempt = () => ({ kind: "attempt" as const, state: null, log });
+    for (const w of wrong) {
+      expect(checkGuess(puzzle, solution, { reveal: true }, attempt())).toMatchObject({ invalid: true });
+      const res = checkGuess(puzzle, solution, w, attempt());
+      const e = record(puzzle, solution, w, res, log);
+      expect(e).toEqual({ slip: expect.any(String) });
+      log.push(e);
+      // the same wrong set again is not a new slip
+      expect(record(puzzle, solution, w.slice().reverse(), res, log)).toBeNull();
+    }
+    const shown = checkGuess(puzzle, solution, { reveal: true }, attempt());
+    expect("reveal" in shown && shown.reveal.map((x) => x.level)).toEqual([0, 1, 2, 3]);
+    log.push(record(puzzle, solution, { reveal: true }, shown, log));
+    expect(audit(puzzle, solution, { guesses: [] }, log)).toMatch(/shown/);
+  });
+
+  it("never reveals on a bare reference, and always on the practice round", () => {
+    expect(checkGuess(puzzle, solution, { reveal: true })).toMatchObject({ invalid: true });
+    expect(checkGuess(puzzle, solution, { reveal: true }, { kind: "practice" })).toHaveProperty("reveal");
+    expect(audit(puzzle, solution, { guesses: [] }, [{ slip: "x" }])).toBeNull();
+  });
+
+  it("keeps every word at 14 px or more", () => {
+    for (const row of [puzzle.words, ["INVISIBILITY", "ABRACADABRA", "GO"]])
+      for (const w of row) expect(wordFont(w)).toBeGreaterThanOrEqual(WORD_MIN_PX);
   });
 });

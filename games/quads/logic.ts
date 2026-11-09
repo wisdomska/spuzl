@@ -5,12 +5,13 @@
  * the solution, so it plays and verifies the same way.
  */
 import type { Difficulty, Generated, Hint, VerifyResult } from "@/games/types";
-import type { GuessLogic } from "@/games/_shared/guess";
+import type { GuessContext, GuessLogic } from "@/games/_shared/guess";
 import { createRng, type Rng } from "@/lib/rng";
 import { liveContent } from "@/games/_shared/live";
 import { CONTENT } from "./content";
 import { PRACTICE_GROUPS, PRACTICE_INDEX, PRACTICE_ORDER } from "./practice";
 import {
+  isRevealGuess,
   setKey,
   SLIPS,
   validGuess,
@@ -55,14 +56,48 @@ export function practice(): Generated<QuadsPuzzle, QuadsSolution> {
   return { puzzle, solution, grade: 0 };
 }
 
-/** Pure check of one set of four, for the server guess API. */
-export function checkGuess(p: QuadsPuzzle, s: QuadsSolution, guess: QuadsGuess): QuadsCheck {
+/** Slips the server has seen on this attempt (its move log): each wrong set of four, once. */
+function loggedSlips(log: unknown[]): Set<string> {
+  const out = new Set<string>();
+  for (const e of log) {
+    const k = e && typeof e === "object" ? (e as { slip?: unknown }).slip : undefined;
+    if (typeof k === "string") out.add(k);
+  }
+  return out;
+}
+const loggedReveal = (log: unknown[]) => log.some((e) => !!e && typeof e === "object" && (e as { reveal?: unknown }).reveal === true);
+
+/**
+ * Pure check of one set of four, for the server guess API. A reveal (the groups, easiest first) is only answered
+ * once the attempt's own log holds SLIPS wrong sets, or on the practice round, whose answers are public; a bare
+ * reference or a run with slips left gets nothing.
+ */
+export function checkGuess(p: QuadsPuzzle, s: QuadsSolution, guess: QuadsGuess, ctx: GuessContext = null): QuadsCheck {
+  if (isRevealGuess(guess)) {
+    const allowed = ctx?.kind === "practice" || (ctx?.kind === "attempt" && loggedSlips(ctx.log).size >= SLIPS);
+    if (!allowed) return { ok: false, oneAway: false, invalid: true };
+    const reveal = s.groups.map((g) => ({ label: g.label, words: g.words.slice(), level: g.level })).sort((a, b) => a.level - b.level);
+    return { ok: false, oneAway: false, reveal };
+  }
   if (!validGuess(p, guess)) return { ok: false, oneAway: false, invalid: true };
   const key = setKey(guess);
   const hit = s.groups.find((g) => setKey(g.words) === key);
   if (hit) return { ok: true, group: { label: hit.label, words: hit.words.slice(), level: hit.level } };
   const oneAway = s.groups.some((g) => g.words.filter((w) => guess.includes(w)).length === 3);
   return { ok: false, oneAway };
+}
+
+/** Kept on the attempt: each wrong set of four (once), and that the groups were shown. */
+export function record(_p: QuadsPuzzle, _s: QuadsSolution, guess: QuadsGuess, res: QuadsCheck, log: unknown[]): unknown {
+  if ("reveal" in res) return loggedReveal(log) ? null : { reveal: true };
+  if (res.ok || ("invalid" in res && res.invalid) || !Array.isArray(guess)) return null;
+  const key = setKey(guess);
+  return loggedSlips(log).has(key) ? null : { slip: key };
+}
+
+/** Groups that were shown can't then be solved: a clear after a reveal fails. */
+export function audit(_p: QuadsPuzzle, _s: QuadsSolution, _state: QuadsState, log: unknown[]): string | null {
+  return loggedReveal(log) ? "groups shown before the board was solved" : null;
 }
 
 interface Replay {
@@ -116,6 +151,8 @@ const logic: GuessLogic<QuadsPuzzle, QuadsSolution, QuadsState, QuadsGuess, Quad
   generateAt,
   practice,
   checkGuess,
+  record,
+  audit,
   verify,
   progress,
   hint,
