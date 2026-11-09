@@ -81,7 +81,7 @@ export default async function GamePage({ params }: PageProps<"/games/[id]">) {
         </ol>
       </nav>
 
-      <article className="mt-6 flex max-w-[760px] flex-col gap-10">
+      <article className="mt-6 flex flex-col gap-10">
         <header className="flex flex-col gap-5">
           <div className="flex items-center gap-4">
             <Image src={`/3d/icons/${g.id}.webp`} alt={`${g.name} game icon`} width={88} height={88} priority className="rounded-[22px]" />
@@ -97,7 +97,7 @@ export default async function GamePage({ params }: PageProps<"/games/[id]">) {
               </Link>
             </div>
           </div>
-          <p className="text-[18px] leading-relaxed sm:text-[20px]">{f.definition}</p>
+          <p className="max-w-[70ch] text-[18px] leading-relaxed sm:text-[20px]">{f.definition}</p>
           <div className="flex flex-col gap-2">
             <Link href={`/play/${g.id}`} prefetch={false} className={CTA}>
               <Icon name="play" size={20} />
@@ -110,64 +110,66 @@ export default async function GamePage({ params }: PageProps<"/games/[id]">) {
           </div>
         </header>
 
-        <section aria-labelledby="rule" className="flex flex-col gap-3">
-          <h2 id="rule" className={H2}>
-            {T.ruleTitle}
-          </h2>
-          <p className="bg-surface border-line rounded-[18px] border p-4 text-[17px] leading-relaxed">{g.rule}</p>
-          {g.photosensitive && <p className="text-gold text-[14px]">{T.photosensitive}</p>}
-        </section>
-
-        <section aria-labelledby="how" className="flex flex-col gap-3">
-          <h2 id="how" className={H2}>
-            {T.howTitle(g.name)}
-          </h2>
-          <ol className="flex list-decimal flex-col gap-2 pl-6 text-[16px] leading-relaxed">
-            {T.howSteps(g).map((s) => (
-              <li key={s}>{s}</li>
-            ))}
-          </ol>
-        </section>
-
-        <section aria-labelledby="facts" className="flex flex-col gap-3">
-          <h2 id="facts" className={H2}>
-            {T.factsTitle}
-          </h2>
-          <dl className="border-line divide-line grid divide-y rounded-[18px] border">
-            {facts.map(([k, v]) => (
-              <div key={k} className="flex flex-col gap-0.5 px-4 py-3 sm:flex-row sm:gap-4">
-                <dt className="text-muted w-36 shrink-0 text-[14px] font-semibold">{k}</dt>
-                <dd className="text-[15px]">{v}</dd>
-              </div>
-            ))}
-          </dl>
-        </section>
-
-        <section aria-labelledby="modes" className="flex flex-col gap-3">
-          <h2 id="modes" className={H2}>
-            {T.modesTitle}
-          </h2>
-          <ul className="flex list-disc flex-col gap-2 pl-6 text-[16px] leading-relaxed">
-            {f.modeLines.map((m) => (
-              <li key={m}>{m}</li>
-            ))}
-          </ul>
-        </section>
-
-        <section aria-labelledby="faq" className="flex flex-col gap-3">
-          <h2 id="faq" className={H2}>
-            {T.faqTitle(g.name)}
-          </h2>
-          <FaqAccordion items={f.faq} />
-        </section>
-
-        <div className="bg-surface-raised flex flex-col items-start gap-3 rounded-[24px] p-6">
-          <p className="font-display text-[22px] font-black">{T.ctaTitle(g.name)}</p>
-          <p className="text-muted text-[15px]">{T.ctaNote}</p>
-          <Link href={`/play/${g.id}`} prefetch={false} className={CTA}>
-            <Icon name="play" size={20} />
-            {T.cta(g.name)}
-          </Link>
+        {/* Full width: the guide on the left, the quick facts and Play on the right (sticky) on wide screens; stacked on phones */}
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:items-start lg:gap-14">
+          <div className="flex min-w-0 flex-col gap-10">
+            <section aria-labelledby="rule" className="flex flex-col gap-3">
+              <h2 id="rule" className={H2}>
+                {T.ruleTitle}
+              </h2>
+              <p className="bg-surface border-line rounded-[18px] border p-4 text-[17px] leading-relaxed">{g.rule}</p>
+              {g.photosensitive && <p className="text-gold text-[14px]">{T.photosensitive}</p>}
+            </section>
+            <section aria-labelledby="how" className="flex flex-col gap-3">
+              <h2 id="how" className={H2}>
+                {T.howTitle(g.name)}
+              </h2>
+              <ol className="flex list-decimal flex-col gap-2 pl-6 text-[16px] leading-relaxed">
+                {T.howSteps(g).map((s) => (
+                  <li key={s}>{s}</li>
+                ))}
+              </ol>
+            </section>
+            <section aria-labelledby="modes" className="flex flex-col gap-3">
+              <h2 id="modes" className={H2}>
+                {T.modesTitle}
+              </h2>
+              <ul className="flex list-disc flex-col gap-2 pl-6 text-[16px] leading-relaxed">
+                {f.modeLines.map((m) => (
+                  <li key={m}>{m}</li>
+                ))}
+              </ul>
+            </section>
+            <section aria-labelledby="faq" className="flex flex-col gap-3">
+              <h2 id="faq" className={H2}>
+                {T.faqTitle(g.name)}
+              </h2>
+              <FaqAccordion items={f.faq} />
+            </section>
+          </div>
+          <aside className="flex min-w-0 flex-col gap-6 lg:sticky lg:top-24">
+            <section aria-labelledby="facts" className="flex flex-col gap-3">
+              <h2 id="facts" className={H2}>
+                {T.factsTitle}
+              </h2>
+              <dl className="border-line divide-line grid divide-y rounded-[18px] border">
+                {facts.map(([k, v]) => (
+                  <div key={k} className="flex flex-col gap-0.5 px-4 py-3 sm:flex-row sm:gap-4">
+                    <dt className="text-muted w-36 shrink-0 text-[14px] font-semibold">{k}</dt>
+                    <dd className="text-[15px]">{v}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+            <div className="bg-surface-raised flex flex-col items-start gap-3 rounded-[24px] p-6">
+              <p className="font-display text-[22px] font-black">{T.ctaTitle(g.name)}</p>
+              <p className="text-muted text-[15px]">{T.ctaNote}</p>
+              <Link href={`/play/${g.id}`} prefetch={false} className={CTA}>
+                <Icon name="play" size={20} />
+                {T.cta(g.name)}
+              </Link>
+            </div>
+          </aside>
         </div>
       </article>
 
