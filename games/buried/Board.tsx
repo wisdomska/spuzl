@@ -25,7 +25,7 @@ import {
 
 const GAP = 2;
 const PAD = 6;
-const INK = "#0E0F1A";
+const INK = "var(--ink-on-bright)";
 
 /**
  * Buried board. Drag in a straight line (8 directions, either way) over a hidden word, or tap its first

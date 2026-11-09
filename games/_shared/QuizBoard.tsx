@@ -12,7 +12,7 @@ import { usePhysicalKeyboard } from "@/components/game/useInputMode";
 import { keyboardCopy } from "@/lib/copy/keyboard";
 import { Kbd } from "./LetterKeyboard";
 
-const INK = "#0E0F1A";
+const INK = "var(--ink-on-bright)";
 const LETTERS = ["A", "B", "C", "D"];
 /** default pause on the revealed answer before the next question (Quickfire passes its game setting) */
 const REVEAL_MS = 1100;
@@ -545,7 +545,7 @@ export function QuizBoard({
                     {wrongPick && <span aria-hidden className="hatch absolute inset-0" />}
                     <span
                       className="relative flex h-7 w-7 flex-none items-center justify-center rounded-[8px] font-mono text-[13px] font-semibold"
-                      style={{ background: isRight ? "rgb(14 15 26 / .15)" : "var(--surface)" }}
+                      style={{ background: isRight ? "color-mix(in srgb, var(--ink-on-bright) 15%, transparent)" : "var(--surface)" }}
                     >
                       {isRight ? <Icon name="check" size={14} /> : wrongPick ? <Icon name="x" size={14} /> : LETTERS[k]}
                     </span>

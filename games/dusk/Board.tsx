@@ -20,7 +20,7 @@ const MARK = 18;
 /* Tile looks (Game Boards: Dusk). Light theme: --line matches the board, so moons use the muted ink tile. */
 const LOOK = {
   empty: "bg-[var(--surface)] text-[var(--text)]",
-  sun: "bg-[var(--world)] text-[#0E0F1A]",
+  sun: "bg-[var(--world)] text-[var(--ink-on-bright)]",
   moon: "bg-[var(--line)] text-[var(--text)] [[data-theme=light]_&]:bg-[var(--text-muted)] [[data-theme=light]_&]:text-[var(--surface)]",
 };
 const GIVEN_RING = "color-mix(in srgb, var(--text-muted) 50%, var(--surface))";
@@ -265,10 +265,20 @@ export default function DuskBoard({ puzzle, initialState, hint, disabled, api }:
                   {done && <span aria-hidden className="absolute inset-0" style={waveStyle(dist, "var(--world)")} />}
                   {bad && <span aria-hidden className="hatch absolute inset-0 rounded-[10px]" />}
                   {v === SUN && (
-                    <Icon name="sun" size={Math.round(cell * 0.55)} className="relative" style={done ? { color: "#0E0F1A" } : undefined} />
+                    <Icon
+                      name="sun"
+                      size={Math.round(cell * 0.55)}
+                      className="relative"
+                      style={done ? { color: "var(--ink-on-bright)" } : undefined}
+                    />
                   )}
                   {v === MOON && (
-                    <Icon name="moon" size={Math.round(cell * 0.5)} className="relative" style={done ? { color: "#0E0F1A" } : undefined} />
+                    <Icon
+                      name="moon"
+                      size={Math.round(cell * 0.5)}
+                      className="relative"
+                      style={done ? { color: "var(--ink-on-bright)" } : undefined}
+                    />
                   )}
                 </div>
               );

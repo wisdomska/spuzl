@@ -270,7 +270,7 @@ export default function RungsBoard({ puzzle, initialState, hint, disabled, mode,
             cell(text[i] ?? "", {
               key: `${key}${i}`,
               bg: word ? "var(--world)" : locked ? "var(--surface-raised)" : "var(--surface)",
-              fg: word ? "#0E0F1A" : undefined,
+              fg: word ? "var(--ink-on-bright)" : undefined,
               ring:
                 isActive && i === Math.min(text.length, LEN - 1)
                   ? "inset 0 0 0 3px var(--world)"

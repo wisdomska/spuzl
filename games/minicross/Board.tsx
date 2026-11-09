@@ -13,7 +13,7 @@ import { ClueList } from "@/games/_shared/ClueList";
 import { cellsOf, clueAt, numberGrid, type Clue, type Dir, type MinicrossCheck, type MinicrossPuzzle, type MinicrossState } from "./rules";
 
 const GAP = 2;
-const INK = "#0E0F1A";
+const INK = "var(--ink-on-bright)";
 const PAPER = "#F4F5FB";
 
 /**

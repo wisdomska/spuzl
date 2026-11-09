@@ -11,7 +11,7 @@ import { analyze, endpoints, type PairupPuzzle, type PairupState } from "./logic
 
 const GAP = 3;
 const PAD = 6;
-const INK = "#0E0F1A";
+const INK = "var(--ink-on-bright)";
 /** Pair colours: the world fills (all readable with ink text), then silver. Every pair also shows its number. */
 const PAIR_COLORS = [
   "var(--w-line)",

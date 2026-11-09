@@ -14,7 +14,7 @@ import { canMove, distances, replay, visibleFrom, type LostPuzzle, type LostStat
 const VIEW = 7;
 const PAD = 6;
 const WALL = 4;
-const INK = "#0E0F1A";
+const INK = "var(--ink-on-bright)";
 const KEY_DIR: Record<string, number> = {
   ArrowUp: 0,
   ArrowRight: 1,

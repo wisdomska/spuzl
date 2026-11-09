@@ -16,7 +16,7 @@ import { adjacent, MIN_LEN, REASON_COPY, spell, type CoilCheck, type CoilPuzzle,
 
 const GAP = 4;
 const PAD = 6;
-const INK = "#0E0F1A";
+const INK = "var(--ink-on-bright)";
 
 /**
  * Coil board (Game Boards: Coil). Round letter cells on the dark board; drag through neighbours in any

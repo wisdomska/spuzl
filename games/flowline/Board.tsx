@@ -12,7 +12,7 @@ import { analyze, masksOf, type FlowlinePuzzle, type FlowlineState } from "./log
 
 const GAP = 3;
 const PAD = 6;
-const INK = "#0E0F1A";
+const INK = "var(--ink-on-bright)";
 const DRY = "color-mix(in srgb, var(--text-muted) 40%, var(--surface))";
 
 /**

@@ -14,7 +14,7 @@ import { ShellAside } from "@/components/game/ShellAside";
 import { TypingKeys } from "@/games/_shared/LetterKeyboard";
 import { ROUNDS, type RemixCheck, type RemixPuzzle, type RemixState } from "./rules";
 
-const INK = "#0E0F1A";
+const INK = "var(--ink-on-bright)";
 
 /**
  * Remix board. Three rounds; each shows a scrambled word as letter tiles. Tap tiles (or type) to fill the

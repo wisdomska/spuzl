@@ -11,7 +11,7 @@ import { checkPath, maxClue, nextClue, RULE_COPY, stepError, wallSet, type Weave
 
 const GAP = 3;
 const PAD = 6;
-const INK = "#0E0F1A";
+const INK = "var(--ink-on-bright)";
 
 interface Trail {
   id: number;

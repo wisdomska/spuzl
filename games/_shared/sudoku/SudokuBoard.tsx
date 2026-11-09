@@ -411,7 +411,10 @@ export function SudokuBoard({
                   {v ? (
                     <span
                       className="relative"
-                      style={{ ...(done ? { color: "#0E0F1A" } : {}), marginTop: cageOf ? Math.round(labelFont * 0.6) : undefined }}
+                      style={{
+                        ...(done ? { color: "var(--ink-on-bright)" } : {}),
+                        marginTop: cageOf ? Math.round(labelFont * 0.6) : undefined,
+                      }}
                     >
                       {v}
                     </span>

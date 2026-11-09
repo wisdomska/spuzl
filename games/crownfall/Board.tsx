@@ -272,7 +272,7 @@ export default function CrownfallBoard({ puzzle, initialState, hint, disabled, m
                         name="crown-simple"
                         size={Math.round(cell * 0.5)}
                         className="relative"
-                        style={done ? { color: "#0E0F1A" } : undefined}
+                        style={done ? { color: "var(--ink-on-bright)" } : undefined}
                       />
                     )}
                     {v === MARK && !done && <Icon name="x" size={Math.round(cell * 0.45)} className="relative" />}

@@ -26,7 +26,7 @@ import { usePhysicalKeyboard } from "@/components/game/useInputMode";
 import { TypingKeys } from "@/games/_shared/LetterKeyboard";
 import { keyboardCopy } from "@/lib/copy/keyboard";
 
-const INK = "#0E0F1A";
+const INK = "var(--ink-on-bright)";
 const HEX_W = 84;
 const HEX_H = 74;
 const HEX = "polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0% 50%)";
