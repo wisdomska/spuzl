@@ -289,7 +289,7 @@ export default function SevenBoard({ puzzle, initialState, hint, disabled, mode,
               }}
             />
           </div>
-          <span className="text-muted text-[13px]">
+          <span className="text-muted text-[14px]">
             {found.length} of {puzzle.total} words{nextRank ? ` · ${Math.ceil(nextRank.pct * maxScore) - score} to ${nextRank.name}` : ""}
           </span>
         </div>
@@ -383,7 +383,7 @@ export default function SevenBoard({ puzzle, initialState, hint, disabled, mode,
           aria-label="Words found"
           role="list"
         >
-          {found.length === 0 && <span className="text-muted self-center text-[13px]">Words you find land here.</span>}
+          {found.length === 0 && <span className="text-muted self-center text-[14px]">Words you find land here.</span>}
           {found
             .slice()
             .sort()
@@ -393,7 +393,7 @@ export default function SevenBoard({ puzzle, initialState, hint, disabled, mode,
                 <span
                   role="listitem"
                   key={w}
-                  className={`flex h-8 items-center gap-1 rounded-[10px] px-2.5 text-[13px] font-bold tracking-[0.03em] ${popKey === w ? "cell-pop-a" : ""}`}
+                  className={`flex h-8 items-center gap-1 rounded-[10px] px-2.5 text-[14px] font-bold tracking-[0.03em] ${popKey === w ? "cell-pop-a" : ""}`}
                   style={{
                     background: pg ? "var(--world)" : "var(--surface-raised)",
                     color: pg ? INK : "var(--text)",

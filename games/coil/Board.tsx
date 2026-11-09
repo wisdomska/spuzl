@@ -314,7 +314,7 @@ export default function CoilBoard({ puzzle, initialState, hint, disabled, mode, 
         <Icon name="leaf" size={16} style={{ color: "var(--world)" }} />
         <span className="truncate">Theme: {puzzle.theme}</span>
       </span>
-      <span className="num text-muted text-[13px] font-semibold whitespace-nowrap">
+      <span className="num text-muted text-[14px] font-semibold whitespace-nowrap">
         {found.length} of {puzzle.count}
       </span>
     </div>
@@ -331,7 +331,7 @@ export default function CoilBoard({ puzzle, initialState, hint, disabled, mode, 
                 ref={(el) => {
                   slotEls.current[k] = el;
                 }}
-                className={`flex h-9 min-w-12 items-center justify-center rounded-[12px] px-3 text-[13px] font-extrabold tracking-[0.04em] ${shown && k === landed - 1 ? "cell-pop-a" : ""}`}
+                className={`flex h-9 min-w-12 items-center justify-center rounded-[12px] px-3 text-[14px] font-extrabold tracking-[0.04em] ${shown && k === landed - 1 ? "cell-pop-a" : ""}`}
                 style={{
                   fontFamily: "var(--font-display)",
                   background: shown ? "var(--world)" : "transparent",
@@ -502,7 +502,7 @@ export default function CoilBoard({ puzzle, initialState, hint, disabled, mode, 
 function BonusList({ words, maxWidth }: { words: string[]; maxWidth?: number }) {
   return (
     <div className="flex w-full flex-col items-center gap-1.5" style={{ maxWidth }}>
-      <span className="text-muted flex items-center gap-1 text-[13px] font-semibold">
+      <span className="text-muted flex items-center gap-1 text-[14px] font-semibold">
         <Icon name="sparkle" size={14} style={{ color: "var(--gold)" }} />
         Bonus words · {words.length}
       </span>
@@ -510,7 +510,7 @@ function BonusList({ words, maxWidth }: { words: string[]; maxWidth?: number }) 
         {words.map((w, k) => (
           <li
             key={w}
-            className={`flex h-8 items-center rounded-[10px] px-2.5 text-[13px] font-bold tracking-[0.03em] ${k === words.length - 1 ? "cell-pop-a" : ""}`}
+            className={`flex h-8 items-center rounded-[10px] px-2.5 text-[14px] font-bold tracking-[0.03em] ${k === words.length - 1 ? "cell-pop-a" : ""}`}
             style={{ background: "var(--surface-raised)", color: "var(--text)", boxShadow: "inset 0 0 0 2px var(--gold)" }}
           >
             {w}

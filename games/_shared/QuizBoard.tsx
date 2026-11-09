@@ -463,7 +463,7 @@ export function QuizBoard({
         </div>
         <span className="flex-1" />
         {phase !== "ready" && (
-          <span className="num text-muted text-[13px] font-semibold">
+          <span className="num text-muted text-[14px] font-semibold">
             {phase === "done" ? t.summaryTitle : t.step(noun, Math.min(i + 1, total), total)}
           </span>
         )}
@@ -504,11 +504,11 @@ export function QuizBoard({
               {answers.length ? t.resumeNext(noun, answers.length + 1, total) : t.intro(total, noun, Math.round(limitMs / 1000))}
             </span>
             {!answers.length && <span className="text-muted text-[14px]">{t.ready}</span>}
-            <span className="text-muted text-[13px]">{t.clockRuns}</span>
+            <span className="text-muted text-[14px]">{t.clockRuns}</span>
           </>
         ) : (
           <>
-            {round.tag && <span className="text-muted text-[12px] font-semibold tracking-[.08em] uppercase">{round.tag}</span>}
+            {round.tag && <span className="text-muted text-[14px] font-semibold tracking-[.08em] uppercase">{round.tag}</span>}
             {round.prompt}
           </>
         )}

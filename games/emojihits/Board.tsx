@@ -364,7 +364,7 @@ export default function EmojiHitsBoard({ puzzle, initialState, hint, disabled, m
         </div>
         <span className="flex-1" />
         {phase !== "ready" && (
-          <span className="num text-muted text-[13px] font-semibold">{phase === "done" ? t.summaryTitle : t.step(i + 1, total)}</span>
+          <span className="num text-muted text-[14px] font-semibold">{phase === "done" ? t.summaryTitle : t.step(i + 1, total)}</span>
         )}
       </div>
 
@@ -409,7 +409,7 @@ export default function EmojiHitsBoard({ puzzle, initialState, hint, disabled, m
           </>
         ) : (
           <>
-            <span className="text-muted text-[12px] font-semibold tracking-[.08em] uppercase">{t.kindLine(round.kind, round.words)}</span>
+            <span className="text-muted text-[14px] font-semibold tracking-[.08em] uppercase">{t.kindLine(round.kind, round.words)}</span>
             <span
               role="img"
               aria-label={t.clueSay(round.kind, round.words, round.emoji)}
@@ -468,7 +468,7 @@ export default function EmojiHitsBoard({ puzzle, initialState, hint, disabled, m
               </button>
             </form>
           )}
-          <div className="text-muted flex items-center justify-between text-[13px] font-medium">
+          <div className="text-muted flex items-center justify-between text-[14px] font-medium">
             <span>{phase === "asking" ? t.triesLeft(triesLeft) : ""}</span>
             <span className="flex gap-[5px]" aria-hidden>
               {Array.from({ length: puzzle.tries }, (_, k) => (

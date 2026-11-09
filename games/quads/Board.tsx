@@ -270,7 +270,7 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
               // backgroundColor, not background: the colour-blind pattern (a background-image) layers on top.
               style={{ backgroundColor: LEVEL_BG[levelOf(g)], color: INK }}
             >
-              <span className="flex max-w-full min-w-0 items-center gap-1.5 text-[13px] leading-tight font-extrabold">
+              <span className="flex max-w-full min-w-0 items-center gap-1.5 text-[14px] leading-tight font-extrabold">
                 <span
                   aria-hidden
                   data-level-tag
@@ -284,7 +284,7 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
                   {g.label}
                 </span>
               </span>
-              <span aria-hidden className="max-w-full truncate text-[13px] leading-tight font-medium">
+              <span aria-hidden className="max-w-full truncate text-[14px] leading-tight font-medium">
                 {g.words.join(" · ")}
               </span>
             </motion.div>
@@ -347,7 +347,7 @@ export default function QuadsBoard({ puzzle, initialState, hint, disabled, mode,
       </div>
 
       <div className="flex items-center justify-between pt-1">
-        <span className="text-muted text-[13px] font-medium">{t.slipsLeft}</span>
+        <span className="text-muted text-[14px] font-medium">{t.slipsLeft}</span>
         <div className="flex gap-[5px]" role="img" aria-label={t.slipsSay(slips, SLIPS)}>
           {Array.from({ length: SLIPS }, (_, k) => (
             <span

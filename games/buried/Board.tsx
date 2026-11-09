@@ -393,7 +393,7 @@ export default function BuriedBoard({ puzzle, initialState, hint, disabled, mode
             return (
               <li
                 key={w}
-                className={`flex h-8 items-center gap-1 rounded-[10px] px-2.5 text-[13px] font-bold tracking-[0.03em] ${pop === w ? "cell-pop-a" : ""}`}
+                className={`flex h-8 items-center gap-1 rounded-[10px] px-2.5 text-[14px] font-bold tracking-[0.03em] ${pop === w ? "cell-pop-a" : ""}`}
                 style={{
                   background: got ? "var(--world)" : "var(--surface-raised)",
                   color: got ? INK : "var(--text)",
@@ -409,7 +409,7 @@ export default function BuriedBoard({ puzzle, initialState, hint, disabled, mode
 
         {bonus.length > 0 && (
           <div className="flex w-full max-w-[400px] flex-col items-center gap-1.5">
-            <span className="text-muted flex items-center gap-1 text-[13px] font-semibold">
+            <span className="text-muted flex items-center gap-1 text-[14px] font-semibold">
               <Icon name="sparkle" size={14} style={{ color: "var(--gold)" }} />
               Bonus words · {bonus.length}
             </span>
@@ -417,7 +417,7 @@ export default function BuriedBoard({ puzzle, initialState, hint, disabled, mode
               {bonus.map((b, k) => (
                 <li
                   key={b.word}
-                  className={`flex h-8 items-center rounded-[10px] px-2.5 text-[13px] font-bold tracking-[0.03em] ${k === bonus.length - 1 ? "cell-pop-a" : ""}`}
+                  className={`flex h-8 items-center rounded-[10px] px-2.5 text-[14px] font-bold tracking-[0.03em] ${k === bonus.length - 1 ? "cell-pop-a" : ""}`}
                   style={{ background: "var(--surface-raised)", color: "var(--text)", boxShadow: "inset 0 0 0 2px var(--gold)" }}
                 >
                   {b.word}
@@ -431,7 +431,7 @@ export default function BuriedBoard({ puzzle, initialState, hint, disabled, mode
           className="flex w-full max-w-[400px] flex-col items-center gap-1.5 rounded-[16px] p-3"
           style={{ background: "var(--surface)" }}
         >
-          <span className="text-muted text-[13px] font-medium">Secret phrase</span>
+          <span className="text-muted text-[14px] font-medium">Secret phrase</span>
           <div
             className="flex flex-wrap justify-center gap-x-3 gap-y-1.5"
             aria-label={done ? phrase.join(" ") : "Hidden until every word is found"}

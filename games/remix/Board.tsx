@@ -195,7 +195,7 @@ export default function RemixBoard({ puzzle, initialState, hint, disabled, mode,
         {Array.from({ length: ROUNDS }, (_, k) => (
           <span
             key={k}
-            className="flex h-8 items-center gap-1 rounded-[10px] px-2.5 text-[13px] font-bold"
+            className="flex h-8 items-center gap-1 rounded-[10px] px-2.5 text-[14px] font-bold"
             style={{
               background: k < answers.length ? "var(--world)" : k === round ? "var(--surface-raised)" : "var(--surface)",
               color: k < answers.length ? INK : "var(--text-muted)",
