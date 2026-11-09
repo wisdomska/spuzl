@@ -47,7 +47,8 @@ export default function PairupBoard({ puzzle, initialState, hint, disabled, mode
   const trailId = useRef(0);
   // Lines restored from a saved game are drawn, not grown, so the board appears at once.
   const [seeded] = useState(() => new Set(lines.flatMap((l, k) => l.slice(1).map((q, s) => `${k}:${s}:${l[s]}-${q}`))));
-  const drag = useRef<{ last: number; k: number } | null>(null);
+  /** the drag in progress, with the lines as they were when it began (its one undo step) */
+  const drag = useRef<{ last: number; k: number; snap: PairupState } | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const a = analyze(puzzle, lines);
   const [done, setDone] = useState(a.complete);
@@ -220,12 +221,13 @@ export default function PairupBoard({ puzzle, initialState, hint, disabled, mode
     if (cell < 0) return;
     keys.setFocus(cell);
     if (disabled || done) return;
-    // one undo step per drag: snapshot now, then the drag's moves are not recorded separately
-    setHist((h) => [...h.slice(-60), linesRef.current]);
+    // One undo step per drag: the lines as they are now, kept only if the drag changes something (a tap on an
+    // empty cell or on a line's own start dot must not leave an undo that does nothing).
+    const snap = linesRef.current;
     const k = begin(cell, false);
     if (k === null) return;
     gridRef.current?.setPointerCapture?.(e.pointerId);
-    drag.current = { last: cell, k };
+    drag.current = { last: cell, k, snap };
   };
   const onPointerMove = (e: React.PointerEvent) => {
     const d = drag.current;
@@ -235,7 +237,11 @@ export default function PairupBoard({ puzzle, initialState, hint, disabled, mode
     d.last = cell;
     extend(d.k, cell, true);
   };
-  const endDrag = () => (drag.current = null);
+  const endDrag = () => {
+    const d = drag.current;
+    drag.current = null;
+    if (d && linesRef.current !== d.snap) setHist((h) => [...h.slice(-60), d.snap]);
+  };
 
   const onKey = useCallback(
     (cell: number) => {
