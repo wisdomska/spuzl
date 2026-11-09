@@ -484,7 +484,12 @@ export function BayMatch({ id }: { id: string }) {
               {diff > 0 && <span className="num text-muted ml-1 font-sans text-[12px] font-semibold">+{diff}</span>}
             </span>
           )}
-          {!chess && <span className="text-muted text-[13px]">{active ? (mine ? "Your move" : "Their move") : "Waiting"}</span>}
+          {/* Whose move, in words. Chess with a clock says it with the lit clock; without one (async) it needs this too. */}
+          {(!chess || c === null) && v.status === "active" && (
+            <span className="text-muted text-[13px]" data-turn-line>
+              {active ? (mine ? boardGames.match.yourMove : boardGames.match.theirMove) : boardGames.match.waiting}
+            </span>
+          )}
         </div>
         {c !== null ? (
           <div

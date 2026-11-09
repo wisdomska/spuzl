@@ -50,6 +50,10 @@ export const boardGames = {
     keep: "Keep playing",
     /** the move is on its way and the Practice bot answers in the same trip */
     thinking: "Thinking…",
+    /** under each name: whose move it is (async games have no clock to say it) */
+    yourMove: "Your move",
+    theirMove: "Their move",
+    waiting: "Waiting",
   },
   bot: {
     /** entry under the game card (World view, Play anytime) */

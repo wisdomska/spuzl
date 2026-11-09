@@ -214,8 +214,6 @@ the Duel loss line. Still open:
   (`phaser/render/platformer.ts`); a pre-drawn dot texture would cut the draw calls. Profile on a mid phone first.
 - **Four Up, Oware and Flip live boards have no roving keyboard focus** (`components/multiplayer/bay/boards.tsx`);
   Four Up wraps gridcells in a column button. Chess and draughts have it now (`Grid8`, `lib/multiplayer/grid-nav.ts`).
-- **Async chess with no clock:** the opponent's row never says "Their move"; only your own "Your turn" pill shows
-  the turn.
 - **A draw offer to a person can't be withdrawn**, and Takeback with no move to take back answers with a generic
   error toast.
 - **Bot games:** Restart (menu) starts over mid-game without asking.
