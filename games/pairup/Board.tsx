@@ -6,7 +6,7 @@ import { useGridKeys } from "@/components/game/useGridKeys";
 import { sfx } from "@/games/_shared/sfx";
 import { adjacent } from "@/games/_shared/grid";
 import { LineStyles } from "@/games/_shared/LineStyles";
-import { useFitCell } from "@/games/_shared/useFitCell";
+import { useFitCellHeight } from "@/games/_shared/useFitCell";
 import { analyze, endpoints, type PairupPuzzle, type PairupState } from "./logic";
 import { puzzleBoards } from "@/lib/copy/puzzle-boards";
 
@@ -53,7 +53,9 @@ export default function PairupBoard({ puzzle, initialState, hint, disabled, mode
   const gridRef = useRef<HTMLDivElement>(null);
   const a = analyze(puzzle, lines);
   const [done, setDone] = useState(a.complete);
-  const { cs, bleed } = useFitCell(n, GAP, PAD);
+  // Short phones: the cells step down until the whole shell fits the screen (no page scroll).
+  const rootRef = useRef<HTMLDivElement>(null);
+  const { cs, bleed } = useFitCellHeight(n, GAP, PAD, n, rootRef);
   const pitch = cs + GAP;
   const th = Math.round(cs * 0.3);
   const center = (i: number) => ({ x: PAD + (i % n) * pitch + cs / 2, y: PAD + Math.floor(i / n) * pitch + cs / 2 });
@@ -329,6 +331,7 @@ export default function PairupBoard({ puzzle, initialState, hint, disabled, mode
 
   return (
     <div
+      ref={rootRef}
       className={`overflow-x-auto ${done ? "board-pulse" : ""}`}
       style={{ marginInline: -bleed, maxWidth: `calc(100% + ${bleed * 2}px)` }}
     >

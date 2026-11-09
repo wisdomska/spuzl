@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
-import { useFitCell } from "@/games/_shared/useFitCell";
+import { useFitCellHeight } from "@/games/_shared/useFitCell";
 import { useGridKeys } from "@/components/game/useGridKeys";
 import { sfx } from "@/games/_shared/sfx";
 import { adjacent, dirBetween, edgeKey, step } from "@/games/_shared/grid";
@@ -46,7 +46,9 @@ export default function WeaveBoard({ puzzle, initialState, hint, disabled, mode,
   const [seeded] = useState(() => new Set(path.slice(1).map((b, k) => `${k}:${path[k]}-${b}`)));
   const drag = useRef<{ last: number } | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
-  const { cs, bleed } = useFitCell(n, GAP, PAD);
+  // Short phones: the cells step down until the whole shell fits the screen (no page scroll).
+  const rootRef = useRef<HTMLDivElement>(null);
+  const { cs, bleed } = useFitCellHeight(n, GAP, PAD, n, rootRef);
   const pitch = cs + GAP;
   const th = Math.round(cs * 0.32);
   const center = (i: number) => ({ x: PAD + (i % n) * pitch + cs / 2, y: PAD + Math.floor(i / n) * pitch + cs / 2 });
@@ -267,6 +269,7 @@ export default function WeaveBoard({ puzzle, initialState, hint, disabled, mode,
 
   return (
     <div
+      ref={rootRef}
       className={`overflow-x-auto ${done ? "board-pulse" : ""}`}
       style={{ marginInline: -bleed, maxWidth: `calc(100% + ${bleed * 2}px)` }}
     >

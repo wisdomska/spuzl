@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
-import { useFitCell } from "@/games/_shared/useFitCell";
+import { useFitCellHeight } from "@/games/_shared/useFitCell";
 import { useGridKeys } from "@/components/game/useGridKeys";
 import { sfx } from "@/games/_shared/sfx";
 import { BIT, DIR_NAME } from "@/games/_shared/grid";
@@ -34,7 +34,9 @@ export default function FlowlineBoard({ puzzle, initialState, hint, disabled, mo
   const [last, setLast] = useState(puzzle.source);
   const turnsRef = useRef(turns);
   const streak = useRef(0);
-  const { cs, bleed } = useFitCell(cols, GAP, PAD);
+  // Short phones: the cells step down until the whole shell fits the screen (no page scroll).
+  const rootRef = useRef<HTMLDivElement>(null);
+  const { cs, bleed } = useFitCellHeight(cols, GAP, PAD, rows, rootRef);
   const masks = masksOf(puzzle, turns);
   const a = analyze(puzzle, masks);
   const [done, setDone] = useState(a.solved);
@@ -174,6 +176,7 @@ export default function FlowlineBoard({ puzzle, initialState, hint, disabled, mo
 
   return (
     <div
+      ref={rootRef}
       className={`overflow-x-auto ${done ? "board-pulse" : ""}`}
       style={{ marginInline: -bleed, maxWidth: `calc(100% + ${bleed * 2}px)` }}
     >
