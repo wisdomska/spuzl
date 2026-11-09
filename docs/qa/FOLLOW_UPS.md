@@ -212,9 +212,8 @@ the Duel loss line. Still open:
 
 - **Rage Ridge painter:** still four small closures per frame and about 270 dots for the background grid
   (`phaser/render/platformer.ts`); a pre-drawn dot texture would cut the draw calls. Profile on a mid phone first.
-- **Live boards have no roving keyboard focus** (`components/multiplayer/bay/boards.tsx`): chess and draughts are 64
-  Tab stops, Four Up wraps gridcells in a column button. `useGridKeys` as the solo boards use would fix keyboard and
-  screen-reader play.
+- **Four Up, Oware and Flip live boards have no roving keyboard focus** (`components/multiplayer/bay/boards.tsx`);
+  Four Up wraps gridcells in a column button. Chess and draughts have it now (`Grid8`, `lib/multiplayer/grid-nav.ts`).
 - **Board Bay chess move is not optimistic:** the piece drops back to its square for the round trip, then jumps. Show
   the move pending (and the bot's reply after it) instead.
 - **Draughts: two capture paths that end on the same square** can't be told apart; `paths.find` takes the first.

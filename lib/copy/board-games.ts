@@ -14,12 +14,16 @@ export const boardGames = {
     promoteTo: (piece: string) => `Promote to ${piece}`,
     promoted: (piece: string) => `Promoted to ${piece}.`,
     promotionCancelled: "Promotion cancelled.",
+    /** Escape on the board, or a tap off the piece */
+    putDown: "Piece put down.",
+    lastMove: "last move",
   },
   /** Live draughts board: why a tap on your own man did nothing, and the last move's squares */
   draughts: {
     mustCapture: "Captures are compulsory. Take with an outlined piece.",
     blocked: "That piece is blocked. Outlined pieces can move.",
     lastMove: "last move",
+    putDown: "Piece put down.",
   },
   /** Live Oware board: why a tap on your own pit did nothing, and the pit sown last */
   oware: {

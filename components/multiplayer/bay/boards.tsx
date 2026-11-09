@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { gridMove } from "@/lib/multiplayer/grid-nav";
 import { Icon } from "@/components/ui/Icon";
 import { boardGames } from "@/lib/copy/board-games";
 import { fitRow, isWide, useCellSize, useViewportHeight, useViewportWidth, wideCell } from "@/components/game/useBoardSize";
@@ -95,9 +96,17 @@ function useOwarePit() {
 const FILES = "abcdefgh";
 const sqName = (sq: number) => FILES[sq & 7] + String(8 - (sq >> 3));
 
+/** What Grid8 hands each square: its place in the Tab order and its visual index (for roving focus). */
+export interface CellProps {
+  tabIndex: number;
+  "data-vi": number;
+}
+
 /**
  * The 8 × 8 board. It does not clip (chess pieces rise into the square behind them, and the back rank above the
  * board), so the four corner squares carry the rounding themselves. `overlay` sits on top (the promotion picker).
+ * Keyboard (WAI-ARIA grid): the board is one Tab stop; arrows, Home, End, PageUp and PageDown move between squares;
+ * Enter or Space presses the focused square; Escape clears a selection (`onEscape` returns true when it did).
  */
 function Grid8({
   flipped,
@@ -106,24 +115,55 @@ function Grid8({
   label,
   overlay,
   headroom = 0,
+  onEscape,
 }: {
   flipped: boolean;
   cell: number;
-  render: (sq: number) => ReactNode;
+  render: (sq: number, cellProps: CellProps) => ReactNode;
   label: string;
   overlay?: ReactNode;
   /** space above the board for tall back-rank pieces, in px */
   headroom?: number;
+  onEscape?: () => boolean;
 }) {
-  const order = Array.from({ length: 64 }, (_, i) => (flipped ? 63 - i : i));
+  const [focus, setFocus] = useState(0);
+  const toSq = (vi: number) => (flipped ? 63 - vi : vi);
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Escape") {
+      // Only when there was something to clear; otherwise Escape stays the screen's (leave the game).
+      if (onEscape?.()) e.preventDefault();
+      return;
+    }
+    const vi = Number((e.target as HTMLElement).dataset?.vi);
+    if (!Number.isInteger(vi)) return;
+    const next = gridMove(vi, e.key);
+    if (next === null) return;
+    e.preventDefault();
+    setFocus(next);
+    e.currentTarget.querySelector<HTMLElement>(`[data-vi="${next}"]`)?.focus();
+  };
   return (
     <div
       role="grid"
       aria-label={label}
-      className="relative grid rounded-[14px] shadow-[0_8px_0_var(--bay-depth),0_14px_24px_rgba(0,0,0,.45)] [&>:nth-child(1)]:rounded-tl-[14px] [&>:nth-child(57)]:rounded-bl-[14px] [&>:nth-child(64)]:rounded-br-[14px] [&>:nth-child(8)]:rounded-tr-[14px]"
+      aria-rowcount={8}
+      aria-colcount={8}
+      onKeyDown={onKeyDown}
+      onFocus={(e) => {
+        const vi = Number((e.target as HTMLElement).dataset?.vi);
+        if (Number.isInteger(vi) && vi !== focus) setFocus(vi);
+      }}
+      className="relative grid rounded-[14px] shadow-[0_8px_0_var(--bay-depth),0_14px_24px_rgba(0,0,0,.45)] [&>:first-child>:first-child]:rounded-tl-[14px] [&>:first-child>:last-child]:rounded-tr-[14px] [&>:nth-child(8)>:first-child]:rounded-bl-[14px] [&>:nth-child(8)>:last-child]:rounded-br-[14px]"
       style={{ gridTemplateColumns: `repeat(8, ${cell}px)`, gridTemplateRows: `repeat(8, ${cell}px)`, marginTop: headroom }}
     >
-      {order.map((sq) => render(sq))}
+      {Array.from({ length: 8 }, (_, vr) => (
+        <div key={vr} role="row" className="contents">
+          {Array.from({ length: 8 }, (_, vc) => {
+            const vi = vr * 8 + vc;
+            return render(toSq(vi), { tabIndex: vi === focus ? 0 : -1, "data-vi": vi });
+          })}
+        </div>
+      ))}
       {overlay}
     </div>
   );
@@ -212,7 +252,14 @@ function ChessLive({ state, seat, legal, disabled, lastMove, onMove, announce, c
           )
         }
         label="Chess board, live"
-        render={(sq) => {
+        onEscape={() => {
+          if (!sel && !promo) return false;
+          setPromo(null);
+          setSel(null);
+          announce(promo ? tc.promotionCancelled : tc.putDown);
+          return true;
+        }}
+        render={(sq, cellProps) => {
           const r = sq >> 3,
             c = sq & 7;
           // where the square sits on screen (seat 1 sees the board turned round)
@@ -238,9 +285,11 @@ function ChessLive({ state, seat, legal, disabled, lastMove, onMove, announce, c
           return (
             <button
               key={sq}
+              {...cellProps}
               type="button"
               role="gridcell"
-              aria-label={`${name}${ch !== "." ? `, ${ch === ch.toUpperCase() ? "white" : "black"} ${CH_N[ch.toUpperCase()]}` : ""}${target ? ", legal move" : ""}`}
+              aria-selected={sel === name}
+              aria-label={`${name}${ch !== "." ? `, ${ch === ch.toUpperCase() ? "white" : "black"} ${CH_N[ch.toUpperCase()]}` : ""}${target ? ", legal move" : ""}${isLast ? `, ${tc.lastMove}` : ""}`}
               onClick={() => tap(sq)}
               className="relative flex items-center justify-center"
               style={{ background: bg, boxShadow: BEVEL }}
@@ -306,7 +355,13 @@ function DraughtsLive({ state, seat, legal, disabled, lastMove, onMove, announce
       flipped={seat === 1}
       cell={cell}
       label="Draughts board, live"
-      render={(sq) => {
+      onEscape={() => {
+        if (sel === null) return false;
+        setSel(null);
+        announce(tdr.putDown);
+        return true;
+      }}
+      render={(sq, cellProps) => {
         const dark = ((sq >> 3) + (sq & 7)) % 2 === 1;
         const p = s.board[sq];
         const mine = p && (p >= 3 ? 1 : 0) === 0;
@@ -315,8 +370,10 @@ function DraughtsLive({ state, seat, legal, disabled, lastMove, onMove, announce
         return (
           <button
             key={sq}
+            {...cellProps}
             type="button"
             role="gridcell"
+            aria-selected={sel === sq}
             onClick={() => tap(sq)}
             aria-label={`${sqName(sq)}${p ? `, ${mine ? "light" : "dark"} ${king ? "king" : "man"}` : ""}${ends.includes(sq) ? ", legal move" : ""}${lastPath.includes(sq) ? `, ${tdr.lastMove}` : ""}`}
             className="relative flex items-center justify-center"
