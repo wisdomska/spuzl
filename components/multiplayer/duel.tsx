@@ -21,6 +21,7 @@ import { GameIcon3D } from "@/components/world/GameIcon3D";
 import { TIMING, type EmoteId } from "@/lib/multiplayer/constants";
 import type { MatchPlayerView, MatchView } from "@/lib/multiplayer/types";
 import { useReduce } from "@/lib/client/multiplayer";
+import { useViewportHeight } from "@/components/game/useBoardSize";
 import {
   Avatar,
   CountdownNumber,
@@ -408,7 +409,7 @@ function RankHex() {
   return (
     <span
       aria-hidden
-      className="flex h-[38px] w-[34px] items-center justify-center bg-[var(--gold)] text-[#0E0F1A] [clip-path:polygon(50%_0,100%_25%,100%_75%,50%_100%,0_75%,0_25%)]"
+      className="bg-gold text-on-gold flex h-[38px] w-[34px] items-center justify-center [clip-path:polygon(50%_0,100%_25%,100%_75%,50%_100%,0_75%,0_25%)]"
     >
       <Icon name="crown-simple" size={16} />
     </span>
@@ -538,6 +539,9 @@ export function OpponentStrip({
   );
 }
 
+/** Viewport height, in px, at or under which the result screens go compact (the `compact` CSS variant). */
+const RESULT_COMPACT_H = 880;
+
 /* ---------------- M2 Round end ---------------- */
 
 export function RoundEnd({
@@ -577,6 +581,9 @@ export function RoundEnd({
   emote: { e: EmoteId; n: number } | null;
 }) {
   const reduce = useReduce();
+  // Under 880 px of height (phones, laptops): smaller Spuz, tighter spacing, so the countdown and the reactions stay
+  // on screen without a scroll.
+  const short = useViewportHeight() <= RESULT_COMPACT_H;
   useEffect(() => {
     play(meWon ? "success" : "fizzle");
   }, [meWon]);
@@ -593,41 +600,46 @@ export function RoundEnd({
     mood: SpuzMood,
     label: string,
   ) => (
-    <div className="flex flex-col items-center gap-2" style={{ opacity: winner ? 1 : 0.7 }}>
-      {winner && <Icon name="crown-simple" size={34} className="text-gold -mb-3.5" />}
-      <SpuzWear mood={mood} size={winner ? 130 : 110} color={who.color} hat={who.hat} />
-      <span className="text-[16px] font-semibold">{label}</span>
-      <span className="num text-[22px] font-semibold" style={{ color: winner ? "var(--accent)" : undefined }}>
+    <div className="compact:gap-1 flex min-w-0 flex-col items-center gap-2" style={{ opacity: winner ? 1 : 0.7 }}>
+      {winner && <Icon name="crown-simple" size={short ? 26 : 34} className="text-gold compact:-mb-2.5 -mb-3.5" />}
+      <SpuzWear mood={mood} size={short ? (winner ? 88 : 76) : winner ? 130 : 110} color={who.color} hat={who.hat} />
+      <span className="max-w-[140px] truncate text-[16px] font-semibold">{label}</span>
+      <span className="num compact:text-[19px] text-[22px] font-semibold" style={{ color: winner ? "var(--accent)" : undefined }}>
         {ms === null ? "DNF" : formatTenths(ms)}
       </span>
     </div>
   );
   return (
     <motion.div
-      className="flex flex-1 flex-col items-center gap-4 px-5 pt-[90px] pb-7"
+      className="compact:gap-2 compact:pt-6 compact:pb-4 flex flex-1 flex-col items-center gap-4 px-5 pt-[90px] pb-7"
       data-screen-label="M2 Round end"
       initial={reduce ? { opacity: 0 } : { opacity: 0, transform: "translateY(12px)" }}
       animate={{ opacity: 1, transform: "translateY(0px)" }}
       transition={{ duration: 0.28, ease: EASE_OUT }}
     >
-      <div className="text-muted text-[15px] font-semibold">Round {round} of 3</div>
-      <h1 className="font-display self-stretch text-center text-[34px] font-black tracking-[-0.02em]" aria-live="polite">
+      {/* the title already names the round; the compact layout drops this line */}
+      <div className="text-muted compact:hidden text-[15px] font-semibold">Round {round} of 3</div>
+      <h1
+        className="font-display compact:text-[26px] compact:leading-[1.1] self-stretch text-center text-[34px] font-black tracking-[-0.02em]"
+        aria-live="polite"
+      >
         {title}
       </h1>
-      <p className="self-stretch text-center text-[17px] font-semibold">{line}</p>
-      <div className="relative mt-2.5 flex items-end gap-3.5">
+      <p className="compact:text-[15px] self-stretch text-center text-[17px] font-semibold">{line}</p>
+      <div className="compact:mt-0 relative mt-2.5 flex items-end gap-3.5">
         {card(me, myMs, meWon, meWon ? "cheer" : "shocked", "You")}
         {card(them, theirMs, !meWon && !draw, !meWon && !draw ? "cheer" : "shocked", them.nickname)}
         <EmoteBubble emote={emote?.e ?? null} n={emote?.n ?? 0} className="-top-8 right-0" />
       </div>
-      <div className="mt-2">
-        <RoundDots rounds={rounds} current={round + 1} size={18} oppColor={oppColor} />
-      </div>
-      <div className="text-muted text-[15px] font-medium">
-        <span className="num">
-          {won} - {lost}
-        </span>
-        . {duelCopy.nextRoundLabel(decider)}
+      {/* the round dots and the score with what's next: one row in the compact layout */}
+      <div className="compact:flex-row compact:gap-3 compact:mt-0 mt-2 flex flex-col items-center gap-4">
+        <RoundDots rounds={rounds} current={round + 1} size={short ? 14 : 18} oppColor={oppColor} />
+        <div className="text-muted text-[15px] font-medium">
+          <span className="num">
+            {won} - {lost}
+          </span>
+          . {duelCopy.nextRoundLabel(decider)}
+        </div>
       </div>
       {note && (
         <p className="text-muted -mt-2 text-center text-[15px] font-medium" aria-live="polite">
@@ -648,7 +660,7 @@ export function RoundEnd({
         />
       </div>
       <div className="mt-auto">
-        <EmoteBar onSend={onEmote} size="lg" onChat={onChat} unread={unread} />
+        <EmoteBar onSend={onEmote} size={short ? "md" : "lg"} onChat={onChat} unread={unread} />
       </div>
     </motion.div>
   );
@@ -799,6 +811,7 @@ export function MatchEnd({
   theyWantRematch: boolean;
 }) {
   const reduce = useReduce();
+  const short = useViewportHeight() <= RESULT_COMPACT_H;
   const won = view.winnerId === me.id;
   const draw = view.result === "draw";
   const [skip, setSkip] = useState(false);
@@ -857,14 +870,16 @@ export function MatchEnd({
   const xp = view.reward?.xp ?? (view.isBot ? 10 : won ? 40 : 10);
   return (
     <div
-      className="relative flex flex-1 flex-col items-center pb-[max(28px,env(safe-area-inset-bottom))]"
+      className="relative flex flex-1 flex-col items-center"
+      // room under the content for the action bar (and the rematch note), which stays on screen
+      style={{ paddingBottom: `calc(${theyWantRematch || rematchWaiting ? 148 : 96}px + max(28px, env(safe-area-inset-bottom)) - 28px)` }}
       onPointerDown={() => setSkip(true)}
       data-screen-label="D4 Match end"
     >
       <HomeCorner onClick={onHome} />
-      <div className="mt-[70px] w-full overflow-hidden py-3">
+      <div className="compact:mt-[60px] compact:py-2 mt-[70px] w-full overflow-hidden py-3">
         <motion.div
-          className="flex h-[84px] w-full items-center justify-center"
+          className="compact:h-[56px] flex h-[84px] w-full items-center justify-center"
           style={{ background: won ? "var(--accent)" : draw ? "var(--surface-raised)" : them.color }}
           initial={
             reduce || skip ? { opacity: 0, transform: "translateX(0%) skewY(-4deg)" } : { transform: "translateX(-110%) skewY(-4deg)" }
@@ -873,8 +888,8 @@ export function MatchEnd({
           transition={reduce || skip ? { duration: 0.2 } : { ...SPRING_PARTY, duration: 1.1 }}
         >
           <h1
-            className="font-display skew-y-[4deg] text-[36px] font-black tracking-[-0.03em]"
-            style={{ color: draw ? "var(--text)" : "#0E0F1A" }}
+            className="font-display compact:text-[30px] skew-y-[4deg] text-[36px] font-black tracking-[-0.03em]"
+            style={{ color: draw ? "var(--text)" : won ? "var(--on-accent)" : "#0E0F1A" }}
             aria-live="polite"
           >
             {title}
@@ -884,20 +899,20 @@ export function MatchEnd({
       {won ? (
         <motion.div
           aria-hidden
-          className="mt-6 flex h-[120px] w-[110px] items-center justify-center bg-[var(--gold)] text-[#0E0F1A] [clip-path:polygon(50%_0,100%_25%,100%_75%,50%_100%,0_75%,0_25%)]"
+          className="compact:mt-2 compact:h-[72px] compact:w-[66px] bg-gold text-on-gold mt-6 flex h-[120px] w-[110px] items-center justify-center [clip-path:polygon(50%_0,100%_25%,100%_75%,50%_100%,0_75%,0_25%)]"
           animate={reduce || skip ? undefined : { transform: ["perspective(400px) rotateY(0deg)", "perspective(400px) rotateY(360deg)"] }}
           transition={{ duration: 1.1, ease: EASE_IN_OUT }}
         >
-          <Icon name="trophy" size={56} />
+          <Icon name="trophy" size={short ? 34 : 56} />
         </motion.div>
       ) : (
-        <div className="mt-6 flex items-end gap-1.5">
-          <SpuzWear mood={draw ? "thinking" : "sad"} size={110} color={me.color} hat={me.hat} />
-          <SpuzWear mood={draw ? "thinking" : "party"} size={110} color={them.color} hat={them.hat} />
+        <div className="compact:mt-3 mt-6 flex items-end gap-1.5">
+          <SpuzWear mood={draw ? "thinking" : "sad"} size={short ? 68 : 110} color={me.color} hat={me.hat} />
+          <SpuzWear mood={draw ? "thinking" : "party"} size={short ? 68 : 110} color={them.color} hat={them.hat} />
         </div>
       )}
-      <p className="mt-3.5 px-4 text-center text-[17px] font-semibold">{line}</p>
-      <div className="mt-[18px] grid w-[calc(100%-32px)] grid-cols-3 gap-2">
+      <p className="compact:mt-2 compact:text-[15px] mt-3.5 px-4 text-center text-[17px] font-semibold">{line}</p>
+      <div className="compact:mt-3 mt-[18px] grid w-[calc(100%-32px)] grid-cols-3 gap-2">
         {[1, 2, 3].map((n) => {
           const mine = view.rounds.find((r) => r.round === n && r.playerId === me.id);
           const theirs = view.rounds.find((r) => r.round === n && r.playerId === them.id);
@@ -906,7 +921,7 @@ export function MatchEnd({
           return (
             <div
               key={n}
-              className="bg-surface flex flex-col gap-1 rounded-[16px] p-2.5"
+              className="bg-surface compact:gap-0.5 compact:p-2 flex min-w-0 flex-col gap-1 rounded-[16px] p-2.5"
               style={{ boxShadow: mine?.won ? "inset 0 0 0 2px var(--accent)" : undefined }}
             >
               <span className="text-muted text-[13px] font-semibold">Round {n}</span>
@@ -919,8 +934,8 @@ export function MatchEnd({
         })}
       </div>
       {!view.isBot && <RankChanges matchId={view.id} setNo={view.setNo} className="mt-3 px-4" />}
-      <div className="mt-3 grid w-[calc(100%-32px)] grid-cols-3 gap-2">
-        <div className="bg-surface flex flex-col gap-0.5 rounded-[16px] p-3">
+      <div className="compact:mt-2 mt-3 grid w-[calc(100%-32px)] grid-cols-3 gap-2">
+        <div className="bg-surface compact:p-2 flex min-w-0 flex-col gap-0.5 rounded-[16px] p-3">
           <span className="text-muted text-[13px] font-semibold">Rating</span>
           {ratingDelta !== null ? (
             <>
@@ -933,11 +948,11 @@ export function MatchEnd({
             <span className="text-muted text-[15px] font-semibold">Unranked</span>
           )}
         </div>
-        <div className="bg-surface flex flex-col gap-0.5 rounded-[16px] p-3">
+        <div className="bg-surface compact:p-2 flex min-w-0 flex-col gap-0.5 rounded-[16px] p-3">
           <span className="text-muted text-[13px] font-semibold">XP</span>
           <span className="num text-accent text-[20px] font-semibold">+{xp}</span>
         </div>
-        <div className="bg-surface flex flex-col gap-0.5 rounded-[16px] p-3">
+        <div className="bg-surface compact:p-2 flex min-w-0 flex-col gap-0.5 rounded-[16px] p-3">
           <span className="text-muted text-[13px] font-semibold">{forfeit ? "Result" : "Score"}</span>
           <span className="num text-[20px] font-semibold">{forfeit ? (won ? "Forfeit win" : "Forfeit") : score}</span>
         </div>
@@ -948,49 +963,47 @@ export function MatchEnd({
           <AddFriend id={them.id} nickname={them.nickname} />
         </div>
       )}
-      {(theyWantRematch || rematchWaiting) && (
-        <div
-          className="bg-surface-raised absolute inset-x-4 bottom-[106px] flex items-center gap-2.5 rounded-[16px] px-3.5 py-2.5"
-          role="status"
-        >
-          <span className="bg-accent size-2 rounded-full" />
-          <span className="text-[15px] font-medium">
-            {theyWantRematch ? `${them.nickname} wants a rematch` : `Waiting for ${them.nickname}`}
-          </span>
-        </div>
-      )}
-      <div
-        className="absolute inset-x-4 bottom-[max(28px,env(safe-area-inset-bottom))] grid gap-2.5"
-        style={{ gridTemplateColumns: onChat ? "1fr 60px 60px" : "1fr 60px" }}
-      >
-        <Cta icon="arrows-clockwise" onClick={onRematch} disabled={rematchWaiting}>
-          Rematch
-        </Cta>
-        <button
-          type="button"
-          aria-label="Share"
-          onClick={onShare}
-          className="toy bg-surface-raised flex h-[60px] items-center justify-center rounded-[20px] [--btn-depth:var(--depth)]"
-          style={{ boxShadow: "0 6px 0 var(--depth)" }}
-        >
-          <Icon name="share-fat" size={22} />
-        </button>
-        {onChat && (
+      {/* The actions stay on the screen's bottom edge on a phone (the card's on a laptop), over a fade, so Rematch is
+          never below the fold or on top of the result. */}
+      <div className="fixed inset-x-0 bottom-0 z-20 mx-auto w-full max-w-[560px] bg-[linear-gradient(to_top,var(--bg)_78%,transparent)] px-4 pt-3 pb-[max(28px,env(safe-area-inset-bottom))] lg:absolute lg:max-w-none">
+        {(theyWantRematch || rematchWaiting) && (
+          <div className="bg-surface-raised mb-2.5 flex items-center gap-2.5 rounded-[16px] px-3.5 py-2.5" role="status">
+            <span className="bg-accent size-2 rounded-full" />
+            <span className="text-[15px] font-medium">
+              {theyWantRematch ? `${them.nickname} wants a rematch` : `Waiting for ${them.nickname}`}
+            </span>
+          </div>
+        )}
+        <div className="grid gap-2.5" style={{ gridTemplateColumns: onChat ? "1fr 60px 60px" : "1fr 60px" }}>
+          <Cta icon="arrows-clockwise" onClick={onRematch} disabled={rematchWaiting}>
+            Rematch
+          </Cta>
           <button
             type="button"
-            aria-label={unread ? `Chat, ${unread} new` : "Chat"}
-            onClick={onChat}
-            className="toy bg-surface-raised relative flex h-[60px] items-center justify-center rounded-[20px] [--btn-depth:var(--depth)]"
+            aria-label="Share"
+            onClick={onShare}
+            className="toy bg-surface-raised flex h-[60px] items-center justify-center rounded-[20px] [--btn-depth:var(--depth)]"
             style={{ boxShadow: "0 6px 0 var(--depth)" }}
           >
-            <Icon name="chat-circle-text" size={22} />
-            {unread > 0 && (
-              <span className="num bg-accent text-on-accent absolute -top-1.5 -right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[12px] font-bold">
-                {unread > 9 ? "9+" : unread}
-              </span>
-            )}
+            <Icon name="share-fat" size={22} />
           </button>
-        )}
+          {onChat && (
+            <button
+              type="button"
+              aria-label={unread ? `Chat, ${unread} new` : "Chat"}
+              onClick={onChat}
+              className="toy bg-surface-raised relative flex h-[60px] items-center justify-center rounded-[20px] [--btn-depth:var(--depth)]"
+              style={{ boxShadow: "0 6px 0 var(--depth)" }}
+            >
+              <Icon name="chat-circle-text" size={22} />
+              {unread > 0 && (
+                <span className="num bg-accent text-on-accent absolute -top-1.5 -right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[12px] font-bold">
+                  {unread > 9 ? "9+" : unread}
+                </span>
+              )}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

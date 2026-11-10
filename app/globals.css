@@ -28,6 +28,9 @@ html {
 body {
   margin: 0;
   min-height: 100dvh;
+  /* A page's first child with a top margin (the centred multiplayer card on a laptop) keeps it inside the body
+     instead of pushing the body down past the viewport, which left a 24 to 40 px scroll on every such page. */
+  display: flow-root;
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
   overscroll-behavior-y: none;
@@ -191,6 +194,9 @@ select {
 
 /* Short screens (a 375 × 667 phone and smaller): the game shell tightens its spacing so the tool bar fits. */
 @custom-variant short (@media (max-height: 740px));
+/* Result screens (Duel round and match end): compact below 880 px of height, phones and laptops alike, so the
+   next action stays on screen (multiplayer/duel.tsx RESULT_COMPACT_H: keep the numbers in step). */
+@custom-variant compact (@media (max-height: 880px));
 /* Very short screens (a 320 × 568 phone): the shell's title row is left to screen readers. */
 @custom-variant tiny (@media (max-height: 600px));
 /* Wide screens get the two-column game shell (components/game/useBoardSize.ts isWide: keep the numbers in step). */
