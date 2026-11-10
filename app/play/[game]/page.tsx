@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { hasLogic } from "@/games/logic-registry";
 import { PlayScreen } from "@/components/play/PlayScreen";
 import { requireSessionPage } from "@/lib/auth/gate";
+import { gameReturn } from "@/lib/onboarding-return";
 import { isLadderGame } from "@/lib/game/levels";
 
 export async function generateMetadata({ params }: PageProps<"/play/[game]">): Promise<Metadata> {
@@ -25,7 +26,8 @@ export default async function Play({ params, searchParams }: PageProps<"/play/[g
   if (!meta || !hasLogic(game)) notFound();
   // SPZ-01: only the session is checked here (a local JWT check). The player profile is already in the client
   // cache from the previous screen, and PlayScreen sends players without a profile to onboarding itself.
-  await requireSessionPage();
+  // R4-03: a signed-out visitor (e.g. Play on /games/<id>) comes back to this game after onboarding.
+  await requireSessionPage({ back: gameReturn(game) });
   // Dailies off (admin "features.dailies"): every link plays free; old Daily and archive links land there too.
   const settings = await getGameSettings();
   const dailies = settings["features.dailies"];

@@ -1,5 +1,7 @@
 "use client";
 
+import { isReturnPath, returnPath } from "@/lib/onboarding-return";
+
 /** First-run state kept on the device until the profile exists on the server. */
 const KEY = "spuzl.onboarding";
 export interface Onboarding {
@@ -25,12 +27,12 @@ export function writeOnboarding(patch: Onboarding) {
   }
 }
 
-/** `?return=` values the first-run pages accept, and where each one leads back to after onboarding. */
-const RETURNS: Record<string, string> = { daily: "/daily" };
-
-/** Remembers a known `?return=` value from the address (the intro and Welcome read it on arrival). */
+/**
+ * Remembers a known `?return=` value from the address (the intro and Welcome read it on arrival): "daily", or
+ * "game:<id>" for a real catalog game (R4-03). Unknown values are ignored (lib/onboarding-return.ts).
+ */
 export function rememberReturn(param: string | null | undefined) {
-  const to = param ? RETURNS[param] : undefined;
+  const to = returnPath(param);
   if (to) writeOnboarding({ returnTo: to });
 }
 
@@ -39,7 +41,7 @@ export function takeReturn(): string | null {
   const to = readOnboarding().returnTo;
   if (!to) return null;
   writeOnboarding({ returnTo: undefined });
-  return Object.values(RETURNS).includes(to) ? to : null;
+  return isReturnPath(to) ? to : null;
 }
 
 /**

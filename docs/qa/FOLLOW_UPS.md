@@ -180,8 +180,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 
 ## SEO pass (round 3)
 
-- **Game page "Play" for signed-out visitors** goes `/play/<id>` → `/intro` → Welcome and then to Home, not back to
-  that game (`lib/client/onboarding.ts` RETURNS only knows `daily`). A `?return=game:<id>` would close the loop.
 - **Admin copy overrides** (games.rule / games.blurb) don't reach the static `/games/<id>` pages or llms.txt, which use
   the catalog's copy until the next deploy.
 
