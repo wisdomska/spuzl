@@ -19,7 +19,7 @@ import { isRaceGame } from "@/lib/multiplayer/games";
 import { isBayGame } from "@/lib/multiplayer/bay";
 import { bayLive } from "@/lib/copy/bay-live";
 import { useSettings } from "@/lib/settings/store";
-import { inviteHref, liveHref } from "@/components/world/LiveEntry";
+import { LiveLockedNote, inviteHref, liveHref, useLiveLocked } from "@/components/world/LiveEntry";
 import { durationLabel, gameCopy } from "@/lib/games-meta";
 import { useGamesMeta } from "@/lib/games-meta/client";
 import { formatClock } from "@/lib/format";
@@ -81,6 +81,7 @@ export function GameCard({
   // Board Bay games: play someone live (matchmaking) or invite a friend.
   const bay = meta ? isBayGame(meta.id) : false;
   const relaxed = useSettings((s) => s.relaxed);
+  const liveLocked = useLiveLocked();
   const [levelsOpen, setLevelsOpen] = useState(false);
   useSheetSound(!!meta);
   return (
@@ -190,9 +191,11 @@ export function GameCard({
               {bay && (
                 <div className="flex flex-col gap-2">
                   <span className="text-muted px-1 text-[13px] font-bold">{bayLive.liveGroup}</span>
-                  <div className="grid grid-cols-2 gap-2">
+                  {/* R4-01: under 16, Play live is a muted note (the server refuses it), never a button. */}
+                  {!relaxed && liveLocked && <LiveLockedNote />}
+                  <div className={`grid gap-2 ${!relaxed && liveLocked ? "grid-cols-1" : "grid-cols-2"}`}>
                     {[
-                      ...(relaxed
+                      ...(relaxed || liveLocked
                         ? []
                         : [{ icon: "lightning", label: bayLive.playLive, aria: bayLive.playLiveAria(meta.name), href: liveHref(meta.id) }]),
                       {

@@ -70,10 +70,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   the app cannot tell whether anyone opened it. The audit suggests the low-data prompt on mobile only; it stays on
   every device but now needs measured slow loads, so a fast desktop never sees it. Navigations the service worker
   answers from cache (transfer size 0) are not measured as page loads; in-app link taps and tap-to-board still are.
-- **R2-02, under-16 entry points outside Duel:** the Library game card (`components/library/GameCard.tsx`) and the world
-  page board-game links (`components/world/LiveEntry.tsx`) still show "Play live" and "Quick Match" to 13 to 15
-  accounts. The server refuses both (403 `age_restricted`, `lib/multiplayer/server/liveGate.ts`), so nothing widens,
-  but the tap ends in an error. They should show the same muted "Opens at 16" note as Duel (`canPlayLive`).
 - **R2-13, needs a privacy decision (left out on purpose):** join requests (`room_join_requests`) are not in the
   player's data export (`app/api/v1/account/export/route.ts`). Rows go with either account on deletion and are
   pruned after 180 days. Whether the export should list requests a player made or received (the other player's

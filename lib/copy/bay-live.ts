@@ -5,6 +5,8 @@ export const bayLive = {
   playLiveAria: (game: string) => `${game}: play live against another player`,
   challengeFriend: "Challenge a friend",
   challengeFriendAria: (game: string) => `${game}: challenge a friend`,
+  /** R4-01: under 16, Play live is a muted note on the game card and world page, never a button */
+  liveLocked: "Opens at 16",
   /** Library sheet group heading */
   liveGroup: "Play someone",
   /** the search screen */
