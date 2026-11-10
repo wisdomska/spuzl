@@ -6,12 +6,19 @@ import { GameLinkCard } from "@/components/seo/GameLinkCard";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { gamesCopy as T, seoMeta } from "@/lib/copy/seo";
 import { publicMetadata } from "@/lib/seo/site";
+import { servedCopy } from "@/lib/games-meta/server";
 import { breadcrumbs, gameList, graph } from "@/lib/seo/jsonld";
 
 export const metadata = publicMetadata({ path: "/games", ...seoMeta.games });
+/**
+ * R4-10: the admin's rule and card copy (Library page) reach this page. Rebuilt at most hourly, and at once after a
+ * copy change (the admin route revalidates it), so the page stays a fast cached file.
+ */
+export const revalidate = 3600;
 
 /** The crawlable game catalogue: every live game, grouped by world, each linking to its own page. Static. */
-export default function GamesIndex() {
+export default async function GamesIndex() {
+  const copy = await servedCopy();
   return (
     <PublicShell>
       <JsonLd
@@ -34,7 +41,7 @@ export default function GamesIndex() {
         ))}
       </ul>
       {WORLDS.map((w) => {
-        const games = gamesInWorld(w.id);
+        const games = gamesInWorld(w.id).map(copy);
         return (
           <section key={w.id} aria-labelledby={`world-${w.id}`} className="mt-12 flex flex-col gap-4">
             <div className="flex flex-wrap items-center justify-between gap-3">

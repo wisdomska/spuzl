@@ -2,7 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/supabase/admin", () => ({ supabaseAdmin: () => ({}) }));
 import { COPY_MAX, DEFAULT_META, filterGames, gameCopy, validateCopyLine, validateMeta } from "./index";
-import { mergeMeta } from "./server";
+import { mergeMeta, withCopy } from "./server";
+import { llmsFullTxt, llmsTxt } from "@/lib/seo/llms";
+import { gameDescription, gameFacts } from "@/lib/seo/games";
 import { GAMES, GAME_BY_ID, LAB_GAMES } from "@/lib/catalog";
 
 describe("per-game rule and card copy overrides (R2-ADMIN)", () => {
@@ -87,5 +89,27 @@ describe("Daily Five typical score (owner decision S)", () => {
     expect(m.quickfire.typicalScore).toBe(500);
     expect(m.crownfall.typicalScore).toBeUndefined();
     expect(m.echo.typicalScore).toBe(DEFAULT_META.echo.typicalScore);
+  });
+});
+
+describe("admin copy on server-built copy (R4-10)", () => {
+  const RULE = "Crowns in every row, column and colour, never touching.";
+  const meta = { ...DEFAULT_META, crownfall: { ...DEFAULT_META.crownfall, rule: RULE, blurb: "Regal logic" } };
+  const copy = <T extends { id: string; rule: string; blurb: string }>(g: T) => withCopy(g, meta);
+
+  it("puts the override on the game and leaves others as they are", () => {
+    const g = withCopy(GAME_BY_ID.crownfall, meta);
+    expect(g.rule).toBe(RULE);
+    expect(g.blurb).toBe("Regal logic");
+    expect(g.name).toBe(GAME_BY_ID.crownfall.name);
+    expect(withCopy(GAME_BY_ID.dusk, meta)).toBe(GAME_BY_ID.dusk);
+  });
+
+  it("reaches the public game page facts and llms.txt / llms-full.txt", () => {
+    const g = copy(GAME_BY_ID.crownfall);
+    expect(gameFacts(g).definition + gameDescription(g)).toContain("never touching");
+    expect(llmsFullTxt(copy)).toContain(`- Rule: ${RULE}`);
+    expect(llmsFullTxt()).not.toContain(RULE);
+    expect(llmsTxt(copy)).not.toBe(llmsTxt());
   });
 });

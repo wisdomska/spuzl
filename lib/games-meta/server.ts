@@ -1,8 +1,8 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { GAME_BY_ID } from "@/lib/catalog";
-import { DEFAULT_META, isTag, validateCopyLine, type GameMetaRow } from "./index";
+import { GAME_BY_ID, type GameMeta } from "@/lib/catalog";
+import { DEFAULT_META, gameCopy, isTag, validateCopyLine, type GameMetaRow } from "./index";
 
 export type GameMetaDbRow = {
   id: string;
@@ -53,8 +53,9 @@ export async function selectMetaRows(db: SupabaseClient): Promise<GameMetaDbRow[
 let cache: { at: number; value: Record<string, GameMetaRow> } | null = null;
 const TTL_MS = Number(process.env.SETTINGS_CACHE_MS ?? (process.env.NODE_ENV === "production" ? 30_000 : 0));
 
-export async function loadGamesMeta(): Promise<Record<string, GameMetaRow>> {
-  if (cache && Date.now() - cache.at < TTL_MS) return cache.value;
+/** `fresh` skips this instance's cache (static pages rebuilt after an admin change, R4-10). */
+export async function loadGamesMeta(opts: { fresh?: boolean } = {}): Promise<Record<string, GameMetaRow>> {
+  if (!opts.fresh && cache && Date.now() - cache.at < TTL_MS) return cache.value;
   try {
     const value = mergeMeta(await selectMetaRows(supabaseAdmin()));
     cache = { at: Date.now(), value };
@@ -67,4 +68,23 @@ export async function loadGamesMeta(): Promise<Record<string, GameMetaRow>> {
 /** Drops the cache after an admin edit so this instance serves the new durations, tags and copy at once. */
 export function invalidateGamesMeta() {
   cache = null;
+}
+
+/**
+ * R4-10: the game with the admin's rule and card copy (Library page) in place of the catalog's, for copy built on the
+ * server (the practice coaching hint, How to play, the Play page description, the public game pages and llms.txt).
+ */
+export function withCopy<T extends Pick<GameMeta, "id" | "rule" | "blurb">>(g: T, meta: Record<string, GameMetaRow | undefined>): T {
+  const c = gameCopy(g, meta);
+  return c.rule === g.rule && c.blurb === g.blurb ? g : { ...g, ...c };
+}
+
+/**
+ * Loads the Library metadata once and returns a mapper that puts the admin's copy on any game. For static pages
+ * (rebuilt at most hourly, or on their next visit after a copy change): it reads the database, not this instance's
+ * 30 s cache, so a rebuild on another server never bakes in the old copy for an hour.
+ */
+export async function servedCopy(): Promise<<T extends Pick<GameMeta, "id" | "rule" | "blurb">>(g: T) => T> {
+  const meta = await loadGamesMeta({ fresh: true });
+  return (g) => withCopy(g, meta);
 }

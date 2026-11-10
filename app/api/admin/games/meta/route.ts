@@ -4,6 +4,7 @@ import { audit, requireAdmin } from "@/lib/admin/auth";
 import { DEFAULT_META, defaultMetaFor, validateMeta } from "@/lib/games-meta";
 import { GAME_BY_ID, RETIRED_GAMES, isLabGame, isLabOn, isRetired } from "@/lib/catalog";
 import { getGameSettings } from "@/lib/game-settings/server";
+import { revalidatePublicCopy } from "@/lib/seo/revalidate";
 import { invalidateGamesMeta, mergeMeta, selectMetaRows, type GameMetaDbRow } from "@/lib/games-meta/server";
 
 const overridden = (r: GameMetaDbRow | undefined) =>
@@ -119,6 +120,8 @@ async function apply(ctx: Awaited<ReturnType<typeof requireAdmin>>, id: string, 
   const { error } = await ctx.db.from("games").update(patch).eq("id", id);
   if (error) throw error;
   invalidateGamesMeta();
+  // R4-10: the public game pages, How to play and llms.txt show the copy; rebuild them on their next visit.
+  if (r.rule !== undefined || r.blurb !== undefined) revalidatePublicCopy();
   await audit(ctx, "game_meta.update", `game:${id}`, { before, after: patch });
 }
 

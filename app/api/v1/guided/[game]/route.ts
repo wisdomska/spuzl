@@ -6,6 +6,7 @@ import { loadServedLogic as loadLogic } from "@/lib/game/served-logic";
 import { guidedCopy } from "@/lib/copy/guided";
 import { bindPuzzle } from "@/lib/game/guess-token";
 import { getGameSettings } from "@/lib/game-settings/server";
+import { loadGamesMeta, withCopy } from "@/lib/games-meta/server";
 
 /**
  * Guided first play (task: first try of each game is a short hinted round). The practice board comes from the
@@ -42,6 +43,9 @@ export const POST = handle(async (req: Request, ctx: RouteContext<"/api/v1/guide
   // A game with no hint for this state (or none at all) coaches with the rule, so a hint always shows. Dusk, Nine and
   // Merge hint from the dealt board before the first move (R4-28), so their first hint is a real move.
   const coach = { target: null, text: `${guidedCopy.ruleHint} ${meta.rule}` };
+  // No deduction yet (some games need a first move): coach with the rule so a hint always shows.
+  // R4-10: the rule as the admin wrote it (Library page), else the catalog's.
+  const coach = { target: null, text: `${guidedCopy.ruleHint} ${withCopy(meta, await loadGamesMeta()).rule}` };
   if (!logic.hint) return ok({ hint: coach });
   const g = await loadFree(meta.id, SEED(meta.id), "easy");
   let hint = null;

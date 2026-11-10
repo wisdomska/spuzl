@@ -10,12 +10,20 @@ import { PLAY_NAV } from "@/lib/analytics/play-nav";
 import { siteCopy } from "@/lib/copy/site";
 import { CONTROLS, PHOTOSENSITIVE, SCORING, SITE_FAQ, howToPlaySeoCopy as S, seoMeta } from "@/lib/copy/seo";
 import { publicMetadata } from "@/lib/seo/site";
+import { servedCopy } from "@/lib/games-meta/server";
 import { breadcrumbs, faqPage, graph } from "@/lib/seo/jsonld";
 
 export const metadata: Metadata = publicMetadata({ path: "/how-to-play", ...seoMeta.howToPlay });
 
+/**
+ * R4-10: the admin's rule and card copy (Library page) reach this page. Rebuilt at most hourly, and at once after a
+ * copy change (the admin route revalidates it), so the page stays a fast cached file.
+ */
+export const revalidate = 3600;
+
 // Copy for owner review before launch.
-export default function HowToPlay() {
+export default async function HowToPlay() {
+  const copy = await servedCopy();
   return (
     <>
       <JsonLd
@@ -75,26 +83,28 @@ export default function HowToPlay() {
             {w.name}
           </h2>
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-            {gamesInWorld(w.id).map((g) => (
-              <article key={g.id} className="bg-surface flex flex-col gap-1.5 rounded-[18px] p-4">
-                <h3 className="flex items-center gap-2">
-                  <Icon name={g.icon} size={18} />
-                  {g.name}
-                </h3>
-                <p>{g.rule}</p>
-                <p className="text-muted text-[14px]">{CONTROLS[g.engine]}</p>
-                <p className="text-muted text-[14px]">{SCORING[g.scoring]}</p>
-                {g.photosensitive && <p className="text-gold text-[14px]">{PHOTOSENSITIVE}</p>}
-                <div className="mt-auto flex flex-wrap gap-x-5 pt-1">
-                  <Link href={`/play/${g.id}`} className="text-[15px]" {...PLAY_NAV}>
-                    Play {g.name}
-                  </Link>
-                  <Link href={`/games/${g.id}`} className="text-[15px]">
-                    {S.more(g.name)}
-                  </Link>
-                </div>
-              </article>
-            ))}
+            {gamesInWorld(w.id)
+              .map(copy)
+              .map((g) => (
+                <article key={g.id} className="bg-surface flex flex-col gap-1.5 rounded-[18px] p-4">
+                  <h3 className="flex items-center gap-2">
+                    <Icon name={g.icon} size={18} />
+                    {g.name}
+                  </h3>
+                  <p>{g.rule}</p>
+                  <p className="text-muted text-[14px]">{CONTROLS[g.engine]}</p>
+                  <p className="text-muted text-[14px]">{SCORING[g.scoring]}</p>
+                  {g.photosensitive && <p className="text-gold text-[14px]">{PHOTOSENSITIVE}</p>}
+                  <div className="mt-auto flex flex-wrap gap-x-5 pt-1">
+                    <Link href={`/play/${g.id}`} className="text-[15px]" {...PLAY_NAV}>
+                      Play {g.name}
+                    </Link>
+                    <Link href={`/games/${g.id}`} className="text-[15px]">
+                      {S.more(g.name)}
+                    </Link>
+                  </div>
+                </article>
+              ))}
           </div>
         </section>
       ))}

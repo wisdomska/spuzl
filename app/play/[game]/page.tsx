@@ -6,11 +6,13 @@ import { PlayScreen } from "@/components/play/PlayScreen";
 import { requireSessionPage } from "@/lib/auth/gate";
 import { gameReturn } from "@/lib/onboarding-return";
 import { isLadderGame } from "@/lib/game/levels";
+import { loadGamesMeta, withCopy } from "@/lib/games-meta/server";
 
 export async function generateMetadata({ params }: PageProps<"/play/[game]">): Promise<Metadata> {
   const { game } = await params;
   const meta = await openGameNow(game);
-  return meta ? { title: meta.name, description: meta.rule } : {};
+  // R4-10: the admin's rule (Library page) when it overrides the catalog's (cached 30 s per instance).
+  return meta ? { title: meta.name, description: withCopy(meta, await loadGamesMeta()).rule } : {};
 }
 
 /**

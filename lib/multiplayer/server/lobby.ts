@@ -15,6 +15,7 @@ import { liveCountdownMs, loadMatch, matchTopic, member, touch, viewOf } from ".
 import { readRating } from "./rewards";
 import { knownGames } from "./known";
 import { GAME_BY_ID } from "@/lib/catalog";
+import { loadGamesMeta, withCopy } from "@/lib/games-meta/server";
 import { isTurnMode, type PartyMode } from "@/lib/party-adult/modes";
 import { clearRounds, isTurnRoom, modeOf, startAdult } from "./adult";
 import { requireQuickPool } from "./liveGate";
@@ -61,7 +62,8 @@ export async function enqueue(admin: SupabaseClient, player: BandedPlayer, game:
   if (game && !isRaceGame(game)) throw new ApiError(400, "game_not_duelable");
   // A ranked game the player has never cleared or learned: read the rules first (the client shows a 20 s rules card).
   if (game && !rulesSeen && !(await knownGames(admin, [player.id], [game])).get(player.id)?.has(game))
-    throw new ApiError(409, "needs_rules", GAME_BY_ID[game]?.rule ?? "");
+    // R4-10: the rule as the admin wrote it (Library page), else the catalog's.
+    throw new ApiError(409, "needs_rules", GAME_BY_ID[game] ? withCopy(GAME_BY_ID[game], await loadGamesMeta()).rule : "");
   const [{ rating }, { data: me }] = await Promise.all([
     readRating(admin, player.id, "duel"),
     admin.from("players").select("country").eq("id", player.id).single(),

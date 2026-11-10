@@ -65,8 +65,8 @@ describe("public page content", () => {
     }
   });
 
-  it("links every live game from the catalogue", () => {
-    const html = renderToStaticMarkup(GamesIndex());
+  it("links every live game from the catalogue", async () => {
+    const html = renderToStaticMarkup(await GamesIndex());
     expect(html.match(/<h1[\s>]/g)).toHaveLength(1);
     for (const g of GAMES) expect(html, g.id).toContain(`href="/games/${g.id}"`);
   });

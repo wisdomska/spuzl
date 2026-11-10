@@ -115,10 +115,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 - **R2-P5 settings delay:** a lab switch reaches players within about 30 s (server settings cache) plus up to 60 s
   (edge cache of `/api/v1/settings/game`); the server refuses a switched-off game as soon as its own cache expires.
 - **Admin cascade audit (R2-ADMIN), left out or partial** (full table: `docs/qa/ADMIN_CASCADE_R2.md`):
-  - **Rule overrides, places still on the catalog text:** the practice round's coaching hint (built on the server in
-    `app/api/v1/guided/[game]/route.ts`), the Duel queue rules card and next-game card (`DuelScreen`), the
-    `/how-to-play` page, the Play page's meta description. Wiring them needs `loadGamesMeta()` on those server
-    paths (one extra read per hint or page) or `useGameCopy` in the Duel cards.
   - **Icons:** the Library page previews each tile; editing needs an asset upload and the 3D pre-render
     (`scripts/prerender-3d.mjs`), so icons still change in code.
   - **Practice boards:** previewed read only. The board is the fixed seed `tutorial:<game>` (or a game's own
@@ -154,6 +150,8 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 
 - **Admin copy overrides** (games.rule / games.blurb) don't reach the static `/games/<id>` pages or llms.txt, which use
   the catalog's copy until the next deploy.
+- **Game page "Play" for signed-out visitors** goes `/play/<id>` → `/intro` → Welcome and then to Home, not back to
+  that game (`lib/client/onboarding.ts` RETURNS only knows `daily`). A `?return=game:<id>` would close the loop.
 
 ## UX pass (9 Nov)
 

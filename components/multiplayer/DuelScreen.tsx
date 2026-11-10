@@ -28,6 +28,8 @@ import { quickMatchPool } from "@/lib/multiplayer/liveGate";
 import { DUEL_ROUNDS, TIMING, type EmoteId } from "@/lib/multiplayer/constants";
 import type { MatchView } from "@/lib/multiplayer/types";
 import { GAME_BY_ID } from "@/lib/catalog";
+import { gameCopy } from "@/lib/games-meta";
+import { useGamesMeta } from "@/lib/games-meta/client";
 import { ShareSheet } from "@/components/share/ShareSheet";
 import { cardUrl } from "@/lib/share/urls";
 import { duelShareText } from "@/lib/share/text";
@@ -335,6 +337,8 @@ function DuelMatch({ id }: { id: string }) {
   const { data: view, channel, offline, error } = useMatch(id);
   const now = useServerNow(view?.serverNow, 100);
   const { toast, show } = useToast();
+  // R4-10: the next game's rule as the admin wrote it (Library page), fetched quietly; the catalog's until then.
+  const metaRows = useGamesMeta({ quiet: true });
   const emotes = useEmotes(channel, view?.me);
   // Chat with the other player (not with the Practice bot).
   const chat = useMatchChat(view && !view.isBot ? view.id : null, channel, view?.me);
@@ -506,7 +510,7 @@ function DuelMatch({ id }: { id: string }) {
     body = (
       <RulesCard
         game={upcoming}
-        rule={GAME_BY_ID[upcoming]?.rule ?? ""}
+        rule={GAME_BY_ID[upcoming] ? gameCopy(GAME_BY_ID[upcoming], metaRows).rule : ""}
         body={duelCopy.rulesMatchBody}
         auto={duelCopy.rulesMatchAuto}
         ready={duelCopy.rulesMatchReady}

@@ -2,7 +2,7 @@
  * /llms.txt and /llms-full.txt (llmstxt.org): what SPUZL is, for AI assistants and answer engines, in plain
  * Markdown. Built from the catalog and the SEO copy, so a new or retired game shows up (or drops out) by itself.
  */
-import { GAME_COUNT, WORLDS, WORLD_COUNT, gamesInWorld } from "@/lib/catalog";
+import { GAME_COUNT, WORLDS, WORLD_COUNT, gamesInWorld, type GameMeta } from "@/lib/catalog";
 import { SAFETY, SITE_FAQ, gamesCopy, llmsSummary, worldNames } from "@/lib/copy/seo";
 import { aboutCopy } from "@/lib/copy/about";
 import { gameDescription, gameFacts } from "./games";
@@ -17,10 +17,14 @@ const PAGES: [string, string, string][] = [
   ["/contact", "Contact", "feedback, help, reports and data questions"],
 ];
 
+/** R4-10: puts the admin's rule and card copy on a game (lib/games-meta/server servedCopy); the catalog's by default. */
+export type CopyFn = <T extends GameMeta>(g: T) => T;
+const asIs: CopyFn = (g) => g;
+
 const link = (path: string, name: string, note?: string) => `- [${name}](${absoluteUrl(path)})${note ? `: ${note}` : ""}`;
 
 /** The short index: H1, summary blockquote, then sections of links (llmstxt.org). */
-export function llmsTxt(): string {
+export function llmsTxt(copy: CopyFn = asIs): string {
   const out: string[] = [
     "# SPUZL",
     "",
@@ -36,7 +40,7 @@ export function llmsTxt(): string {
   ];
   for (const w of WORLDS) {
     out.push("", `### ${w.name}`, "", `${w.tagline}.`, "");
-    for (const g of gamesInWorld(w.id)) out.push(link(`/games/${g.id}`, g.name, gameDescription(g)));
+    for (const g of gamesInWorld(w.id).map(copy)) out.push(link(`/games/${g.id}`, g.name, gameDescription(g)));
   }
   out.push("", "## Guides and policies", "");
   for (const [path, name, note] of PAGES) out.push(link(path, name, note));
@@ -50,7 +54,7 @@ export function llmsTxt(): string {
 }
 
 /** Everything in one plain-text file: what SPUZL is, every game in full, the FAQ, safety for 13 to 15, links. */
-export function llmsFullTxt(): string {
+export function llmsFullTxt(copy: CopyFn = asIs): string {
   const out: string[] = [
     "# SPUZL",
     "",
@@ -77,7 +81,7 @@ export function llmsFullTxt(): string {
   ];
   for (const w of WORLDS) {
     out.push("", `### ${w.name}`, "", `${w.tagline}. ${gamesCopy.worldCount(gamesInWorld(w.id).length)}.`);
-    for (const g of gamesInWorld(w.id)) {
+    for (const g of gamesInWorld(w.id).map(copy)) {
       const f = gameFacts(g);
       out.push(
         "",

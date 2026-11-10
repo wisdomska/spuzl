@@ -11,10 +11,16 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { gamesCopy as T } from "@/lib/copy/seo";
 import { gameDescription, gameFacts, gameTitle, publicGame } from "@/lib/seo/games";
 import { publicMetadata } from "@/lib/seo/site";
+import { servedCopy } from "@/lib/games-meta/server";
 import { breadcrumbs, faqPage, graph, videoGame } from "@/lib/seo/jsonld";
 
 /** One static page per live game. Lab and retired games have no public page (any other id is a real 404). */
 export const dynamicParams = false;
+/**
+ * R4-10: the admin's rule and card copy (Library page) reach this page. Rebuilt at most hourly, and at once after a
+ * copy change (the admin route revalidates it), so the page stays a fast cached file.
+ */
+export const revalidate = 3600;
 
 export function generateStaticParams() {
   return GAMES.map((g) => ({ id: g.id }));
@@ -22,8 +28,9 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps<"/games/[id]">): Promise<Metadata> {
   const { id } = await params;
-  const g = publicGame(id);
-  if (!g) return {};
+  const pg = publicGame(id);
+  if (!pg) return {};
+  const g = (await servedCopy())(pg);
   // The page's own opengraph-image.tsx fills in the share image (and Twitter inherits it).
   return publicMetadata({ path: `/games/${g.id}`, title: gameTitle(g), description: gameDescription(g), image: false });
 }
@@ -34,9 +41,12 @@ const H2 = "font-display text-[24px] leading-tight font-black tracking-[-0.02em]
 
 export default async function GamePage({ params }: PageProps<"/games/[id]">) {
   const { id } = await params;
-  const g = publicGame(id);
-  if (!g) notFound();
-  const f = gameFacts(g);
+  const pg = publicGame(id);
+  if (!pg) notFound();
+  const copy = await servedCopy();
+  const g = copy(pg);
+  const facts0 = gameFacts(g);
+  const f = { ...facts0, related: facts0.related.map(copy) };
   const world = WORLD_BY_ID[g.world];
   const crumbs = [
     ["SPUZL", "/"],
