@@ -78,7 +78,10 @@ describe("admin: ready-made seasonal events", () => {
     const q = await g.api("/api/v1/attempts", { json: { game: "quickfire", mode: "free", difficulty: "easy" } });
     expect(q.status, JSON.stringify(q.data)).toBe(200);
     const texts = GHANA_HISTORY.map((x) => x.q);
-    for (const question of q.data.puzzle.questions as { q: string }[]) expect(texts).toContain(question.q);
+    // R4-23: a scored board carries no questions; each comes on its open. The first is a Ghana history round.
+    const open = await g.api("/api/games/quickfire/guess", { json: { ref: q.data.puzzle.ref, guess: { q: 0, open: true } } });
+    expect(open.status, JSON.stringify(open.data)).toBe(200);
+    expect(texts).toContain((open.data.question as { q: string }).q);
     const { data: att } = await admin().from("attempts").select("free_seed").eq("id", q.data.attemptId).single();
     expect(att!.free_seed).toMatch(/^quiz:ghana-1957:/);
 

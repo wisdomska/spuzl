@@ -54,6 +54,9 @@ const ROUTES: Route[] = [
   { method: "POST", path: "/api/admin/content/files/edit", perm: "content.write" },
   { method: "GET", path: "/api/admin/content/files/preview?game=hunch&index=0", perm: "content.read" },
   { method: "POST", path: "/api/admin/content/import", perm: "content.write" },
+  { method: "POST", path: `/api/admin/content/${NIL}/pool`, perm: "content.write" },
+  { method: "GET", path: "/api/admin/content/export?game=quads", perm: "content.read" },
+  { method: "POST", path: "/api/admin/content/rebuild", perm: "calendar.write" },
   // Round 3 item 11: Family Draw words in the database
   { method: "GET", path: "/api/admin/content/draw-words", perm: "content.read" },
   { method: "POST", path: "/api/admin/content/draw-words", perm: "content.write" },
