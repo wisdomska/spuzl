@@ -20,6 +20,7 @@ import {
   isFinished,
   msToFiveReset,
   pickFive,
+  replaceSlots,
   rulesFrom,
   slotsFor,
   type Candidate,
@@ -177,11 +178,14 @@ const addDays = (iso: string, n: number) => new Date(Date.parse(iso + "T00:00:00
 /**
  * Keeps the Daily Five scheduled `dailyFive.daysAhead` days ahead (cron /api/cron/generate). Missing days are
  * picked; future automatic days that are not locked are re-picked when the rules now give other games or another
- * difficulty. Today, past days, locked days and manual days are never changed.
+ * difficulty. Today, past days, locked days and manual days are never changed, except that a game players can no
+ * longer open is swapped out first (repickClosedGames).
  */
 export async function fillFive(db: SupabaseClient, settings?: GameSettings) {
   const s = settings ?? (await getGameSettings());
   const rules = rulesFrom(s);
+  // R4-06: first, days that hold a game that was switched off (normally done at once by the settings change).
+  const closed = await repickClosedGames(db, s);
   const candidates = await fiveCandidates(s);
   const today = fiveDate(new Date(), rules.resetHour);
   const through = addDays(today, rules.daysAhead - 1);
@@ -220,7 +224,76 @@ export async function fillFive(db: SupabaseClient, settings?: GameSettings) {
       repicked++;
     } else kept++;
   }
-  return { made, repicked, kept, from: today, through };
+  return { made, repicked, kept, from: today, through, closed };
+}
+
+export interface ClosedRepick {
+  /** days changed: a whole re-pick (future automatic days nobody has played) or only the closed games' slots */
+  days: { date: string; how: "repick" | "swap"; before: string[]; after: string[] }[];
+  /** days that still hold a closed game: locked days, or a slot with no game left to take */
+  kept: { date: string; reason: "locked" | "no_game" }[];
+}
+
+/**
+ * R4-06: today's and future unlocked Daily Five days that hold a game players can no longer open (a lab game
+ * switched off in `features.labGames`) get new games, so the server never refuses a slot. A future automatic day
+ * nobody has played is re-picked whole under the current rules (what the daily job would pick); today, a manual
+ * day or a day already started keeps its other games and only the closed slots change, each to a new puzzle.
+ * Locked days are never changed. The caller audits the result (settings change, cron, admin fill).
+ */
+export async function repickClosedGames(db: SupabaseClient, settings?: GameSettings, actor: string | null = null): Promise<ClosedRepick> {
+  const s = settings ?? (await getGameSettings());
+  const rules = rulesFrom(s);
+  const today = fiveDate(new Date(), rules.resetHour);
+  const through = addDays(today, rules.daysAhead - 1);
+  const closed = (id: string) => !schedulableGame(id, s);
+  const out: ClosedRepick = { days: [], kept: [] };
+  const { data, error } = await db.from("daily_five").select(COLS).gte("date", today).lte("date", through).order("date").order("slot");
+  if (error) throw error;
+  const byDate = new Map<string, FiveRow[]>();
+  for (const r of (data ?? []) as FiveRow[]) byDate.set(r.date, [...(byDate.get(r.date) ?? []), r]);
+  const hit = [...byDate.entries()].filter(([, rows]) => rows.some((r) => closed(r.game_id)));
+  if (!hit.length) return out;
+  const candidates = await fiveCandidates(s);
+  for (const [date, rows] of hit) {
+    if (rows.some((r) => r.locked)) {
+      out.kept.push({ date, reason: "locked" });
+      continue;
+    }
+    const before = rows.map((r) => r.game_id);
+    const { count } = await db.from("attempts").select("id", { count: "exact", head: true }).eq("daily_five", true).eq("daily_date", date);
+    if (date > today && !count && rows.every((r) => r.source === "auto")) {
+      const after = await writeDay(db, date, pickFive(date, rules, candidates), rules.difficulty, "auto", actor, true);
+      out.days.push({ date, how: "repick", before, after: after.map((r) => r.game_id) });
+      continue;
+    }
+    const swaps = replaceSlots(
+      date,
+      rows.map((r) => ({ slot: r.slot, kind: r.kind, world: r.world, game: r.game_id })),
+      closed,
+      rules,
+      candidates,
+    );
+    for (const p of swaps) {
+      const puzzle = await makeFivePuzzle(db, p.game, date, rules.difficulty);
+      const { error: e } = await db
+        .from("daily_five")
+        .update({
+          kind: p.kind,
+          world: p.world,
+          game_id: p.game,
+          puzzle_id: puzzle,
+          updated_at: new Date().toISOString(),
+          updated_by: actor,
+        })
+        .eq("date", date)
+        .eq("slot", p.slot);
+      if (e) throw e;
+    }
+    if (swaps.length) out.days.push({ date, how: "swap", before, after: (await readDay(db, date)).map((r) => r.game_id) });
+    if (rows.filter((r) => closed(r.game_id)).length > swaps.length) out.kept.push({ date, reason: "no_game" });
+  }
+  return out;
 }
 
 /** The Daily Five slot of `game` on `date`, if it is in that day's five. */

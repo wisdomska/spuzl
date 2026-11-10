@@ -2,7 +2,8 @@ import { z } from "zod";
 import { ApiError, body, handle, ok } from "@/lib/api/server";
 import { audit, requireAdmin } from "@/lib/admin/auth";
 import { DEFAULTS, SETTINGS, SETTING_LIST_MAX, mergeSettings, sameSetting, validateSetting } from "@/lib/game-settings/schema";
-import { invalidateGameSettings } from "@/lib/game-settings/server";
+import { getGameSettings, invalidateGameSettings } from "@/lib/game-settings/server";
+import { repickClosedGames } from "@/lib/daily-five/server";
 
 /** GET /api/admin/settings: every tunable with its definition, current value and last change. */
 export const GET = handle(async () => {
@@ -40,5 +41,14 @@ export const PUT = handle(async (req: Request) => {
   if (error) throw error;
   invalidateGameSettings();
   await audit(ctx, "setting.update", `setting:${key}`, { before: before?.value ?? null, after: value });
-  return ok({ key, value });
+  // R4-06: a lab game switched off leaves today's and upcoming unlocked Daily Five days at once (audited), so the
+  // server never refuses a slot it scheduled.
+  let dailyFive: Awaited<ReturnType<typeof repickClosedGames>> | undefined;
+  const was = Array.isArray(before?.value) ? (before.value as string[]) : (DEFAULTS["features.labGames"] as readonly string[]);
+  if (key === "features.labGames" && Array.isArray(value) && was.some((g) => !value.includes(g))) {
+    dailyFive = await repickClosedGames(ctx.db, await getGameSettings(), ctx.user.id);
+    if (dailyFive.days.length || dailyFive.kept.length)
+      await audit(ctx, "daily_five.lab_repick", null, { off: was.filter((g) => !value.includes(g)), ...dailyFive });
+  }
+  return ok({ key, value, ...(dailyFive ? { dailyFive } : {}) });
 });

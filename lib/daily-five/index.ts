@@ -151,6 +151,49 @@ export function pickFive(date: string, rules: FiveRules, candidates: readonly Ca
 }
 
 /**
+ * R4-06: new games for the slots of a stored day whose game can no longer be played (a lab game switched off).
+ * Each such slot keeps its number and gets a quick game of the same world that is not already in the day (and its
+ * kind), else one from the bonus pool, else any quick game left (as a bonus), rotating by date so the choice is
+ * deterministic.
+ * Only the changed slots are returned; a slot with no game left to take is left out (and stays as it was).
+ */
+export function replaceSlots(
+  date: string,
+  rows: readonly { slot: number; kind: "world" | "bonus"; world: WorldId; game: string }[],
+  closed: (id: string) => boolean,
+  rules: FiveRules,
+  candidates: readonly Candidate[],
+): FivePick[] {
+  const day = dailyNumber(date);
+  const all = [...new Map(candidates.map((c) => [c.id, c])).values()]
+    .filter((c) => !closed(c.id))
+    .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  const used = new Set(rows.map((r) => r.game));
+  const chosen = FIVE_WORLDS.filter((w) => rules.bonus[w]);
+  const poolWorlds: readonly string[] = chosen.length ? chosen : FIVE_WORLDS;
+  const out: FivePick[] = [];
+  for (const r of [...rows].sort((a, b) => a.slot - b.slot)) {
+    if (!closed(r.game)) continue;
+    const left = all.filter((c) => !used.has(c.id));
+    let pool = quick(
+      left.filter((c) => c.world === r.world),
+      rules.maxGameSec,
+    );
+    if (!pool.length)
+      pool = quick(
+        left.filter((c) => poolWorlds.includes(c.world)),
+        rules.maxGameSec,
+      );
+    if (!pool.length) pool = quick(left, rules.maxGameSec);
+    if (!pool.length) continue;
+    const g = pool[(day + (hash32(`swap:${r.slot}`) % pool.length)) % pool.length];
+    used.add(g.id);
+    out.push({ slot: r.slot, kind: g.world === r.world ? r.kind : "bonus", world: g.world, game: g.id });
+  }
+  return out;
+}
+
+/**
  * Slots for a manual pick (admin scheduler or JSON import), in the order given: the first game of each world
  * holds that world's slot, any further game is a bonus.
  */

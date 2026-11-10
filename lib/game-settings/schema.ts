@@ -135,7 +135,7 @@ export const SETTINGS = {
     kind: "set",
     group: "Features",
     label: "Lab games",
-    help: "Games switched on for players while in testing. A ticked game shows in All games and on its world, can be picked for the Daily Five and gets Dailies, and players can open it (practice round, free play, vs the bot). Unticked: it is hidden and the server refuses it like an unknown game. Lab games never go into Duels or Parties. None ticked: players see only the live games.",
+    help: "Games switched on for players while in testing. A ticked game shows in All games and on its world, can be picked for the Daily Five and gets Dailies, and players can open it (practice round, free play, vs the bot). Unticked: it is hidden and the server refuses it like an unknown game, and today's and upcoming unlocked Daily Five days that hold it get another game at once (logged in the audit log; locked days keep it). Lab games never go into Duels or Parties. None ticked: players see only the live games.",
     default: [] as readonly string[],
     options: LAB_GAMES.map((g) => ({ id: g.id, label: g.name })),
   },

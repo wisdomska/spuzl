@@ -13,6 +13,7 @@ import {
   msToFiveReset,
   parseSchedule,
   pickFive,
+  replaceSlots,
   rulesFrom,
   scheduleToJson,
   shareGrid,
@@ -98,6 +99,59 @@ describe("Daily Five selection", () => {
       [2, "bonus", "dusk"],
       [3, "world", "remix"],
     ]);
+  });
+});
+
+describe("Daily Five when a game is switched off (R4-06)", () => {
+  const day = pickFive(DAY, rules(), LIVE).map((p) => ({ slot: p.slot, kind: p.kind, world: p.world, game: p.game }));
+
+  it("swaps only the closed game's slot, for a quick game of the same world not already in the day", () => {
+    const off = day[1].game;
+    const swaps = replaceSlots(DAY, day, (id) => id === off, rules(), LIVE);
+    expect(swaps).toHaveLength(1);
+    expect(swaps[0].slot).toBe(2);
+    expect(swaps[0].kind).toBe("world");
+    expect(swaps[0].world).toBe(day[1].world);
+    expect(swaps[0].game).not.toBe(off);
+    expect(day.map((d) => d.game)).not.toContain(swaps[0].game);
+    expect(LIVE.find((c) => c.id === swaps[0].game)!.typicalSec).toBeLessThanOrEqual(rules().maxGameSec);
+  });
+
+  it("is deterministic and never picks another closed game", () => {
+    const closed = new Set([
+      day[0].game,
+      day[4].game,
+      ...LIVE.filter((c) => c.world === day[0].world)
+        .slice(0, 3)
+        .map((c) => c.id),
+    ]);
+    const a = replaceSlots(DAY, day, (id) => closed.has(id), rules(), LIVE);
+    const b = replaceSlots(DAY, [...day].reverse(), (id) => closed.has(id), rules(), [...LIVE].reverse());
+    expect(a).toEqual(b);
+    expect(a.map((p) => p.slot)).toEqual([1, 5]);
+    for (const p of a) expect(closed.has(p.game)).toBe(false);
+    expect(new Set([...day.map((d) => d.game), ...a.map((p) => p.game)]).size).toBe(day.length + a.length);
+  });
+
+  it("takes a game from another world as a bonus when the world has none left, and changes nothing when all are open", () => {
+    const only = LIVE.filter((c) => c.world !== day[2].world || c.id === day[2].game);
+    const swaps = replaceSlots(DAY, day, (id) => id === day[2].game, rules(), only);
+    expect(swaps).toHaveLength(1);
+    expect(swaps[0].kind).toBe("bonus");
+    expect(swaps[0].world).not.toBe(day[2].world);
+    expect(replaceSlots(DAY, day, () => false, rules(), LIVE)).toEqual([]);
+  });
+
+  it("leaves a slot out when no game is left to take", () => {
+    expect(
+      replaceSlots(
+        DAY,
+        day,
+        (id) => id === day[0].game,
+        rules(),
+        LIVE.filter((c) => day.some((d) => d.game === c.id)),
+      ),
+    ).toEqual([]);
   });
 });
 
