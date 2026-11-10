@@ -9,7 +9,8 @@ import { solve, type CrownfallPuzzle } from "@/games/crownfall/logic";
  */
 const noDaily = async (page: Page, where: string) => {
   const text = await page.locator("body").innerText();
-  expect(text, `Daily wording on ${where}`).not.toMatch(/\bDail(y|ies)\b/);
+  // The regular Daily is off; the Daily Five (its own feature, R2-05) may show.
+  expect(text, `Daily wording on ${where}`).not.toMatch(/\bDail(y|ies)\b(?! Five)/);
 };
 
 test("full journey: guest to clears, social and multiplayer, with no Daily anywhere", async ({ page }) => {

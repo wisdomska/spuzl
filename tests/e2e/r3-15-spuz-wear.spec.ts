@@ -1,4 +1,4 @@
-import { execSync } from "node:child_process";
+import { createClient } from "@supabase/supabase-js";
 import { expect, test, type Page } from "@playwright/test";
 import { onboardGuest, tapCell, VIEWPORTS, waitForBoard } from "./harness";
 import { solve, type CrownfallPuzzle } from "@/games/crownfall/logic";
@@ -6,18 +6,21 @@ import { solve, type CrownfallPuzzle } from "@/games/crownfall/logic";
 /**
  * R3-15 (owner: "now that I've given mine shades, it should show everywhere"): a hat bought and worn in the Shop
  * shows on the player's Spuz on Home, on the result bar after a clear, and on the game-over card.
- * Needs the app with the local database (it sets the test guest's Sparks with psql, like r2-19-shop-afford.spec.ts).
+ * Needs the app with a database: it sets the test guest's Sparks through the service role (SUPABASE_SERVICE_ROLE_KEY).
  */
 
-const setSparks = (nickname: string, n: number) =>
-  execSync(
-    `PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -qc "update players set sparks = ${n} where nickname = '${nickname}'"`,
-  );
+const setSparks = async (nickname: string, n: number) => {
+  const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    auth: { persistSession: false },
+  });
+  const { error } = await db.from("players").update({ sparks: n }).eq("nickname", nickname);
+  if (error) throw error;
+};
 
 /** Onboards a guest, then buys and wears Shades through the real Shop API. */
 async function guestInShades(page: Page) {
   const nick = await onboardGuest(page);
-  setSparks(nick, 1000);
+  await setSparks(nick, 1000);
   const buy = await page.request.post("/api/v1/shop/buy", { data: { itemId: "hat-shades", requestId: crypto.randomUUID() } });
   expect(buy.ok(), await buy.text()).toBe(true);
   const equip = await page.request.post("/api/v1/shop/equip", { data: { itemId: "hat-shades", equip: true } });

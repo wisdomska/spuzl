@@ -45,7 +45,7 @@ import * as pinned from "@/games/pinned/logic";
 import * as market from "@/games/market/logic";
 import * as tripwire from "@/games/tripwire/logic";
 import * as pixl from "@/games/pixl/logic";
-import { REVEAL_MS as TRUTHS_REVEAL_MS } from "@/games/twotruths/rules";
+import { REVEAL_MAX_MS as TRUTHS_REVEAL_MAX_MS } from "@/games/twotruths/rules";
 import { READ_FLOOR_MS } from "@/games/_shared/cluecave";
 
 export type Age = "13-15" | "16-17" | "18+";
@@ -150,7 +150,7 @@ export async function testSignIn(page: Page, email: string): Promise<boolean> {
  */
 export async function waitForBoard(page: Page, timeout = 30_000) {
   const board = page
-    .locator('[role="grid"], [role="listbox"], main[aria-label$=" board"] canvas, main[aria-label$=" board"] button')
+    .locator('[role="grid"], [role="listbox"], [role="application"], main[aria-label$=" board"] canvas, main[aria-label$=" board"] button')
     .or(page.getByRole("button", { name: /^Start\b/ }))
     .first();
   await board.waitFor({ state: "visible", timeout });
@@ -283,9 +283,12 @@ const SOLVERS: Record<string, (page: Page, seed: string, d: Difficulty) => Promi
     await page.getByRole("button", { name: /^Start\b/ }).click();
     const answers = page.getByRole("group", { name: "Answers" });
     for (let i = 0; i < total; i++) {
-      // Taps before the reading floor are ignored; the next round follows the reveal (what is true instead).
-      await page.waitForTimeout((i ? TRUTHS_REVEAL_MS : 0) + READ_FLOOR_MS + 200);
-      await answers.getByRole("button", { name: new RegExp(`^${"ABC"[g.solution.lie[i]]}, `) }).click();
+      // The next round follows the reveal, which stays as long as its line takes to read (rules.ts revealMsFor, up
+      // to REVEAL_MAX_MS): wait for this round's answers to be live, then the reading floor (earlier taps are ignored).
+      const pick = answers.getByRole("button", { name: new RegExp(`^${"ABC"[g.solution.lie[i]]}, `) });
+      if (i) await expect(pick).toBeEnabled({ timeout: TRUTHS_REVEAL_MAX_MS + 5000 });
+      await page.waitForTimeout(READ_FLOOR_MS + 200);
+      await pick.click();
       await expect(page.getByRole("img", { name: `${i + 1} of ${total} answered` })).toBeVisible();
     }
   },
