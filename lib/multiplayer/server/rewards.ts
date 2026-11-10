@@ -7,6 +7,7 @@ import { questsForDate, WEEKLY_CHAIN, type QuestDef } from "@/lib/gamification/q
 import { weekStart } from "@/lib/gamification/progress";
 import { getGameSettings } from "@/lib/game-settings/server";
 import { ADULT_REWARD_SOURCE, adultRewardRef, adultRewards } from "@/lib/party-adult/rewards";
+import { isAdultMode } from "@/lib/party-adult/modes";
 import { TIMING } from "../constants";
 import type { Loaded, MatchRow, RoundRow } from "./match";
 import { GAME_BY_ID, isLiveWorld } from "@/lib/catalog";
@@ -73,6 +74,27 @@ async function badge(admin: SupabaseClient, player: string, id: string) {
   const { error } = await admin.from("player_badges").insert({ player_id: player, badge_id: id });
   if (!error) await grant(admin, player, "badge", id, 0, b.sparks);
 }
+
+/**
+ * A badge earned in an 18+ party room (owner decision Q): awarded and paid like any other, but with no friends feed
+ * event (svc_award_badge_quiet), since friends of any age read the feed.
+ */
+async function quietBadge(admin: SupabaseClient, player: string, id: string) {
+  const b = BADGES.find((x) => x.id === id);
+  if (!b) return;
+  const { data: added, error } = await admin.rpc("svc_award_badge_quiet", { p_player: player, p_badge: id });
+  if (error) console.error("[party] badge failed", player, id, error.message);
+  else if (added) await grant(admin, player, "badge", id, 0, b.sparks);
+}
+
+/**
+ * Owner decision Q: what an 18+ party room counts toward besides its XP and Sparks. The winners (first place, a tie
+ * shares it) of a room that paid (enough players, lib/party-adult/rewards.ts) advance "Win 2 Duels or Races" and earn
+ * the Party win badge, as a Party Race winner does. Never a feed event: no party_win line, and the badge goes in
+ * quietly. The decision covers the 18+ rooms only: Family Draw (16+) rooms keep paying XP and Sparks alone.
+ */
+export const adultRoomCredit = (won: boolean, mode: unknown): { quests: string[]; badges: string[] } =>
+  won && isAdultMode(mode) ? { quests: ["mp_wins"], badges: ["party-1"] } : { quests: [], badges: [] };
 
 /** Advances "Play a Duel" and "Win 2 Duels or Races" style quests (evaluated where those events happen). */
 export async function bumpQuests(admin: SupabaseClient, player: string, kinds: string[]) {
@@ -244,8 +266,9 @@ export async function finalizeRace(admin: SupabaseClient, l: Loaded, lastGame: P
  * After the last round of an 18+ party room (Draw It, Two Truths): XP and Sparks per round played and a bonus
  * for first place (rules in lib/party-adult/rewards.ts). Only players still in the room at the end count, and
  * a room where fewer than three did pays nothing. svc_grant_capped_reward applies the daily cap and pays each
- * player once per room set, so running this twice changes nothing. No feed events, quests or badges: those are
- * visible to friends of any age.
+ * player once per room set. Owner decision Q: the room's winners also advance quests and earn badges
+ * (`adultRoomCredit`, once per set: this runs only when the final commit applies), but nothing ever goes to the
+ * friends feed, which friends of any age read.
  */
 export async function finalizeAdult(admin: SupabaseClient, l: Loaded) {
   const { m, now } = l;
@@ -288,6 +311,9 @@ export async function finalizeAdult(admin: SupabaseClient, l: Loaded) {
       p_cap: s["adultParty.xpDailyCap"],
     });
     if (e) console.error("[party] reward failed", m.id, o.id, e.message);
+    const credit = adultRoomCredit(o.won, m.party_mode);
+    if (credit.quests.length) await bumpQuests(admin, o.id, credit.quests);
+    for (const b of credit.badges) await quietBadge(admin, o.id, b);
   }
 }
 

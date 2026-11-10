@@ -11,6 +11,9 @@
  * - XP up to `adultParty.xpDailyCap` a GMT day across all 18+ rooms, Sparks only while under it
  *   (svc_grant_capped_reward enforces the cap atomically);
  * - once per player per room set (ledger source "party_adult", ref "<match id>:<set>").
+ *
+ * Owner decision Q: an 18+ room's winners also count toward quests ("Win 2 Duels or Races") and the Party win badge
+ * (`adultRoomCredit` in lib/multiplayer/server/rewards.ts), but nothing from these rooms reaches the friends feed.
  */
 
 export const ADULT_REWARD_MIN_PLAYERS = 3;

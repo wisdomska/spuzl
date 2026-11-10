@@ -33,8 +33,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 - **Round state in the database:** strokes, statements and guesses live in server-only tables for the round
   (needed on serverless hosts and for trustworthy report snapshots) and are wiped when it closes; nothing is kept
   in memory only.
-- **Rewards and quests:** 18+ rooms pay XP and Sparks but don't count toward quests, badges or the friends feed
-  (those reach friends of any age).
 
 ## Content-game tokens and the 18+ fixes (1.5.0)
 

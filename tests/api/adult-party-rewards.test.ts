@@ -170,6 +170,37 @@ describe("18+ party rewards", () => {
     for (const id of ids) expect(again[id].xp).toHaveLength(1);
   }, 90_000);
 
+  it("counts toward badges for the winner, but never writes a friends feed event (owner decision Q)", async () => {
+    const players = [await adult(), await adult(), await adult()];
+    const room = await openRoom(players);
+    const end = await playAll(room, players);
+    expect(end.status).toBe("finished");
+    const ids = players.map((p) => p.userId);
+    const winners = end.players.filter((x: { place: number | null }) => x.place === 1).map((x: { id: string }) => x.id);
+    expect(winners.length).toBeGreaterThan(0);
+    const { data: badges } = await admin()
+      .from("player_badges")
+      .select("player_id, badge_id")
+      .eq("badge_id", "party-1")
+      .in("player_id", ids);
+    expect((badges ?? []).map((b) => b.player_id).sort()).toEqual([...winners].sort());
+    // The badge paid its Sparks like any other.
+    const { data: sparks } = await admin()
+      .from("sparks_ledger")
+      .select("player_id")
+      .eq("source", "badge")
+      .eq("ref_id", "party-1")
+      .in("player_id", ids);
+    expect((sparks ?? []).map((s) => s.player_id).sort()).toEqual([...winners].sort());
+    // Nothing from the room in the friends feed: no win line and no badge line.
+    const { data: feed } = await admin()
+      .from("feed_events")
+      .select("kind, payload")
+      .in("player_id", ids)
+      .in("kind", ["party_win", "badge"]);
+    expect(feed ?? []).toEqual([]);
+  }, 90_000);
+
   it("pays nothing to players who left or were removed, and nothing for sitting idle", async () => {
     const players = [await adult(), await adult(), await adult(), await adult(), await adult(), await adult()];
     const [host, a, b, leaver, kicked, idle] = players;
