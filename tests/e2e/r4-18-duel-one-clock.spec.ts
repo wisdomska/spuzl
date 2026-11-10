@@ -38,8 +38,13 @@ test("the header timer and the strip show the server round time from the round s
 
     // The other player sees the same round time (one server clock).
     await expect(header(guest.page)).toHaveAttribute("data-timer", "running");
-    const [mine, theirs] = [secs(await header(page).textContent()), secs(await header(guest.page).textContent())];
-    expect(Math.abs(mine - theirs)).toBeLessThanOrEqual(1);
+    // The two pages are read one after the other, so bracket theirs between two reads of mine (a slow dev server can
+    // take a second between reads).
+    const before = secs(await header(page).textContent());
+    const theirs = secs(await header(guest.page).textContent());
+    const after = secs(await header(page).textContent());
+    expect(theirs).toBeGreaterThanOrEqual(before - 1);
+    expect(theirs).toBeLessThanOrEqual(after + 1);
     await expect(page.getByRole("timer")).toHaveCount(1);
     await page.screenshot({ path: "docs/qa/screens/r2/r4-18-duel-clock-375.png" });
   } finally {

@@ -1,4 +1,4 @@
-import { execSync } from "node:child_process";
+import { createClient } from "@supabase/supabase-js";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { guestContext, VIEWPORTS } from "./harness";
 
@@ -7,17 +7,24 @@ import { guestContext, VIEWPORTS } from "./harness";
  * player chip draws the player's Spuz in their hat, and a hat shows only when that player owns it. `owner` buys and
  * wears Shades through the Shop API; `forger` gets 'shades' written straight into players.hat with no purchase (a
  * stale or forged value). Every payload and chip shows the owner's Shades and never the forger's.
- * Needs the app with the local database (psql, like r3-15-spuz-wear and r3-16-avatar-hats).
+ * Needs the app with a database: writes go through the service role (SUPABASE_SERVICE_ROLE_KEY), local or hosted.
  */
 
-const psql = (sql: string) => execSync(`PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -qc "${sql}"`);
+const db = () =>
+  createClient(process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    auth: { persistSession: false },
+  });
+const must = async (q: PromiseLike<{ error: unknown }>) => {
+  const { error } = await q;
+  if (error) throw error;
+};
 
 async function myId(page: Page) {
   return (await (await page.request.get("/api/v1/me")).json()).id as string;
 }
 
 async function wearShades(page: Page, nickname: string) {
-  psql(`update players set sparks = 1000 where nickname = '${nickname}'`);
+  await must(db().from("players").update({ sparks: 1000 }).eq("nickname", nickname));
   const buy = await page.request.post("/api/v1/shop/buy", { data: { itemId: "hat-shades", requestId: crypto.randomUUID() } });
   expect(buy.ok(), await buy.text()).toBe(true);
   const equip = await page.request.post("/api/v1/shop/equip", { data: { itemId: "hat-shades", equip: true } });
@@ -29,7 +36,8 @@ async function ownerAndForger(browser: Browser, viewport: { width: number; heigh
   const owner = await guestContext(browser, { viewport });
   const forger = await guestContext(browser, { viewport });
   await wearShades(owner.page, owner.nickname);
-  psql(`update players set hat = 'shades' where nickname = '${forger.nickname}'`);
+  // The forger's row says Shades, but they never bought them.
+  await must(db().from("players").update({ hat: "shades" }).eq("nickname", forger.nickname));
   const inv = await (await owner.page.request.get("/api/v1/friends/invite")).json();
   const acc = await forger.page.request.post("/api/v1/friends/invite/accept", { data: { code: inv.code } });
   expect(acc.ok(), await acc.text()).toBe(true);
@@ -38,8 +46,13 @@ async function ownerAndForger(browser: Browser, viewport: { width: number; heigh
     [await myId(owner.page), 50_000],
     [await myId(forger.page), 70_000],
   ] as const)
-    psql(
-      `insert into daily_results (date, game_id, player_id, time_ms, finished_at) values ('${day}', 'crownfall', '${id}', ${ms}, now()) on conflict do nothing`,
+    await must(
+      db()
+        .from("daily_results")
+        .upsert(
+          { date: day, game_id: "crownfall", player_id: id, time_ms: ms, finished_at: new Date().toISOString() },
+          { ignoreDuplicates: true },
+        ),
     );
   return { owner, forger };
 }

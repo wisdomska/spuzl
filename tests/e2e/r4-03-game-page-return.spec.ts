@@ -22,7 +22,10 @@ async function finishOnboarding(page: Page) {
 
 test("Play on a game's page returns to that game after onboarding", async ({ page }) => {
   await page.goto("/games/sixer");
-  await page.getByRole("link", { name: /^Play Sixer free$/ }).click();
+  await page
+    .getByRole("link", { name: /^Play Sixer free$/ })
+    .first()
+    .click();
   await expect(page).toHaveURL(/[?&]return=game(%3A|:)sixer/, { timeout: 15_000 });
   await finishOnboarding(page);
   await page.waitForURL((u) => u.pathname === "/play/sixer", { timeout: 30_000 });

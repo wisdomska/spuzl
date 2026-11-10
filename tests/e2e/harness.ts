@@ -76,10 +76,18 @@ export async function logGuest(page: Page) {
 /** The onboarding step "When were you born?": picks a birth month and year (a band, or exact values) and continues. */
 export async function pickBirth(page: Page, age: Age | { year: number; month?: number } = "18+") {
   const b = typeof age === "string" ? birthFor(age) : { year: age.year, month: age.month ?? 12 };
-  await page.getByLabel("Month", { exact: true }).selectOption(String(b.month));
-  // R2-09: the year is a 4-digit numeric field (it was a select).
-  await page.getByLabel("Year", { exact: true }).fill(String(b.year));
-  await page.getByRole("button", { name: /^Continue\b/ }).click();
+  const month = page.getByLabel("Month", { exact: true });
+  const year = page.getByLabel("Year", { exact: true });
+  const go = page.getByRole("button", { name: /^Continue\b/ });
+  // A pick made before the page hydrates can be reset by React (the fields are controlled): pick again until it holds.
+  await expect(async () => {
+    await month.selectOption(String(b.month));
+    // R2-09: the year is a 4-digit numeric field (it was a select).
+    await year.fill(String(b.year));
+    await expect(month).toHaveValue(String(b.month), { timeout: 1000 });
+    await expect(go).toBeEnabled({ timeout: 1000 });
+  }).toPass({ timeout: 20_000 });
+  await go.click();
 }
 
 export interface GuestOpts {

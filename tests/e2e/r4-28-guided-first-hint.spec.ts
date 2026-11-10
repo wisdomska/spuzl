@@ -9,7 +9,9 @@ import { onboardGuest, VIEWPORTS } from "./harness";
  * server's answer is checked too: a target, and text that isn't the rule.
  * Needs a server with a database (guest onboarding). Screenshots: docs/qa/screens/r2/r4-28-<game>-375.png.
  */
-const GAMES = ["dusk", "nine", "merge"] as const;
+// Merge is retired (players can't open it), so its first hint is covered by the unit test only
+// (tests/unit/game/guided-first-hint.test.ts).
+const GAMES = ["dusk", "nine"] as const;
 
 test.use({ viewport: VIEWPORTS.phone });
 

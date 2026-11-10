@@ -29,7 +29,8 @@ test.describe("R4-23 Quickfire questions on open", () => {
     const first = await (await opened).json();
     expect(first).toMatchObject({ ok: true, question: { q: expect.any(String), choices: expect.any(Array) } });
     await expect(answers.getByRole("button")).toHaveCount(4);
-    await expect(page.getByText(first.question.q)).toBeVisible();
+    // The question shows on the card (and once more for screen readers): the visible one is enough.
+    await expect(page.getByText(first.question.q).first()).toBeVisible();
     await expect(page.getByRole("progressbar", { name: /time left/i })).toBeVisible();
 
     // Wait past the reading floor, answer, and cut the connection before the next question is fetched.

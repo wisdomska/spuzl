@@ -20,7 +20,8 @@ test("Quickfire's Library card offers Host a party, which opens the Host tab wit
   await page.screenshot({ path: "docs/qa/screens/r4/r4-08-card-375.png" });
   await card.getByRole("button", { name: "Host a party", exact: true }).click();
   await page.waitForURL(/\/party\?host=1&game=quickfire/);
-  await expect(page.getByRole("button", { name: /Quickfire/ }).first()).toBeVisible();
+  // The Host tab opens with Quickfire picked (a score race, "most points wins").
+  await expect(page.getByRole("radio", { name: /^Quickfire, most points wins/ })).toBeChecked();
 });
 
 test("Quickfire's Challenge sheet on its world page offers only Host a party", async ({ page }) => {
