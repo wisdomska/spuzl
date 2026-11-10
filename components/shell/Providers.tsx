@@ -17,6 +17,7 @@ import { useNavTracker } from "@/lib/client/nav";
 import { HapticFallback } from "./HapticFallback";
 import { Inbox } from "./Inbox";
 import { TapSkeleton } from "./TapSkeleton";
+import { ShieldThanks } from "@/components/meta/ShieldThanks";
 import { PromptHost } from "./PromptQueue";
 
 export function Providers({ children }: { children: ReactNode }) {
@@ -89,6 +90,7 @@ export function Providers({ children }: { children: ReactNode }) {
         <PromptHost />
         <Inbox />
         <TapSkeleton />
+        <ShieldThanks />
       </MotionConfig>
     </QueryClientProvider>
   );

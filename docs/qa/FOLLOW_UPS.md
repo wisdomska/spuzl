@@ -158,9 +158,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   - **Deploy order:** apply `20261202000101` to `20261202000701` before deploying. Until then the copy overrides and
     the `warm` split fall back quietly, but `practice_*` and `game_over` metrics are refused by the old name check
     (the client ignores the error, so players see nothing).
-- **Google link and the streak shield (R2-P5):** linking Google from "Save your streak" grants the shield in
-  `/auth/callback` and adds `?shield=1` to the return URL, but no screen reads it yet, so the player isn't thanked
-  the way the email path thanks them. A small toast on the return page would close it.
 - **Share images for free play (R2-P5):** before the story card, Share on a free-play clear pointed at the Daily card,
   which 404s for anything but Daily and archive clears. Story cards fix it while `features.storyCards` is on; with it
   off, free play still has no image to share.
