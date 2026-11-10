@@ -1,5 +1,6 @@
 import { GAME_BY_ID, LAUNCH_IDS, toneOf, type WorldId } from "@/lib/catalog";
 import { formatNumber, formatShort } from "@/lib/format";
+import { freeCardCopy } from "@/lib/copy/share";
 import { ordinal, type StatusCardModel, type StatusStat } from "./card-model";
 
 /**
@@ -97,6 +98,22 @@ export function dailyShareText(d: DailyShare): string {
   const result =
     meta?.scoring === "score" && d.score !== null && d.score !== undefined ? `${formatNumber(d.score)} pts` : formatShort(d.timeMs);
   return [`SPUZL #${d.number} · ${name} · ${result}${streakTag(d.streak)}`, ...effortGrid(d), SHARE_DOMAIN].join("\n");
+}
+
+export interface FreeShare extends Effort {
+  gameId: string;
+  /** for score games */
+  score?: number | null;
+  streak?: number;
+}
+
+/** R4-20: a free-play clear (no Daily number): "SPUZL · Nine · Free play · 1:35", the effort grid, the site. */
+export function freeShareText(d: FreeShare): string {
+  const meta = GAME_BY_ID[d.gameId];
+  const name = meta?.name ?? d.gameId;
+  const result =
+    meta?.scoring === "score" && d.score !== null && d.score !== undefined ? `${formatNumber(d.score)} pts` : formatShort(d.timeMs);
+  return [`${freeCardCopy.text(name, result)}${streakTag(d.streak)}`, ...effortGrid(d), SHARE_DOMAIN].join("\n");
 }
 
 export interface DayShare {

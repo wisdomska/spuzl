@@ -26,3 +26,16 @@ export const storyCopy = {
   formatLabel: "Card shape",
   failed: "Couldn't make your card. Try again.",
 } as const;
+
+/**
+ * Free-play clear card (R4-20): the share image for a free-play clear when story cards are off (and the Square choice
+ * when they are on), drawn like the Daily card (lib/share/card-model.ts `freeCard`).
+ */
+export const freeCardCopy = {
+  kicker: (game: string) => `${game} · Free play`,
+  alt: (game: string, result: string) => `SPUZL ${game}, free play, cleared in ${result}`,
+  altScore: (game: string, result: string) => `SPUZL ${game}, free play, ${result} points`,
+  sheetTitle: (game: string) => `${game} on SPUZL`,
+  /** share text head line (the effort grid and the site follow) */
+  text: (game: string, result: string) => `SPUZL · ${game} · Free play · ${result}`,
+} as const;

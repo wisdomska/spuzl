@@ -6,6 +6,7 @@ import type { CardFormat, CardKind } from "./card-model";
  *
  *   cardUrl("daily", attemptId)                  Daily clear, 1080 × 1920
  *   cardUrl("full", attemptId, { format: "square" })
+ *   cardUrl("free", attemptId)                   free-play clear (R4-20)
  *   cardUrl("duel", matchId)  /  cardUrl("party", matchId, { player: myId })
  */
 export function cardUrl(

@@ -6,7 +6,7 @@ import { api } from "@/lib/client/api";
 import { createChallengeLink } from "@/lib/client/challenge";
 import { useGameSettings } from "@/lib/game-settings/client";
 import { challengeCopy } from "@/lib/copy/challenge";
-import { storyCopy } from "@/lib/copy/share";
+import { freeCardCopy, storyCopy } from "@/lib/copy/share";
 import { cardUrl } from "@/lib/share/urls";
 import { ShareSheet } from "./ShareSheet";
 
@@ -26,10 +26,11 @@ type Shape = "story" | "square";
 /**
  * Sharing a clear (R2-P5): the 9:16 story card (admin "features.storyCards") with the player's hatted Spuz, the
  * result and a "Beat me" short link to a challenge on the same puzzle, made on the server when they share.
- * Daily and archive clears keep their older Daily card as a Square choice (and as the whole sheet while story
- * cards are off). "Beat my time" (admin "features.challenges") sends the challenge link straight away.
+ * Daily and archive clears keep their older Daily card, and free-play clears have their own card (R4-20,
+ * `/api/og/free/<attempt>`), as a Square choice beside the story (and as the whole sheet while story cards are off
+ * or the story can't be made). "Beat my time" (admin "features.challenges") sends the challenge link straight away.
  *
- *   const share = useClearShare({ meta, attemptId, cleared, daily, dailyText, onNotice });
+ *   const share = useClearShare({ meta, attemptId, cleared, daily, free, text, onNotice });
  *   share.open()  share.beat  share.sheet  share.busy
  */
 export function useClearShare({
@@ -37,7 +38,8 @@ export function useClearShare({
   attemptId,
   cleared,
   daily,
-  dailyText,
+  free = false,
+  text,
   onNotice,
 }: {
   meta: GameMeta;
@@ -46,7 +48,10 @@ export function useClearShare({
   cleared: boolean;
   /** a Daily or archive clear: the older Daily card exists for it */
   daily: boolean;
-  dailyText: string;
+  /** a free-play clear: the free-play card exists for it (R4-20) */
+  free?: boolean;
+  /** share text for the Daily or free-play card */
+  text: string;
   onNotice: (text: string) => void;
 }) {
   const settings = useGameSettings();
@@ -58,6 +63,8 @@ export function useClearShare({
   const [busy, setBusy] = useState(false);
   const mine = story && story.attemptId === attemptId ? story : null;
   const canStory = storyOn && cleared && !!attemptId;
+  // The clear's own card: the Daily card, or the free-play card for a verified free clear.
+  const card = daily ? ("daily" as const) : free && cleared ? ("free" as const) : null;
 
   const open = useCallback(async () => {
     if (canStory && !mine && attemptId) {
@@ -68,23 +75,23 @@ export function useClearShare({
         setShape("story");
       } catch {
         setBusy(false);
-        // A Daily still has its own card to share; anything else says so and stays put.
-        if (!daily) return onNotice(storyCopy.failed);
+        // A clear with its own card shares that; anything else says so and stays put.
+        if (!card) return onNotice(storyCopy.failed);
       }
       setBusy(false);
-    } else if (!canStory && !daily) return;
+    } else if (!canStory && !card) return;
     setOpen(true);
-  }, [canStory, mine, attemptId, daily, onNotice]);
+  }, [canStory, mine, attemptId, card, onNotice]);
 
   const beat =
     challengesOn && cleared && attemptId
       ? async () => {
           try {
             const url = await createChallengeLink(attemptId);
-            const text = challengeCopy.share.fromResult(meta.name);
-            if (navigator.share) await navigator.share({ text, url });
+            const line = challengeCopy.share.fromResult(meta.name);
+            if (navigator.share) await navigator.share({ text: line, url });
             else {
-              await navigator.clipboard.writeText(`${text} ${url}`);
+              await navigator.clipboard.writeText(`${line} ${url}`);
               onNotice(challengeCopy.share.copied);
             }
           } catch {
@@ -93,9 +100,9 @@ export function useClearShare({
         }
       : undefined;
 
-  const asStory = !!mine && (shape === "story" || !daily);
+  const asStory = !!mine && (shape === "story" || !card);
   const options =
-    mine && daily && attemptId ? (
+    mine && card && attemptId ? (
       <div role="radiogroup" aria-label={storyCopy.formatLabel} className="grid grid-cols-2 gap-2">
         {(["story", "square"] as const).map((f) => (
           <button
@@ -113,14 +120,14 @@ export function useClearShare({
     ) : undefined;
 
   const sheet: ReactNode =
-    attemptId && (mine || daily) ? (
+    attemptId && (mine || card) ? (
       <ShareSheet
         open={isOpen}
         onOpenChange={setOpen}
-        kind={asStory ? "story" : "daily"}
-        title={asStory ? storyCopy.sheetTitle(meta.name) : `${meta.name} on SPUZL`}
-        text={asStory ? mine!.text : dailyText}
-        image={asStory ? mine!.image : cardUrl("daily", attemptId, shape === "square" && mine ? { format: "square" } : {})}
+        kind={asStory ? "story" : (card ?? "daily")}
+        title={asStory ? storyCopy.sheetTitle(meta.name) : freeCardCopy.sheetTitle(meta.name)}
+        text={asStory ? mine!.text : text}
+        image={asStory ? mine!.image : cardUrl(card ?? "daily", attemptId, shape === "square" && mine ? { format: "square" } : {})}
         fileName={`spuzl-${meta.id}${asStory ? "-story" : ""}.png`}
         preview={
           asStory
@@ -133,5 +140,5 @@ export function useClearShare({
       />
     ) : null;
 
-  return { open, beat, sheet, busy, canShare: canStory || daily };
+  return { open, beat, sheet, busy, canShare: canStory || !!card };
 }

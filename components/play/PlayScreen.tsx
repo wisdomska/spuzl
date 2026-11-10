@@ -36,7 +36,7 @@ import { PhotosensitivityNotice } from "./PhotosensitivityNotice";
 import { finishOrQueue } from "@/lib/offline/queue";
 import { OfflineBanner } from "@/components/pwa/OfflineBanner";
 import { useClearShare } from "@/components/share/ClearShare";
-import { dailyShareText } from "@/lib/share/text";
+import { dailyShareText, freeShareText } from "@/lib/share/text";
 import { GHOST_GAMES, saveGhostRun } from "@/lib/client/challenge";
 import { HowToSheet } from "./HowToSheet";
 import { GuidedPlay } from "./GuidedPlay";
@@ -488,23 +488,29 @@ export function PlayScreen({
       />
     ) : undefined;
 
-  // Share a clear (R2-P5): the 9:16 story card with a "Beat me" link, or a Daily's own card; and "Beat my time".
+  // Share a clear (R2-P5): the 9:16 story card with a "Beat me" link, or the clear's own card (a Daily's, or the
+  // free-play card, R4-20); and "Beat my time".
+  const shareEffort = result
+    ? {
+        gameId: meta.id,
+        timeMs: result.timeMs,
+        hints: stats.hints,
+        slips: stats.mistakes,
+        score: result.score ?? null,
+        streak: result.streak?.current,
+      }
+    : null;
   const clearShare = useClearShare({
     meta,
     attemptId: attempt?.attemptId ?? null,
     cleared: result?.status === "cleared",
     daily: mode === "daily" || mode === "archive",
-    dailyText: result
-      ? dailyShareText({
-          gameId: meta.id,
-          number: attempt?.date ? dailyNumber(attempt.date) : 0,
-          timeMs: result.timeMs,
-          hints: stats.hints,
-          slips: stats.mistakes,
-          score: result.score ?? null,
-          streak: result.streak?.current,
-        })
-      : "",
+    free: mode === "free",
+    text: !shareEffort
+      ? ""
+      : mode === "free"
+        ? freeShareText(shareEffort)
+        : dailyShareText({ ...shareEffort, number: attempt?.date ? dailyNumber(attempt.date) : 0 }),
     onNotice: setNotice,
   });
 

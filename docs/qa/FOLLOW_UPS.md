@@ -153,6 +153,9 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 - **Share images for free play (R2-P5):** before the story card, Share on a free-play clear pointed at the Daily card,
   which 404s for anything but Daily and archive clears. Story cards fix it while `features.storyCards` is on; with it
   off, free play still has no image to share.
+- **Google link and the streak shield (R2-P5):** linking Google from "Save your streak" grants the shield in
+  `/auth/callback` and adds `?shield=1` to the return URL, but no screen reads it yet, so the player isn't thanked
+  the way the email path thanks them. A small toast on the return page would close it.
 - **Party TV for under-16 hosts (R2-P5):** the big-screen view is refused for hosts under 16 (their rooms are friends
   only, R2-13). If teachers under 16 ever host classroom rooms, this needs a product decision.
 - **Retired content and boards built before the retire (round 3, item 12):** every board built after a retire leaves

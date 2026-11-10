@@ -1,12 +1,13 @@
 import type { SpuzMood } from "@/components/brand/Spuz";
 import { GAME_BY_ID, GAME_COUNT, WORLDS, WORLD_BY_ID, type WorldId } from "@/lib/catalog";
 import { formatNumber, formatShort } from "@/lib/format";
+import { freeCardCopy } from "@/lib/copy/share";
 
 /**
  * Share card view model (design: States Share Light Desktop, "Share cards").
  * Pure: the server loaders in lib/share/cards.ts fill it from database rows, never from the query string.
  */
-export type CardKind = "daily" | "full" | "duel" | "party";
+export type CardKind = "daily" | "full" | "free" | "duel" | "party";
 export type CardFormat = "story" | "square";
 
 export interface CardModel {
@@ -144,6 +145,34 @@ export function dailyCard(i: DailyCardInput): CardModel {
   };
 }
 
+export interface FreeCardInput {
+  world: WorldId;
+  gameName: string;
+  scoring: "time" | "score" | "deaths";
+  timeMs: number;
+  score: number | null;
+  hints: number;
+  deaths: number;
+  streak: number;
+  level: number;
+}
+
+/**
+ * R4-20: a free-play clear, drawn like the Daily card (the game's world colours, the time or score big, the effort
+ * line) with "Free play" in place of the Daily number, and no comparison (free boards differ from player to player).
+ */
+export function freeCard(i: FreeCardInput): CardModel {
+  const daily = dailyCard({ ...i, number: 0, percentile: null, field: 0 });
+  const score = i.scoring === "score" && i.score !== null;
+  return {
+    ...daily,
+    kind: "free",
+    kicker: freeCardCopy.kicker(i.gameName),
+    foot: streakFoot(i.streak, i.level),
+    alt: score ? freeCardCopy.altScore(i.gameName, daily.big) : freeCardCopy.alt(i.gameName, formatShort(i.timeMs)),
+  };
+}
+
 export interface FullCardInput {
   date: string;
   cleared: number;
@@ -243,6 +272,17 @@ export const SAMPLE_CARDS: Record<CardKind, CardModel> = {
     percentile: 82,
     field: 40,
     streak: 12,
+  }),
+  free: freeCard({
+    world: "number",
+    gameName: "Nine",
+    scoring: "time",
+    timeMs: 95_000,
+    score: null,
+    hints: 1,
+    deaths: 0,
+    streak: 12,
+    level: 15,
   }),
   full: fullCard({ date: "2026-10-30", cleared: 15, totalMs: 38 * 60_000 + 12_000, streak: 12, level: 15 }),
   duel: duelCard({ gameName: "Sixer", winnerRounds: 2, loserRounds: 1, loser: "Tunde", ratingAfter: 1438, ratingBefore: 1420, bestOf: 3 }),

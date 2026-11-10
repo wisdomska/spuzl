@@ -4,7 +4,7 @@ import { headToHead } from "@/lib/multiplayer/server/h2h";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { GAME_BY_ID, LAUNCH_IDS, toneOf } from "@/lib/catalog";
 import { dailyNumber } from "@/lib/format";
-import { dailyCard, duelCard, fullCard, partyCard, type CardModel } from "./card-model";
+import { dailyCard, duelCard, freeCard, fullCard, partyCard, type CardModel } from "./card-model";
 
 /**
  * Share card loaders. Every number on a card comes from the database by attempt or match id;
@@ -38,7 +38,11 @@ async function streakAndLevel(admin: SupabaseClient, playerId: string) {
   return { streak: s?.current ?? 0, level: p?.level ?? 1 };
 }
 
-export async function attemptCard(admin: SupabaseClient, id: string, kind: "daily" | "full"): Promise<CardModel | null> {
+/**
+ * A clear's card: "daily" (a Daily or archive clear), "full" (the day's Full Spuzl) or "free" (R4-20: a free-play
+ * clear, the share image while story cards are off). Only verified clears of the matching mode render.
+ */
+export async function attemptCard(admin: SupabaseClient, id: string, kind: "daily" | "full" | "free"): Promise<CardModel | null> {
   if (!isUuid(id)) return null;
   const { data } = await admin
     .from("attempts")
@@ -46,10 +50,25 @@ export async function attemptCard(admin: SupabaseClient, id: string, kind: "dail
     .eq("id", id)
     .maybeSingle();
   const a = data as AttemptRow | null;
-  if (!a || a.status !== "cleared" || !a.verified || !a.daily_date || a.time_ms === null) return null;
-  if (a.mode !== "daily" && a.mode !== "archive") return null;
+  if (!a || a.status !== "cleared" || !a.verified || a.time_ms === null) return null;
   const meta = GAME_BY_ID[a.game_id];
   if (!meta) return null;
+  if (kind === "free") {
+    if (a.mode !== "free") return null;
+    const { streak, level } = await streakAndLevel(admin, a.player_id);
+    return freeCard({
+      world: toneOf(meta),
+      gameName: meta.name,
+      scoring: meta.scoring,
+      timeMs: a.time_ms,
+      score: a.score,
+      hints: a.hints,
+      deaths: a.deaths,
+      streak,
+      level,
+    });
+  }
+  if (!a.daily_date || (a.mode !== "daily" && a.mode !== "archive")) return null;
   const { streak, level } = await streakAndLevel(admin, a.player_id);
 
   if (kind === "full") {
