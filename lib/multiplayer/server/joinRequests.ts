@@ -87,6 +87,19 @@ export async function requireMayJoin(
   if (!(await mayJoin(admin, room, playerId, wasMember))) throw friendsOnlyRefusal();
 }
 
+/**
+ * R4-02: Board Bay invite codes from an under-16 host are friends only, like Party rooms. The host's accepted
+ * friends join with the code; anyone else (and a blocked pair) gets 403 friends_only with a line saying to become
+ * friends first. Board Bay has no ask-to-join step: its invites are made for a friend, so the friend request is the
+ * way in. Same setting as rooms ("rooms.under16FriendsOnly").
+ */
+export async function requireBayJoin(admin: SupabaseClient, hostId: string | null, playerId: string) {
+  if (!hostId || hostId === playerId) return;
+  if (!(await friendsOnlyHost(admin, hostId))) return;
+  const [friendship, blocked] = await Promise.all([friendshipBetween(admin, hostId, playerId), isBlockedPair(admin, hostId, playerId)]);
+  if (blocked || friendship?.status !== "accepted") throw new ApiError(403, "friends_only", joinRequestsCopy.bayFriendsOnly);
+}
+
 /** An open room for a code: a friend duel waiting for its rival, or a Party room that hasn't expired. */
 async function openRoom(admin: SupabaseClient, code: string): Promise<Room> {
   const { data, error } = await admin.from("matches").select("id, kind, status, host_id, code, emptied_at").eq("code", code).maybeSingle();

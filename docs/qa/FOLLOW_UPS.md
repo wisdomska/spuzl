@@ -76,8 +76,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   nickname included) is a privacy call for the lead.
 - **R2-13, host away:** a request reaches the host only in the lobby (realtime plus a 15 s poll). There is no push
   or Home card, so a host who left the lobby screen won't see it until they come back. The asker can wait or cancel.
-- **R2-13, Board Bay invites:** friends-only covers Party rooms and friend duels (the ticket). Board Bay invite codes
-  from an under-16 host (`/api/v1/bay/[id]/join`) still let anyone with the code in.
 - **Daily Five reset hour (R2-05):** with `dailyFive.resetHour` above 0, a Daily Five attempt's `daily_date` is the
   Daily Five day, while the offline-clear check in `finishAttempt` ("offline clear outside its day") and the regular
   Daily (when `features.dailies` is on) still use the GMT date. Keep the reset hour at 0 while Dailies are on, or

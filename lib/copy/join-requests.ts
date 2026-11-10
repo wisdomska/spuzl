@@ -3,6 +3,8 @@ export const joinRequestsCopy = {
   /** the server's answer to a non-friend joining by code */
   friendsOnly: "This room is for the host's friends only. Ask to join and the host can let you in.",
   friendsOnlyTitle: (host: string | null) => (host ? `${host}'s room is friends only` : "This room is friends only"),
+  /** R4-02: a Board Bay invite from an under-16 host, opened by someone who isn't their friend */
+  bayFriendsOnly: "This game is for the host's friends only. Ask them to add you as a friend, then join.",
   friendsOnlyBody: "Only the host's friends can join straight away. Send a request and the host can let you in.",
   ask: "Request to join",
   asking: "Sending your request…",

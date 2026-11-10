@@ -385,8 +385,9 @@ export function BayMatch({ id }: { id: string }) {
             onClick={async () => {
               try {
                 set(await api<BayView>(`/api/v1/bay/${v.id}/join`, { json: { code: join } }));
-              } catch {
-                show("This invite is closed.", "bad");
+              } catch (e) {
+                // R4-02: an under-16 host's invite is friends only; the server says how to get in.
+                show(e instanceof HttpError && e.code === "friends_only" ? e.message : "This invite is closed.", "bad");
               }
             }}
           >

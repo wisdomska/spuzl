@@ -25,6 +25,7 @@ import {
 import { CODE_ALPHABET, makeRoomCode } from "../roomCode";
 import type { BayView } from "../types";
 import { rateTwo } from "./rewards";
+import { requireBayJoin } from "./joinRequests";
 
 export const bayTopic = (id: string) => `bay:${id}`;
 const iso = (n: number) => new Date(n).toISOString();
@@ -203,6 +204,8 @@ export async function joinBay(admin: SupabaseClient, me: string, id: string, cod
   const b = await load(admin, id);
   if (seatOf(b, me) >= 0) return bayView(admin, b, me);
   if (b.status !== "waiting" || !b.invite_code || b.invite_code !== code.toUpperCase()) throw new ApiError(409, "invite_closed");
+  // R4-02: an under-16 host's invite is friends only (like Party rooms, R2-13).
+  await requireBayJoin(admin, b.created_by ?? b.players[0] ?? null, me);
   const players = [...b.players, me];
   const full = players.length >= b.seats;
   const now = Date.now();
