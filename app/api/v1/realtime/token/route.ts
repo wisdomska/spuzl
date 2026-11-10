@@ -1,7 +1,10 @@
 import { handle, ok, rateLimit, requirePlayer, ApiError } from "@/lib/api/server";
 import { channelToken } from "@/lib/realtime/server";
 
-/** GET /api/v1/realtime/token?topic=: channel token for the Ably and PartyKit adapters, after a membership check. */
+/**
+ * GET /api/v1/realtime/token?topic=: channel token for the Ably and PartyKit adapters, after a membership check.
+ * Server-written topics (`ink:`) get a subscribe-only token.
+ */
 export const GET = handle(async (req: Request) => {
   const { admin, player } = await requirePlayer();
   await rateLimit(admin, `rt-token:${player.id}`, 60, 60);
@@ -9,7 +12,8 @@ export const GET = handle(async (req: Request) => {
   const [kind, id] = topic.split(":");
   if (!/^[0-9a-f-]{36}$/i.test(id ?? "")) throw new ApiError(400, "bad_topic");
   let allowed = false;
-  if (kind === "match") {
+  // R4-24: `ink:<match>` (Draw It live ink) is read by the same members; its token can't publish (channelToken).
+  if (kind === "match" || kind === "ink") {
     const { data } = await admin
       .from("match_players")
       .select("player_id")

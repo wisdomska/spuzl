@@ -45,6 +45,8 @@ export default class SpuzlParty {
   onMessage(message: string, sender: Conn) {
     const player = sender.state?.player;
     if (!player) return;
+    // R4-24: the Draw It ink channel is written by the server only (onRequest, from /api/v1/ink).
+    if (this.room.id.startsWith("ink:")) return;
     try {
       const m = JSON.parse(message) as { event: string; payload: unknown };
       if (typeof m.event !== "string" || m.event.length > 40) return;

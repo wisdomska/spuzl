@@ -9,6 +9,7 @@ import { adultPartyRefusal } from "@/lib/party-adult/gate";
 import { DRAW_WORDS, type DrawWord } from "@/lib/party-adult/content";
 import { familyDrawRefusal, familyOptions } from "@/lib/party-adult/family";
 import { familyWords } from "@/lib/party-adult/family-words";
+import { INK_PASS_SLACK_MS, signInkPass } from "@/lib/party-adult/ink-pass";
 import { TEXT_MAX, cleanText, partyTextProblem, type PartyTextKind } from "@/lib/party-adult/filter";
 import {
   isAdultMode,
@@ -421,6 +422,11 @@ export async function adultRoundView(admin: SupabaseClient, l: Loaded, me: strin
     awards: revealed ? (r.awards ?? {}) : null,
     skipped: revealed && r.mode === "truths" && r.statements === null,
     iCorrect: guesses.some((x) => x.correct && x.playerId === me),
+    // R4-24: only the drawer, only while drawing, gets a pass for the live ink relay.
+    inkPass:
+      r.mode === "draw" && lead && r.phase === "play"
+        ? signInkPass({ m: m.id, s: m.set_no, r: m.round, p: me, x: Date.parse(r.phase_ends_at) + INK_PASS_SLACK_MS })
+        : null,
   };
 }
 

@@ -57,6 +57,13 @@ async function partyPublish(topic: string, event: string, payload: unknown) {
   });
 }
 
+/**
+ * Topics only the server writes to (R4-24: Draw It live ink, relayed by /api/v1/ink). Supabase refuses client
+ * broadcasts on them in its Realtime policy (private.can_send_topic), Ably by the token's capability and the
+ * PartyKit relay by dropping client messages there.
+ */
+export const serverOnlyTopic = (topic: string) => topic.startsWith("ink:");
+
 /** Channel tokens for the Ably and PartyKit adapters (Supabase checks RLS instead). */
 export async function channelToken(topic: string, playerId: string): Promise<{ token: string; clientId: string }> {
   if (transportName() === "ably") {
@@ -69,7 +76,7 @@ export async function channelToken(topic: string, playerId: string): Promise<{ t
         keyName,
         clientId: playerId,
         ttl: 60 * 60 * 1000,
-        capability: JSON.stringify({ [topic]: ["subscribe", "publish"] }),
+        capability: JSON.stringify({ [topic]: serverOnlyTopic(topic) ? ["subscribe"] : ["subscribe", "publish"] }),
         timestamp: Date.now(),
       }),
     });

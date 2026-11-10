@@ -12,7 +12,7 @@ import { useEffect, useRef, useState, type FormEvent, type PointerEvent as React
 import { useQueryClient } from "@tanstack/react-query";
 import { Icon } from "@/components/ui/Icon";
 import { api, HttpError } from "@/lib/client/api";
-import { matchKey, useReduce } from "@/lib/client/multiplayer";
+import { matchKey, useChannel, useReduce } from "@/lib/client/multiplayer";
 import { adultPartyCopy as C } from "@/lib/copy/adult-party";
 import { TEXT_MAX, partyTextProblem, type PartyTextKind } from "@/lib/party-adult/filter";
 import type { PartyMode, TurnMode } from "@/lib/party-adult/modes";
@@ -20,7 +20,9 @@ import { BOARD, PEN_COLORS, PEN_WIDTHS, STROKE_LIMITS, strokePath, toStrokes, ty
 import {
   INK,
   InkBatcher,
+  INK_RELAY,
   applyInk,
+  inkTopic,
   livePath,
   parseInk,
   pruneLive,
@@ -29,7 +31,6 @@ import {
   type InkWire,
   type LiveLines,
 } from "@/lib/party-adult/ink";
-import type { RealtimeChannel } from "@/lib/realtime/transport";
 import type { AdultRoundView, MatchPlayerView, MatchView } from "@/lib/multiplayer/types";
 import { Avatar, Cta, TopButton } from "./ui";
 
@@ -285,7 +286,6 @@ export function AdultRound({
   code,
   now,
   host,
-  channel,
   onToast,
   onLeave,
 }: {
@@ -293,8 +293,6 @@ export function AdultRound({
   code: string;
   now: number;
   host: boolean;
-  /** the room's realtime channel: Draw It live ink goes over it */
-  channel: RealtimeChannel | null;
   onToast: Toast;
   onLeave: () => void;
 }) {
@@ -366,17 +364,7 @@ export function AdultRound({
       )}
       <div className="mt-3 flex flex-1 flex-col gap-3 px-4">
         {r.mode === "draw" ? (
-          <DrawIt
-            view={view}
-            r={r}
-            isLead={isLead}
-            name={name}
-            post={post}
-            refresh={refresh}
-            onToast={onToast}
-            onReport={setReport}
-            channel={channel}
-          />
+          <DrawIt view={view} r={r} isLead={isLead} name={name} post={post} refresh={refresh} onToast={onToast} onReport={setReport} />
         ) : (
           <TwoTruths view={view} r={r} isLead={isLead} name={name} post={post} refresh={refresh} onToast={onToast} onReport={setReport} />
         )}
@@ -408,7 +396,6 @@ interface RoundProps {
   refresh: () => Promise<unknown>;
   onToast: Toast;
   onReport: (t: ReportTarget) => void;
-  channel?: RealtimeChannel | null;
 }
 
 function Awards({ view, r }: { view: MatchView; r: AdultRoundView }) {
@@ -439,7 +426,7 @@ function Awards({ view, r }: { view: MatchView; r: AdultRoundView }) {
 
 /* ---------------- Draw It ---------------- */
 
-function DrawIt({ view, r, isLead, name, post, refresh, onToast, onReport, channel = null }: RoundProps) {
+function DrawIt({ view, r, isLead, name, post, refresh, onToast, onReport }: RoundProps) {
   const drawing = isLead && r.phase === "play";
   const revealed = r.phase === "reveal" || r.phase === "done";
   return (
@@ -477,7 +464,7 @@ function DrawIt({ view, r, isLead, name, post, refresh, onToast, onReport, chann
         post={post}
         refresh={refresh}
         onToast={onToast}
-        ink={{ channel, me: view.me, leadId: r.leadId, live: r.phase === "play" && !isLead }}
+        ink={{ matchId: view.id, pass: drawing ? (r.inkPass ?? null) : null, leadId: r.leadId, live: r.phase === "play" && !isLead }}
       />
       {drawing && <p className="text-muted text-[14px]">{C.draw.youDraw}</p>}
       {!isLead &&
@@ -507,8 +494,11 @@ function Canvas({
   post: RoundProps["post"];
   refresh: RoundProps["refresh"];
   onToast: Toast;
-  /** live ink: the drawer sends it while drawing; everyone else shows the drawer's (when `live`) */
-  ink: { channel: RealtimeChannel | null; me: string; leadId: string | null; live: boolean };
+  /**
+   * Live ink (R4-24): the drawer posts it to the relay with its pass (the server stamps and broadcasts it);
+   * everyone else shows the drawer's from the room's ink channel (when `live`).
+   */
+  ink: { matchId: string; pass: string | null; leadId: string | null; live: boolean };
 }) {
   const svg = useRef<SVGSVGElement | null>(null);
   const [color, setColor] = useState(0);
@@ -517,9 +507,17 @@ function Canvas({
   const [pending, setPending] = useState<Stroke[]>([]);
   const batcher = useRef<InkBatcher | null>(null);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const channel = editable ? ink.channel : null;
+  const pass = editable ? ink.pass : null;
+  /** batches go one at a time, in order; while one is on its way the next waits and grows */
+  const chain = useRef<Promise<unknown>>(Promise.resolve());
+  const inFlight = useRef(0);
   const send = (b: Omit<InkWire, "by" | "r"> | null) => {
-    if (b && channel) void channel.broadcast("ink", { by: ink.me, r: round, ...b } satisfies InkWire).catch(() => {});
+    if (!b || !pass) return;
+    inFlight.current++;
+    chain.current = chain.current
+      .then(() => api(INK_RELAY, { json: { pass, ...b } }))
+      .catch(() => {}) // live ink is best effort: the stored stroke follows anyway
+      .finally(() => void inFlight.current--);
   };
   const stopTimer = () => {
     if (timer.current) clearInterval(timer.current);
@@ -535,12 +533,14 @@ function Canvas({
     e.currentTarget.setPointerCapture(e.pointerId);
     const p = toBoard(e);
     setPath([p]);
-    if (!channel) return;
+    if (!pass) return;
     batcher.current ??= new InkBatcher();
     batcher.current.start(color, width);
     batcher.current.add(...p);
     stopTimer();
-    timer.current = setInterval(() => send(batcher.current?.take() ?? null), INK.batchMs);
+    timer.current = setInterval(() => {
+      if (!inFlight.current) send(batcher.current?.take() ?? null);
+    }, INK.batchMs);
   };
   const move = (e: ReactPointerEvent<SVGSVGElement>) => {
     if (!editable || !path) return;
@@ -602,7 +602,7 @@ function Canvas({
             strokeLinejoin="round"
           />
         ))}
-        {!editable && ink.live && <LiveInk channel={ink.channel} leadId={ink.leadId} round={round} stored={strokes.length} />}
+        {!editable && ink.live && <LiveInk matchId={ink.matchId} leadId={ink.leadId} round={round} stored={strokes.length} />}
       </svg>
       {editable && (
         <div className="flex flex-col gap-2">
@@ -669,20 +669,12 @@ function Canvas({
 /**
  * The drawer's line while it is being drawn (lib/party-adult/ink.ts). Points arrive in small batches and are
  * eased in frame by frame, so the line glides instead of stepping; with reduced motion each batch shows at
- * once. Paths are updated directly, outside React, so a frame never re-renders the stored drawing. Only
- * batches naming the round's drawer are kept, and each line goes once the stored drawing holds it.
+ * once. Paths are updated directly, outside React, so a frame never re-renders the stored drawing. Batches come
+ * on the room's ink channel, which only the server writes to (R4-24); only those naming the round's drawer are
+ * kept, and each line goes once the stored drawing holds it.
  */
-function LiveInk({
-  channel,
-  leadId,
-  round,
-  stored,
-}: {
-  channel: RealtimeChannel | null;
-  leadId: string | null;
-  round: number;
-  stored: number;
-}) {
+function LiveInk({ matchId, leadId, round, stored }: { matchId: string; leadId: string | null; round: number; stored: number }) {
+  const { channel } = useChannel(inkTopic(matchId));
   const reduce = useReduce();
   const g = useRef<SVGGElement | null>(null);
   const storedRef = useRef(stored);

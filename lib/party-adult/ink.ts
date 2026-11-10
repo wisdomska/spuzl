@@ -1,23 +1,33 @@
 /**
  * Live ink for Draw It: the drawer's in-progress line, streamed to the room while it is being drawn.
  *
- * Live ink is ephemeral. It goes peer to peer over the room's realtime channel (event "ink"), is never sent
- * to the server routes and never stored. When the drawer lifts the pen, the finished stroke still goes
- * through POST /party/draw (the server's caps and checks) and the stored drawing replaces the live line.
+ * Live ink is ephemeral and never stored. The drawer posts each batch to the ink relay (POST /api/v1/ink) with
+ * the ink pass its round view gave it (lib/party-adult/ink-pass.ts); the relay checks the pass and the batch and
+ * broadcasts it on the room's ink channel (`inkTopic`, event "ink"), stamped server side with the drawer and the
+ * round (R4-24). When the drawer lifts the pen, the finished stroke still goes through POST /party/draw (the
+ * server's caps and checks) and the stored drawing replaces the live line.
  *
  * Bandwidth: the drawer sends one small batch every INK.batchMs while the pen is down, only when it has new
- * points. Coordinates are whole board units (0..1000); points closer than INK.minGap are dropped; the first
- * point of a batch is absolute and the rest are deltas from the point before, so most numbers are 1-2 digits.
+ * points, and never while the last one is still on its way (so batches stay in order and a slow phone just sends
+ * fewer, bigger ones). Coordinates are whole board units (0..1000); points closer than INK.minGap are dropped;
+ * the first point of a batch is absolute and the rest are deltas from the point before, so most numbers are 1-2
+ * digits.
  *
- * Trust: the realtime transport can't say who sent a message, so viewers keep a batch only when it names the
- * round's drawer (from the server's view) and this round, and every field passes the checks below. Anything
- * else is dropped. The stored stroke is always the truth; live ink only ever shows until it arrives.
+ * Trust: players can't publish on the ink channel (the Realtime policy, the Ably token's capability and the
+ * PartyKit relay all refuse it), so the sender stamp is the server's. Viewers still keep a batch only when it
+ * names the round's drawer (from the server's view) and this round, and every field passes the checks below.
+ * The stored stroke is always the truth; live ink only ever shows until it arrives.
  */
 import { BOARD, PEN_COLORS, PEN_WIDTHS } from "./strokes";
 
+/** The room's ink channel: members read it, only the server writes to it (R4-24). */
+export const inkTopic = (matchId: string) => `ink:${matchId}`;
+/** Where the drawer posts its live batches (app/api/v1/ink). */
+export const INK_RELAY = "/api/v1/ink";
+
 export const INK = {
-  /** how often the drawer sends a batch while the pen is down */
-  batchMs: 50,
+  /** how often the drawer sends a batch while the pen is down (each one is a request to the relay) */
+  batchMs: 100,
   /** points per batch at most (the rest wait for the next batch) */
   maxPerBatch: 48,
   /** points closer than this (board units) are dropped */
@@ -106,6 +116,13 @@ export function parseInk(raw: unknown, expect: { leadId: string | null; round: n
   if (!expect.drawing || !expect.leadId || !raw || typeof raw !== "object") return null;
   const m = raw as Partial<Record<keyof InkWire, unknown>>;
   if (m.by !== expect.leadId || m.r !== expect.round) return null;
+  return checkBatch(m);
+}
+
+/** The relay's check of a batch the drawer posts (no sender or round: the server stamps those). */
+export function checkBatch(raw: unknown): InkBatch | null {
+  if (!raw || typeof raw !== "object") return null;
+  const m = raw as Partial<Record<keyof InkWire, unknown>>;
   if (!smallInt(m.s, 1, 100_000) || !smallInt(m.i, 0, INK.maxPoints)) return null;
   if (!smallInt(m.c, 0, PEN_COLORS.length - 1) || !smallInt(m.w, 0, PEN_WIDTHS.length - 1)) return null;
   const p = decodePoints(m.p);

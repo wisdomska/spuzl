@@ -30,7 +30,6 @@ import { readiness } from "@/lib/multiplayer/readiness";
 import { canHostTv, tvPath } from "@/lib/multiplayer/tv";
 import { partyCopy } from "@/lib/copy/party";
 import type { MatchPlayerView, MatchView } from "@/lib/multiplayer/types";
-import type { RealtimeChannel } from "@/lib/realtime/transport";
 import { useGameSettings } from "@/lib/game-settings/client";
 import { canSeeAdultParty, canSeeFamilyDraw } from "@/lib/party-adult/gate";
 import { isTurnMode, type PartyMode } from "@/lib/party-adult/modes";
@@ -430,7 +429,6 @@ function Room({ id, code }: { id: string; code: string }) {
           show={show}
           onLeave={leave}
           onHome={leaveHome}
-          channel={channel}
           onChat={() => chat.setOpen(true)}
           unread={chat.unread}
           beats={countdown.beats}
@@ -737,15 +735,12 @@ function AdultRoom({
   onHome,
   onChat,
   unread,
-  channel,
   beats,
 }: {
   view: MatchView;
   code: string;
   now: number;
   phase: ReturnType<typeof partyPhase>;
-  /** the room's realtime channel (Draw It live ink) */
-  channel: RealtimeChannel | null;
   present: Set<string>;
   emote: Parameters<typeof Lobby>[0]["emote"];
   onEmote: Parameters<typeof Lobby>[0]["onEmote"];
@@ -828,8 +823,7 @@ function AdultRoom({
         <CountdownNumber msToStart={(view.roundStartedAt ?? now) - now} beats={beats} />
       </div>
     );
-  else if (view.party)
-    body = <AdultRound view={view} code={code} now={now} host={host} channel={channel} onToast={show} onLeave={onLeave} />;
+  else if (view.party) body = <AdultRound view={view} code={code} now={now} host={host} onToast={show} onLeave={onLeave} />;
   else body = <LoadingScreen />;
   return (
     <>

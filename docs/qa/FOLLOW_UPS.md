@@ -33,10 +33,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 - **Round state in the database:** strokes, statements and guesses live in server-only tables for the round
   (needed on serverless hosts and for trustworthy report snapshots) and are wiped when it closes; nothing is kept
   in memory only.
-- **Live ink sender:** the realtime transport doesn't say who sent a broadcast, so viewers keep live ink only when
-  it names the round's drawer (from the server's view). A room member could still forge a line that shows for a
-  few seconds until it times out or the stored drawing replaces it; reports and the canonical drawing only ever
-  use stored strokes. Stamping the sender server side (a relay route, or Ably's clientId) would close it.
 - **Rewards and quests:** 18+ rooms pay XP and Sparks but don't count toward quests, badges or the friends feed
   (those reach friends of any age). Party Race XP is still fixed in code with no daily cap.
 

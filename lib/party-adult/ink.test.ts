@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   INK,
+  INK_RELAY,
   InkBatcher,
   applyInk,
+  checkBatch,
+  inkTopic,
   decodePoints,
   encodePoints,
   livePath,
@@ -63,6 +66,24 @@ describe("live ink: only the drawer, only this round", () => {
     expect(parseInk(wire({ i: 1.5 }), expect1)).toBeNull();
     expect(parseInk(wire({ p: [] }), expect1)).toBeNull();
     expect(parseInk(null, expect1)).toBeNull();
+  });
+});
+
+describe("live ink: the relay's checks (R4-24)", () => {
+  it("checks a posted batch with the viewers' rules, without a sender or round (the server stamps those)", () => {
+    const posted: Record<string, unknown> = wire();
+    delete posted.by;
+    delete posted.r;
+    expect(checkBatch(posted)).toEqual({ s: 1, c: 0, w: 1, i: 0, p: [10, 10, 15, 7], end: false });
+    expect(checkBatch({ ...posted, c: 99 })).toBeNull();
+    expect(checkBatch({ ...posted, p: [990, 10, 20, 0] })).toBeNull();
+    expect(checkBatch({ ...posted, p: [] })).toBeNull();
+    expect(checkBatch("nope")).toBeNull();
+  });
+
+  it("names the room's server-written ink channel and the relay route", () => {
+    expect(inkTopic("abc")).toBe("ink:abc");
+    expect(INK_RELAY).toBe("/api/v1/ink");
   });
 });
 

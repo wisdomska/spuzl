@@ -135,6 +135,8 @@ export interface AdultRoundView {
   /** Two Truths: the writer ran out of time or left */
   skipped: boolean;
   iCorrect: boolean;
+  /** Draw It: the drawer's pass for the live ink relay while drawing (R4-24); null for everyone else */
+  inkPass?: string | null;
 }
 
 /** Realtime events the server sends on match:<id> */
