@@ -252,7 +252,7 @@ describe("api: party rooms", () => {
 
 describe("api: skipping a Party round", () => {
   it("a skipped round scores 0, the round ends without waiting, and the skipper plays the next game", async () => {
-    const host = await guest(uniq("sh_"));
+    const host = await guest(uniq("host_"));
     const room = await host.api("/api/v1/rooms", { json: { game: "crownfall", difficulty: "easy", maxPlayers: 3 } });
     const code: string = room.data.code;
     const id: string = room.data.matchId;

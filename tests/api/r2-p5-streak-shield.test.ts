@@ -27,7 +27,7 @@ const freezes = async (id: string) =>
 
 describe("api: sign-in streak shield", () => {
   it("gives a guest who links an email one Streak Freeze, once, audited and visible to the admin", async () => {
-    const g = await guest(uniq("sh_"));
+    const g = await guest(uniq("shield_"));
     expect(await freezes(g.userId)).toBe(0);
     const { sync } = await linkAndSync(g);
     const first = await sync();
