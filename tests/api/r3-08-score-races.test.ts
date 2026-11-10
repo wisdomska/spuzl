@@ -50,9 +50,14 @@ async function play(g: G, id: string, correct: number[], right: (q: number) => b
   const ref = v.puzzle.data.ref;
   expect(ref).toEqual({ game: "quickfire", t: expect.any(String) });
   expect(JSON.stringify(v.puzzle)).not.toMatch(/"correct"|"solution"/);
+  // R4-23: the round board carries no questions; each one comes with its open.
+  expect(v.puzzle.data).not.toHaveProperty("questions");
+  expect(v.puzzle.data.count).toBe(QUESTIONS);
   const answers: { pick: number | null; ms: number }[] = [];
   for (let q = 0; q < QUESTIONS; q++) {
-    expect((await guess(g, ref, { q, open: true })).status).toBe(200);
+    const open = await guess(g, ref, { q, open: true });
+    expect(open.status).toBe(200);
+    expect(open.data).toMatchObject({ ok: true, question: { choices: expect.any(Array) } });
     const pick = right(q) ? correct[q] : (correct[q] + 1) % 4;
     const r = await guess(g, ref, { q, pick, ms: 2500 });
     expect(r.status, JSON.stringify(r.data)).toBe(200);

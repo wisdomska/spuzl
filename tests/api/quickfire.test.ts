@@ -24,7 +24,7 @@ const backdate = (id: string) =>
     .update({ started_at: new Date(Date.now() - 60_000).toISOString() })
     .eq("id", id);
 
-/** No answer key anywhere in a served board: only questions, options and the token. */
+/** No answer key anywhere in the public practice board: only questions, options and the token. */
 function expectNoAnswers(puzzle: Record<string, unknown>) {
   expect(Object.keys(puzzle).sort()).toEqual(["limitMs", "questions", "ref"]);
   expect(puzzle.ref).toEqual({ game: "quickfire", t: expect.any(String) });
@@ -32,17 +32,24 @@ function expectNoAnswers(puzzle: Record<string, unknown>) {
   expect(JSON.stringify(puzzle)).not.toMatch(/"sealed"|"correct"|"answer"|"solution"|"i":|"d":/);
 }
 
+/** A scored board (R4-23): not even the questions, only how many and the time limit; each comes on its open. */
+function expectNoQuestions(puzzle: Record<string, unknown>) {
+  expect(Object.keys(puzzle).sort()).toEqual(["count", "limitMs", "ref"]);
+  expect(puzzle.count).toBe(QUESTIONS);
+  expect(puzzle.ref).toEqual({ game: "quickfire", t: expect.any(String) });
+  expect(JSON.stringify(puzzle)).not.toMatch(/"sealed"|"correct"|"answer"|"solution"|"choices"|"q":|"i":|"d":/);
+}
+
 /** A free-play attempt and its answer key, rebuilt from the server-only seed (read with the service role). */
 async function start(g: G) {
   const s = await g.api("/api/v1/attempts", { json: { game: "quickfire", mode: "free", difficulty: D } });
   expect(s.status, JSON.stringify(s.data)).toBe(200);
   expect(s.data).not.toHaveProperty("solution");
-  expectNoAnswers(s.data.puzzle);
+  expectNoQuestions(s.data.puzzle);
   const { data: att } = await admin().from("attempts").select("free_seed").eq("id", s.data.attemptId).single();
   const [seed, d] = att!.free_seed!.split("|");
   const gen = quickfire.generate(createRng(seed), d as Difficulty);
-  expect(s.data.puzzle.questions).toEqual(gen.puzzle.questions);
-  return { id: s.data.attemptId as string, ref: s.data.puzzle.ref, correct: gen.solution.correct };
+  return { id: s.data.attemptId as string, ref: s.data.puzzle.ref, correct: gen.solution.correct, questions: gen.puzzle.questions };
 }
 
 describe("api: Quickfire answers stay on the server", () => {
@@ -51,13 +58,17 @@ describe("api: Quickfire answers stay on the server", () => {
     const a = await start(g);
     // The resumed Daily and the guided practice board go out the same way.
     const daily = await g.api("/api/v1/attempts", { json: { game: "quickfire", mode: "daily" } });
-    if (daily.status === 200) expectNoAnswers(daily.data.puzzle);
+    if (daily.status === 200) expectNoQuestions(daily.data.puzzle);
+    // The guided practice board is public, so it keeps its questions (still no answers).
     const guided = await g.api("/api/v1/guided/quickfire");
     expect(guided.status).toBe(200);
     expectNoAnswers(guided.data.puzzle);
-    // Opening a question says how long is left, never what is right.
+    // A later question is not handed out before the first is answered.
+    const ahead = await guess(g, a.ref, { q: 1, open: true });
+    expect(ahead.data).toEqual({ ok: false, refused: true });
+    // Opening a question hands it out and says how long is left, never what is right.
     const open = await guess(g, a.ref, { q: 0, open: true });
-    expect(open.data).toEqual({ ok: true, leftMs: LIMIT_MS });
+    expect(open.data).toEqual({ ok: true, leftMs: LIMIT_MS, question: a.questions[0] });
   });
 
   it("records right and wrong answers on the attempt and scores the server's record", async () => {

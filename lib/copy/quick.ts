@@ -33,6 +33,11 @@ export const quick = {
     /** shown when the server takes a moment to judge an answer */
     checking: "Checking your answer…",
     offline: "No connection. Your answer is kept; tap Try again.",
+    /** R4-23: the next question comes from the server when it opens */
+    opening: "Getting your question…",
+    /** the question could not be fetched */
+    offlineOpen: "No connection. Tap Try again to get your question.",
+    offlineOpenShort: "No connection yet",
     retry: "Try again",
     /** before Start: the question clock is the server's, so pausing does not stop it */
     clockRuns: "The clock keeps running if you pause mid-question.",

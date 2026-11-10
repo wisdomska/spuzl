@@ -2,10 +2,11 @@
  * Quickfire: 5 trivia questions, 15 seconds each, tap one of 4 answers.
  * 100 per right answer plus up to 50 for speed. The hint is a 50:50 on the current question.
  *
- * The answers stay on the server. The client gets the questions and options, and its `ref` is an opaque token
- * (games/_shared/guess.ts). Each question goes through the guess transport twice: `{ q, open: true }` when it
- * appears, which starts its window on the server, and `{ q, pick, ms }` when it is answered (pick null on a
- * timeout). On the player's attempt the server keeps both on the move log, judges the answer and only then
+ * The answers stay on the server, and on scored boards so do the questions (R4-23): an attempt or race board is
+ * served as its question count and time limit only (`scoredView`, games/quickfire/view.ts), and its `ref` is an
+ * opaque token (games/_shared/guess.ts). Each question goes through the guess transport twice: `{ q, open: true }`
+ * when it appears, which starts its window on the server and only then hands out the question and its options,
+ * and `{ q, pick, ms }` when it is answered (pick null on a timeout). On the player's attempt the server keeps both on the move log, judges the answer and only then
  * says right or wrong and which option was right. Time is the server's: an answer that reaches it more than
  * NET_SLACK_MS after the window closed counts as a timeout, and the scored time is never put more than
  * NET_SLACK_MS under the server's own measure. Finish checks that the final state holds exactly the answers
@@ -69,11 +70,14 @@ export interface QuickfireVerdict {
   late: boolean;
 }
 /**
- * `leftMs`: the time left in the question's window (an open); `verdict`: the judged answer (an answer, or an
- * open of a question the server already judged, so a resumed board catches up).
+ * `leftMs`: the time left in the question's window (an open); `question`: the question and its options, handed
+ * out on its open once that open is on the server's record; `verdict`: the judged answer (an answer, or an open
+ * of a question the server already judged, so a resumed board catches up).
  */
 export type QuickfireCheck =
-  { ok: true; leftMs?: number; verdict?: QuickfireVerdict } | { ok: false; refused: true } | { ok: false; invalid: true };
+  | { ok: true; leftMs?: number; question?: QuickfireQuestion; verdict?: QuickfireVerdict }
+  | { ok: false; refused: true }
+  | { ok: false; invalid: true };
 
 const LEVELS_FOR: Record<Difficulty, number[]> = { easy: [1], medium: [1, 2], hard: [2, 3], expert: [3, 2], mega: [1, 2, 3] };
 
@@ -232,8 +236,9 @@ const judged = (s: QuickfireSolution, j: Judged): QuickfireVerdict => ({
 });
 
 /**
- * Opens or answers one question. As practice (the guided board, the admin preview, the dev fixture) the pick
- * is judged at once with its own time. On an attempt, questions go in order: each must be opened before it is
+ * Opens or answers one question; an open also hands out the question (its text, category and options), never a
+ * later one. As practice (the guided board, the admin preview, the dev fixture) the pick is judged at once with
+ * its own time. On an attempt, questions go in order: each must be opened before it is
  * answered, an answer counts once (asking again returns the same verdict), and its time is the server's (see
  * the file comment). With no context (a bare reference, a race round) nothing is answered.
  */
@@ -241,18 +246,22 @@ export function checkGuess(p: QuickfirePuzzle, s: QuickfireSolution, g: Quickfir
   if (!validGuess(p, g)) return { ok: false, invalid: true };
   if (!ctx) return { ok: false, refused: true };
   const limit = p.limitMs;
+  const question = p.questions[g.q];
   if (ctx.kind === "practice") {
-    if (isOpen(g)) return { ok: true, leftMs: limit };
+    if (isOpen(g)) return { ok: true, leftMs: limit, question };
     const ms = g.pick === null ? limit : Math.min(limit, Math.max(READ_FLOOR_MS, Math.round(g.ms)));
     return { ok: true, verdict: judged(s, { q: g.q, pick: g.pick, ms, late: false }) };
   }
   const now = ctx.now ?? Date.now();
   const { opens, answers } = readLog(ctx.log);
   const done = answers[g.q];
-  if (done) return { ok: true, leftMs: 0, verdict: judged(s, done) };
+  if (done)
+    return isOpen(g) ? { ok: true, leftMs: 0, question, verdict: judged(s, done) } : { ok: true, leftMs: 0, verdict: judged(s, done) };
+  // A later question is neither opened nor shown before this one is answered.
   if (g.q !== answers.length) return { ok: false, refused: true };
   const openedAt = opens.get(g.q);
-  if (isOpen(g)) return { ok: true, leftMs: openedAt === undefined ? limit : Math.max(0, Math.min(limit, limit - (now - openedAt))) };
+  if (isOpen(g))
+    return { ok: true, leftMs: openedAt === undefined ? limit : Math.max(0, Math.min(limit, limit - (now - openedAt))), question };
   if (openedAt === undefined) return { ok: false, refused: true };
   const elapsed = now - openedAt;
   const late = elapsed > limit + NET_SLACK_MS;

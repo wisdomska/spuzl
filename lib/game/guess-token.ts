@@ -2,13 +2,17 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:
 import type { Difficulty } from "@/games/types";
 import type { ContentRef, GuessToken } from "@/games/_shared/guess";
 import { scoredView as emojiScoredView, type EmojiPuzzle } from "@/games/emojihits/rules";
+import { scoredView as quickfireScoredView } from "@/games/quickfire/view";
+import type { QuickfirePuzzle } from "@/games/quickfire/logic";
 
 /**
  * How a game's board looks when served for scored play (an attempt or a race round) rather than as the public
- * practice board: Emoji Hits drops its pick-from-four options, since scored rounds are typed (R2-17).
+ * practice board: Emoji Hits drops its pick-from-four options, since scored rounds are typed (R2-17); Quickfire
+ * drops its questions, which the guess route hands out one at a time as each opens (R4-23).
  */
 const SCORED_VIEW: Record<string, (p: unknown) => unknown> = {
   emojihits: (p) => emojiScoredView(p as EmojiPuzzle),
+  quickfire: (p) => quickfireScoredView(p as QuickfirePuzzle),
 };
 
 /**

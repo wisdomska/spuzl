@@ -6,17 +6,26 @@ import { QuizBoard, type QuizJudge, type QuizRound } from "@/games/_shared/QuizB
 import { sendGuess } from "@/games/_shared/guess";
 import { useGameSettings } from "@/lib/game-settings/client";
 // Types only: logic.ts holds the question bank and must stay out of the client bundle (tests/unit/client-graph).
-import type { QuickfireCheck, QuickfireGuess, QuickfirePuzzle, QuickfireState } from "./logic";
+import type { QuickfireCheck, QuickfireGuess, QuickfireQuestion, QuickfireState } from "./logic";
+import { questionCount, type QuickfireServed } from "./view";
 
 const CAT_LABEL = { africa: "Africa", sport: "Sport", music: "Music", science: "Science", world: "World" } as const;
 
+const toRound = (q: QuickfireQuestion): QuizRound => ({
+  tag: CAT_LABEL[q.cat],
+  say: q.q,
+  prompt: <p className="m-0 text-[19px] leading-[1.3] font-semibold text-balance">{q.q}</p>,
+  choices: q.choices,
+});
+
 /**
  * Quickfire: five questions, 15 seconds each, on the shared timed quiz board. The board never holds the
- * answers: each question is opened on the server when it appears, each answer is judged there (with the
- * server's clock) and only then is the right option shown. Answers stay hidden until Start; the next question
- * follows after the admin-tunable delay.
+ * answers, and on a scored board (an attempt, a race round) not the questions either (R4-23): each question is
+ * opened on the server when it is wanted, and only that open hands it out; each answer is judged there (with
+ * the server's clock) and only then is the right option shown. Answers stay hidden until Start; the next
+ * question follows after the admin-tunable delay. Practice boards still carry their questions.
  */
-export default function QuickfireBoard({ puzzle, initialState, hint, disabled, mode, api }: BoardProps<QuickfirePuzzle, QuickfireState>) {
+export default function QuickfireBoard({ puzzle, initialState, hint, disabled, mode, api }: BoardProps<QuickfireServed, QuickfireState>) {
   const advanceMs = useGameSettings()["quickfire.autoAdvanceMs"];
   const judge = useMemo<QuizJudge>(() => {
     const ask = (g: QuickfireGuess) => sendGuess<QuickfireCheck>(puzzle.ref, g);
@@ -24,7 +33,7 @@ export default function QuickfireBoard({ puzzle, initialState, hint, disabled, m
       async open(q) {
         const r = await ask({ q, open: true });
         if (!r.ok) throw new Error("open refused");
-        return { leftMs: r.leftMs ?? puzzle.limitMs, verdict: r.verdict };
+        return { leftMs: r.leftMs ?? puzzle.limitMs, verdict: r.verdict, round: r.question ? toRound(r.question) : undefined };
       },
       async answer(q, pick, ms) {
         let r = await ask({ q, pick, ms });
@@ -38,14 +47,8 @@ export default function QuickfireBoard({ puzzle, initialState, hint, disabled, m
       },
     };
   }, [puzzle]);
-  const rounds = useMemo<QuizRound[]>(
-    () =>
-      puzzle.questions.map((q) => ({
-        tag: CAT_LABEL[q.cat],
-        say: q.q,
-        prompt: <p className="m-0 text-[19px] leading-[1.3] font-semibold text-balance">{q.q}</p>,
-        choices: q.choices,
-      })),
+  const rounds = useMemo<(QuizRound | null)[]>(
+    () => Array.from({ length: questionCount(puzzle) }, (_, k) => (puzzle.questions?.[k] ? toRound(puzzle.questions[k]) : null)),
     [puzzle],
   );
   return (

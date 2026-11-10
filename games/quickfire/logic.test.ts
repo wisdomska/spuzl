@@ -24,6 +24,7 @@ import logic, {
   type QuickfireGuess,
 } from "./logic";
 import { CONTENT, needsReview } from "./content";
+import { questionCount, type QuickfireServed } from "./view";
 
 const D: Difficulty[] = ["easy", "medium", "hard", "expert", "mega"];
 
@@ -67,6 +68,27 @@ describe("quickfire generation", () => {
       const json = JSON.stringify(served);
       expect(json).not.toMatch(/"correct"|"sealed"|"answer"|"i":|"d":/);
     }
+  });
+
+  it("serves scored boards without the questions (R4-23); only the practice board carries them", () => {
+    const g = generateAt(4);
+    for (const ctx of [
+      { k: "a", a: "attempt-1" },
+      { k: "m", m: "match-1", s: 1, r: 1 },
+    ] as const) {
+      const served = bindPuzzle(g.puzzle, "player-1", ctx) as unknown as QuickfireServed;
+      expect(Object.keys(served).sort()).toEqual(["count", "limitMs", "ref"]);
+      expect(served.count).toBe(QUESTIONS);
+      expect(questionCount(served)).toBe(QUESTIONS);
+      const json = JSON.stringify(served);
+      for (const q of g.puzzle.questions) {
+        expect(json).not.toContain(q.q);
+        for (const choice of q.choices) expect(json).not.toContain(JSON.stringify(choice));
+      }
+    }
+    const practice = bindPuzzle(g.puzzle, "player-1", { k: "p" }) as unknown as QuickfireServed;
+    expect(practice.questions).toEqual(g.puzzle.questions);
+    expect(questionCount(practice)).toBe(QUESTIONS);
   });
 
   it("a content reference rebuilds its board: Daily days below FREE_BASE, free play seeds above", () => {
@@ -185,7 +207,8 @@ describe("quickfire answers on the server", () => {
 
   it("opens a question, then judges the answer with the server's time and records both", () => {
     const a = attempt();
-    expect(a.send({ q: 0, open: true })).toEqual({ ok: true, leftMs: LIMIT_MS });
+    // The open hands out the question itself (R4-23), never which option is right.
+    expect(a.send({ q: 0, open: true })).toEqual({ ok: true, leftMs: LIMIT_MS, question: g.puzzle.questions[0] });
     a.wait(4000);
     expect(verdictOf(a.send({ q: 0, pick: c[0], ms: 3900 }))).toEqual({
       q: 0,
@@ -208,6 +231,8 @@ describe("quickfire answers on the server", () => {
     const a = attempt();
     const open = a.send({ q: 0, open: true });
     expect(JSON.stringify(open)).not.toMatch(/answer|right|verdict/);
+    // A later question is never handed out before this one is answered (R4-23).
+    expect(JSON.stringify(a.send({ q: 1, open: true }))).not.toContain(g.puzzle.questions[1].q);
     // Not opened yet, or not the next question: refused, nothing recorded.
     expect(a.send({ q: 1, open: true })).toEqual({ ok: false, refused: true });
     expect(a.send({ q: 1, pick: 0, ms: 2000 })).toEqual({ ok: false, refused: true });
@@ -226,7 +251,7 @@ describe("quickfire answers on the server", () => {
     expect(first?.right).toBe(false);
     expect(verdictOf(a.send({ q: 0, pick: c[0], ms: 5000 }))).toEqual(first);
     // Re-opening an answered question catches a resumed board up with the verdict.
-    expect(a.send({ q: 0, open: true })).toEqual({ ok: true, leftMs: 0, verdict: first });
+    expect(a.send({ q: 0, open: true })).toEqual({ ok: true, leftMs: 0, question: g.puzzle.questions[0], verdict: first });
     expect(a.log).toHaveLength(2);
   });
 
@@ -256,7 +281,7 @@ describe("quickfire answers on the server", () => {
     // A reopen after the window started reports only the time left.
     a.send({ q: 1, open: true });
     a.wait(6000);
-    expect(a.send({ q: 1, open: true })).toEqual({ ok: true, leftMs: LIMIT_MS - 6000 });
+    expect(a.send({ q: 1, open: true })).toEqual({ ok: true, leftMs: LIMIT_MS - 6000, question: g.puzzle.questions[1] });
   });
 
   it("a timeout is judged at the full limit and shows the right option", () => {
@@ -301,7 +326,11 @@ describe("quickfire answers on the server", () => {
 
   it("practice (guided board, admin preview, dev fixture) judges at once; no context answers nothing", () => {
     const practice: GuessContext = { kind: "practice" };
-    expect(checkGuess(g.puzzle, g.solution, { q: 2, open: true }, practice)).toEqual({ ok: true, leftMs: LIMIT_MS });
+    expect(checkGuess(g.puzzle, g.solution, { q: 2, open: true }, practice)).toEqual({
+      ok: true,
+      leftMs: LIMIT_MS,
+      question: g.puzzle.questions[2],
+    });
     expect(checkGuess(g.puzzle, g.solution, { q: 2, pick: c[2], ms: 100 }, practice)).toEqual({
       ok: true,
       verdict: { q: 2, pick: c[2], ms: READ_FLOOR_MS, right: true, answer: c[2], late: false },

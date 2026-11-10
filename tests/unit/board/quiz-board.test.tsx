@@ -176,3 +176,82 @@ describe("QuizBoard with a server judge", () => {
     expect(calls[1]).toMatchObject({ kind: "answer", q: 0, pick: null });
   });
 });
+
+describe("QuizBoard with rounds the judge hands out on open (R4-23)", () => {
+  const verdict = (v: Partial<QuizVerdict>): QuizVerdict => ({ pick: 1, ms: 2000, right: false, answer: 2, ...v });
+  const unknown: (QuizRound | null)[] = [null, null, null];
+  const choices = () => screen.queryAllByRole("button").filter((b) => /^[A-D], /.test(b.getAttribute("aria-label") ?? ""));
+
+  it("shows no question or answers until its open hands it out, then the clock runs from the judge's time", async () => {
+    const api = mockApi();
+    const { judge, calls } = manualJudge();
+    render(<QuizBoard rounds={unknown} judge={judge} limitMs={15000} noun="Question" mode="free" api={api} />);
+    expect(choices()).toHaveLength(0);
+    act(() => go(api).onPress());
+    expect(calls).toMatchObject([{ kind: "open", q: 0 }]);
+    // Waiting on the server: still no answers, and the clock has not started on the board.
+    act(() => vi.advanceTimersByTime(20000));
+    expect(choices()).toHaveLength(0);
+    expect(calls.filter((c) => c.kind === "answer")).toHaveLength(0);
+    await act(async () => calls[0].ok({ leftMs: 15000, round: rounds[0] }));
+    expect(choices()).toHaveLength(4);
+    expect(api.announce).toHaveBeenCalledWith(expect.stringContaining("Q0"));
+    act(() => vi.advanceTimersByTime(3000));
+    fireEvent.click(option("C"));
+    await flush();
+    expect(calls[1]).toMatchObject({ kind: "answer", q: 0, pick: 2, ms: 3000 });
+    await act(async () => calls[1].ok(verdict({ pick: 2, ms: 3000, right: true, answer: 2 })));
+    expect(api.feedback).toHaveBeenCalledWith(quick.quiz.right("c"), "success", "check-circle");
+    // The next question is asked for only after the reveal.
+    act(() => vi.advanceTimersByTime(1200));
+    expect(calls.at(-1)).toMatchObject({ kind: "open", q: 1 });
+    expect(choices()).toHaveLength(0);
+  });
+
+  it("a question that can't be fetched offers Try again, which asks for it again", async () => {
+    const api = mockApi();
+    const { judge, calls } = manualJudge();
+    render(<QuizBoard rounds={unknown} judge={judge} limitMs={15000} noun="Question" mode="free" api={api} />);
+    act(() => go(api).onPress());
+    for (let k = 0; k < 3; k++) {
+      await act(async () => calls.at(-1)!.fail(new Error("offline")));
+      act(() => vi.advanceTimersByTime(1000));
+      await flush();
+    }
+    expect(calls).toHaveLength(3);
+    expect(api.feedback).toHaveBeenCalledWith(quick.quiz.offlineOpen, "danger", "wifi-slash");
+    expect(go(api)).toMatchObject({ label: quick.quiz.retry, disabled: false });
+    expect(choices()).toHaveLength(0);
+    act(() => go(api).onPress());
+    expect(calls.at(-1)).toMatchObject({ kind: "open", q: 0 });
+    await act(async () => calls.at(-1)!.ok({ leftMs: 9000, round: rounds[0] }));
+    expect(choices()).toHaveLength(4);
+    // The window the server started on the lost open is the one that counts.
+    act(() => vi.advanceTimersByTime(9100));
+    await flush();
+    expect(calls.at(-1)).toMatchObject({ kind: "answer", q: 0, pick: null });
+  });
+
+  it("an open that answers without the question counts as a failure, never an empty card", async () => {
+    const api = mockApi();
+    const { judge, calls } = manualJudge();
+    render(<QuizBoard rounds={unknown} judge={judge} limitMs={15000} noun="Question" mode="free" api={api} />);
+    act(() => go(api).onPress());
+    await act(async () => calls[0].ok({ leftMs: 15000 }));
+    act(() => vi.advanceTimersByTime(400));
+    await flush();
+    expect(calls.at(-1)).toMatchObject({ kind: "open", q: 0 });
+    expect(choices()).toHaveLength(0);
+  });
+
+  it("a resumed run catches up when the open says the question was already judged", async () => {
+    const api = mockApi();
+    const { judge, calls } = manualJudge();
+    render(<QuizBoard rounds={unknown} judge={judge} limitMs={15000} noun="Question" mode="free" api={api} />);
+    act(() => go(api).onPress());
+    await act(async () => calls[0].ok({ leftMs: 0, round: rounds[0], verdict: verdict({ pick: 1, ms: 4000, right: false, answer: 3 }) }));
+    expect(api.ruleBreak).toHaveBeenCalledWith(quick.quiz.wrong("d"));
+    expect(option("D").getAttribute("aria-label")).toContain(quick.quiz.rightAnswer);
+    expect(calls.filter((c) => c.kind === "answer")).toHaveLength(0);
+  });
+});

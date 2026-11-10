@@ -63,8 +63,12 @@ export interface VerdictWords {
  * never holds the answers; `open` starts a question's window there. A judge throws when it can't be reached.
  */
 export interface QuizJudge {
-  /** The question is on screen. Resolves with the time left in its window, or its verdict if already judged. */
-  open(q: number): Promise<{ leftMs: number; verdict?: QuizVerdict }>;
+  /**
+   * The question is on screen (or, for a round the board doesn't hold yet, is wanted). Resolves with the time
+   * left in its window, or its verdict if already judged, and the round itself when the judge hands rounds out
+   * one at a time (Quickfire's scored boards, R4-23).
+   */
+  open(q: number): Promise<{ leftMs: number; verdict?: QuizVerdict; round?: QuizRound }>;
   answer(q: number, pick: number | null, ms: number): Promise<QuizVerdict>;
 }
 
@@ -82,7 +86,8 @@ export function localJudge(correct: number[], limitMs: number): QuizJudge {
 }
 
 interface Props {
-  rounds: QuizRound[];
+  /** one per question; null where the judge hands the round out when it opens (the board never holds it early) */
+  rounds: (QuizRound | null)[];
   judge: QuizJudge;
   limitMs: number;
   noun: string;
@@ -104,8 +109,12 @@ interface Props {
   revealMs?: (line: string) => number;
 }
 
-/** checking: an answer is with the judge; retry: the judge could not be reached, the answer waits to be sent again */
-type Phase = "ready" | "asking" | "checking" | "retry" | "reveal" | "done";
+/**
+ * opening: the board is getting a question it doesn't hold from the judge (its clock starts once it arrives);
+ * checking: an answer is with the judge; retry: the judge could not be reached, and the answer (or the question's
+ * open) waits to be sent again
+ */
+type Phase = "ready" | "opening" | "asking" | "checking" | "retry" | "reveal" | "done";
 
 /** The answer key as far as the board knows it: the pick where it was judged right, -1 otherwise. */
 const keyOf = (answers: QuizAnswer[]) => answers.map((a) => (a.right && a.pick !== null ? a.pick : -1));
@@ -128,7 +137,9 @@ async function withRetry<T>(f: () => Promise<T>): Promise<T> {
  * and ticks, so never colour alone), and the next question appears on its own after `advanceMs`: there is no
  * Next button. If the judge can't be reached the pick is kept and Try again sends it. The run ends on a
  * summary ("4 of 5 · 469 pts"). The question clock is the judge's, so it keeps running through a pause.
- * Taps under the reading floor are ignored, since the server rejects them.
+ * Taps under the reading floor are ignored, since the server rejects them. A round passed as null is fetched from
+ * the judge when it opens: the card waits on it and the bar starts draining only once it is on screen; if it
+ * can't be reached, Try again asks for it again.
  */
 export function QuizBoard({
   rounds,
@@ -161,6 +172,12 @@ export function QuizBoard({
   const streak = useRef(0);
   const opened = useRef<{ q: number; p: Promise<unknown> } | null>(null);
   const pending = useRef<{ q: number; pick: number | null; ms: number } | null>(null);
+  /** rounds the judge handed out on open (kept for the reveal) */
+  const [got, setGot] = useState<Record<number, QuizRound>>({});
+  const gotRef = useRef(got);
+  /** the open of a question the board doesn't hold failed: Try again asks for it again */
+  const openFailed = useRef(false);
+  const roundOf = useCallback((q: number): QuizRound | null => rounds[q] ?? gotRef.current[q] ?? null, [rounds]);
   const phaseRef = useRef(phase);
   const disabledRef = useRef(disabled);
   useEffect(() => {
@@ -174,7 +191,7 @@ export function QuizBoard({
 
   const revealed = phase === "reveal" || phase === "done";
   const i = revealed ? Math.max(0, answers.length - 1) : answers.length;
-  const round = rounds[Math.min(i, total - 1)];
+  const round = rounds[Math.min(i, total - 1)] ?? got[Math.min(i, total - 1)] ?? null;
   const last = answers[answers.length - 1];
   const struck = useMemo(
     () =>
@@ -202,22 +219,68 @@ export function QuizBoard({
     ticker.current = window.setInterval(() => setLeft(remaining()), 250);
   }, []);
 
+  /** The question is on screen with `leftMs` of its window left: the bar drains and the clock runs. */
+  const begin = useCallback(
+    (q: number, r: QuizRound, leftMs: number) => {
+      deadline.current = performance.now() + leftMs;
+      setLeft(leftMs);
+      go("asking");
+      anim.current?.cancel();
+      anim.current =
+        bar.current?.animate([{ transform: "scaleX(1)" }, { transform: "scaleX(0)" }], {
+          duration: limitMs,
+          easing: "linear",
+          fill: "forwards",
+        }) ?? null;
+      if (anim.current && leftMs < limitMs) anim.current.currentTime = limitMs - leftMs;
+      runClock();
+      api.announce(`${t.step(noun, q + 1, total)}. ${r.say}. ${r.choices.map((c, k) => `${LETTERS[k]}, ${c}`).join(". ")}`);
+    },
+    [api, limitMs, noun, runClock, total],
+  );
+
   const ask = useCallback(() => {
     // The header clock runs from Start, not from the first answer.
     api.start?.();
     const q = answersRef.current.length;
-    deadline.current = performance.now() + limitMs;
-    setLeft(limitMs);
-    go("asking");
-    anim.current?.cancel();
-    anim.current =
-      bar.current?.animate([{ transform: "scaleX(1)" }, { transform: "scaleX(0)" }], {
-        duration: limitMs,
-        easing: "linear",
-        fill: "forwards",
-      }) ?? null;
-    runClock();
-    api.announce(`${t.step(noun, q + 1, total)}. ${rounds[q].say}. ${rounds[q].choices.map((c, k) => `${LETTERS[k]}, ${c}`).join(". ")}`);
+    openFailed.current = false;
+    const known = roundOf(q);
+    if (!known) {
+      // R4-23: the judge hands this question out on its open, which also starts its window there. The card waits
+      // (answers still hidden) and the bar starts once the question is on screen, from the time the judge gives.
+      go("opening");
+      setLeft(limitMs);
+      anim.current?.cancel();
+      anim.current = null;
+      const slow = window.setTimeout(() => api.feedback(t.opening, "info", "hourglass"), CHECKING_AFTER_MS);
+      const p = withRetry(async () => {
+        const r = await judge.open(q);
+        if (!r.round) throw new Error("question not handed out");
+        return { ...r, round: r.round };
+      });
+      opened.current = { q, p: p.catch(() => {}) };
+      p.then(
+        (r) => {
+          window.clearTimeout(slow);
+          if (phaseRef.current !== "opening" || answersRef.current.length !== q) return;
+          gotRef.current = { ...gotRef.current, [q]: r.round };
+          setGot(gotRef.current);
+          api.feedback("");
+          if (r.verdict) settleRef.current(r.verdict, q);
+          else begin(q, r.round, Math.max(0, Math.min(limitMs, r.leftMs)));
+        },
+        () => {
+          window.clearTimeout(slow);
+          if (phaseRef.current !== "opening" || answersRef.current.length !== q) return;
+          openFailed.current = true;
+          go("retry");
+          api.feedback(t.offlineOpen, "danger", "wifi-slash");
+          api.announce(t.offlineOpen);
+        },
+      );
+      return;
+    }
+    begin(q, known, limitMs);
     // The judge starts the question's window now. A question it already judged (a resumed run) catches up; a
     // window that started earlier (asked before a reload) shortens the bar.
     const p = withRetry(() => judge.open(q)).then(
@@ -234,7 +297,7 @@ export function QuizBoard({
       () => {}, // the answer opens it again if it has to
     );
     opened.current = { q, p };
-  }, [api, judge, limitMs, noun, rounds, runClock, total]);
+  }, [api, begin, judge, limitMs, roundOf, runClock]);
 
   // One advance model: the next question (or the summary) follows the reveal on its own.
   const advance = useCallback(() => {
@@ -270,7 +333,7 @@ export function QuizBoard({
       answersRef.current = next;
       setAnswers(next);
       go("reveal");
-      const answerText = rounds[q].choices[v.answer] ?? "";
+      const answerText = roundOf(q)?.choices[v.answer] ?? "";
       const keep = (line: string) => (hold.current = revealMs ? revealMs(line) : advanceMs);
       if (v.right) {
         streak.current++;
@@ -314,7 +377,7 @@ export function QuizBoard({
       }
       if (!disabledRef.current) scheduleAdvance();
     },
-    [advanceMs, api, revealMs, rounds, scheduleAdvance, words],
+    [advanceMs, api, revealMs, roundOf, scheduleAdvance, words],
   );
   useEffect(() => {
     settleRef.current = settle;
@@ -366,15 +429,16 @@ export function QuizBoard({
     else if (!timer.current) scheduleAdvance();
   }, [disabled]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const choiceCount = round?.choices.length ?? 0;
   useEffect(() => {
     if (phase !== "asking" || disabled) return;
     const onKey = (e: KeyboardEvent) => {
       const k = "1234".indexOf(e.key) >= 0 ? "1234".indexOf(e.key) : "abcd".indexOf(e.key.toLowerCase());
-      if (k >= 0 && k < round.choices.length && !struck.includes(k) && !(e.target instanceof HTMLInputElement)) commit(k);
+      if (k >= 0 && k < choiceCount && !struck.includes(k) && !(e.target instanceof HTMLInputElement)) commit(k);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [commit, disabled, phase, round.choices.length, struck]);
+  }, [commit, disabled, phase, choiceCount, struck]);
 
   useEffect(() => {
     const retrying = phase === "retry";
@@ -392,7 +456,8 @@ export function QuizBoard({
                 ? t.done
                 : t.step(noun, i + 1, total),
         icon: phase === "ready" ? "play" : retrying ? "arrow-clockwise" : phase === "done" ? "flag-checkered" : "timer",
-        onPress: phase === "ready" ? ask : retrying ? () => void send() : () => {},
+        // A failed open asks for the question again; a failed answer is sent again.
+        onPress: phase === "ready" ? ask : retrying ? () => (openFailed.current ? ask() : void send()) : () => {},
         tone: phase === "ready" || retrying ? "world" : "default",
         disabled: disabled || (phase !== "ready" && !retrying),
       },
@@ -414,7 +479,7 @@ export function QuizBoard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const waiting = phase === "checking" || phase === "retry";
+  const waiting = phase === "checking" || phase === "retry" || phase === "opening";
   const secsLeft = Math.ceil((phase === "asking" ? left : limitMs) / 1000);
   const physical = usePhysicalKeyboard();
 
@@ -483,7 +548,7 @@ export function QuizBoard({
           className="h-full w-full origin-left rounded-full"
           style={{
             background: phase === "asking" && left <= 5000 ? "var(--gold)" : "var(--world)",
-            transform: phase === "ready" ? "scaleX(1)" : phase === "done" ? "scaleX(0)" : undefined,
+            transform: phase === "ready" || phase === "opening" ? "scaleX(1)" : phase === "done" ? "scaleX(0)" : undefined,
           }}
         />
       </div>
@@ -506,6 +571,12 @@ export function QuizBoard({
             {!answers.length && <span className="text-muted text-[14px]">{t.ready}</span>}
             <span className="text-muted text-[14px]">{t.clockRuns}</span>
           </>
+        ) : !round ? (
+          // The question is on its way from the server (or Try again will ask for it again).
+          <>
+            <Icon name={phase === "retry" ? "wifi-slash" : "hourglass"} size={32} className="text-muted" />
+            <span className="text-muted text-[16px] font-semibold">{phase === "retry" ? t.offlineOpenShort : t.opening}</span>
+          </>
         ) : (
           <>
             {round.tag && <span className="text-muted text-[14px] font-semibold tracking-[.08em] uppercase">{round.tag}</span>}
@@ -519,11 +590,11 @@ export function QuizBoard({
           className="wide:grid wide:grid-cols-2 wide:gap-3 flex flex-col gap-2"
           role="group"
           aria-label={t.answers}
-          aria-busy={phase === "checking"}
+          aria-busy={phase === "checking" || phase === "opening"}
         >
-          {phase === "ready"
-            ? // Answers stay hidden until Start: empty slots keep the layout still.
-              round.choices.map((_, k) => (
+          {phase === "ready" || !round
+            ? // Answers stay hidden until Start (and until the question arrives): empty slots keep the layout still.
+              Array.from({ length: round?.choices.length ?? 4 }, (_, k) => (
                 <div
                   key={k}
                   aria-hidden
