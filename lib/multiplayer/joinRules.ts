@@ -31,6 +31,24 @@ export interface JoinFacts {
   approved: boolean;
 }
 
+/**
+ * R4-X (owner decision, 10 Nov 2026): what a host's data export says about requests they received: the asker's
+ * nickname, the room (kind and code), when they asked and the outcome. Nothing else about the other player (no id,
+ * no decision time). Pure, so the export route and its test agree.
+ */
+export function receivedForExport(
+  rows: readonly { requester_id: string; room_kind: string; room_code: string; created_at: string; status: string }[],
+  nicknames: ReadonlyMap<string, string>,
+) {
+  return rows.map((r) => ({
+    requester_nickname: nicknames.get(r.requester_id) ?? null,
+    room_kind: r.room_kind,
+    room_code: r.room_code,
+    requested_at: r.created_at,
+    status: r.status,
+  }));
+}
+
 /** "join": straight in; "ask": friends only, a request is needed (or was declined). */
 export function joinAccess(f: JoinFacts): "join" | "ask" {
   if (f.isHost || f.wasMember || !f.friendsOnly) return "join";

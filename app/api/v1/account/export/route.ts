@@ -1,4 +1,5 @@
 import { handle, rateLimit, requireUser } from "@/lib/api/server";
+import { joinRequestsForExport } from "@/lib/multiplayer/server/joinRequests";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +54,8 @@ export const GET = handle(async () => {
   );
   const { data: friends } = await admin.from("friendships").select("*").or(`player_id.eq.${user.id},friend_id.eq.${user.id}`);
   tables.friendships = friends ?? [];
+  // R4-X (owner decision, 10 Nov 2026): join requests made (in full) and received (nickname, room, time, status).
+  Object.assign(tables, await joinRequestsForExport(admin, user.id));
   // The request identity carries only JWT claims: read the full auth record for the export.
   const { data: authUser } = await admin.auth.admin.getUserById(user.id);
   const doc = {

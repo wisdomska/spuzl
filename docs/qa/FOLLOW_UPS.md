@@ -70,10 +70,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   the app cannot tell whether anyone opened it. The audit suggests the low-data prompt on mobile only; it stays on
   every device but now needs measured slow loads, so a fast desktop never sees it. Navigations the service worker
   answers from cache (transfer size 0) are not measured as page loads; in-app link taps and tap-to-board still are.
-- **R2-13, needs a privacy decision (left out on purpose):** join requests (`room_join_requests`) are not in the
-  player's data export (`app/api/v1/account/export/route.ts`). Rows go with either account on deletion and are
-  pruned after 180 days. Whether the export should list requests a player made or received (the other player's
-  nickname included) is a privacy call for the lead.
 - **Daily Five reset hour (R2-05):** with `dailyFive.resetHour` above 0, a Daily Five attempt's `daily_date` is the
   Daily Five day, while the offline-clear check in `finishAttempt` ("offline clear outside its day") and the regular
   Daily (when `features.dailies` is on) still use the GMT date. Keep the reset hour at 0 while Dailies are on, or

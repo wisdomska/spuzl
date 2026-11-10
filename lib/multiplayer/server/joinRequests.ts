@@ -5,7 +5,7 @@ import { getGameSettings } from "@/lib/game-settings/server";
 import { serverBroadcast } from "@/lib/realtime/server";
 import { friendshipBetween, isBlockedPair } from "@/lib/social/server";
 import { joinRequestsCopy } from "@/lib/copy/join-requests";
-import { hostIsUnder16, joinAccess, MAX_PENDING_PER_ROOM, type JoinRequestStatus } from "../joinRules";
+import { hostIsUnder16, joinAccess, MAX_PENDING_PER_ROOM, receivedForExport, type JoinRequestStatus } from "../joinRules";
 import { roomExpired } from "../roomCode";
 import { matchTopic } from "./match";
 
@@ -338,4 +338,30 @@ export async function joinStateFor(
     .limit(1)
     .maybeSingle();
   return { friendsOnly: true, request: data ? { id: data.id as string, status: data.status as JoinRequestStatus } : null };
+}
+
+/**
+ * R4-X (owner decision, 10 Nov 2026), the player's data export (/api/v1/account/export): requests they made, every
+ * column of their own rows; requests they received as host, only `receivedForExport` (asker's nickname, room, time,
+ * status). Before migration 20261130101301 (or on a read error) both are empty lists.
+ */
+export async function joinRequestsForExport(admin: SupabaseClient, playerId: string) {
+  const [made, got] = await Promise.all([
+    admin.from("room_join_requests").select("*").eq("requester_id", playerId).order("created_at").limit(50_000),
+    admin
+      .from("room_join_requests")
+      .select("requester_id, room_kind, room_code, created_at, status")
+      .eq("host_id", playerId)
+      .order("created_at")
+      .limit(50_000),
+  ]);
+  type Received = { requester_id: string; room_kind: string; room_code: string; created_at: string; status: string };
+  const received = got.error ? [] : ((got.data ?? []) as Received[]);
+  const ids = [...new Set(received.map((r) => r.requester_id))];
+  const { data: names } = ids.length ? await admin.from("players").select("id, nickname").in("id", ids) : { data: [] };
+  const nicknames = new Map((names ?? []).map((p) => [p.id as string, p.nickname as string]));
+  return {
+    join_requests_made: made.error ? [] : (made.data ?? []),
+    join_requests_received: receivedForExport(received, nicknames),
+  };
 }

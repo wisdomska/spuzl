@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hostIsUnder16, joinAccess, type JoinFacts } from "./joinRules";
+import { hostIsUnder16, joinAccess, receivedForExport, type JoinFacts } from "./joinRules";
 
 const base: JoinFacts = { friendsOnly: true, isHost: false, wasMember: false, friends: false, blocked: false, approved: false };
 const today = new Date(Date.UTC(2026, 10, 6));
@@ -29,5 +29,20 @@ describe("hostIsUnder16", () => {
     expect(hostIsUnder16({ age_band: "16-17" }, today)).toBe(false);
     expect(hostIsUnder16({ age_band: "18+", birth_year: 2011, birth_month: 1 }, today)).toBe(true);
     expect(hostIsUnder16({}, today)).toBe(true);
+  });
+});
+
+describe("receivedForExport (R4-X data export)", () => {
+  it("keeps only the asker's nickname, the room, the time and the outcome", () => {
+    const rows = [
+      { requester_id: "a", room_kind: "party", room_code: "ABCD", created_at: "2026-11-10T10:00:00Z", status: "approved" },
+      { requester_id: "gone", room_kind: "duel", room_code: "WXYZ", created_at: "2026-11-10T11:00:00Z", status: "pending" },
+    ];
+    const out = receivedForExport(rows, new Map([["a", "Kofi"]]));
+    expect(out).toEqual([
+      { requester_nickname: "Kofi", room_kind: "party", room_code: "ABCD", requested_at: "2026-11-10T10:00:00Z", status: "approved" },
+      { requester_nickname: null, room_kind: "duel", room_code: "WXYZ", requested_at: "2026-11-10T11:00:00Z", status: "pending" },
+    ]);
+    expect(JSON.stringify(out)).not.toContain('"a"');
   });
 });
