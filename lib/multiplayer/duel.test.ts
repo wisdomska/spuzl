@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { TIMING } from "./constants";
 import {
+  duelClockMs,
   duelPhase,
   firstRoundStart,
   inRulesBreak,
   newToGame,
   nextRoundStart,
-  ownClockMs,
   rankedPool,
   roundOutcomes,
   rulesBreakMs,
@@ -74,22 +74,20 @@ describe("roundOutcomes (SPZ-03)", () => {
   });
 });
 
-describe("one Duel clock rule (R3-07)", () => {
-  const live = { pauseMs: 0, pausedAt: null };
-  it("shows nothing before the first move, then counts from it (not from the round start)", () => {
-    expect(ownClockMs(null, "m:1:1", 10_000, live)).toBeNull();
-    const start = { key: "m:1:1", at: 4_000, pauseMs: 0 };
-    expect(ownClockMs(start, "m:1:1", 4_000, live)).toBe(0);
-    expect(ownClockMs(start, "m:1:1", 10_000, live)).toBe(6_000);
+describe("one Duel clock, the server round time (R4-18)", () => {
+  it("shows nothing before the round starts or between rounds", () => {
+    expect(duelClockMs("versus", 0, null)).toBeNull();
+    expect(duelClockMs("countdown", 0, null)).toBeNull();
+    expect(duelClockMs("round_end", 12_000, null)).toBeNull();
   });
-  it("starts again each round", () => {
-    expect(ownClockMs({ key: "m:1:1", at: 4_000, pauseMs: 0 }, "m:1:2", 30_000, live)).toBeNull();
+  it("counts the round time from the shared start, first move or not, and holds it while paused", () => {
+    expect(duelClockMs("playing", 0, null)).toBe(0);
+    expect(duelClockMs("playing", 6_400, null)).toBe(6_400);
+    expect(duelClockMs("paused", 6_400, null)).toBe(6_400);
+    expect(duelClockMs("playing", -20, null)).toBe(0);
   });
-  it("leaves out pauses after the first move, but not ones before it", () => {
-    const start = { key: "k", at: 10_000, pauseMs: 3_000 };
-    // 2 s of pause since the first move (5 s total, 3 s before it)
-    expect(ownClockMs(start, "k", 20_000, { pauseMs: 5_000, pausedAt: null })).toBe(8_000);
-    // paused right now since 18 s: the clock holds at 8 s
-    expect(ownClockMs(start, "k", 21_000, { pauseMs: 3_000, pausedAt: 18_000 })).toBe(8_000);
+  it("stops at the official time once this player finishes", () => {
+    expect(duelClockMs("playing", 15_000, 12_345)).toBe(12_345);
+    expect(duelClockMs("round_end", 30_000, 12_345)).toBe(12_345);
   });
 });

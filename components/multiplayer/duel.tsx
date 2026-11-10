@@ -430,7 +430,7 @@ export function OpponentStrip({
 }: {
   them: { nickname: string; color: string; hat?: string | null; progress: number; mistakes: number; finished: boolean; bot?: boolean };
   me: { nickname: string; color: string; hat?: string | null; progress: number };
-  /** your clock by the header timer's rule (`ownClockMs`); null before your first move of the round */
+  /** your round time, the same clock as the header timer (`duelClockMs`); null before the round starts */
   myMs: number | null;
   rounds: ("me" | "them" | "draw")[];
   round: number;
@@ -511,7 +511,7 @@ export function OpponentStrip({
         <div className="flex flex-1 flex-col gap-[5px]">
           <div className="flex justify-between text-[14px] font-semibold">
             <span>You</span>
-            {/* R3-07: the same rule as the header timer (from your first move); nothing running before it. */}
+            {/* R4-18: the same clock as the header timer (the server round time); nothing running before the round. */}
             {myMs === null ? (
               <span className="text-muted flex items-center" data-strip-clock="waiting">
                 <Icon name="timer" size={14} />

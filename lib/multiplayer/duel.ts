@@ -172,30 +172,18 @@ export function botTimes(baseMs: number, r: number[]): number[] {
 }
 
 /**
- * R3-07: one clock rule in a live Duel round. R2-15 says your timer starts on your first move, so every clock that
- * shows your time follows it: the header timer (GameShell) and the "You" clock on the opponent strip both count
- * from your first move of the round (in this screen, so after a reload both restart on your next move), stop while
- * the match is paused, and show nothing before you move. The rival's time is never shown as a running clock (it
- * can't be known until they finish: their progress bar and crown say how they're doing). The round result card
- * still shows the official race times, which the server counts from the shared round start for both players.
+ * R4-18: one clock in a live Duel round, the server's round time. The header timer (GameShell `clockMs`) and the
+ * "You" clock on the opponent strip both show it: from the shared round start (the end of the 3-2-1, synced to the
+ * server clock), less the match's pauses (it holds while paused), the same time the server counts for the race. It
+ * shows nothing during the countdown and between rounds, and stops at your official time once you finish. A reload
+ * picks the same time back up. The rival's time is never a running clock (their progress bar and crown say how
+ * they're doing).
  *
- * `start` is when (server clock) this player's clock started for round `key`, with the match's pause total then.
+ * `elapsedMs` is the round time on the synced clock; `finishedMs` this player's official time for the round, if any.
  */
-export interface OwnClockStart {
-  key: string;
-  at: number;
-  pauseMs: number;
-}
-
-export function ownClockMs(
-  start: OwnClockStart | null,
-  key: string,
-  now: number,
-  match: { pauseMs: number; pausedAt: number | null },
-): number | null {
-  if (!start || start.key !== key) return null;
-  const pausedSince = match.pausedAt !== null ? now - Math.max(match.pausedAt, start.at) : 0;
-  return Math.max(0, now - start.at - Math.max(0, match.pauseMs - start.pauseMs) - Math.max(0, pausedSince));
+export function duelClockMs(phase: DuelPhase, elapsedMs: number, finishedMs: number | null): number | null {
+  if (finishedMs !== null) return finishedMs;
+  return phase === "playing" || phase === "paused" ? Math.max(0, elapsedMs) : null;
 }
 
 /** Bot progress shown on the strip: a gentle curve that reaches 1 at its finish time. */

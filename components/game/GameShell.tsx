@@ -106,6 +106,12 @@ export interface GameShellProps<P, St> {
   onForfeit?: (opts: { keepalive: boolean }) => Promise<unknown> | void;
   /** a resumed attempt's time so far, so the clock carries on from there */
   initialElapsed?: number;
+  /**
+   * R4-18: a clock kept outside the shell (a live Duel's server round time, lib/multiplayer/duel.ts `duelClockMs`)
+   * shown in the header timer instead of the play clock; null shows the waiting clock icon. Display only: what the
+   * shell reports with a clear (`elapsedMs`) is unchanged, and the server times the race itself.
+   */
+  clockMs?: number | null;
 }
 
 /** Board tools that start the puzzle over move from the tool row to the menu's Restart. */
@@ -160,6 +166,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
     leaveContext = mode === "tutorial" ? "guided" : mode === "duel" ? "duel" : mode === "race" ? "party" : "solo",
     onForfeit,
     initialElapsed = 0,
+    clockMs,
   } = props;
   const wide = useWide();
   const vw = useViewportWidth();
@@ -528,7 +535,10 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   // R2-16: the board is covered whenever the game is held (Pause, the menu where it pauses, How to play, the hint and
   // leave confirms), first move or not. A cleared board stays on show.
   // R2-15: digits only once the clock runs (or a resumed game carries time); never in a practice round.
-  const clockShown = !guided && (started || elapsed > 0);
+  // R4-18: an outside clock (`clockMs`, a live Duel's server round time) replaces the play clock on screen.
+  const outside = clockMs !== undefined;
+  const clockShown = !guided && (outside ? clockMs !== null : started || elapsed > 0);
+  const shownMs = outside ? (clockMs ?? 0) : elapsed;
   const ruleExit = reduce
     ? { opacity: 0, height: 0, transition: { duration: 0 } }
     : { opacity: 0, height: 0, transition: { duration: 0.22, ease: [0.23, 1, 0.32, 1] as const } };
@@ -584,11 +594,11 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
         <div
           className="num bg-surface flex h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-[14px] px-3 text-[20px] font-semibold max-[359px]:px-2 max-[359px]:text-[18px]"
           role="timer"
-          aria-label={clockShown ? `Time ${formatClock(elapsed)}` : M.timerWaits}
+          aria-label={clockShown ? `Time ${formatClock(shownMs)}` : M.timerWaits}
           data-timer={clockShown ? "running" : "waiting"}
         >
           <Icon name="timer" size={16} className={clockShown ? "text-muted max-[359px]:hidden" : "text-muted"} />
-          {clockShown && formatClock(elapsed)}
+          {clockShown && formatClock(shownMs)}
         </div>
       )}
       <GameMenu
@@ -758,7 +768,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
         <PauseOverlay
           open={paused}
           title={meta.name}
-          elapsed={clockShown ? elapsed : null}
+          elapsed={clockShown ? shownMs : null}
           onResume={() => setPaused(false)}
           onRestart={undefined}
           onQuit={() => {

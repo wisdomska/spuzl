@@ -98,6 +98,9 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 - **Duel timer vs strip clock (R2-15):** in a live round the header timer starts on the first move, while the
   opponent strip's "my time" runs from the round start (server time). Both are true; a later pass could show only
   the server's round time in live matches.
+- **Practice rounds on Challenge and Ghost links (R2-07):** `/challenge/<code>` and `/ghost/<game>` still open the
+  real board on a first try (they race a fixed run, so a practice round would need its own flow). They show the
+  visible rule (R2-06) and the first-move timer (R2-15).
 - **R2-P5 lab games, content review:** Pinned, Flagged and Pixl still have `needsReview = true` in their content
   files (`games/pinned/content.ts`, `games/flagged/content.ts`, `games/pixl/art.ts`). The owner should review them on
   the admin Content page before ticking them in `features.labGames`. Five's word list is already reviewed.
