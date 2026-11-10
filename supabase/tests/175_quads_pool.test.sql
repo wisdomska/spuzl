@@ -30,7 +30,8 @@ select lives_ok($$update public.content_items set pooled_at = null, pooled_by = 
   'an item is taken out of the pool');
 
 set local role authenticated;
-select throws_ok($$select pooled_at from public.content_items$$, '42501', null, 'players cannot read content items');
+-- RLS is forced with no player policy: a player's read returns no rows (the table grant itself is Supabase's default).
+select is_empty($$select pooled_at from public.content_items$$, 'players cannot read content items');
 reset role;
 
 select * from finish();
