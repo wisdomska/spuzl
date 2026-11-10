@@ -27,15 +27,16 @@ Facts checked against the code on 6 Nov 2026 (release 1.33.0).
 
 ## Routing
 
-| Area              | Routes                                                                                                      | Notes                                                                                                      |
-| ----------------- | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Landing           | `/` for visitors (`components/landing/*`, playable demo `TryIt.tsx`)                                        | "Play now" → `/welcome/play` (guest, birth step first, no intro). A solved demo counts as the first clear. |
-| First run         | `/intro`, `/welcome`, `/welcome/play`                                                                       | Guest / Google / email, birth month + year, "How do you want to start?", lesson, nickname.                 |
-| Tabs (bottom nav) | `/` (Home map), `/library`, `/leagues`, `/friends`, `/crews`, `/shop`, `/me`, `/settings`, `/u/[nickname]`… | `app/(tabs)/layout.tsx` adds the nav, `LowDataSuggest` and the Inbox. Server-gated by `lib/auth/gate.ts`.  |
-| Play              | `/play/[game]?mode=daily\|free\|archive\|level`, `/play/[game]/bot`, `/world/[id]`                          | One Play route for every game; Ludo free play redirects to `/play/ludo/bot`.                               |
-| Multiplayer       | `/duel`, `/party`, `/party/[code]`, `/bay`, `/bay/[matchId]`, `/ghost/[game]`, `/challenge/[code]`          | Board Games ("Bay") is turn-based with Play live matchmaking.                                              |
-| Admin             | `/admin/login`, `/admin/(console)/…`                                                                        | Overview, players, puzzles, content, moderation, liveops, flags, settings, metrics, audit.                 |
-| Dev fixtures      | `/dev/board/[game]?seed=&d=&state=`, `/dev/spuz`, `/dev/pwa`                                                | Only with `ENABLE_DEV_ROUTES=1` or outside production. Seeded, server-free boards for every game.          |
+| Area              | Routes                                                                                                      | Notes                                                                                                                                        |
+| ----------------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Landing           | `/` for visitors (`components/landing/*`, playable demo `TryIt.tsx`)                                        | "Play now" → `/welcome/play` (guest, birth step first, no intro). A solved demo counts as the first clear.                                   |
+| First run         | `/intro`, `/welcome`, `/welcome/play`                                                                       | Guest / Google / email, birth month + year, "How do you want to start?", lesson, nickname.                                                   |
+| Tabs (bottom nav) | `/` (Home map), `/library`, `/leagues`, `/friends`, `/crews`, `/shop`, `/me`, `/settings`, `/u/[nickname]`… | `app/(tabs)/layout.tsx` adds the nav, `LowDataSuggest` and the Inbox. Server-gated by `lib/auth/gate.ts`.                                    |
+| Play              | `/play/[game]?mode=daily\|free\|archive\|level`, `/play/[game]/bot`, `/world/[id]`                          | One Play route for every game; Ludo free play redirects to `/play/ludo/bot`.                                                                 |
+| Multiplayer       | `/duel`, `/party`, `/party/[code]`, `/bay`, `/bay/[matchId]`, `/ghost/[game]`, `/challenge/[code]`          | Board Games ("Bay") is turn-based with Play live matchmaking.                                                                                |
+| Admin             | `/admin/login`, `/admin/(console)/…`                                                                        | Overview, players, puzzles, content, moderation, liveops, flags, settings, metrics, audit.                                                   |
+| Dev fixtures      | `/dev/board/[game]?seed=&d=&state=`, `/dev/spuz`, `/dev/pwa`                                                | Only with `ENABLE_DEV_ROUTES=1` or outside production. Seeded, server-free boards for every game.                                            |
+| Test sign-in      | `POST /api/dev/sign-in {email}` (R4-27, E2E only)                                                           | Only with `ENABLE_DEV_ROUTES=1`, never on Vercel production (a bare `next start` also needs `ALLOW_TEST_SIGN_IN=1`); `.test` addresses only. |
 
 ## The first-game load path (R2-01)
 

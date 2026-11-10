@@ -1,14 +1,15 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { admin } from "../api/helpers";
-import { birthFor, keepFocus, logGuest, onboardGuest, VIEWPORTS, type Age } from "./harness";
+import { birthFor, keepFocus, logGuest, onboardGuest, testSignIn, VIEWPORTS, type Age } from "./harness";
 
 /**
  * R2-P5 part B: Family Draw, Draw It for signed-in players aged 16 and over (party mode "drawfam", setting
  * "party.familyDraw"). Preset words, guessers pick the word from four (no typing), drawings keep their Report
  * button. Under-16s and guests never see the mode.
  *
- * Signs in real email accounts: the account is made with the admin API, the app sends its sign-in code, and the
- * spec reads a fresh code from the admin API (`generateLink`, local Supabase) and types it. Flips
+ * Signs in real email accounts: the account is made with the admin API, then signed in through the test-only route
+ * (/api/dev/sign-in, R4-27) where the server allows it (ENABLE_DEV_ROUTES=1, not production), else the app sends its
+ * sign-in code and the spec reads a fresh code from the admin API (`generateLink`, local Supabase) and types it. Flips
  * "party.familyDraw" in game_settings and puts it back; run with --workers=1 against a server with a database that
  * reads settings without a cache. Screenshots: docs/qa/screens/r2/r2-p5b-family-draw-<name>-<375|1280>.png.
  */
@@ -28,14 +29,20 @@ async function member(browser: Browser, age: Age, viewport: { width: number; hei
   const context = await browser.newContext({ viewport });
   const page = await context.newPage();
   await keepFocus(page);
-  await page.goto("/welcome");
-  await page.getByRole("button", { name: "Sign in with email" }).click();
-  await page.getByLabel("Your email").fill(email);
-  await page.getByRole("button", { name: "Send me a code" }).click();
-  await expect(page.getByLabel("6-digit code")).toBeVisible();
-  const { data, error: e2 } = await admin().auth.admin.generateLink({ type: "magiclink", email });
-  if (e2) throw e2;
-  await page.getByLabel("6-digit code").fill(data.properties.email_otp);
+  if (await testSignIn(page, email)) {
+    // R4-27: the test sign-in route (ENABLE_DEV_ROUTES=1, never production) signs in with no email sent, so hosted
+    // projects' email limits don't apply; the app then picks up the new account like a returning email link.
+    await page.goto("/welcome?auth=linked");
+  } else {
+    await page.goto("/welcome");
+    await page.getByRole("button", { name: "Sign in with email" }).click();
+    await page.getByLabel("Your email").fill(email);
+    await page.getByRole("button", { name: "Send me a code" }).click();
+    await expect(page.getByLabel("6-digit code")).toBeVisible();
+    const { data, error: e2 } = await admin().auth.admin.generateLink({ type: "magiclink", email });
+    if (e2) throw e2;
+    await page.getByLabel("6-digit code").fill(data.properties.email_otp);
+  }
   // A new account sets up like a new player: birth month and year, then a nickname.
   await expect(page.getByRole("heading", { name: /When were you born\?/ })).toBeVisible({ timeout: 30_000 });
   const b = birthFor(age);

@@ -125,6 +125,18 @@ export async function onboardGuest(
 }
 
 /**
+ * R4-27: signs this browser context in as a `.test` email account through the test-only route (/api/dev/sign-in),
+ * with no email sent. Returns false when the server doesn't allow it (it answers 404 unless ENABLE_DEV_ROUTES=1
+ * outside production; lib/dev/guard.ts), so a spec can fall back to the emailed code.
+ */
+export async function testSignIn(page: Page, email: string): Promise<boolean> {
+  const res = await page.request.post("/api/dev/sign-in", { data: { email, create: true } });
+  if (res.status() === 404) return false;
+  expect(res.ok(), `test sign-in: ${res.status()} ${await res.text()}`).toBe(true);
+  return true;
+}
+
+/**
  * The board is interactive when its grid (or main board region) is visible and not aria-disabled. Quiz games
  * (Quickfire, Emoji Hits) show only their Start button until play begins: that counts as ready.
  */
