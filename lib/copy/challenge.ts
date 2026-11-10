@@ -5,6 +5,8 @@ export const challengeCopy = {
     `Ghost Races run on ${names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}` : (names[0] ?? "Rage Ridge")}.`,
   /** Ghost strip: one clock per game (the header); the strip says how the race stands in words. */
   ahead: "On pace",
+  /** R4-19: the practice round's last button before a challenge or a Ghost Race starts for real */
+  practiceDone: "Start the race",
   behind: "Past their time",
   /** The challenge card image (link preview and story card). */
   card: {

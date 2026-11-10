@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { api, type Me } from "@/lib/client/api";
-import { learnedToSync, markLearned, rememberLearned, learnedGames } from "@/lib/guided";
+import { api, useMe, type Me } from "@/lib/client/api";
+import { useGameSettings } from "@/lib/game-settings/client";
+import { hasLogic } from "@/games/logic-ids";
+import { allLearned, learnedToSync, markLearned, needsGuided, rememberLearned, learnedGames } from "@/lib/guided";
 
 /** Saves learned games to the account (best effort: the device copy covers a failed call, and syncs later). */
 function saveLearned(games: string[]) {
@@ -17,6 +19,39 @@ export function useMarkLearned() {
     markLearned(id);
     qc.setQueryData<Me | null>(["me"], (m) => (m ? { ...m, learned: [...new Set([...(m.learned ?? []), id])] } : m));
     saveLearned([id]).catch(() => {});
+  };
+}
+
+/**
+ * R4-19: a practice round before the real run of a challenge or a Ghost Race (same rule as solo play: the first try
+ * of a game the player doesn't know, unless the admin turned its practice off). `ready`: the account is known, so
+ * the answer is final (the screen waits for it before starting anything timed). `finish` is GuidedPlay's onDone.
+ */
+export function usePracticeFirst(game: string, mode: "challenge" | "ghost") {
+  const me = useMe();
+  const disabled = useGameSettings()["practice.disabled"];
+  const markLearned = useMarkLearned();
+  const [done, setDone] = useState(false);
+  const needed =
+    !done &&
+    !!me.data &&
+    needsGuided({
+      id: game,
+      mode,
+      played: me.data.played,
+      learned: allLearned(learnedGames(), me.data.learned),
+      started: false,
+      available: hasLogic(game),
+      disabled,
+    });
+  return {
+    // A failed profile read never blocks the run: no practice then.
+    ready: me.isSuccess || me.isError,
+    needed,
+    finish: (how: "done" | "skipped" | "unavailable") => {
+      if (how !== "unavailable") markLearned(game);
+      setDone(true);
+    },
   };
 }
 

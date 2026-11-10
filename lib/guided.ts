@@ -44,9 +44,11 @@ export function learnedToSync(device: Set<string>, account: readonly string[] | 
 /**
  * R2-07: every solo way into a game runs the practice round on its first open: the Daily (and the Daily Five),
  * free play (Library, deep links), the archive, levels (Continue opens ladder games in level mode) and a game
- * against the bot. Live rounds (Duel, Party) never wait for it: they get the "How it works" card instead.
+ * against the bot. R4-19 (owner decision, 10 Nov 2026): a friend's challenge (/challenge/<code>) and a Ghost Race
+ * (/ghost/<game>) too, before the real run starts (their clock and attempt begin only after it). Live rounds (Duel,
+ * Party) never wait for it: they get the "How it works" card instead.
  */
-export const PRACTICE_MODES: readonly string[] = ["daily", "five", "free", "archive", "level", "bot"];
+export const PRACTICE_MODES: readonly string[] = ["daily", "five", "free", "archive", "level", "bot", "challenge", "ghost"];
 
 /** The player knows this game: cleared it once (any device), or learned or skipped its practice round. */
 export function knowsGame(id: string, played: readonly string[] | undefined, learned: Set<string>): boolean {

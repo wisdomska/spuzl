@@ -16,6 +16,8 @@ import { useBackOrHome } from "@/lib/client/nav";
 import { formatClock } from "@/lib/format";
 import { play } from "@/lib/audio";
 import { useGameSettings } from "@/lib/game-settings/client";
+import { usePracticeFirst } from "@/lib/client/learned";
+import { GuidedPlay } from "@/components/play/GuidedPlay";
 import { CHALLENGE_DAYS, challengeDaysLeft, challengePath } from "@/lib/share/challenge-card";
 import { Avatar, Cta, EASE_OUT, HomeCorner, LoadingScreen, MpToast, NeedProfile, Screen, TopButton, formatTenths, useToast } from "./ui";
 
@@ -320,7 +322,14 @@ export function ChallengeScreen({ code }: { code: string }) {
     [play_, code, show],
   );
 
+  // R4-19: a game the player doesn't know gets its practice round after Accept, before the timed run starts.
+  const practice = usePracticeFirst(q.data?.game ?? "", "challenge");
+  const [practicing, setPracticing] = useState(false);
   const accept = async () => {
+    if (practice.needed) return setPracticing(true);
+    await start();
+  };
+  const start = async () => {
     try {
       const r = await api<{ attemptId: string; puzzle: unknown; startedAt: string }>(`/api/v1/challenges/${code}/accept`, { json: {} });
       samples.current = [];
@@ -378,6 +387,21 @@ export function ChallengeScreen({ code }: { code: string }) {
       </Screen>
     );
   }
+
+  if (practicing && meta)
+    return (
+      <GuidedPlay
+        meta={meta}
+        daily={false}
+        doneLabel={challengeCopy.practiceDone}
+        onExit={() => setPracticing(false)}
+        onDone={(how) => {
+          practice.finish(how);
+          setPracticing(false);
+          void start();
+        }}
+      />
+    );
 
   if (play_ && meta && Board)
     return (

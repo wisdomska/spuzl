@@ -11,6 +11,8 @@ import { api, finishAttempt, HttpError } from "@/lib/client/api";
 import { GHOST_GAMES } from "@/lib/client/challenge";
 import { challengeCopy } from "@/lib/copy/challenge";
 import { useProfileGate } from "@/lib/client/multiplayer";
+import { usePracticeFirst } from "@/lib/client/learned";
+import { GuidedPlay } from "@/components/play/GuidedPlay";
 import type { InputLog } from "@/games/types";
 import { play } from "@/lib/audio";
 import { Cta, HomeCorner, LoadingScreen, MpToast, NeedProfile, Screen, formatTenths, useToast } from "./ui";
@@ -46,8 +48,12 @@ export function GhostScreen({ game }: { game: string }) {
   const Board = BOARDS[game];
 
   const [round, setRound] = useState(0);
+  // R4-19: a game the player doesn't know gets its practice round first; the run (its attempt and clock) is only
+  // asked for once the account is known and any practice is over.
+  const practice = usePracticeFirst(game, "ghost");
+  const waiting = !practice.ready || practice.needed;
   useEffect(() => {
-    if (gate !== "ready") return;
+    if (gate !== "ready" || waiting) return;
     let dead = false;
     api<Start>(`/api/v1/ghosts/${game}`, { json: run ? { run } : {} })
       .then((r) => !dead && setStart(r))
@@ -63,7 +69,7 @@ export function GhostScreen({ game }: { game: string }) {
     return () => {
       dead = true;
     };
-  }, [gate, game, run, round]);
+  }, [gate, game, run, round, waiting]);
 
   const onSolved = useCallback(
     async (state: unknown, ms: number, stats: { mistakes: number; boardMs?: number }) => {
@@ -100,6 +106,16 @@ export function GhostScreen({ game }: { game: string }) {
           </Cta>
         </div>
       </Screen>
+    );
+  if (practice.needed)
+    return (
+      <GuidedPlay
+        meta={meta}
+        daily={false}
+        doneLabel={challengeCopy.practiceDone}
+        onExit={() => router.push("/")}
+        onDone={practice.finish}
+      />
     );
   if (!start) return <LoadingScreen />;
 

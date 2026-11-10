@@ -33,8 +33,9 @@ describe("guided first play", () => {
     expect(needsGuided({ ...base, available: false })).toBe(false);
     expect(needsGuided({ ...base, played: undefined })).toBe(false);
   });
-  it("only applies to solo play", () => {
-    expect(needsGuided({ ...base, mode: "challenge" })).toBe(false);
+  it("only applies to solo play (a challenge or Ghost Race run counts, R4-19; live rounds don't)", () => {
+    expect(needsGuided({ ...base, mode: "duel" })).toBe(false);
+    expect(needsGuided({ ...base, mode: "challenge" })).toBe(true);
     expect(needsGuided({ ...base, mode: "free" })).toBe(true);
   });
 });
@@ -42,8 +43,9 @@ describe("guided first play", () => {
 describe("R2-07: practice round from every entry", () => {
   const base = { id: "dusk", played: [] as string[], learned: new Set<string>(), started: false, available: true };
   it("runs from levels (Continue), the Daily Five and games vs the bot, not just Daily and free play", () => {
-    for (const mode of ["daily", "five", "free", "archive", "level", "bot"]) expect(needsGuided({ ...base, mode }), mode).toBe(true);
-    for (const mode of ["duel", "race", "challenge", "ghost", "tutorial"]) expect(needsGuided({ ...base, mode }), mode).toBe(false);
+    for (const mode of ["daily", "five", "free", "archive", "level", "bot", "challenge", "ghost"])
+      expect(needsGuided({ ...base, mode }), mode).toBe(true);
+    for (const mode of ["duel", "race", "tutorial"]) expect(needsGuided({ ...base, mode }), mode).toBe(false);
   });
   it("the admin can turn a game's practice round off", () => {
     expect(needsGuided({ ...base, mode: "level", disabled: ["dusk"] })).toBe(false);
