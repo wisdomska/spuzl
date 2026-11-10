@@ -28,4 +28,10 @@ export const joinRequestsCopy = {
   decline: "Say no",
   declineAria: (name: string) => `Say no to ${name}`,
   decideFailed: "Couldn't answer that request. Try again.",
+  // R4-17: Home card, for a host who left the lobby
+  homeTitle: (n: number) => (n === 1 ? "Someone wants to join your room" : `${n} players want to join your rooms`),
+  homeWants: (kind: "duel" | "party", code: string) => (kind === "duel" ? `wants to join your duel ${code}` : `wants to join room ${code}`),
+  backToRoom: "Back to the room",
+  backToRoomAria: (code: string) => `Back to room ${code}`,
+  letInDone: (name: string) => `${name} can join now.`,
 } as const;

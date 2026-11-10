@@ -34,10 +34,13 @@ import { DailyFiveCard } from "@/components/daily-five/DailyFiveCard";
 import { NewGamesBanner } from "./NewGamesBanner";
 import { BoardThumb } from "./BoardThumb";
 import { isLadderGame } from "@/lib/game/levels";
+import { hostIsUnder16 } from "@/lib/multiplayer/joinRules";
 import { useLevels } from "@/lib/client/levels";
 import type { GameMeta } from "@/lib/catalog";
 import { useDailyFive } from "@/lib/client/daily-five";
 
+// R4-17: only friends-only hosts (13 to 15) can get join requests, so only they load the card's code.
+const HostRequestsCard = dynamic(() => import("./HostRequestsCard").then((m) => m.HostRequestsCard), { ssr: false });
 const BirthAskOnce = dynamic(() => import("@/components/onboarding/BirthAsk").then((m) => m.BirthAskOnce), { ssr: false });
 
 /** The at-risk card's "resets in" countdown: the one part of Home that ticks every second. */
@@ -95,7 +98,8 @@ export function HomeScreen() {
   }, [me.data]);
 
   // Dailies off: progress is the games a player has ever cleared (free play), not today's Dailies.
-  const dailiesOn = useGameSettings()["features.dailies"];
+  const gameSettings = useGameSettings();
+  const dailiesOn = gameSettings["features.dailies"];
   const cleared = useMemo<Record<string, number>>(
     () => (dailiesOn ? (me.data?.today.cleared ?? {}) : Object.fromEntries((me.data?.played ?? []).map((id) => [id, 1]))),
     [me.data, dailiesOn],
@@ -143,6 +147,7 @@ export function HomeScreen() {
 
         <div className="relative z-10 flex flex-col gap-2 px-3">
           <OfflineBanner context="home" />
+          {gameSettings["rooms.under16FriendsOnly"] && hostIsUnder16(d) && <HostRequestsCard />}
           <FirstTips order={HOME_TIPS} />
           <WeeklyRecapCard />
           <EventBanner />

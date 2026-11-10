@@ -249,6 +249,60 @@ export async function pendingForHost(admin: SupabaseClient, hostId: string, matc
   };
 }
 
+/**
+ * R4-17: every pending request for rooms this player hosts now, for the Home card (a host who left the lobby).
+ * Only rooms still open and still hosted by them; oldest first, capped. Each row names the room's code and kind so
+ * the host knows which room it is; nothing about the asker beyond nickname, colour and hat (what the lobby shows).
+ */
+export async function pendingForHostEverywhere(admin: SupabaseClient, hostId: string) {
+  const { data, error } = await admin
+    .from("room_join_requests")
+    .select("id, match_id, room_kind, room_code, requester_id, created_at")
+    .eq("host_id", hostId)
+    .eq("status", "pending")
+    .not("match_id", "is", null)
+    .order("created_at")
+    .limit(MAX_PENDING_PER_ROOM);
+  // Deployed ahead of migration 20261130101301: nothing to show.
+  if (error?.code === "42P01") return { requests: [] };
+  if (error) throw error;
+  const rows = data ?? [];
+  if (!rows.length) return { requests: [] };
+  const matchIds = [...new Set(rows.map((r) => r.match_id as string))];
+  const askers = [...new Set(rows.map((r) => r.requester_id as string))];
+  const [{ data: rooms, error: e1 }, { data: players, error: e2 }] = await Promise.all([
+    admin.from("matches").select("id, kind, status, host_id, emptied_at").in("id", matchIds),
+    admin.from("players").select("id, nickname, avatar_color, hat").in("id", askers),
+  ]);
+  if (e1) throw e1;
+  if (e2) throw e2;
+  // A room still waiting for players and still theirs: a friend duel in its lobby, or a Party room not expired.
+  const open = new Set(
+    (rooms ?? [])
+      .filter(
+        (m) => m.host_id === hostId && (m.kind === "duel" ? m.status === "lobby" : m.status === "lobby" && !roomExpired(m.emptied_at)),
+      )
+      .map((m) => m.id as string),
+  );
+  const byId = new Map((players ?? []).map((p) => [p.id as string, p]));
+  return {
+    requests: rows
+      .filter((r) => open.has(r.match_id as string))
+      .map((r) => {
+        const p = byId.get(r.requester_id as string);
+        return {
+          id: r.id as string,
+          code: r.room_code as string,
+          kind: r.room_kind as "duel" | "party",
+          nickname: (p?.nickname as string | undefined) ?? "Spuzler",
+          color: (p?.avatar_color as string | undefined) ?? null,
+          hat: (p?.hat as string | null | undefined) ?? null,
+          at: Date.parse(r.created_at as string),
+        };
+      }),
+  };
+}
+
 /** The host answers a pending request for the room they host now. Approving lets that player join by code. */
 export async function decideJoinRequest(admin: SupabaseClient, hostId: string, id: string, decision: "approve" | "decline") {
   const r = await requestRow(admin, id);

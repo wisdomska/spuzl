@@ -74,8 +74,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   player's data export (`app/api/v1/account/export/route.ts`). Rows go with either account on deletion and are
   pruned after 180 days. Whether the export should list requests a player made or received (the other player's
   nickname included) is a privacy call for the lead.
-- **R2-13, host away:** a request reaches the host only in the lobby (realtime plus a 15 s poll). There is no push
-  or Home card, so a host who left the lobby screen won't see it until they come back. The asker can wait or cancel.
 - **Daily Five reset hour (R2-05):** with `dailyFive.resetHour` above 0, a Daily Five attempt's `daily_date` is the
   Daily Five day, while the offline-clear check in `finishAttempt` ("offline clear outside its day") and the regular
   Daily (when `features.dailies` is on) still use the GMT date. Keep the reset hour at 0 while Dailies are on, or
