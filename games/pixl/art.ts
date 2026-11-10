@@ -2,9 +2,10 @@
  * Pixl picture library: original pixel art drawn for SPUZL (no licensed or traced images).
  * `#` filled, `.` empty. Rows must share one width. The generator only uses a picture when the line
  * solver proves it unique; anything else falls back to seeded symmetric patterns.
- * Owner review: art and names are new content (SRS 9.2, Pixl art), so `needsReview` stays true.
+ * Owner review: art and names are new content (SRS 9.2, Pixl art).
  */
-export const needsReview = true;
+/** Reviewed 10 Nov 2026 (R4-C). */
+export const needsReview = false;
 
 export interface Art {
   name: string;
@@ -15,7 +16,7 @@ export const ART: Art[] = [
   // 5 × 5
   { name: "Heart", rows: [".#.#.", "#####", "#####", ".###.", "..#.."] },
   { name: "Star", rows: ["..#..", ".###.", "#####", ".###.", ".#.#."] },
-  { name: "Cup", rows: ["#####", "#####", "####.", ".###.", "#####"] },
+  { name: "Cup", rows: ["#####", ".###.", "..#..", "..#..", ".###."] },
   { name: "Arrow", rows: ["..#..", ".###.", "#.#.#", "..#..", "..#.."] },
   { name: "Key", rows: ["###..", "#.###", "###.#", ".....", "....."] },
   // 7 × 7

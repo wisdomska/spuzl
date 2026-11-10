@@ -43,7 +43,7 @@ describe("pixl", () => {
   });
 
   it("every library picture is line solvable and unique", () => {
-    expect(needsReview).toBe(true);
+    expect(needsReview).toBe(false);
     for (const a of ART) {
       const c = artCells(a);
       expect(a.rows.every((r) => r.length === c.w)).toBe(true);
