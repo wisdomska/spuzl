@@ -13,8 +13,17 @@ import { GAME_BY_ID, isLiveWorld } from "@/lib/catalog";
 import { updateRating } from "@/lib/game/service";
 import type { Placed } from "../race";
 
-/** Party Race XP: the winner 30, everyone who finished the set 10 (SRS lists no Party XP; see DECISIONS). */
-export const PARTY = { winXp: 30, playXp: 10 };
+/** The ledger source of Party Race XP; its daily cap counts this source only. */
+export const PARTY_REWARD_SOURCE = "party";
+
+/**
+ * Party Race XP for one player at the end of a set (R4-25: admin settings, see DECISIONS for the defaults): the
+ * winner `party.winXp`, everyone else still in the room `party.playXp`. The daily cap (`party.xpDailyCap`) is
+ * applied by svc_grant_capped_reward on the server, against what the player already earned from Parties today.
+ */
+export function partyXp(won: boolean, s: { "party.winXp": number; "party.playXp": number }): number {
+  return Math.max(0, won ? s["party.winXp"] : s["party.playXp"]);
+}
 /** Practice bot: nothing on the line, a small practice XP either way. */
 export const PRACTICE_XP = 10;
 
@@ -199,14 +208,26 @@ async function countRounds(admin: SupabaseClient, l: Loaded) {
   }
 }
 
-/** After the last game of a Party set: XP, feed, badges and quests for everyone who played. */
+/**
+ * After the last game of a Party set: XP (capped per GMT day, R4-25), feed, badges and quests for everyone who
+ * played. The capped grant pays each player once per set, so running this twice changes nothing.
+ */
 export async function finalizeRace(admin: SupabaseClient, l: Loaded, lastGame: Placed[]) {
   const { m } = l;
   await countRounds(admin, l);
   const ref = `${m.id}:${m.set_no}`;
+  const s = await getGameSettings();
   for (const p of l.players.filter((x) => !x.spectator && !x.left_at)) {
     const won = m.winner_id === p.player_id;
-    await grant(admin, p.player_id, "party", ref, won ? PARTY.winXp : PARTY.playXp);
+    const { error } = await admin.rpc("svc_grant_capped_reward", {
+      p_player: p.player_id,
+      p_source: PARTY_REWARD_SOURCE,
+      p_ref: ref,
+      p_xp: partyXp(won, s),
+      p_sparks: 0,
+      p_cap: s["party.xpDailyCap"],
+    });
+    if (error) console.error("[party] reward failed", m.id, p.player_id, error.message);
     if (!won) continue;
     await bumpQuests(admin, p.player_id, ["mp_wins"]);
     await admin
