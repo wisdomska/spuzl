@@ -83,7 +83,8 @@ for (const [vpName, vp] of Object.entries({ "375": VIEWPORTS.phone, "1280": VIEW
       await page.goto("/play/quickfire?mode=free");
       const start = page.getByRole("button", { name: /^Start\b/ });
       await start.waitFor({ timeout: 45_000 });
-      await expect(page.getByRole("group", { name: /answers/i })).toHaveCount(0);
+      // Answers stay hidden until Start (empty placeholder slots keep the layout still): no answer buttons yet.
+      await expect(page.getByRole("group", { name: /answers/i }).getByRole("button")).toHaveCount(0);
       await shot("quickfire-before-start");
       await start.click();
       const answers = page.getByRole("group", { name: /answers/i });
@@ -96,7 +97,9 @@ for (const [vpName, vp] of Object.entries({ "375": VIEWPORTS.phone, "1280": VIEW
     test("Four Up: a tap anywhere in a column drops there", async () => {
       await page.goto("/play/fourup?mode=free");
       await waitForBoard(page, 45_000);
-      const grid = page.getByRole("grid").first();
+      // The board is a group of column buttons (one per column, arrow keys between them).
+      const grid = page.getByRole("group", { name: /^Four Up board/ });
+      await grid.waitFor();
       const box = (await grid.boundingBox())!;
       // top of column 4 (an empty cell, far from where the disc lands)
       await page.mouse.click(box.x + box.width * (3.5 / 7), box.y + 6);
@@ -119,7 +122,9 @@ for (const [vpName, vp] of Object.entries({ "375": VIEWPORTS.phone, "1280": VIEW
           for (const k of c.querySelectorAll("svg, img, span")) {
             const q = (k as HTMLElement).getBoundingClientRect();
             if (!q.width) continue;
-            worst = Math.max(worst, r.left - q.left, q.right - r.right, r.top - q.top, q.bottom - r.bottom);
+            // Pieces stand up into the square behind them by design (tall 3D pieces): only sideways and downward
+            // overflow counts.
+            worst = Math.max(worst, r.left - q.left, q.right - r.right, q.bottom - r.bottom);
           }
         }
         return Math.round(worst);

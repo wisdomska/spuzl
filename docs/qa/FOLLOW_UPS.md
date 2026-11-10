@@ -189,12 +189,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   `Avatar` (Duel HUD, Party seats and standings, chat, invites, Board Bay seats), plus the Home header `LevelRing`.
   Turning those into tiny hatted Spuz needs a design call and `hat` in the friends, leaderboard, crew, chat and TV
   payloads (`SpuzWear` already draws legibly at 24 to 40 px).
-- **Hydration warning on All games, production build only (found 8 Nov, 1.40.1):** React error #418 (text mismatch)
-  on `/library` on every visit after the first in a tab, with or without the service worker; not seen on the dev
-  server, even on repeat visits. 1.40.1 fixed the visible part (durations and lab games now come from the server,
-  `components/shell/SeedQueries.tsx`; server and browser rows match), and React recovers silently, so players see no
-  change. Next step: a local production build (needs more memory than the QA container has) with React's
-  development error messages, to name the text node.
 
 ## SEO pass (round 3)
 
@@ -212,13 +206,22 @@ the Duel loss line. Still open:
 
 - **Rage Ridge painter:** still four small closures per frame and about 270 dots for the background grid
   (`phaser/render/platformer.ts`); a pre-drawn dot texture would cut the draw calls. Profile on a mid phone first.
-- **Four Up, Oware and Flip live boards have no roving keyboard focus** (`components/multiplayer/bay/boards.tsx`);
-  Four Up wraps gridcells in a column button. Chess and draughts have it now (`Grid8`, `lib/multiplayer/grid-nav.ts`).
-- **Not measured here (no dev server in this pass):** fit at 320×568 for Flinch and Beat Tap (square pad plus rounds
-  row) and the Duel round result (`pt-[90px]` plus 130 px cards). Run the viewport harness on them.
 
 Puzzles (Crownfall, Dusk, Sixer, Nine, Weave, Flowline, Pairup, Lost, Trotro Jam), Words & Quiz (Coil, Rungs, Quads,
-Seven, Minicross, Buried, Remix, Quickfire, Emoji Hits) and Two Truths. All audit items fixed in round 2 except:
+Seven, Minicross, Buried, Remix, Quickfire, Emoji Hits) and Two Truths. All audit items fixed (the last, Duel ink on gold,
+in 1.44.1).
 
-- **Duel ink on gold:** `components/multiplayer/duel.tsx` (round badge and win badge) still uses a raw `#0E0F1A` on
-  `--gold`; switch it to `text-on-gold` (the new token, 5.6:1 in the light theme) when that file is next free.
+## Follow-ups closed (10 Nov, 1.44.1)
+
+- **Hydration warning on All games (#418):** the server drew the default settings (29 games) because the app-wide
+  AlertsAsk created the game-settings query while the seeded page streamed, and HydrationBoundary leaves existing
+  queries to an effect. `components/shell/HydrateNow.tsx` applies the seed in the first render on both sides.
+  Guarded by `tests/e2e/r4-follow-ups.spec.ts`.
+- **Four Up, Oware and Flip live boards:** one Tab stop with arrow keys (`useRovingGrid`, `gridMoveRC`); Four Up's
+  columns are the grid cells. `tests/e2e/r4-board-keys.spec.ts`.
+- **Fit at 320 × 568:** Flinch and Beat Tap fit. The Duel round end and match end now go compact under 880 px of
+  height, Rematch stays on the screen's bottom edge, and the body no longer lets the centred card's margin add a
+  scroll on laptops. `/dev/duel` fixture, `tests/e2e/r4-follow-ups.spec.ts`.
+- **Duel ink on gold:** `text-on-gold` on the round and win badges.
+- Found on the way: a long Gotcha or Dash level name pushed the page 7 px sideways on phones with keyboard hints
+  (an inline `truncate`); the r2-phase4 spec's Quickfire, Four Up and chess checks were updated to the current boards.

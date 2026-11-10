@@ -581,10 +581,11 @@ export function RageBoard<S extends SimCore>({
             )}
           </p>
           <div className="text-muted min-w-0 flex-1 text-center text-[14px] leading-[1.4] font-medium" aria-live="off">
+            {/* Blocks, so a long level name truncates inside the row instead of pushing past the screen edge. */}
             {total > 1 && (
-              <span className="num font-semibold text-[var(--text)]">{`Level ${Math.min(total, hud.cleared + 1)} of ${total}`}</span>
+              <div className="num font-semibold text-balance text-[var(--text)]">{`Level ${Math.min(total, hud.cleared + 1)} of ${total}`}</div>
             )}
-            {hud.level && <span className="truncate">{` · ${hud.level}`}</span>}
+            {hud.level && <div className="truncate">{hud.level}</div>}
           </div>
           <button
             type="button"
