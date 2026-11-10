@@ -17,6 +17,14 @@ import type { BayView, MatchView } from "@/lib/multiplayer/types";
 
 /* ---------------- Clock: render phases on the server's clock ---------------- */
 
+/** Steps back smaller than this are network wobble and are ridden out; larger ones are real corrections. */
+export const CLOCK_WOBBLE_MS = 1500;
+
+/** The next shown server time: never a small step back (network wobble), any step forward, a large step back at once. */
+export function steadyNow(prev: number, next: number): number {
+  return next < prev && prev - next < CLOCK_WOBBLE_MS ? prev : next;
+}
+
 /** Offset between the server and this device, from the latest view. */
 export function useServerNow(serverNow: number | undefined, tickMs = 200) {
   const offset = useRef(0);
@@ -25,7 +33,10 @@ export function useServerNow(serverNow: number | undefined, tickMs = 200) {
   }, [serverNow]);
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now() + offset.current), tickMs);
+    // Each server reply resets the offset from a time stamped before the reply travelled, so it wobbles by the
+    // network delay, and a clock that steps back a second on a move looks broken (R4-18). `steadyNow` rides out a
+    // small step back; a real correction (a device clock that is off) still applies at once.
+    const id = setInterval(() => setNow((prev) => steadyNow(prev, Date.now() + offset.current)), tickMs);
     return () => clearInterval(id);
   }, [tickMs]);
   return now;
