@@ -17,7 +17,7 @@ export async function loadStatusCard(admin: SupabaseClient, playerId: string): P
   const [{ data: p }, { data: streak }, { data: ratings }, stats, settings] = await Promise.all([
     admin
       .from("players")
-      .select("nickname, avatar_color, hat, level, age_band, birth_year, birth_month, hide_activity, banned_at")
+      .select("nickname, avatar_color, hat:owned_hat, level, age_band, birth_year, birth_month, hide_activity, banned_at")
       .eq("id", playerId)
       .maybeSingle(),
     admin.from("streaks").select("current").eq("player_id", playerId).maybeSingle(),

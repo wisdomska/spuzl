@@ -25,7 +25,7 @@ type Seat = {
 /** A chat room: a Duel or Party match, or a Board Games match. */
 export type ChatRoom = { kind: "match" | "bay"; id: string };
 
-const PLAYER_COLS = "nickname, avatar_color, hat, age_band, birth_year, birth_month";
+const PLAYER_COLS = "nickname, avatar_color, hat:owned_hat, age_band, birth_year, birth_month";
 
 async function seats(admin: SupabaseClient, room: ChatRoom): Promise<Seat[]> {
   if (!/^[0-9a-f-]{36}$/i.test(room.id)) throw new ApiError(404, "match_not_found");

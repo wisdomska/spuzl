@@ -20,7 +20,11 @@ export async function loadChallengeCard(admin: SupabaseClient, raw: string): Pro
     .eq("code", code)
     .maybeSingle();
   if (!c || Date.parse(c.expires_at) < Date.now() || !playableGame(c.game_id)) return null;
-  const { data: p } = await admin.from("players").select("nickname, avatar_color, hat, banned_at").eq("id", c.sender_id).maybeSingle();
+  const { data: p } = await admin
+    .from("players")
+    .select("nickname, avatar_color, hat:owned_hat, banned_at")
+    .eq("id", c.sender_id)
+    .maybeSingle();
   if (!p || p.banned_at) return null;
   const meta = GAME_BY_ID[c.game_id];
   return challengeCard({

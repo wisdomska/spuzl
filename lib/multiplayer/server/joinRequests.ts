@@ -222,7 +222,7 @@ export async function pendingForHost(admin: SupabaseClient, hostId: string, matc
   const rows = data ?? [];
   const ids = rows.map((r) => r.requester_id as string);
   const { data: players } = ids.length
-    ? await admin.from("players").select("id, nickname, avatar_color, hat").in("id", ids)
+    ? await admin.from("players").select("id, nickname, avatar_color, hat:owned_hat").in("id", ids)
     : { data: [] as { id: string; nickname: string; avatar_color: string; hat: string | null }[] };
   const byId = new Map((players ?? []).map((p) => [p.id as string, p]));
   return {

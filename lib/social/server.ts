@@ -16,7 +16,11 @@ export interface Card {
   minor: boolean;
 }
 
-const CARD_COLS = "id, nickname, avatar_color, skin, hat, title, level, age_band, birth_year, birth_month";
+/**
+ * R4-H: `hat:owned_hat` reads players.hat through the inventory (public.owned_hat, migration 20261210720101), so a
+ * hat shows only when the player owns it. Every server read that hands a hat to other players selects it this way.
+ */
+const CARD_COLS = "id, nickname, avatar_color, skin, hat:owned_hat, title, level, age_band, birth_year, birth_month";
 
 type CardRow = {
   id: string;

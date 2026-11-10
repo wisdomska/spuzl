@@ -145,7 +145,7 @@ export async function loadMatch(admin: SupabaseClient, id: string): Promise<Load
     admin.from("matches").select("*").eq("id", id).maybeSingle(),
     admin
       .from("match_players")
-      .select("*, players(nickname, avatar_color, hat, level, country, city, age_band, birth_year, birth_month)")
+      .select("*, players(nickname, avatar_color, hat:owned_hat, level, country, city, age_band, birth_year, birth_month)")
       .eq("match_id", id)
       .order("seat"),
   ]);

@@ -19,7 +19,7 @@ export const GET = handle(async () => {
       .order("price_sparks"),
     admin.from("inventory").select("cosmetic_id, equipped").eq("player_id", player.id),
     admin.from("streaks").select("freezes_held").eq("player_id", player.id).maybeSingle(),
-    admin.from("players").select("sparks, level, practice_hints, avatar_color, skin, hat, title").eq("id", player.id).single(),
+    admin.from("players").select("sparks, level, practice_hints, avatar_color, skin, hat:owned_hat, title").eq("id", player.id).single(),
     getGameSettings(),
   ]);
   if (error) throw error;

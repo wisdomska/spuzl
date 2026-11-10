@@ -20,7 +20,7 @@ export interface PlayerRow {
   is_guest: boolean;
 }
 
-const PROFILE_COLS = "nickname, avatar_color, skin, hat, title, age_band, country, city, settings, hide_activity, created_at";
+const PROFILE_COLS = "nickname, avatar_color, skin, hat:owned_hat, title, age_band, country, city, settings, hide_activity, created_at";
 
 /** The profile row with birth month and year; without them while migration 20261119000001 is not applied yet. */
 async function profileRow(admin: SupabaseClient, id: string) {

@@ -18,7 +18,7 @@ export const GET = handle(async (_req: Request, ctx: RouteContext<"/api/v1/playe
   const { data: p } = await admin
     .from("players")
     .select(
-      "id, nickname, avatar_color, skin, hat, title, level, age_band, birth_year, birth_month, hide_activity, last_seen_at, playing_game, banned_at",
+      "id, nickname, avatar_color, skin, hat:owned_hat, title, level, age_band, birth_year, birth_month, hide_activity, last_seen_at, playing_game, banned_at",
     )
     .eq("nickname", nickname)
     .maybeSingle();

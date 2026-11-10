@@ -84,7 +84,7 @@ export async function bayView(admin: SupabaseClient, b: BayRow, me: string): Pro
   const [{ data: cards }, { data: ratings }, moves] = await Promise.all([
     admin
       .from("players")
-      .select("id, nickname, avatar_color, hat")
+      .select("id, nickname, avatar_color, hat:owned_hat")
       .in("id", humans.length ? humans : [BOT_PLAYER]),
     admin
       .from("ratings")
@@ -551,7 +551,8 @@ export async function inbox(admin: SupabaseClient, me: string) {
   const others = [...new Set(rows.flatMap((b) => b.players).filter((p) => p !== me && p !== BOT_PLAYER))];
   const { data: cards } = await admin
     .from("players")
-    .select("id, nickname, avatar_color")
+    // R4-H: hat:owned_hat is the worn hat only if the player owns it (migration 20261210720101).
+    .select("id, nickname, avatar_color, hat:owned_hat")
     .in("id", others.length ? others : [BOT_PLAYER]);
   const name = (id: string) => (id === BOT_PLAYER ? "Practice bot" : (cards?.find((c) => c.id === id)?.nickname ?? "Spuzler"));
   const color = (id: string) => (id === BOT_PLAYER ? "#A2A6C2" : (cards?.find((c) => c.id === id)?.avatar_color ?? "#B8F23A"));
@@ -581,7 +582,15 @@ export async function inbox(admin: SupabaseClient, me: string) {
         return {
           id: b.id,
           game: b.game_id,
-          opponent: { name: b.status === "waiting" ? "a friend" : name(opp), color: color(opp) },
+          opponent: {
+            name: b.status === "waiting" ? "a friend" : name(opp),
+            color: color(opp),
+            // no hat until a friend takes the invite (the seat isn't theirs yet), none for the bot
+            hat:
+              b.status === "waiting" || opp === BOT_PLAYER
+                ? null
+                : ((cards?.find((c) => c.id === opp)?.hat as string | null | undefined) ?? null),
+          },
           detail,
           status: b.status === "finished" ? ("finished" as const) : mine ? ("your-move" as const) : ("their-move" as const),
           nudged: !!b.nudged_at,

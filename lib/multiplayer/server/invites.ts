@@ -60,7 +60,7 @@ export async function sendGameInvite(
     game = b.game_id as string;
   }
 
-  const { data: card } = await admin.from("players").select("nickname, avatar_color, hat").eq("id", me).single();
+  const { data: card } = await admin.from("players").select("nickname, avatar_color, hat:owned_hat").eq("id", me).single();
   await serverBroadcast(`user:${input.to}`, "invite", {
     id: randomUUID(),
     from: {
