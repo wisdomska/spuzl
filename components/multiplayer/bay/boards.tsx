@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
-import { gridMove } from "@/lib/multiplayer/grid-nav";
+import { gridMove, gridMoveRC } from "@/lib/multiplayer/grid-nav";
 import { Icon } from "@/components/ui/Icon";
 import { boardGames } from "@/lib/copy/board-games";
 import { fitRow, isWide, useCellSize, useViewportHeight, useViewportWidth, wideCell } from "@/components/game/useBoardSize";
@@ -171,6 +171,33 @@ function Grid8({
       {overlay}
     </div>
   );
+}
+
+/**
+ * Roving focus for the boards that are not 8 × 8 squares (Oware's pits, Four Up's columns, Flip): one Tab stop,
+ * arrows, Home, End, PageUp and PageDown move between cells (as the player sees them), Enter or Space presses the
+ * focused cell. Spread `grid` on the role="grid" element and `cell(i)` on each cell, `i` in visual order.
+ */
+function useRovingGrid(rows: number, cols: number) {
+  const [focus, setFocus] = useState(0);
+  const at = Math.min(focus, rows * cols - 1);
+  const grid = {
+    onKeyDown: (e: KeyboardEvent<HTMLElement>) => {
+      const i = Number((e.target as HTMLElement).dataset?.ri);
+      if (!Number.isInteger(i)) return;
+      const next = gridMoveRC(i, e.key, rows, cols);
+      if (next === null) return;
+      e.preventDefault();
+      setFocus(next);
+      e.currentTarget.querySelector<HTMLElement>(`[data-ri="${next}"]`)?.focus();
+    },
+    onFocus: (e: React.FocusEvent<HTMLElement>) => {
+      const i = Number((e.target as HTMLElement).dataset?.ri);
+      if (Number.isInteger(i) && i !== at) setFocus(i);
+    },
+  };
+  const cell = (i: number) => ({ tabIndex: i === at ? 0 : -1, "data-ri": i });
+  return { grid, cell };
 }
 
 /* ---------------- Chess (B3) ---------------- */
@@ -458,6 +485,7 @@ function OwareLive({ state, seat, legal, disabled, lastMove, onMove, announce, e
   const me = seat ?? 0;
   const pitPx = useOwarePit();
   const lastPit = typeof lastMove === "number" ? lastMove : -1;
+  const nav = useRovingGrid(2, 6);
   const tap = (pit: number) => {
     if (disabled) return;
     if (pits.includes(pit)) return onMove(pit);
@@ -475,10 +503,13 @@ function OwareLive({ state, seat, legal, disabled, lastMove, onMove, announce, e
         className="flex flex-col gap-2.5 rounded-[28px] bg-[var(--bay-wood)] p-3 shadow-[inset_0_-6px_0_rgba(0,0,0,.25)]"
         role="grid"
         aria-label="Oware board"
+        aria-rowcount={2}
+        aria-colcount={6}
+        {...nav.grid}
       >
         {rows.map((row, ri) => (
           <div key={ri} className="flex gap-2" role="row">
-            {row.map((pit) => {
+            {row.map((pit, ci) => {
               const can = pits.includes(pit) && !disabled;
               // Your own pits stay tappable on your turn, so a pit you can't sow can say why.
               const asks = !disabled && pits.length > 0 && (me === 0 ? pit < 6 : pit >= 6);
@@ -488,11 +519,12 @@ function OwareLive({ state, seat, legal, disabled, lastMove, onMove, announce, e
                   key={pit}
                   type="button"
                   role="gridcell"
-                  disabled={!can && !asks}
+                  {...nav.cell(ri * 6 + ci)}
+                  // Focusable even when it can't be sown, so the arrows reach every pit (a disabled button can't).
                   aria-disabled={!can || undefined}
-                  onClick={() => tap(pit)}
+                  onClick={() => (can || asks) && tap(pit)}
                   aria-label={`Pit ${pit + 1}, ${s.pits[pit]} seeds${can ? ", sow" : ""}${last ? `, ${tow.lastSown}` : ""}`}
-                  className="num relative flex flex-col items-center justify-center rounded-full font-semibold"
+                  className="num relative flex flex-col items-center justify-center rounded-full font-semibold focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
                   style={{
                     width: pitPx,
                     height: pitPx,
@@ -540,52 +572,71 @@ function FourUpLive({ state, legal, disabled, onMove }: LiveBoardProps) {
   // The disc dropped last keeps a ring after its pop, so the last move stays readable.
   const lastCol = s.moves[s.moves.length - 1];
   const lastRow = lastCol === undefined ? -1 : firstFilled(s, lastCol);
+  const nav = useRovingGrid(1, FU_COLS);
+  /** A column read top to bottom for a screen reader: its discs from the bottom up, then the last disc if it's here. */
+  const columnName = (c: number) => {
+    const discs: string[] = [];
+    for (let r = FU_ROWS - 1; r >= 0; r--) {
+      const v = s.grid[r * FU_COLS + c];
+      if (v) discs.push(v === 1 ? "star" : "ring");
+    }
+    const open = cols.includes(c) && !disabled;
+    const what = discs.length ? `${discs.length} ${discs.length === 1 ? "disc" : "discs"} from the bottom: ${discs.join(", ")}` : "empty";
+    const last = c === lastCol ? `, ${boardGames.fourup.lastDisc} on top` : "";
+    return `Column ${c + 1}, ${what}${last}${discs.length === FU_ROWS ? ", full" : open ? ", drop here" : ""}`;
+  };
   return (
+    // Keyboard: one Tab stop; Left and Right pick a column, Enter or Space drops. A tap anywhere in a column drops.
     <div
       className="grid gap-1 rounded-[18px] p-2 shadow-[inset_0_-6px_0_rgba(0,0,0,.2)]"
       style={{ gridTemplateColumns: `repeat(${FU_COLS}, ${cell}px)`, background: "var(--w-board)" }}
       role="grid"
       aria-label="Four Up board"
+      aria-rowcount={1}
+      aria-colcount={FU_COLS}
+      {...nav.grid}
     >
-      {Array.from({ length: FU_COLS }, (_, c) => (
-        <button
-          key={c}
-          type="button"
-          disabled={disabled || !cols.includes(c)}
-          onClick={() => onMove(c)}
-          aria-label={`Drop in column ${c + 1}`}
-          className="flex flex-col gap-1"
-          role="row"
-        >
-          {Array.from({ length: FU_ROWS }, (_, r) => {
-            const v = s.grid[r * FU_COLS + c];
-            const last = !!v && c === lastCol && r === lastRow;
-            return (
-              <span
-                key={r}
-                role="gridcell"
-                aria-label={`${v ? (v === 1 ? "star disc" : "ring disc") : "empty"}${last ? `, ${boardGames.fourup.lastDisc}` : ""}`}
-                className="flex items-center justify-center rounded-full text-[var(--square-ink)]"
-                style={{
-                  width: cell,
-                  height: cell,
-                  background: v === 1 ? "var(--bay-disc-light)" : v === 2 ? "var(--bay-disc-dark)" : "var(--bay-well)",
-                  boxShadow: v === 2 ? "inset 0 0 0 3px var(--accent)" : "inset 0 3px 0 rgba(0,0,0,.3)",
-                  color: v === 2 ? "var(--accent)" : "var(--square-ink)",
-                  outline: last ? "2px solid var(--text)" : undefined,
-                  outlineOffset: last ? 1 : undefined,
-                  animation:
-                    !reduce && v && s.moves[s.moves.length - 1] === c && r === firstFilled(s, c)
-                      ? "bay-pop 180ms var(--ease-out)"
-                      : undefined,
-                }}
-              >
-                {v === 1 ? <Icon name="star" size={16} /> : v === 2 ? <Icon name="circle" size={14} /> : null}
-              </span>
-            );
-          })}
-        </button>
-      ))}
+      <div role="row" className="contents">
+        {Array.from({ length: FU_COLS }, (_, c) => (
+          <button
+            key={c}
+            type="button"
+            role="gridcell"
+            {...nav.cell(c)}
+            aria-disabled={disabled || !cols.includes(c) || undefined}
+            onClick={() => !disabled && cols.includes(c) && onMove(c)}
+            aria-label={columnName(c)}
+            className="flex flex-col gap-1 rounded-[14px] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+          >
+            {Array.from({ length: FU_ROWS }, (_, r) => {
+              const v = s.grid[r * FU_COLS + c];
+              const last = !!v && c === lastCol && r === lastRow;
+              return (
+                <span
+                  key={r}
+                  aria-hidden
+                  className="flex items-center justify-center rounded-full text-[var(--square-ink)]"
+                  style={{
+                    width: cell,
+                    height: cell,
+                    background: v === 1 ? "var(--bay-disc-light)" : v === 2 ? "var(--bay-disc-dark)" : "var(--bay-well)",
+                    boxShadow: v === 2 ? "inset 0 0 0 3px var(--accent)" : "inset 0 3px 0 rgba(0,0,0,.3)",
+                    color: v === 2 ? "var(--accent)" : "var(--square-ink)",
+                    outline: last ? "2px solid var(--text)" : undefined,
+                    outlineOffset: last ? 1 : undefined,
+                    animation:
+                      !reduce && v && s.moves[s.moves.length - 1] === c && r === firstFilled(s, c)
+                        ? "bay-pop 180ms var(--ease-out)"
+                        : undefined,
+                  }}
+                >
+                  {v === 1 ? <Icon name="star" size={16} /> : v === 2 ? <Icon name="circle" size={14} /> : null}
+                </span>
+              );
+            })}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -600,45 +651,56 @@ function FlipLive({ state, seat, legal, disabled, onMove }: LiveBoardProps) {
   const s = state as FlipMatch;
   const squares = legal as number[];
   const cell = useCellSize(8, 2, 12, 40);
+  const nav = useRovingGrid(8, 8);
   return (
     <div
       className="grid gap-[2px] rounded-[16px] bg-[var(--bay-well)] p-1.5"
       style={{ gridTemplateColumns: `repeat(8, ${cell}px)` }}
       role="grid"
       aria-label="Flip board"
+      aria-rowcount={8}
+      aria-colcount={8}
+      {...nav.grid}
     >
-      {s.grid.map((v, sq) => {
-        const can = squares.includes(sq) && !disabled;
-        const flips = can ? flipsFor(s.grid, sq, (seat ?? 0) + 1).length : 0;
-        return (
-          <button
-            key={sq}
-            type="button"
-            role="gridcell"
-            disabled={!can}
-            onClick={() => onMove(sq)}
-            aria-label={`${sqName(sq)}${v ? (v === 1 ? ", light" : ", dark") : can ? `, flips ${flips}` : ""}`}
-            className="flex items-center justify-center rounded-[7px] bg-[var(--bay-wood)]"
-            style={{ width: cell, height: cell }}
-          >
-            {v ? (
-              <span
-                className="rounded-full"
-                style={{
-                  width: cell * 0.76,
-                  height: cell * 0.76,
-                  background: v === 1 ? "var(--bay-disc-light)" : "var(--bay-disc-dark)",
-                  boxShadow: v === 2 ? "inset 0 0 0 3px var(--accent)" : "inset 0 -3px 0 var(--bay-disc-light-rim)",
-                }}
-              />
-            ) : can ? (
-              <span className="num flex size-[60%] items-center justify-center rounded-full text-[12px] font-bold text-[var(--accent)] shadow-[inset_0_0_0_2px_var(--accent)]">
-                {flips}
-              </span>
-            ) : null}
-          </button>
-        );
-      })}
+      {Array.from({ length: 8 }, (_, r) => (
+        <div key={r} role="row" className="contents">
+          {s.grid.slice(r * 8, r * 8 + 8).map((v, c) => {
+            const sq = r * 8 + c;
+            const can = squares.includes(sq) && !disabled;
+            const flips = can ? flipsFor(s.grid, sq, (seat ?? 0) + 1).length : 0;
+            return (
+              <button
+                key={sq}
+                type="button"
+                role="gridcell"
+                {...nav.cell(sq)}
+                // Every square takes focus (the arrows reach them all); only a legal one plays.
+                aria-disabled={!can || undefined}
+                onClick={() => can && onMove(sq)}
+                aria-label={`${sqName(sq)}${v ? (v === 1 ? ", light" : ", dark") : can ? `, flips ${flips}` : ""}`}
+                className="flex items-center justify-center rounded-[7px] bg-[var(--bay-wood)] focus-visible:z-10 focus-visible:outline-3 focus-visible:outline-offset-1 focus-visible:outline-[var(--accent)]"
+                style={{ width: cell, height: cell }}
+              >
+                {v ? (
+                  <span
+                    className="rounded-full"
+                    style={{
+                      width: cell * 0.76,
+                      height: cell * 0.76,
+                      background: v === 1 ? "var(--bay-disc-light)" : "var(--bay-disc-dark)",
+                      boxShadow: v === 2 ? "inset 0 0 0 3px var(--accent)" : "inset 0 -3px 0 var(--bay-disc-light-rim)",
+                    }}
+                  />
+                ) : can ? (
+                  <span className="num flex size-[60%] items-center justify-center rounded-full text-[12px] font-bold text-[var(--accent)] shadow-[inset_0_0_0_2px_var(--accent)]">
+                    {flips}
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+      ))}
     </div>
   );
 }
