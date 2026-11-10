@@ -42,8 +42,6 @@ export const POST = handle(async (req: Request, ctx: RouteContext<"/api/v1/guide
   const logic = await loadLogic(meta.id);
   // A game with no hint for this state (or none at all) coaches with the rule, so a hint always shows. Dusk, Nine and
   // Merge hint from the dealt board before the first move (R4-28), so their first hint is a real move.
-  const coach = { target: null, text: `${guidedCopy.ruleHint} ${meta.rule}` };
-  // No deduction yet (some games need a first move): coach with the rule so a hint always shows.
   // R4-10: the rule as the admin wrote it (Library page), else the catalog's.
   const coach = { target: null, text: `${guidedCopy.ruleHint} ${withCopy(meta, await loadGamesMeta()).rule}` };
   if (!logic.hint) return ok({ hint: coach });
