@@ -6,8 +6,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 
 - **Dusk:**
   - Swipe up and down is not done; it would block page scroll when a finger starts on the board.
-- **Guided first play:**
-  - Before the first move, Dusk, Nine and Merge have no deduction, so the first hint coaches with the rule.
 
 ## Accounts and email
 

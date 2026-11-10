@@ -321,7 +321,10 @@ export function progressOf(p: DuskPuzzle, sol: DuskSolution, state: DuskState): 
   return open.filter((i) => state[i] === sol[i]).length / open.length;
 }
 
-export function hint(p: DuskPuzzle, sol: DuskSolution, state: DuskState): Hint | null {
+export function hint(p: DuskPuzzle, sol: DuskSolution, state: DuskState | null | undefined): Hint | null {
+  // R4-28: before the first move the shell has no state yet (the guided first play's first hint): hint from the
+  // givens, so the player gets a real first deduction instead of the rule.
+  if (state == null) state = p.givens.slice();
   if (!wellFormed(p, state)) return null;
   const wrong = state.findIndex((v, i) => v !== EMPTY && v !== sol[i]);
   if (wrong >= 0) return { target: wrong, text: `This ${name(state[wrong])} does not belong here.` };

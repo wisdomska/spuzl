@@ -431,8 +431,10 @@ export function progressOf(p: SudokuPuzzle, sol: SudokuSolution, state: SudokuSt
   return open.filter((i) => v[i] === sol[i]).length / open.length;
 }
 
-export function hint(p: SudokuPuzzle, sol: SudokuSolution, state: SudokuState): Hint | null {
-  const v = valuesOf(p, state);
+export function hint(p: SudokuPuzzle, sol: SudokuSolution, state: SudokuState | null | undefined): Hint | null {
+  // R4-28: before the first move the shell has no state yet (the guided first play's first hint): hint from the
+  // givens, so the player gets a real first deduction instead of the rule.
+  const v = state == null ? p.givens.slice() : valuesOf(p, state);
   if (!v) return null;
   const wrong = v.findIndex((d, i) => d && d !== sol[i]);
   if (wrong >= 0) return { target: wrong, text: `This ${v[wrong]} does not belong here.` };

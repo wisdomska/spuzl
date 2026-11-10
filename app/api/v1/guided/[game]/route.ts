@@ -39,7 +39,8 @@ export const POST = handle(async (req: Request, ctx: RouteContext<"/api/v1/guide
   await rateLimit(admin, `guided-hint:${player.id}`, 120, 3600);
   const { state } = await body(req, HintReq);
   const logic = await loadLogic(meta.id);
-  // No deduction yet (some games need a first move): coach with the rule so a hint always shows.
+  // A game with no hint for this state (or none at all) coaches with the rule, so a hint always shows. Dusk, Nine and
+  // Merge hint from the dealt board before the first move (R4-28), so their first hint is a real move.
   const coach = { target: null, text: `${guidedCopy.ruleHint} ${meta.rule}` };
   if (!logic.hint) return ok({ hint: coach });
   const g = await loadFree(meta.id, SEED(meta.id), "easy");
