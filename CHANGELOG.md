@@ -1,5 +1,52 @@
 # Changelog
 
+## 1.45.0 (10 November 2026)
+
+Every open follow-up the owner approved on 10 November.
+
+### For players
+
+- **Your hat, everywhere:** friends, leaderboards, crews, leagues, chat, invites, Duel, Party seats and the TV, Board
+  Bay and your Home ring show each player's Spuz in their hat, and only a hat they bought.
+- **Duel:** one clock, the round time, the same for both players, and it no longer steps back a second on a move.
+- **Challenges and Ghost Races** start with a short practice round on your first try at a game.
+- **Party:** score games (Quickfire, Echo, Beat Tap and more) offer "Host a party" from their game card. A host who
+  left the lobby sees join requests on Home and can let people in from there.
+- **Five** fits a 320 × 568 phone, and every board re-fits when its screen changes after it loads.
+- **Light Up:** on small screens, the first tap zooms in so every cell is easy to hit.
+- **Dusk and Nine practice rounds:** the first hint is a real first move.
+- **Gotcha and Dash** run smoother on mid-range phones.
+- **Free play** gets a share card even with story cards off.
+- **Signing up from a game's page** brings you back to that game. Invite links and other entry points go straight to
+  the age step instead of replaying the intro, with "Played before? Sign in" there.
+- **Linking Google** from "Save your streak" says thank you, as the email path does.
+- **Daily Five:** score games earn points from their score. A lab game switched off is swapped out of today's five.
+- **18+ party rooms** count toward quests and badges, and stay out of the friends feed.
+- **Draw It for 16+** (preset words, pick the word) is on.
+
+### Safety and fair play
+
+- 13 to 15 year olds see "Opens at 16" instead of a Play live button that failed.
+- Board Bay invite codes from under-16 hosts work for their friends only.
+- Quickfire hands out each question only when it opens.
+- Live drawing in Draw It is stamped by the server, so nobody can fake ink for the drawer.
+- Party Race XP has a daily cap.
+- A hat shows only when the server finds it in the player's Shop inventory.
+
+### Content
+
+- Pinned, Flagged, Pixl and Two Truths are reviewed and fact-checked. Map pins, a Two Truths line and a Pixl
+  picture are fixed, and Bulgaria's currency is now the euro.
+
+### For admins
+
+- Rule and card text you edit reaches the practice hints, the Duel cards, How to play, the game pages and llms.txt.
+- New on the Content page: "Rebuild upcoming days" after retiring content, approved Quads items joining free play
+  in one click, and audited Quads exports.
+- Daily Five typical scores per score game, on the Library page.
+- Retention counts Board Bay moves. Metrics labels Welcome as the sign-in screen. Birth years start at 13.
+- Your data export lists Party join requests you made, and the ones you received (the asker's nickname only).
+
 ## 1.44.1 (10 November 2026)
 
 ### For players
