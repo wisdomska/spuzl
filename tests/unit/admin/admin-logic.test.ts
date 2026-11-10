@@ -105,7 +105,10 @@ describe("content payload schemas", () => {
   it("have a template for every game and only schedule whole Dailies", () => {
     for (const g of CONTENT_GAMES) expect(TEMPLATES[g]).toBeDefined();
     expect(SCHEDULABLE.pinned).toBeUndefined();
-    expect(SCHEDULABLE.hunch?.guessRoute).toBe(false);
+    // R4-12: guess games schedule like the rest (their guesses check the attempt's stored puzzle).
+    for (const g of ["hunch", "quickfire", "coil", "rungs", "quads", "minicross", "seven", "buried", "remix"] as const)
+      expect(SCHEDULABLE[g]?.items, g).toBeGreaterThan(0);
+    expect(Object.values(SCHEDULABLE).every((p) => !("guessRoute" in p!))).toBe(true);
   });
 
   it("cover the lab content games (Five, Emoji Hits) as review-only pool games", () => {

@@ -39,8 +39,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 - **Retired sealed quiz boards** (Flagged, Hunch, Pinned) still carry their string `ref` salt and sealed answers,
   and their boards import their logic (with content) into the client bundle. Move them to the guess transport if
   they come back.
-- **Admin content desk:** `SCHEDULABLE[...].guessRoute` blocks scheduling a custom item with copy saying the guess
-  route can't resolve by puzzle, but attempt guesses already check the stored puzzle; the flag looks stale.
 - **Brute force:** the generators are deterministic, so someone with the game code could still match a served
   board to its content index by generating every index; the token only stops the guess route from helping.
 
