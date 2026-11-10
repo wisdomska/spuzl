@@ -74,7 +74,7 @@ export const FILES: Record<ContentGame, () => Promise<{ needsReview: boolean; en
 };
 
 export const ITEM_COLS =
-  "id, game_id, payload, author_id, reviewer_id, status, notes, created_at, updated_at, submitted_at, reviewed_at, scheduled_for, puzzle_id, source";
+  "id, game_id, payload, author_id, reviewer_id, status, notes, created_at, updated_at, submitted_at, reviewed_at, scheduled_for, puzzle_id, source, pooled_at";
 
 export const entryHash = (entry: unknown) => createHash("sha256").update(JSON.stringify(entry)).digest("hex").slice(0, 16);
 

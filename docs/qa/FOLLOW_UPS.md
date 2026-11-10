@@ -73,9 +73,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 - **R2-08, guest session timing (left as is on purpose):** the anonymous guest session is still made at "Save my
   Spuz", after the age gate, as "Play as guest" always did. Making it on the "Play now" tap would create an auth
   account before the birth step, including for under-13s who are then turned away. The lead may decide otherwise.
-- **Quads pool from the console (R2-14):** approved Quads items can be scheduled on a Daily from the Content page,
-  but free play still reads `games/quads/content.ts`; "put in the pool" today means export the pack and add it to
-  that file. A database-backed pool (approved items mixed into free play) would make it a one-click step.
 - **Quads feedback on slow networks (R2-14):** answers are checked on the server (the groups never reach the
   client), so the 600 ms budget from Submit to feedback holds on a normal connection; on slow 3G the round trip
   alone can pass it. The lifted four show a "checking" ring at once and "Checking…" after 250 ms meanwhile.

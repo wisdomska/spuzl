@@ -28,6 +28,9 @@ interface Item {
   notes: string | null;
   updated_at: string;
   scheduled_for: string | null;
+  source?: "editor" | "content_file";
+  /** R4-15: in the Quads free-play pool since */
+  pooled_at?: string | null;
   author_email?: string | null;
   reviewer_email?: string | null;
 }
@@ -206,7 +209,10 @@ function Items({
                       </button>
                     </td>
                     <td className="px-3 py-2">
-                      <Pill tone={TONE[r.status]}>{label(r.status)}</Pill>
+                      <span className="flex flex-wrap items-center gap-1">
+                        <Pill tone={TONE[r.status]}>{label(r.status)}</Pill>
+                        {r.pooled_at && <Pill tone="ok">{E.poolPill}</Pill>}
+                      </span>
                     </td>
                     <td className="text-muted max-w-[160px] truncate px-3 py-2 text-[13px]">
                       {r.author_id === q.data.me ? C.you : (r.author_email ?? C.editor)}
@@ -437,6 +443,36 @@ function Editor({
           {E.scheduledLink(dayMonth(item.scheduled_for))}
         </Link>
       )}
+      {item && item.game_id === "quads" && item.source !== "content_file" && ["approved", "scheduled"].includes(item.status) && (
+        <QuadsPool item={item} canWrite={canWrite} />
+      )}
     </aside>
+  );
+}
+
+/** R4-15: one click puts an approved Quads item in free play (mixed with the built-in boards) or takes it out. */
+function QuadsPool({ item, canWrite }: { item: Item; canWrite: boolean }) {
+  const pool = useAdminAction<{ pooled: boolean }, Item>("POST", `/api/admin/content/${item.id}/pool`);
+  const pooled = pool.data ? !!pool.data.pooled_at : !!item.pooled_at;
+  return (
+    <section
+      aria-label={E.poolTitle}
+      className="bg-bg flex flex-col gap-2 rounded-[12px] p-3 shadow-[inset_0_0_0_1px_var(--line)]"
+      data-quads-pool
+    >
+      <div className="flex items-center gap-2">
+        <h3 className="text-[14px] font-semibold">{E.poolTitle}</h3>
+        {pooled && <Pill tone="ok">{E.poolPill}</Pill>}
+      </div>
+      <p className="text-muted text-[13px]" aria-live="polite">
+        {pooled ? E.poolIn : E.poolOut}
+      </p>
+      {pool.error && <Notice tone="danger">{errorText(pool.error)}</Notice>}
+      {canWrite && (
+        <Btn tone={pooled ? "secondary" : "primary"} size="lg" disabled={pool.isPending} onClick={() => pool.mutate({ pooled: !pooled })}>
+          {pooled ? E.poolRemove : E.poolAdd}
+        </Btn>
+      )}
+    </section>
   );
 }

@@ -29,6 +29,8 @@ import { securedLevelSeed } from "./level-seed";
 import { timingFlag } from "./anticheat";
 import { fiveSlot } from "@/lib/daily-five/server";
 import { offlineInDay } from "@/lib/daily-five";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { POOL_SEED, pickPooled, pooledEntry, pooledItemOf, quadsPoolIds } from "./quads-pool";
 
 /** Human floor for one Rage Ridge room played in Levels mode. */
 const LEVEL_ROOM_FLOOR_MS = 1500;
@@ -126,6 +128,15 @@ export async function loadFree(gameId: string, seed: string, difficulty: Difficu
     const { quizSetBoard } = await import("@/games/quickfire/logic");
     const g = quizSetBoard(seed.split(":")[1], createRng(seed), difficulty);
     if (g) return { puzzleId: null, puzzle: g.puzzle, solution: g.solution, difficulty };
+  }
+  // R4-15: a Quads board from the database pool (seed qpool:<item>:<uuid>, made by startAttempt).
+  const pooled = gameId === "quads" ? pooledItemOf(seed) : null;
+  if (pooled) {
+    const entry = await pooledEntry(supabaseAdmin(), pooled);
+    if (!entry) throw new ApiError(410, "board_gone", "This board is no longer available. Start a new one.");
+    const { boardFor, POOL_INDEX } = await import("@/games/quads/logic");
+    const g = boardFor(entry, POOL_INDEX, difficulty, seed);
+    return { puzzleId: null, puzzle: g.puzzle, solution: g.solution, difficulty };
   }
   const logic = await loadLogic(gameId);
   // A game with its own small practice board (Quads) uses it for the guided first play.
@@ -233,6 +244,13 @@ export async function startAttempt(admin: SupabaseClient, playerId: string, ref:
     if (meta.id === "quickfire" && ref.mode === "free") {
       const quiz = await activeEventQuiz(admin).catch(() => null);
       if (quiz) seed = `quiz:${quiz}:${randomUUID()}`;
+    }
+    // R4-15: Quads free play deals approved items from the database pool too, mixed evenly with content.ts.
+    if (meta.id === "quads" && ref.mode === "free") {
+      const ids = await quadsPoolIds(admin).catch(() => [] as string[]);
+      const { contentCount } = await import("@/games/quads/logic");
+      const item = pickPooled(ids, contentCount);
+      if (item) seed = `${POOL_SEED}${item}:${randomUUID()}`;
     }
     loaded = await loadFree(meta.id, seed, ref.difficulty);
   }

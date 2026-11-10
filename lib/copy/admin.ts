@@ -272,6 +272,13 @@ export const adminCopy = {
       scheduleOn: "Schedule on",
       schedule: "Schedule",
       scheduledLink: (day: string) => `Scheduled for ${day}`,
+      /** R4-15: approved Quads items join free play from the database in one click. */
+      poolTitle: "Free play",
+      poolIn: "In free play: players get this board mixed with the built-in Quads boards.",
+      poolOut: "Not in free play yet. Add it and players get it mixed with the built-in Quads boards.",
+      poolAdd: "Add to free play",
+      poolRemove: "Take out of free play",
+      poolPill: "in free play",
     },
     /** The Quads puzzle editor and pack import/export (R2-14). */
     quads: {
@@ -286,7 +293,7 @@ export const adminCopy = {
       previewHint: "Groups as players see them once found, then the shuffled board.",
       tools: "Quads packs",
       toolsHint:
-        "Export the listed Quads items as a JSON pack, or import a pack as drafts for review. Approved items can go on a Daily (Schedule) or into the free-play pool: export them and add the pack to games/quads/content.ts.",
+        "Export the listed Quads items as a JSON pack, or import a pack as drafts for review. Approved items can go on a Daily (Schedule) or into free play with one click (open the item, Add to free play).",
       exportPack: "Export Quads JSON",
       importPack: "Import Quads JSON",
       importLabel: "Paste a Quads pack",

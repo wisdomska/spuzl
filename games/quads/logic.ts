@@ -8,7 +8,7 @@ import type { Difficulty, Generated, Hint, VerifyResult } from "@/games/types";
 import type { GuessContext, GuessLogic } from "@/games/_shared/guess";
 import { createRng, type Rng } from "@/lib/rng";
 import { liveContent } from "@/games/_shared/live";
-import { CONTENT } from "./content";
+import { CONTENT, type QuadsEntry } from "./content";
 import { PRACTICE_GROUPS, PRACTICE_INDEX, PRACTICE_ORDER } from "./practice";
 import {
   isRevealGuess,
@@ -36,13 +36,23 @@ export function generateAt(index: number, difficulty: Difficulty): Generated<Qua
   // Round 3 item 12: the reviewed list (retired entries left out, edited ones swapped in).
   const list = liveContent("quads", CONTENT);
   const i = ((index % list.length) + list.length) % list.length;
-  const entry = list[i];
-  const rng = createRng(`quads:${i}:${difficulty}`);
+  return boardFor(list[i], i, difficulty, `quads:${i}:${difficulty}`);
+}
+
+/**
+ * R4-15: the `ref.i` of a board dealt from the database pool (an approved item an editor put in free play). Past any
+ * content.ts index, so it never names a built-in entry; attempts resolve their board from the server seed.
+ */
+export const POOL_INDEX = 100_000;
+
+/** The board for one entry: its 16 words shuffled by `shuffleSeed`; groups, labels and levels stay in the solution. */
+export function boardFor(entry: QuadsEntry, i: number, difficulty: Difficulty, shuffleSeed: string): Generated<QuadsPuzzle, QuadsSolution> {
+  const rng = createRng(shuffleSeed);
   const words = rng.shuffle(entry.groups.flatMap((g) => g.words.slice()));
   const puzzle: QuadsPuzzle = { ref: { game: "quads", i, d: difficulty }, words };
   if (difficulty === "easy") puzzle.starter = entry.groups[0].label;
   const solution: QuadsSolution = { groups: entry.groups.map((g, level) => ({ label: g.label, words: g.words.slice(), level })) };
-  return { puzzle, solution, grade: grade(i, difficulty, words) };
+  return { puzzle, solution, grade: grade(i % 1000, difficulty, words) };
 }
 
 export function generate(rng: Rng, difficulty: Difficulty): Generated<QuadsPuzzle, QuadsSolution> {
