@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.44.1 (10 November 2026)
+
+### For players
+
+- **Duel results fit every screen:** the round result keeps its countdown and reactions on screen, and the match
+  result keeps Rematch on the bottom edge, from a 320 × 568 phone up to a laptop.
+- **Multiplayer screens on a laptop** no longer scroll a little for no reason.
+- **Board Bay with a keyboard:** Four Up and Oware are one Tab stop each. The arrow keys move between columns or
+  pits, and Enter plays. Every pit takes focus and says when it can't be sown.
+- **All games** shows the same list on the first paint as after it, with no flash and no hydration error.
+- **Gotcha and Dash:** a long level name no longer pushes the page sideways on a phone.
+- Gold badges in Duel use the readable ink in every theme.
+
 ## 1.44.0 (9 November 2026)
 
 A full usability pass over every game and the game screen.
