@@ -84,10 +84,17 @@ test("payloads carry a hat only for the player who bought it", async ({ browser 
   const friendsOfForger = await get(forger.page, "/api/v1/friends");
   expect(text(friendsOfForger)).toContain('"hat":"shades"');
 
-  const board = await get(owner.page, "/api/v1/leaderboards/crownfall?scope=friends");
-  const rows = board.rows as { nickname: string; hat: string | null }[];
-  expect(rows.find((r) => r.nickname === owner.nickname)?.hat).toBe("shades");
-  expect(rows.find((r) => r.nickname === forger.nickname)?.hat).toBeNull();
+  // Daily leaderboards exist only while Dailies are on (production runs with them off); the SQL is also covered by
+  // pgTAP (172_owned_hats).
+  const lb = await owner.page.request.get("/api/v1/leaderboards/crownfall?scope=friends");
+  if (lb.ok()) {
+    const rows = (await lb.json()).rows as { nickname: string; hat: string | null }[];
+    expect(rows.find((r) => r.nickname === owner.nickname)?.hat).toBe("shades");
+    expect(rows.find((r) => r.nickname === forger.nickname)?.hat).toBeNull();
+  } else {
+    expect(await lb.text()).toContain("dailies_off");
+    test.info().annotations.push({ type: "leaderboard", description: "Dailies are off: leaderboard check skipped" });
+  }
 
   // blocking: the blocked list shows the forger with no hat
   const bl = await owner.page.request.post("/api/v1/blocks", { data: { playerId: await myId(forger.page) } });
