@@ -247,6 +247,9 @@ export function shellContentBottom(el: HTMLElement): number | null {
  * whole game shell has to fit, down to its tool bar (`shellContentBottom`), still measured from `target`. A
  * viewport resize starts again from `ideal`.
  */
+/** How often `useFitHeight` starts again after the layout changed under it, per viewport. */
+const MAX_REARMS = 3;
+
 export function useFitHeight(
   ideal: number,
   min: number,
@@ -260,15 +263,24 @@ export function useFitHeight(
   // Since the last restart: `cap` is one under the smallest size that overflowed (growing back stops there, see
   // fitStep); `prev` is the last overflowing measurement; `stuck` is set when shrinking the board didn't reduce the
   // overflow (something else is too tall, e.g. the side panel of the two-column shell), so it stops shrinking.
-  const guard = useRef<{ ideal: number; cap: number; prev: { size: number; over: number } | null; stuck: boolean }>({
+  // `rearms` counts how often the guard was reset because the layout changed under it (see below), so a layout that
+  // keeps changing can't make it shrink and grow for ever.
+  const guard = useRef<{
+    ideal: number;
+    cap: number;
+    prev: { size: number; over: number } | null;
+    stuck: boolean;
+    rearms: number;
+  }>({
     ideal,
     cap: ideal,
     prev: null,
     stuck: false,
+    rearms: 0,
   });
   useLayoutEffect(() => {
     if (embedded) return;
-    const reset = () => (guard.current = { ideal, cap: ideal, prev: null, stuck: false });
+    const reset = (rearms = 0) => (guard.current = { ideal, cap: ideal, prev: null, stuck: false, rearms });
     if (guard.current.ideal !== ideal) reset();
     const measure = () => {
       const vh = window.innerHeight;
@@ -280,9 +292,16 @@ export function useFitHeight(
         const bottom = shellBottom ?? el.getBoundingClientRect().bottom + (margin === "shell" ? 0 : margin);
         over = bottom + window.scrollY - vh;
       } else over = document.documentElement.scrollHeight - vh;
-      const g = guard.current;
+      let g = guard.current;
       if (over > 0) {
-        if (g.stuck) return;
+        if (g.stuck) {
+          // Stuck, back at the size that overflowed less: if the page now overflows by a different amount at that same
+          // size, the layout changed on its own (the rule line, the keyboard or a font arriving late) and the "shrinking
+          // didn't help" verdict was wrong. Start the fit again (at most MAX_REARMS times per viewport).
+          const changed = g.prev && size === g.prev.size && Math.abs(over - g.prev.over) > 2;
+          if (!changed || g.rearms >= MAX_REARMS) return;
+          g = reset(g.rearms + 1);
+        }
         if (g.prev && g.prev.size > size && over >= g.prev.over) {
           // The last shrink didn't help: undo it and leave the board alone until the viewport changes.
           g.stuck = true;

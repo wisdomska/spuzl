@@ -70,10 +70,11 @@ export default function FiveBoard({ puzzle, initialState, hint, disabled, mode, 
   const hintedRef = useRef<number[]>(initialState?.hinted?.slice() ?? []);
   const locked = disabled || over || busy;
   // Tiles only show letters (the keyboard takes the taps), so they may shrink to keep the page on one screen.
-  // Measured to the shell's tool bar ("shell"), so the tiles grow back once the rule folds away on the first move.
+  // Measured on the whole page (Five's keyboard sits under the board, inside the slot), as before R4-09: the shell
+  // measurement stopped at the first step, since the slot's height doesn't follow the tiles.
   const vw = useViewportWidth();
   const rootRef = useRef<HTMLDivElement>(null);
-  const cell = useFitHeight(Math.min(MAX_CELL, Math.floor((vw - 84) / 5)), MIN_CELL, tries, rootRef, "shell");
+  const cell = useFitHeight(Math.min(MAX_CELL, Math.floor((vw - 84) / 5)), MIN_CELL, tries);
 
   const stateOf = useCallback(
     (list: Row[]): FiveState =>
