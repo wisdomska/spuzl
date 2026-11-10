@@ -94,7 +94,7 @@ export interface MetricRow {
   practice_skipped?: number;
   practice_games?: Record<string, PracticeCounts>;
   /**
-   * R2-ADMIN (20261202000601): D1 and D7 retention by cohort day (first attempt that day). A day's D1 (D7) cohort is
+   * R2-ADMIN (20261202000601): D1 and D7 retention by cohort day (first attempt or, since R4-11, Board Bay move that day). A day's D1 (D7) cohort is
    * 0 until the day after (7 days after) is over.
    */
   ret_cohort?: number;
@@ -352,7 +352,7 @@ export const METRICS: readonly MetricDef[] = [
   {
     id: "retention",
     title: "D1 and D7 retention",
-    note: "Cohort = players whose first game started that GMT day (test players left out). D1 = of them, the share who started a game the next day; D7 = 7 days later. A day shows n/a until that later day is over. Same rule as Live ops, by day.",
+    note: "Cohort = players whose first game started (or first Board Bay move was made) that GMT day (test players left out). D1 = of them, the share who started a game or made a Board Bay move the next day; D7 = 7 days later. A day shows n/a until that later day is over. Same rule as Live ops, by day.",
     headline: (t) => `${pct(d1(t))} / ${pct(d7(t))}`,
     sub: (t) =>
       `D1 / D7 · D1 ${n(t.ret_d1_kept ?? 0)} of ${n(t.ret_d1_cohort ?? 0)} · D7 ${n(t.ret_d7_kept ?? 0)} of ${n(t.ret_d7_cohort ?? 0)} · ${n(t.ret_cohort ?? 0)} new players`,

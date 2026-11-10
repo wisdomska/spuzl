@@ -132,8 +132,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
     not audited either). If exports must be logged, it needs a server export route like the Daily Five one.
   - **Push count** is devices with alerts on, not distinct players: PostgREST head counts cannot count distinct
     players, so that needs an `svc_*` function.
-  - **Retention activity** counts attempts (solo, Duel and Party rounds), as Live ops does; Board Games moves
-    (`board_moves`) do not count as a day's activity yet.
   - **Landing to first clear** starts at profile creation (Welcome's guest profile). Visitors who leave before a
     profile exists are not in the cohort; that part of the funnel is on the Onboarding completion card.
   - **Deploy order:** apply `20261202000101` to `20261202000701` before deploying. Until then the copy overrides and
