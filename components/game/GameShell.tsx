@@ -536,7 +536,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
     <p
       aria-hidden
       data-shell-rule
-      className={`text-muted line-clamp-2 text-[14px] leading-5 font-medium ${center ? "text-center" : "short:text-[13px] pb-2"}`}
+      className={`text-muted line-clamp-2 text-[14px] leading-5 font-medium ${center ? "text-center" : "short:text-[13px] tiny:pb-1 pb-2"}`}
     >
       {ruleText}
     </p>
@@ -557,7 +557,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
       className={
         wide
           ? "relative z-10 flex items-center gap-3 px-3 pt-[max(20px,env(safe-area-inset-top))] pb-2"
-          : "safe-top short:pb-1.5 relative z-10 flex items-center gap-3 px-3 pb-2"
+          : "safe-top short:pb-1.5 tiny:pb-1 relative z-10 flex items-center gap-3 px-3 pb-2"
       }
     >
       <IconButton icon="arrow-left" label="Back" onClick={requestLeave} />
@@ -675,7 +675,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   ) : (
     row.length > 0 && (
       <div
-        className={wide ? "grid gap-2 pt-1" : "safe-bottom short:pt-1.5 mt-auto grid gap-2 px-3 pt-2.5"}
+        className={wide ? "grid gap-2 pt-1" : "safe-bottom short:pt-1.5 tiny:pt-1 mt-auto grid gap-2 px-3 pt-2.5"}
         data-shell-tail
         style={{ gridTemplateColumns: `repeat(${toolCols}, minmax(0, 1fr))` }}
       >
@@ -839,7 +839,7 @@ export function FeedbackLine({ text, tone, icon }: Omit<FeedbackState, "n">) {
       style={{ background: look.bg, boxShadow: look.ring }}
     >
       <Icon name={look.i} size={22} style={{ color: look.ic, flex: "none" }} />
-      <span className="text-[15px] font-medium">{text}</span>
+      <span className="tiny:text-[14px] tiny:leading-5 text-[15px] font-medium">{text}</span>
     </motion.div>
   );
 }
@@ -879,7 +879,7 @@ function ToolButton({ c, badge, extra, slim }: { c: ControlSpec; badge?: string;
       className={
         slim
           ? "toy relative flex h-12 items-center justify-center gap-2 rounded-[14px] px-2"
-          : "toy short:h-12 relative flex h-14 flex-col items-center justify-center gap-0.5 rounded-[16px]"
+          : "toy short:h-12 tiny:h-11 relative flex h-14 flex-col items-center justify-center gap-0.5 rounded-[16px]"
       }
       style={
         c.disabled

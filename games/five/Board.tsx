@@ -34,9 +34,12 @@ const CHECKING_AFTER_MS = 250;
 const FLIP_STEP_MS = 90;
 const FLIP_MS = 420;
 const flipMid = (c: number) => c * FLIP_STEP_MS + FLIP_MS / 2;
-/** Tiles fit the width (up to 56 px), then step down (to 30 px) until the page fits the screen's height. */
+/**
+ * Tiles fit the width (up to 56 px), then step down until the shell (down to its tool bar) fits the screen's height.
+ * Tiles only show letters (the keyboard takes the taps), so on a 320 × 568 phone they may go to 26 px (R4-09).
+ */
 const MAX_CELL = 56;
-const MIN_CELL = 30;
+const MIN_CELL = 26;
 
 function hintTarget(hint: Hint | null | undefined): { pos: number; letter: string } | null {
   const t = hint?.target as { pos?: unknown; letter?: unknown } | undefined;
@@ -67,8 +70,10 @@ export default function FiveBoard({ puzzle, initialState, hint, disabled, mode, 
   const hintedRef = useRef<number[]>(initialState?.hinted?.slice() ?? []);
   const locked = disabled || over || busy;
   // Tiles only show letters (the keyboard takes the taps), so they may shrink to keep the page on one screen.
+  // Measured to the shell's tool bar ("shell"), so the tiles grow back once the rule folds away on the first move.
   const vw = useViewportWidth();
-  const cell = useFitHeight(Math.min(MAX_CELL, Math.floor((vw - 84) / 5)), MIN_CELL, tries);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const cell = useFitHeight(Math.min(MAX_CELL, Math.floor((vw - 84) / 5)), MIN_CELL, tries, rootRef, "shell");
 
   const stateOf = useCallback(
     (list: Row[]): FiveState =>
@@ -262,15 +267,27 @@ export default function FiveBoard({ puzzle, initialState, hint, disabled, mode, 
   const current = rows.length;
 
   return (
-    <div className={`short:gap-1.5 flex w-full max-w-[400px] flex-col items-center gap-2 ${won ? "board-pulse" : ""}`}>
-      <div className="short:gap-1 short:p-2 flex flex-col gap-1.5 rounded-[20px] p-2.5" style={{ background: "var(--board-bg)" }}>
-        <div role="grid" aria-label={t.grid} aria-readonly aria-busy={busy} className="flex flex-col gap-1">
+    // R4-09: a very short phone (`tiny`, 320 × 568) gets the compact layout: tighter spacing, 40 px keys and no tile
+    // key under the grid (every tile and key carries its mark's icon and spoken name, and the rule names the three marks).
+    <div
+      ref={rootRef}
+      className={`short:gap-1.5 tiny:gap-1 flex w-full max-w-[400px] flex-col items-center gap-2 ${won ? "board-pulse" : ""}`}
+    >
+      <div
+        className="short:gap-1 short:p-2 tiny:p-1.5 flex flex-col gap-1.5 rounded-[20px] p-2.5"
+        style={{ background: "var(--board-bg)" }}
+      >
+        <div role="grid" aria-label={t.grid} aria-readonly aria-busy={busy} className="tiny:gap-0.5 flex flex-col gap-1">
           {Array.from({ length: tries }, (_, r) => {
             const row = rows[r];
             const isCurrent = r === current && !over;
             const shaking = isCurrent && shakeN > 0;
             return (
-              <div key={r} role="row" className={`flex gap-1 ${shaking ? (shakeN % 2 ? "cell-shake-a" : "cell-shake-b") : ""}`}>
+              <div
+                key={r}
+                role="row"
+                className={`tiny:gap-0.5 flex gap-1 ${shaking ? (shakeN % 2 ? "cell-shake-a" : "cell-shake-b") : ""}`}
+              >
                 {Array.from({ length: len }, (_, c) => {
                   const mark = row ? row.marks[c] : undefined;
                   const look = mark === undefined ? null : LOOK[mark];
@@ -331,7 +348,7 @@ export default function FiveBoard({ puzzle, initialState, hint, disabled, mode, 
             );
           })}
         </div>
-        <ul aria-label={t.legend} className="short:pt-0 m-0 flex list-none justify-center gap-3 p-0 pt-1">
+        <ul aria-label={t.legend} className="short:pt-0 tiny:hidden m-0 flex list-none justify-center gap-3 p-0 pt-1">
           {LEGEND.map(([m, label]) => (
             <li key={m} className="text-muted flex items-center gap-1 text-[12px] font-medium">
               <span

@@ -197,7 +197,8 @@ select {
 /* Result screens (Duel round and match end): compact below 880 px of height, phones and laptops alike, so the
    next action stays on screen (multiplayer/duel.tsx RESULT_COMPACT_H: keep the numbers in step). */
 @custom-variant compact (@media (max-height: 880px));
-/* Very short screens (a 320 × 568 phone): the shell's title row is left to screen readers. */
+/* Very short screens (a 320 × 568 phone): the game shell and the compact letter keyboard tighten once more
+   (Five's compact layout, R4-09). */
 @custom-variant tiny (@media (max-height: 600px));
 /* Wide screens get the two-column game shell (components/game/useBoardSize.ts isWide: keep the numbers in step). */
 @custom-variant wide (@media (min-width: 900px) and (min-height: 600px));

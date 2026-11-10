@@ -31,7 +31,8 @@ export interface LetterKeyboardProps {
   listen?: boolean;
   /** per-letter colour, corner badge and spoken name */
   decorate?: (letter: string) => KeyDecor | undefined;
-  /** short screens: ENTER takes the left key of the third row (no undo key, no fourth row) and keys are 44 px */
+  /** short screens: ENTER takes the left key of the third row (no undo key, no fourth row) and keys are 44 px
+   *  (40 px on a very short phone, the `tiny` variant: 320 × 568, R4-09) */
   compact?: boolean;
   /** what Enter does, for the typing keys shown instead of the keyboard on a computer ("submit") */
   enterDoes?: string;
@@ -179,7 +180,7 @@ function OnScreenKeys({
       onPointerUp={() => setPressed(null)}
       onPointerLeave={() => setPressed((p) => (p === id ? null : p))}
       onClick={act}
-      className={`press relative flex ${compact ? "h-11" : "h-12"} items-center justify-center rounded-[10px] text-[17px] font-bold disabled:opacity-50`}
+      className={`press relative flex ${compact ? "tiny:h-10 h-11" : "h-12"} items-center justify-center rounded-[10px] text-[17px] font-bold disabled:opacity-50`}
       style={{
         flex: opts.wide ? "1.45 1 0" : "1 1 0",
         maxWidth: opts.wide ? 46 : 34,
@@ -215,7 +216,7 @@ function OnScreenKeys({
 
   return (
     <div
-      className={`flex w-full max-w-[400px] flex-col gap-1.5 rounded-[20px] p-2.5 ${compact ? "short:p-2" : ""}`}
+      className={`flex w-full max-w-[400px] flex-col gap-1.5 rounded-[20px] p-2.5 ${compact ? "short:p-2 tiny:gap-1 tiny:p-1.5" : ""}`}
       style={{ background: "var(--board-bg)" }}
       role="group"
       aria-label={K.group}
@@ -229,7 +230,7 @@ function OnScreenKeys({
                 type="button"
                 disabled={disabled}
                 onClick={onEnter}
-                className="toy flex h-11 items-center justify-center rounded-[10px] text-[12px] font-bold"
+                className="toy tiny:h-10 flex h-11 items-center justify-center rounded-[10px] text-[12px] font-bold"
                 style={{
                   flex: "1.75 1 0",
                   maxWidth: 64,
