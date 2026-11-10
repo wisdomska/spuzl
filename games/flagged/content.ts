@@ -3,7 +3,6 @@
  * exactly) a flag. National flags are public domain designs; they are redrawn here as plain SVG from
  * their official proportions, with no coats of arms or seals. Countries whose capital is split or
  * disputed, or whose currency is shared or changing, leave that field out.
- * Needs owner review before scheduling (see /admin).
  */
 export type Continent = "africa" | "europe" | "asia" | "americas" | "oceania";
 
@@ -33,7 +32,8 @@ export interface Country {
   flag?: FlagSpec;
 }
 
-export const needsReview = true;
+/** Reviewed 10 Nov 2026 (R4-C). */
+export const needsReview = false;
 
 const RED = "#CE1126",
   GOLD = "#FCD116",
@@ -269,7 +269,13 @@ export const CONTENT: Country[] = [
     currency: "Polish zloty",
     flag: h([WHITE, "#DC143C"], undefined, undefined, 8, 5),
   },
-  { name: "Bulgaria", continent: "europe", capital: "Sofia", flag: h([WHITE, "#00966E", "#D62612"], undefined, undefined, 5, 3) },
+  {
+    name: "Bulgaria",
+    continent: "europe",
+    capital: "Sofia",
+    currency: "Euro",
+    flag: h([WHITE, "#00966E", "#D62612"], undefined, undefined, 5, 3),
+  },
   {
     name: "Armenia",
     continent: "europe",

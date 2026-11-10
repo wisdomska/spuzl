@@ -11,7 +11,7 @@ const byName = new Map(CONTENT.map((c) => [c.name, c]));
 
 describe("flagged content", () => {
   it("has unique countries, plausible flags and enough of each pool", () => {
-    expect(needsReview).toBe(true);
+    expect(needsReview).toBe(false);
     expect(byName.size).toBe(CONTENT.length);
     expect(CONTENT.filter((c) => c.flag).length).toBeGreaterThanOrEqual(MIX.flag * 2 * 5);
     for (const c of CONTENT) {
