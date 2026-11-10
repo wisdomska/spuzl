@@ -28,6 +28,21 @@ export interface QuadsPack {
   puzzles: { groups: PackGroup[] }[];
 }
 
+/** The editor's working copy: always four groups of four slots, whatever the JSON held. */
+export function toDraft(value: unknown): QuadsPayload {
+  const groups = (value as { groups?: unknown } | null)?.groups;
+  return {
+    groups: [0, 1, 2, 3].map((i) => {
+      const g = (Array.isArray(groups) ? groups[i] : null) as { label?: unknown; words?: unknown } | null;
+      const words = Array.isArray(g?.words) ? g.words : [];
+      return {
+        label: typeof g?.label === "string" ? g.label : "",
+        words: [0, 1, 2, 3].map((k) => (typeof words[k] === "string" ? (words[k] as string) : "")),
+      };
+    }),
+  };
+}
+
 /** Pretty JSON of puzzles (stored payloads), each group named with its difficulty. */
 export function packToJson(puzzles: readonly QuadsPayload[]): string {
   const pack: QuadsPack = {

@@ -3,30 +3,18 @@
 import { useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { api } from "@/lib/client/api";
-import { errorText, useAdminAction, type AdminPage } from "@/lib/client/admin";
+import { errorText, useAdminAction } from "@/lib/client/admin";
 import { adminCopy } from "@/lib/copy/admin";
 import { createRng } from "@/lib/rng";
-import { packToJson, parsePack, repeatedWords, setDifficulty, type QuadsPayload } from "@/lib/admin/quads-pack";
+import { parsePack, repeatedWords, setDifficulty, toDraft, type QuadsPayload } from "@/lib/admin/quads-pack";
 import { Btn, Field, Notice, inputCls, textareaCls } from "./ui";
 
 const Q = adminCopy.content.quads;
 const BG = ["var(--quad-0)", "var(--quad-1)", "var(--quad-2)", "var(--quad-3)"] as const;
 const SHAPE = ["circle", "triangle", "square", "diamond"] as const;
 
-/** The editor's working copy: always four groups of four slots, whatever the JSON held. */
-export function toDraft(value: unknown): QuadsPayload {
-  const groups = (value as { groups?: unknown } | null)?.groups;
-  return {
-    groups: [0, 1, 2, 3].map((i) => {
-      const g = (Array.isArray(groups) ? groups[i] : null) as { label?: unknown; words?: unknown } | null;
-      const words = Array.isArray(g?.words) ? g.words : [];
-      return {
-        label: typeof g?.label === "string" ? g.label : "",
-        words: [0, 1, 2, 3].map((k) => (typeof words[k] === "string" ? (words[k] as string) : "")),
-      };
-    }),
-  };
-}
+/** The editor's working copy (lib/admin/quads-pack.ts, shared with the server export). */
+export { toDraft };
 
 /**
  * Quads puzzle editor (admin Content, R2-14): four groups, each with a difficulty (Easy to Tricky, shown with its
@@ -139,11 +127,6 @@ export function QuadsPreview({ value }: { value: unknown }) {
   );
 }
 
-interface Row {
-  game_id: string;
-  payload: unknown;
-}
-
 function download(filename: string, text: string) {
   const url = URL.createObjectURL(new Blob([text], { type: "application/json;charset=utf-8" }));
   const a = document.createElement("a");
@@ -156,7 +139,8 @@ function download(filename: string, text: string) {
 }
 
 /**
- * Quads pack tools on the Content page: export the listed Quads items (the current status filter) as a JSON pack,
+ * Quads pack tools on the Content page: export the listed Quads items (the current status filter) as a JSON pack
+ * (built by GET /api/admin/content/export, which audits it),
  * or import a pack as drafts (POST /api/admin/content/import, all or nothing). The pack format and its
  * round trip live in lib/admin/quads-pack.ts.
  */
@@ -169,15 +153,13 @@ export function QuadsPackPanel({ status, canWrite }: { status: string; canWrite:
   const exportPack = async () => {
     setNote(null);
     try {
-      const rows: Row[] = [];
-      for (let page = 1; page <= 20; page++) {
-        const r = await api<AdminPage<Row>>(`/api/admin/content?game=quads&${status ? `status=${status}&` : ""}pageSize=100&page=${page}`);
-        rows.push(...r.rows);
-        if (rows.length >= r.total || !r.rows.length) break;
-      }
-      if (!rows.length) return setNote({ tone: "danger", text: Q.nothing });
-      download(`spuzl-quads-${status || "all"}.json`, packToJson(rows.map((r) => toDraft(r.payload))));
-      setNote({ tone: "ok", text: Q.exported(rows.length) });
+      // R4-16: built on the server, which writes the audit row (content.export).
+      const r = await api<{ filename: string; json: string; count: number }>(
+        `/api/admin/content/export?game=quads${status ? `&status=${status}` : ""}`,
+      );
+      if (!r.count) return setNote({ tone: "danger", text: Q.nothing });
+      download(r.filename, r.json);
+      setNote({ tone: "ok", text: Q.exported(r.count) });
     } catch (e) {
       setNote({ tone: "danger", text: errorText(e) });
     }

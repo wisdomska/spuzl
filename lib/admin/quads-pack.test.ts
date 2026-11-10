@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CONTENT } from "@/games/quads/content";
-import { MAX_PACK, packToJson, parsePack, repeatedWords, setDifficulty, type QuadsPayload } from "./quads-pack";
+import { MAX_PACK, packToJson, parsePack, repeatedWords, setDifficulty, toDraft, type QuadsPayload } from "./quads-pack";
 
 const all = CONTENT as unknown as QuadsPayload[];
 
@@ -64,5 +64,15 @@ describe("Quads packs (admin import and export)", () => {
   it("swaps groups to change difficulty and flags repeated words as you type", () => {
     expect(setDifficulty(["a", "b", "c", "d"], 0, 3)).toEqual(["d", "b", "c", "a"]);
     expect([...repeatedWords({ groups: [{ words: ["Kente", "", "KOKO"] }, { words: ["kente ", "fufu"] }] })]).toEqual(["KENTE"]);
+  });
+
+  it("normalises stored payloads for the server export (R4-16) and round-trips them", () => {
+    expect(toDraft(null).groups).toHaveLength(4);
+    expect(toDraft({ groups: [{ label: 7, words: ["A", 2] }] }).groups[0]).toEqual({ label: "", words: ["A", "", "", ""] });
+    const stored = CONTENT.slice(0, 3) as unknown as QuadsPayload[];
+    const back = parsePack(packToJson(stored.map(toDraft)));
+    expect(back.ok && back.puzzles).toEqual(
+      stored.map((p) => ({ groups: p.groups.map((g) => ({ label: g.label, words: [...g.words] })) })),
+    );
   });
 });

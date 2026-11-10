@@ -123,8 +123,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
     (`scripts/prerender-3d.mjs`), so icons still change in code.
   - **Practice boards:** previewed read only. The board is the fixed seed `tutorial:<game>` (or a game's own
     practice board) in code; changing it needs a code change, and the per-game off switch is `practice.disabled`.
-  - **Quads pack export** runs in the browser from the content list, so it writes no audit row (reads of the list are
-    not audited either). If exports must be logged, it needs a server export route like the Daily Five one.
   - **Push count** is devices with alerts on, not distinct players: PostgREST head counts cannot count distinct
     players, so that needs an `svc_*` function.
   - **Landing to first clear** starts at profile creation (Welcome's guest profile). Visitors who leave before a
