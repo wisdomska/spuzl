@@ -25,7 +25,7 @@ const D: Difficulty[] = ["easy", "medium", "hard", "expert", "mega"];
 
 describe("pinned content and geometry", () => {
   it("has unique landmarks inside their map, about a fifth or more on the Africa map", () => {
-    expect(needsReview).toBe(true);
+    expect(needsReview).toBe(false);
     expect(new Set(CONTENT.map((l) => l.name)).size).toBe(CONTENT.length);
     for (const l of CONTENT) {
       const v = VIEWS[l.map];

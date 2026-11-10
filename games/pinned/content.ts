@@ -2,7 +2,6 @@
  * Pinned landmarks. Original one-line descriptions stand in for photos (no licensed images).
  * Coordinates are decimal degrees to about 0.01 degree (roughly 1 km), which is far finer than the
  * scoring scale. Places of worship and political monuments are left out.
- * Needs owner review before scheduling (see /admin).
  */
 export interface Landmark {
   name: string;
@@ -12,7 +11,8 @@ export interface Landmark {
   map: "world" | "africa";
 }
 
-export const needsReview = true;
+/** Reviewed 10 Nov 2026 (R4-C). */
+export const needsReview = false;
 
 type Row = [string, string, number, number];
 
@@ -26,7 +26,7 @@ const AFRICA: Row[] = [
   ["Akosombo Dam", "The dam that holds back Lake Volta", 6.3, 0.06],
   ["Kejetia Market", "One of West Africa's biggest markets, in Kumasi", 6.7, -1.62],
   ["Paga crocodile ponds", "Village ponds of famously calm crocodiles in Ghana's far north", 10.98, -1.11],
-  ["Nzulezu stilt village", "A whole village built on stilts over a lagoon in western Ghana", 4.97, -2.33],
+  ["Nzulezu stilt village", "A whole village built on stilts over a lagoon in western Ghana", 5.02, -2.6],
   ["Goree Island", "A small island of colourful houses off Senegal's capital", 14.667, -17.398],
   ["Lake Retba", "Senegal's pink lake, coloured by salt loving algae", 14.84, -17.23],
   ["Zuma Rock", "A giant granite dome beside the road into Abuja", 9.13, 7.23],
@@ -50,7 +50,7 @@ const AFRICA: Row[] = [
   ["Avenue of the Baobabs", "A dirt road lined with giant baobab trees in Madagascar", -20.25, 44.42],
   ["Source of the Nile", "Where the White Nile leaves Lake Victoria, at Jinja", 0.42, 33.2],
   ["Murchison Falls", "The Nile squeezes through a gap just 7 metres wide", 2.28, 31.69],
-  ["Mount Kenya", "Africa's second highest mountain, right on the Equator", -0.15, 37.31],
+  ["Mount Kenya", "Africa's second highest mountain, just south of the Equator", -0.15, 37.31],
   ["Stone Town", "Old coral stone streets on the island of Zanzibar", -6.16, 39.19],
   ["Ait Benhaddou", "A mud brick fortified village on the old Saharan caravan route", 31.05, -7.13],
   ["Carthage", "Ruins of an ancient trading city outside Tunis", 36.85, 10.33],
@@ -88,22 +88,22 @@ const WORLD: Row[] = [
   ["Zhangjiajie", "Sandstone pillars that rise out of the forest like towers", 29.32, 110.43],
   ["Mount Fuji", "A snow capped volcano seen from Tokyo on clear days", 35.361, 138.727],
   ["Ha Long Bay", "Limestone islands rising from emerald water", 20.91, 107.18],
-  ["Banaue Rice Terraces", "Mountain rice terraces carved by hand 2,000 years ago", 16.92, 121.06],
+  ["Banaue Rice Terraces", "Mountain rice terraces carved by hand centuries ago", 16.92, 121.06],
   ["Mount Kinabalu", "The highest peak on the island of Borneo", 6.075, 116.558],
   ["Komodo National Park", "Islands home to the world's largest lizard", -8.55, 119.49],
   ["Victoria Peak", "A lookout above a crowded harbour of skyscrapers", 22.276, 114.146],
   ["Lake Baikal", "The world's deepest lake, in Siberia", 53.5, 108.0],
   ["Sydney Opera House", "A harbourside theatre with roofs like sails", -33.857, 151.215],
-  ["Uluru", "A giant red sandstone monolith in the outback", -25.344, 131.037],
+  ["Uluru", "A giant red sandstone rock in the outback", -25.344, 131.037],
   ["Great Barrier Reef", "The world's largest coral reef, off Cairns", -16.5, 146.3],
   ["Milford Sound", "A fjord walled by sheer cliffs and waterfalls", -44.641, 167.897],
   ["Statue of Liberty", "A copper statue holding a torch over a harbour", 40.689, -74.045],
   ["Golden Gate Bridge", "A red suspension bridge across a foggy strait", 37.82, -122.478],
   ["Grand Canyon", "A mile deep gorge carved by the Colorado River", 36.107, -112.113],
-  ["Niagara Falls", "Thundering falls on the US and Canada border", 43.096, -79.038],
+  ["Niagara Falls", "Thundering falls on the US and Canada border", 43.08, -79.075],
   ["Old Faithful", "A geyser that erupts like clockwork", 44.461, -110.828],
   ["CN Tower", "A needle shaped tower above Lake Ontario", 43.643, -79.387],
-  ["Lake Louise", "A turquoise glacier lake in the Rocky Mountains", 51.425, -116.177],
+  ["Lake Louise", "A turquoise glacier lake in the Rocky Mountains", 51.417, -116.217],
   ["Chichen Itza", "A stepped Maya pyramid on the Yucatan peninsula", 20.684, -88.568],
   ["Teotihuacan", "The Pyramid of the Sun, north of Mexico City", 19.693, -98.844],
   ["Panama Canal", "Locks that lift ships between two oceans", 9.0, -79.59],
@@ -114,7 +114,7 @@ const WORLD: Row[] = [
   ["Easter Island", "Giant stone heads on a remote Pacific island", -27.12, -109.37],
   ["Galapagos Islands", "Volcanic islands of giant tortoises", -0.8, -91.1],
   ["Angel Falls", "The world's tallest uninterrupted waterfall", 5.967, -62.535],
-  ["Torres del Paine", "Granite towers above glacier lakes in Patagonia", -50.94, -73.41],
+  ["Torres del Paine", "Granite towers above glacier lakes in Patagonia", -50.94, -72.95],
   ["Perito Moreno Glacier", "A wall of ice that cracks into a lake", -50.497, -73.138],
   ["Hermitage Museum", "A green and white palace full of art in St Petersburg", 59.94, 30.315],
 ];
