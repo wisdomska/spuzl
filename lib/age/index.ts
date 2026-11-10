@@ -58,10 +58,14 @@ export function readYearInput(text: string): { text: string; year: number | null
   return { text: digits, year: digits.length === 4 ? Number(digits) : null };
 }
 
-/** Years for the picker, newest first: this year back to MAX_AGE_YEARS ago. */
-export function birthYears(today: Date = new Date()): number[] {
+/**
+ * Years for the picker, newest first: this year (or `fromAge` years back, R4-13: the admin player editor starts at
+ * MIN_AGE, since nobody younger has a profile) back to MAX_AGE_YEARS ago.
+ */
+export function birthYears(today: Date = new Date(), fromAge = 0): number[] {
   const { y } = ymOf(today);
-  return Array.from({ length: MAX_AGE_YEARS + 1 }, (_, i) => y - i);
+  const start = Math.max(0, Math.min(MAX_AGE_YEARS, fromAge));
+  return Array.from({ length: MAX_AGE_YEARS + 1 - start }, (_, i) => y - start - i);
 }
 
 /**

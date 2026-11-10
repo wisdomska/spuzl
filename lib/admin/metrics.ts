@@ -337,7 +337,7 @@ export const METRICS: readonly MetricDef[] = [
     sub: (t) =>
       `${n(t.onboarding_home ?? 0)} of ${n(t.onboarding_age ?? 0)} reached Home · ${n(t.played)} of ${n(t.created)} new profiles played`,
     cols: [
-      { key: "welcome", label: "Welcome", value: (r) => r.onboarding_hello ?? 0 },
+      { key: "welcome", label: "Welcome (sign-in screen)", value: (r) => r.onboarding_hello ?? 0 },
       { key: "age_step", label: "Age", value: (r) => r.onboarding_age ?? 0 },
       { key: "start_step", label: "How to start", value: (r) => r.onboarding_start ?? 0 },
       { key: "tutorial_step", label: "Tutorial", value: (r) => r.onboarding_tutorial ?? 0 },

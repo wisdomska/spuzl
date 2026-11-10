@@ -13,7 +13,7 @@ import { errorText, useAdminAction, useAdminQuery } from "@/lib/client/admin";
 import { adminCopy } from "@/lib/copy/admin";
 import { LEAGUE_TIERS } from "@/lib/rewards";
 import { ConfirmDialog } from "./ConfirmDialog";
-import { ageBandOf, birthProblem, birthYears } from "@/lib/age";
+import { MIN_AGE, ageBandOf, birthProblem, birthYears } from "@/lib/age";
 import { ageCopy } from "@/lib/copy/age";
 import { DaysField, STATUS_TONE } from "./PlayersPage";
 import { Btn, Empty, Field, Notice, PageTitle, Pill, ReadField, RowsSkeleton, inputCls, type PillTone } from "./ui";
@@ -513,7 +513,8 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
                   className={`${inputCls} num h-11`}
                 >
                   <option value="">{ageCopy.pickYear}</option>
-                  {birthYears().map((y) => (
+                  {/* R4-13: nobody under 13 has a profile, so the list starts at this year minus 13. */}
+                  {birthYears(new Date(), MIN_AGE).map((y) => (
                     <option key={y} value={y}>
                       {y}
                     </option>

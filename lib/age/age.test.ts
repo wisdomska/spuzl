@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { adultPartyRefusal } from "@/lib/party-adult/gate";
 import { canRequestByUsername, isUnder16 } from "@/lib/social";
-import { ageBandOf, ageOn, bandRank, birthProblem, birthYears, effectiveBand, readYearInput } from ".";
+import { MIN_AGE, ageBandOf, ageOn, bandRank, birthProblem, birthYears, effectiveBand, readYearInput } from ".";
 
 /** GMT midnight on a day. */
 const d = (iso: string) => new Date(`${iso}T00:00:00Z`);
@@ -68,6 +68,12 @@ describe("birthProblem and birthYears", () => {
     expect(ys[0]).toBe(2026);
     expect(ys.at(-1)).toBe(1926);
     expect(ys).toHaveLength(101);
+  });
+  it("starts the admin list at this year minus 13 (R4-13)", () => {
+    const ys = birthYears(today, MIN_AGE);
+    expect(ys[0]).toBe(2013);
+    expect(ys.at(-1)).toBe(1926);
+    expect(ys).toHaveLength(88);
   });
 });
 
