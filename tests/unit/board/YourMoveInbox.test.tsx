@@ -49,4 +49,20 @@ describe("YourMoveInbox", () => {
     expect(screen.getByText("No games on the go")).toBeTruthy();
     expect(screen.queryByText(/waiting/)).toBeNull();
   });
+
+  it("R4-H: the opponent badge is their Spuz at 24 px, in the hat the server sent and no letter", () => {
+    const games = [
+      { ...INBOX_SAMPLE[0], opponent: { ...INBOX_SAMPLE[0].opponent, hat: "shades" } },
+      { ...INBOX_SAMPLE[1], opponent: { ...INBOX_SAMPLE[1].opponent, hat: null } },
+    ];
+    render(<YourMoveInbox games={games} onPlay={() => {}} onNewGame={() => {}} />);
+    const badges = screen.getAllByTestId("inbox-opponent");
+    expect(badges).toHaveLength(2);
+    for (const b of badges) {
+      const chip = b.querySelector<HTMLElement>('[data-avatar="spuz"]')!;
+      expect(chip.style.width).toBe("24px");
+      expect(b.textContent).toBe("");
+    }
+    expect(badges.filter((b) => b.querySelector('[data-hat="shades"]'))).toHaveLength(1);
+  });
 });

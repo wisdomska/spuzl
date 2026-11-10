@@ -183,12 +183,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 
 - **Score games from game cards (R3-08):** the Challenge sheet and Library card offer Party only for time races
   (`isRaceGame`); a score game can be raced only by picking it in the Party Host tab.
-- **Hats on initial chips (R3-15):** every drawn Spuz now wears the player's look (`MySpuz` for the player, `SpuzWear`
-  with the seat's `hat` for others), but list rows still use letter chips in the skin colour, not a Spuz:
-  `AvatarChip` (friends, leaderboards, crews, leagues, settings blocked list, side panel) and the multiplayer
-  `Avatar` (Duel HUD, Party seats and standings, chat, invites, Board Bay seats), plus the Home header `LevelRing`.
-  Turning those into tiny hatted Spuz needs a design call and `hat` in the friends, leaderboard, crew, chat and TV
-  payloads (`SpuzWear` already draws legibly at 24 to 40 px).
 
 ## SEO pass (round 3)
 

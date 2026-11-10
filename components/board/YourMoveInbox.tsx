@@ -3,6 +3,7 @@
 import { useState, type CSSProperties } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { GAME_BY_ID } from "@/lib/catalog";
+import { SpuzChip } from "@/components/meta/SpuzChip";
 
 export type InboxStatus = "your-move" | "their-move" | "finished";
 
@@ -10,7 +11,8 @@ export interface InboxGame {
   id: string;
   /** Board Bay game id: chess, draughts, oware, ludo, fourup, flip */
   game: string;
-  opponent: { name: string; initial?: string; color: string };
+  /** the opponent's skin colour and Shop hat (the server sends a hat only when they own it) */
+  opponent: { name: string; color: string; hat?: string | null };
   /** One line under the title, e.g. "He captured 4. Your move, 22 h left." */
   detail: string;
   status: InboxStatus;
@@ -136,11 +138,13 @@ export function YourMoveInbox({
             >
               <div className="relative size-[52px] flex-none">
                 <GameTile game={g.game} size={52} />
+                {/* R4-H: the opponent's Spuz in their skin colour and owned hat, on the page colour so it reads over the tile */}
                 <span
-                  className="font-display absolute -right-[5px] -bottom-[5px] flex size-6 items-center justify-center rounded-[8px] text-[11px] font-black"
-                  style={{ background: g.opponent.color, color: "#0E0F1A", boxShadow: "0 0 0 3px var(--bg)" }}
+                  data-testid="inbox-opponent"
+                  className="bg-bg absolute -right-[5px] -bottom-[5px] flex size-6 rounded-[8px]"
+                  style={{ boxShadow: "0 0 0 3px var(--bg)" }}
                 >
-                  {g.opponent.initial ?? g.opponent.name[0]?.toUpperCase()}
+                  <SpuzChip color={g.opponent.color} hat={g.opponent.hat} size={24} radius={8} />
                 </span>
               </div>
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
