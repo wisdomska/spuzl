@@ -92,9 +92,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 - **R2-P5 Daily Five and a lab game switched off:** future automatic days that are not locked are re-picked without
   it, but a day already locked, or today's five, keeps the game, and the server then refuses that slot. Re-pick the
   day on the admin Daily Five page after switching a lab game off. A later pass could re-pick today automatically.
-- **R2-P5 harness solvers:** Five, Higher or Lower, Flagged, Light Up, Killer Sums and Dara have tap solvers. Penalty
-  King (timing taps), Pinned (map taps by coordinates), Market Run, Tripwire and Pixl do not yet; their seeded
-  boards render in `tests/e2e/r2-p5-lab-games.spec.ts` and their practice rounds are skipped there.
 - **R2-P5 players' view of a lab game:** a switched-on lab game looks like any other game in All games and on its
   world (no "in testing" mark), and the public `/api/v1/games/meta` lists every lab game's duration and tags (ids
   only) even while it is switched off. A small "New, in testing" tag on the card is a design call for the owner.

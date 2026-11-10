@@ -40,6 +40,11 @@ import * as five from "@/games/five/logic";
 import * as hilo from "@/games/hilo/logic";
 import * as flagged from "@/games/flagged/logic";
 import * as twotruths from "@/games/twotruths/logic";
+import * as penalty from "@/games/penalty/logic";
+import * as pinned from "@/games/pinned/logic";
+import * as market from "@/games/market/logic";
+import * as tripwire from "@/games/tripwire/logic";
+import * as pixl from "@/games/pixl/logic";
 import { REVEAL_MS as TRUTHS_REVEAL_MS } from "@/games/twotruths/rules";
 import { READ_FLOOR_MS } from "@/games/_shared/cluecave";
 
@@ -263,6 +268,83 @@ const SOLVERS: Record<string, (page: Page, seed: string, d: Difficulty) => Promi
       await answers.getByRole("button", { name: new RegExp(`^${"ABC"[g.solution.lie[i]]}, `) }).click();
       await expect(page.getByRole("img", { name: `${i + 1} of ${total} answered` })).toBeVisible();
     }
+  },
+  async penalty(page) {
+    // R4-26: any five kicks clear the board (the score is the goals); the server answers each shot. The pad says
+    // where it is (data-phase): ready/result, tap to set up the kick; aim, tap to set the aim; power, tap to shoot.
+    // Taps sit well past the human floor and inside the kick's time.
+    const pad = page.locator("button[data-phase]");
+    for (let k = 0; k < penalty.KICKS; k++) {
+      await expect(pad).toHaveAttribute("data-phase", /^(ready|result)$/, { timeout: 20_000 });
+      // A tap right after a result is ignored for a moment (it would be a double tap on the shot).
+      await page.waitForTimeout(700);
+      await pad.click();
+      await expect(pad).toHaveAttribute("data-phase", "aim");
+      await page.waitForTimeout(600);
+      await pad.click();
+      await expect(pad).toHaveAttribute("data-phase", "power");
+      await page.waitForTimeout(600);
+      await pad.click();
+      await expect(pad).not.toHaveAttribute("data-phase", "power");
+    }
+    await expect(pad).toHaveAttribute("data-phase", "over", { timeout: 20_000 });
+  },
+  async pinned(page, seed, d) {
+    // R4-26: each round's spot comes from the seeded puzzle. The first tap zooms in around it, the second drops the
+    // pin on it (map units are lon and -lat, read through the map's own screen transform), then Lock pin and Next.
+    const g = pinned.generate(createRng(seed), d);
+    const map = page.getByRole("application", { name: /map\./ });
+    const tapAt = async ([lat, lon]: [number, number]) => {
+      const pt = await map.evaluate(
+        (el, [la, lo]) => {
+          const m = (el as SVGSVGElement).getScreenCTM()!;
+          const p = new DOMPoint(lo, -la).matrixTransform(m);
+          return { x: p.x, y: p.y };
+        },
+        [lat, lon] as [number, number],
+      );
+      await page.mouse.click(pt.x, pt.y);
+    };
+    const total = g.solution.spots.length;
+    for (let i = 0; i < total; i++) {
+      await expect(page.getByRole("button", { name: /^Lock pin\b/ })).toBeVisible();
+      await tapAt(g.solution.spots[i]);
+      await page.waitForTimeout(300);
+      await tapAt(g.solution.spots[i]);
+      await page.getByRole("button", { name: /^Lock pin\b/ }).click();
+      await page.getByRole("button", { name: i === total - 1 ? /^Finish\b/ : /^Next\b/ }).click();
+    }
+  },
+  async market(page, seed, d) {
+    // R4-26: select each item on the list, then its quantity on the number pad.
+    const g = market.generate(createRng(seed), d);
+    const pad = page.getByRole("group", { name: "Number pad" });
+    for (let i = 0; i < g.solution.qty.length; i++) {
+      await page.locator(`[role="gridcell"][data-i="${i}"]`).click();
+      await pad.getByRole("button", { name: `Number ${g.solution.qty[i]}`, exact: true }).click();
+    }
+  },
+  async tripwire(page, seed, d) {
+    // R4-26: the first tap (on the published start tile) opens a clear patch; then every safe tile still hidden is
+    // tapped. No flags are needed: the board clears once every safe tile is open.
+    const g = tripwire.generate(createRng(seed), d);
+    const { w, h, start } = g.puzzle;
+    const mines = new Set(g.solution);
+    const cell = (i: number) => page.locator(`[role="grid"] [role="gridcell"][data-i="${i}"]`);
+    await cell(start).click();
+    await expect(cell(start)).not.toHaveAttribute("aria-label", /hidden$/);
+    for (let i = 0; i < w * h; i++) {
+      if (mines.has(i)) continue;
+      if (!/hidden$/.test((await cell(i).getAttribute("aria-label")) ?? "")) continue;
+      await cell(i).click();
+      await expect(cell(i)).not.toHaveAttribute("aria-label", /hidden$/);
+    }
+  },
+  async pixl(page, seed, d) {
+    // R4-26: the Fill tool is on by default; one tap fills a cell. Fill every cell of the picture.
+    const g = pixl.generate(createRng(seed), d);
+    const { w } = g.puzzle;
+    for (let i = 0; i < g.solution.length; i++) if (g.solution[i] === 1) await tapCell(page, Math.floor(i / w) + 1, (i % w) + 1);
   },
   async quads(page, seed, d) {
     const { generate } = quads;
