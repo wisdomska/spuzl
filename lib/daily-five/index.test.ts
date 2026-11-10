@@ -11,6 +11,7 @@ import {
   fiveDate,
   fivePoints,
   msToFiveReset,
+  offlineInDay,
   parseSchedule,
   pickFive,
   replaceSlots,
@@ -180,6 +181,20 @@ describe("Daily Five day and reset", () => {
     expect(fiveDate(new Date("2026-11-06T06:00:00Z"), 6)).toBe("2026-11-06");
     expect(msToFiveReset(new Date("2026-11-06T23:00:00Z"))).toBe(3_600_000);
     expect(msToFiveReset(new Date("2026-11-06T05:00:00Z"), 6)).toBe(3_600_000);
+  });
+
+  it("checks an offline clear against the Daily Five day for a Daily Five attempt (R4-07)", () => {
+    // Reset at 06:00 GMT: a clear at 03:00 on the 6th belongs to the five of the 5th.
+    const early = new Date("2026-11-06T03:00:00Z");
+    expect(offlineInDay(early, "2026-11-05", true, 6)).toBe(true);
+    expect(offlineInDay(early, "2026-11-05", false, 6)).toBe(false);
+    // The regular Daily keeps the GMT date, and a five game opened as that Daily before the reset fits too.
+    expect(offlineInDay(early, "2026-11-06", false, 6)).toBe(true);
+    expect(offlineInDay(early, "2026-11-06", true, 6)).toBe(true);
+    // After the day is over, neither fits.
+    expect(offlineInDay(new Date("2026-11-06T07:00:00Z"), "2026-11-05", true, 6)).toBe(false);
+    expect(offlineInDay(new Date("2026-11-07T00:30:00Z"), "2026-11-06", false, 0)).toBe(false);
+    expect(offlineInDay(new Date("2026-11-06T23:30:00Z"), "2026-11-06", true, 0)).toBe(true);
   });
 });
 

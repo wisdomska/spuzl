@@ -65,6 +65,16 @@ export function fiveDate(now: Date = new Date(), resetHour = 0): string {
   return new Date(now.getTime() - resetHour * HOUR).toISOString().slice(0, 10);
 }
 
+/**
+ * R4-07: an offline Daily clear synced later counts only when it was finished within its day. A Daily Five attempt's
+ * day is the Daily Five day (from the reset hour), so it is checked against that too; the regular Daily's is the GMT
+ * date. A Daily Five game opened as the regular Daily before the reset hour carries the GMT date, so either fits.
+ */
+export function offlineInDay(finishedAt: Date, dailyDate: string, dailyFive: boolean, resetHour = 0): boolean {
+  if (finishedAt.toISOString().slice(0, 10) === dailyDate) return true;
+  return dailyFive && fiveDate(finishedAt, resetHour) === dailyDate;
+}
+
 /** ms until the next Daily Five opens. */
 export function msToFiveReset(now: Date = new Date(), resetHour = 0): number {
   const next = Date.parse(fiveDate(now, resetHour) + "T00:00:00Z") + DAY + resetHour * HOUR;

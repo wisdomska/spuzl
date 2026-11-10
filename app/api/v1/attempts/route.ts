@@ -5,7 +5,7 @@ import { difficultyForDate } from "@/games/types";
 import { getGameSettings } from "@/lib/game-settings/server";
 import { MAX_LEVEL } from "@/lib/game/levels";
 import { fiveDate, rulesFrom } from "@/lib/daily-five";
-import { ensureDay } from "@/lib/daily-five/server";
+import { ensureDay, fiveSlot } from "@/lib/daily-five/server";
 
 const Start = z.object({
   game: z.string().min(2).max(24),
@@ -62,7 +62,14 @@ export const POST = handle(async (req: Request) => {
     await rateLimit(admin, `practice:${player.id}`, 60, 3600); // 60 practice puzzles/hour
   else await rateLimit(admin, `attempt:${player.id}`, 120, 3600);
   let date = input.date;
-  if (input.mode === "daily") date = today; // the Daily is always today's, GMT
+  if (input.mode === "daily") {
+    date = today; // the Daily is today's, GMT
+    // R4-07: with the Daily Five reset hour above 0, a game in the Daily Five open now (yesterday's five until the
+    // reset hour) is played as that day's Daily, on the five's puzzle, so a game has one puzzle and one record.
+    const settings = await getGameSettings();
+    const fiveDay = fiveDate(new Date(), settings["dailyFive.resetHour"]);
+    if (settings["dailyFive.enabled"] && fiveDay !== today && (await fiveSlot(admin, fiveDay, input.game))) date = fiveDay;
+  }
   if (input.mode === "archive") {
     if (!date || date >= today) throw new ApiError(400, "archive_date");
     if (Date.parse(today) - Date.parse(date) > 7 * 86_400_000)

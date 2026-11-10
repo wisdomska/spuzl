@@ -28,6 +28,7 @@ import { isLadderGame, isLevel, levelCount, levelDifficulty, levelOpen, nextLeve
 import { securedLevelSeed } from "./level-seed";
 import { timingFlag } from "./anticheat";
 import { fiveSlot } from "@/lib/daily-five/server";
+import { offlineInDay } from "@/lib/daily-five";
 
 /** Human floor for one Rage Ridge room played in Levels mode. */
 const LEVEL_ROOM_FLOOR_MS = 1500;
@@ -335,6 +336,8 @@ interface AttemptRow {
   state: unknown;
   /** server move log: entries the guess route recorded while the attempt was played (GuessLogic.record) */
   moves: unknown;
+  /** a Daily Five attempt: daily_date is the Daily Five day (R4-07) */
+  daily_five?: boolean | null;
 }
 
 const logOf = (moves: unknown): unknown[] => (Array.isArray(moves) ? moves : []);
@@ -342,7 +345,7 @@ const logOf = (moves: unknown): unknown[] => (Array.isArray(moves) ? moves : [])
 async function getAttempt(admin: SupabaseClient, playerId: string, id: string): Promise<AttemptRow> {
   const { data } = await admin
     .from("attempts")
-    .select("id, player_id, game_id, mode, daily_date, puzzle_id, free_seed, started_at, status, hints, mistakes, state, moves")
+    .select("id, player_id, game_id, mode, daily_date, puzzle_id, free_seed, started_at, status, hints, mistakes, state, moves, daily_five")
     .eq("id", id)
     .maybeSingle();
   if (!data || data.player_id !== playerId) throw new ApiError(404, "attempt_not_found");
@@ -503,7 +506,12 @@ export async function finishAttempt(
   const timing = a.mode === "tutorial" ? null : timingFlag({ activeMs: input.activeMs, boardMs: input.boardMs, wallMs, floorMs });
   if (a.mode === "tutorial") flag = null;
   else if (timing) flag = timing;
-  else if (input.offline && a.mode === "daily" && a.daily_date && finishedAt.toISOString().slice(0, 10) !== a.daily_date)
+  else if (
+    input.offline &&
+    a.mode === "daily" &&
+    a.daily_date &&
+    !offlineInDay(finishedAt, a.daily_date, !!a.daily_five, (await getGameSettings())["dailyFive.resetHour"])
+  )
     flag = "offline clear outside its day";
   else if (suspect) flag = suspect; // the game's own timing check (Penalty King's tap spread)
 

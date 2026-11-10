@@ -41,7 +41,7 @@ export const SETTINGS = {
     kind: "int",
     group: "Daily Five",
     label: "New Daily Five at (GMT hour)",
-    help: "The hour, in GMT, when the next Daily Five opens. 0 is midnight GMT. A clear before this hour counts for the previous day's five.",
+    help: "The hour, in GMT, when the next Daily Five opens. 0 is midnight GMT. A clear before this hour counts for the previous day's five; with Dailies on, a game in that five is also its Daily until this hour (one puzzle per game a day), and offline clears are checked against the Daily Five day.",
     default: 0,
     min: 0,
     max: 23,
