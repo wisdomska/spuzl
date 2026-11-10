@@ -16,6 +16,7 @@ import {
   pickFive,
   replaceSlots,
   rulesFrom,
+  scoreBonus,
   scheduleToJson,
   shareGrid,
   slotsFor,
@@ -209,6 +210,41 @@ describe("Daily Five scoring", () => {
   it("gives nothing for a miss, an unfinished game or a flagged clear", () => {
     for (const state of ["failed", "flagged", "new", "in_progress"] as const) expect(fivePoints({ state, timeMs: 1000 }, 100)).toBe(0);
     expect(MAX_SCORE).toBe(1000);
+  });
+
+  describe("score games (owner decision S)", () => {
+    it("scores on the game's own score against its typical score, not on time", () => {
+      // Typical score 400: none at 0, half the bonus at 400, the full bonus at 800 or more.
+      expect(fivePoints({ state: "cleared", timeMs: 999_000, score: 0 }, 75, 400)).toBe(100);
+      expect(fivePoints({ state: "cleared", timeMs: 999_000, score: 400 }, 75, 400)).toBe(150);
+      expect(fivePoints({ state: "cleared", timeMs: 999_000, score: 800 }, 75, 400)).toBe(MAX_POINTS);
+      expect(fivePoints({ state: "cleared", timeMs: 1_000, score: 1200 }, 75, 400)).toBe(MAX_POINTS);
+      expect(fivePoints({ state: "cleared", timeMs: 1_000, score: 200 }, 75, 400)).toBe(125);
+      // Time no longer moves it: a slow high score beats a quick low one.
+      expect(fivePoints({ state: "cleared", timeMs: 70_000, score: 700 }, 75, 400)).toBeGreaterThan(
+        fivePoints({ state: "cleared", timeMs: 5_000, score: 100 }, 75, 400),
+      );
+    });
+
+    it("keeps hints, mistakes, the 50 floor and 0 for a miss", () => {
+      expect(fivePoints({ state: "cleared", score: 400, hints: 1, mistakes: 2 }, 75, 400)).toBe(125);
+      expect(fivePoints({ state: "cleared", score: 0, hints: 5 }, 75, 400)).toBe(50);
+      expect(fivePoints({ state: "failed", score: 800 }, 75, 400)).toBe(0);
+      expect(fivePoints({ state: "flagged", score: 800 }, 75, 400)).toBe(0);
+    });
+
+    it("falls back to time without a typical score or a stored score", () => {
+      expect(fivePoints({ state: "cleared", timeMs: 100_000, score: 800 }, 100, null)).toBe(150);
+      expect(fivePoints({ state: "cleared", timeMs: 100_000, score: null }, 100, 400)).toBe(150);
+      expect(fivePoints({ state: "cleared", timeMs: 100_000 }, 100, 0)).toBe(150);
+    });
+
+    it("scales any game's points onto the same 0..100 bonus", () => {
+      expect(scoreBonus(8, 8)).toBe(50);
+      expect(scoreBonus(16, 8)).toBe(100);
+      expect(scoreBonus(-5, 8)).toBe(0);
+      expect(scoreBonus(3000, 3000)).toBe(50);
+    });
   });
 });
 

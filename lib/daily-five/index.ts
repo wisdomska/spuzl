@@ -225,15 +225,35 @@ export const isFinished = (s: FiveState) => s === "cleared" || s === "failed" ||
  * Points for one Daily Five game, 0..200, computed on the server from the verified attempt. A clear earns 100
  * plus a speed bonus up to 100 (full at 0 s, half at the game's typical time, none at twice it), less 15 per
  * hint and 5 per mistake, never below 50. A miss earns 0; a flagged (too fast) clear earns 0 until a moderator
- * clears it, when it counts like any clear. Time is the measure for every game, so scores add up fairly.
+ * clears it, when it counts like any clear.
+ *
+ * Score games (owner decision S): a game scored on points rather than time (Quickfire, Echo, Beat Tap...) with a
+ * typical score (`typicalScore`, admin-tunable on the Library page) earns its bonus from its own score instead: none
+ * at 0, half at the typical score, full at twice it. Without a typical score, or before the score is known, time
+ * is the measure, so every game's points sit on the same 50..200 scale and add up fairly.
  */
-export function fivePoints(r: { state: FiveState; timeMs?: number | null; hints?: number; mistakes?: number }, typicalSec: number): number {
+export function fivePoints(
+  r: { state: FiveState; timeMs?: number | null; hints?: number; mistakes?: number; score?: number | null },
+  typicalSec: number,
+  typicalScore?: number | null,
+): number {
   if (r.state !== "cleared") return 0;
-  const par = Math.max(10, typicalSec) * 1000;
-  const t = Math.max(0, r.timeMs ?? par);
-  const speed = Math.round(Math.min(100, Math.max(0, (100 * (2 * par - t)) / (2 * par))));
-  const raw = 100 + speed - 15 * (r.hints ?? 0) - 5 * (r.mistakes ?? 0);
+  const bonus =
+    typicalScore && typicalScore > 0 && typeof r.score === "number" ? scoreBonus(r.score, typicalScore) : timeBonus(r.timeMs, typicalSec);
+  const raw = 100 + bonus - 15 * (r.hints ?? 0) - 5 * (r.mistakes ?? 0);
   return Math.min(MAX_POINTS, Math.max(50, raw));
+}
+
+/** 0..100: full at 0 s, half at the typical time, none at twice it. */
+function timeBonus(timeMs: number | null | undefined, typicalSec: number): number {
+  const par = Math.max(10, typicalSec) * 1000;
+  const t = Math.max(0, timeMs ?? par);
+  return Math.round(Math.min(100, Math.max(0, (100 * (2 * par - t)) / (2 * par))));
+}
+
+/** 0..100: none at a score of 0, half at the typical score, full at twice it or more. */
+export function scoreBonus(score: number, typicalScore: number): number {
+  return Math.round(Math.min(100, Math.max(0, (100 * score) / (2 * typicalScore))));
 }
 
 /* ---------------- Share grid ---------------- */

@@ -309,6 +309,7 @@ interface AttemptLite {
   hints: number | null;
   mistakes: number | null;
   first_move_at: string | null;
+  score?: number | null;
 }
 
 function stateOf(a: AttemptLite | undefined): FiveState {
@@ -332,7 +333,7 @@ export async function loadDailyFive(playerId: string | null, db: SupabaseClient,
   if (playerId && rows.length) {
     const { data } = await db
       .from("attempts")
-      .select("game_id, status, time_ms, hints, mistakes, first_move_at")
+      .select("game_id, status, time_ms, hints, mistakes, first_move_at, score")
       .eq("player_id", playerId)
       .eq("mode", "daily")
       .eq("daily_date", date)
@@ -354,8 +355,10 @@ export async function loadDailyFive(playerId: string | null, db: SupabaseClient,
       state,
       timeMs: isFinished(state) ? (a?.time_ms ?? null) : null,
       points: fivePoints(
-        { state, timeMs: a?.time_ms, hints: a?.hints ?? 0, mistakes: a?.mistakes ?? 0 },
+        { state, timeMs: a?.time_ms, hints: a?.hints ?? 0, mistakes: a?.mistakes ?? 0, score: a?.score },
         meta[r.game_id]?.typicalSec ?? 180,
+        // Owner decision S: score games are judged on their score against the typical one (Library page).
+        GAME_BY_ID[r.game_id]?.scoring === "score" ? meta[r.game_id]?.typicalScore : null,
       ),
     };
   });

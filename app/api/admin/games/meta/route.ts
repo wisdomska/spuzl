@@ -6,7 +6,10 @@ import { GAME_BY_ID, RETIRED_GAMES, isLabGame, isLabOn, isRetired } from "@/lib/
 import { getGameSettings } from "@/lib/game-settings/server";
 import { invalidateGamesMeta, mergeMeta, selectMetaRows, type GameMetaDbRow } from "@/lib/games-meta/server";
 
-const overridden = (r: GameMetaDbRow | undefined) => r?.typical_sec != null || r?.tags != null || r?.rule != null || r?.blurb != null;
+const overridden = (r: GameMetaDbRow | undefined) =>
+  r?.typical_sec != null || r?.tags != null || r?.rule != null || r?.blurb != null || r?.typical_score != null;
+/** Owner decision S: only games scored on points have a Daily Five typical score. */
+const scored = (id: string) => GAME_BY_ID[id]?.scoring === "score";
 /** The catalog's copy, shown as the default next to an override. */
 const copyDefault = (id: string) => ({ rule: GAME_BY_ID[id]?.rule ?? "", blurb: GAME_BY_ID[id]?.blurb ?? "" });
 
@@ -33,6 +36,8 @@ export const GET = handle(async () => {
           overridden: overridden(byId[id]),
           ruleOverridden: byId[id]?.rule != null,
           blurbOverridden: byId[id]?.blurb != null,
+          scored: scored(id),
+          scoreOverridden: byId[id]?.typical_score != null,
           retired: false,
           // Lab games: whether "features.labGames" (Settings page) has switched them on for players
           lab: isLabGame(id),
@@ -66,6 +71,7 @@ export const GET = handle(async () => {
             tags: r.tags,
             ...(r.rule != null ? { rule: r.rule } : {}),
             ...(r.blurb != null ? { blurb: r.blurb } : {}),
+            ...(r.typical_score != null ? { typicalScore: r.typical_score } : {}),
           },
         ]),
     ),
@@ -79,6 +85,8 @@ const Row = z.object({
   rule: z.string().max(400).nullable().optional(),
   /** the card copy on the world page; same limits */
   blurb: z.string().max(400).nullable().optional(),
+  /** score games only: the Daily Five typical score (half the bonus there); null resets to the code default */
+  typicalScore: z.number().int().nullable().optional(),
 });
 const Patch = z.object({ id: z.string().min(2).max(24) }).merge(Row);
 const Import = z.object({ rows: z.record(z.string().min(2).max(24), Row) });
@@ -91,7 +99,9 @@ function check(id: string, r: z.infer<typeof Row>) {
     tags: r.tags ?? undefined,
     rule: r.rule ?? undefined,
     blurb: r.blurb ?? undefined,
+    typicalScore: r.typicalScore ?? undefined,
   });
+  if (r.typicalScore != null && !scored(id)) throw new ApiError(422, "invalid_meta", `${id}: only score games have a typical score`);
   if (problem) throw new ApiError(422, "invalid_meta", `${id}: ${problem}`);
 }
 
@@ -102,6 +112,7 @@ async function apply(ctx: Awaited<ReturnType<typeof requireAdmin>>, id: string, 
   if (r.tags !== undefined) patch.tags = r.tags;
   if (r.rule !== undefined) patch.rule = r.rule;
   if (r.blurb !== undefined) patch.blurb = r.blurb;
+  if (r.typicalScore !== undefined) patch.typical_score = r.typicalScore;
   if (!Object.keys(patch).length) return;
   const cols = Object.keys(patch).join(", ");
   const { data: before } = await ctx.db.from("games").select(cols).eq("id", id).maybeSingle();
@@ -111,7 +122,10 @@ async function apply(ctx: Awaited<ReturnType<typeof requireAdmin>>, id: string, 
   await audit(ctx, "game_meta.update", `game:${id}`, { before, after: patch });
 }
 
-/** PATCH /api/admin/games/meta: overrides one game's duration, tags, rule or card copy (null resets to the default). */
+/**
+ * PATCH /api/admin/games/meta: overrides one game's duration, tags, rule, card copy or (score games) Daily Five typical
+ * score; null resets to the default.
+ */
 export const PATCH = handle(async (req: Request) => {
   const ctx = await requireAdmin("content.write");
   const { id, ...r } = await body(req, Patch);
@@ -119,7 +133,7 @@ export const PATCH = handle(async (req: Request) => {
   return ok({ ok: true });
 });
 
-/** PUT /api/admin/games/meta: imports an export ({ rows: { id: { typicalSec, tags, rule?, blurb? } } }); all rows validate first. */
+/** PUT /api/admin/games/meta: imports an export ({ rows: { id: { typicalSec, tags, rule?, blurb?, typicalScore? } } }); all rows validate first. */
 export const PUT = handle(async (req: Request) => {
   const ctx = await requireAdmin("content.write");
   const { rows } = await body(req, Import);

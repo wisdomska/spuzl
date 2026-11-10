@@ -76,6 +76,27 @@ export const TYPICAL_SEC: Record<string, number> = {
   twotruths: 120,
 };
 
+/**
+ * Owner decision S (R4): a score game's typical score on the Daily Five's difficulty, its "par" in Daily Five points
+ * (lib/daily-five fivePoints: half the bonus at this score, the full bonus at twice it). Admin-overridable per game
+ * (games.typical_score, Library page). A score game without one is scored on time like the rest.
+ */
+export const TYPICAL_SCORE: Record<string, number> = {
+  quickfire: 400, // 5 questions, 100-150 each when right
+  emojihits: 350, // 5 rounds, 40-150 each when found
+  twotruths: 400, // 5 rounds, 100-150 each when right
+  flagged: 800, // 10 rounds, 100-150 each when right
+  echo: 8, // the longest sequence repeated
+  beattap: 3000, // 16 beats on easy, 300 perfect or 100 good
+  flinch: 3000, // 5 rounds, 1000 less the reaction in ms
+  twins: 550, // 1000 for a flawless run, less with every extra flip
+  penalty: 3000, // 1000 a goal plus up to 100 accuracy, 5 kicks
+  hilo: 6, // right calls out of 10
+};
+
+/** The highest typical score the admin can set. */
+export const TYPICAL_SCORE_MAX = 1_000_000;
+
 /** Games with a clock pushing you (reaction, action, countdowns) are never "calm". */
 const PRESSURE = new Set(["merge", "quickfire", "flagged", "deadon", "seven", "twotruths"]);
 
@@ -95,10 +116,14 @@ export function defaultTags(id: string): Tag[] {
  * One game's Library metadata. `rule` and `blurb` are present only when the admin overrode the catalog's copy
  * (games.rule, games.blurb); readers fall back to the catalog through `gameCopy()`.
  */
-export type GameMetaRow = { typicalSec: number; tags: Tag[]; rule?: string; blurb?: string };
+export type GameMetaRow = { typicalSec: number; tags: Tag[]; rule?: string; blurb?: string; typicalScore?: number };
 
 /** The default row for any game in code (retired ones too, for the admin Library list). */
-export const defaultMetaFor = (id: string): GameMetaRow => ({ typicalSec: TYPICAL_SEC[id] ?? 180, tags: defaultTags(id) });
+export const defaultMetaFor = (id: string): GameMetaRow => ({
+  typicalSec: TYPICAL_SEC[id] ?? 180,
+  tags: defaultTags(id),
+  ...(TYPICAL_SCORE[id] && GAME_BY_ID[id]?.scoring === "score" ? { typicalScore: TYPICAL_SCORE[id] } : {}),
+});
 
 /** Defaults for the games players can reach (live and lab). Retired games are left out. */
 export const DEFAULT_META: Record<string, GameMetaRow> = Object.fromEntries(
@@ -126,12 +151,23 @@ export function parseFilter(v: string | null | undefined): GameFilter {
 export const isTag = (t: unknown): t is Tag => typeof t === "string" && (TAGS as readonly string[]).includes(t);
 
 /** Validates an admin override; returns an error message or null. */
-export function validateMeta(m: { typicalSec?: unknown; tags?: unknown; rule?: unknown; blurb?: unknown }): string | null {
+export function validateMeta(m: {
+  typicalSec?: unknown;
+  tags?: unknown;
+  rule?: unknown;
+  blurb?: unknown;
+  typicalScore?: unknown;
+}): string | null {
   if (
     m.typicalSec !== undefined &&
     (typeof m.typicalSec !== "number" || !Number.isInteger(m.typicalSec) || m.typicalSec < 10 || m.typicalSec > 3600)
   )
     return "Typical time must be a whole number of seconds between 10 and 3600";
+  if (
+    m.typicalScore !== undefined &&
+    (typeof m.typicalScore !== "number" || !Number.isInteger(m.typicalScore) || m.typicalScore < 1 || m.typicalScore > TYPICAL_SCORE_MAX)
+  )
+    return `Typical score must be a whole number between 1 and ${TYPICAL_SCORE_MAX}`;
   if (m.tags !== undefined && (!Array.isArray(m.tags) || !m.tags.every(isTag) || new Set(m.tags).size !== m.tags.length))
     return `Tags must be distinct values from: ${TAGS.join(", ")}`;
   if (m.rule !== undefined) {

@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { GAME_BY_ID } from "@/lib/catalog";
 import { DEFAULT_META, isTag, validateCopyLine, type GameMetaRow } from "./index";
 
 export type GameMetaDbRow = {
@@ -9,10 +10,12 @@ export type GameMetaDbRow = {
   tags: string[] | null;
   rule?: string | null;
   blurb?: string | null;
+  typical_score?: number | null;
 };
 
 /** The columns every reader of the Library metadata selects. */
-export const META_COLS = "id, typical_sec, tags, rule, blurb";
+export const META_COLS = "id, typical_sec, tags, rule, blurb, typical_score";
+const META_COLS_R2 = "id, typical_sec, tags, rule, blurb";
 
 /**
  * Stored overrides (games.typical_sec, tags, rule, blurb) over the code defaults. The copy overrides are kept only
@@ -26,17 +29,21 @@ export function mergeMeta(rows: GameMetaDbRow[]): Record<string, GameMetaRow> {
     if (Array.isArray(r.tags)) out[r.id].tags = r.tags.filter(isTag);
     if (r.rule != null && validateCopyLine(r.rule, "rule") === null) out[r.id].rule = r.rule;
     if (r.blurb != null && validateCopyLine(r.blurb, "blurb") === null) out[r.id].blurb = r.blurb;
+    if (typeof r.typical_score === "number" && GAME_BY_ID[r.id]?.scoring === "score") out[r.id].typicalScore = r.typical_score;
   }
   return out;
 }
 
 /**
- * Every game's stored overrides. Before 20261202000101 (the rule and blurb columns) is applied, falls back to the
- * duration and tags, so a deploy that runs ahead of the migration keeps the existing overrides.
+ * Every game's stored overrides. Before 20261210900101 (typical_score) or 20261202000101 (the rule and blurb
+ * columns) is applied, falls back to the columns that exist, so a deploy that runs ahead of the migration keeps the
+ * existing overrides.
  */
 export async function selectMetaRows(db: SupabaseClient): Promise<GameMetaDbRow[]> {
   const full = await db.from("games").select(META_COLS);
   if (!full.error) return (full.data ?? []) as GameMetaDbRow[];
+  const r2 = await db.from("games").select(META_COLS_R2);
+  if (!r2.error) return (r2.data ?? []) as GameMetaDbRow[];
   const old = await db.from("games").select("id, typical_sec, tags");
   if (old.error) throw old.error;
   return (old.data ?? []) as GameMetaDbRow[];

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { errorText, useAdminAction, useAdminQuery } from "@/lib/client/admin";
 import { GAME_BY_ID } from "@/lib/catalog";
-import { COPY_MAX, TAGS, durationLabel, validateCopyLine, type GameMetaRow, type Tag } from "@/lib/games-meta";
+import { COPY_MAX, TAGS, TYPICAL_SCORE_MAX, durationLabel, validateCopyLine, type GameMetaRow, type Tag } from "@/lib/games-meta";
 import { adminCopy } from "@/lib/copy/admin";
 import { GameIcon3D } from "@/components/world/GameIcon3D";
 import { hasLogic } from "@/games/logic-ids";
@@ -21,11 +21,20 @@ type Row = Omit<GameMetaRow, "rule" | "blurb"> & {
   overridden: boolean;
   ruleOverridden?: boolean;
   blurbOverridden?: boolean;
+  /** a game scored on points: it has a Daily Five typical score (owner decision S) */
+  scored?: boolean;
+  scoreOverridden?: boolean;
   retired?: boolean;
   lab?: boolean;
   labOn?: boolean;
 };
-type Patch = { typicalSec?: number | null; tags?: Tag[] | null; rule?: string | null; blurb?: string | null };
+type Patch = {
+  typicalSec?: number | null;
+  tags?: Tag[] | null;
+  rule?: string | null;
+  blurb?: string | null;
+  typicalScore?: number | null;
+};
 
 /**
  * Admin: Library duration chip, filter tags, one-line rule and card copy per game (SPZ-14, R2-ADMIN), with each
@@ -168,12 +177,13 @@ function MetaRow({ row, canWrite, busy, onSave }: { row: Row; canWrite: boolean;
           <Btn
             tone="secondary"
             disabled={!canWrite || busy}
-            onClick={() => onSave({ typicalSec: null, tags: null, rule: null, blurb: null })}
+            onClick={() => onSave({ typicalSec: null, tags: null, rule: null, blurb: null, ...(row.scored ? { typicalScore: null } : {}) })}
           >
             {C.reset}
           </Btn>
         )}
       </div>
+      {row.scored && !row.retired && <ScoreScale row={row} canWrite={canWrite} busy={busy} onSave={onSave} />}
       <details className="group" data-copy-editor>
         <summary className="text-muted hover:text-text flex h-11 cursor-pointer items-center gap-2 text-[13px] font-semibold">
           {C.copy}
@@ -208,6 +218,58 @@ function MetaRow({ row, canWrite, busy, onSave }: { row: Row; canWrite: boolean;
       </details>
       {!row.retired && hasLogic(row.id) && <PracticeBoard id={row.id} />}
     </div>
+  );
+}
+
+/** Owner decision S: a score game's Daily Five typical score (half the bonus at it, the full bonus at twice it). */
+function ScoreScale({ row, canWrite, busy, onSave }: { row: Row; canWrite: boolean; busy: boolean; onSave: (p: Patch) => void }) {
+  const [text, setText] = useState(row.typicalScore != null ? String(row.typicalScore) : "");
+  const n = Number(text);
+  const bad = text !== "" && (!Number.isInteger(n) || n < 1 || n > TYPICAL_SCORE_MAX);
+  const id = `score-${row.id}`;
+  return (
+    <form
+      className="flex flex-col gap-1"
+      data-score-scale={row.id}
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!bad && text !== "") onSave({ typicalScore: n });
+      }}
+    >
+      <label htmlFor={id} className="num text-muted text-[12px] font-semibold">
+        {C.scoreLabel}
+      </label>
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          id={id}
+          aria-describedby={`${id}-help`}
+          className={`${inputCls} num w-32`}
+          inputMode="numeric"
+          value={text}
+          onChange={(e) => setText(e.target.value.trim())}
+          aria-invalid={bad}
+          disabled={!canWrite}
+        />
+        <Btn type="submit" tone="secondary" disabled={!canWrite || busy || bad || text === "" || n === row.typicalScore}>
+          {C.save}
+        </Btn>
+        {row.scoreOverridden && (
+          <Btn
+            tone="ghost"
+            disabled={!canWrite || busy}
+            onClick={() => {
+              setText(row.default.typicalScore != null ? String(row.default.typicalScore) : "");
+              onSave({ typicalScore: null });
+            }}
+          >
+            {C.scoreReset}
+          </Btn>
+        )}
+      </div>
+      <span id={`${id}-help`} className="text-muted text-[12px]">
+        {C.scoreHelp(row.default.typicalScore)}
+      </span>
+    </form>
   );
 }
 

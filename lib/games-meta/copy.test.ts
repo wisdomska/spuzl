@@ -64,3 +64,28 @@ describe("per-game rule and card copy overrides (R2-ADMIN)", () => {
     expect(filterGames(GAMES, "all", "zebracorn", DEFAULT_META)).toEqual([]);
   });
 });
+
+describe("Daily Five typical score (owner decision S)", () => {
+  it("has a valid default for the main score games and none for games scored on time", () => {
+    for (const id of ["quickfire", "echo", "beattap"]) expect(DEFAULT_META[id].typicalScore, id).toBeGreaterThan(0);
+    for (const [id, m] of Object.entries(DEFAULT_META)) {
+      if (m.typicalScore !== undefined) expect(GAME_BY_ID[id].scoring, id).toBe("score");
+      expect(validateMeta({ typicalScore: m.typicalScore }), id).toBeNull();
+    }
+    expect(DEFAULT_META.crownfall.typicalScore).toBeUndefined();
+  });
+
+  it("validates an override and merges it for score games only", () => {
+    expect(validateMeta({ typicalScore: 0 })).toMatch(/whole number between 1/);
+    expect(validateMeta({ typicalScore: 2.5 })).toMatch(/whole number/);
+    expect(validateMeta({ typicalScore: 450 })).toBeNull();
+    const m = mergeMeta([
+      { id: "quickfire", typical_sec: null, tags: null, typical_score: 500 },
+      { id: "crownfall", typical_sec: null, tags: null, typical_score: 500 },
+      { id: "echo", typical_sec: null, tags: null, typical_score: null },
+    ]);
+    expect(m.quickfire.typicalScore).toBe(500);
+    expect(m.crownfall.typicalScore).toBeUndefined();
+    expect(m.echo.typicalScore).toBe(DEFAULT_META.echo.typicalScore);
+  });
+});

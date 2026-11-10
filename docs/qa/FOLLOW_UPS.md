@@ -67,9 +67,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
   or Home card, so a host who left the lobby screen won't see it until they come back. The asker can wait or cancel.
 - **R2-13, Board Bay invites:** friends-only covers Party rooms and friend duels (the ticket). Board Bay invite codes
   from an under-16 host (`/api/v1/bay/[id]/join`) still let anyone with the code in.
-- **Daily Five scoring (R2-05):** points come from time against the game's typical time (Library), hints and
-  mistakes, so score-based games (Quickfire, Echo, Beat Tap) are scored on time too. A per-game score scale would
-  be fairer once the game designers pick one.
 - **R2-08, onboarding funnel:** landing visitors now start at the age step (`/welcome/play`), so the admin Metrics
   "Welcome" column only counts `/welcome` visits (sign-in links, deep links, Home redirects). Completion % is
   measured from the age step, so it is unaffected; the column label could say "Welcome (sign-in screen)".

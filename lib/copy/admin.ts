@@ -840,6 +840,13 @@ export const adminCopy = {
       `${overridden ? "Changed" : "Default"} · default ${duration}, ${tags.join(", ") || "no tags"}`,
     secondsAria: (id: string) => `Typical seconds for ${id}`,
     secondsUnit: "s",
+    /** Owner decision S: a score game's typical score, its par in Daily Five points. */
+    scoreLabel: "Daily Five typical score",
+    scoreHelp: (def: number | undefined) =>
+      `Daily Five points for this score game come from its score: half the bonus at this score, the full bonus at twice it. ${
+        def ? `Default ${def}.` : "No default: empty means it is scored on time like the other games."
+      }`,
+    scoreReset: "Use default",
     save: "Save",
     reset: "Reset",
     /** Lab games (features.labGames): their state, switched on the Settings page. */
