@@ -145,7 +145,7 @@ describe("api: leaderboards", () => {
 
 describe("api: shop", () => {
   it("buys once per request, refuses without Sparks, equips", async () => {
-    const a = await guest(uniq("sh_"));
+    const a = await guest(uniq("buyer_"));
     await admin().from("players").update({ sparks: 500 }).eq("id", a.userId);
     const requestId = randomUUID();
     const buy = await a.api("/api/v1/shop/buy", { json: { itemId: "hat-party", requestId } });
