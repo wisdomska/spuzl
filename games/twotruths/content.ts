@@ -25,8 +25,8 @@ export interface TruthsRound {
   source: string;
 }
 
-/** The owner reviews this bank on the admin Content page before switching the game on. */
-export const needsReview = true;
+/** Reviewed 10 Nov 2026 (R4-C). */
+export const needsReview = false;
 
 export const CONTENT: TruthsRound[] = [
   // ---------- Ghana ----------
@@ -119,7 +119,7 @@ export const CONTENT: TruthsRound[] = [
     level: 2,
     truths: ["The Niger River flows through Mali, Niger and Nigeria.", "Timbuktu is a city in Mali."],
     lie: "The Sahara Desert lies south of Ghana.",
-    fix: "The Sahara lies to the north of West Africa.",
+    fix: "The Sahara lies far to the north of Ghana.",
     source: "Britannica, Niger River, Timbuktu and Sahara",
   },
   {
@@ -313,7 +313,7 @@ export const CONTENT: TruthsRound[] = [
     id: "fd-pizza",
     theme: "food",
     level: 1,
-    truths: ["Tea comes from the leaves of the tea plant.", "Sushi comes from Japan."],
+    truths: ["Tea comes from the leaves of the tea plant.", "Sushi is a Japanese dish."],
     lie: "Pizza first came from Mexico.",
     fix: "Pizza as we know it comes from Naples, in Italy.",
     source: "Britannica, tea, sushi and pizza",
@@ -620,7 +620,7 @@ export const CONTENT: TruthsRound[] = [
     level: 1,
     truths: ["The United Nations has its headquarters in New York.", "The African Union has its headquarters in Addis Ababa."],
     lie: "The Olympic Games are held every year.",
-    fix: "The Summer Olympics come every four years, and so do the Winter Olympics.",
+    fix: "The Summer and Winter Olympics each come every four years.",
     source: "United Nations; African Union; International Olympic Committee",
   },
 ];

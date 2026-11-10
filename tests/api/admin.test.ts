@@ -1452,10 +1452,11 @@ describe("content review queue (round 3, item 12)", () => {
   it("summarises every game in the queue with progress and a needsReview flag derived from the reviews", async () => {
     const r = await S.content_editor.aal2("/api/admin/content/files");
     expect(r.status).toBe(200);
-    const tt = r.data.games.find((g: { game: string }) => g.game === GAME);
-    expect(tt).toMatchObject({ codeFlag: true, needsReview: true });
-    expect(tt.reviewed).toBeLessThan(tt.total);
-    expect(r.data.games.some((g: { game: string }) => g.game === "five")).toBe(false); // owner-approved in code
+    const qf = r.data.games.find((g: { game: string }) => g.game === "quickfire");
+    expect(qf).toMatchObject({ codeFlag: true, needsReview: true });
+    expect(qf.reviewed).toBeLessThan(qf.total);
+    // owner-approved in code (Two Truths: reviewed 10 Nov 2026, R4-C); a game can still be reviewed by name, as below
+    for (const done of ["five", GAME]) expect(r.data.games.some((g: { game: string }) => g.game === done)).toBe(false);
     // content is for owners and content editors only: analysts and moderators are refused
     expect((await S.analyst.aal2("/api/admin/content/files")).status).toBe(403);
     expect((await S.moderator.aal2("/api/admin/content/files")).status).toBe(403);

@@ -30,7 +30,7 @@ const DASH = /[–—]/;
 
 describe("two truths content (R2-P5)", () => {
   it("has at least 60 fact-checked rounds, every theme, unique ids and statements, no dashes", () => {
-    expect(needsReview).toBe(true);
+    expect(needsReview).toBe(false);
     expect(CONTENT.length).toBeGreaterThanOrEqual(60);
     expect(new Set(CONTENT.map((r) => r.id)).size).toBe(CONTENT.length);
     const all = CONTENT.flatMap((r) => [...r.truths, r.lie]);
