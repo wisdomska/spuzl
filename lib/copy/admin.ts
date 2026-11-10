@@ -207,6 +207,20 @@ export const adminCopy = {
       editEntry: (i: number) => `Edit entry ${i}`,
       retire: "Retire",
       retireEntry: (i: number) => `Retire entry ${i}`,
+      /** R4-14: rebuild the game's upcoming Dailies and Daily Five days after retiring entries. */
+      rebuild: "Rebuild upcoming days",
+      rebuildBusy: "Rebuilding…",
+      rebuildHelp:
+        "Days already built (up to 60 ahead) keep the boards they were made with. After retiring entries, rebuild the unlocked future Dailies and Daily Five days of this game. Locked days, custom items and today stay.",
+      rebuilt: (r: { dailies: number; five: number; same: number; skipped: number; pending: number }) =>
+        [
+          `Rebuilt ${r.dailies} ${r.dailies === 1 ? "Daily" : "Dailies"} and ${r.five} Daily Five ${r.five === 1 ? "day" : "days"}.`,
+          r.same ? `${r.same} came out the same.` : "",
+          r.skipped ? `${r.skipped} kept (locked, custom or started).` : "",
+          r.pending ? `${r.pending} still to do: run it again.` : "",
+        ]
+          .filter(Boolean)
+          .join(" "),
       board: "Preview board",
       boardEntry: (i: number) => `Preview the board for entry ${i}`,
       boardTitle: (i: number) => `Board for entry ${i}`,

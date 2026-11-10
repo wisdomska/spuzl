@@ -10,6 +10,7 @@ import { adminCopy } from "@/lib/copy/admin";
 import { Pagination, type Pager } from "./Pagination";
 import { PracticeBoardPreview } from "./PuzzlePreview";
 import { ReviewEntry } from "./ReviewEntry";
+import type { RebuildResult } from "@/lib/admin/rebuild";
 import { Btn, Empty, Field, Notice, Pill, RowsSkeleton, Swatch, Tabs, inputCls, textareaCls, type PillTone } from "./ui";
 
 const C = adminCopy.content;
@@ -71,12 +72,15 @@ function Progress({ s, compact = false }: { s: GameSummary; compact?: boolean })
  */
 export function ReviewQueue({
   canWrite,
+  canSchedule = false,
   game,
   show,
   setFilters,
   pager,
 }: {
   canWrite: boolean;
+  /** calendar.write: may rebuild the game's upcoming Dailies and Daily Five days (R4-14) */
+  canSchedule?: boolean;
   game: ContentGame | null;
   show: ReviewShow;
   setFilters: (f: { game?: string; show?: string }) => void;
@@ -93,6 +97,7 @@ export function ReviewQueue({
     { keepPrevious: true },
   );
   const act = useAdminAction<{ game: string; indexes: number[]; decision: "approve" | "retire" }>("POST", "/api/admin/content/files");
+  const rebuild = useAdminAction<{ game: string }, RebuildResult>("POST", "/api/admin/content/rebuild");
   const shown = one.data?.games[0]?.game === game ? one.data : undefined;
   const entries = shown?.games[0]?.entries ?? [];
   const summary = shown?.games[0];
@@ -104,6 +109,7 @@ export function ReviewQueue({
     setPicked(new Set());
     setEditing(null);
     setBoard(null);
+    rebuild.reset();
     pager.reset();
   };
 
@@ -146,7 +152,35 @@ export function ReviewQueue({
             <div className="flex flex-wrap items-center gap-3">
               <h2 className="font-display text-[18px] font-extrabold">{nameOf(game)}</h2>
               {summary && <Progress s={summary} />}
+              {canSchedule && (
+                <Btn
+                  className="ml-auto"
+                  disabled={rebuild.isPending}
+                  aria-describedby="rebuild-help"
+                  onClick={() => rebuild.mutate({ game })}
+                  data-rebuild-upcoming
+                >
+                  {rebuild.isPending ? R.rebuildBusy : R.rebuild}
+                </Btn>
+              )}
             </div>
+            {canSchedule && (
+              <p id="rebuild-help" className="text-muted text-[13px]">
+                {R.rebuildHelp}
+              </p>
+            )}
+            {rebuild.error && <Notice tone="danger">{errorText(rebuild.error)}</Notice>}
+            {rebuild.data?.game === game && (
+              <Notice tone="ok" icon="check-circle">
+                {R.rebuilt({
+                  dailies: rebuild.data.dailies.rebuilt.length,
+                  five: rebuild.data.five.rebuilt.length,
+                  same: rebuild.data.dailies.same.length + rebuild.data.five.same.length,
+                  skipped: rebuild.data.dailies.skipped.length + rebuild.data.five.skipped.length,
+                  pending: rebuild.data.dailies.pending.length,
+                })}
+              </Notice>
+            )}
             <div className="flex flex-wrap items-center gap-2">
               <Tabs
                 label={C.show}

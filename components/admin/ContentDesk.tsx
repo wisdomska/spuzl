@@ -101,6 +101,7 @@ export function ContentDesk(props: { canWrite: boolean; canApprove: boolean; can
       ) : (
         <ReviewQueue
           canWrite={props.canWrite}
+          canSchedule={props.canSchedule}
           game={(filters.game || null) as ContentGame | null}
           show={filters.show as ReviewShow}
           setFilters={setFilters}
