@@ -47,5 +47,10 @@ export const LIGHTUP_COPY = {
     dark: "dark",
     bad: ", breaks a rule",
   },
-  controls: { undo: "Undo", lamp: "Lamp", mark: "Mark X", hint: "Hint" },
+  controls: { undo: "Undo", lamp: "Lamp", mark: "Mark X", hint: "Hint", zoom: "Zoom" },
+  /** Tap-to-zoom (R4-22): small cells open zoomed on a tap. */
+  zoom: {
+    zoomed: "Zoomed in. Drag to look around, tap Zoom again to see the whole board.",
+    whole: "Whole board.",
+  },
 } as const;

@@ -9,10 +9,6 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 - **Guided first play:**
   - Before the first move, Dusk, Nine and Merge have no deduction, so the first hint coaches with the rule.
 
-## Layout and motion
-
-- Light Up 10 × 10 cells are 36 px at 375 wide (30 px at 320). 44 px would need a smaller hard board or zoom.
-
 ## Accounts and email
 
 - **Email:** production sends codes through Brevo SMTP with the SPUZL code templates. The preview project has

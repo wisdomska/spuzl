@@ -198,8 +198,19 @@ const SOLVERS: Record<string, (page: Page, seed: string, d: Difficulty) => Promi
   async lightup(page, seed, d) {
     const { generate } = lightup;
     const g = generate(createRng(seed), d);
-    // one tap on an empty white cell places a lamp
-    for (const i of g.solution.lamps) await tapCell(page, Math.floor(i / g.puzzle.size) + 1, (i % g.puzzle.size) + 1);
+    // one tap on an empty white cell places a lamp; a board with small cells (R4-22 tap-to-zoom) first zooms in on
+    // the tapped spot, so the solver goes back to the whole board, taps to zoom there, then taps to place
+    const zoomedIn = page.locator('[data-zoom="in"]');
+    const zoomable = (await page.locator("[data-zoom]").count()) > 0;
+    for (const i of g.solution.lamps) {
+      const [r, c] = [Math.floor(i / g.puzzle.size) + 1, (i % g.puzzle.size) + 1];
+      if (zoomable) {
+        if (await zoomedIn.count()) await page.getByRole("button", { name: /^Zoom\b/ }).click();
+        await tapCell(page, r, c);
+        await expect(zoomedIn).toHaveCount(1);
+      }
+      await tapCell(page, r, c);
+    }
   },
   async killer(page, seed, d) {
     const { generate } = killer;
