@@ -27,12 +27,8 @@ export function createStackedPainter(): Painter<StackedSim> {
       const target = n * bh - h * 0.65;
       cam = Number.isNaN(cam) || reduced ? target : cam + (target - cam) * 0.15;
       const rowY = (i: number) => h - (i + 1) * bh + Math.max(0, cam);
-      ctx.bg.fillStyle(SCENE.bg, 1);
-      ctx.bg.fillRect(0, 0, w, h);
-      ctx.bg.fillStyle(SCENE.dot, 1);
-      const step = 20 * ctx.dpr;
-      const off = (Math.max(0, cam) * 0.3) % step;
-      for (let y = off; y < h; y += step) for (let x = step / 2; x < w; x += step) ctx.bg.fillCircle(x, y, 1.5 * ctx.dpr);
+      // Background and dot grid, slow parallax: one pre-drawn texture (R4-21).
+      ctx.backdrop(0, Math.max(0, cam) * 0.3);
       const block = (i: number, x: number, bw: number, color: number, alpha = 1, dy = 0) => {
         const y = rowY(i) + dy;
         if (y > h || y + bh < 0) return;

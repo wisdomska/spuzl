@@ -28,12 +28,8 @@ export function createWobblePainter(): Painter<WobbleSim> {
       const camX = Math.max(-40, Math.min(r.length + 40 - viewW, px - viewW * 0.35));
       const ropeY = h * 0.62;
       const X = (wx: number) => (wx - camX) * s;
-      ctx.bg.fillStyle(SCENE.bg, 1);
-      ctx.bg.fillRect(0, 0, w, h);
-      ctx.bg.fillStyle(SCENE.dot, 1);
-      const step = 20 * ctx.dpr;
-      const off = (-(camX * s) * 0.3) % step;
-      for (let y = step / 2; y < h; y += step) for (let x = off; x < w; x += step) ctx.bg.fillCircle(x, y, 1.5 * ctx.dpr);
+      // Background and dot grid, slow parallax: one pre-drawn texture (R4-21).
+      ctx.backdrop(-(camX * s) * 0.3, 0);
       // poles and the rope (a slight sag under the walker)
       g.fillStyle(SCENE.ledge, 1);
       for (const x of [0, r.length])

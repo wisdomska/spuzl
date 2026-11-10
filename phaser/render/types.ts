@@ -45,7 +45,16 @@ export interface DrawCtx {
   now: number;
   reduced: boolean;
   palette: Palette;
+  /**
+   * R4-21: fills the frame with the scene colour and its dot grid (one dot every DOT_STEP css px), shifted by
+   * (dx, dy) device px for parallax. The grid is a texture drawn once and repeated, so it costs one draw a frame
+   * instead of a few hundred circles. A frame that doesn't call it shows no backdrop.
+   */
+  backdrop(dx: number, dy: number): void;
 }
+
+/** Spacing of the backdrop's dot grid, in css px. */
+export const DOT_STEP = 20;
 
 export interface Palette {
   rage: number;

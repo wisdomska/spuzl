@@ -184,10 +184,7 @@ Things noticed while working on SPZ-01 to SPZ-27 that the tickets didn't cover, 
 Arcade, Board Games and the shared game shell. Fixed in this pass: keyboard focus on cells, pads and tools; Try
 again on a failed start; Echo's pause between rounds; Beat Tap and Rage Ridge per-frame work; last move and refused
 taps on the live Draughts, Oware and Four Up boards; Resign and the bot draw ask first; bot thinking in Board Bay;
-the Duel loss line. Still open:
-
-- **Rage Ridge painter:** still four small closures per frame and about 270 dots for the background grid
-  (`phaser/render/platformer.ts`); a pre-drawn dot texture would cut the draw calls. Profile on a mid phone first.
+the Duel loss line. Nothing is left open.
 
 Puzzles (Crownfall, Dusk, Sixer, Nine, Weave, Flowline, Pairup, Lost, Trotro Jam), Words & Quiz (Coil, Rungs, Quads,
 Seven, Minicross, Buried, Remix, Quickfire, Emoji Hits) and Two Truths. All audit items fixed (the last, Duel ink on gold,

@@ -8,7 +8,7 @@ import { FP, TILE, TILE_PX } from "../sim/fixed";
 import { Cell } from "../sim/level";
 import { BODY_H, BODY_W, EXIT_H, EXIT_W, type PlatformerCourse } from "../sim/platformer";
 import { burst, drawSpuz, type Particle } from "./spuz";
-import { SCENE, type Painter } from "./types";
+import { SCENE, type Gfx, type Painter } from "./types";
 
 /** Rows of world shown on screen. */
 export const VIEW_ROWS = 7;
@@ -30,6 +30,43 @@ export function createPlatformerPainter(opts: PainterOptions = {}): Painter<Plat
   let camY = NaN;
   let lvlIdx = -1;
 
+  // R4-21: the frame's drawing state and helpers live here, made once with the painter, so a frame makes no
+  // closures (and no radius object) for the garbage collector. `draw` sets the state at its start.
+  let g: Gfx = null!;
+  let world: PlatformerCourse["world"] = null!;
+  let s = 1;
+  let T = 0;
+  let gap = 1;
+  /** One rounded-top radius, updated each frame (Phaser reads it at once). */
+  const topR = { tl: 0, tr: 0, bl: 0, br: 0 };
+  const X = (wx: number) => (wx - camX) * s;
+  const Y = (wy: number) => (wy - camY) * s;
+  const solidAt = (cx: number, cy: number) => {
+    const lvl = world.lvl;
+    return cy >= 0 && cy < lvl.h && cx >= 0 && cx < lvl.w && world.solidCell(cx, cy);
+  };
+  const block = (cx: number, cy: number, color: number, alpha = 1, dy = 0) => {
+    const top = !solidAt(cx, cy - 1);
+    g.fillStyle(color, alpha);
+    g.fillRoundedRect(X(cx * TILE_PX) + gap / 2, Y(cy * TILE_PX) + dy, T - gap, T, top ? topR : 0);
+  };
+  const spike = (cx: number, cy: number, dir: number, color: number, alpha: number, k = 1, outline = false) => {
+    const bx = X(cx * TILE_PX),
+      by = Y(cy * TILE_PX);
+    const half = 7 * s * k,
+      hh = 12 * s * k;
+    const mid = bx + T / 2;
+    const base = dir > 0 ? by + T : by;
+    const tip = dir > 0 ? by + T - hh : by + hh;
+    if (outline) {
+      g.lineStyle(Math.max(1, s), color, alpha);
+      g.strokeTriangle(mid - half, base, mid + half, base, mid, tip);
+    } else {
+      g.fillStyle(color, alpha);
+      g.fillTriangle(mid - half, base, mid + half, base, mid, tip);
+    }
+  };
+
   return {
     onEvents(ev, sim, now) {
       if (ev & EV.DEATH) {
@@ -46,11 +83,12 @@ export function createPlatformerPainter(opts: PainterOptions = {}): Painter<Plat
     },
 
     draw(ctx, sim, ghost) {
-      const { g, w, h, now, reduced, palette } = ctx;
-      const world = sim.world;
+      const { w, h, now, reduced, palette } = ctx;
+      g = ctx.g;
+      world = sim.world;
       const lvl = world.lvl;
       const rows = opts.viewRows ?? VIEW_ROWS;
-      const s = h / (rows * TILE_PX); // device px per world px
+      s = h / (rows * TILE_PX); // device px per world px
       const viewW = w / s,
         viewH = rows * TILE_PX;
       const lvlW = lvl.w * TILE_PX,
@@ -68,50 +106,18 @@ export function createPlatformerPainter(opts: PainterOptions = {}): Painter<Plat
         camX += (tx - camX) * 0.18;
         camY += (ty - camY) * 0.18;
       }
-      const X = (wx: number) => (wx - camX) * s;
-      const Y = (wy: number) => (wy - camY) * s;
-      const T = TILE_PX * s;
+      T = TILE_PX * s;
+      gap = Math.max(1, s);
+      topR.tl = topR.tr = 4 * s;
       const pulse = 0.5 + 0.5 * Math.sin((now / 1000) * Math.PI * 2); // 1 Hz
 
-      // Background and dot grid (20 css px), slow parallax.
-      ctx.bg.fillStyle(SCENE.bg, 1);
-      ctx.bg.fillRect(0, 0, w, h);
-      ctx.bg.fillStyle(SCENE.dot, 1);
-      const step = 20 * ctx.dpr;
-      const off = (-(camX * s) * 0.3) % step;
-      for (let y = step / 2; y < h; y += step) for (let x = off; x < w; x += step) ctx.bg.fillCircle(x, y, 1.5 * ctx.dpr);
+      // Background and dot grid (20 css px), slow parallax: one pre-drawn texture, not ~270 circles (R4-21).
+      ctx.backdrop(-(camX * s) * 0.3, 0);
 
       const x0 = Math.max(0, Math.floor(camX / TILE_PX) - 1),
         x1 = Math.min(lvl.w - 1, Math.ceil((camX + viewW) / TILE_PX) + 1);
       const y0 = Math.max(0, Math.floor(camY / TILE_PX) - 1),
         y1 = Math.min(lvl.h - 1, Math.ceil((camY + viewH) / TILE_PX) + 1);
-      const gap = Math.max(1, s);
-      // One rounded-top radius for the whole frame (Phaser reads it at once), not a new object per block.
-      const topR = { tl: 4 * s, tr: 4 * s, bl: 0, br: 0 };
-      const solidAt = (cx: number, cy: number) => cy >= 0 && cy < lvl.h && cx >= 0 && cx < lvl.w && world.solidCell(cx, cy);
-
-      const block = (cx: number, cy: number, color: number, alpha = 1, dy = 0) => {
-        const top = !solidAt(cx, cy - 1);
-        g.fillStyle(color, alpha);
-        g.fillRoundedRect(X(cx * TILE_PX) + gap / 2, Y(cy * TILE_PX) + dy + (top ? 0 : 0), T - gap, T, top ? topR : 0);
-      };
-      const spike = (cx: number, cy: number, dir: number, color: number, alpha: number, k = 1, outline = false) => {
-        const bx = X(cx * TILE_PX),
-          by = Y(cy * TILE_PX);
-        const half = 7 * s * k,
-          hh = 12 * s * k;
-        const mid = bx + T / 2;
-        // Called for every spike on screen every frame: plain calls, no bound function per spike.
-        const base = dir > 0 ? by + T : by;
-        const tip = dir > 0 ? by + T - hh : by + hh;
-        if (outline) {
-          g.lineStyle(Math.max(1, s), color, alpha);
-          g.strokeTriangle(mid - half, base, mid + half, base, mid, tip);
-        } else {
-          g.fillStyle(color, alpha);
-          g.fillTriangle(mid - half, base, mid + half, base, mid, tip);
-        }
-      };
 
       for (let cy = y0; cy <= y1; cy++) {
         for (let cx = x0; cx <= x1; cx++) {
@@ -201,15 +207,16 @@ export function createPlatformerPainter(opts: PainterOptions = {}): Painter<Plat
         dw = (EXIT_W / FP) * s,
         dh = (EXIT_H / FP) * s;
       if (world.telegraph) {
-        lvl.traps.forEach((tr, k) => {
-          if (tr.kind !== "exit" || world.fired[k] >= 0) return;
+        for (let k = 0; k < lvl.traps.length; k++) {
+          const tr = lvl.traps[k];
+          if (tr.kind !== "exit" || world.fired[k] >= 0) continue;
           const tx2 = X(tr.to![0] * TILE_PX + (TILE_PX - EXIT_W / FP) / 2),
             ty2 = Y((tr.to![1] + 1) * TILE_PX - EXIT_H / FP);
           g.lineStyle(Math.max(1, s), palette.gold, 0.35 + 0.3 * pulse);
           g.strokeRoundedRect(tx2, ty2, dw, dh, 4 * s);
           const n = 8;
           for (let j = 1; j < n; j++) g.fillCircle(exX + dw / 2 + ((tx2 - exX) * j) / n, exY + dh / 2 + ((ty2 - exY) * j) / n, 1.2 * s);
-        });
+        }
       }
       const running = world.exitRunning();
       const hop = running && !reduced ? -Math.abs(Math.sin(now / 60)) * 3 * s : 0;

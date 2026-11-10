@@ -23,11 +23,8 @@ export function createRicochetPainter(): Painter<RicochetSim> {
         oy = (h - a.h * s) / 2 + h * 0.02;
       const X = (px: number) => ox + px * s;
       const Y = (py: number) => oy + py * s;
-      ctx.bg.fillStyle(SCENE.bg, 1);
-      ctx.bg.fillRect(0, 0, w, h);
-      ctx.bg.fillStyle(SCENE.dot, 1);
-      const step = 20 * ctx.dpr;
-      for (let y = step / 2; y < h; y += step) for (let x = step / 2; x < w; x += step) ctx.bg.fillCircle(x, y, 1.5 * ctx.dpr);
+      // Background and dot grid: one pre-drawn texture (R4-21).
+      ctx.backdrop(0, 0);
       // walls
       g.fillStyle(SCENE.ground, 1);
       g.fillRoundedRect(X(0) - 8 * s, Y(0), 8 * s, a.h * s, { tl: 4 * s, tr: 0, bl: 4 * s, br: 0 });

@@ -4,9 +4,15 @@
  * `import("phaser")`, so Phaser lives in its own lazy chunk and never in other routes.
  */
 import type * as PhaserNS from "phaser";
-import type { DrawCtx, LabelStyle, Painter, Palette } from "./render/types";
+import { DOT_STEP, SCENE, type DrawCtx, type LabelStyle, type Painter, type Palette } from "./render/types";
 
 type PhaserModule = typeof PhaserNS;
+
+/** Texture key of the backdrop tile (one dot on the scene colour). */
+const DOTS_KEY = "rage-dots";
+const hex = (n: number) => `#${n.toString(16).padStart(6, "0")}`;
+/** `n` mod `m`, never negative. */
+const wrap = (n: number, m: number) => ((n % m) + m) % m;
 
 export interface StageOptions<S> {
   parent: HTMLElement;
@@ -40,6 +46,9 @@ export function startStage<S>(Phaser: PhaserModule, o: StageOptions<S>): Stage {
   class RageScene extends Phaser.Scene {
     gfx!: PhaserNS.GameObjects.Graphics;
     bg!: PhaserNS.GameObjects.Graphics;
+    /** R4-21: the scene colour and dot grid, drawn once into a one-dot tile and repeated by the GPU. */
+    dots!: PhaserNS.GameObjects.TileSprite;
+    dotsUsed = false;
     labels = new Map<string, PhaserNS.GameObjects.Text>();
     /** Per-frame scratch, made once and reused, so a frame allocates nothing for the garbage collector. */
     used = new Set<string>();
@@ -48,10 +57,27 @@ export function startStage<S>(Phaser: PhaserModule, o: StageOptions<S>): Stage {
       super("rage");
     }
     create() {
+      // One tile of the backdrop (DOT_STEP css px square, the dot in its centre) on a 2D canvas, once.
+      const tile = Math.max(2, Math.round(DOT_STEP * dpr));
+      if (!this.textures.exists(DOTS_KEY)) {
+        const tex = this.textures.createCanvas(DOTS_KEY, tile, tile);
+        const c = tex?.getContext();
+        if (tex && c) {
+          c.fillStyle = hex(SCENE.bg);
+          c.fillRect(0, 0, tile, tile);
+          c.fillStyle = hex(SCENE.dot);
+          c.beginPath();
+          c.arc(tile / 2, tile / 2, 1.5 * dpr, 0, Math.PI * 2);
+          c.fill();
+          tex.refresh();
+        }
+      }
+      this.dots = this.add.tileSprite(0, 0, w, h, DOTS_KEY).setOrigin(0, 0).setDepth(-3).setVisible(false);
       this.bg = this.add.graphics();
       this.bg.setDepth(-2);
       this.gfx = this.add.graphics();
       const used = this.used;
+      const dots = this.dots;
       this.ctx = {
         g: this.gfx,
         bg: this.bg,
@@ -61,6 +87,11 @@ export function startStage<S>(Phaser: PhaserModule, o: StageOptions<S>): Stage {
         now: 0,
         reduced: false,
         palette: o.palette,
+        backdrop: (dx, dy) => {
+          this.dotsUsed = true;
+          // A dot sits at the tile's centre: shifting the grid by (dx, dy) moves the texture the other way.
+          dots.setTilePosition(wrap(-dx, tile), wrap(-dy, tile));
+        },
         label: (key, text, x, y, st: LabelStyle) => {
           used.add(key);
           let t = this.labels.get(key);
@@ -96,7 +127,10 @@ export function startStage<S>(Phaser: PhaserModule, o: StageOptions<S>): Stage {
       ctx.reduced = o.reduced();
       this.gfx.clear();
       this.bg.clear();
+      this.dotsUsed = false;
+      if (this.dots.width !== w || this.dots.height !== h) this.dots.setSize(w, h);
       o.painter.draw(ctx, sim, ghost);
+      if (this.dots.visible !== this.dotsUsed) this.dots.setVisible(this.dotsUsed);
       for (const [k, t] of this.labels) if (!used.has(k)) t.setVisible(false);
       // Asked to sleep before the loop was running (Phaser starts it after boot): draw this one frame, then stop.
       if (asleep) this.game.loop.sleep();
