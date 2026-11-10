@@ -2,7 +2,7 @@
 
 import { useGameSettings } from "@/lib/game-settings/client";
 import { useSettings } from "@/lib/settings/store";
-import { isRaceGame } from "@/lib/multiplayer/games";
+import { isPartyGame } from "@/lib/multiplayer/games";
 import { worldCopy } from "@/lib/copy/world";
 import Link from "next/link";
 import { motion } from "motion/react";
@@ -106,7 +106,8 @@ export function WorldScreen({ id }: { id: WorldId }) {
           const resume = resumeGames.has(g.id);
           const resumeLevel = resume && resumeNote(g.id)?.mode === "level";
           const inProgress = resume || (dailiesOn && s?.state === "in_progress");
-          const canChallenge = isRaceGame(g.id) && !relaxed;
+          // R4-08: score games race in Party, so they get the Challenge entry too.
+          const canChallenge = isPartyGame(g.id, settings) && !relaxed;
           const hasActions = !!g.botPlay || canChallenge || hasLiveEntries(g.id) || isLadderGame(g.id);
           return (
             // CSS stagger, not Motion: it plays while the route is still loading, and CSS keeps it off the main thread.

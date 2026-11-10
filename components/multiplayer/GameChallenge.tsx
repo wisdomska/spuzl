@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/Button";
 import { Sheet } from "@/components/meta/Sheet";
 import { useMe } from "@/lib/client/api";
 import { useSettings } from "@/lib/settings/store";
-import { challengeLinks, isRaceGame } from "@/lib/multiplayer/games";
+import { useGameSettings } from "@/lib/game-settings/client";
+import { challengeLinks, isPartyGame, isRaceGame } from "@/lib/multiplayer/games";
 import { quickMatchPool } from "@/lib/multiplayer/liveGate";
 import { partyCopy } from "@/lib/copy/party";
 
@@ -17,10 +18,22 @@ import { partyCopy } from "@/lib/copy/party";
  * mode-first flow with the game preselected (see `challengeLinks`).
  */
 
-/** Race games only, and never in Relaxed mode (no clocks, so Duels and Party Races are off). */
-export function useCanChallenge(meta: GameMeta) {
+/**
+ * How a game can be raced with others: "race" (time games: Duel and Party), "score" (R4-08: score games race in
+ * Party only, while "party.scoreRaces" is on and a lab game is switched on, the server's own check), or null.
+ * Never in Relaxed mode (no clocks, so Duels and Party Races are off).
+ */
+export function useChallengeKind(meta: GameMeta): "race" | "score" | null {
   const relaxed = useSettings((s) => s.relaxed);
-  return isRaceGame(meta.id) && !relaxed;
+  const settings = useGameSettings();
+  if (relaxed) return null;
+  if (isRaceGame(meta.id)) return "race";
+  return isPartyGame(meta.id, settings) ? "score" : null;
+}
+
+/** True when the game has any way to race others now (see `useChallengeKind`). */
+export function useCanChallenge(meta: GameMeta) {
+  return useChallengeKind(meta) !== null;
 }
 
 export function GameChallengeSheet({
@@ -38,17 +51,34 @@ export function GameChallengeSheet({
   const me = useMe();
   // R3-06: 13 to 15 year olds may Quick Match too; the server pairs them with players their age only.
   const teen = !!me.data && quickMatchPool(me.data) === "u16";
-  const live = useCanChallenge(meta);
+  const kind = useChallengeKind(meta);
   const links = challengeLinks(meta.id);
   const c = partyCopy.challenge;
-  const liveRows = [
-    { key: "friend", href: links.friend, icon: "user-plus", title: c.friend, hint: c.friendHint },
-    { key: "quick", href: links.quick, icon: "lightning", title: c.quick, hint: teen ? c.quickHintTeen : c.quickHint },
-    { key: "party", href: links.party, icon: "confetti", title: c.party, hint: c.partyHint },
-  ];
-  const rows = live ? liveRows : [];
+  const party = {
+    key: "party",
+    href: links.party,
+    icon: "confetti",
+    title: c.party,
+    hint: kind === "score" ? c.partyHintScore : c.partyHint,
+  };
+  // R4-08: a score game races in Party only (Duels are time races).
+  const rows =
+    kind === "race"
+      ? [
+          { key: "friend", href: links.friend, icon: "user-plus", title: c.friend, hint: c.friendHint },
+          { key: "quick", href: links.quick, icon: "lightning", title: c.quick, hint: teen ? c.quickHintTeen : c.quickHint },
+          party,
+        ]
+      : kind === "score"
+        ? [party]
+        : [];
   return (
-    <Sheet open={open} onOpenChange={(o) => !o && onClose()} title={c.title(meta.name)} description={c.body}>
+    <Sheet
+      open={open}
+      onOpenChange={(o) => !o && onClose()}
+      title={c.title(meta.name)}
+      description={kind === "score" && !onBeatMyTime ? c.scoreBody : c.body}
+    >
       <ul className="flex flex-col gap-2.5 pt-1">
         {onBeatMyTime && (
           <li>

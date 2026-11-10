@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { GAMES } from "@/lib/catalog";
-import { PARTY_GAME_IDS, RACE_GAMES, SCORE_RACE_GAMES, challengeLinks, isRaceGame, pickGames, raceGameParam, roomGamesName } from "./games";
+import {
+  PARTY_GAME_IDS,
+  RACE_GAMES,
+  SCORE_RACE_GAMES,
+  challengeLinks,
+  isRaceGame,
+  partyGameParam,
+  pickGames,
+  raceGameParam,
+  roomGamesName,
+} from "./games";
 import { createRng } from "@/lib/rng";
 import { PARTY_GAMES, PARTY_PICK_MAX } from "./constants";
 import { RoomCreateInput, RoomSettingsInput } from "./roomInput";
@@ -30,6 +40,23 @@ describe("Party game picker (SPZ-13)", () => {
     expect(raceGameParam("chess")).toBeNull();
     expect(raceGameParam(null)).toBeNull();
     expect(raceGameParam("")).toBeNull();
+  });
+
+  it("reads a Party ?game= for score games too, while score races are on (R4-08)", () => {
+    const live = SCORE_RACE_GAMES.find((g) => !g.lab)!;
+    const on = { "party.scoreRaces": true, "features.labGames": [] as string[] };
+    const off = { ...on, "party.scoreRaces": false };
+    expect(partyGameParam(live.id, on)).toBe(live.id);
+    expect(partyGameParam(live.id, off)).toBeNull();
+    expect(raceGameParam(live.id)).toBeNull(); // never a Duel
+    expect(partyGameParam(PARTY_GAME_IDS[0], off)).toBe(PARTY_GAME_IDS[0]);
+    expect(partyGameParam("chess", on)).toBeNull();
+    expect(partyGameParam(null, on)).toBeNull();
+    const lab = SCORE_RACE_GAMES.find((g) => g.lab);
+    if (lab) {
+      expect(partyGameParam(lab.id, on)).toBeNull();
+      expect(partyGameParam(lab.id, { ...on, "features.labGames": [lab.id] })).toBe(lab.id);
+    }
   });
 
   it("game-first links carry the game the Duel and Party screens read back", () => {

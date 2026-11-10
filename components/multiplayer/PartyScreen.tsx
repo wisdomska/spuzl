@@ -24,7 +24,7 @@ import { useBackOrHome } from "@/lib/client/nav";
 import { codeHref } from "@/lib/client/codes";
 import { normalizeRoomCode } from "@/lib/multiplayer/roomCode";
 import { partyPhase } from "@/lib/multiplayer/race";
-import { isScoreRaceGame, raceGameParam, roomGamesName } from "@/lib/multiplayer/games";
+import { isScoreRaceGame, partyGameParam, roomGamesName } from "@/lib/multiplayer/games";
 import { PARTY_PICK_MIN } from "@/lib/multiplayer/constants";
 import { readiness } from "@/lib/multiplayer/readiness";
 import { canHostTv, tvPath } from "@/lib/multiplayer/tv";
@@ -75,14 +75,15 @@ export function PartyHome() {
   const crewId = sp.get("crew");
   const back = useBackOrHome(); // SPZ-25: deep links go back to the Grid
   // Game-first (SPZ-13): /party?host=1&game=<id> opens the Host tab with that game picked; ?join=1 opens Join.
-  const initialGame = raceGameParam(sp.get("game"));
+  // R4-08: a score game (Quickfire, Echo, ...) is picked too while score races are on.
+  const settings = useGameSettings();
+  const initialGame = partyGameParam(sp.get("game"), settings);
   const [tab, setTab] = useState<PartyTab>(sp.get("join") === "1" && sp.get("host") !== "1" ? "join" : "host");
   const relaxed = useSettings((s) => s.relaxed);
   const [busy, setBusy] = useState(false);
   const { toast, show } = useToast();
   // Draw It and Two Truths: only for signed-in 18+ players while the admin switch is on (the server checks again).
   const me = useMe(gate === "ready");
-  const settings = useGameSettings();
   const adult = canSeeAdultParty(me.data, settings["features.adultParty"]);
   // Family Draw (R2-P5): signed-in players aged 16 and over while "party.familyDraw" is on.
   const family = canSeeFamilyDraw(me.data, settings["party.familyDraw"]);

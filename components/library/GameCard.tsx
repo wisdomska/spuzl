@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { GameIcon3D } from "@/components/world/GameIcon3D";
 import { WORLD_BY_ID, type GameMeta, UI_ACCENT } from "@/lib/catalog";
-import { isRaceGame } from "@/lib/multiplayer/games";
+import { isPartyGame, isRaceGame } from "@/lib/multiplayer/games";
 import { isBayGame } from "@/lib/multiplayer/bay";
 import { bayLive } from "@/lib/copy/bay-live";
 import { useSettings } from "@/lib/settings/store";
@@ -45,7 +45,8 @@ export function GameCard({
   typicalSec?: number;
 }) {
   const router = useRouter();
-  const dailies = useGameSettings()["features.dailies"];
+  const gameSettings = useGameSettings();
+  const dailies = gameSettings["features.dailies"];
   const done = dailies && doneMs !== undefined;
   const ladder = meta ? isLadderGame(meta.id) : false;
   const levels = useLevels(ladder);
@@ -78,6 +79,8 @@ export function GameCard({
   const world = meta ? WORLD_BY_ID[meta.world] : null;
   const metaRows = useGamesMeta();
   const race = meta ? isRaceGame(meta.id) : false;
+  // R4-08: score games (Quickfire, Echo, Beat Tap, ...) race in Party only, while score races are on.
+  const scoreParty = !!meta && !race && isPartyGame(meta.id, gameSettings);
   // Board Bay games: play someone live (matchmaking) or invite a friend.
   const bay = meta ? isBayGame(meta.id) : false;
   const relaxed = useSettings((s) => s.relaxed);
@@ -220,13 +223,17 @@ export function GameCard({
                 </div>
               )}
 
-              {race && (
+              {(race || scoreParty) && (
                 <div className="flex flex-col gap-2">
                   <span className="text-muted px-1 text-[13px] font-bold">{T.challenge}</span>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className={`grid gap-2 ${race ? "grid-cols-3" : "grid-cols-1"}`}>
                     {[
-                      { icon: "sword", label: T.quickMatch, href: `/duel?game=${meta.id}` },
-                      { icon: "user-plus", label: T.duelFriend, href: `/duel?game=${meta.id}&invite=1` },
+                      ...(race
+                        ? [
+                            { icon: "sword", label: T.quickMatch, href: `/duel?game=${meta.id}` },
+                            { icon: "user-plus", label: T.duelFriend, href: `/duel?game=${meta.id}&invite=1` },
+                          ]
+                        : []),
                       { icon: "users-three", label: T.hostParty, href: `/party?host=1&game=${meta.id}` },
                     ].map((a) => (
                       <button

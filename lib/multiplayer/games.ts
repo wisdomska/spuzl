@@ -46,6 +46,14 @@ export const partyGames = (s: PartyGameSwitch): GameMeta[] => [...RACE_GAMES, ..
 /** The server's check for a Party game: a time race game, or a score race game open now. */
 export const isPartyGame = (id: string, s: PartyGameSwitch) =>
   isRaceGame(id) || (isScoreRaceGame(id) && s["party.scoreRaces"] && !!openGame(id, s));
+
+/**
+ * R4-08: a `?game=<id>` param for the Party Host tab: a time race game, or a score race game open now (the same
+ * check the server makes), otherwise null.
+ */
+export const partyGameParam = (raw: string | null | undefined, s: PartyGameSwitch): string | null =>
+  raw && isPartyGame(raw, s) ? raw : null;
+
 /** Duel entry default (Overlays M1 "Sixer | Any game"). */
 export const DUEL_DEFAULT_GAME = isRaceGame("sixer") ? "sixer" : RACE_GAMES[0]?.id;
 

@@ -47,6 +47,9 @@ export const partyCopy = {
     quickHintTeen: "Ranked. We find you a rival aged 13 to 15.",
     party: "Host a party",
     partyHint: "2 to 8 players race with a room code.",
+    /** R4-08: score games (Quickfire, Echo, Beat Tap, ...) race in Party only, on points */
+    scoreBody: "Same round for everyone. Most points wins, then the faster finish.",
+    partyHintScore: "2 to 8 players with a room code. Most points wins.",
     close: "Close",
     beat: "Beat my time",
     beatHint: "Send this exact puzzle. They race your time.",
