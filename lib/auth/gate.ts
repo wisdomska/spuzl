@@ -8,8 +8,8 @@ import type { PlayerRow } from "@/lib/server/player-data";
 import { returnPath } from "@/lib/onboarding-return";
 
 /**
- * Server-side first-run gate for pages that need a player: no session goes to the logo intro, a session
- * without a profile goes to onboarding. Redirecting on the server means first-time visitors never
+ * Server-side first-run gate for pages that need a player: no session, or a session without a profile, goes
+ * straight to the age step of onboarding (/welcome/play; R4-04: the logo intro is not replayed). Redirecting on the server means first-time visitors never
  * download and boot the Home or Play screen just to be bounced. Returns the player for pages that
  * prefetch their data; null when the backend is not configured (local demo mode).
  *
@@ -18,18 +18,21 @@ import { returnPath } from "@/lib/onboarding-return";
  */
 const backQuery = (back?: string) => (back && returnPath(back) ? `?return=${encodeURIComponent(back)}` : "");
 
-/** Session only (no database): signed-out visitors go to the intro. */
+/** The first-run page a gate sends visitors to: the age step (it offers sign-in when a deep link sent them). */
+export const FIRST_RUN = "/welcome/play";
+
+/** Session only (no database): signed-out visitors go to the age step. */
 export async function requireSessionPage(opts: { back?: string } = {}): Promise<void> {
   if (!hasSupabase()) return;
-  if (!(await currentUser())) redirect(`/intro${backQuery(opts.back)}`);
+  if (!(await currentUser())) redirect(`${FIRST_RUN}${backQuery(opts.back)}`);
 }
 
 export async function requirePlayerPage(opts: { back?: string } = {}): Promise<{ user: User; player: PlayerRow } | null> {
   if (!hasSupabase()) return null;
   const q = backQuery(opts.back);
   const user = await currentUser();
-  if (!user) redirect(`/intro${q}`);
+  if (!user) redirect(`${FIRST_RUN}${q}`);
   const { data } = await supabaseAdmin().from("players").select("id, xp, sparks, is_guest").eq("id", user.id).maybeSingle();
-  if (!data) redirect(`/welcome${q}`);
+  if (!data) redirect(`${FIRST_RUN}${q}`);
   return { user, player: data as PlayerRow };
 }

@@ -91,6 +91,8 @@ export const en = {
     signInLater: "You can sign in later from Settings. Your progress comes with you.",
     signInFailed: "Sign-in didn't finish. Try again, or play as a guest.",
     signInTitle: "Sign in",
+    /** R4-04: on the age step when a deep link or invite sent the visitor there (no intro, no "Ready to play?") */
+    playedBefore: "Played before? Sign in",
     signedInNote: "Signed in. Your Spuz is saved to your account.",
     startTitle: "How do you want to start?",
     starts: {

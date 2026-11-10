@@ -135,10 +135,8 @@ test.describe("R2-05 Daily Five", () => {
     const ctx = await browser.newContext();
     const page = await ctx.newPage();
     await page.goto("/daily");
-    await page.waitForURL(/\/intro\?return=daily/);
-    // The intro hands over to Welcome by itself.
-    await page.waitForURL(/\/welcome/, { timeout: 15_000 });
-    await page.getByRole("button", { name: "Play as guest" }).click();
+    // R4-04: straight to the age step, no logo intro.
+    await page.waitForURL(/\/welcome\/play\?return=daily/);
     await expect(page.getByRole("heading", { name: /When were you born\?/ })).toBeVisible();
     await pickBirth(page, "18+");
     await page.getByRole("button", { name: /Jump straight in|Go to the map/ }).click();

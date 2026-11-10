@@ -21,7 +21,6 @@ import {
   type FinishRes,
   type StartRes,
 } from "@/lib/client/api";
-import { readOnboarding } from "@/lib/client/onboarding";
 import { gameReturn } from "@/lib/onboarding-return";
 import { usePresence } from "@/lib/client/social";
 import { dailyNumber, formatClear, formatClock } from "@/lib/format";
@@ -120,11 +119,9 @@ export function PlayScreen({
   const Board = BOARDS[meta.id];
   useTapToBoard(phase === "playing" && !!attempt && !!Board, meta.id, mode);
 
-  // No profile yet: first run goes through onboarding, then back to this game (R4-03).
+  // No profile yet: first run goes through onboarding (the age step, R4-04), then back to this game (R4-03).
   useEffect(() => {
-    if (!me.isSuccess || me.data !== null) return;
-    const back = `?return=${encodeURIComponent(gameReturn(meta.id))}`;
-    router.replace(`${readOnboarding().introSeen ? "/welcome" : "/intro"}${back}` as never);
+    if (me.isSuccess && me.data === null) router.replace(`/welcome/play?return=${encodeURIComponent(gameReturn(meta.id))}` as never);
   }, [me.isSuccess, me.data, router, meta.id]);
 
   // Back goes to the world page in code, so have its loading screen ready, once this board is up and the network

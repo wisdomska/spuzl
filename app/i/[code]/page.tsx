@@ -5,7 +5,6 @@ import { use, useEffect, useRef, useState } from "react";
 import { useMe, HttpError } from "@/lib/client/api";
 import { useAcceptInvite } from "@/lib/client/social";
 import { savePendingInvite } from "@/lib/client/invite";
-import { readOnboarding } from "@/lib/client/onboarding";
 import { Spuz } from "@/components/brand/Spuz";
 import { MySpuz } from "@/components/meta/MySpuz";
 import { Wordmark } from "@/components/brand/Wordmark";
@@ -32,7 +31,8 @@ export default function InvitePage({ params }: PageProps<"/i/[code]">) {
       .catch((e) => setErr(e instanceof HttpError && e.message !== e.code ? e.message : "That invite didn't work."));
   }, [me.isSuccess, me.data, code, accept]);
 
-  const start = readOnboarding().introSeen ? "/welcome" : "/intro";
+  // R4-04: straight to the age step (no logo intro); the pending invite is accepted once the profile exists.
+  const start = "/welcome/play?from=invite";
   const cta =
     "toy bg-accent text-on-accent font-display flex h-[60px] w-full items-center justify-center rounded-[20px] text-[16px] font-black";
 

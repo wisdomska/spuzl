@@ -89,6 +89,16 @@ export function Welcome({ first = "hello" }: { first?: "hello" | "age" }) {
     () => new URLSearchParams(window.location.search).get("auth") === "failed",
     () => false,
   );
+  // R4-04: a gate, deep link (?return=) or invite (?from=invite) opened the age step directly. A returning player
+  // whose session ended gets a way to sign in here, since the "Ready to play?" choice was skipped.
+  const deepLink = useSyncExternalStore(
+    noSubscribe,
+    () => {
+      const sp = new URLSearchParams(window.location.search);
+      return sp.has("return") || sp.get("from") === "invite";
+    },
+    () => false,
+  );
   const [nick, setNick] = useState("");
   const [ideas, setIdeas] = useState(() => IDEAS.slice(0, 3));
   const [coach, setCoach] = useState("Tap once for X, twice for a crown.");
@@ -362,6 +372,15 @@ export function Welcome({ first = "hello" }: { first?: "hello" | "age" }) {
                 >
                   {ageCopy.continue}
                 </Button>
+                {first === "age" && deepLink && !signedIn && (
+                  <button
+                    type="button"
+                    onClick={() => setStep("hello")}
+                    className="press text-muted min-h-11 text-center text-[15px] font-semibold underline-offset-4 hover:underline"
+                  >
+                    {copy.welcome.playedBefore}
+                  </button>
+                )}
               </form>
             </Screen>
           )}

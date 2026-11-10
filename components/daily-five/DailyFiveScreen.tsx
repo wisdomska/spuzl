@@ -13,7 +13,6 @@ import { MySpuz } from "@/components/meta/MySpuz";
 import { WORLD_BY_ID } from "@/lib/catalog";
 import { useMe } from "@/lib/client/api";
 import { fiveHref, nextFiveGame, shareFiveGrid, useDailyFive, type FiveGame } from "@/lib/client/daily-five";
-import { readOnboarding } from "@/lib/client/onboarding";
 import { dailyFiveCopy as T } from "@/lib/copy/daily-five";
 import { isFinished, shareGrid } from "@/lib/daily-five";
 import { formatClock, formatCountdown } from "@/lib/format";
@@ -42,7 +41,8 @@ export function DailyFiveScreen() {
 
   // No profile yet (a friend's link on a new phone): onboarding first, then straight back here.
   useEffect(() => {
-    if (me.isSuccess && me.data === null) router.replace(readOnboarding().introSeen ? "/welcome?return=daily" : "/intro?return=daily");
+    // R4-04: straight to the age step, no logo intro.
+    if (me.isSuccess && me.data === null) router.replace("/welcome/play?return=daily");
   }, [me.isSuccess, me.data, router]);
 
   const v = q.data;
