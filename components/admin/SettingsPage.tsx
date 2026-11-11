@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, type ReactNode } from "react";
+import { useEffect, useId, useState, type KeyboardEvent, type ReactNode } from "react";
 import { age } from "@/lib/admin/dates";
 import { inputSpec, intText, settingValueText } from "@/lib/admin/setting-words";
 import { errorText, useAdminAction, useAdminQuery } from "@/lib/client/admin";
@@ -33,6 +33,20 @@ export function SettingsPage({ canWrite }: { canWrite: boolean }) {
   for (const r of q.data?.rows ?? []) groups.set(r.def.group, [...(groups.get(r.def.group) ?? []), r]);
   const shown = [...groups].filter(([, rows]) => rows.length);
   const about = (name: string) => SETTING_GROUPS.find((g) => g.name === name)?.about;
+  // The open section: the first one, or the one named in the address (#games-in-testing), read after hydration.
+  const [tab, setTab] = useState<string | null>(null);
+  useEffect(() => {
+    const read = () => setTab(window.location.hash.replace(/^#/, "") || null);
+    read();
+    window.addEventListener("hashchange", read);
+    return () => window.removeEventListener("hashchange", read);
+  }, []);
+  const slugs = shown.map(([g]) => slug(g));
+  const active = tab && slugs.includes(tab) ? tab : (slugs[0] ?? "");
+  const pick = (id: string) => {
+    setTab(id);
+    window.history.replaceState(null, "", `#${id}`);
+  };
 
   const save = (r: Row) => (value: Value) => {
     setSaved(null);
@@ -83,35 +97,27 @@ export function SettingsPage({ canWrite }: { canWrite: boolean }) {
         <Notice icon="info">{C.empty}</Notice>
       ) : (
         <>
-          <nav aria-label={C.onThisPage} className="flex flex-wrap gap-2">
-            {shown.map(([group]) => (
-              <a
+          {/* One section at a time (owner request: less scrolling). The open tab lives in the address (#section). */}
+          <SectionTabs groups={shown.map(([g]) => g)} value={active} onChange={pick} />
+          {shown
+            .filter(([group]) => slug(group) === active)
+            .map(([group, rows]) => (
+              <section
                 key={group}
-                href={`#set-${slug(group)}`}
-                className="bg-surface hover:bg-surface-raised flex min-h-11 items-center rounded-full px-3.5 text-[13px] font-semibold focus-visible:shadow-[inset_0_0_0_2px_var(--accent)] focus-visible:outline-none sm:min-h-9"
+                id={`set-${slug(group)}`}
+                role="tabpanel"
+                aria-labelledby={`tab-${slug(group)}`}
+                className="bg-surface flex flex-col gap-4 rounded-[16px] p-4 sm:p-5"
               >
-                {group}
-              </a>
+                <div className="flex flex-col gap-0.5">
+                  <h2 className="font-display text-[17px] font-extrabold">{group}</h2>
+                  {about(group) && <p className="text-muted text-[13px]">{about(group)}</p>}
+                </div>
+                {rows.map((r) => (
+                  <SettingRow key={r.key} row={r} canWrite={canWrite} busy={put.isPending} onSave={save(r)} />
+                ))}
+              </section>
             ))}
-          </nav>
-          {shown.map(([group, rows]) => (
-            <section
-              key={group}
-              id={`set-${slug(group)}`}
-              aria-labelledby={`set-${slug(group)}-h`}
-              className="bg-surface flex scroll-mt-4 flex-col gap-4 rounded-[16px] p-4 sm:p-5"
-            >
-              <div className="flex flex-col gap-0.5">
-                <h2 id={`set-${slug(group)}-h`} className="font-display text-[17px] font-extrabold">
-                  {group}
-                </h2>
-                {about(group) && <p className="text-muted text-[13px]">{about(group)}</p>}
-              </div>
-              {rows.map((r) => (
-                <SettingRow key={r.key} row={r} canWrite={canWrite} busy={put.isPending} onSave={save(r)} />
-              ))}
-            </section>
-          ))}
         </>
       )}
     </div>
@@ -447,6 +453,53 @@ export function GameSetRow({ row, canWrite, busy, onSave }: { row: Row; canWrite
       )}
       <DefaultLine row={row} canWrite={canWrite} busy={busy} onSave={onSave} />
       <TechDetails row={row} />
+    </div>
+  );
+}
+
+/** The settings sections as tabs that wrap onto a second line on narrow screens; arrows move between them. */
+function SectionTabs({ groups, value, onChange }: { groups: string[]; value: string; onChange: (id: string) => void }) {
+  const ids = groups.map(slug);
+  const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
+    const i = ids.indexOf(value);
+    const next =
+      e.key === "ArrowRight"
+        ? ids[(i + 1) % ids.length]
+        : e.key === "ArrowLeft"
+          ? ids[(i - 1 + ids.length) % ids.length]
+          : e.key === "Home"
+            ? ids[0]
+            : e.key === "End"
+              ? ids[ids.length - 1]
+              : null;
+    if (!next) return;
+    e.preventDefault();
+    onChange(next);
+    document.getElementById(`tab-${next}`)?.focus();
+  };
+  return (
+    <div role="tablist" aria-label={C.onThisPage} onKeyDown={onKey} className="bg-surface flex flex-wrap gap-1 rounded-[14px] p-1">
+      {groups.map((g) => {
+        const id = slug(g);
+        const on = id === value;
+        return (
+          <button
+            key={id}
+            id={`tab-${id}`}
+            type="button"
+            role="tab"
+            aria-selected={on}
+            aria-controls={`set-${id}`}
+            tabIndex={on ? 0 : -1}
+            onClick={() => onChange(id)}
+            className={`flex min-h-11 items-center rounded-[10px] px-3.5 text-[13px] font-semibold focus-visible:shadow-[inset_0_0_0_2px_var(--accent)] focus-visible:outline-none sm:min-h-10 ${
+              on ? "bg-accent text-on-accent" : "text-muted hover:bg-surface-raised hover:text-text"
+            }`}
+          >
+            {g}
+          </button>
+        );
+      })}
     </div>
   );
 }

@@ -49,9 +49,12 @@ test("Game settings: every round 2 setting shows with its helper text, and range
     "rooms.under16FriendsOnly",
     "practice.disabled",
   ] as const) {
+    // One section at a time: open the setting's tab first.
+    await page.getByRole("tab", { name: SETTINGS[key].group, exact: true }).click();
     await expect(page.getByRole("heading", { name: SETTINGS[key].label, exact: true, level: 3 })).toBeVisible();
     await expect(page.getByText(key, { exact: true })).toBeHidden();
   }
+  await page.getByRole("tab", { name: SETTINGS["party.countdownSeconds"].group, exact: true }).click();
   const countdown = await settingRow(page, SETTINGS["party.countdownSeconds"].label);
   await countdown.getByText("Technical details").click();
   await expect(countdown.getByText("party.countdownSeconds", { exact: true })).toBeVisible();
