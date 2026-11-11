@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.46.0 (11 November 2026)
+
+The admin, rewritten for people who aren't developers.
+
+### Admin
+
+- **A grouped menu:** Home, Players, Games & content, Shop, Insights and Settings, instead of 18 items in one list.
+  Groups fold away, show how many things wait inside, and the whole menu fits a laptop screen. On phones and tablets
+  a Menu button opens the same list.
+- **Overview is a real home:** what needs your attention first, with a button for each, then today's numbers, the
+  last 7 days and your players (guests, saved accounts, age groups) in plain words.
+- **Metrics answer an owner's questions:** how many people play, whether they come back, what they play, playing
+  together, Sparks and the shop, reports and feedback, and first-time players. Each number says what it means and
+  how it compares with the period before. App speed timings moved to a folded technical section.
+- **Activity log in sentences:** "Senya switched on Pinned and Flagged", "Automatic: picked the Daily Five for
+  Tue 24 Nov". Automatic jobs are hidden unless you ask for them, and hourly reminders fold into one line a day.
+- **Game settings in plain words,** in sections with a jump list, values in seconds and words, "Use default" on
+  anything changed, and a confirmation before switching off something players use.
+- **Players, Reports, Join requests and Feedback** lead with what needs doing. Taking something away from a player
+  now asks first and says what will happen.
+- **Games, Content, Puzzles, Daily calendar, Daily Five, Events and Shop** say what every state means for players
+  and what each button does. The Games page is a compact list that opens to edit.
+- Internal ids, setting keys and raw data are folded under "Technical details" everywhere.
+- No admin page scrolls sideways on a phone.
+
 ## 1.45.1 (11 November 2026)
 
 - **Two Truths** says "Cape Verde", like Flagged.
