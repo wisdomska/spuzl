@@ -277,7 +277,6 @@ export const adminCopy = {
     editor: "a team member",
     show: "Show",
     questions: (n: number) => `${n} questions`,
-    openItem: (summary: string) => `Open ${summary}`,
     /** A team-written item's status (content_items.status). */
     states: {
       draft: { label: "Draft", meaning: "Still being written. Only the team sees it; players don't get it." },
@@ -1620,9 +1619,6 @@ export const adminCopy = {
   contentCommon: {
     technical: "Technical details",
     guide: "What do these labels mean?",
-    working: "Working…",
-    cancel: "Cancel",
-    close: "Close",
   },
 
   /** The Games page (was Library): how each game is shown to players. */
