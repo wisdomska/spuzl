@@ -7,7 +7,8 @@ import { TabPage } from "@/components/meta/TabPage";
 import { AvatarChip, EmptyState, ErrorState, ListSkeleton, PageTitle, PillTabs } from "@/components/meta/ui";
 import { Sheet } from "@/components/meta/Sheet";
 import { Icon } from "@/components/ui/Icon";
-import { GAME_BY_ID, LAUNCH_IDS, WORLDS, gamesInWorld } from "@/lib/catalog";
+import { GAME_BY_ID, LAUNCH_IDS, WORLDS, playerGamesInWorld, playerWorlds } from "@/lib/catalog";
+import { useGameSettings } from "@/lib/game-settings/client";
 import { SCOPES, SCOPE_LABEL, addDays, shortDate, type Scope } from "@/lib/meta";
 import { formatNumber, formatClock, gmtDate } from "@/lib/format";
 import { ordinal } from "@/lib/leagues";
@@ -47,6 +48,8 @@ export default function LeaderboardsPage() {
   const [game, setGame] = useState<string>(LAUNCH_IDS[0] ?? "crownfall");
   const [date, setDate] = useState(today);
   const [picking, setPicking] = useState(false);
+  // The picker lists the games that are On (Games page state).
+  const gameSettings = useGameSettings();
   const q = useBoard(game, scope, date);
   const d = q.data;
   const meta = game === "overall" ? null : GAME_BY_ID[game];
@@ -203,11 +206,11 @@ export default function LeaderboardsPage() {
             <Icon name="trophy" size={18} className="text-accent" />
             All games, most clears
           </button>
-          {WORLDS.map((w) => (
+          {playerWorlds(gameSettings).map((w) => (
             <section key={w.id} aria-label={w.name} className="flex flex-col gap-1.5">
               <h3 className="text-muted px-1 text-[13px] font-semibold">{w.name}</h3>
               <div className="grid grid-cols-2 gap-1.5">
-                {gamesInWorld(w.id).map((g) => (
+                {playerGamesInWorld(w.id, gameSettings).map((g) => (
                   <button
                     key={g.id}
                     onClick={() => {

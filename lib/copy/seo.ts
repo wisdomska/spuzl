@@ -145,11 +145,14 @@ export type QA = { q: string; a: string; points?: readonly string[] };
 /** The answer as one plain paragraph (structured data and plain text): the answer, then each point. */
 export const qaText = ({ a, points }: QA) => (points?.length ? `${a} ${points.join(" ")}` : a);
 
-/** The site-wide FAQ (landing page, How to play, llms-full.txt). */
-export const SITE_FAQ: QA[] = [
+/**
+ * The site-wide FAQ (landing page, How to play, llms-full.txt), counting `games` in `worlds` (the games that are On
+ * now, where the page can follow them; SITE_FAQ is the catalogue count).
+ */
+export const siteFaq = (games: number = GAME_COUNT, worlds: number = WORLD_COUNT, names: string = worldNames): QA[] => [
   {
     q: "What is SPUZL?",
-    a: `SPUZL is a free puzzle games app that runs in your web browser. It has ${GAME_COUNT} short games in ${WORLD_COUNT} worlds: ${worldNames}. Logic grids, word games, quick arcade runs and classic board games like oware and draughts, made in Ghana for puzzle lovers everywhere.`,
+    a: `SPUZL is a free puzzle games app that runs in your web browser. It has ${games} short games in ${worlds} worlds: ${names}. Logic grids, word games, quick arcade runs and classic board games like oware and draughts, made in Ghana for puzzle lovers everywhere.`,
   },
   {
     q: "Is SPUZL free?",
@@ -170,7 +173,7 @@ export const SITE_FAQ: QA[] = [
   },
   {
     q: "How many games are on SPUZL?",
-    a: `${GAME_COUNT} games in ${WORLD_COUNT} worlds: ${worldNames}. Every game can be played any time, as often as you like.`,
+    a: `${games} games in ${worlds} worlds: ${names}. Every game can be played any time, as often as you like.`,
   },
   {
     q: "Does SPUZL work on phones and offline?",
@@ -178,9 +181,25 @@ export const SITE_FAQ: QA[] = [
   },
 ];
 
+/** The site-wide FAQ with the catalogue count (static text). */
+export const SITE_FAQ: QA[] = siteFaq();
+
+/** "Puzzles, Words & Quiz, Arcade and Board Games" for a list of world names. */
+export const worldNamesOf = (names: readonly string[]) => list([...names]);
+
 /** Page titles and descriptions (titles under 60 characters, descriptions under 155). */
 export const seoMeta = {
   landing: { title: aboutCopy.metaTitle, description: aboutCopy.metaDescription },
+  /** /games, counting the games that are On (the page is rebuilt hourly and after a state change) */
+  gamesFor: (n: number) => ({
+    title: `All ${n} free online puzzle games | SPUZL`,
+    description: `Every SPUZL game in one list: logic puzzles, sudoku, word games, trivia, arcade and board games like oware and ludo. All free in your browser.`,
+  }),
+  /** How to play, counting the games that are On */
+  howToPlayFor: (n: number) => ({
+    title: "How to play SPUZL: rules for every game",
+    description: `The rules of all ${n} SPUZL games, plus how free play, hints, streaks and weekly leagues work. Free puzzle games in your browser.`,
+  }),
   games: {
     title: `All ${GAME_COUNT} free online puzzle games | SPUZL`,
     description: `Every SPUZL game in one list: logic puzzles, sudoku, word games, trivia, arcade and board games like oware and ludo. All free in your browser.`,
@@ -223,6 +242,9 @@ export const gamesCopy = {
   nav: { home: "SPUZL home", games: "Games", how: "How to play", play: "Play", breadcrumb: "Breadcrumb", footer: "Footer" },
   indexTitle: "All SPUZL games",
   indexLede: `SPUZL has ${GAME_COUNT} free online games in ${WORLD_COUNT} worlds: ${worldNames}. Every one plays in your browser on a phone or a computer, any time, as often as you like.`,
+  /** The same, counting the games that are On (the /games page follows the Games page state). */
+  indexLedeFor: (games: number, worlds: number, names: string) =>
+    `SPUZL has ${games} free online games in ${worlds} worlds: ${names}. Every one plays in your browser on a phone or a computer, any time, as often as you like.`,
   indexPoints: [
     "Free to play, no download and no ads.",
     "No sign-up needed: play as a guest, sign in later to keep your streak.",
@@ -324,6 +346,7 @@ export const howToPlaySeoCopy = {
 /** The visitor landing page's extra sections (catalogue and FAQ). */
 export const landingSeoCopy = {
   catalogueTitle: `All ${GAME_COUNT} games, one tap away.`,
+  catalogueTitleFor: (n: number) => `All ${n} games, one tap away.`,
   catalogueMore: "See every game",
   faqEyebrow: "Questions",
   faqTitle: "Good to know.",
@@ -338,7 +361,10 @@ export const worldSeoCopy = {
   play: "Play now",
 } as const;
 
-/** llms.txt summary line (the blockquote). */
+/** llms.txt summary line (the blockquote), counting the games that are On (llms.txt follows the Games page state). */
+export const llmsSummaryFor = (games: number, worlds: number, names: string) =>
+  `SPUZL is a free puzzle games web app (PWA) with ${games} short games in ${worlds} worlds (${names}): logic grids, sudoku, word games, trivia, arcade runs and board games like oware, draughts and ludo. Play in any browser as a guest, duel friends, race in Party rooms and climb weekly leagues. Made in Ghana, for players aged 13 and over.`;
+/** The same with the catalogue count. */
 export const llmsSummary = `SPUZL is a free puzzle games web app (PWA) with ${GAME_COUNT} short games in ${WORLD_COUNT} worlds (${worldNames}): logic grids, sudoku, word games, trivia, arcade runs and board games like oware, draughts and ludo. Play in any browser as a guest, duel friends, race in Party rooms and climb weekly leagues. Made in Ghana, for players aged 13 and over.`;
 
 /** The site's default link preview (app/opengraph-image.tsx). */

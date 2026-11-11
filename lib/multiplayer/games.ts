@@ -4,48 +4,67 @@
  * Ghost Race, Board Games their own matches, and photosensitive games stay solo. Score games race in Party only
  * (R3-08, `SCORE_RACE_GAMES`).
  */
-import { GAMES, GAME_BY_ID, LAB_GAMES, openGame, type GameMeta, type LabSwitch } from "@/lib/catalog";
+import { GAMES, GAME_BY_ID, openGame, versusAllowed, type GameMeta, type GameSwitch } from "@/lib/catalog";
 import { hasLogic } from "@/games/logic-ids";
 import type { Rng } from "@/lib/rng";
 
+/**
+ * Every game that CAN be raced head to head (time races), whatever its state: the eligibility. Who may race it now
+ * is `isDuelGame` (On, and the admin hasn't kept it out of Duels and Parties on the Games page).
+ */
 export const RACE_GAMES: GameMeta[] = GAMES.filter(
   (g) => g.world !== "board" && g.engine !== "phaser" && !g.photosensitive && g.scoring === "time" && hasLogic(g.id),
 );
 const RACE_IDS = new Set(RACE_GAMES.map((g) => g.id));
+/** A game that can be raced (eligibility only; gate rooms on `isDuelGame` / `isPartyGame`). */
 export const isRaceGame = (id: string) => RACE_IDS.has(id);
 
 /**
- * Party room picker (Overlays P0, SPZ-13): Random mix plus every race game, in catalog order. The rooms API
- * accepts exactly this set (`isRaceGame`), so the picker and the server can never disagree.
+ * Party room picker (Overlays P0, SPZ-13): Random mix plus every race game, in catalog order. Eligibility only: the
+ * Host tab lists `partyGames(settings)` and the rooms API checks `isPartyGame`.
  */
 export const PARTY_GAME_IDS: string[] = RACE_GAMES.map((g) => g.id);
 
 /**
- * R3-08: score races. Score games a Party may race (most points wins, then the faster finish): every live or lab
- * game scored by points that is all ages, not photosensitive, not an action course and not a board game. Party
- * only, never Duels (`isRaceGame` stays time games). A lab game joins only while "features.labGames" has it, the
- * same rule as everywhere else (`openGame`), and all of them only while the admin setting "party.scoreRaces" is on.
- * The server judges each one with the game's own checks (verify, and audit of the server's answer log).
+ * R3-08: score races. Score games a Party may race (most points wins, then the faster finish): every game scored by
+ * points that is all ages, not photosensitive, not an action course and not a board game. Party only, never Duels
+ * (`isRaceGame` stays time games). Each joins only while it is On and allowed in Duels and Parties (Games page), and
+ * all of them only while the admin setting "party.scoreRaces" is on. The server judges each one with the game's own
+ * checks (verify, and audit of the server's answer log).
  */
-export const SCORE_RACE_GAMES: GameMeta[] = [...GAMES, ...LAB_GAMES].filter(
+export const SCORE_RACE_GAMES: GameMeta[] = GAMES.filter(
   (g) => g.world !== "board" && g.engine !== "phaser" && !g.photosensitive && g.scoring === "score" && hasLogic(g.id),
 );
 const SCORE_IDS = new Set(SCORE_RACE_GAMES.map((g) => g.id));
 export const isScoreRaceGame = (id: string | null | undefined) => !!id && SCORE_IDS.has(id);
 
-/** The settings a Party's game list reads. */
-export type PartyGameSwitch = LabSwitch & { readonly "party.scoreRaces": boolean };
+/** Games the Games page offers "Can be played in Duels and Parties" for: time races and score races. */
+export const isVersusEligible = (id: string) => isRaceGame(id) || isScoreRaceGame(id);
 
-/** Score games a host may pick now: the setting on, and a lab game only while it is switched on. */
+/**
+ * A game players may race in a Duel or a Party now: eligible, On (Games page state; a game In testing or Off never
+ * races, not even for admins), and not kept out of Duels and Parties.
+ */
+export const versusOpen = (id: string, s: GameSwitch) => !!openGame(id, s) && versusAllowed(id, s);
+
+/** A time race game players may pick for a Duel (or a Party) now. */
+export const isDuelGame = (id: string | null | undefined, s: GameSwitch) => !!id && isRaceGame(id) && versusOpen(id, s);
+/** Every time race game players may pick now, in catalogue order (Duel picker). */
+export const duelGames = (s: GameSwitch): GameMeta[] => RACE_GAMES.filter((g) => versusOpen(g.id, s));
+
+/** The settings a Party's game list reads. */
+export type PartyGameSwitch = GameSwitch & { readonly "party.scoreRaces": boolean };
+
+/** Score games a host may pick now: the setting on, and the game open for Duels and Parties. */
 export const scoreRaceGames = (s: PartyGameSwitch): GameMeta[] =>
-  s["party.scoreRaces"] ? SCORE_RACE_GAMES.filter((g) => !!openGame(g.id, s)) : [];
+  s["party.scoreRaces"] ? SCORE_RACE_GAMES.filter((g) => versusOpen(g.id, s)) : [];
 
 /** Every game a host may pick for a Party now (time races, then score races), in catalogue order within each. */
-export const partyGames = (s: PartyGameSwitch): GameMeta[] => [...RACE_GAMES, ...scoreRaceGames(s)];
+export const partyGames = (s: PartyGameSwitch): GameMeta[] => [...duelGames(s), ...scoreRaceGames(s)];
 
-/** The server's check for a Party game: a time race game, or a score race game open now. */
+/** The server's check for a Party game: a time race game, or a score race game, open for Duels and Parties now. */
 export const isPartyGame = (id: string, s: PartyGameSwitch) =>
-  isRaceGame(id) || (isScoreRaceGame(id) && s["party.scoreRaces"] && !!openGame(id, s));
+  isDuelGame(id, s) || (isScoreRaceGame(id) && s["party.scoreRaces"] && versusOpen(id, s));
 
 /**
  * R4-08: a `?game=<id>` param for the Party Host tab: a time race game, or a score race game open now (the same
@@ -54,15 +73,15 @@ export const isPartyGame = (id: string, s: PartyGameSwitch) =>
 export const partyGameParam = (raw: string | null | undefined, s: PartyGameSwitch): string | null =>
   raw && isPartyGame(raw, s) ? raw : null;
 
-/** Duel entry default (Overlays M1 "Sixer | Any game"). */
+/** Duel entry default (Overlays M1 "Sixer | Any game"); screens check it is open now (`isDuelGame`). */
 export const DUEL_DEFAULT_GAME = isRaceGame("sixer") ? "sixer" : RACE_GAMES[0]?.id;
 
 /**
- * A `?game=<id>` query param from a game card (game-first Duel and Party): the id when it can be raced,
+ * A `?game=<id>` query param from a game card (game-first Duel and Party): the id when it can be raced now,
  * otherwise null so the screen keeps its own default.
  */
-export function raceGameParam(raw: string | null | undefined): string | null {
-  return raw && isRaceGame(raw) ? raw : null;
+export function raceGameParam(raw: string | null | undefined, s: GameSwitch): string | null {
+  return raw && isDuelGame(raw, s) ? raw : null;
 }
 
 /**
@@ -79,19 +98,21 @@ export const challengeLinks = (id: string) => ({
 
 /**
  * Games for a match: the chosen game every round, or a seeded mix of different games. `ok` says which games may be
- * used: time races by default (Duels); a Party start passes `isPartyGame` with the live settings, so score races
- * (R3-08) count there while they are switched on. A Random mix is always time races.
+ * used now: a Duel passes `isDuelGame`, a Party start `isPartyGame`, both with the live settings, so a game switched
+ * Off, to In testing or out of Duels and Parties never races; score races (R3-08) count in Parties while they are
+ * switched on. A Random mix is always time races that pass `ok`. Empty when no game is left to race.
  */
 export function pickGames(
   rng: Rng,
   chosen: string | null,
   rounds: number,
-  allowed?: string[],
-  ok: (id: string) => boolean = isRaceGame,
+  allowed: string[] | undefined,
+  ok: (id: string) => boolean,
 ): string[] {
   if (chosen && ok(chosen)) return Array.from({ length: rounds }, () => chosen);
   const fromAllowed = (allowed ?? []).filter(ok);
-  const pool = rng.shuffle(fromAllowed.length ? fromAllowed : RACE_GAMES.map((g) => g.id));
+  const pool = rng.shuffle(fromAllowed.length ? fromAllowed : RACE_GAMES.map((g) => g.id).filter(ok));
+  if (!pool.length) return [];
   return Array.from({ length: rounds }, (_, i) => pool[i % pool.length]);
 }
 

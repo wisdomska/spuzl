@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: PageProps<"/play/[game]/bot">
 export default async function BotPlay({ params, searchParams }: PageProps<"/play/[game]/bot">) {
   const { game } = await params;
   const { level } = await searchParams;
-  // Unknown, retired and switched-off lab games ("features.labGames") are not found.
+  // Unknown and retired games, games Off, and games In testing unless an admin is signed in are not found.
   const meta = await openGameNow(game);
   if (!meta?.botPlay || !isBotGame(game)) notFound();
   // Same first-run gate as every Play page (intro, then onboarding).

@@ -26,6 +26,15 @@ import { CODE_ALPHABET, makeRoomCode } from "../roomCode";
 import type { BayView } from "../types";
 import { rateTwo } from "./rewards";
 import { requireBayJoin } from "./joinRequests";
+import { openGameNow } from "@/lib/game-settings/server";
+
+/**
+ * A board game a new match, a join or a rematch may use now: On (or In testing, for a signed-in admin trying it),
+ * per the Games page. Off, and In testing for players, answer like an unknown game.
+ */
+export async function requireBayOpen(game: string) {
+  if (!(await openGameNow(game))) throw new ApiError(404, "unknown_game");
+}
 
 export const bayTopic = (id: string) => `bay:${id}`;
 const iso = (n: number) => new Date(n).toISOString();
@@ -158,6 +167,7 @@ export async function createBay(
   },
 ) {
   if (!isBayGame(input.game)) throw new ApiError(400, "not_board_game");
+  await requireBayOpen(input.game);
   const rules = await loadRules(input.game);
   const seats = Math.max(rules.seats.min, Math.min(rules.seats.max, input.seats ?? rules.seats.min));
   if (input.bot && !rules.botMove) throw new ApiError(400, "no_bot");
@@ -204,6 +214,7 @@ export async function joinBay(admin: SupabaseClient, me: string, id: string, cod
   const b = await load(admin, id);
   if (seatOf(b, me) >= 0) return bayView(admin, b, me);
   if (b.status !== "waiting" || !b.invite_code || b.invite_code !== code.toUpperCase()) throw new ApiError(409, "invite_closed");
+  await requireBayOpen(b.game_id);
   // R4-02: an under-16 host's invite is friends only (like Party rooms, R2-13).
   await requireBayJoin(admin, b.created_by ?? b.players[0] ?? null, me);
   const players = [...b.players, me];
@@ -494,6 +505,7 @@ async function rematchBay(admin: SupabaseClient, me: string, b: BayRow) {
   if (b.rematch_id) return getBay(admin, b.rematch_id, me);
   // A retired game (Flip) can finish, but never starts again.
   if (!isBayGame(b.game_id)) throw new ApiError(409, "game_retired", "This game has left Board Bay.");
+  await requireBayOpen(b.game_id);
   const rules = await loadRules(b.game_id);
   const seed = crypto.randomUUID();
   const fresh = initialState(rules, b.seats, seed);

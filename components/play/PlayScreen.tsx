@@ -56,7 +56,7 @@ import { dropResume, keepResume, resumeIdFor } from "@/lib/client/resume";
 import { fiveHref, useDailyFive } from "@/lib/client/daily-five";
 import { dailyFiveCopy as FT } from "@/lib/copy/daily-five";
 import { MAX_SCORE } from "@/lib/daily-five";
-import { GAME_BY_ID } from "@/lib/catalog";
+import { GAME_BY_ID, openGame } from "@/lib/catalog";
 import { track } from "@/lib/analytics/track";
 import { useGameCopy } from "@/lib/games-meta/client";
 import { storyCopy } from "@/lib/copy/share";
@@ -389,7 +389,12 @@ export function PlayScreen({
     : { [meta.id]: 1 };
   const playHref = (id: string) => (dailiesOn ? `/play/${id}` : `/play/${id}?mode=free`);
   const readyIds = new Set((today.data?.games ?? []).filter((g) => g.ready).map((g) => g.id));
-  const nextId = nextInPath(meta.id, clearedNow, (id) => (today.data ? readyIds.has(id) : true));
+  const nextId = nextInPath(
+    meta.id,
+    clearedNow,
+    (id) => (today.data ? readyIds.has(id) : true),
+    (id) => !!openGame(id, settings),
+  );
   const nextAction = nextId
     ? {
         label: nextLabelParts(nextId).title,

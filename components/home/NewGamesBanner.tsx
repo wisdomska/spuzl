@@ -26,8 +26,8 @@ const read = (): string | null => {
  */
 export function NewGamesBanner({ played }: { played: readonly string[] }) {
   const meta = useGamesMeta();
-  const labOn = useGameSettings()["features.labGames"];
-  const ids = useMemo(() => newGameIds(playerGames({ "features.labGames": labOn }), meta), [meta, labOn]);
+  const settings = useGameSettings();
+  const ids = useMemo(() => newGameIds(playerGames(settings), meta), [meta, settings]);
   const key = [...ids].sort().join(",");
   const [dismissed, setDismissed] = useState<string | null>(null);
   const [ready, setReady] = useState(false);

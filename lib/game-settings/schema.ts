@@ -5,7 +5,7 @@
  * Add a setting here, then read it with `getGameSettings()` (server) or `useGameSettings()` (client).
  * Labels and help are written for a non-technical owner: what it does and what players notice, in plain words.
  */
-import { GAMES, LAB_GAMES } from "@/lib/catalog";
+import { DEFAULT_SWITCH, GAMES, type GameSwitch } from "@/lib/catalog";
 import { hasLogic } from "@/games/logic-ids";
 
 /** Game settings sections, in page order, each with one line on what it covers. */
@@ -37,6 +37,11 @@ interface SettingText {
   more?: string;
   /** Section on Game settings (one of SETTING_GROUPS). */
   group: SettingGroup;
+  /**
+   * Edited somewhere else, not on Game settings: "games" is the Games page (one switch on each game's row). The key
+   * stays the storage and the server validates it the same way.
+   */
+  editedOn?: "games";
 }
 
 export type SettingDef =
@@ -190,15 +195,6 @@ export const SETTINGS = {
     label: "Bonus game can be from Board Games",
     help: "Board puzzles can be the bonus game.",
     default: true,
-  },
-  "features.labGames": {
-    kind: "set",
-    group: FEATURES,
-    label: "Games in testing (Lab games)",
-    help: "Switch on a game that is still in testing to let players find and play it.",
-    more: "A game switched on shows in All games and on its world, can be in the Daily Five and gets Daily puzzles, and players can practise it, play it freely and play it against the bot. Switched off, it is hidden and the server refuses it like an unknown game; today's and upcoming Daily Five days that hold it get another game at once (shown in the Activity log; locked days keep it). Games in testing are never in Duels or Parties. None switched on: players see only the finished games.",
-    default: [] as readonly string[],
-    options: LAB_GAMES.map((g) => ({ id: g.id, label: g.name })),
   },
   "features.statusCards": {
     kind: "bool",
@@ -681,9 +677,10 @@ export const SETTINGS = {
     group: PRACTICE,
     label: "Games that skip the practice round",
     help: "A game switched on here skips the short first try with free hints, everywhere.",
+    editedOn: "games",
     more: "From every way in: Continue, the Games list, links, the Daily Five, levels and vs the bot. It also skips the How it works card in Duels and Parties, and the server stops serving its practice boards. None switched on: every game has its practice round.",
     default: [] as readonly string[],
-    options: [...GAMES, ...LAB_GAMES].filter((g) => hasLogic(g.id)).map((g) => ({ id: g.id, label: g.name })),
+    options: GAMES.filter((g) => hasLogic(g.id)).map((g) => ({ id: g.id, label: g.name })),
   },
   "leagues.fillWithFriends": {
     kind: "bool",
@@ -705,7 +702,13 @@ export const SETTINGS = {
 } as const satisfies Record<string, SettingDef>;
 
 export type SettingKey = keyof typeof SETTINGS;
-export type GameSettings = {
+/**
+ * The settings every reader gets: the stored tunables over their defaults, plus the games' runtime switch (On, In
+ * testing, Off and the Duels and Parties opt-out: GameSwitch in lib/catalog.ts). The switch is not a setting key: the
+ * server reads it from the `games` table (getGameSettings) and the Games page changes it.
+ */
+export type GameSettings = SchemaSettings & GameSwitch;
+type SchemaSettings = {
   [K in SettingKey]: (typeof SETTINGS)[K]["default"] extends boolean
     ? boolean
     : (typeof SETTINGS)[K]["default"] extends readonly string[]
@@ -716,7 +719,10 @@ export type GameSettings = {
 };
 export type SettingValue = number | boolean | string | readonly string[];
 
-export const DEFAULTS = Object.fromEntries(Object.entries(SETTINGS).map(([k, d]) => [k, d.default])) as unknown as GameSettings;
+export const DEFAULTS = {
+  ...Object.fromEntries(Object.entries(SETTINGS).map(([k, d]) => [k, d.default])),
+  ...DEFAULT_SWITCH,
+} as unknown as GameSettings;
 
 /** Longest list a multi-pick (set) setting can hold through the admin API: at least every option of every set. */
 export const SETTING_LIST_MAX = 100;
@@ -750,5 +756,5 @@ export function sameSetting(a: unknown, b: unknown): boolean {
 export function mergeSettings(rows: { key: string; value: unknown }[]): GameSettings {
   const out: Record<string, unknown> = { ...DEFAULTS };
   for (const r of rows) if (isSettingKey(r.key) && validateSetting(r.key, r.value) === null) out[r.key] = r.value;
-  return out as GameSettings;
+  return out as unknown as GameSettings;
 }

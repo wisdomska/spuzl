@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { GameIcon3D } from "@/components/world/GameIcon3D";
 import { WORLD_BY_ID, type GameMeta, UI_ACCENT } from "@/lib/catalog";
-import { isPartyGame, isRaceGame } from "@/lib/multiplayer/games";
+import { isDuelGame, isPartyGame } from "@/lib/multiplayer/games";
 import { isBayGame } from "@/lib/multiplayer/bay";
 import { bayLive } from "@/lib/copy/bay-live";
 import { useSettings } from "@/lib/settings/store";
@@ -78,7 +78,7 @@ export function GameCard({
   };
   const world = meta ? WORLD_BY_ID[meta.world] : null;
   const metaRows = useGamesMeta();
-  const race = meta ? isRaceGame(meta.id) : false;
+  const race = meta ? isDuelGame(meta.id, gameSettings) : false;
   // R4-08: score games (Quickfire, Echo, Beat Tap, ...) race in Party only, while score races are on.
   const scoreParty = !!meta && !race && isPartyGame(meta.id, gameSettings);
   // Board Bay games: play someone live (matchmaking) or invite a friend.

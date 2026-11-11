@@ -6,7 +6,12 @@ import { checkGuessWith } from "@/lib/game/guess-check";
 import { placeScoreRace, scoreOrder, scoreRaceOver, scoreRun } from "./scoreRace";
 import { isPartyGame, isRaceGame, isScoreRaceGame, partyGames, pickGames, SCORE_RACE_GAMES } from "./games";
 
-const settings = (o: { lab?: string[]; on?: boolean } = {}) => ({ "features.labGames": o.lab ?? [], "party.scoreRaces": o.on ?? true });
+const settings = (o: { off?: string[]; testing?: string[]; noVersus?: string[]; on?: boolean } = {}) => ({
+  "games.testing": o.testing ?? [],
+  "games.off": o.off ?? [],
+  "games.noVersus": o.noVersus ?? [],
+  "party.scoreRaces": o.on ?? true,
+});
 
 describe("score race games (R3-08)", () => {
   it("takes the all-ages score games, never photosensitive ones, and never in Duels", () => {
@@ -49,9 +54,19 @@ describe("score race games (R3-08)", () => {
     expect(new Set(picked)).toEqual(new Set(["quickfire", "crownfall"]));
     for (const g of pickGames(createRng("y"), null, 3, undefined, party)) expect(isRaceGame(g)).toBe(true);
     // Without the Party rule (a Duel) a score game is never used, nor in a Party while score races are off.
-    for (const g of pickGames(createRng("x"), "quickfire", 3)) expect(isRaceGame(g)).toBe(true);
+    for (const g of pickGames(createRng("x"), "quickfire", 3, undefined, isRaceGame)) expect(isRaceGame(g)).toBe(true);
     for (const g of pickGames(createRng("z"), null, 3, ["twotruths", "crownfall"], (id) => isPartyGame(id, settings({ on: false }))))
       expect(g).toBe("crownfall");
+  });
+});
+
+describe("score races follow the Games page", () => {
+  it("drops a score game that is Off, In testing or kept out of Duels and Parties", () => {
+    expect(isPartyGame("quickfire", settings({ off: ["quickfire"] }))).toBe(false);
+    expect(isPartyGame("quickfire", settings({ testing: ["quickfire"] }))).toBe(false);
+    expect(isPartyGame("quickfire", settings({ noVersus: ["quickfire"] }))).toBe(false);
+    expect(partyGames(settings({ noVersus: ["quickfire"] })).some((g) => g.id === "quickfire")).toBe(false);
+    expect(isPartyGame("emojihits", settings({ noVersus: ["quickfire"] }))).toBe(true);
   });
 });
 

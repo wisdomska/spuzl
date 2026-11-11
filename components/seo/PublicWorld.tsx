@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { WORLDS, WORLD_BY_ID, type LabSwitch, type WorldId } from "@/lib/catalog";
+import { WORLD_BY_ID, playerWorlds, type GameSwitch, type WorldId } from "@/lib/catalog";
 import { Icon } from "@/components/ui/Icon";
 import { PublicShell } from "./PublicShell";
 import { GameLinkCard } from "./GameLinkCard";
@@ -12,9 +12,9 @@ import { LIVE_ONLY, publicGamesInWorld } from "@/lib/seo/games";
  * A world for visitors and search engines (no session): what the world is, its games (each linking to its page),
  * Play now, and the other worlds. Server-rendered; players with a session get the World screen instead.
  */
-export function PublicWorld({ id, lab = LIVE_ONLY }: { id: WorldId; lab?: LabSwitch }) {
+export function PublicWorld({ id, lab = LIVE_ONLY }: { id: WorldId; lab?: GameSwitch }) {
   const w = WORLD_BY_ID[id];
-  // Its live games, then the lab games switched on for players (as on the World screen).
+  // Its games that are On (as on the World screen).
   const games = publicGamesInWorld(id, lab);
   return (
     <PublicShell>
@@ -64,17 +64,19 @@ export function PublicWorld({ id, lab = LIVE_ONLY }: { id: WorldId; lab?: LabSwi
           {T.otherWorlds}
         </h2>
         <ul className="flex flex-wrap gap-2">
-          {WORLDS.filter((x) => x.id !== id).map((x) => (
-            <li key={x.id}>
-              <Link
-                href={`/world/${x.id}`}
-                className="press bg-surface border-line flex h-11 items-center gap-2 rounded-full border px-4 text-[15px] font-semibold"
-              >
-                <span className="size-3 rounded-full" style={{ background: x.color }} aria-hidden />
-                {x.name}
-              </Link>
-            </li>
-          ))}
+          {playerWorlds(lab)
+            .filter((x) => x.id !== id)
+            .map((x) => (
+              <li key={x.id}>
+                <Link
+                  href={`/world/${x.id}`}
+                  className="press bg-surface border-line flex h-11 items-center gap-2 rounded-full border px-4 text-[15px] font-semibold"
+                >
+                  <span className="size-3 rounded-full" style={{ background: x.color }} aria-hidden />
+                  {x.name}
+                </Link>
+              </li>
+            ))}
           <li>
             <Link
               href="/games"

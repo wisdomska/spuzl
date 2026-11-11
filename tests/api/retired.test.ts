@@ -73,7 +73,7 @@ describe("api: retired games are refused like unknown ones", () => {
     const today = await fetch(`${BASE}/api/v1/today`).then((r) => r.json());
     expect(today.games.map((x: { id: string }) => x.id).sort()).toEqual(GAMES.map((x) => x.id).sort());
     const meta = await fetch(`${BASE}/api/v1/games/meta`).then((r) => r.json());
-    // (Lab games are covered by tests/api/lab-flag.test.ts: they come back when "features.labGames" has them.)
+    // (Games In testing and Off are covered by tests/api/game-state.test.ts.)
     for (const g of RETIRED_GAMES) expect(meta[g.id], g.id).toBeUndefined();
   });
 });

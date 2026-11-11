@@ -131,8 +131,8 @@ export const choiceReady = (c: GameChoice) => c.picks === null || c.picks.length
 /**
  * Random mix, any one race game, or several hand-picked ones (filtered by world so every race game fits a phone without
  * a long scroll). Picking mode turns the game tiles into checkboxes; each set races PARTY_GAMES of the picks.
- * R3-08: score games join the list (marked "Most points") while "party.scoreRaces" is on, lab ones only while
- * "features.labGames" has them; the rooms API checks the same rule (`isPartyGame`).
+ * R3-08: score games join the list (marked "Most points") while "party.scoreRaces" is on; every game only while it is
+ * On and allowed in Duels and Parties (Games page); the rooms API checks the same rule (`isPartyGame`).
  */
 export function GamePicker({ value, onChange }: { value: GameChoice; onChange: (c: GameChoice) => void }) {
   const settings = useGameSettings();

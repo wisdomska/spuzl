@@ -1,21 +1,24 @@
 import type { Metadata } from "next";
 import { FaqAccordion } from "@/components/seo/FaqAccordion";
 import Link from "next/link";
-import { WORLDS } from "@/lib/catalog";
+import { playerWorlds } from "@/lib/catalog";
 import { Icon } from "@/components/ui/Icon";
 import { FreePlayRewards } from "@/components/info/FreePlayRewards";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { freePlayCopy } from "@/lib/copy/free-play";
 import { PLAY_NAV } from "@/lib/analytics/play-nav";
 import { siteCopy } from "@/lib/copy/site";
-import { CONTROLS, PHOTOSENSITIVE, SCORING, SITE_FAQ, howToPlaySeoCopy as S, seoMeta } from "@/lib/copy/seo";
+import { CONTROLS, PHOTOSENSITIVE, SCORING, howToPlaySeoCopy as S, seoMeta, siteFaq } from "@/lib/copy/seo";
 import { publicMetadata } from "@/lib/seo/site";
 import { servedCopy } from "@/lib/games-meta/server";
-import { servedLabSwitch } from "@/lib/game-settings/server";
-import { publicGamesInWorld } from "@/lib/seo/games";
+import { servedGameSwitch } from "@/lib/game-settings/server";
+import { publicCounts, publicGamesInWorld } from "@/lib/seo/games";
 import { breadcrumbs, faqPage, graph } from "@/lib/seo/jsonld";
 
-export const metadata: Metadata = publicMetadata({ path: "/how-to-play", ...seoMeta.howToPlay });
+/** The description counts the games that are On (Games page state); rebuilt with the page. */
+export async function generateMetadata(): Promise<Metadata> {
+  return publicMetadata({ path: "/how-to-play", ...seoMeta.howToPlayFor(publicCounts(await servedGameSwitch()).games) });
+}
 
 /**
  * R4-10: the admin's rule and card copy (Library page) reach this page. Rebuilt at most hourly, and at once after a
@@ -26,7 +29,9 @@ export const revalidate = 3600;
 // Copy for owner review before launch.
 export default async function HowToPlay() {
   const copy = await servedCopy();
-  const lab = await servedLabSwitch();
+  const lab = await servedGameSwitch();
+  const counts = publicCounts(lab);
+  const faq = siteFaq(counts.games, counts.worlds, counts.names);
   return (
     <>
       <JsonLd
@@ -35,11 +40,11 @@ export default async function HowToPlay() {
             ["SPUZL", "/"],
             [S.crumb, "/how-to-play"],
           ]),
-          faqPage(SITE_FAQ),
+          faqPage(faq),
         )}
       />
       <h1 data-wide>How to play</h1>
-      <p className="lede max-w-[70ch]">{siteCopy.howToPlayLede}</p>
+      <p className="lede max-w-[70ch]">{siteCopy.howToPlayLedeFor(counts.games, counts.worlds)}</p>
 
       <h2>The basics</h2>
       <div className="not-prose">
@@ -73,7 +78,7 @@ export default async function HowToPlay() {
         </ul>
       </div>
 
-      {WORLDS.map((w) => (
+      {playerWorlds(lab).map((w) => (
         <section key={w.id} aria-labelledby={`world-${w.id}`} className="flex flex-col gap-3">
           <h2 id={`world-${w.id}`} className="flex items-center gap-2.5">
             <span
@@ -114,7 +119,7 @@ export default async function HowToPlay() {
 
       <section aria-labelledby="faq" className="flex flex-col gap-3">
         <h2 id="faq">{S.faqTitle}</h2>
-        <FaqAccordion items={SITE_FAQ} className="not-prose" />
+        <FaqAccordion items={faq} className="not-prose" />
       </section>
     </>
   );

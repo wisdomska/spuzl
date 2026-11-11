@@ -9,7 +9,7 @@ import { BackButton, ErrorState, Segmented } from "@/components/meta/ui";
 import { Sheet } from "@/components/meta/Sheet";
 import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { GAME_BY_ID, LAUNCH_IDS, WORLDS, WORLD_BY_ID, gamesInWorld, playableGame } from "@/lib/catalog";
+import { GAME_BY_ID, LAUNCH_IDS, WORLD_BY_ID, playableGame, playerGamesInWorld, playerWorlds } from "@/lib/catalog";
 import { LAUNCH_DATE, formatClock, gmtDate } from "@/lib/format";
 import { monthGrid, shortDate } from "@/lib/meta";
 import { difficultyForDate } from "@/games/types";
@@ -161,11 +161,11 @@ function Archive() {
 
       <Sheet open={picking} onOpenChange={setPicking} title="Pick a game">
         <div className="flex flex-col gap-3">
-          {WORLDS.map((w) => (
+          {playerWorlds(settings).map((w) => (
             <section key={w.id} aria-label={w.name} className="flex flex-col gap-1.5">
               <h3 className="text-muted px-1 text-[13px] font-semibold">{w.name}</h3>
               <div className="grid grid-cols-2 gap-1.5">
-                {gamesInWorld(w.id).map((g) => (
+                {playerGamesInWorld(w.id, settings).map((g) => (
                   <button
                     key={g.id}
                     aria-pressed={game === g.id}

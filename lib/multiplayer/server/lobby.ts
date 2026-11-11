@@ -7,7 +7,7 @@ import { serverBroadcast } from "@/lib/realtime/server";
 import { createRng } from "@/lib/rng";
 import { DUEL_ROUNDS, PARTY_GAMES, PARTY_MIN } from "../constants";
 import { botTimes, firstRoundStart, newToGame, partyRoundStart, rankedPool, rulesBreakMs } from "../duel";
-import { isPartyGame, isRaceGame, pickGames } from "../games";
+import { isDuelGame, isPartyGame, pickGames } from "../games";
 import { getGameSettings } from "@/lib/game-settings/server";
 import { pickOpponent, type QueueEntry } from "../matchmaking";
 import { CODE_ALPHABET, makeRoomCode, roomExpired } from "../roomCode";
@@ -54,12 +54,20 @@ async function addPlayer(admin: SupabaseClient, matchId: string, playerId: strin
 
 /* ---------------- Duel: matchmaking ---------------- */
 
+/**
+ * A Duel game must be a time race game players may race now: On (a game In testing or Off is refused, admins too) and
+ * not kept out of Duels and Parties on the Games page. No game (a Random mix) passes.
+ */
+async function requireDuelGame(game: string | null) {
+  if (game && !isDuelGame(game, await getGameSettings())) throw new ApiError(400, "game_not_duelable");
+}
+
 type BandedPlayer = { id: string; age_band: string; birth_year?: number | null; birth_month?: number | null };
 
 export async function enqueue(admin: SupabaseClient, player: BandedPlayer, game: string | null, rulesSeen = false) {
   // R3-06: every known band may search, inside its own pool (13 to 15 only meet 13 to 15; 16+ only 16+).
   const pool = requireQuickPool(player, duelCopy.quickRefused);
-  if (game && !isRaceGame(game)) throw new ApiError(400, "game_not_duelable");
+  await requireDuelGame(game);
   // A ranked game the player has never cleared or learned: read the rules first (the client shows a 20 s rules card).
   if (game && !rulesSeen && !(await knownGames(admin, [player.id], [game])).get(player.id)?.has(game))
     // R4-10: the rule as the admin wrote it (Library page), else the catalog's.
@@ -154,7 +162,11 @@ async function createDuel(
   const rng = createRng(`duel:${id}`);
   // Ranked games between people: what each player knows picks the mix and the rules breaks.
   const known = o.rated && !o.bot ? await knownGames(admin, players) : null;
-  const games = pickGames(rng, game, DUEL_ROUNDS, !game && known ? rankedPool(known) : undefined);
+  // Only games On and allowed in Duels and Parties now (Games page): checked again here, as a queue entry or a
+  // rematch can outlive a switch.
+  const s = await getGameSettings();
+  const games = pickGames(rng, game, DUEL_ROUNDS, !game && known ? rankedPool(known) : undefined, (id) => isDuelGame(id, s));
+  if (games.length !== DUEL_ROUNDS) throw new ApiError(400, "game_not_duelable");
   // A first round that is new to either player starts after a rules break (both wait the same).
   const rulesMs = known ? rulesBreakMs(newToGame(games[0], players, known)) : 0;
   const countdownMs = await liveCountdownMs();
@@ -210,9 +222,11 @@ export async function practiceBot(admin: SupabaseClient, playerId: string, game:
 
 /** `band`: the host's effective band, recorded with the duel (admin Metrics). */
 export async function friendDuel(admin: SupabaseClient, playerId: string, game: string | null, band: string) {
-  if (game && !isRaceGame(game)) throw new ApiError(400, "game_not_duelable");
+  await requireDuelGame(game);
   const id = randomUUID();
-  const games = pickGames(createRng(`duel:${id}`), game, DUEL_ROUNDS);
+  const s = await getGameSettings();
+  const games = pickGames(createRng(`duel:${id}`), game, DUEL_ROUNDS, undefined, (g) => isDuelGame(g, s));
+  if (games.length !== DUEL_ROUNDS) throw new ApiError(400, "game_not_duelable");
   const row = await insertWithCode(admin, {
     id,
     kind: "duel",
@@ -288,7 +302,7 @@ export async function rematch(admin: SupabaseClient, id: string, playerId: strin
 
 /**
  * R3-08: every game a room asks for must be a Party game now: a time race, or a score race while
- * "party.scoreRaces" is on (a lab one only while "features.labGames" has it).
+ * "party.scoreRaces" is on, and either way On and allowed in Duels and Parties (Games page).
  */
 async function requirePartyGames(
   game: string | null | undefined,
@@ -298,7 +312,6 @@ async function requirePartyGames(
 ) {
   const ids = [...(game ? [game] : []), ...(games ?? [])];
   if (!ids.length) return;
-  if (ids.every(isRaceGame)) return;
   const s = await getGameSettings();
   if (ids.some((g) => !isPartyGame(g, s))) throw new ApiError(status, code);
 }
@@ -470,7 +483,8 @@ export async function startRoom(admin: SupabaseClient, playerId: string, code: s
   if (r.racers.length < PARTY_MIN) throw new ApiError(409, "need_players", partyCopy.lobby.needPlayers);
   if (r.waiting.length && !o.readyOnly) throw new ApiError(409, "not_ready", partyCopy.lobby.notReady(r.waiting[0].nickname));
   if (r.ready.length < PARTY_MIN) throw new ApiError(409, "need_ready", partyCopy.lobby.needReady);
-  // R3-08: a score game the admin switched off since the room opened (or a lab game no longer on) can't start.
+  // R3-08: a game the admin switched Off, put In testing or kept out of Duels and Parties since the room opened can't
+  // start (nor a score game while score races are off).
   // Checked before anyone is seated out, so a refused start changes nothing.
   if (!isTurnRoom(l.m)) await requirePartyGames(l.m.game_id, l.m.chosen_games, "game_unavailable", 409);
   if (r.waiting.length) {
@@ -493,6 +507,8 @@ export async function startRoom(admin: SupabaseClient, playerId: string, code: s
   const games = pickGames(createRng(`party:${l.m.id}:${l.m.set_no}`), l.m.game_id, PARTY_GAMES, l.m.chosen_games, (id) =>
     isPartyGame(id, settings),
   );
+  // Every game the room had was switched Off, to In testing or out of Duels and Parties since it was made.
+  if (!games.length) throw new ApiError(409, "game_not_raceable");
   const countdownMs = await liveCountdownMs();
   await admin
     .from("match_players")

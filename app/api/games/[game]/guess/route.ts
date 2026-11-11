@@ -41,7 +41,7 @@ export const POST = handle(async (req: Request, ctx: RouteContext<"/api/games/[g
   await limited;
   const meta = playableGame(game);
   if (ref.game !== game || !LOGIC[game] || !meta) throw new ApiError(404, "unknown_game");
-  // A switched-off lab game ("features.labGames") answers like an unknown one, before the token is read.
+  // A game Off, or In testing for a player (Games page state), answers like an unknown one, before the token is read.
   await assertGameOpen(meta);
   const tok = openGuessToken(ref.t);
   if (!tok || tok.g !== game) throw new ApiError(400, "bad_ref");

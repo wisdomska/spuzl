@@ -20,22 +20,26 @@ out.push(
 );
 
 // Live games, then retired ones (lib/catalog RETIRED_IDS: hidden from players, refused by the server; migration
-// 20261116000001). Both carry their status, so a fresh database matches the catalog.
+// 20261116000001). Both carry their status, so a fresh database matches the catalog. A game's runtime state that an
+// admin set on the Games page ('live', 'testing' or 'off', migration 20261212010101) is kept on a re-seed; only a row
+// that is retired (or in the old lab status) takes the catalog's.
 const gameRow = (g: GameMeta, status: string, sort: number) =>
   `  (${q(g.id)}, ${q(g.world)}, ${q(g.name)}, ${q(status)}, ${q(g.phase)}, ${q(g.engine)}, ${q(g.scoring)}, ${g.unique}, ${g.minTimeMs}, ${sort})`;
+/** Games that are not retired and not lab (GAMES holds every game that is not retired, lab ones too). */
+const MAIN = GAMES.filter((g) => !g.lab);
 out.push("insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values");
 out.push(
-  [...GAMES.map((g, i) => gameRow(g, "live", i)), ...RETIRED_GAMES.map((g, i) => gameRow(g, "retired", GAMES.length + i))].join(",\n") +
-    "\non conflict (id) do update set world_id = excluded.world_id, name = excluded.name, status = excluded.status, phase = excluded.phase, engine = excluded.engine, scoring = excluded.scoring, is_unique = excluded.is_unique, min_time_ms = excluded.min_time_ms, sort = excluded.sort;",
+  [...MAIN.map((g, i) => gameRow(g, "live", i)), ...RETIRED_GAMES.map((g, i) => gameRow(g, "retired", MAIN.length + i))].join(",\n") +
+    "\non conflict (id) do update set world_id = excluded.world_id, name = excluded.name, status = case when excluded.status = 'live' and public.games.status in ('live', 'testing', 'off') then public.games.status else excluded.status end, phase = excluded.phase, engine = excluded.engine, scoring = excluded.scoring, is_unique = excluded.is_unique, min_time_ms = excluded.min_time_ms, sort = excluded.sort;",
 );
 
-// Lab games (hidden from players unless "features.labGames" has them): status coming_soon. A row already there keeps
-// its status (a lab game made live by hand, or one brought back from retirement, which a migration moves), so a
-// re-seed never hides a live game.
+// Lab games start In testing (only signed-in admins can open them) until an admin switches them On on the Games page.
+// A row already there keeps its status (a game switched On, or one brought back from retirement, which a migration
+// moves), so a re-seed never hides a live game.
 for (const [i, g] of LAB_GAMES.entries()) {
   out.push("insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values");
   out.push(
-    `  (${q(g.id)}, ${q(g.world)}, ${q(g.name)}, 'coming_soon', ${q(g.phase)}, ${q(g.engine)}, ${q(g.scoring)}, ${g.unique}, ${g.minTimeMs}, ${GAMES.length + RETIRED_GAMES.length + i})\non conflict (id) do nothing;`,
+    `  (${q(g.id)}, ${q(g.world)}, ${q(g.name)}, 'testing', ${q(g.phase)}, ${q(g.engine)}, ${q(g.scoring)}, ${g.unique}, ${g.minTimeMs}, ${MAIN.length + RETIRED_GAMES.length + i})\non conflict (id) do nothing;`,
   );
 }
 
@@ -79,5 +83,5 @@ out.push("commit;");
 
 fs.writeFileSync("supabase/seed.sql", out.join("\n") + "\n");
 console.log(
-  `seed.sql: ${ALL_WORLDS.length} worlds (${WORLDS.length} with live games), ${GAMES.length} live games, ${RETIRED_GAMES.length} retired, ${LAB_GAMES.length} lab, ${BADGES.length} badges, ${DAILY_POOL.length + WEEKLY_CHAIN.length} quests, ${COSMETICS.length} cosmetics`,
+  `seed.sql: ${ALL_WORLDS.length} worlds (${WORLDS.length} with live games), ${MAIN.length} live games, ${RETIRED_GAMES.length} retired, ${LAB_GAMES.length} lab, ${BADGES.length} badges, ${DAILY_POOL.length + WEEKLY_CHAIN.length} quests, ${COSMETICS.length} cosmetics`,
 );

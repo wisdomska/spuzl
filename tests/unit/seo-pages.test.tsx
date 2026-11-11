@@ -2,13 +2,13 @@ import { describe, expect, it, vi } from "vitest";
 import type { Metadata } from "next";
 import { renderToStaticMarkup } from "react-dom/server";
 vi.mock("server-only", () => ({}));
-import { GAMES, LAB_GAMES, WORLDS } from "@/lib/catalog";
+import { GAMES, WORLDS } from "@/lib/catalog";
 import { metadata as landing } from "@/app/(landing)/about/page";
-import { metadata as games } from "@/app/games/page";
+import { generateMetadata as gamesMeta } from "@/app/games/page";
 import GamesIndex from "@/app/games/page";
 import GamePage, { generateMetadata as gameMeta, generateStaticParams } from "@/app/games/[id]/page";
 import { generateMetadata as worldMeta } from "@/app/world/[id]/page";
-import { metadata as howToPlay } from "@/app/(info)/how-to-play/page";
+import { generateMetadata as howToPlayMeta } from "@/app/(info)/how-to-play/page";
 import { metadata as fairPlay } from "@/app/(info)/fair-play/page";
 import { metadata as privacy } from "@/app/(info)/privacy/page";
 import { metadata as terms } from "@/app/(info)/terms/page";
@@ -22,8 +22,8 @@ describe("public page metadata", () => {
   it("gives every public page a canonical, a unique title and a description", async () => {
     const pages: [string, Metadata][] = [
       ["/", landing],
-      ["/games", games],
-      ["/how-to-play", howToPlay],
+      ["/games", await gamesMeta()],
+      ["/how-to-play", await howToPlayMeta()],
       ["/fair-play", fairPlay],
       ["/privacy", privacy],
       ["/terms", terms],
@@ -36,14 +36,15 @@ describe("public page metadata", () => {
       expect(m.description?.length, path).toBeGreaterThan(40);
       expect((m.openGraph as { url?: string }).url, path).toBe(path);
     }
+    // The catalogue's title counts the games that are On (all of them here).
+    expect(title(await gamesMeta())).toBe(`All ${GAMES.length} free online puzzle games | SPUZL`);
     const titles = pages.map(([, m]) => title(m));
     expect(new Set(titles).size).toBe(titles.length);
   });
 
-  it("builds a static page for every live and lab game, and a lab game's only while it is switched on", async () => {
-    expect(generateStaticParams()).toEqual([...GAMES, ...LAB_GAMES].map((g) => ({ id: g.id })));
-    // No database here: the settings are the defaults, with every lab game switched off. Five graduated from the
-    // lab (11 Nov 2026), so it has its page whatever the setting; a retired game never does.
+  it("builds a static page for every game that is not retired; the page answers only while the game is On", async () => {
+    expect(generateStaticParams()).toEqual(GAMES.map((g) => ({ id: g.id })));
+    // No database here: the switch is the default, every game On. A retired game never has a page.
     expect((await gameMeta(params({ id: "five" }))).alternates?.canonical).toBe("/games/five");
     expect(await gameMeta(params({ id: "blackout" }))).toEqual({});
     expect(await worldMeta(params({ id: "number" }))).toEqual({});

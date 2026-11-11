@@ -2,11 +2,12 @@ import { z } from "zod";
 import { ApiError, body, handle, ok } from "@/lib/api/server";
 import { audit, requireAdmin } from "@/lib/admin/auth";
 import { DEFAULTS, SETTINGS, SETTING_LIST_MAX, mergeSettings, sameSetting, validateSetting } from "@/lib/game-settings/schema";
-import { getGameSettings, invalidateGameSettings } from "@/lib/game-settings/server";
-import { revalidatePublicCopy } from "@/lib/seo/revalidate";
-import { repickClosedGames } from "@/lib/daily-five/server";
+import { invalidateGameSettings } from "@/lib/game-settings/server";
 
-/** GET /api/admin/settings: every tunable with its definition, current value and last change. */
+/**
+ * GET /api/admin/settings: every tunable with its definition, current value and last change. Settings edited on the
+ * Games page (`editedOn: "games"`, e.g. which games skip the practice round) are left out: that page owns them.
+ */
 export const GET = handle(async () => {
   const ctx = await requireAdmin("settings.read");
   const { data, error } = await ctx.db.from("game_settings").select("key, value, updated_at");
@@ -14,13 +15,15 @@ export const GET = handle(async () => {
   const current = mergeSettings(data ?? []);
   const changed = Object.fromEntries((data ?? []).map((r) => [r.key, r.updated_at]));
   return ok({
-    rows: Object.entries(SETTINGS).map(([key, def]) => ({
-      key,
-      def,
-      value: current[key as keyof typeof current],
-      isDefault: sameSetting(current[key as keyof typeof current], DEFAULTS[key as keyof typeof DEFAULTS]),
-      updatedAt: changed[key] ?? null,
-    })),
+    rows: Object.entries(SETTINGS)
+      .filter(([, def]) => !("editedOn" in def))
+      .map(([key, def]) => ({
+        key,
+        def,
+        value: current[key as keyof typeof current],
+        isDefault: sameSetting(current[key as keyof typeof current], DEFAULTS[key as keyof typeof DEFAULTS]),
+        updatedAt: changed[key] ?? null,
+      })),
   });
 });
 
@@ -41,17 +44,6 @@ export const PUT = handle(async (req: Request) => {
     .upsert({ key, value, updated_by: ctx.user.id, updated_at: new Date().toISOString() }, { onConflict: "key" });
   if (error) throw error;
   invalidateGameSettings();
-  // A lab game switched on or off appears on (or leaves) the public game pages, How to play and llms.txt at once.
-  if (key === "features.labGames") revalidatePublicCopy();
   await audit(ctx, "setting.update", `setting:${key}`, { before: before?.value ?? null, after: value });
-  // R4-06: a lab game switched off leaves today's and upcoming unlocked Daily Five days at once (audited), so the
-  // server never refuses a slot it scheduled.
-  let dailyFive: Awaited<ReturnType<typeof repickClosedGames>> | undefined;
-  const was = Array.isArray(before?.value) ? (before.value as string[]) : (DEFAULTS["features.labGames"] as readonly string[]);
-  if (key === "features.labGames" && Array.isArray(value) && was.some((g) => !value.includes(g))) {
-    dailyFive = await repickClosedGames(ctx.db, await getGameSettings(), ctx.user.id);
-    if (dailyFive.days.length || dailyFive.kept.length)
-      await audit(ctx, "daily_five.lab_repick", null, { off: was.filter((g) => !value.includes(g)), ...dailyFive });
-  }
-  return ok({ key, value, ...(dailyFive ? { dailyFive } : {}) });
+  return ok({ key, value });
 });

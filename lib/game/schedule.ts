@@ -13,8 +13,8 @@ import { encodeSolution } from "./solution-codec";
 /**
  * Keeps the Daily buffer full: fills every missing (date, game) up to `days` ahead, oldest gap first,
  * and stops when the time budget runs out (the next run continues). Logic Dailies are proven unique.
- * Retired games (lib/catalog RETIRED_IDS) get no new Dailies, nor do lab games until "features.labGames" switches
- * them on (`openGame`); a switched-on lab game is filled from the next run.
+ * Retired games (lib/catalog RETIRED_IDS) get no new Dailies, nor do games In testing or Off (Games page state,
+ * `openGame`); a game switched On is filled from the next run.
  */
 /** The generated Daily puzzle row for (game, date): the same every time for the same game, date and content. */
 export interface DailyPuzzleRow {

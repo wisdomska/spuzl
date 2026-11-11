@@ -8,13 +8,12 @@ import { GameIcon3D } from "@/components/world/GameIcon3D";
 import { GameFilterChips, GameSearchField } from "@/components/library/GameFilters";
 import { useGamesMeta } from "@/lib/games-meta/client";
 import { durationLabel, filterGames, newGameIds, type GameFilter } from "@/lib/games-meta";
-import { RACE_GAMES } from "@/lib/multiplayer/games";
+import { duelGames } from "@/lib/multiplayer/games";
+import { useGameSettings } from "@/lib/game-settings/client";
 import { duelCopy } from "@/lib/copy/duel";
 import { useSheetSound } from "@/lib/audio/useSheetSound";
 
 const C = duelCopy.picker;
-/** Only the worlds that hold a race game get a chip. */
-const RACE_WORLDS = WORLDS.filter((w) => RACE_GAMES.some((g) => g.world === w.id));
 
 /**
  * R2-02: the Duel game picker. A full-height sheet with the Library's search and filters (shared components),
@@ -39,7 +38,12 @@ export function GamePickerSheet({
   const search = useRef<HTMLInputElement>(null);
   // The "Game" row isn't a Radix Trigger, so remember what opened the sheet and hand focus back to it on close.
   const opener = useRef<HTMLElement | null>(null);
-  const list = useMemo(() => filterGames(RACE_GAMES, filter, q, meta), [filter, q, meta]);
+  // The race games players may pick now: On and allowed in Duels and Parties (Games page; the server checks too).
+  const settings = useGameSettings();
+  const raceGames = useMemo(() => duelGames(settings), [settings]);
+  /** Only the worlds that hold a race game get a chip. */
+  const raceWorlds = useMemo(() => WORLDS.filter((w) => raceGames.some((g) => g.world === w.id)), [raceGames]);
+  const list = useMemo(() => filterGames(raceGames, filter, q, meta), [raceGames, filter, q, meta]);
   const filtering = filter !== "all" || q.trim() !== "";
   useSheetSound(open);
   const pick = (g: string | null) => {
@@ -83,8 +87,8 @@ export function GamePickerSheet({
                 <Icon name="x" size={20} />
               </Dialog.Close>
             </div>
-            <GameSearchField ref={search} value={q} onChange={setQ} placeholder={C.searchPlaceholder(RACE_GAMES.length)} />
-            <GameFilterChips value={filter} onChange={setFilter} worlds={RACE_WORLDS} showNew={newGameIds(RACE_GAMES, meta).length > 0} />
+            <GameSearchField ref={search} value={q} onChange={setQ} placeholder={C.searchPlaceholder(raceGames.length)} />
+            <GameFilterChips value={filter} onChange={setFilter} worlds={raceWorlds} showNew={newGameIds(raceGames, meta).length > 0} />
             <p className="text-muted text-[13px] font-medium" aria-live="polite">
               {C.count(list.length)}
             </p>

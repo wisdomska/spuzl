@@ -4,7 +4,7 @@ import { whenQuiet } from "@/lib/perf/quiet";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { WORLD_BY_ID, playerGames, type GameMeta } from "@/lib/catalog";
+import { WORLD_BY_ID, playerGames, playerWorlds, type GameMeta } from "@/lib/catalog";
 import { Icon } from "@/components/ui/Icon";
 import { GameIcon3D } from "@/components/world/GameIcon3D";
 import { GameCard } from "@/components/library/GameCard";
@@ -38,9 +38,10 @@ export default function Library() {
     ? (me.data?.today.cleared ?? {})
     : Object.fromEntries((me.data?.played ?? []).map((id) => [id, 1]));
 
-  // Live games plus the lab games switched on in "features.labGames" (the server refuses the others).
-  const labOn = useGameSettings()["features.labGames"];
-  const all = useMemo(() => playerGames({ "features.labGames": labOn }), [labOn]);
+  // The games that are On (Games page state); the server refuses the others like an unknown game.
+  const settings = useGameSettings();
+  const all = useMemo(() => playerGames(settings), [settings]);
+  const worlds = useMemo(() => playerWorlds(settings), [settings]);
   const list = useMemo(() => filterGames(all, filter, q, meta), [all, filter, q, meta]);
   const hasNew = newGameIds(all, meta).length > 0;
 
@@ -80,8 +81,8 @@ export default function Library() {
             <p className="text-muted text-[14px] leading-[1.35]">{T.subtitle}</p>
           </div>
         </div>
-        <GameSearchField value={q} onChange={setQ} />
-        <GameFilterChips value={filter} onChange={setFilter} showNew={hasNew} />
+        <GameSearchField value={q} onChange={setQ} placeholder={T.searchPlaceholderFor(all.length)} />
+        <GameFilterChips value={filter} onChange={setFilter} worlds={worlds} showNew={hasNew} />
         <p className="text-muted text-[13px] font-medium" aria-live="polite">
           {T.count(list.length)}
         </p>

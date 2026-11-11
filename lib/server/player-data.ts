@@ -3,7 +3,7 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { levelFromXp, flameTier } from "@/lib/rewards";
 import { rankFor } from "@/lib/rating/glicko2";
-import { GAMES, LAUNCH_IDS, isLiveWorld, openGame, playableGame } from "@/lib/catalog";
+import { LAUNCH_IDS, isLiveWorld, openGame, playableGame, playerGames } from "@/lib/catalog";
 import { COSMETICS } from "@/lib/gamification/cosmetics";
 import { hasLogic } from "@/games/logic-registry";
 import { dailyNumber, msToReset } from "@/lib/format";
@@ -117,8 +117,8 @@ export async function loadMe(user: User, player: PlayerRow, admin: SupabaseClien
     // Retired games drop out: "Games tried x of N" and the guided first play only know games players can reach.
     played: [...new Set((played ?? []).map((r) => r.game_id as string))].filter((id) => !!playableGame(id)),
     learned: (learned ?? []).map((r) => r.game_id as string),
-    // Most recent first, one entry per game, games the player can open now (live, or lab and switched on), so
-    // Continue never leads to a lab game switched off since.
+    // Most recent first, one entry per game, games the player can open now (On, Games page state), so Continue never
+    // leads to a game switched Off or put In testing since.
     recent: [...new Set((recentRows ?? []).map((r) => r.game_id as string))].filter((id) => !!openGame(id, settings)).slice(0, 8),
     ratings: Object.fromEntries((ratings ?? []).map((r) => [r.track, Number(r.rating)])),
     today: {
@@ -149,12 +149,19 @@ export async function loadToday(user: User | null, admin: SupabaseClient = supab
       status[a.game_id] =
         a.status === "cleared" ? { state: "cleared", timeMs: a.time_ms } : a.first_move_at ? { state: "in_progress" } : { state: "new" };
   }
+  const settings = await getGameSettings();
   return {
     signedIn: !!user,
-    dailies: (await getGameSettings())["features.dailies"],
+    dailies: settings["features.dailies"],
     date,
     number: dailyNumber(date),
     resetsInMs: msToReset(),
-    games: GAMES.map((g) => ({ id: g.id, world: g.world, ready: hasLogic(g.id), ...(status[g.id] ?? { state: "new" as const }) })),
+    // Only games that are On (Games page state): one In testing or Off has no Daily for players.
+    games: playerGames(settings).map((g) => ({
+      id: g.id,
+      world: g.world,
+      ready: hasLogic(g.id),
+      ...(status[g.id] ?? { state: "new" as const }),
+    })),
   };
 }

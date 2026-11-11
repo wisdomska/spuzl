@@ -33,6 +33,8 @@ export interface BadgeStats {
   friends: number;
   /** distinct games cleared per world */
   worldCleared: Partial<Record<WorldId, number>>;
+  /** games per world that are On now (Games page state); a world missing here counts all its games */
+  worldTotal?: Partial<Record<WorldId, number>>;
   gameClears: Record<string, number>;
 }
 
@@ -52,7 +54,7 @@ export function badgeProgress(b: BadgeDef, s: BadgeStats): { have: number; need:
       return { have: Math.min(n, s.friends), need: n };
     case "world_all": {
       const w = b.rule.world as WorldId;
-      const need = gamesInWorld(w).length;
+      const need = s.worldTotal?.[w] ?? gamesInWorld(w).length;
       return { have: Math.min(need, s.worldCleared[w] ?? 0), need };
     }
     case "game_clears":

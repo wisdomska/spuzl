@@ -22,12 +22,14 @@ import {
   NEW_GAMES,
   NEW_IDS,
   isNewGame,
-  isLabOn,
-  labGamesInWorld,
+  DEFAULT_SWITCH,
+  gameState,
   openGame,
-  openLabGames,
   playableGame,
   playerGames,
+  playerGamesInWorld,
+  playerWorlds,
+  versusAllowed,
   colourOf,
   toneOf,
   type WorldId,
@@ -266,29 +268,70 @@ describe("catalog: four groups", () => {
   });
 });
 
-describe("R2-P5: the lab switch with no game in testing", () => {
-  const none = { "features.labGames": [] as string[] };
-  // A setting stored before the graduation still names the twelve; it no longer changes anything.
-  const stale = { "features.labGames": GRADUATED };
-
-  it("opens the graduated games whatever the setting, and never a retired or unknown id", () => {
-    for (const s of [none, stale]) {
-      for (const id of GRADUATED) expect(openGame(id, s)?.id, id).toBe(id);
-      for (const id of GRADUATED) expect(isLabOn(id, s), id).toBe(false);
-    }
-    expect(openGame("crownfall", none)?.id).toBe("crownfall");
-    expect(openGame("blackout", { "features.labGames": ["blackout"] })).toBeUndefined();
-    expect(openGame("nope", { "features.labGames": ["nope"] })).toBeUndefined();
-    expect(isLabOn("crownfall", { "features.labGames": ["crownfall"] })).toBe(false);
+describe("Game state: On, In testing, Off (Games page)", () => {
+  const sw = (testing: string[] = [], off: string[] = [], noVersus: string[] = []) => ({
+    "games.testing": testing,
+    "games.off": off,
+    "games.noVersus": noVersus,
   });
 
-  it("adds nothing to the player lists, so they are exactly the live games", () => {
-    for (const s of [none, stale]) {
-      expect(playerGames(s)).toEqual(GAMES);
-      expect(openLabGames(s)).toEqual([]);
-      for (const w of WORLDS) expect(labGamesInWorld(w.id, s), w.id).toEqual([]);
-    }
+  it("starts every game On (none in testing now that the lab is empty)", () => {
+    expect(DEFAULT_SWITCH).toEqual(sw());
+    for (const g of GAMES) expect(gameState(g.id, DEFAULT_SWITCH), g.id).toBe("on");
+    expect(playerGames(DEFAULT_SWITCH)).toEqual(GAMES);
+    expect(playerWorlds(DEFAULT_SWITCH)).toEqual(WORLDS);
     expect(WORLD_COUNT).toBe(4);
+  });
+
+  it("opens a game In testing for admins only, and a game Off for nobody", () => {
+    const s = sw(["pinned"], ["crownfall"]);
+    expect(gameState("pinned", s)).toBe("testing");
+    expect(gameState("crownfall", s)).toBe("off");
+    expect(openGame("pinned", s)).toBeUndefined();
+    expect(openGame("pinned", s, { admin: false })).toBeUndefined();
+    expect(openGame("pinned", s, { admin: true })?.id).toBe("pinned");
+    expect(openGame("crownfall", s)).toBeUndefined();
+    expect(openGame("crownfall", s, { admin: true })).toBeUndefined();
+    expect(openGame("dusk", s)?.id).toBe("dusk");
+  });
+
+  it("never opens a retired or unknown id, whatever the switch says", () => {
+    const s = sw([], [], []);
+    expect(gameState("blackout", s)).toBeUndefined();
+    expect(openGame("blackout", s, { admin: true })).toBeUndefined();
+    expect(openGame("nope", sw(["nope"]), { admin: true })).toBeUndefined();
+    expect(openGame(null, s)).toBeUndefined();
+  });
+
+  it("Off wins when a game is somehow listed both ways", () => {
+    expect(gameState("dara", sw(["dara"], ["dara"]))).toBe("off");
+    expect(openGame("dara", sw(["dara"], ["dara"]), { admin: true })).toBeUndefined();
+  });
+
+  it("drops games In testing and Off from every player list and count", () => {
+    const s = sw(["pinned"], ["crownfall"]);
+    const ids = playerGames(s).map((g) => g.id);
+    expect(ids).not.toContain("pinned");
+    expect(ids).not.toContain("crownfall");
+    expect(ids).toHaveLength(GAME_COUNT - 2);
+    expect(playerGamesInWorld("logic", s).map((g) => g.id)).not.toContain("crownfall");
+    expect(playerGamesInWorld("word", s).map((g) => g.id)).not.toContain("pinned");
+    // An admin's view keeps the game in testing, never the one Off.
+    expect(playerGames(s, { admin: true }).map((g) => g.id)).toContain("pinned");
+    expect(playerGames(s, { admin: true }).map((g) => g.id)).not.toContain("crownfall");
+  });
+
+  it("hides a world once none of its games is On", () => {
+    const board = gamesInWorld("board").map((g) => g.id);
+    const s = sw([], board);
+    expect(playerWorlds(s).map((w) => w.id)).not.toContain("board");
+    expect(playerWorlds(s)).toHaveLength(WORLDS.length - 1);
+    expect(playerGamesInWorld("board", s)).toEqual([]);
+  });
+
+  it("keeps a game out of Duels and Parties only when the admin says so", () => {
+    expect(versusAllowed("sixer", sw())).toBe(true);
+    expect(versusAllowed("sixer", sw([], [], ["sixer"]))).toBe(false);
   });
 
   it("races the graduated time games in Duels and Parties, never Dara (a board game) nor the score games", () => {
@@ -327,7 +370,7 @@ describe("catalog: derived lists", () => {
     expect(retired(Object.keys(DEFAULT_META))).toEqual([]);
     expect(isRaceGame("quilt")).toBe(false);
     // The random mix never deals a retired game, even when asked for one.
-    const mix = pickGames(createRng("t"), "pixl", 40, ["quilt", "sums"]);
+    const mix = pickGames(createRng("t"), "pixl", 40, ["quilt", "sums"], isRaceGame);
     expect(retired(mix)).toEqual([]);
   });
 

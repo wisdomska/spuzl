@@ -57,8 +57,8 @@ export const FILES: Record<ContentGame, () => Promise<{ needsReview: boolean; en
     const m = await import("@/games/pixl/art");
     return { needsReview: m.needsReview, entries: m.ART };
   },
-  // Lab content games (Five, and Pinned, Flagged and Pixl above): the owner reviews them here before switching them
-  // on in "features.labGames".
+  // Content games that were in the lab (Five, and Pinned, Flagged and Pixl above): the owner reviews their content here
+  // (a new game In testing too, before it is switched On on the Games page).
   five: async () => {
     const m = await import("@/games/five/content");
     return { needsReview: m.needsReview, entries: m.ANSWERS as unknown[] };

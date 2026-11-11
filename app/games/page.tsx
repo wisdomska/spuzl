@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { WORLDS } from "@/lib/catalog";
+import { playerWorlds } from "@/lib/catalog";
 import { Icon } from "@/components/ui/Icon";
 import { PublicShell } from "@/components/seo/PublicShell";
 import { GameLinkCard } from "@/components/seo/GameLinkCard";
@@ -7,11 +7,14 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { gamesCopy as T, seoMeta } from "@/lib/copy/seo";
 import { publicMetadata } from "@/lib/seo/site";
 import { servedCopy } from "@/lib/games-meta/server";
-import { servedLabSwitch } from "@/lib/game-settings/server";
-import { publicGames, publicGamesInWorld } from "@/lib/seo/games";
+import { servedGameSwitch } from "@/lib/game-settings/server";
+import { publicCounts, publicGames, publicGamesInWorld } from "@/lib/seo/games";
 import { breadcrumbs, gameList, graph } from "@/lib/seo/jsonld";
 
-export const metadata = publicMetadata({ path: "/games", ...seoMeta.games });
+/** The title counts the games that are On (Games page state); rebuilt with the page. */
+export async function generateMetadata() {
+  return publicMetadata({ path: "/games", ...seoMeta.gamesFor(publicCounts(await servedGameSwitch()).games) });
+}
 /**
  * R4-10: the admin's rule and card copy (Library page) reach this page. Rebuilt at most hourly, and at once after a
  * copy change (the admin route revalidates it), so the page stays a fast cached file.
@@ -21,7 +24,8 @@ export const revalidate = 3600;
 /** The crawlable game catalogue: every game players can open, grouped by world, each linking to its own page. Static. */
 export default async function GamesIndex() {
   const copy = await servedCopy();
-  const lab = await servedLabSwitch();
+  const lab = await servedGameSwitch();
+  const counts = publicCounts(lab);
   return (
     <PublicShell>
       <JsonLd
@@ -34,7 +38,9 @@ export default async function GamesIndex() {
         )}
       />
       <h1 className="font-display text-[36px] leading-[1.02] font-black tracking-[-0.04em] text-balance sm:text-[56px]">{T.indexTitle}</h1>
-      <p className="text-muted mt-4 max-w-[680px] text-[17px] leading-relaxed">{T.indexLede}</p>
+      <p className="text-muted mt-4 max-w-[680px] text-[17px] leading-relaxed">
+        {T.indexLedeFor(counts.games, counts.worlds, counts.names)}
+      </p>
       <ul className="mt-4 flex flex-col gap-1.5 text-[15px]">
         {T.indexPoints.map((p) => (
           <li key={p} className="flex items-center gap-2">
@@ -43,7 +49,7 @@ export default async function GamesIndex() {
           </li>
         ))}
       </ul>
-      {WORLDS.map((w) => {
+      {playerWorlds(lab).map((w) => {
         const games = publicGamesInWorld(w.id, lab).map(copy);
         return (
           <section key={w.id} aria-labelledby={`world-${w.id}`} className="mt-12 flex flex-col gap-4">

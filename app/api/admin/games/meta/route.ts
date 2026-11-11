@@ -2,7 +2,9 @@ import { z } from "zod";
 import { ApiError, body, handle, ok } from "@/lib/api/server";
 import { audit, requireAdmin } from "@/lib/admin/auth";
 import { DEFAULT_META, defaultMetaFor, validateMeta } from "@/lib/games-meta";
-import { GAME_BY_ID, RETIRED_GAMES, isLabGame, isLabOn, isRetired } from "@/lib/catalog";
+import { GAME_BY_ID, RETIRED_GAMES, gameState, isRetired, versusAllowed } from "@/lib/catalog";
+import { hasLogic } from "@/games/logic-ids";
+import { isVersusEligible } from "@/lib/multiplayer/games";
 import { getGameSettings } from "@/lib/game-settings/server";
 import { revalidatePublicCopy } from "@/lib/seo/revalidate";
 import { invalidateGamesMeta, mergeMeta, selectMetaRows, type GameMetaDbRow } from "@/lib/games-meta/server";
@@ -16,8 +18,9 @@ const copyDefault = (id: string) => ({ rule: GAME_BY_ID[id]?.rule ?? "", blurb: 
 
 /**
  * GET /api/admin/games/meta: every game's Library metadata (duration, tags, one-line rule and card copy), defaults
- * and overrides (also the export format). Retired games are listed last, marked `retired`, and cannot be changed.
- * Lab games carry `lab` and `labOn`: whether "features.labGames" (Settings page) has switched them on for players.
+ * and overrides (also the export format), and its runtime state (On, In testing, Off: `state`), whether it may be
+ * played in Duels and Parties (`versus`, offered where `versusEligible`) and whether it skips its practice round
+ * (`practiceOff`, where `hasPractice`). Retired games are listed last, marked `retired`, and cannot be changed.
  */
 export const GET = handle(async () => {
   const ctx = await requireAdmin("content.read");
@@ -40,9 +43,11 @@ export const GET = handle(async () => {
           scored: scored(id),
           scoreOverridden: byId[id]?.typical_score != null,
           retired: false,
-          // Lab games: whether "features.labGames" (Settings page) has switched them on for players
-          lab: isLabGame(id),
-          labOn: isLabOn(id, settings),
+          state: gameState(id, settings) ?? "on",
+          versusEligible: isVersusEligible(id),
+          versus: versusAllowed(id, settings),
+          hasPractice: hasLogic(id),
+          practiceOff: settings["practice.disabled"].includes(id),
         };
       }),
       ...RETIRED_GAMES.map((g) => {

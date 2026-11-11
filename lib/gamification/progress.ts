@@ -10,7 +10,8 @@ import { advanceEventQuest } from "@/lib/events/server";
  */
 export const SOLO_MODES = ["daily", "free", "archive", "level"];
 const isSolo = (mode: string) => SOLO_MODES.includes(mode);
-import { GAME_BY_ID, gamesInWorld, type WorldId } from "@/lib/catalog";
+import { GAME_BY_ID, gamesInWorld, playerGamesInWorld, type WorldId } from "@/lib/catalog";
+import { getGameSettings } from "@/lib/game-settings/server";
 
 export interface ClearContext {
   gameId: string;
@@ -37,6 +38,8 @@ interface Stats {
   fullSpuzlDays: number;
   gameClears: (game: string) => Promise<number>;
   worldGamesCleared: (world: WorldId) => Promise<number>;
+  /** Explorer badges count the world's games that are On (Games page state) */
+  worldGames: (world: WorldId) => string[];
 }
 
 async function stats(admin: SupabaseClient, playerId: string): Promise<Stats> {
@@ -47,6 +50,8 @@ async function stats(admin: SupabaseClient, playerId: string): Promise<Stats> {
     count(base().in("mode", SOLO_MODES)),
     count(base().in("mode", SOLO_MODES).eq("hints", 0)),
   ]);
+  const settings = await getGameSettings();
+  const worldGames = (world: WorldId) => playerGamesInWorld(world, settings).map((g) => g.id);
   const { count: fs } = await admin
     .from("xp_ledger")
     .select("id", { count: "exact", head: true })
@@ -58,8 +63,9 @@ async function stats(admin: SupabaseClient, playerId: string): Promise<Stats> {
     noHintClears,
     fullSpuzlDays: fs ?? 0,
     gameClears: async (game) => count(base().eq("game_id", game)),
+    worldGames,
     worldGamesCleared: async (world) => {
-      const ids = gamesInWorld(world).map((g) => g.id);
+      const ids = worldGames(world);
       const { data } = await admin.from("attempts").select("game_id").eq("player_id", playerId).eq("status", "cleared").in("game_id", ids);
       return new Set((data ?? []).map((r) => r.game_id)).size;
     },
@@ -82,7 +88,9 @@ async function badgeEarned(b: BadgeDef, c: ClearContext, s: Stats): Promise<bool
     case "game_clears":
       return c.gameId === b.rule.game && (await s.gameClears(b.rule.game!)) >= n;
     case "world_all":
-      return c.world === b.rule.world && (await s.worldGamesCleared(c.world)) >= gamesInWorld(c.world).length;
+      return (
+        c.world === b.rule.world && s.worldGames(c.world).length > 0 && (await s.worldGamesCleared(c.world)) >= s.worldGames(c.world).length
+      );
     case "under_ms":
       return c.timeMs < n;
     case "night_owl":

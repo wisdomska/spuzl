@@ -7,6 +7,8 @@ export const libraryCopy = {
   back: "Back",
   search: "Search games",
   searchPlaceholder: `Search ${GAME_COUNT} games`,
+  /** The search box counting the games that are On now (Games page state). */
+  searchPlaceholderFor: (n: number) => `Search ${n} games`,
   clear: "Clear search",
   filters: "Filter games",
   all: "All",

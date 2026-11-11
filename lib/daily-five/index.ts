@@ -161,7 +161,7 @@ export function pickFive(date: string, rules: FiveRules, candidates: readonly Ca
 }
 
 /**
- * R4-06: new games for the slots of a stored day whose game can no longer be played (a lab game switched off).
+ * R4-06: new games for the slots of a stored day whose game can no longer be played (switched Off or put In testing).
  * Each such slot keeps its number and gets a quick game of the same world that is not already in the day (and its
  * kind), else one from the bonus pool, else any quick game left (as a bonus), rotating by date so the choice is
  * deterministic.

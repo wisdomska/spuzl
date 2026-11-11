@@ -5,7 +5,7 @@ import { getGameSettings } from "@/lib/game-settings/server";
 const DAILY_ONLY_FAMILIES = ["speed", "fullspuzl"];
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { BADGES } from "@/lib/gamification/badges";
-import { GAME_BY_ID, WORLDS, isLiveWorld, playableGame, type WorldId } from "@/lib/catalog";
+import { GAME_BY_ID, WORLDS, isLiveWorld, openGame, playableGame, playerGames, type WorldId } from "@/lib/catalog";
 import { rankFor } from "@/lib/rating/glicko2";
 import { FAMILY_LABEL, badgeFamilies, badgeProgress, type BadgeStats } from "./index";
 import { friendIds } from "@/lib/social/server";
@@ -39,13 +39,16 @@ export async function badgeOverview(admin: SupabaseClient, playerId: string, gam
     admin.from("streaks").select("best, current").eq("player_id", playerId).maybeSingle(),
     friendIds(admin, playerId),
   ]);
+  // Explorer badges count the world's games that are On (Games page state); a game In testing or Off doesn't count.
+  const settings = await getGameSettings();
   const worldCleared: Partial<Record<WorldId, number>> = {};
   for (const s of stats) {
-    // Explorer badges count the world's live games (gamesInWorld); a lab game cleared there does not count.
-    if (GAME_BY_ID[s.game].lab) continue;
+    if (!openGame(s.game, settings)) continue;
     const w = GAME_BY_ID[s.game].world;
     worldCleared[w] = (worldCleared[w] ?? 0) + 1;
   }
+  const worldTotal: Partial<Record<WorldId, number>> = {};
+  for (const g of playerGames(settings)) worldTotal[g.world] = (worldTotal[g.world] ?? 0) + 1;
   const bs: BadgeStats = {
     clears: stats.reduce((n, s) => n + s.clears, 0),
     dailyClears: daily ?? 0,
@@ -54,11 +57,12 @@ export async function badgeOverview(admin: SupabaseClient, playerId: string, gam
     bestStreak: Math.max(streak?.best ?? 0, streak?.current ?? 0),
     friends: friends.length,
     worldCleared,
+    worldTotal,
     gameClears: Object.fromEntries(stats.map((s) => [s.game, s.clears])),
   };
   const earnedAt = new Map((owned ?? []).map((o) => [o.badge_id as string, o.earned_at as string]));
   // Dailies off: the families only Dailies can earn (median speed, Full Spuzl) are hidden unless already earned.
-  const dailiesOn = (await getGameSettings())["features.dailies"];
+  const dailiesOn = settings["features.dailies"];
   // A world with no live game left (all its games retired) hides its Explorer badge unless already earned.
   const shownBadges = BADGES.filter(
     (b) =>

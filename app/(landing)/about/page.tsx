@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { FaqAccordion } from "@/components/seo/FaqAccordion";
 import Link from "next/link";
-import { WORLDS, gamesInWorld } from "@/lib/catalog";
 import { Icon } from "@/components/ui/Icon";
 import { Spuz } from "@/components/brand/Spuz";
 import { Wordmark } from "@/components/brand/Wordmark";
@@ -9,13 +8,23 @@ import { TryIt } from "@/components/landing/TryIt";
 import { NoMusic } from "@/components/landing/NoMusic";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { aboutCopy as T } from "@/lib/copy/about";
-import { SITE_FAQ, landingSeoCopy as S, seoMeta } from "@/lib/copy/seo";
+import { landingSeoCopy as S, seoMeta, siteFaq } from "@/lib/copy/seo";
 import { publicMetadata } from "@/lib/seo/site";
 import { faqPage, gameList, graph, organization, webApplication, website } from "@/lib/seo/jsonld";
-import { GAMES } from "@/lib/catalog";
+import { servedGameSwitch } from "@/lib/game-settings/server";
+import { publicCounts, publicGames, publicGamesInWorld } from "@/lib/seo/games";
+import { playerWorlds } from "@/lib/catalog";
 
-/** Served at "/" to visitors (proxy rewrite) and kept at /about, so both name "/" as the canonical address. */
+/**
+ * Served at "/" to visitors (proxy rewrite) and kept at /about, so both name "/" as the canonical address. The search
+ * title and description keep the catalogue count (static text); the page itself counts the games that are On.
+ */
 export const metadata: Metadata = publicMetadata({ path: "/", ...seoMeta.landing });
+/**
+ * Games page state: the games, worlds and counts on the page follow the games that are On. Rebuilt at most hourly, and
+ * at once after an admin changes a game's state (lib/seo/revalidate), so the page stays a fast cached file.
+ */
+export const revalidate = 3600;
 
 const PRIMARY =
   "press bg-accent text-on-accent flex h-14 items-center justify-center gap-2 rounded-full px-7 text-[17px] font-bold shadow-[0_5px_0_var(--accent-depth)]";
@@ -27,10 +36,22 @@ const H2 = "font-display text-[32px] leading-[1.05] font-black tracking-[-0.03em
  * Public landing page. Signed-out visitors get it at "/" (proxy rewrite), so the homepage names the app, says what
  * it does and links the privacy policy without a login, as Google's OAuth branding review requires.
  */
-export default function Landing() {
+export default async function Landing() {
+  const sw = await servedGameSwitch();
+  const counts = publicCounts(sw);
+  const C = T.counted(counts.games, counts.worlds);
+  const faq = siteFaq(counts.games, counts.worlds, counts.names);
   return (
     <div className="safe-top min-h-dvh overflow-x-clip">
-      <JsonLd data={graph(organization(), website(), webApplication(), gameList(S.catalogueTitle, GAMES), faqPage(SITE_FAQ))} />
+      <JsonLd
+        data={graph(
+          organization(),
+          website(),
+          webApplication(),
+          gameList(S.catalogueTitleFor(counts.games), publicGames(sw)),
+          faqPage(faq),
+        )}
+      />
       <NoMusic />
       {/* Nav */}
       <header className="sticky top-0 z-20 px-4 pt-3">
@@ -72,7 +93,7 @@ export default function Landing() {
             <p className="bg-surface-raised text-muted flex w-fit items-center gap-2 rounded-full px-3.5 py-1.5 text-[13px] font-semibold">
               <span className="text-text font-display font-black">{T.name}</span>
               <span aria-hidden>·</span>
-              {T.eyebrow}
+              {C.eyebrow}
             </p>
             <h1 className="font-display text-[46px] leading-[0.98] font-black tracking-[-0.045em] text-balance sm:text-[64px] lg:text-[80px]">
               <span className="sr-only">{T.name}: </span>
@@ -98,7 +119,7 @@ export default function Landing() {
 
         {/* Stats */}
         <section aria-label="SPUZL in numbers" className="border-line grid grid-cols-3 border-y py-8">
-          {T.stats.map(([n, label]) => (
+          {C.stats.map(([n, label]) => (
             <div key={label} className="flex flex-col items-center gap-1">
               <span className="font-display text-[34px] leading-none font-black tracking-[-0.03em] sm:text-[48px]">{n}</span>
               <span className="text-muted text-[14px] font-semibold">{label}</span>
@@ -128,10 +149,10 @@ export default function Landing() {
         {/* Worlds */}
         <section id="worlds" className="scroll-mt-24 pb-16 sm:pb-24">
           <p className={EYEBROW}>{T.worldsEyebrow}</p>
-          <h2 className={`${H2} mt-3`}>{T.worldsTitle}</h2>
+          <h2 className={`${H2} mt-3`}>{C.worldsTitle}</h2>
           <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {WORLDS.map((w) => {
-              const games = gamesInWorld(w.id);
+            {playerWorlds(sw).map((w) => {
+              const games = publicGamesInWorld(w.id, sw);
               return (
                 <li key={w.id} className="bg-surface border-line flex flex-col gap-3 rounded-[24px] border p-5">
                   <div className="flex items-center gap-3">
@@ -214,7 +235,7 @@ export default function Landing() {
           <h2 id="faq-title" className={`${H2} mt-3`}>
             {S.faqTitle}
           </h2>
-          <FaqAccordion items={SITE_FAQ} className="mt-10" />
+          <FaqAccordion items={faq} className="mt-10" />
         </section>
 
         {/* Final call to action */}

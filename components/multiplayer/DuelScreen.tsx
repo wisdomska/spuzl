@@ -62,7 +62,7 @@ export function DuelScreen() {
   const m = sp.get("m");
   const code = sp.get("code");
   const friendName = sp.get("friend")?.slice(0, 16) || null;
-  const game = raceGameParam(sp.get("game"));
+  const game = raceGameParam(sp.get("game"), useGameSettings());
   const invite = sp.get("invite") === "1";
   if (gate === "loading") return <LoadingScreen />;
   if (gate === "no_profile") return <NeedProfile />;

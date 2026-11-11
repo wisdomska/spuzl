@@ -6,10 +6,16 @@ import { isLadderGame } from "./levels";
  * round), preferring one not cleared yet and ready to play. Never the game just played, and never a jump back to
  * the start of the Dailies list (that sent every non-Daily game to Crownfall).
  */
-export function nextInPath(current: string, cleared: Record<string, unknown>, ready: (id: string) => boolean): string | null {
+export function nextInPath(
+  current: string,
+  cleared: Record<string, unknown>,
+  ready: (id: string) => boolean,
+  /** players may open it now (Games page state: On); a game In testing or Off is never offered */
+  open: (id: string) => boolean = () => true,
+): string | null {
   const meta = GAME_BY_ID[current];
   if (!meta) return null;
-  const world = GAMES.filter((g) => g.world === meta.world);
+  const world = GAMES.filter((g) => g.world === meta.world && (g.id === current || open(g.id)));
   const i = world.findIndex((g) => g.id === current);
   const after = [...world.slice(i + 1), ...world.slice(0, Math.max(0, i))].map((g) => g.id).filter((id) => id !== current);
   return after.find((id) => cleared[id] === undefined && ready(id)) ?? after.find((id) => ready(id)) ?? after[0] ?? null;
@@ -34,8 +40,13 @@ export function nextLabelParts(id: string): { title: string; sub: string; full: 
  * Home's Continue: the game the player played most recently. A brand-new player (nothing played yet) gets the
  * first Daily that is ready, as before.
  */
-export function continueGame(recent: readonly string[] | undefined, fallback: string | null): string | null {
-  return (recent ?? []).find((id) => !!playableGame(id)) ?? fallback;
+export function continueGame(
+  recent: readonly string[] | undefined,
+  fallback: string | null,
+  /** players may open it now (Games page state: On); a game In testing or Off is skipped */
+  open: (id: string) => boolean = () => true,
+): string | null {
+  return (recent ?? []).find((id) => !!playableGame(id) && open(id)) ?? fallback;
 }
 
 /** Where Continue opens a game: its next level for games with levels, else a fresh puzzle (or today's Daily). */

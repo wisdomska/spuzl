@@ -2,7 +2,8 @@ import "server-only";
 import { duelShareModel, type DuelShareModel } from "./duel-card";
 import { headToHead } from "@/lib/multiplayer/server/h2h";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { GAME_BY_ID, LAUNCH_IDS, toneOf } from "@/lib/catalog";
+import { GAME_BY_ID, LAUNCH_IDS, openGame, toneOf } from "@/lib/catalog";
+import { getGameSettings } from "@/lib/game-settings/server";
 import { dailyNumber } from "@/lib/format";
 import { dailyCard, duelCard, freeCard, fullCard, partyCard, type CardModel } from "./card-model";
 
@@ -53,6 +54,9 @@ export async function attemptCard(admin: SupabaseClient, id: string, kind: "dail
   if (!a || a.status !== "cleared" || !a.verified || a.time_ms === null) return null;
   const meta = GAME_BY_ID[a.game_id];
   if (!meta) return null;
+  // Link previews are public: a game Off or In testing (Games page) shows no card, like an unknown one. (Old cards of
+  // retired games still render, as before.)
+  if (!meta.retired && !openGame(a.game_id, await getGameSettings())) return null;
   if (kind === "free") {
     if (a.mode !== "free") return null;
     const { streak, level } = await streakAndLevel(admin, a.player_id);

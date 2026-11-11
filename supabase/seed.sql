@@ -74,7 +74,7 @@ insert into public.games (id, world_id, name, status, phase, engine, scoring, is
   ('slip', 'rage', 'Slip', 'retired', 'M3+', 'phaser', 'deaths', false, 5000, 59),
   ('gauntlet', 'reflex', 'Gauntlet', 'retired', 'M3+', 'phaser', 'deaths', false, 10000, 60),
   ('flip', 'board', 'Flip', 'retired', 'M3+', 'board', 'time', false, 1500, 61)
-on conflict (id) do update set world_id = excluded.world_id, name = excluded.name, status = excluded.status, phase = excluded.phase, engine = excluded.engine, scoring = excluded.scoring, is_unique = excluded.is_unique, min_time_ms = excluded.min_time_ms, sort = excluded.sort;
+on conflict (id) do update set world_id = excluded.world_id, name = excluded.name, status = case when excluded.status = 'live' and public.games.status in ('live', 'testing', 'off') then public.games.status else excluded.status end, phase = excluded.phase, engine = excluded.engine, scoring = excluded.scoring, is_unique = excluded.is_unique, min_time_ms = excluded.min_time_ms, sort = excluded.sort;
 insert into public.badges (id, family, tier, name, description, secret, sparks, rule, sort) values
   ('first-clear', 'starter', 'bronze', 'First Clear', 'Clear your first puzzle.', false, 10, '{"kind":"clears","n":1,"icon":"seal-check"}'::jsonb, 0),
   ('explorer-logic', 'explorer', 'gold', 'Puzzles Explorer', 'Clear every game in Puzzles.', false, 50, '{"kind":"world_all","world":"logic","icon":"puzzle-piece"}'::jsonb, 1),

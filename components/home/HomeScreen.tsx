@@ -13,7 +13,7 @@ import { motion } from "motion/react";
 import { useMe, useToday } from "@/lib/client/api";
 import { readOnboarding, writeOnboarding } from "@/lib/client/onboarding";
 import { track } from "@/lib/analytics/track";
-import { GAMES, GAME_BY_ID, LAUNCH_IDS, WORLD_BY_ID, gamesInWorld, isLiveGame, type WorldId } from "@/lib/catalog";
+import { GAME_BY_ID, LAUNCH_IDS, WORLD_BY_ID, openGame, playerGames, playerGamesInWorld, type WorldId } from "@/lib/catalog";
 import { HomeMap, nextDaily, worldProgress } from "./HomeMap";
 import { continueGame, continueHref } from "@/lib/game/next";
 import { LevelRing, SparksChip, StreakChip } from "@/components/shell/Hud";
@@ -106,7 +106,7 @@ export function HomeScreen() {
   );
   const ready = (id: string) => today.data?.games.find((g) => g.id === id)?.ready ?? id === "crownfall";
   // Continue: the game played most recently (a brand-new player gets the first ready Daily).
-  const recentId = continueGame(me.data?.recent, null);
+  const recentId = continueGame(me.data?.recent, null, (id) => !!openGame(id, gameSettings));
   const next = recentId ?? nextDaily(cleared, ready);
   const nextMeta = next ? GAME_BY_ID[next] : null;
   // R2-01: the Continue game's page, code and board are downloaded while the player looks at Home.
@@ -115,7 +115,7 @@ export function HomeScreen() {
   const nextLadder = !!me.data && !!nextMeta && isLadderGame(nextMeta.id);
   const levels = useLevels(nextLadder);
   const nextLevel = nextLadder && nextMeta ? levels.data?.games[nextMeta.id]?.next : undefined;
-  const progress = worldProgress(cleared);
+  const progress = worldProgress(cleared, gameSettings);
   const currentWorld: WorldId = nextMeta?.world ?? "logic";
   const featuredDone = LAUNCH_IDS.filter((id) => cleared[id] !== undefined).length;
   const hour = now === null ? 0 : new Date(now).getHours();
@@ -128,7 +128,7 @@ export function HomeScreen() {
 
   if (!me.data) return <HomeSkeleton />;
   const d = me.data;
-  const worldGames = nextMeta ? gamesInWorld(nextMeta.world) : [];
+  const worldGames = nextMeta ? playerGamesInWorld(nextMeta.world, gameSettings) : [];
   const posInWorld = nextMeta ? worldGames.findIndex((g) => g.id === nextMeta.id) + 1 : 0;
 
   return (
@@ -216,8 +216,8 @@ export function HomeScreen() {
                   ? T.allDoneSub
                   : T.allTriedSub
             }
-            done={dailiesOn ? counted : (d.played ?? []).filter((id) => isLiveGame(id)).length}
-            total={dailiesOn ? LAUNCH_IDS.length : GAMES.length}
+            done={dailiesOn ? counted : (d.played ?? []).filter((id) => !!openGame(id, gameSettings)).length}
+            total={dailiesOn ? LAUNCH_IDS.length : playerGames(gameSettings).length}
             aria={dailiesOn ? T.todayAria : T.triedAria}
           />
           <nav aria-label="More ways to play" className="grid grid-cols-3 gap-2">

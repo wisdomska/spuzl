@@ -1,9 +1,9 @@
 import "server-only";
 import { activeEventQuiz } from "@/lib/events/server";
-import { getGameSettings } from "@/lib/game-settings/server";
+import { getGameSettings, openGameNow } from "@/lib/game-settings/server";
 import { createHash, randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { LAUNCH_IDS, isRetired, openGame, playableGame, type GameMeta } from "@/lib/catalog";
+import { LAUNCH_IDS, isRetired, playableGame, type GameMeta } from "@/lib/catalog";
 import { hasLogic } from "@/games/logic-registry";
 import { loadServedLogic as loadLogic } from "@/lib/game/served-logic";
 import { createRng } from "@/lib/rng";
@@ -38,12 +38,12 @@ const LEVEL_ROOM_FLOOR_MS = 1500;
 export type Mode = "tutorial" | "daily" | "free" | "archive" | "challenge" | "level";
 
 /**
- * Retired games are refused always, and lab games unless the admin setting "features.labGames" has their id,
- * both as an unknown game (`openGame`, lib/catalog.ts).
+ * Retired games are refused always; a game Off is refused for everyone, and one In testing for everyone but a
+ * signed-in admin (Games page state, `openGameNow`): all answered exactly like an unknown game.
  */
 export async function assertGameOpen(meta: GameMeta): Promise<void> {
   if (meta.retired || isRetired(meta.id)) throw new ApiError(404, "unknown_game");
-  if (meta.lab && !openGame(meta.id, await getGameSettings())) throw new ApiError(404, "unknown_game");
+  if (!(await openGameNow(meta.id))) throw new ApiError(404, "unknown_game");
 }
 
 export function gameOr404(id: string): GameMeta {
@@ -315,6 +315,8 @@ export async function resumeAttempt(
   if (nowMs - Date.parse(a.started_at) > RESUME_WINDOW_MS) return null;
   const level = a.mode === "level" ? levelOfSeed(a.free_seed) : undefined;
   if (ref.level !== undefined && level !== ref.level) return null;
+  // A game switched Off or to In testing since: nothing to resume (the fresh start is refused as unknown).
+  if (!(await openGameNow(a.game_id))) return null;
   const loaded = await loadForAttempt(admin, a);
   return {
     attemptId: a.id,
@@ -420,6 +422,7 @@ export async function saveAttempt(admin: SupabaseClient, playerId: string, id: s
 export async function hintFor(admin: SupabaseClient, playerId: string, id: string, state: unknown): Promise<Hint | null> {
   const a = await getAttempt(admin, playerId, id);
   if (a.status !== "in_progress") throw new ApiError(409, "attempt_closed");
+  await assertGameOpen(gameOr404(a.game_id));
   const banked = a.hints >= FREE_HINTS;
   if (banked && !usesBankedHints(a.mode)) throw new ApiError(429, "no_hints_left");
   const logic = await loadLogic(a.game_id);
@@ -484,6 +487,8 @@ export async function finishAttempt(
   const a = await getAttempt(admin, playerId, id);
   if (a.status !== "in_progress") throw new ApiError(409, "attempt_closed");
   const meta = gameOr404(a.game_id);
+  // Off, or In testing for a player: refused like an unknown game, even for a board opened before the switch.
+  await assertGameOpen(meta);
   const logic = await loadLogic(a.game_id);
   const l = await loadForAttempt(admin, a);
   // verify, then check against the attempt's server record (shown answers, committed shots) and the bot check

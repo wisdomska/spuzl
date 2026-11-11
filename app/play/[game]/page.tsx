@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: PageProps<"/play/[game]">): P
 export default async function Play({ params, searchParams }: PageProps<"/play/[game]">) {
   const { game } = await params;
   const sp = await searchParams;
-  // Unknown, retired and switched-off lab games ("features.labGames") are not found.
+  // Unknown and retired games, games Off, and games In testing unless an admin is signed in are not found.
   const meta = await openGameNow(game);
   if (!meta || !hasLogic(game)) notFound();
   // SPZ-01: only the session is checked here (a local JWT check). The player profile is already in the client

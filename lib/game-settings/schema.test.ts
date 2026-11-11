@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULTS, SETTINGS, SETTING_GROUPS, SETTING_LIST_MAX, mergeSettings, sameSetting, validateSetting } from "./schema";
-import { LAB_GAMES } from "@/lib/catalog";
 
 describe("game settings schema", () => {
   it("every default passes its own validation", () => {
@@ -106,21 +105,32 @@ describe("R2-07: practice.disabled", () => {
   });
 });
 
-describe("R2-P5: features.labGames", () => {
-  it("is a set of lab game ids, empty by default, with helper text, in Features for players", () => {
-    const d = SETTINGS["features.labGames"];
-    expect(DEFAULTS["features.labGames"]).toEqual([]);
-    expect(d.group).toBe("Features for players");
-    expect(d.help.startsWith("Switch on a game that is still in testing")).toBe(true);
-    expect(d.more).toMatch(/never in Duels or Parties/);
-    expect(d.options.map((o) => o.id)).toEqual(LAB_GAMES.map((g) => g.id));
-    // Every lab game graduated (11 Nov 2026): no options, so only the empty list is valid.
-    expect(d.options).toEqual([]);
-    expect(validateSetting("features.labGames", [])).toBeNull();
-    // Only lab games: a live (graduated too) or retired id is refused.
-    expect(validateSetting("features.labGames", ["crownfall"])).toMatch(/Must be a list/);
-    expect(validateSetting("features.labGames", ["five", "pixl"])).toMatch(/Must be a list/);
-    expect(validateSetting("features.labGames", ["blackout"])).toMatch(/Must be a list/);
+describe("Game state: the lab switch moved to the Games page", () => {
+  it("drops features.labGames: an old stored row is ignored and never becomes a key", () => {
+    expect("features.labGames" in SETTINGS).toBe(false);
+    expect(validateSetting("features.labGames", [])).toBe("Unknown setting");
+    const s = mergeSettings([{ key: "features.labGames", value: ["five", "dara", "twotruths"] }]);
+    expect(Object.keys(s)).not.toContain("features.labGames");
+  });
+
+  it("carries the games' runtime switch with the settings, every game On by default", () => {
+    expect(DEFAULTS["games.testing"]).toEqual([]);
+    expect(DEFAULTS["games.off"]).toEqual([]);
+    expect(DEFAULTS["games.noVersus"]).toEqual([]);
+    const s = mergeSettings([]);
+    expect(s["games.off"]).toEqual([]);
+    // The switch is not a setting: the settings API can't write it (the Games page owns it).
+    expect(validateSetting("games.off", ["crownfall"])).toBe("Unknown setting");
+  });
+
+  it("keeps practice.disabled as storage, edited on the Games page, not on Game settings", () => {
+    expect(SETTINGS["practice.disabled"].editedOn).toBe("games");
+    expect(validateSetting("practice.disabled", ["crownfall"])).toBeNull();
+    const onSettingsPage = Object.entries(SETTINGS)
+      .filter(([, d]) => !("editedOn" in d))
+      .map(([k]) => k);
+    expect(onSettingsPage).not.toContain("practice.disabled");
+    expect(onSettingsPage.length).toBeGreaterThan(20);
   });
 
   it("every setting has a plain label, a one-line help and a known section", () => {
@@ -138,16 +148,7 @@ describe("R2-P5: features.labGames", () => {
 
   it("replaces features.newGames, whose stored row is now ignored", () => {
     expect("features.newGames" in SETTINGS).toBe(false);
-    const s = mergeSettings([
-      { key: "features.newGames", value: true },
-      { key: "features.labGames", value: [] },
-    ]);
-    expect(s["features.labGames"]).toEqual([]);
+    const s = mergeSettings([{ key: "features.newGames", value: true }]);
     expect(Object.keys(s)).not.toContain("features.newGames");
-  });
-
-  it("ignores a stored value that still names graduated games, so the server and the admin page read none", () => {
-    const s = mergeSettings([{ key: "features.labGames", value: ["five", "dara", "twotruths"] }]);
-    expect(s["features.labGames"]).toEqual([]);
   });
 });

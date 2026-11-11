@@ -1,6 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { GAME_BY_ID, playableGame, toneOf } from "@/lib/catalog";
+import { GAME_BY_ID, openGame, toneOf } from "@/lib/catalog";
 import { getGameSettings } from "@/lib/game-settings/server";
 import { challengeCard, challengeCodeOf, type ChallengeCardModel } from "./challenge-card";
 import { SHARE_DOMAIN } from "./text";
@@ -13,13 +13,14 @@ import { SHARE_DOMAIN } from "./text";
 export async function loadChallengeCard(admin: SupabaseClient, raw: string): Promise<ChallengeCardModel | null> {
   const code = challengeCodeOf(raw);
   if (!code) return null;
-  if (!(await getGameSettings())["features.challenges"]) return null;
+  const settings = await getGameSettings();
+  if (!settings["features.challenges"]) return null;
   const { data: c } = await admin
     .from("challenges")
     .select("code, sender_id, game_id, sender_ms, hints, mistakes, expires_at")
     .eq("code", code)
     .maybeSingle();
-  if (!c || Date.parse(c.expires_at) < Date.now() || !playableGame(c.game_id)) return null;
+  if (!c || Date.parse(c.expires_at) < Date.now() || !openGame(c.game_id, settings)) return null;
   const { data: p } = await admin
     .from("players")
     .select("nickname, avatar_color, hat:owned_hat, banned_at")

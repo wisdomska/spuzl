@@ -9,7 +9,7 @@ import { Sheet } from "@/components/meta/Sheet";
 import { useMe } from "@/lib/client/api";
 import { useSettings } from "@/lib/settings/store";
 import { useGameSettings } from "@/lib/game-settings/client";
-import { challengeLinks, isPartyGame, isRaceGame } from "@/lib/multiplayer/games";
+import { challengeLinks, isDuelGame, isPartyGame } from "@/lib/multiplayer/games";
 import { quickMatchPool } from "@/lib/multiplayer/liveGate";
 import { partyCopy } from "@/lib/copy/party";
 
@@ -20,14 +20,15 @@ import { partyCopy } from "@/lib/copy/party";
 
 /**
  * How a game can be raced with others: "race" (time games: Duel and Party), "score" (R4-08: score games race in
- * Party only, while "party.scoreRaces" is on and a lab game is switched on, the server's own check), or null.
+ * Party only, while "party.scoreRaces" is on), or null; either way only while it is On and allowed in Duels and
+ * Parties on the Games page (the server's own check).
  * Never in Relaxed mode (no clocks, so Duels and Party Races are off).
  */
 export function useChallengeKind(meta: GameMeta): "race" | "score" | null {
   const relaxed = useSettings((s) => s.relaxed);
   const settings = useGameSettings();
   if (relaxed) return null;
-  if (isRaceGame(meta.id)) return "race";
+  if (isDuelGame(meta.id, settings)) return "race";
   return isPartyGame(meta.id, settings) ? "score" : null;
 }
 

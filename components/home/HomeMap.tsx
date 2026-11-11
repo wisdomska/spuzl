@@ -2,9 +2,10 @@
 
 import { whenQuiet } from "@/lib/perf/quiet";
 import { useRouter } from "next/navigation";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { WORLDS, gamesInWorld, LAUNCH_IDS, type WorldId } from "@/lib/catalog";
+import { DEFAULT_SWITCH, WORLDS, LAUNCH_IDS, playerGamesInWorld, playerWorlds, type GameSwitch, type WorldId } from "@/lib/catalog";
+import { useGameSettings } from "@/lib/game-settings/client";
 import { Island } from "./Island";
 import type { SpuzMood } from "@/components/brand/Spuz";
 import { MySpuz } from "@/components/meta/MySpuz";
@@ -90,11 +91,21 @@ export function HomeMap({
 }) {
   const router = useRouter();
   const reduce = useReducedMotion();
+  // Worlds with a game that is On (Games page state); every world while the settings load.
+  const settings = useGameSettings();
+  const worlds = useMemo(() => {
+    const on = playerWorlds(settings);
+    return on.length ? on : WORLDS;
+  }, [settings]);
   // A saved "current" world can be one that has since been hidden: Spuz then starts on the first island.
   const [spuzAt, setSpuzAt] = useState<WorldId>(WORLDS.some((w) => w.id === current) ? current : WORLDS[0].id);
   const [hopTo, setHopTo] = useState<{ x: number; y: number } | null>(null);
   const busy = useRef(false);
-  const idx = (w: WorldId) => WORLDS.findIndex((x) => x.id === w);
+  const idx = (w: WorldId) =>
+    Math.max(
+      0,
+      worlds.findIndex((x) => x.id === w),
+    );
   const box = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<{ slots: Slot[]; scale: number }>({ slots: TALL, scale: 1 });
   // Size the map to the space between the header and the Continue bar (the section's bottom padding).
@@ -118,7 +129,8 @@ export function HomeMap({
       window.removeEventListener("resize", measure);
     };
   }, []);
-  const SLOTS = view.slots;
+  // One slot per shown world (a world with no game On leaves the path).
+  const SLOTS = view.slots.slice(0, worlds.length);
   const b = bounds(SLOTS);
   const width = Math.max(b.w, SLOTS === TALL ? 390 : 0);
   const height = b.h;
@@ -129,12 +141,12 @@ export function HomeMap({
   useEffect(() => {
     let live = true;
     void whenQuiet().then(() => {
-      if (live) for (const w of WORLDS) router.prefetch(`/world/${w.id}`);
+      if (live) for (const w of worlds) router.prefetch(`/world/${w.id}`);
     });
     return () => {
       live = false;
     };
-  }, [router]);
+  }, [router, worlds]);
 
   // World travel (Handoff): camera + Spuz hops along the dotted path in 3 arcs over 700 ms; RM cross-fades.
   const travel = (w: WorldId) => {
@@ -171,7 +183,7 @@ export function HomeMap({
               strokeLinecap="round"
             />
           </svg>
-          {WORLDS.map((w, i) => {
+          {worlds.map((w, i) => {
             const s = SLOTS[i];
             const p = progress[w.id] ?? { cleared: 0, total: 0 };
             return (
@@ -231,11 +243,11 @@ export function HomeMap({
   );
 }
 
-/** Per-world Dailies progress for today (featured launch games + all games in that world). */
-export function worldProgress(cleared: Record<string, number>): Record<WorldId, WorldProgress> {
+/** Per-world Dailies progress for today (featured launch games + all games in that world that are On). */
+export function worldProgress(cleared: Record<string, number>, s: GameSwitch = DEFAULT_SWITCH): Record<WorldId, WorldProgress> {
   const out = {} as Record<WorldId, WorldProgress>;
   for (const w of WORLDS) {
-    const games = gamesInWorld(w.id);
+    const games = playerGamesInWorld(w.id, s);
     out[w.id] = { cleared: games.filter((g) => cleared[g.id] !== undefined).length, total: games.length };
   }
   return out;

@@ -10,8 +10,8 @@ import { roundSeed } from "@/lib/multiplayer/games";
  * R3-08: Party score races through the real API. A score game (Quickfire here) can be picked for a Party while
  * "party.scoreRaces" is on; everyone plays the same seeded round; answers go through the guess route, which judges
  * them like a solo attempt on a server log per racer and round; the finish is checked against that log and the
- * round is placed by the server's score (then time). Lab score games need "features.labGames" (none is in testing
- * since the twelve graduated on 11 Nov 2026; Two Truths and a Lie races with no switch now); Duels never take them.
+ * round is placed by the server's score (then time). A score game In testing or Off never races (Games page;
+ * tests/api/game-state.test.ts); Two Truths and a Lie races with no switch since it graduated. Duels never take them.
  * Run: API_BASE=http://localhost:<port> pnpm vitest run -c vitest.api.config.mts tests/api/r3-08-score-races.test.ts
  */
 type G = Awaited<ReturnType<typeof guest>>;
@@ -69,7 +69,7 @@ async function play(g: G, id: string, correct: number[], right: (q: number) => b
 }
 
 afterAll(async () => {
-  await admin().from("game_settings").delete().in("key", ["party.scoreRaces", "features.labGames"]);
+  await admin().from("game_settings").delete().in("key", ["party.scoreRaces"]);
 });
 
 describe("api: Party score races (R3-08)", () => {
@@ -127,9 +127,8 @@ describe("api: Party score races (R3-08)", () => {
     expect((await p.api("/api/v1/duel/friend", { json: { game: "quickfire" } })).status).toBe(400);
   });
 
-  it("races a graduated score game (Two Truths and a Lie) with Lab games empty, and not once score races go off", async () => {
+  it("races a graduated score game (Two Truths and a Lie), and not once score races go off", async () => {
     await setSetting("party.scoreRaces", true);
-    await setSetting("features.labGames", []);
     const host = await guest(uniq("sl_"));
     const on = await host.api("/api/v1/rooms", { json: { game: "twotruths", difficulty: "easy", maxPlayers: 4 } });
     expect(on.status, JSON.stringify(on.data)).toBe(200);

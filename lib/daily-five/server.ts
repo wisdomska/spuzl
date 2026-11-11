@@ -70,7 +70,7 @@ export interface DailyFiveView {
 
 const COLS = "date, slot, kind, world, game_id, puzzle_id, source, locked, updated_at";
 
-/** Games the auto-pick can choose from: live ones with logic, and lab games only while "features.labGames" has them. */
+/** Games the auto-pick can choose from: the ones with logic that are On (Games page state). */
 export async function fiveCandidates(settings: GameSettings): Promise<Candidate[]> {
   const meta = await loadGamesMeta();
   const games = playerGames(settings).filter((g) => hasLogic(g.id));
@@ -235,8 +235,8 @@ export interface ClosedRepick {
 }
 
 /**
- * R4-06: today's and future unlocked Daily Five days that hold a game players can no longer open (a lab game
- * switched off in `features.labGames`) get new games, so the server never refuses a slot. A future automatic day
+ * R4-06: today's and future unlocked Daily Five days that hold a game players can no longer open (switched Off or
+ * put In testing on the Games page) get new games, so the server never refuses a slot. A future automatic day
  * nobody has played is re-picked whole under the current rules (what the daily job would pick); today, a manual
  * day or a day already started keeps its other games and only the closed slots change, each to a new puzzle.
  * Locked days are never changed. The caller audits the result (settings change, cron, admin fill).

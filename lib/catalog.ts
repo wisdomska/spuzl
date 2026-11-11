@@ -9,10 +9,11 @@ import { dara } from "@/lib/copy/dara";
  *
  * Retired games (RETIRED_IDS) keep their code, boards and tests so they can come back, but they are out of
  * every player-facing list (GAMES, WORLDS, LAB_GAMES) and the server refuses them like an unknown game
- * (`playableGame`, `lib/game/service.ts`). Counts on screens come from GAMES.length / WORLDS.length
- * (GAME_COUNT, WORLD_COUNT), never typed by hand. To bring a game back, take its id out of RETIRED_IDS and
- * set its `games.status` to 'live' in a migration; or bring it back as a lab game (`lab: true` in LAB_LIST,
- * `games.status` 'coming_soon'), which players reach only while "features.labGames" has it (`openGame`).
+ * (`playableGame`, `lib/game/service.ts`). Counts on screens come from the games that are On
+ * (`playerGames(s).length`), or the catalogue (GAME_COUNT, WORLD_COUNT) for static text, never typed by hand.
+ * To bring a game back, take its id out of RETIRED_IDS and
+ * set its `games.status` to 'live' (or 'testing', so only admins can try it first) in a migration. Every game that is
+ * not retired has a runtime state the admin sets on the Games page (On, In testing, Off: `gameState`, `openGame`).
  */
 export type WorldId = "logic" | "line" | "shape" | "number" | "word" | "clue" | "reflex" | "rage" | "board";
 
@@ -61,7 +62,7 @@ export interface GameMeta {
   photosensitive?: boolean;
   /** Offers "Play a full game vs bot" (casual, on the device, no XP): /play/<id>/bot */
   botPlay?: boolean;
-  /** Lab game: hidden and refused by the server unless the admin setting "features.labGames" has its id (`openGame`) */
+  /** Lab game: starts In testing (admins only) until an admin switches it On on the Games page (`DEFAULT_SWITCH`) */
   lab?: boolean;
   /** Retired (RETIRED_IDS): kept in code, hidden from players and refused by the server. Set by the catalog. */
   retired?: boolean;
@@ -747,14 +748,12 @@ const MAIN_GAMES: GameMeta[] = [
 ];
 
 /**
- * Lab games (lab: true): playable code that players reach only while the admin setting "features.labGames" (a set
- * of game ids, lib/game-settings/schema.ts) has their id. They are NOT in GAMES, so counts, paths, Duel/Party
- * pickers and the live Dailies stay the live games; player screens add the switched-on ones with `openLabGames` /
- * `labGamesInWorld`, and the server refuses the others like an unknown game (`openGame`, lib/game/service.ts
- * assertGameOpen). Add new games at the END of this list (one block per game).
+ * Lab games (lab: true): a new game that starts In testing (only signed-in admins can open it) until the admin
+ * switches it On from the Games page, which stores the state in `games.status` (see GameSwitch below). Add new games
+ * at the END of this list (one block per game); scripts/gen-seed.ts writes their row with status 'testing'.
  * Trotro Jam, Emoji Hits and Beat Tap graduated to the live list (2026-11). The twelve R2-P5 lab games (eleven back
  * from retirement, plus Two Truths and a Lie) graduated on 11 Nov 2026 (migration 20261211300101), so the list is
- * empty for now: the next game in testing goes here, and the admin Lab games card says none are in testing.
+ * empty for now.
  */
 const LAB_LIST: GameMeta[] = [];
 
@@ -805,60 +804,113 @@ const mark = (x: GameMeta): GameMeta => (RETIRED_IDS.has(x.id) ? { ...x, retired
 
 /** Every game in code: live, lab and retired. Admin and old-result lookups only; never a player list. */
 export const ALL_GAMES: GameMeta[] = [...MAIN_GAMES, ...LAB_LIST].map(mark);
-/** The live games: every player-facing list, count, picker, Daily and path. */
-export const GAMES: GameMeta[] = ALL_GAMES.filter((x) => !x.retired && !x.lab);
-/** Lab games that are not retired, switched on or not. Players see only the ones `features.labGames` has (`openLabGames`). */
+/**
+ * Every game that is not retired, whatever its runtime state (On, In testing or Off, `gameState`). Players see only
+ * the ones that are On: build player lists with `playerGames(s)`, and counts with `playerGames(s).length`.
+ * This full list is for admin screens, static paths (the pages answer 404 for a game that is not On) and options.
+ */
+export const GAMES: GameMeta[] = ALL_GAMES.filter((x) => !x.retired);
+/** Games that start In testing (lab: true) until an admin switches them On. */
 export const LAB_GAMES: GameMeta[] = ALL_GAMES.filter((x) => x.lab && !x.retired);
 export const RETIRED_GAMES: GameMeta[] = ALL_GAMES.filter((x) => x.retired);
-/** Games marked new and not retired: what the Home "new games" banner counts (lab ones only while switched on). */
+/** Games marked new and not retired: what the Home "new games" banner counts (only the ones that are On). */
 export const NEW_GAMES: GameMeta[] = ALL_GAMES.filter((x) => x.isNew && !x.retired);
 export const isNewGame = (id: string) => NEW_GAMES.some((g) => g.id === id);
-/** Worlds that still have a live game. Empty worlds are hidden everywhere players look. */
+/**
+ * Worlds that have a game in code. Players see only the worlds with a game that is On (`playerWorlds`); this static
+ * list is for admin screens and static paths.
+ */
 export const WORLDS: World[] = ALL_WORLDS.filter((w) => GAMES.some((x) => x.world === w.id));
+/**
+ * The catalogue count: every game that is not retired. Static text that cannot follow the runtime state (the PWA
+ * manifest, the offline page) keeps it; anything rendered per request or revalidated counts `playerGames(s).length`.
+ */
 export const GAME_COUNT = GAMES.length;
 export const WORLD_COUNT = WORLDS.length;
 
 /**
  * Lookup by id for names, icons and colours, including retired games (old results, admin, Board Bay ids).
- * It is NOT a "can this be played" check: gate on `playableGame` (or `isRetired`) for that.
+ * It is NOT a "can this be played" check: gate on `openGame` (or the server's assertGameOpen) for that.
  */
 export const GAME_BY_ID: Record<string, GameMeta> = Object.fromEntries(ALL_GAMES.map((x) => [x.id, x]));
 export const isRetired = (id: string) => RETIRED_IDS.has(id);
 /**
- * The game when it is live or lab (not retired), otherwise undefined: unknown and retired ids alike. A lab game is
- * only open to players while "features.labGames" has it: gate play on `openGame` (or the server's assertGameOpen).
+ * The game when it is in code and not retired (any runtime state), otherwise undefined: unknown and retired ids
+ * alike. Whether someone may open it now is `openGame` (or the server's assertGameOpen).
  */
 export const playableGame = (id: string | null | undefined): GameMeta | undefined =>
   id && Object.hasOwn(GAME_BY_ID, id) && !RETIRED_IDS.has(id) ? GAME_BY_ID[id] : undefined;
-/** A live game (not lab, not retired). */
-export const isLiveGame = (id: string | null | undefined) => !!playableGame(id) && !GAME_BY_ID[id!].lab;
+/** A game in code that is not retired (any runtime state). */
+export const isLiveGame = (id: string | null | undefined) => !!playableGame(id);
 export const isLabGame = (id: string) => playableGame(id)?.lab === true;
 
 /**
- * The settings slice that switches lab games on for players: "features.labGames", a set of lab game ids
- * (lib/game-settings/schema.ts). Pass the whole settings object (`getGameSettings()` / `useGameSettings()`).
+ * A game's runtime state, set by an admin on the Games page and stored in `games.status`:
+ * - "on" ('live'): everyone can find and play it;
+ * - "testing" ('testing'): only signed-in admins can open it, to try it out; players never see it and the server
+ *   refuses it like an unknown game;
+ * - "off" ('off'): hidden from everyone and refused for everyone.
+ * Retired games (RETIRED_IDS) have no runtime state: they are retired in code.
  */
-export type LabSwitch = { readonly "features.labGames": readonly string[] };
-/** A lab game switched on for players. False for live, retired and unknown ids. */
-export const isLabOn = (id: string, s: LabSwitch) => isLabGame(id) && s["features.labGames"].includes(id);
-/** The lab games switched on for players, in catalogue order. */
-export const openLabGames = (s: LabSwitch): GameMeta[] => LAB_GAMES.filter((x) => s["features.labGames"].includes(x.id));
-/** Every game a player can open now: the live games, then the switched-on lab games (Library, worlds, share card). */
-export const playerGames = (s: LabSwitch): GameMeta[] => [...GAMES, ...openLabGames(s)];
-/** The switched-on lab games of one world (shown after its live games). */
-export const labGamesInWorld = (w: WorldId, s: LabSwitch) => openLabGames(s).filter((x) => x.world === w);
+export type GameState = "on" | "testing" | "off";
+export const GAME_STATES: readonly GameState[] = ["on", "testing", "off"];
+export const isGameState = (v: unknown): v is GameState => typeof v === "string" && (GAME_STATES as readonly string[]).includes(v);
+
 /**
- * The game when a player may open it now: live, or lab and switched on. Unknown, retired and switched-off lab ids
- * are all undefined, so every caller answers them alike (404 unknown_game).
+ * The runtime switch every gate reads. It travels with the game settings (`getGameSettings()` / `useGameSettings()`;
+ * the server reads it from the `games` table): the games In testing, the games Off, and the games the admin keeps
+ * out of Duels and Parties (`games.versus` false). Pass the whole settings object.
  */
-export const openGame = (id: string | null | undefined, s: LabSwitch): GameMeta | undefined => {
-  const g = playableGame(id);
-  return g && (!g.lab || s["features.labGames"].includes(g.id)) ? g : undefined;
+export interface GameSwitch {
+  readonly "games.testing": readonly string[];
+  readonly "games.off": readonly string[];
+  readonly "games.noVersus": readonly string[];
+}
+/** Before the database answers (or when it can't): every game On, except lab games, which start In testing. */
+export const DEFAULT_SWITCH: GameSwitch = {
+  "games.testing": LAB_GAMES.map((g) => g.id),
+  "games.off": [],
+  "games.noVersus": [],
 };
+/** Who is looking: a signed-in admin (any role) may open games In testing. */
+export interface Viewer {
+  readonly admin?: boolean;
+}
+
+/** A game's runtime state; undefined for unknown and retired ids. Off wins over In testing if both somehow hold. */
+export function gameState(id: string | null | undefined, s: GameSwitch): GameState | undefined {
+  const g = playableGame(id);
+  if (!g) return undefined;
+  if ((s["games.off"] ?? []).includes(g.id)) return "off";
+  if ((s["games.testing"] ?? []).includes(g.id)) return "testing";
+  return "on";
+}
+
+/**
+ * The game when this viewer may open it now: On for everyone, In testing for admins only. Unknown, retired, Off and
+ * (for players) In testing ids are all undefined, so every caller answers them alike (404 unknown_game).
+ */
+export const openGame = (id: string | null | undefined, s: GameSwitch, viewer: Viewer = {}): GameMeta | undefined => {
+  const st = gameState(id, s);
+  return st === "on" || (st === "testing" && viewer.admin === true) ? GAME_BY_ID[id!] : undefined;
+};
+/** Every game players can find and play now (On), in catalogue order: Library, worlds, pickers, counts, SEO. */
+export const playerGames = (s: GameSwitch, viewer: Viewer = {}): GameMeta[] => GAMES.filter((g) => !!openGame(g.id, s, viewer));
+/** The On games of one world. */
+export const playerGamesInWorld = (w: WorldId, s: GameSwitch, viewer: Viewer = {}) => playerGames(s, viewer).filter((x) => x.world === w);
+/** Worlds with at least one game that is On. */
+export const playerWorlds = (s: GameSwitch, viewer: Viewer = {}): World[] => {
+  const on = playerGames(s, viewer);
+  return WORLDS.filter((w) => on.some((g) => g.world === w.id));
+};
+/** Whether the admin lets this game be played in Duels and Parties ("Can be played in Duels and Parties"). */
+export const versusAllowed = (id: string, s: GameSwitch) => !(s["games.noVersus"] ?? []).includes(id);
+
 /** Every world, including empty ones, so old results and CSS colours always resolve. */
 export const WORLD_BY_ID: Record<WorldId, World> = Object.fromEntries(ALL_WORLDS.map((w) => [w.id, w])) as Record<WorldId, World>;
-/** A world players may open: it has at least one live game. */
+/** A world in code with a game that is not retired (players open only the ones `playerWorlds` lists). */
 export const isLiveWorld = (id: string | null | undefined) => !!id && WORLDS.some((w) => w.id === id);
+/** Every not-retired game of a world, any runtime state (admin and static paths; players: `playerGamesInWorld`). */
 export const gamesInWorld = (w: WorldId) => GAMES.filter((x) => x.world === w);
 
 /**

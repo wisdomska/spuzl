@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import { sitemapEntries as sitemap } from "./sitemap";
 import robots from "@/app/robots";
 import { ALL_GAMES, GAMES, LAB_GAMES, MERGED_WORLDS, RETIRED_GAMES, WORLDS } from "@/lib/catalog";
-import { GAME_SEO, SITE_FAQ, seoMeta } from "@/lib/copy/seo";
+import { GAME_SEO, SITE_FAQ, seoMeta, siteFaq } from "@/lib/copy/seo";
 import { AI_CRAWLERS, PRIVATE_PATHS } from "./crawlers";
-import { gameDescription, gameFacts, gameModes, gameTitle, publicGame, publicGames, publicGamesInWorld } from "./games";
+import { gameDescription, gameFacts, gameModes, gameTitle, publicCounts, publicGame, publicGames, publicGamesInWorld } from "./games";
 import { llmsFullTxt, llmsTxt } from "./llms";
 import { breadcrumbs, faqPage, graph, jsonLdScript, organization, videoGame, webApplication, website } from "./jsonld";
 import { SITE_URL, absoluteUrl, publicMetadata } from "./site";
@@ -100,38 +100,61 @@ describe("llms.txt", () => {
   });
 });
 
-describe("lab games switched on for players", () => {
-  const lab = { "features.labGames": LAB_GAMES.slice(0, 3).map((g) => g.id) };
-  const on = LAB_GAMES.slice(0, 3);
-  const off = LAB_GAMES.slice(3);
+describe("public pages follow the Games page state", () => {
+  const sw = (testing: string[] = [], off: string[] = [], noVersus: string[] = []) => ({
+    "games.testing": testing,
+    "games.off": off,
+    "games.noVersus": noVersus,
+  });
+  const closed = sw(["pinned"], ["crownfall"]);
 
-  it("get a page, a sitemap entry, an llms.txt line and their world, after the live games", () => {
-    const urls = sitemap(lab).map((e) => e.url);
-    const short = llmsTxt(undefined, lab);
-    const full = llmsFullTxt(undefined, lab);
-    for (const g of on) {
-      expect(publicGame(g.id, lab), g.id).toBe(g);
-      expect(urls, g.id).toContain(absoluteUrl(`/games/${g.id}`));
-      expect(short, g.id).toContain(absoluteUrl(`/games/${g.id}`));
-      expect(full, g.id).toContain(`#### ${g.name}`);
-      const world = publicGamesInWorld(g.world, lab);
-      expect(world.indexOf(g), g.id).toBeGreaterThanOrEqual(world.filter((x) => !x.lab).length);
+  it("never show a game In testing or Off: no page, sitemap entry, llms.txt line or count", () => {
+    const urls = sitemap(closed).map((e) => e.url);
+    const short = llmsTxt(undefined, closed);
+    const full = llmsFullTxt(undefined, closed);
+    for (const id of ["pinned", "crownfall"]) {
+      const g = GAMES.find((x) => x.id === id)!;
+      expect(publicGame(id, closed), id).toBeUndefined();
+      expect(urls, id).not.toContain(absoluteUrl(`/games/${id}`));
+      expect(short, id).not.toContain(absoluteUrl(`/games/${id}`));
+      expect(full, id).not.toContain(`#### ${g.name}`);
+      expect(
+        publicGamesInWorld(g.world, closed).map((x) => x.id),
+        id,
+      ).not.toContain(id);
     }
-    expect(publicGames(lab).length).toBe(GAMES.length + on.length);
-    expect(short).toContain(`All ${GAMES.length + on.length} games`);
+    expect(publicGames(closed)).toHaveLength(GAMES.length - 2);
+    expect(short).toContain(`All ${GAMES.length - 2} games`);
+    expect(short).toContain(`with ${GAMES.length - 2} short games`);
+    expect(full).toContain(`- Games: ${GAMES.length - 2} in ${WORLDS.length} worlds`);
+    expect(publicCounts(closed)).toMatchObject({ games: GAMES.length - 2, worlds: WORLDS.length });
+    for (const g of RETIRED_GAMES) expect(publicGame(g.id, sw()), g.id).toBeUndefined();
   });
 
-  it("never show while switched off", () => {
-    const urls = sitemap(lab).map((e) => e.url);
-    const short = llmsTxt(undefined, lab);
-    for (const g of off) {
-      expect(publicGame(g.id, lab), g.id).toBeUndefined();
-      expect(urls, g.id).not.toContain(absoluteUrl(`/games/${g.id}`));
-      expect(short, g.id).not.toContain(absoluteUrl(`/games/${g.id}`));
-    }
-    for (const g of RETIRED_GAMES) expect(publicGame(g.id, { "features.labGames": [g.id] }), g.id).toBeUndefined();
+  it("drops a world whose games are all Off, from the sitemap and the counts", () => {
+    const board = GAMES.filter((g) => g.world === "board").map((g) => g.id);
+    const s = sw([], board);
+    expect(sitemap(s).map((e) => e.url)).not.toContain(absoluteUrl("/world/board"));
+    expect(publicCounts(s).worlds).toBe(WORLDS.length - 1);
+    expect(publicCounts(s).names).not.toContain("Board Games");
   });
 
+  it("claims Duels and Parties only for a race game the admin lets players race", () => {
+    const race = GAMES.find((g) => isRaceGame(g.id))!;
+    expect(gameModes(race, sw())).toContain("duel");
+    expect(gameModes(race, sw([], [], [race.id]))).not.toContain("duel");
+    expect(gameModes(race, sw([], [], [race.id]))).not.toContain("party");
+  });
+
+  it("counts the On games in the FAQ and summaries where a page can follow them", () => {
+    expect(siteFaq(3, 2, "A and B")[0].a).toContain("It has 3 short games in 2 worlds: A and B.");
+    expect(SITE_FAQ[0].a).toContain(`${GAMES.length} short games`);
+    expect(seoMeta.gamesFor(39).title).toBe("All 39 free online puzzle games | SPUZL");
+    expect(seoMeta.howToPlayFor(39).description).toContain("all 39 SPUZL games");
+  });
+});
+
+describe("lab games", () => {
   it("each have their own search wording, whole in the search description", () => {
     for (const g of LAB_GAMES) {
       expect(GAME_SEO[g.id], g.id).toBeTruthy();

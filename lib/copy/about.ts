@@ -46,6 +46,19 @@ export const aboutCopy = {
   worldsEyebrow: "The games",
   worldsTitle: `${spelled(WORLD_COUNT)} worlds to wander.`,
   gamesCount: (n: number) => (n === 1 ? "1 game" : `${n} games`),
+  /**
+   * The counts on the landing page itself, for the games that are On now (the page is rebuilt hourly and at once after
+   * an admin changes a game's state). The static keys above keep the catalogue count for text that can't follow.
+   */
+  counted: (games: number, worlds: number) => ({
+    eyebrow: `${games} free games · ${worlds} worlds`,
+    stats: [
+      [String(games), "games"],
+      [String(worlds), "worlds"],
+      ["Free", "to play"],
+    ] as const,
+    worldsTitle: `${spelled(worlds)} worlds to wander.`,
+  }),
   friendsEyebrow: "With friends",
   friendsTitle: "Better with your people.",
   friends: [

@@ -4,7 +4,7 @@ import { useGameSettings } from "@/lib/game-settings/client";
 import Link from "next/link";
 import { useMe, useToday } from "@/lib/client/api";
 import { useFriends } from "@/lib/client/social";
-import { GAME_BY_ID, LAUNCH_IDS } from "@/lib/catalog";
+import { GAME_BY_ID, LAUNCH_IDS, openGame } from "@/lib/catalog";
 import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { PanelSkeleton } from "./SidePanel";
@@ -28,11 +28,12 @@ export function SidePanelBody() {
   const today = useToday();
   const friends = useFriends(!!me.data);
   const d = me.data;
-  const dailiesOn = useGameSettings()["features.dailies"];
+  const gameSettings = useGameSettings();
+  const dailiesOn = gameSettings["features.dailies"];
   // Dailies off: the strip shows which featured games the player has tried, not today's Dailies.
   const cleared: Record<string, number> = dailiesOn ? (d?.today.cleared ?? {}) : Object.fromEntries((d?.played ?? []).map((id) => [id, 1]));
   const ready = (id: string) => today.data?.games.find((g) => g.id === id)?.ready ?? id === "crownfall";
-  const next = continueGame(d?.recent, null) ?? nextDaily(cleared, ready);
+  const next = continueGame(d?.recent, null, (id) => !!openGame(id, gameSettings)) ?? nextDaily(cleared, ready);
   const nextMeta = next ? GAME_BY_ID[next] : null;
   // R2-18: like Home's Continue card, a ladder game names the level it opens. Shares the cached /levels query.
   const nextLadder = !!d && !!nextMeta && isLadderGame(nextMeta.id);

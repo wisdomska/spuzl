@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { notFound, permanentRedirect } from "next/navigation";
-import { MERGED_WORLDS, WORLD_BY_ID, isLiveWorld, type WorldId } from "@/lib/catalog";
+import { MERGED_WORLDS, WORLD_BY_ID, isLiveWorld, playerWorlds, type WorldId } from "@/lib/catalog";
 import { WorldScreen } from "@/components/world/WorldScreen";
 import { PublicWorld } from "@/components/seo/PublicWorld";
 import { SeedQueries } from "@/components/shell/SeedQueries";
@@ -30,10 +30,12 @@ export default async function World({ params }: PageProps<"/world/[id]">) {
   // answers both (308, and a real 404 for unknown worlds) before the page streams; these are the fallbacks.
   const merged = Object.hasOwn(MERGED_WORLDS, id) ? MERGED_WORLDS[id as WorldId] : undefined;
   if (merged && isLiveWorld(merged)) permanentRedirect(`/world/${merged}`);
-  // Unknown worlds and worlds whose games are all retired (Number Den) are not found.
+  // Unknown worlds, worlds whose games are all retired (Number Den) and worlds with no game On now are not found.
   if (!isLiveWorld(id)) notFound();
+  const settings = await getGameSettings();
+  if (!playerWorlds(settings).some((w) => w.id === id)) notFound();
   // Local demo mode (no backend) keeps the World screen for everyone.
-  if (hasSupabase() && !hasSessionCookie(await cookies())) return <PublicWorld id={id as WorldId} lab={await getGameSettings()} />;
+  if (hasSupabase() && !hasSessionCookie(await cookies())) return <PublicWorld id={id as WorldId} lab={settings} />;
   return (
     <SeedQueries>
       <WorldScreen id={id as WorldId} />

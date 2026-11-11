@@ -3,7 +3,7 @@
  * These are the defaults; the admin console can override them per game (games.typical_sec and games.tags),
  * read at runtime through useGamesMeta().
  */
-import { GAMES, GAME_BY_ID, LAB_GAMES, WORLDS, WORLD_BY_ID, type GameMeta, type WorldId } from "@/lib/catalog";
+import { GAMES, GAME_BY_ID, WORLDS, WORLD_BY_ID, type GameMeta, type WorldId } from "@/lib/catalog";
 import { isRaceGame } from "@/lib/multiplayer/games";
 
 /** R2-18: "new" marks recently added games (default from the catalog's `isNew`, admin-editable like the rest). */
@@ -127,9 +127,7 @@ export const defaultMetaFor = (id: string): GameMetaRow => ({
 });
 
 /** Defaults for the games players can reach (live and lab). Retired games are left out. */
-export const DEFAULT_META: Record<string, GameMetaRow> = Object.fromEntries(
-  [...GAMES, ...LAB_GAMES].map((g) => [g.id, defaultMetaFor(g.id)]),
-);
+export const DEFAULT_META: Record<string, GameMetaRow> = Object.fromEntries(GAMES.map((g) => [g.id, defaultMetaFor(g.id)]));
 
 /** "About 2 min" style label; under a minute shows "Under 1 min". */
 export function durationLabel(sec: number): string {

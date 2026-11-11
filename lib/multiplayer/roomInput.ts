@@ -8,7 +8,7 @@ import { PARTY_MAX, PARTY_MIN, PARTY_PICK_MAX, PARTY_PICK_MIN } from "./constant
 import { isRaceGame, isScoreRaceGame } from "./games";
 import { PARTY_MODES } from "@/lib/party-adult/modes";
 
-// R3-08: score race games pass here too; the lobby checks them against the settings ("party.scoreRaces", lab games).
+// R3-08: score race games pass here too; the lobby checks them against the settings ("party.scoreRaces", Games page state).
 const partyGame = z
   .string()
   .max(24)
