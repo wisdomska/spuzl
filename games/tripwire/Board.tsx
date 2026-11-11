@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
-import { useCellSize } from "@/components/game/useBoardSize";
+import { useCellSize, useFitHeight } from "@/components/game/useBoardSize";
 import { isKeyedInput, useGridKeys } from "@/components/game/useGridKeys";
 import { play } from "@/lib/audio";
 import { sfx } from "@/games/_shared/sfx";
@@ -13,6 +13,8 @@ import { field, FLAG, flood, HIDDEN, neighbours, OPEN, TRIPPED, type TripwirePuz
 
 const GAP = 3;
 const PAD = 6;
+/** Smallest cell on a short phone (the whole cell is the tap target). */
+const MIN_CELL = 32;
 const LONG_PRESS_MS = 420;
 /** A flood opens outward from the tapped tile: this much later per step away, capped so big floods stay quick. */
 const SPREAD_MS = 22;
@@ -40,7 +42,11 @@ export default function TripwireBoard({ puzzle, initialState, hint, disabled, mo
   const cellsRef = useRef(cells);
   const streak = useRef(0);
   const press = useRef<{ i: number; timer: ReturnType<typeof setTimeout> | null; fired: boolean } | null>(null);
-  const cell = useCellSize(w, GAP, PAD * 2, 56);
+  // The grid fits the width and the height (rows count), and the counts row above it and the tool bar must fit too:
+  // useFitHeight measures the whole shell (on a wide screen, the board column) and steps the cells down.
+  const root = useRef<HTMLDivElement>(null);
+  const ideal = useCellSize(w, GAP, PAD * 2, 56, h);
+  const cell = useFitHeight(ideal, Math.min(MIN_CELL, ideal), h, root, "shell");
   const locked = disabled || done;
   const opened = cells.filter((v, i) => v === OPEN && f[i] >= 0).length;
   const flags = cells.filter((v) => v === FLAG).length;
@@ -218,7 +224,7 @@ export default function TripwireBoard({ puzzle, initialState, hint, disabled, mo
   const hintTarget = typeof hint?.target === "number" ? hint.target : -1;
 
   return (
-    <div className={`flex flex-col items-center gap-3 ${done ? "board-pulse" : ""}`}>
+    <div ref={root} className={`short:gap-2 flex flex-col items-center gap-3 ${done ? "board-pulse" : ""}`}>
       <div className="num flex items-center gap-4 text-[14px] font-semibold text-[var(--text-muted)]" aria-hidden>
         <span className="flex items-center gap-1.5">
           <Icon name="bomb" size={16} />
@@ -279,10 +285,12 @@ export default function TripwireBoard({ puzzle, initialState, hint, disabled, mo
                       e.preventDefault();
                       if (!press.current?.fired) toggleFlag(i);
                     }}
-                    className={`num relative flex cursor-pointer items-center justify-center rounded-[10px] text-[20px] font-semibold outline-none focus-visible:z-10 ${anim} ${glow ? "hint-ring" : ""}`}
+                    className={`num relative flex cursor-pointer items-center justify-center rounded-[10px] font-semibold outline-none focus-visible:z-10 ${anim} ${glow ? "hint-ring" : ""}`}
                     style={{
                       width: cell,
                       height: cell,
+                      // the count grows with the cell (big on a wide screen), never under 16 px
+                      fontSize: Math.max(16, Math.round(cell * 0.46)),
                       background: trip
                         ? "var(--danger-tint)"
                         : isOpen
