@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { CONTENT } from "@/games/quads/content";
 import { packToJson } from "@/lib/admin/quads-pack";
+import { SETTINGS } from "@/lib/game-settings/schema";
 import { admin } from "../../api/helpers";
 import { signedIn } from "./helpers";
 
@@ -25,9 +26,9 @@ const lastAction = async (actor: string, action: string) =>
       .limit(1)
   ).data?.[0];
 
-async function settingRow(page: Page, key: string) {
-  // The key sits in the label line: span, then p, then the text column, then the row with the control.
-  const row = page.getByText(key, { exact: true }).locator("xpath=ancestor::div[2]");
+async function settingRow(page: Page, label: string) {
+  // The label is the row's h3: h3, then its title line, then the text column, then the row with the control.
+  const row = page.getByRole("heading", { name: label, exact: true, level: 3 }).locator("xpath=ancestor::div[3]");
   await expect(row).toBeVisible();
   return row;
 }
@@ -35,6 +36,7 @@ async function settingRow(page: Page, key: string) {
 test("Game settings: every round 2 setting shows with its helper text, and ranges are checked", async ({ page }) => {
   await signedIn(page, "owner");
   await page.goto("/admin/settings");
+  // Plain labels on the page; the setting keys only under Technical details.
   for (const key of [
     "prompts.alertsTriggers",
     "prompts.alertsCooldownDays",
@@ -46,9 +48,13 @@ test("Game settings: every round 2 setting shows with its helper text, and range
     "dailyFive.bonus.board",
     "rooms.under16FriendsOnly",
     "practice.disabled",
-  ])
-    await expect(page.getByText(key, { exact: true })).toBeVisible();
-  const countdown = await settingRow(page, "party.countdownSeconds");
+  ] as const) {
+    await expect(page.getByRole("heading", { name: SETTINGS[key].label, exact: true, level: 3 })).toBeVisible();
+    await expect(page.getByText(key, { exact: true })).toBeHidden();
+  }
+  const countdown = await settingRow(page, SETTINGS["party.countdownSeconds"].label);
+  await countdown.getByText("Technical details").click();
+  await expect(countdown.getByText("party.countdownSeconds", { exact: true })).toBeVisible();
   await expect(countdown.getByText(/The number every Duel round and Party game counts down from/)).toBeVisible();
   const input = countdown.getByRole("textbox");
   await input.fill("9");

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULTS, SETTINGS, SETTING_LIST_MAX, mergeSettings, sameSetting, validateSetting } from "./schema";
+import { DEFAULTS, SETTINGS, SETTING_GROUPS, SETTING_LIST_MAX, mergeSettings, sameSetting, validateSetting } from "./schema";
 import { LAB_GAMES } from "@/lib/catalog";
 
 describe("game settings schema", () => {
@@ -107,11 +107,12 @@ describe("R2-07: practice.disabled", () => {
 });
 
 describe("R2-P5: features.labGames", () => {
-  it("is a set of lab game ids, empty by default, with helper text, in Features", () => {
+  it("is a set of lab game ids, empty by default, with helper text, in Features for players", () => {
     const d = SETTINGS["features.labGames"];
     expect(DEFAULTS["features.labGames"]).toEqual([]);
-    expect(d.group).toBe("Features");
-    expect(d.help.startsWith("Games switched on for players while in testing")).toBe(true);
+    expect(d.group).toBe("Features for players");
+    expect(d.help.startsWith("Switch on a game that is still in testing")).toBe(true);
+    expect(d.more).toMatch(/never in Duels or Parties/);
     expect(d.options.map((o) => o.id)).toEqual(LAB_GAMES.map((g) => g.id));
     expect(validateSetting("features.labGames", ["five", "pixl"])).toBeNull();
     expect(validateSetting("features.labGames", [])).toBeNull();
@@ -119,6 +120,19 @@ describe("R2-P5: features.labGames", () => {
     expect(validateSetting("features.labGames", ["crownfall"])).toMatch(/Must be a list/);
     expect(validateSetting("features.labGames", ["blackout"])).toMatch(/Must be a list/);
     expect(validateSetting("features.labGames", ["five", "five"])).toMatch(/at most once/);
+  });
+
+  it("every setting has a plain label, a one-line help and a known section", () => {
+    const groups = SETTING_GROUPS.map((g) => g.name as string);
+    for (const [key, d] of Object.entries(SETTINGS)) {
+      expect(groups, key).toContain(d.group);
+      expect(d.label.length, key).toBeGreaterThan(3);
+      // One short line; the rest belongs in `more`.
+      expect(d.help.length, key).toBeLessThanOrEqual(150);
+      // No setting keys or developer units in what the owner reads.
+      for (const text of [d.label, d.help, "more" in d ? (d.more ?? "") : ""])
+        expect(text, key).not.toMatch(/\bms\b|[a-z]+\.[a-z]+[A-Z]|\/[a-z]+\//);
+    }
   });
 
   it("replaces features.newGames, whose stored row is now ignored", () => {
