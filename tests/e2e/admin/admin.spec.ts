@@ -153,7 +153,7 @@ test("content editor: draft with schema validation, second person approves", asy
   await signedIn(editor, "content_editor");
   await editor.goto("/admin/content");
   await editor.getByRole("button", { name: "New item" }).click();
-  const payload = editor.getByLabel("Payload (JSON)");
+  const payload = editor.getByLabel("Contents (JSON format)");
   await payload.fill('{ "id": "x" }');
   await expect(editor.locator("#payload-issues li").first()).toBeVisible();
   const id = uniq("e2e-");
@@ -168,9 +168,9 @@ test("content editor: draft with schema validation, second person approves", asy
       source: "QA",
     }),
   );
-  await expect(editor.getByText("Matches the Quickfire format.")).toBeVisible();
+  await expect(editor.getByText("Looks right for Quickfire.")).toBeVisible();
   await editor.getByRole("button", { name: "Save draft" }).click();
-  await editor.getByRole("button", { name: "Submit for review" }).click();
+  await editor.getByRole("button", { name: "Send for review" }).click();
   await expect(editor.getByText("Waiting for a second person to review.")).toBeVisible();
   await expect(editor.getByRole("button", { name: "Approve" })).toHaveCount(0);
 
@@ -183,7 +183,7 @@ test("content editor: draft with schema validation, second person approves", asy
     .first()
     .click();
   await owner.getByRole("button", { name: "Approve" }).click();
-  await expect(owner.getByLabel("Schedule on")).toBeVisible();
+  await expect(owner.getByLabel("Players get it on")).toBeVisible();
   await editorCtx.close();
   await ownerCtx.close();
 });

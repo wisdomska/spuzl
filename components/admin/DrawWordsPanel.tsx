@@ -10,7 +10,8 @@ import { drawPackDiff, drawPackToJson, parseDrawPack } from "@/lib/admin/draw-pa
 import { errorText, useAdminAction, useAdminQuery } from "@/lib/client/admin";
 import { api } from "@/lib/client/api";
 import { PackPanel } from "./PackPanel";
-import { Btn, Empty, Field, Notice, Pill, RowsSkeleton, Tabs, inputCls } from "./ui";
+import { StatePill } from "./content-ui";
+import { Btn, Empty, Field, Notice, RowsSkeleton, Tabs, inputCls } from "./ui";
 
 const W = adminCopy.content.drawit;
 
@@ -76,7 +77,7 @@ export function DrawWordsPanel({ canWrite }: { canWrite: boolean }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-muted text-[14px]">
+      <p className="text-muted max-w-[760px] text-[13px]">
         {W.intro(active)} {W.minNote(min)}
       </p>
       {source === "code" && (
@@ -123,7 +124,9 @@ export function DrawWordsPanel({ canWrite }: { canWrite: boolean }) {
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="flex items-center gap-1.5 text-[14px] font-semibold capitalize">
                     {r.word}
-                    {r.retired_at && <Pill>{W.retiredPill}</Pill>}
+                    {r.retired_at && (
+                      <StatePill s={{ label: W.retiredPill, meaning: W.retiredMeaning, tone: "neutral", icon: "prohibit" }} />
+                    )}
                   </span>
                   {r.alt.length ? <span className="text-muted truncate text-[12px]">{W.also(r.alt.join(", "))}</span> : null}
                 </span>

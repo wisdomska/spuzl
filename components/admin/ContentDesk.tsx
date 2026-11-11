@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { GAME_BY_ID } from "@/lib/catalog";
 import { CONTENT_GAMES, SCHEDULABLE, TEMPLATES, validatePayload, type ContentGame } from "@/lib/admin/content-schemas";
 import { REVIEW_SHOW, type ReviewShow } from "@/lib/admin/content-review";
-import { addDays, age, dayMonth, todayIso } from "@/lib/admin/dates";
+import { addDays, dayMonth, todayIso } from "@/lib/admin/dates";
 import { CONTENT_SORT } from "@/lib/admin/sorting";
 import { errorText, useAdminAction, useAdminQuery, type AdminPage } from "@/lib/client/admin";
 import { adminCopy } from "@/lib/copy/admin";
@@ -16,7 +16,8 @@ import { DrawWordsPanel } from "./DrawWordsPanel";
 import { ReviewQueue } from "./ReviewQueue";
 import { SortHead, type HeadCol } from "./SortHeader";
 import { useUrlFilters, useUrlSort } from "./useUrlFilters";
-import { Btn, Empty, Field, Notice, PageTitle, Pill, RowsSkeleton, Swatch, Tabs, inputCls, textareaCls, type PillTone } from "./ui";
+import { PageHead, StateGuide, StatePill, TechDetails, TechLine, When, type StateWords } from "./content-ui";
+import { Btn, Empty, Field, Notice, Pill, RowsSkeleton, Swatch, Tabs, inputCls, textareaCls, type PillTone } from "./ui";
 
 interface Item {
   id: string;
@@ -35,8 +36,15 @@ interface Item {
   reviewer_email?: string | null;
 }
 
-const TONE: Record<Item["status"], PillTone> = { draft: "neutral", in_review: "warn", approved: "ok", rejected: "danger", scheduled: "ok" };
-const label = adminCopy.common.statusLabel;
+const LOOK: Record<Item["status"], { tone: PillTone; icon: string }> = {
+  draft: { tone: "neutral", icon: "pencil-simple" },
+  in_review: { tone: "warn", icon: "hourglass" },
+  approved: { tone: "ok", icon: "check-circle" },
+  rejected: { tone: "danger", icon: "x-circle" },
+  scheduled: { tone: "ok", icon: "calendar-blank" },
+};
+const itemState = (s: Item["status"]): StateWords => ({ ...adminCopy.content.states[s], ...LOOK[s] });
+const ITEM_STATES = (Object.keys(LOOK) as Item["status"][]).map(itemState);
 
 /** A one-line summary of a payload: its first text field. */
 function summary(p: unknown): string {
@@ -65,8 +73,8 @@ const ALLOWED = {
   show: [...REVIEW_SHOW],
 };
 const ITEM_COLS: HeadCol<(typeof CONTENT_SORT.keys)[number]>[] = [
-  { label: C.itemsHead[0], sort: "game" },
-  { label: C.itemsHead[1] },
+  { label: C.itemsHead[0] },
+  { label: C.itemsHead[1], sort: "game" },
   { label: C.itemsHead[2], sort: "status" },
   { label: C.itemsHead[3] },
   { label: C.itemsHead[4], sort: "updated_at" },
@@ -81,22 +89,20 @@ export function ContentDesk(props: { canWrite: boolean; canApprove: boolean; can
   const tab = filters.tab as "items" | "review" | "drawit";
   const pager = usePager();
   return (
-    <div className="flex flex-col gap-3.5 px-6 py-5">
-      <PageTitle
-        title={C.title}
-        aside={
-          <Tabs
-            label={C.views}
-            value={tab}
-            onChange={(t) => setFilters({ tab: t })}
-            items={[
-              { id: "items", label: C.tabs.items },
-              { id: "review", label: C.tabs.review },
-              { id: "drawit", label: C.tabs.drawit },
-            ]}
-          />
-        }
-      />
+    <div className="flex flex-col gap-4 px-4 py-5 md:px-6">
+      <PageHead title={C.title} purpose={C.intro} />
+      <div className="max-w-full self-start overflow-x-auto">
+        <Tabs
+          label={C.views}
+          value={tab}
+          onChange={(t) => setFilters({ tab: t })}
+          items={[
+            { id: "items", label: C.tabs.items },
+            { id: "review", label: C.tabs.review },
+            { id: "drawit", label: C.tabs.drawit },
+          ]}
+        />
+      </div>
       {tab === "items" ? (
         <Items {...props} pager={pager} />
       ) : tab === "drawit" ? (
@@ -142,48 +148,51 @@ function Items({
   return (
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_480px]">
       <div className="flex min-w-0 flex-col gap-3">
-        <div className="flex items-center gap-2">
-          <select
-            aria-label={common.status}
-            value={status}
-            onChange={(e) => setFilters({ status: e.target.value })}
-            className={`${inputCls} w-44`}
-          >
-            <option value="">{common.anyStatus}</option>
-            {ALLOWED.status.map((s) => (
-              <option key={s} value={s}>
-                {label(s)}
-              </option>
-            ))}
-          </select>
-          <select
-            aria-label={common.game}
-            value={game}
-            onChange={(e) => setFilters({ game: e.target.value })}
-            className={`${inputCls} w-44`}
-          >
-            <option value="">{common.allGames}</option>
-            {CONTENT_GAMES.map((g) => (
-              <option key={g} value={g}>
-                {GAME_BY_ID[g]?.retired ? adminCopy.retired.option(GAME_BY_ID[g].name) : (GAME_BY_ID[g]?.name ?? g)}
-              </option>
-            ))}
-          </select>
+        <p className="text-muted max-w-[760px] text-[13px]">{C.itemsIntro}</p>
+        <StateGuide states={ITEM_STATES} />
+        <div className="flex flex-wrap items-end gap-2">
+          <Field label={C.status} htmlFor="ci-status">
+            <select
+              id="ci-status"
+              value={status}
+              onChange={(e) => setFilters({ status: e.target.value })}
+              className={`${inputCls} h-11 w-44`}
+            >
+              <option value="">{C.anyStatus}</option>
+              {ALLOWED.status.map((s) => (
+                <option key={s} value={s}>
+                  {itemState(s as Item["status"]).label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label={C.game} htmlFor="ci-game">
+            <select id="ci-game" value={game} onChange={(e) => setFilters({ game: e.target.value })} className={`${inputCls} h-11 w-44`}>
+              <option value="">{common.allGames}</option>
+              {CONTENT_GAMES.map((g) => (
+                <option key={g} value={g}>
+                  {GAME_BY_ID[g]?.retired ? adminCopy.retired.option(GAME_BY_ID[g].name) : (GAME_BY_ID[g]?.name ?? g)}
+                </option>
+              ))}
+            </select>
+          </Field>
           {canWrite && (
-            <Btn tone="primary" icon="plus" className="ml-auto" onClick={() => setOpen("new")}>
+            <Btn tone="primary" size="lg" icon="plus" className="ml-auto" onClick={() => setOpen("new")}>
               {C.newItem}
             </Btn>
           )}
         </div>
-        <div className="bg-surface overflow-x-auto rounded-[12px]">
+        <div className="bg-surface overflow-x-auto rounded-[16px]">
           {q.isPending ? (
             <RowsSkeleton />
           ) : q.error ? (
             <div className="p-3">
-              <Notice tone="danger">{errorText(q.error)}</Notice>
+              <Notice tone="danger" icon="warning">
+                {C.loadError} {errorText(q.error)}
+              </Notice>
             </div>
           ) : !q.data.rows.length ? (
-            <Empty icon="note-pencil">{C.emptyItems}</Empty>
+            <Empty icon="note-pencil">{status || game ? C.emptyFiltered : C.emptyItems}</Empty>
           ) : (
             <table className="w-full min-w-[640px] border-collapse text-[14px]">
               <SortHead cols={ITEM_COLS} sort={sort} />
@@ -193,31 +202,34 @@ function Items({
                     key={r.id}
                     className={`border-line border-t ${open === r.id ? "bg-[var(--success-tint)]" : "hover:bg-surface-raised/50"}`}
                   >
-                    <td className="px-3 py-2">
-                      <span className="flex items-center gap-2 font-semibold">
-                        <Swatch world={GAME_BY_ID[r.game_id]?.world ?? "word"} />
-                        {GAME_BY_ID[r.game_id]?.name ?? r.game_id}
-                      </span>
-                    </td>
-                    <td className="max-w-[280px] px-3 py-2">
+                    <td className="max-w-[300px] px-3 py-2">
                       <button
                         type="button"
+                        aria-expanded={open === r.id}
                         onClick={() => setOpen(r.id)}
-                        className="block w-full truncate text-left font-medium hover:underline"
+                        className="block min-h-11 w-full truncate text-left font-semibold hover:underline"
                       >
                         {summary(r.payload) || C.untitled}
                       </button>
                     </td>
                     <td className="px-3 py-2">
+                      <span className="flex items-center gap-2 text-[13px]">
+                        <Swatch world={GAME_BY_ID[r.game_id]?.world ?? "word"} />
+                        {GAME_BY_ID[r.game_id]?.name ?? r.game_id}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2">
                       <span className="flex flex-wrap items-center gap-1">
-                        <Pill tone={TONE[r.status]}>{label(r.status)}</Pill>
+                        <StatePill s={itemState(r.status)} />
                         {r.pooled_at && <Pill tone="ok">{E.poolPill}</Pill>}
                       </span>
                     </td>
                     <td className="text-muted max-w-[160px] truncate px-3 py-2 text-[13px]">
                       {r.author_id === q.data.me ? C.you : (r.author_email ?? C.editor)}
                     </td>
-                    <td className="num text-muted px-3 py-2 text-[13px]">{age(r.updated_at)}</td>
+                    <td className="num text-muted px-3 py-2 text-[13px] whitespace-nowrap">
+                      <When iso={r.updated_at} />
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -282,6 +294,32 @@ function Editor({
   const editable = canWrite && mine && (!item || ["draft", "rejected", "in_review"].includes(item.status));
   const plan = SCHEDULABLE[game];
   const err = create.error ?? save.error ?? review.error ?? schedule.error;
+  const nextStep = !item
+    ? canWrite
+      ? E.next.draft
+      : null
+    : item.status === "in_review" && !mine && canApprove
+      ? E.next.reviewer
+      : item.status === "rejected" && editable
+        ? E.next.rejected
+        : item.status === "draft" && editable
+          ? E.next.draft
+          : null;
+  const payloadField = (
+    <Field label={E.payload} htmlFor="payload" hint={editable ? E.payloadHint : undefined}>
+      <textarea
+        id="payload"
+        value={text}
+        readOnly={!editable}
+        onChange={(e) => setText(e.target.value)}
+        spellCheck={false}
+        rows={14}
+        className={`${textareaCls} num resize-y text-[13px]`}
+        aria-invalid={!check?.success}
+        aria-describedby="payload-issues"
+      />
+    </Field>
+  );
 
   return (
     <aside aria-label={E.aria} className="bg-surface flex flex-col gap-3 rounded-[12px] p-4 xl:sticky xl:top-5 xl:self-start">
@@ -289,7 +327,7 @@ function Editor({
         <h2 className="font-display text-[16px] font-extrabold">
           {item ? E.itemTitle(GAME_BY_ID[item.game_id]?.name ?? item.game_id) : C.newItem}
         </h2>
-        {item && <Pill tone={TONE[item.status]}>{label(item.status)}</Pill>}
+        {item && <StatePill s={itemState(item.status)} />}
         <Btn size="sm" tone="ghost" icon="x" aria-label={E.close} className="ml-auto" onClick={onClose} />
       </div>
       {!item && (
@@ -312,26 +350,26 @@ function Editor({
           </select>
         </Field>
       )}
+      {item && <p className="text-muted text-[13px]">{itemState(item.status).meaning}</p>}
+      {item && (
+        <span className="text-muted text-[12px]">
+          {E.byline(item.author_id === me ? C.you : (item.author_email ?? E.anEditor), item.reviewer_email)}
+        </span>
+      )}
+      {nextStep && <Notice icon="info">{nextStep}</Notice>}
       {game === "quads" && (
         <QuadsEditor value={parsed.ok ? parsed.value : null} readOnly={!editable} onChange={(p) => setText(JSON.stringify(p, null, 2))} />
       )}
-      <Field
-        label={E.payload}
-        htmlFor="payload"
-        hint={item ? E.byline(item.author_id === me ? C.you : (item.author_email ?? E.anEditor), item.reviewer_email) : undefined}
-      >
-        <textarea
-          id="payload"
-          value={text}
-          readOnly={!editable}
-          onChange={(e) => setText(e.target.value)}
-          spellCheck={false}
-          rows={14}
-          className={`${textareaCls} num resize-y text-[13px]`}
-          aria-invalid={!check?.success}
-          aria-describedby="payload-issues"
-        />
-      </Field>
+      {game === "quads" ? (
+        <details>
+          <summary className="text-muted hover:text-text flex min-h-11 cursor-pointer items-center text-[13px] font-semibold">
+            {E.payloadFolded}
+          </summary>
+          {payloadField}
+        </details>
+      ) : (
+        payloadField
+      )}
       <div id="payload-issues" aria-live="polite">
         {!parsed.ok ? (
           <Notice tone="danger" icon="warning">
@@ -372,7 +410,7 @@ function Editor({
       )}
 
       {editable && (
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <Btn
             size="lg"
             disabled={!check?.success || create.isPending || save.isPending}
@@ -395,7 +433,7 @@ function Editor({
         </div>
       )}
       {item?.status === "in_review" && !mine && canApprove && (
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <Btn size="lg" disabled={review.isPending} onClick={() => review.mutate({ decision: "reject", notes })}>
             {E.reject}
           </Btn>
@@ -412,13 +450,13 @@ function Editor({
           ) : (
             // Guess-route games (Quads, Coil...) schedule too: the guess route checks the attempt's stored puzzle.
             <form
-              className="flex items-end gap-2"
+              className="flex flex-wrap items-end gap-2"
               onSubmit={(e) => {
                 e.preventDefault();
                 schedule.mutate({ itemId: item.id, date });
               }}
             >
-              <Field label={E.scheduleOn} htmlFor="sched">
+              <Field label={E.scheduleOn} htmlFor="sched" hint={E.scheduleHelp}>
                 <input
                   id="sched"
                   type="date"
@@ -445,6 +483,11 @@ function Editor({
       )}
       {item && item.game_id === "quads" && item.source !== "content_file" && ["approved", "scheduled"].includes(item.status) && (
         <QuadsPool item={item} canWrite={canWrite} />
+      )}
+      {item && (
+        <TechDetails>
+          <TechLine name={E.techItem} value={item.id} />
+        </TechDetails>
       )}
     </aside>
   );

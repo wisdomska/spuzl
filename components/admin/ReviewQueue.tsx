@@ -4,13 +4,14 @@ import { useMemo, useState } from "react";
 import { GAME_BY_ID } from "@/lib/catalog";
 import { SCHEDULABLE, validatePayload, type ContentGame } from "@/lib/admin/content-schemas";
 import { REVIEW_SHOW, type EntryState, type ReviewShow } from "@/lib/admin/content-review";
-import { age } from "@/lib/admin/dates";
+import { ago } from "@/lib/admin/content-words";
 import { errorText, useAdminAction, useAdminQuery } from "@/lib/client/admin";
 import { adminCopy } from "@/lib/copy/admin";
 import { Pagination, type Pager } from "./Pagination";
 import { PracticeBoardPreview } from "./PuzzlePreview";
 import { ReviewEntry } from "./ReviewEntry";
 import type { RebuildResult } from "@/lib/admin/rebuild";
+import { StateGuide, StatePill, type StateWords } from "./content-ui";
 import { Btn, Empty, Field, Notice, Pill, RowsSkeleton, Swatch, Tabs, inputCls, textareaCls, type PillTone } from "./ui";
 
 const C = adminCopy.content;
@@ -42,7 +43,15 @@ interface Queue {
   total?: number;
 }
 
-const TONE: Record<EntryState, PillTone> = { pending: "warn", changed: "warn", approved: "ok", edited: "ok", retired: "neutral" };
+const LOOK: Record<EntryState, { tone: PillTone; icon: string }> = {
+  pending: { tone: "warn", icon: "hourglass" },
+  changed: { tone: "warn", icon: "warning" },
+  approved: { tone: "ok", icon: "check-circle" },
+  edited: { tone: "ok", icon: "pencil-simple" },
+  retired: { tone: "neutral", icon: "prohibit" },
+};
+const entryState = (s: EntryState): StateWords => ({ ...R.states[s], ...LOOK[s] });
+const ENTRY_STATES = (Object.keys(LOOK) as EntryState[]).map(entryState);
 const nameOf = (g: string) => GAME_BY_ID[g]?.name ?? g;
 
 /** A labelled bar plus the count in words, so progress never relies on the bar alone. */
@@ -104,6 +113,9 @@ export function ReviewQueue({
   const can = canWrite && (sum.data?.canReview ?? true);
   const decide = (indexes: number[], decision: "approve" | "retire") =>
     act.mutate({ game: game!, indexes, decision }, { onSuccess: () => setPicked(new Set()) });
+  const retireMany = () => {
+    if (window.confirm(R.confirmRetireAll(picked.size))) decide([...picked], "retire");
+  };
   const pick = (g: string) => {
     setFilters({ game: g });
     setPicked(new Set());
@@ -114,214 +126,221 @@ export function ReviewQueue({
   };
 
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[300px_1fr]">
-      <nav aria-label={R.games} className="bg-surface flex flex-col gap-1 self-start rounded-[12px] p-2">
-        {sum.isPending ? (
-          <RowsSkeleton rows={8} />
-        ) : sum.error ? (
-          <Notice tone="danger">{errorText(sum.error)}</Notice>
-        ) : (
-          sum.data.games.map((g) => (
-            <button
-              key={g.game}
-              type="button"
-              aria-pressed={game === g.game}
-              onClick={() => pick(g.game)}
-              className={`flex min-h-14 items-center gap-2 rounded-[10px] px-2.5 py-1.5 text-left text-[14px] font-semibold ${game === g.game ? "bg-surface-raised" : "hover:bg-surface-raised/60"}`}
-            >
-              <Swatch world={GAME_BY_ID[g.game]?.world ?? "word"} />
-              <span className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate">{nameOf(g.game)}</span>
-                <Pill tone={g.needsReview ? "warn" : "ok"} className="w-fit">
-                  {g.needsReview ? R.needsReview : R.reviewed}
-                </Pill>
-              </span>
-              <Progress s={g} compact />
-            </button>
-          ))
-        )}
-      </nav>
-      <div className="flex min-w-0 flex-col gap-3">
-        {!can && <Notice icon="info">{R.readOnly}</Notice>}
-        {!game ? (
-          <Notice icon="info">
-            {R.intro} {R.pick}
-          </Notice>
-        ) : (
-          <>
-            <div className="flex flex-wrap items-center gap-3">
-              <h2 className="font-display text-[18px] font-extrabold">{nameOf(game)}</h2>
-              {summary && <Progress s={summary} />}
-              {canSchedule && (
-                <Btn
-                  className="ml-auto"
-                  disabled={rebuild.isPending}
-                  aria-describedby="rebuild-help"
-                  onClick={() => rebuild.mutate({ game })}
-                  data-rebuild-upcoming
-                >
-                  {rebuild.isPending ? R.rebuildBusy : R.rebuild}
-                </Btn>
-              )}
-            </div>
-            {canSchedule && (
-              <p id="rebuild-help" className="text-muted text-[13px]">
-                {R.rebuildHelp}
-              </p>
-            )}
-            {rebuild.error && <Notice tone="danger">{errorText(rebuild.error)}</Notice>}
-            {rebuild.data?.game === game && (
-              <Notice tone="ok" icon="check-circle">
-                {R.rebuilt({
-                  dailies: rebuild.data.dailies.rebuilt.length,
-                  five: rebuild.data.five.rebuilt.length,
-                  same: rebuild.data.dailies.same.length + rebuild.data.five.same.length,
-                  skipped: rebuild.data.dailies.skipped.length + rebuild.data.five.skipped.length,
-                  pending: rebuild.data.dailies.pending.length,
-                })}
-              </Notice>
-            )}
-            <div className="flex flex-wrap items-center gap-2">
-              <Tabs
-                label={C.show}
-                value={show}
-                onChange={(v) => (setFilters({ show: v }), setPicked(new Set()), pager.reset())}
-                items={REVIEW_SHOW.map((id) => ({ id, label: R.showTabs[id] }))}
-              />
-              <input
-                type="search"
-                aria-label={R.search}
-                placeholder={R.search}
-                value={q}
-                onChange={(e) => (setQ(e.target.value), pager.reset())}
-                className={`${inputCls} w-56`}
-              />
-              {can && (
-                <div className="ml-auto flex gap-2">
-                  <Btn disabled={!picked.size || act.isPending} onClick={() => decide([...picked], "retire")}>
-                    {R.retireAll(picked.size)}
+    <div className="flex flex-col gap-3">
+      <p className="text-muted max-w-[760px] text-[13px]">{R.intro}</p>
+      <StateGuide states={ENTRY_STATES} />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[300px_1fr]">
+        <nav aria-label={R.games} className="bg-surface flex flex-col gap-1 self-start rounded-[12px] p-2">
+          {sum.isPending ? (
+            <RowsSkeleton rows={8} />
+          ) : sum.error ? (
+            <Notice tone="danger">{errorText(sum.error)}</Notice>
+          ) : (
+            sum.data.games.map((g) => (
+              <button
+                key={g.game}
+                type="button"
+                aria-pressed={game === g.game}
+                onClick={() => pick(g.game)}
+                className={`flex min-h-14 items-center gap-2 rounded-[10px] px-2.5 py-1.5 text-left text-[14px] font-semibold ${game === g.game ? "bg-surface-raised" : "hover:bg-surface-raised/60"}`}
+              >
+                <Swatch world={GAME_BY_ID[g.game]?.world ?? "word"} />
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate">{nameOf(g.game)}</span>
+                  <Pill tone={g.needsReview ? "warn" : "ok"} className="w-fit">
+                    {g.needsReview ? R.needsReview : R.reviewed}
+                  </Pill>
+                </span>
+                <Progress s={g} compact />
+              </button>
+            ))
+          )}
+        </nav>
+        <div className="flex min-w-0 flex-col gap-3">
+          {!can && <Notice icon="info">{R.readOnly}</Notice>}
+          {!game ? (
+            <Notice icon="info">{R.pick}</Notice>
+          ) : (
+            <>
+              <div className="flex flex-wrap items-center gap-3">
+                <h2 className="font-display text-[18px] font-extrabold">{nameOf(game)}</h2>
+                {summary && <Progress s={summary} />}
+                {canSchedule && (
+                  <Btn
+                    className="ml-auto"
+                    disabled={rebuild.isPending}
+                    aria-describedby="rebuild-help"
+                    onClick={() => rebuild.mutate({ game })}
+                    data-rebuild-upcoming
+                  >
+                    {rebuild.isPending ? R.rebuildBusy : R.rebuild}
                   </Btn>
-                  <Btn tone="primary" disabled={!picked.size || act.isPending} onClick={() => decide([...picked], "approve")}>
-                    {R.approveAll(picked.size)}
-                  </Btn>
-                </div>
-              )}
-            </div>
-            {act.error && <Notice tone="danger">{errorText(act.error)}</Notice>}
-            {one.error ? (
-              <Notice tone="danger">{errorText(one.error)}</Notice>
-            ) : !shown ? (
-              <RowsSkeleton />
-            ) : !entries.length ? (
-              <Empty>{show === "todo" && !summary?.needsReview ? R.allDone(nameOf(game)) : R.nothingHere(nameOf(game))}</Empty>
-            ) : (
-              <>
-                {can && (
-                  <label className="flex min-h-11 w-fit items-center gap-2 text-[14px]">
-                    <input
-                      type="checkbox"
-                      checked={entries.every((e) => picked.has(e.index))}
-                      onChange={(ev) => {
-                        const n = new Set(picked);
-                        for (const x of entries) {
-                          if (ev.target.checked) n.add(x.index);
-                          else n.delete(x.index);
-                        }
-                        setPicked(n);
-                      }}
-                      className="size-5 accent-[var(--accent)]"
-                    />
-                    {R.selectAll}
-                  </label>
                 )}
-                <ul className="flex flex-col gap-2" aria-label={R.games}>
-                  {entries.map((e) => (
-                    <li key={e.index} className="bg-surface flex flex-col gap-2 rounded-[12px] p-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        {can && (
-                          <input
-                            type="checkbox"
-                            aria-label={R.selectEntry(e.index)}
-                            checked={picked.has(e.index)}
-                            onChange={(ev) => {
-                              const n = new Set(picked);
-                              if (ev.target.checked) n.add(e.index);
-                              else n.delete(e.index);
-                              setPicked(n);
-                            }}
-                            className="size-5 accent-[var(--accent)]"
-                          />
-                        )}
-                        <span className="num text-muted text-[13px]">{R.entry(e.index)}</span>
-                        <Pill tone={TONE[e.state]}>{R.states[e.state]}</Pill>
-                        {e.reviewer && e.reviewed_at && (
-                          <span className="text-muted text-[12px]">
-                            {R.by(e.reviewer === "you" ? C.you : e.reviewer, age(e.reviewed_at))}
-                          </span>
-                        )}
-                        <div className="ml-auto flex flex-wrap gap-1.5">
-                          {SCHEDULABLE[game] && (
-                            <Btn size="sm" tone="ghost" icon="eye" aria-label={R.boardEntry(e.index)} onClick={() => setBoard(e.index)}>
-                              {R.board}
-                            </Btn>
-                          )}
+              </div>
+              {canSchedule && (
+                <p id="rebuild-help" className="text-muted text-[13px]">
+                  {R.rebuildHelp}
+                </p>
+              )}
+              {rebuild.error && <Notice tone="danger">{errorText(rebuild.error)}</Notice>}
+              {rebuild.data?.game === game && (
+                <Notice tone="ok" icon="check-circle">
+                  {R.rebuilt({
+                    dailies: rebuild.data.dailies.rebuilt.length,
+                    five: rebuild.data.five.rebuilt.length,
+                    same: rebuild.data.dailies.same.length + rebuild.data.five.same.length,
+                    skipped: rebuild.data.dailies.skipped.length + rebuild.data.five.skipped.length,
+                    pending: rebuild.data.dailies.pending.length,
+                  })}
+                </Notice>
+              )}
+              <div className="flex flex-wrap items-center gap-2">
+                <Tabs
+                  label={C.show}
+                  value={show}
+                  onChange={(v) => (setFilters({ show: v }), setPicked(new Set()), pager.reset())}
+                  items={REVIEW_SHOW.map((id) => ({ id, label: R.showTabs[id] }))}
+                />
+                <input
+                  type="search"
+                  aria-label={R.search}
+                  placeholder={R.search}
+                  value={q}
+                  onChange={(e) => (setQ(e.target.value), pager.reset())}
+                  className={`${inputCls} w-56`}
+                />
+                {can && (
+                  <div className="ml-auto flex flex-wrap gap-2">
+                    <Btn disabled={!picked.size || act.isPending} title={picked.size ? undefined : R.noneSelected} onClick={retireMany}>
+                      {R.retireAll(picked.size)}
+                    </Btn>
+                    <Btn
+                      tone="primary"
+                      disabled={!picked.size || act.isPending}
+                      title={picked.size ? undefined : R.noneSelected}
+                      onClick={() => decide([...picked], "approve")}
+                    >
+                      {R.approveAll(picked.size)}
+                    </Btn>
+                  </div>
+                )}
+              </div>
+              {act.error && <Notice tone="danger">{errorText(act.error)}</Notice>}
+              {one.error ? (
+                <Notice tone="danger">{errorText(one.error)}</Notice>
+              ) : !shown ? (
+                <RowsSkeleton />
+              ) : !entries.length ? (
+                <Empty>{show === "todo" && !summary?.needsReview ? R.allDone(nameOf(game)) : R.nothingHere(nameOf(game))}</Empty>
+              ) : (
+                <>
+                  {can && (
+                    <label className="flex min-h-11 w-fit items-center gap-2 text-[14px]">
+                      <input
+                        type="checkbox"
+                        checked={entries.every((e) => picked.has(e.index))}
+                        onChange={(ev) => {
+                          const n = new Set(picked);
+                          for (const x of entries) {
+                            if (ev.target.checked) n.add(x.index);
+                            else n.delete(x.index);
+                          }
+                          setPicked(n);
+                        }}
+                        className="size-5 accent-[var(--accent)]"
+                      />
+                      {R.selectAll}
+                    </label>
+                  )}
+                  <ul className="flex flex-col gap-2" aria-label={R.games}>
+                    {entries.map((e) => (
+                      <li key={e.index} className="bg-surface flex flex-col gap-2 rounded-[12px] p-3">
+                        <div className="flex flex-wrap items-center gap-2">
                           {can && (
-                            <>
-                              <Btn size="sm" icon="pencil-simple" aria-label={R.editEntry(e.index)} onClick={() => setEditing(e.index)}>
-                                {R.edit}
+                            <input
+                              type="checkbox"
+                              aria-label={R.selectEntry(e.index)}
+                              checked={picked.has(e.index)}
+                              onChange={(ev) => {
+                                const n = new Set(picked);
+                                if (ev.target.checked) n.add(e.index);
+                                else n.delete(e.index);
+                                setPicked(n);
+                              }}
+                              className="size-5 accent-[var(--accent)]"
+                            />
+                          )}
+                          <span className="num text-muted text-[13px]">{R.entry(e.index)}</span>
+                          <StatePill s={entryState(e.state)} />
+                          {e.reviewer && e.reviewed_at && (
+                            <span className="text-muted text-[12px]">
+                              {R.by(e.reviewer === "you" ? C.you : e.reviewer, ago(e.reviewed_at))}
+                            </span>
+                          )}
+                          <div className="ml-auto flex flex-wrap gap-1.5">
+                            {SCHEDULABLE[game] && (
+                              <Btn size="sm" tone="ghost" icon="eye" aria-label={R.boardEntry(e.index)} onClick={() => setBoard(e.index)}>
+                                {R.board}
                               </Btn>
-                              {e.state !== "retired" && (
-                                <Btn
-                                  size="sm"
-                                  aria-label={R.retireEntry(e.index)}
-                                  disabled={act.isPending}
-                                  onClick={() => decide([e.index], "retire")}
-                                >
-                                  {R.retire}
+                            )}
+                            {can && (
+                              <>
+                                <Btn size="sm" icon="pencil-simple" aria-label={R.editEntry(e.index)} onClick={() => setEditing(e.index)}>
+                                  {R.edit}
                                 </Btn>
-                              )}
-                              {e.state !== "approved" && (
-                                <Btn
-                                  size="sm"
-                                  tone="primary"
-                                  aria-label={e.state === "retired" ? R.restoreEntry(e.index) : R.approveEntry(e.index)}
-                                  disabled={act.isPending}
-                                  onClick={() => decide([e.index], "approve")}
-                                >
-                                  {e.state === "retired" ? R.restore : R.approve}
-                                </Btn>
-                              )}
+                                {e.state !== "retired" && (
+                                  <Btn
+                                    size="sm"
+                                    aria-label={R.retireEntry(e.index)}
+                                    disabled={act.isPending}
+                                    onClick={() => decide([e.index], "retire")}
+                                  >
+                                    {R.retire}
+                                  </Btn>
+                                )}
+                                {e.state !== "approved" && (
+                                  <Btn
+                                    size="sm"
+                                    tone="primary"
+                                    aria-label={e.state === "retired" ? R.restoreEntry(e.index) : R.approveEntry(e.index)}
+                                    disabled={act.isPending}
+                                    onClick={() => decide([e.index], "approve")}
+                                  >
+                                    {e.state === "retired" ? R.restore : R.approve}
+                                  </Btn>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <div className={`grid grid-cols-1 gap-3 ${e.edit !== undefined ? "md:grid-cols-2" : ""}`}>
+                          {e.edit !== undefined ? (
+                            <>
+                              <div className="flex flex-col gap-1">
+                                <span className="text-muted text-[12px] font-semibold">{R.asEdited}</span>
+                                <ReviewEntry game={game} value={e.edit} />
+                              </div>
+                              <div className="flex flex-col gap-1 opacity-70">
+                                <span className="text-muted text-[12px] font-semibold">{R.code}</span>
+                                <ReviewEntry game={game} value={e.entry} />
+                              </div>
                             </>
+                          ) : (
+                            <ReviewEntry game={game} value={e.entry} />
                           )}
                         </div>
-                      </div>
-                      <div className={`grid grid-cols-1 gap-3 ${e.edit !== undefined ? "md:grid-cols-2" : ""}`}>
-                        {e.edit !== undefined ? (
-                          <>
-                            <div className="flex flex-col gap-1">
-                              <span className="text-muted text-[12px] font-semibold">{R.asEdited}</span>
-                              <ReviewEntry game={game} value={e.edit} />
-                            </div>
-                            <div className="flex flex-col gap-1 opacity-70">
-                              <span className="text-muted text-[12px] font-semibold">{R.code}</span>
-                              <ReviewEntry game={game} value={e.entry} />
-                            </div>
-                          </>
-                        ) : (
-                          <ReviewEntry game={game} value={e.entry} />
-                        )}
-                      </div>
-                      {e.notes && <p className="text-muted text-[13px]">{e.notes}</p>}
-                      {editing === e.index && <EditEntry game={game} entry={e} onDone={() => setEditing(null)} />}
-                      {board === e.index && <BoardPreview game={game} index={e.index} onClose={() => setBoard(null)} />}
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-            {shown?.total !== undefined && <Pagination pager={pager} total={shown.total} />}
-          </>
-        )}
+                        {e.notes && <p className="text-muted text-[13px]">{e.notes}</p>}
+                        {editing === e.index && <EditEntry game={game} entry={e} onDone={() => setEditing(null)} />}
+                        {board === e.index && <BoardPreview game={game} index={e.index} onClose={() => setBoard(null)} />}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+              {shown?.total !== undefined && <Pagination pager={pager} total={shown.total} />}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

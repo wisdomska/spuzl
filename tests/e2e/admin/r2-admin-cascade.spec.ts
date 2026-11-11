@@ -115,7 +115,7 @@ test("Quads packs: a bad pack lists its problems and saves nothing; a good one b
   await page.goto("/admin/content?game=quads");
   const tools = page.getByRole("region", { name: "Quads packs" });
   await expect(tools).toBeVisible({ timeout: 20_000 });
-  await tools.getByRole("button", { name: "Import Quads JSON" }).click();
+  await tools.getByRole("button", { name: "Add from a Quads pack" }).click();
   await tools.getByLabel("Paste a Quads pack").fill('{"app":"spuzl","kind":"quads","puzzles":[{}]}');
   await tools.getByRole("button", { name: "Import as drafts" }).click();
   await expect(tools.getByText("Fix these and import again. Nothing was saved.")).toBeVisible();
