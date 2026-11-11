@@ -64,7 +64,7 @@ export const market = {
   },
 
   /* Feedback */
-  start: "Tap an item, then a number. Hit the change exactly.",
+  start: "Tap an item, then how many to buy.",
   startTutorial: "Tap an item on the list, then tap how many to buy. Every rule must hold.",
   pickFirst: "Tap an item on the list first.",
   set: (k: ItemKey, n: number, basket: number) => `${count(k, n)}. Basket ${cedis(basket)}.`,

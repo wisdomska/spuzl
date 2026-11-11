@@ -169,19 +169,21 @@ export default function MarketBoard({ puzzle, initialState, hint, disabled, mode
 
   return (
     <div
-      className={`flex flex-col gap-3 rounded-[20px] p-4 ${done ? "board-pulse" : ""}`}
+      // Short screens (a 375 x 667 or 320 x 568 phone): tighter gaps and padding, and the money row keeps to one line
+      // (the spend rule on the list already says what to bring back, and the change follows the basket).
+      className={`short:gap-2 tiny:gap-1.5 tiny:px-3 tiny:py-2.5 flex flex-col gap-3 rounded-[20px] p-4 ${done ? "board-pulse" : ""}`}
       style={{ width: "min(358px, calc(100vw - 36px))", background: "var(--board-bg)", boxShadow: "0 0 0 2px var(--line)" }}
     >
       {/* Money */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 flex-col">
-          <span className="num text-[18px] leading-tight font-semibold whitespace-nowrap">{t.cash(puzzle.cash)}</span>
-          <span className="text-muted text-[13px] font-medium">{t.bringBack(puzzle.change)}</span>
+          <span className="num tiny:text-[16px] text-[18px] leading-tight font-semibold whitespace-nowrap">{t.cash(puzzle.cash)}</span>
+          <span className="text-muted short:hidden text-[13px] font-medium">{t.bringBack(puzzle.change)}</span>
         </div>
         <div className="flex flex-col items-end" aria-live="off">
-          <span className="num text-[15px] font-semibold">{t.basket(cost)}</span>
+          <span className="num short:hidden text-[15px] font-semibold whitespace-nowrap">{t.basket(cost)}</span>
           <span
-            className="num flex items-center gap-1 text-[13px] font-semibold"
+            className="num short:text-[15px] tiny:text-[13px] flex items-center gap-1 text-[13px] font-semibold whitespace-nowrap"
             style={{ color: change < puzzle.change ? "var(--danger)" : full && change === puzzle.change ? "var(--accent)" : "var(--gold)" }}
           >
             {change < puzzle.change ? (
@@ -197,7 +199,14 @@ export default function MarketBoard({ puzzle, initialState, hint, disabled, mode
       </div>
 
       {/* Shopping list */}
-      <div role="grid" aria-label={t.list} aria-rowcount={n} aria-colcount={1} onKeyDown={onKeyDown} className="flex flex-col gap-2">
+      <div
+        role="grid"
+        aria-label={t.list}
+        aria-rowcount={n}
+        aria-colcount={1}
+        onKeyDown={onKeyDown}
+        className="tiny:gap-1.5 flex flex-col gap-2"
+      >
         {puzzle.items.map((it, i) => {
           const q = qty[i];
           const isSel = sel === i && !locked;
@@ -218,7 +227,7 @@ export default function MarketBoard({ puzzle, initialState, hint, disabled, mode
                   if (sel !== i && !locked) sfx.select();
                   setSel(i);
                 }}
-                className={`relative flex min-h-[56px] cursor-pointer items-center gap-3 rounded-[14px] px-3 py-1.5 outline-none focus-visible:ring-2 focus-visible:ring-[var(--text)] ${anim} ${hinted ? "hint-ring" : ""}`}
+                className={`short:min-h-12 tiny:min-h-11 tiny:py-0 relative flex min-h-[56px] cursor-pointer items-center gap-3 rounded-[14px] px-3 py-1.5 outline-none focus-visible:ring-2 focus-visible:ring-[var(--text)] ${anim} ${hinted ? "hint-ring" : ""}`}
                 style={{
                   background: "var(--surface-raised)",
                   boxShadow: `0 4px 0 var(--depth)${isBad ? ", inset 0 0 0 2px var(--danger)" : hinted ? ", inset 0 0 0 3px var(--accent)" : isSel ? ", inset 0 0 0 2px var(--world)" : ""}`,
@@ -259,12 +268,12 @@ export default function MarketBoard({ puzzle, initialState, hint, disabled, mode
 
       {/* Rules */}
       <div className="flex flex-col gap-1">
-        <span className="text-muted text-[12px] font-semibold tracking-wide uppercase">{t.rules}</span>
+        <span className="text-muted short:hidden text-[12px] font-semibold tracking-wide uppercase">{t.rules}</span>
         <ul className="flex flex-col gap-1">
           {rules.map((r, k) => {
             const s = status[k];
             return (
-              <li key={k} className="flex items-start gap-2 text-[14px] leading-snug">
+              <li key={k} className="tiny:leading-[18px] flex items-start gap-2 text-[14px] leading-snug">
                 <Icon
                   name={s === true ? "check-circle" : s === false ? "x-circle" : "circle"}
                   size={16}
@@ -282,7 +291,7 @@ export default function MarketBoard({ puzzle, initialState, hint, disabled, mode
 
       {/* Number pad */}
       {/* Each key makes its own sound (place, or the soft erase), not the generic tap. */}
-      <div className="grid grid-cols-5 gap-2" role="group" aria-label={t.pad} data-no-tick>
+      <div className="tiny:gap-1.5 grid grid-cols-5 gap-2" role="group" aria-label={t.pad} data-no-tick>
         {DIGITS.map((d) => {
           const hinted = hintT?.value === d && hintT.item === sel && qty[sel ?? -1] !== d;
           return (
@@ -292,7 +301,7 @@ export default function MarketBoard({ puzzle, initialState, hint, disabled, mode
               disabled={locked}
               onClick={() => enter(d)}
               aria-label={t.number(d)}
-              className={`toy num flex h-12 items-center justify-center rounded-[14px] text-[22px] font-semibold ${hinted ? "hint-ring" : ""}`}
+              className={`toy num tiny:h-11 flex h-12 items-center justify-center rounded-[14px] text-[22px] font-semibold ${hinted ? "hint-ring" : ""}`}
               style={{
                 background: "var(--surface-raised)",
                 ["--btn-depth" as string]: "var(--depth)",
@@ -308,7 +317,7 @@ export default function MarketBoard({ puzzle, initialState, hint, disabled, mode
           disabled={locked || sel === null || qty[sel] == null}
           onClick={erase}
           aria-label={t.erase}
-          className={`toy text-muted flex h-12 items-center justify-center rounded-[14px] ${hintT?.clear ? "hint-ring" : ""}`}
+          className={`toy text-muted tiny:h-11 flex h-12 items-center justify-center rounded-[14px] ${hintT?.clear ? "hint-ring" : ""}`}
           style={{
             background: "var(--surface-raised)",
             ["--btn-depth" as string]: "var(--depth)",
