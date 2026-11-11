@@ -26,7 +26,7 @@ export async function mailCode(email: string, since: number): Promise<string> {
  * The sign-in code for a test admin: from Mailpit on a local Supabase; on a hosted project (no Mailpit, and the
  * `@admin.test` address can't receive mail) a fresh one-time code from the admin API (generateLink, sends nothing).
  */
-async function loginCode(email: string, since: number): Promise<string> {
+export async function loginCode(email: string, since: number): Promise<string> {
   const local = await fetch(`${MAILPIT}/api/v1/info`).then(
     () => true,
     () => false,

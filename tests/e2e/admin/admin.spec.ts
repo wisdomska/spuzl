@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { admin, guest, uniq } from "../../api/helpers";
-import { login, mailCode, signedIn } from "./helpers";
+import { login, loginCode, signedIn } from "./helpers";
 
 /**
  * Admin console flows (FR-AD-01 to FR-AD-08). Desktop first, so the phone projects skip.
@@ -37,7 +37,7 @@ test("first sign-in enrols TOTP, then every visit needs the code; admin pages ar
   await page.getByLabel("Code").fill("000000");
   await page.getByRole("button", { name: "Verify" }).click();
   await expect(page.getByText("That code didn't work.")).toBeVisible();
-  await page.getByLabel("Code").fill(await mailCode(email, since));
+  await page.getByLabel("Code").fill(await loginCode(email, since));
   await page.getByRole("button", { name: "Verify" }).click();
   // Owners land on the Overview.
   await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible({ timeout: 20_000 });
