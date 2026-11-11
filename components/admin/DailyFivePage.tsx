@@ -12,10 +12,23 @@ import { api, HttpError } from "@/lib/client/api";
 import { errorText, useAdminAction, useAdminQuery } from "@/lib/client/admin";
 import { adminCopy } from "@/lib/copy/admin";
 import { FIVE_SLOTS } from "@/lib/daily-five";
-import { GAME_BY_ID } from "@/lib/catalog";
-import { Btn, Field, Notice, PageTitle, Pill, RowsSkeleton, Swatch, inputCls, textareaCls } from "./ui";
+import { GAME_BY_ID, WORLD_BY_ID } from "@/lib/catalog";
+import { durationWords } from "@/lib/admin/content-words";
+import { Icon } from "@/components/ui/Icon";
+import { PageHead, StateGuide, StatePill, type StateWords } from "./content-ui";
+import { Btn, Field, Notice, RowsSkeleton, Swatch, inputCls, textareaCls } from "./ui";
 
 const C = adminCopy.dailyFive;
+const SOURCE: Record<"preview" | "auto" | "manual", StateWords> = {
+  preview: { ...C.sources.preview, tone: "neutral", icon: "circle-dashed" },
+  auto: { ...C.sources.auto, tone: "ok", icon: "check-circle" },
+  manual: { ...C.sources.manual, tone: "warn", icon: "pencil-simple" },
+};
+const LOCK: Record<"locked" | "open", StateWords> = {
+  locked: { ...C.lockStates.locked, tone: "warn", icon: "lock-simple" },
+  open: { ...C.lockStates.open, tone: "neutral", icon: "lock-simple-open" },
+};
+const GUIDE = [SOURCE.preview, SOURCE.auto, SOURCE.manual, LOCK.locked, LOCK.open];
 
 interface Row {
   date: string;
@@ -97,38 +110,36 @@ export function DailyFivePage({ canWrite }: { canWrite: boolean }) {
   };
 
   return (
-    <div className="flex min-h-dvh flex-col gap-3.5 px-4 py-5 md:px-6">
-      <PageTitle
+    <div className="flex min-h-dvh flex-col gap-4 px-4 py-5 md:px-6">
+      <PageHead
         title={C.title}
+        purpose={C.intro}
         aside={
-          <>
-            <Btn size="sm" tone="ghost" icon="download-simple" onClick={() => void exportJson()}>
-              {C.exportJson}
+          canWrite && (
+            <Btn
+              tone="primary"
+              title={C.fillHelp}
+              disabled={act.isPending}
+              onClick={() => run({ action: "fill" }, (r) => C.filled(r.made ?? 0, r.repicked ?? 0))}
+            >
+              {C.fill}
             </Btn>
-            {canWrite && (
-              <Btn size="sm" tone="ghost" onClick={() => setImportOpen((o) => !o)} aria-expanded={importOpen}>
-                {C.importJson}
-              </Btn>
-            )}
-            {canWrite && (
-              <Btn
-                size="sm"
-                tone="primary"
-                disabled={act.isPending}
-                onClick={() => run({ action: "fill" }, (r) => C.filled(r.made ?? 0, r.repicked ?? 0))}
-              >
-                {C.fill}
-              </Btn>
-            )}
-          </>
+          )
         }
       >
-        {q.data && <Pill tone={q.data.enabled ? "ok" : "warn"}>{q.data.enabled ? C.on : C.off}</Pill>}
-        <Link href="/admin/settings" className="text-muted hover:text-text text-[13px] font-semibold underline">
+        {q.data && (
+          <StatePill
+            s={
+              q.data.enabled
+                ? { label: C.on, meaning: C.onMeaning, tone: "ok", icon: "check-circle" }
+                : { label: C.off, meaning: C.offMeaning, tone: "warn", icon: "prohibit" }
+            }
+          />
+        )}
+        <Link href="/admin/settings" className="text-muted hover:text-text flex min-h-11 items-center text-[13px] font-semibold underline">
           {C.rulesLink}
         </Link>
-      </PageTitle>
-      <p className="text-muted max-w-[760px] text-[14px]">{C.intro}</p>
+      </PageHead>
       <div aria-live="polite" className="empty:hidden">
         {note && (
           <Notice tone={note.tone} icon={note.tone === "ok" ? "check-circle" : "warning"}>
@@ -136,7 +147,7 @@ export function DailyFivePage({ canWrite }: { canWrite: boolean }) {
           </Notice>
         )}
       </div>
-      {importOpen && canWrite && <ImportPanel onDone={(t) => setNote(t)} />}
+      <StateGuide states={GUIDE} />
       <div className="flex flex-wrap items-end gap-2">
         <Field label={C.from} htmlFor="d5-from">
           <input
@@ -144,23 +155,24 @@ export function DailyFivePage({ canWrite }: { canWrite: boolean }) {
             type="date"
             value={from}
             onChange={(e) => e.target.value && setFrom(e.target.value)}
-            className={`${inputCls} num`}
+            className={`${inputCls} num h-11`}
           />
         </Field>
-        <Btn size="lg" onClick={() => setFrom(addDays(from, -7))}>
+        <Btn size="lg" icon="caret-left" onClick={() => setFrom(addDays(from, -7))}>
           {C.earlier}
         </Btn>
         <Btn size="lg" onClick={() => setFrom(addDays(from, 7))}>
           {C.later}
+          <Icon name="caret-right" size={16} />
         </Btn>
       </div>
-      <div className="bg-surface overflow-x-auto rounded-[12px]">
+      <div className="bg-surface overflow-x-auto rounded-[16px]">
         {q.isPending ? (
           <RowsSkeleton rows={8} height={56} />
         ) : q.error ? (
           <div className="p-3">
             <Notice tone="danger" icon="warning">
-              {say(q.error)}
+              {C.loadError} {say(q.error)}
             </Notice>
           </div>
         ) : (
@@ -194,6 +206,20 @@ export function DailyFivePage({ canWrite }: { canWrite: boolean }) {
           </table>
         )}
       </div>
+      <details
+        className="group bg-surface rounded-[16px] px-4 md:px-5"
+        open={importOpen}
+        onToggle={(e) => setImportOpen((e.currentTarget as HTMLDetailsElement).open)}
+      >
+        <summary className="flex min-h-12 cursor-pointer items-center gap-2 text-[15px] font-semibold">{C.backup}</summary>
+        <div className="flex flex-col gap-3 pb-4">
+          <p className="text-muted text-[13px]">{C.backupIntro}</p>
+          <Btn icon="download-simple" className="self-start" onClick={() => void exportJson()}>
+            {C.exportJson}
+          </Btn>
+          {canWrite && <ImportPanel onDone={(t) => setNote(t)} />}
+        </div>
+      </details>
     </div>
   );
 }
@@ -223,6 +249,8 @@ function DayRow({
 }) {
   const past = day.date < today;
   const frozen = past || day.locked || day.attempts > 0;
+  const why = past ? C.why.past : day.attempts > 0 ? C.why.played : day.locked ? C.why.locked : undefined;
+  const source = day.preview ? SOURCE.preview : SOURCE[day.source ?? "auto"];
   return (
     <>
       <tr className="border-line border-t align-top" data-testid={`d5-day-${day.date}`}>
@@ -257,26 +285,27 @@ function DayRow({
           )}
         </td>
         <td className="px-3 py-2.5">
-          <Pill tone={day.preview ? "neutral" : day.source === "manual" ? "warn" : "ok"}>
-            {day.preview ? C.preview : (C.sources[day.source ?? "auto"] ?? day.source)}
-          </Pill>
+          <StatePill s={source} />
         </td>
         <td className="px-3 py-2.5">
-          <Pill tone={day.locked ? "warn" : "neutral"}>{day.locked ? C.locked : C.unlocked}</Pill>
+          <StatePill s={day.locked ? LOCK.locked : LOCK.open} />
         </td>
-        <td className="num text-muted px-3 py-2.5">{C.played(day.attempts)}</td>
+        <td className="num text-muted px-3 py-2.5 text-right">{C.played(day.attempts)}</td>
         <td className="px-3 py-2.5">
           {canWrite && !past && (
-            <div className="flex flex-wrap justify-end gap-1.5">
-              <Btn size="sm" disabled={busy || frozen} onClick={onAuto}>
-                {C.repick}
-              </Btn>
-              <Btn size="sm" disabled={busy || frozen} onClick={onEdit} aria-expanded={editing}>
-                {C.edit}
-              </Btn>
-              <Btn size="sm" tone={day.locked ? "secondary" : "primary"} disabled={busy} onClick={() => onLock(!day.locked)}>
-                {day.locked ? C.unlock : C.lock}
-              </Btn>
+            <div className="flex flex-col items-end gap-1">
+              <div className="flex flex-wrap justify-end gap-1.5">
+                <Btn size="sm" disabled={busy || frozen} title={why ?? C.repickHelp} onClick={onAuto}>
+                  {C.repick}
+                </Btn>
+                <Btn size="sm" disabled={busy || frozen} title={why} onClick={onEdit} aria-expanded={editing}>
+                  {C.edit}
+                </Btn>
+                <Btn size="sm" tone={day.locked ? "secondary" : "primary"} disabled={busy} onClick={() => onLock(!day.locked)}>
+                  {day.locked ? C.unlock : C.lock}
+                </Btn>
+              </div>
+              {why && <span className="text-muted max-w-[260px] text-right text-[12px]">{why}</span>}
             </div>
           )}
         </td>
@@ -332,10 +361,14 @@ function PickForm({
             onChange={(e) => setPicks((cur) => cur.map((x, j) => (j === i ? e.target.value : x)))}
             className={`${inputCls} w-44`}
           >
-            <option value="" />
+            <option value="">{C.slotEmpty}</option>
             {games.map((g) => (
               <option key={g.id} value={g.id}>
-                {g.name} ({g.world}, {g.typicalSec}s)
+                {C.gameOption(
+                  g.name,
+                  (WORLD_BY_ID as Record<string, { name: string } | undefined>)[g.world]?.name ?? g.world,
+                  durationWords(g.typicalSec),
+                )}
               </option>
             ))}
           </select>

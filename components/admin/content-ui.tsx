@@ -112,8 +112,8 @@ export function StatePill({ s, className = "" }: { s: StateWords; className?: st
     <span title={s.meaning} className={`inline-flex ${className}`}>
       <Pill tone={s.tone}>
         {s.icon && <Icon name={s.icon} size={12} />}
-        {s.label}
-        <span className="sr-only">: {s.meaning}</span>
+        <span>{s.label}</span>
+        {s.meaning && <span className="sr-only">: {s.meaning}</span>}
       </Pill>
     </span>
   );

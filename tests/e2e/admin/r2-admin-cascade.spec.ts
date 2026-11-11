@@ -64,12 +64,13 @@ test("Game settings: every round 2 setting shows with its helper text, and range
   await page.screenshot({ path: "docs/qa/screens/r2/r2-admin-settings-1280.png", fullPage: true });
 });
 
-test("Daily Five scheduler: export JSON, lock and unlock a day, each audited", async ({ page }) => {
+test("Daily Five planner: download the plan, lock and unlock a day, each audited", async ({ page }) => {
   const acct = await signedIn(page, "content_editor");
   await page.goto("/admin/daily-five");
   await expect(page.getByRole("heading", { name: "Daily Five" })).toBeVisible();
   const download = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Export JSON" }).click();
+  await page.getByText("Download or upload a plan").click();
+  await page.getByRole("button", { name: "Download the plan" }).click();
   expect((await download).suggestedFilename()).toMatch(/\.json$/);
   await expect.poll(async () => (await lastAction(acct.userId, "daily_five.export"))?.action).toBe("daily_five.export");
 
