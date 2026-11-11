@@ -36,7 +36,7 @@ test("player detail shows ratings, rank moves from Duels and Parties, and a Ludo
 
   await signedIn(page, "analyst");
   await page.goto(`/admin/players/${g.userId}`);
-  await expect(page.getByRole("heading", { name: "Ratings" })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole("heading", { name: "Ratings", exact: true })).toBeVisible({ timeout: 20_000 });
   await expect(page.getByRole("cell", { name: "logic" }).first()).toBeVisible();
   await expect(page.getByRole("heading", { name: "Rank from Duels and Parties" })).toBeVisible();
   await expect(page.getByRole("cell", { name: "+8.0" })).toBeVisible();

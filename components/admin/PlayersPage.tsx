@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { age, todayIso } from "@/lib/admin/dates";
+import { Icon } from "@/components/ui/Icon";
+import { todayIso } from "@/lib/admin/dates";
+import { dayDate, exactTime } from "@/lib/admin/people-format";
 import {
   ACCOUNT_TYPES,
   AGE_BANDS,
@@ -26,7 +28,8 @@ import { ConfirmDialog } from "./ConfirmDialog";
 import { Pagination, usePager } from "./Pagination";
 import { SortHead, type HeadCol } from "./SortHeader";
 import { useDebouncedFilter, useUrlFilters, useUrlSort } from "./useUrlFilters";
-import { Btn, Empty, Field, Notice, PageTitle, Pill, RowsSkeleton, inputCls, type PillTone } from "./ui";
+import { PageHead, When } from "./people-ui";
+import { Btn, Empty, Field, Notice, Pill, RowsSkeleton, inputCls, type PillTone } from "./ui";
 
 const C = adminCopy.players;
 type SortKey = (typeof PLAYER_SORT.keys)[number];
@@ -51,10 +54,19 @@ export function saveCsv(filename: string, csv: string) {
 }
 
 const fmt = (n: number) => n.toLocaleString("en-US");
+/** Filters folded under "More filters" (the everyday ones stay in view). */
+const MORE: PlayerFilterKey[] = ["test", "joinedFrom", "joinedTo", "activeFrom", "activeTo"];
+const num = "text-right [&>button]:justify-end";
+
+/** Status pills for the list: suspicious scores show in "To review" instead, so a flagged player still reads as in good standing. */
+export function listStatuses(r: Parameters<typeof playerStatuses>[0]): PlayerStatus[] {
+  const s = playerStatuses(r).filter((x) => x !== "flagged");
+  return s.length && !(s.length === 1 && s[0] === "test") ? s : ["active", ...s];
+}
 
 /**
- * Players (owner request): every player, guests and signed in, with search, URL filters, server-side sort and
- * pagination. Roles that can act get row selection with the safe bulk actions (ban, revoke ranking); the owner can
+ * Players (owner request): every player, guests and saved accounts, with search, URL filters, server-side sort and
+ * pagination. The key column (the player) comes first, then what needs attention, then the rest. Roles that can act get row selection with the safe bulk actions (ban, revoke ranking); the owner can
  * export. The server checks every permission again and masks emails for roles without personal-data access.
  */
 export function PlayersPage({ canModerate, canExport, emailVisible }: { canModerate: boolean; canExport: boolean; emailVisible: boolean }) {
@@ -140,20 +152,25 @@ export function PlayersPage({ canModerate, canExport, emailVisible }: { canModer
         ]
       : []),
     { label: C.head.nickname, sort: "nickname" },
-    { label: C.head.account, sort: "account" },
-    { label: C.head.email },
-    { label: C.head.age, sort: "age_band" },
-    { label: C.head.level, sort: "level" },
-    { label: C.head.sparks, sort: "sparks" },
-    { label: C.head.streak, sort: "streak" },
+    { label: C.head.status },
     { label: C.head.reports, sort: "reports" },
     { label: C.head.lastActive, sort: "last_active" },
+    { label: C.head.account, sort: "account" },
+    { label: C.head.age, sort: "age_band" },
     { label: C.head.joined, sort: "joined" },
-    { label: C.head.status },
+    { label: C.head.level, sort: "level", className: num },
+    { label: C.head.sparks, sort: "sparks", className: num },
+    { label: C.head.streak, sort: "streak", className: num },
+    { label: C.head.email },
   ];
   const select = (key: PlayerFilterKey, label: string, any: string | null, options: readonly string[], text: (o: string) => string) => (
     <Field label={label} htmlFor={`pf-${key}`}>
-      <select id={`pf-${key}`} value={f[key]} onChange={(e) => setFilters({ [key]: e.target.value })} className={`${inputCls} h-11 w-40`}>
+      <select
+        id={`pf-${key}`}
+        value={f[key]}
+        onChange={(e) => setFilters({ [key]: e.target.value })}
+        className={`${inputCls} h-11 w-48 max-w-full`}
+      >
         {any !== null && <option value="">{any}</option>}
         {options.map((o) => (
           <option key={o} value={o}>
@@ -189,53 +206,65 @@ export function PlayersPage({ canModerate, canExport, emailVisible }: { canModer
     </fieldset>
   );
 
+  const moreActive = MORE.some((k) => f[k] !== PLAYER_FILTERS[k]);
+  const clearAll = () => setFilters(Object.fromEntries(Object.keys(PLAYER_FILTERS).map((k) => [k, null])) as Record<PlayerFilterKey, null>);
+
   return (
-    <div className="flex flex-col gap-3.5 px-4 py-5 sm:px-6">
-      <PageTitle
+    <div className="flex flex-col gap-4 px-4 py-5 sm:px-6">
+      <PageHead
         title={C.title}
+        purpose={
+          <>
+            {C.purpose} {f.test === "exclude" && C.testHidden} {!emailVisible && C.emailMasked}
+          </>
+        }
+        meta={q.data && <span className="num text-muted text-[14px] font-semibold">{C.total(fmt(q.data.total))}</span>}
         aside={
           canExport ? (
-            <Btn icon="download-simple" disabled={exporting || !q.data?.total} onClick={() => void exportCsv()}>
+            <Btn
+              icon="download-simple"
+              disabled={exporting || !q.data?.total}
+              title={q.data?.total ? C.exportTitle : C.exportNone}
+              onClick={() => void exportCsv()}
+            >
               {C.exportAll}
             </Btn>
           ) : undefined
         }
-      >
-        {q.data && <span className="num text-muted text-[14px]">{C.total(fmt(q.data.total))}</span>}
-      </PageTitle>
-      <p className="text-muted text-[14px]">
-        {C.intro} {!emailVisible && C.emailMasked}
-      </p>
-      <div className="flex flex-wrap items-end gap-2">
-        <Field label={C.search} htmlFor="pf-q">
-          <input
-            id="pf-q"
-            type="search"
-            value={search}
-            placeholder={emailVisible ? C.searchPlaceholderPii : C.searchPlaceholder}
-            onChange={(e) => setSearch(e.target.value)}
-            className={`${inputCls} h-11 w-72 max-w-full`}
-          />
-        </Field>
-        {select("account", C.account, C.anyAccount, ACCOUNT_TYPES, (o) => C.accounts[o as keyof typeof C.accounts])}
-        {select("age", C.age, C.anyAge, AGE_BANDS, (o) => o)}
-        {select("status", C.status, C.anyStatus, PLAYER_STATUSES, (o) => C.statuses[o as PlayerStatus])}
-        {select("reports", C.reports, C.anyReports, REPORT_FILTERS, (o) => C.reportOptions[o as keyof typeof C.reportOptions])}
-        {select("test", C.test, null, TEST_FILTERS, (o) => C.testOptions[o as keyof typeof C.testOptions])}
-        {dateRange("joinedFrom", "joinedTo", C.joined)}
-        {dateRange("activeFrom", "activeTo", C.lastActive)}
-        {filtered && (
-          <Btn
-            size="lg"
-            tone="ghost"
-            icon="x"
-            onClick={() =>
-              setFilters(Object.fromEntries(Object.keys(PLAYER_FILTERS).map((k) => [k, null])) as Record<PlayerFilterKey, null>)
-            }
-          >
-            {C.clear}
-          </Btn>
-        )}
+      />
+      <div role="search" aria-label={C.filters} className="bg-surface flex flex-col gap-3 rounded-[16px] p-4">
+        <div className="flex flex-wrap items-end gap-2">
+          <Field label={C.search} htmlFor="pf-q">
+            <input
+              id="pf-q"
+              type="search"
+              value={search}
+              placeholder={emailVisible ? C.searchPlaceholderPii : C.searchPlaceholder}
+              onChange={(e) => setSearch(e.target.value)}
+              className={`${inputCls} h-11 w-72 max-w-full`}
+            />
+          </Field>
+          {select("status", C.status, C.anyStatus, PLAYER_STATUSES, (o) => C.statuses[o as PlayerStatus])}
+          {select("reports", C.reports, C.anyReports, REPORT_FILTERS, (o) => C.reportOptions[o as keyof typeof C.reportOptions])}
+          {select("account", C.account, C.anyAccount, ACCOUNT_TYPES, (o) => C.accountOptions[o])}
+          {select("age", C.age, C.anyAge, AGE_BANDS, (o) => C.ageBands[o] ?? o)}
+          {filtered && (
+            <Btn size="lg" tone="ghost" icon="x" onClick={clearAll}>
+              {C.clear}
+            </Btn>
+          )}
+        </div>
+        <details open={moreActive || undefined} className="group">
+          <summary className="text-muted hover:text-text inline-flex min-h-11 cursor-pointer list-none items-center gap-1.5 rounded-[10px] text-[13px] font-semibold [&::-webkit-details-marker]:hidden">
+            <Icon name="caret-right" size={14} className="transition-transform duration-150 group-open:rotate-90" />
+            {C.moreFilters}
+          </summary>
+          <div className="flex flex-wrap items-end gap-2 pt-2">
+            {select("test", C.test, null, TEST_FILTERS, (o) => C.testOptions[o as keyof typeof C.testOptions])}
+            {dateRange("joinedFrom", "joinedTo", C.joined)}
+            {dateRange("activeFrom", "activeTo", C.lastActive)}
+          </div>
+        </details>
       </div>
       <div aria-live="polite" className="flex flex-col gap-2 empty:hidden">
         {notice && (
@@ -243,7 +272,11 @@ export function PlayersPage({ canModerate, canExport, emailVisible }: { canModer
             {notice}
           </Notice>
         )}
-        {exportError && <Notice tone="danger">{exportError}</Notice>}
+        {exportError && (
+          <Notice tone="danger" icon="warning">
+            {exportError}
+          </Notice>
+        )}
       </div>
       {selectable && selected.size > 0 && (
         <div
@@ -272,7 +305,7 @@ export function PlayersPage({ canModerate, canExport, emailVisible }: { canModer
           </Btn>
         </div>
       )}
-      <div className="bg-surface overflow-x-auto rounded-[12px]">
+      <div className="bg-surface max-h-[75dvh] overflow-auto rounded-[16px]">
         {q.isPending ? (
           <RowsSkeleton />
         ) : q.error ? (
@@ -282,13 +315,21 @@ export function PlayersPage({ canModerate, canExport, emailVisible }: { canModer
             </Notice>
           </div>
         ) : !rows.length ? (
-          <Empty icon="users">{C.empty}</Empty>
+          <Empty icon="users">
+            {filtered ? C.emptyFiltered : C.empty}
+            {filtered && (
+              <Btn tone="ghost" icon="x" onClick={clearAll}>
+                {C.clear}
+              </Btn>
+            )}
+          </Empty>
         ) : (
-          <table className="w-full min-w-[1180px] border-collapse text-[14px]">
+          <table className="w-full min-w-[1120px] border-collapse text-[14px] [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-[1] [&_thead_th]:bg-[var(--surface-raised)]">
             <SortHead cols={cols} sort={sort} />
             <tbody>
               {rows.map((r) => {
                 const on = selected.has(r.id);
+                const closed = Math.max(0, (r.reports_total || 0) - (r.reports_open || 0));
                 return (
                   <tr key={r.id} className={`border-line border-t ${on ? "bg-[var(--success-tint)]" : "hover:bg-surface-raised/50"}`}>
                     {selectable && (
@@ -311,30 +352,45 @@ export function PlayersPage({ canModerate, canExport, emailVisible }: { canModer
                       </Link>
                     </td>
                     <td className="px-3 py-2">
-                      <Pill tone={r.account_type === "guest" ? "neutral" : "ok"}>{C.accounts[r.account_type]}</Pill>
-                    </td>
-                    <td className="num text-muted max-w-[220px] truncate px-3 py-2 text-[13px]" title={r.email ?? undefined}>
-                      {r.email ?? C.noEmail}
-                    </td>
-                    <td className="num px-3 py-2 text-[13px]">{r.age_band}</td>
-                    <td className="num px-3 py-2 text-[13px] whitespace-nowrap">{C.level(r.level, fmt(r.xp))}</td>
-                    <td className="num px-3 py-2 text-[13px]">{fmt(r.sparks)}</td>
-                    <td className="num px-3 py-2 text-[13px]">{r.streak}</td>
-                    <td className="num px-3 py-2 text-[13px]">
-                      {r.reports_open ? <span className="text-danger font-semibold">{r.reports_open}</span> : r.reports_total || 0}
-                    </td>
-                    <td className="num text-muted px-3 py-2 text-[13px] whitespace-nowrap">
-                      {r.last_active ? C.ago(age(r.last_active)) : C.never}
-                    </td>
-                    <td className="num text-muted px-3 py-2 text-[13px] whitespace-nowrap">{r.created_at.slice(0, 10)}</td>
-                    <td className="px-3 py-2">
                       <span className="flex flex-wrap gap-1">
-                        {playerStatuses(r).map((s) => (
+                        {listStatuses(r).map((s) => (
                           <Pill key={s} tone={STATUS_TONE[s]}>
                             {C.statuses[s]}
                           </Pill>
                         ))}
                       </span>
+                    </td>
+                    <td className="px-3 py-2 text-[13px]">
+                      {r.reports_open || r.flagged ? (
+                        <span className="flex flex-wrap gap-1">
+                          {r.reports_open > 0 && <Pill tone="danger">{C.openReports(r.reports_open)}</Pill>}
+                          {r.flagged > 0 && <Pill tone="warn">{C.flaggedScores(r.flagged)}</Pill>}
+                        </span>
+                      ) : (
+                        <span className="text-muted" title={closed ? C.pastReports(closed) : undefined}>
+                          {C.nothingToReview}
+                        </span>
+                      )}
+                    </td>
+                    <td className="text-muted px-3 py-2 text-[13px] whitespace-nowrap">
+                      <When iso={r.last_active} fallback={C.never} />
+                    </td>
+                    <td className="px-3 py-2">
+                      <Pill tone={r.account_type === "guest" ? "neutral" : "ok"} className="!font-medium">
+                        {C.accountKind[r.account_type]}
+                      </Pill>
+                    </td>
+                    <td className="px-3 py-2 text-[13px] whitespace-nowrap">{C.ageBands[r.age_band] ?? r.age_band}</td>
+                    <td className="text-muted px-3 py-2 text-[13px] whitespace-nowrap" title={exactTime(r.created_at)}>
+                      {dayDate(r.created_at)}
+                    </td>
+                    <td className="num px-3 py-2 text-right text-[13px] whitespace-nowrap" title={C.xpTitle(fmt(r.xp))}>
+                      {r.level}
+                    </td>
+                    <td className="num px-3 py-2 text-right text-[13px]">{fmt(r.sparks)}</td>
+                    <td className="num px-3 py-2 text-right text-[13px] whitespace-nowrap">{C.streakDays(r.streak)}</td>
+                    <td className="num text-muted max-w-[220px] truncate px-3 py-2 text-[13px]" title={r.email ?? undefined}>
+                      {r.email ?? C.noEmail}
                     </td>
                   </tr>
                 );

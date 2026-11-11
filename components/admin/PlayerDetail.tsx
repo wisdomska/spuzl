@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { Icon } from "@/components/ui/Icon";
-import { age, clock } from "@/lib/admin/dates";
 import { ACTION_PERMISSION, SPARKS_LIMIT, playerStatuses, type PlayerAction } from "@/lib/admin/player-filters";
+import { activityOf, dayDate, duration, exactTime, timeAgo, timeUntil } from "@/lib/admin/people-format";
 import type { PlayerDetail as Detail } from "@/lib/admin/players";
 import { can, type Role } from "@/lib/admin/roles";
 import { GAME_BY_ID } from "@/lib/catalog";
@@ -16,24 +16,19 @@ import { ConfirmDialog } from "./ConfirmDialog";
 import { MIN_AGE, ageBandOf, birthProblem, birthYears } from "@/lib/age";
 import { ageCopy } from "@/lib/copy/age";
 import { DaysField, STATUS_TONE } from "./PlayersPage";
-import { Btn, Empty, Field, Notice, PageTitle, Pill, ReadField, RowsSkeleton, inputCls, type PillTone } from "./ui";
+import { Card, Fact, Figure, TechDetails, TechRow, When } from "./people-ui";
+import { Btn, Empty, Field, Notice, Pill, RowsSkeleton, inputCls, type PillTone } from "./ui";
 
 const C = adminCopy.players;
 const fmt = (n: number) => n.toLocaleString("en-US");
-const when = (iso: string | null) => (iso ? iso.slice(0, 16).replace("T", " ") : C.never);
+const band = (b: string | null | undefined) => (b ? (C.ageBands[b] ?? b) : "");
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
-/** Actions in panel order; the irreversible one last. */
-const ORDER: PlayerAction[] = [
-  "reset_nickname",
-  "sparks",
-  "freeze",
-  "ban",
-  "unban",
-  "revoke_ranking",
-  "restore_ranking",
-  "signout",
-  "birth",
-  "delete",
+/** Actions grouped the way a person thinks about them; within a group, the gentlest first and the irreversible last. */
+const GROUPS: { id: keyof typeof C.actionGroups; actions: PlayerAction[] }[] = [
+  { id: "gifts", actions: ["sparks", "freeze"] },
+  { id: "safety", actions: ["reset_nickname", "revoke_ranking", "restore_ranking", "ban", "unban"] },
+  { id: "account", actions: ["birth", "signout", "delete"] },
 ];
 const DANGER = new Set<PlayerAction>(["ban", "revoke_ranking", "signout", "delete"]);
 const ATTEMPT_TONE: Record<string, PillTone> = {
@@ -44,33 +39,14 @@ const ATTEMPT_TONE: Record<string, PillTone> = {
   in_progress: "warn",
 };
 const REPORT_TONE: Record<string, PillTone> = { open: "danger", actioned: "ok", dismissed: "neutral" };
-
-function Section({ title, children, id }: { title: string; children: ReactNode; id: string }) {
-  return (
-    <section aria-labelledby={id} className="bg-surface flex min-w-0 flex-col gap-2.5 rounded-[12px] p-4">
-      <h2 id={id} className="font-display text-[16px] font-extrabold">
-        {title}
-      </h2>
-      {children}
-    </section>
-  );
-}
-
-function Stat({ value, label }: { value: ReactNode; label: string }) {
-  return (
-    <div className="bg-bg flex flex-col gap-0.5 rounded-[10px] p-2.5">
-      <span className="num text-[18px] font-semibold">{value}</span>
-      <span className="text-muted text-[12px] font-medium">{label}</span>
-    </div>
-  );
-}
+const ACTIVITY_TONE: Record<string, PillTone> = { now: "ok", today: "ok", week: "ok", month: "neutral", quiet: "warn", never: "neutral" };
 
 function MiniTable({ head, children, min = 480 }: { head: readonly string[]; children: ReactNode; min?: number }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse text-[13px]" style={{ minWidth: min }}>
         <thead>
-          <tr className="num text-muted text-left text-[12px]">
+          <tr className="text-muted text-left text-[12px]">
             {head.map((h) => (
               <th key={h} scope="col" className="px-2 py-1.5 font-semibold">
                 {h}
@@ -83,12 +59,14 @@ function MiniTable({ head, children, min = 480 }: { head: readonly string[]; chi
     </div>
   );
 }
-const td = "border-line border-t px-2 py-1.5 align-top";
+const td = "border-line border-t px-2 py-2 align-top";
+const none = <p className="text-muted text-[13px]">{C.noReports}</p>;
 
 /**
- * One player (owner request): profile, account and linked sign-ins, stats, recent attempts, reports, moderation
- * history, league, inventory, Sparks ledger and audit trail, with the actions the role may take. Every action opens a
- * dialog that needs a reason; deleting also needs the nickname typed. The server checks all of it again.
+ * One player (owner request). Read top to bottom: who they are (account kind and what it means, age group and what
+ * it allows, how active they are), anything that needs the team's attention, how far they've come, then their
+ * history. Raw ids sit under Technical details. Every action opens a dialog that asks for a reason; deleting also
+ * needs the nickname typed. The server checks all of it again.
  */
 export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; backHref: string }) {
   const router = useRouter();
@@ -101,6 +79,12 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
   const [birthMonth, setBirthMonth] = useState("");
   const [done, setDone] = useState<string | null>(null);
 
+  const back = (
+    <Link href={backHref} className="text-muted hover:text-text flex h-11 items-center gap-1.5 self-start text-[13px] font-semibold">
+      <Icon name="arrow-left" size={16} />
+      {C.back}
+    </Link>
+  );
   if (q.isPending) return <RowsSkeleton rows={10} height={56} />;
   if (q.error)
     return (
@@ -108,26 +92,30 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
         <Notice tone="danger" icon="warning">
           {errorText(q.error)}
         </Notice>
-        <Link href={backHref} className="text-accent text-[14px] font-semibold hover:underline">
-          {C.back}
-        </Link>
+        {back}
       </div>
     );
   const d = q.data;
   const p = d.profile;
-  const statuses = playerStatuses({ ...p, flagged: d.stats.flagged });
-  const actions = ORDER.filter((a) => can(role, ACTION_PERMISSION[a])).filter((a) => {
+  const statuses = playerStatuses({ ...p, flagged: d.stats.flagged }).filter((s) => s !== "flagged" && s !== "test");
+  const activity = activityOf(p.last_seen_at);
+  const allowed = (a: PlayerAction) => {
+    if (!can(role, ACTION_PERMISSION[a])) return false;
     if (a === "unban") return !!p.banned_at;
     if (a === "ban") return !p.banned_at;
     if (a === "revoke_ranking") return !p.ranking_revoked;
     if (a === "restore_ranking") return p.ranking_revoked;
     if (a === "signout" || a === "delete") return !d.account.isAdmin;
     return true;
-  });
+  };
+  const groups = GROUPS.map((g) => ({ ...g, actions: g.actions.filter(allowed) })).filter((g) => g.actions.length);
   const amountN = Number(amount);
   const amountOk = Number.isInteger(amountN) && amountN !== 0 && Math.abs(amountN) <= SPARKS_LIMIT;
   const birthOk = !!birthYear && !!birthMonth && !birthProblem(Number(birthYear), Number(birthMonth));
   const birthBand = birthOk ? ageBandOf(Number(birthYear), Number(birthMonth)) : null;
+  const canReports = can(role, "moderation.read");
+  const openReports = d.reportsReceived.filter((r) => r.status === "open").length;
+  const attention = !!p.banned_at || p.ranking_revoked || openReports > 0 || d.stats.flagged > 0 || p.is_test;
 
   const confirm = ({ reason, confirm }: { reason: string; confirm: string }) => {
     if (!open) return;
@@ -154,7 +142,7 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
                 : action === "signout"
                   ? C.done.signout(Number(r.sessions))
                   : action === "birth"
-                    ? C.done.birth(String(r.age_band))
+                    ? C.done.birth(band(String(r.age_band)))
                     : C.done[action],
         );
       },
@@ -162,21 +150,27 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
   };
 
   return (
-    <div className="flex flex-col gap-3.5 px-4 py-5 sm:px-6">
-      <Link href={backHref} className="text-muted hover:text-text flex h-11 items-center gap-1.5 self-start text-[13px] font-semibold">
-        <Icon name="arrow-left" size={16} />
-        {C.back}
-      </Link>
-      <PageTitle title={p.nickname}>
-        <span className="flex flex-wrap gap-1">
-          <Pill tone={d.account.type === "guest" ? "neutral" : "ok"}>{C.accounts[d.account.type]}</Pill>
-          {statuses.map((s) => (
-            <Pill key={s} tone={STATUS_TONE[s]}>
-              {C.statuses[s]}
-            </Pill>
-          ))}
-        </span>
-      </PageTitle>
+    <div className="flex flex-col gap-4 px-4 py-5 sm:px-6">
+      {back}
+
+      {/* Who: name, account kind, standing and activity in one glance. */}
+      <header className="flex flex-col gap-1">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <h1 className="font-display text-[24px] font-extrabold tracking-[-0.01em] break-all">{p.nickname}</h1>
+          <span className="flex flex-wrap gap-1">
+            <Pill tone={d.account.type === "guest" ? "warn" : "ok"}>{C.accountPill[d.account.type]}</Pill>
+            <Pill>{band(p.age_band)}</Pill>
+            {statuses.map((s) => (
+              <Pill key={s} tone={STATUS_TONE[s]}>
+                {C.statuses[s]}
+              </Pill>
+            ))}
+            <Pill tone={ACTIVITY_TONE[activity]}>{C.activity[activity]}</Pill>
+          </span>
+        </div>
+        <p className="text-muted text-[14px]">{C.purposeDetail}</p>
+      </header>
+
       <div aria-live="polite" className="empty:hidden">
         {done && (
           <Notice tone="ok" icon="check-circle">
@@ -184,48 +178,144 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
           </Notice>
         )}
       </div>
-      {p.banned_at && (
-        <Notice tone="danger" icon="prohibit">
-          {C.banned(p.banned_until ? p.banned_until.slice(0, 10) : null)} {p.ban_reason ? C.banReason(p.ban_reason) : ""}
-        </Notice>
-      )}
-      {p.ranking_revoked && <Notice tone="warn">{C.revoked}</Notice>}
 
-      <div className="grid grid-cols-1 gap-3.5 xl:grid-cols-[1fr_360px]">
-        <div className="flex min-w-0 flex-col gap-3.5">
-          <Section title={C.profile} id="pd-profile">
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <ReadField label={C.playerId} value={<span className="num truncate text-[13px]">{p.id}</span>} />
-              <ReadField label={C.ageBand} value={p.age_band} />
-              {can(role, "players.age") && (
-                <ReadField
-                  label={C.birth}
-                  value={p.birth_year && p.birth_month ? `${ageCopy.months[p.birth_month - 1]} ${p.birth_year}` : C.birthNotGiven}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_340px]">
+        <div className="flex min-w-0 flex-col gap-4">
+          {/* What needs doing comes before the history. */}
+          <Card title={C.attention} id="pd-attention" hint={attention ? C.attentionHint : undefined}>
+            {!attention ? (
+              <Notice tone="ok" icon="check-circle">
+                {C.allClear}
+              </Notice>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {p.banned_at && (
+                  <Notice tone="danger" icon="prohibit">
+                    {C.bannedLine(p.banned_until ? `${timeUntil(p.banned_until)} (${dayDate(p.banned_until)})` : null)}{" "}
+                    {p.ban_reason ? C.banReason(p.ban_reason) : ""}
+                  </Notice>
+                )}
+                {openReports > 0 && (
+                  <Notice
+                    tone="danger"
+                    icon="flag"
+                    action={canReports ? <AttentionLink href="/admin/moderation">{C.reviewReports}</AttentionLink> : undefined}
+                  >
+                    {C.openReportsLine(openReports)}
+                  </Notice>
+                )}
+                {d.stats.flagged > 0 && (
+                  <Notice
+                    tone="warn"
+                    icon="warning"
+                    action={canReports ? <AttentionLink href="/admin/moderation?tab=flagged">{C.reviewScores}</AttentionLink> : undefined}
+                  >
+                    {C.flaggedLine(d.stats.flagged)}
+                  </Notice>
+                )}
+                {p.ranking_revoked && (
+                  <Notice tone="warn" icon="flag">
+                    {C.revoked}
+                  </Notice>
+                )}
+                {p.is_test && <Notice icon="info">{C.testPlayer}</Notice>}
+              </div>
+            )}
+          </Card>
+
+          <Card title={C.whoTitle} id="pd-who">
+            <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+              <Fact
+                label={C.accountTitle}
+                value={C.accountKind[d.account.type]}
+                hint={C.accountMeaning[d.account.type]}
+                tone={d.account.type === "guest" ? "warn" : undefined}
+              />
+              <Fact
+                label={C.ageBand}
+                value={
+                  <>
+                    {band(p.age_band)}
+                    {can(role, "players.age") && (
+                      <span className="text-muted block text-[13px] font-medium">
+                        {C.birth}:{" "}
+                        {p.birth_year && p.birth_month ? `${ageCopy.months[p.birth_month - 1]} ${p.birth_year}` : C.birthNotGiven}
+                      </span>
+                    )}
+                  </>
+                }
+                hint={C.ageMeaning[p.age_band]}
+              />
+              <Fact
+                label={C.lastSeen}
+                value={C.activity[activity]}
+                hint={p.last_seen_at ? <When iso={p.last_seen_at} /> : undefined}
+                tone={activity === "quiet" ? "warn" : undefined}
+              />
+              <Fact
+                label={C.joinedOn}
+                value={<span title={exactTime(p.created_at)}>{dayDate(p.created_at)}</span>}
+                hint={timeAgo(p.created_at)}
+              />
+              {d.account.type !== "guest" && (
+                <Fact
+                  label={C.email}
+                  value={<span className="num text-[14px] break-all">{d.account.email ?? C.noEmail}</span>}
+                  hint={!d.account.emailVisible && d.account.email ? C.emailMasked : undefined}
                 />
               )}
-              <ReadField label={C.joinedOn} value={when(p.created_at)} />
-              <ReadField label={C.lastSeen} value={p.last_seen_at ? C.ago(age(p.last_seen_at)) : C.never} />
+              {d.account.type !== "guest" && (
+                <Fact label={C.signedInLast} value={d.account.lastSignInAt ? <When iso={d.account.lastSignInAt} /> : C.never} />
+              )}
             </div>
-          </Section>
+            {d.account.isAdmin && <Notice icon="info">{C.adminAccount}</Notice>}
+            <TechDetails>
+              <TechRow k={C.tech.playerId} v={p.id} />
+              <TechRow
+                k={C.tech.signIns}
+                v={
+                  d.account.identities.length
+                    ? d.account.identities.map((i) => C.tech.linked(i.provider, i.created_at ? exactTime(i.created_at) : "?")).join("; ")
+                    : "anonymous"
+                }
+              />
+              <TechRow k={C.tech.storedBand} v={p.age_band} />
+              <TechRow k={C.tech.created} v={exactTime(p.created_at)} />
+              <TechRow k={C.tech.lastSeen} v={p.last_seen_at ? exactTime(p.last_seen_at) : "null"} />
+            </TechDetails>
+          </Card>
 
-          <Section title={C.stats} id="pd-stats">
+          <Card title={C.progress} id="pd-progress" hint={C.progressHint}>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              <Stat value={p.level} label={C.statLabels.level} />
-              <Stat value={fmt(p.xp)} label={C.statLabels.xp} />
-              <Stat value={fmt(p.sparks)} label={C.statLabels.sparks} />
-              <Stat value={d.stats.streak} label={C.statLabels.streak} />
-              <Stat value={d.stats.bestStreak} label={C.statLabels.best} />
-              <Stat value={d.stats.freezes} label={C.statLabels.freezes} />
-              <Stat value={d.stats.shieldAt ? when(d.stats.shieldAt) : C.shieldNone} label={C.statLabels.shield} />
-              <Stat value={fmt(d.stats.attempts)} label={C.statLabels.attempts} />
-              <Stat value={fmt(d.stats.clears)} label={C.statLabels.clears} />
-              <Stat value={fmt(d.stats.dailyClears)} label={C.statLabels.daily} />
-              <Stat value={d.stats.flagged} label={C.statLabels.flagged} />
-              <Stat value={d.stats.badges} label={C.statLabels.badges} />
+              <Figure value={p.level} label={C.statLabels.level} />
+              <Figure value={fmt(d.stats.clears)} label={C.statLabels.clears} />
+              <Figure value={d.stats.streak} label={C.statLabels.streak} />
+              <Figure value={fmt(p.sparks)} label={C.statLabels.sparks} />
             </div>
-          </Section>
+            <TechDetails label={C.moreStats}>
+              <dl className="grid grid-cols-1 gap-x-6 gap-y-1.5 sm:grid-cols-2">
+                {(
+                  [
+                    [C.statLabels.xp, fmt(p.xp)],
+                    [C.statLabels.best, d.stats.bestStreak],
+                    [C.statLabels.freezes, d.stats.freezes],
+                    [C.statLabels.shield, d.stats.shieldAt ? dayDate(d.stats.shieldAt) : C.shieldNone],
+                    [C.statLabels.attempts, fmt(d.stats.attempts)],
+                    [C.statLabels.daily, fmt(d.stats.dailyClears)],
+                    [C.statLabels.badges, d.stats.badges],
+                    [C.statLabels.flagged, d.stats.flagged],
+                  ] as const
+                ).map(([k, v]) => (
+                  <div key={k} className="flex justify-between gap-3">
+                    <dt className="text-muted">{k}</dt>
+                    <dd className="num font-semibold">{v}</dd>
+                  </div>
+                ))}
+              </dl>
+            </TechDetails>
+          </Card>
 
-          <Section title={C.recent} id="pd-attempts">
+          <Card title={C.recent} id="pd-attempts" hint={C.recentHint}>
             {!d.attempts.length ? (
               <Empty icon="puzzle-piece">{C.noAttempts}</Empty>
             ) : (
@@ -233,128 +323,102 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
                 {d.attempts.map((a) => (
                   <tr key={a.id}>
                     <td className={`${td} font-semibold`}>{GAME_BY_ID[a.game_id]?.name ?? a.game_id}</td>
-                    <td className={`${td} text-muted`}>{a.mode}</td>
-                    <td className={`${td} num`}>{a.time_ms !== null ? clock(a.time_ms) : C.noEmail}</td>
+                    <td className={`${td} text-muted`}>{C.modes[a.mode] ?? cap(a.mode)}</td>
+                    <td className={`${td} num`}>{a.time_ms !== null ? duration(a.time_ms) : C.noEmail}</td>
                     <td className={td}>
-                      <Pill tone={ATTEMPT_TONE[a.status] ?? "neutral"}>{adminCopy.common.statusLabel(a.status)}</Pill>
+                      <Pill tone={ATTEMPT_TONE[a.status] ?? "neutral"}>
+                        {C.attemptStatus[a.status] ?? adminCopy.common.statusLabel(a.status)}
+                      </Pill>
                     </td>
-                    <td className={`${td} num text-muted`}>{C.ago(age(a.started_at))}</td>
+                    <td className={`${td} text-muted whitespace-nowrap`}>
+                      <When iso={a.started_at} />
+                    </td>
                   </tr>
                 ))}
               </MiniTable>
             )}
-          </Section>
+          </Card>
 
-          <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {(
               [
                 ["pd-rr", C.reportsReceived, d.reportsReceived],
                 ["pd-rm", C.reportsMade, d.reportsMade],
               ] as const
             ).map(([sid, title, list]) => (
-              <Section key={sid} title={title} id={sid}>
+              <Card key={sid} title={title} id={sid}>
                 {!list.length ? (
-                  <p className="text-muted text-[13px]">{C.noReports}</p>
+                  none
                 ) : (
-                  <MiniTable head={C.reportsHead} min={360}>
+                  <MiniTable head={C.reportsHead} min={340}>
                     {list.map((r) => (
                       <tr key={r.id}>
-                        <td className={`${td} num text-muted`}>{r.ref}</td>
-                        <td className={td}>{r.reason}</td>
-                        <td className={`${td} text-muted`}>{r.target_type}</td>
+                        <td className={`${td} font-semibold`}>{C.reportReasons[r.reason] ?? cap(r.reason)}</td>
+                        <td className={`${td} text-muted`}>{C.reportTargets[r.target_type] ?? r.target_type}</td>
                         <td className={td}>
-                          <Pill tone={REPORT_TONE[r.status] ?? "neutral"}>{r.status}</Pill>
+                          <Pill tone={REPORT_TONE[r.status] ?? "neutral"}>{C.reportStatus[r.status] ?? r.status}</Pill>
                         </td>
-                        <td className={`${td} num text-muted`}>{age(r.created_at)}</td>
+                        <td className={`${td} text-muted whitespace-nowrap`}>
+                          <When iso={r.created_at} />
+                        </td>
                       </tr>
                     ))}
                   </MiniTable>
                 )}
-              </Section>
+              </Card>
             ))}
           </div>
 
-          <Section title={C.moderation} id="pd-mod">
-            {!d.moderation.length ? <p className="text-muted text-[13px]">{C.noModeration}</p> : <AuditTable rows={d.moderation} />}
-          </Section>
+          <Card title={C.moderation} id="pd-audit" hint={C.moderationHint}>
+            {!d.audit.length ? <p className="text-muted text-[13px]">{C.noModeration}</p> : <AuditList rows={d.audit} />}
+          </Card>
 
-          <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
-            <Section title={C.league} id="pd-league">
-              {!d.league.length ? (
-                <p className="text-muted text-[13px]">{C.noLeague}</p>
-              ) : (
-                <MiniTable head={C.leagueHead} min={340}>
-                  {d.league.map((l) => (
-                    <tr key={l.week_start}>
-                      <td className={`${td} num`}>{l.week_start}</td>
-                      <td className={td}>{LEAGUE_TIERS[l.tier] ?? l.tier}</td>
-                      <td className={`${td} num`}>{fmt(l.points)}</td>
-                      <td className={`${td} num`}>{l.rank ?? C.noEmail}</td>
-                      <td className={`${td} text-muted`}>{l.result ?? C.noEmail}</td>
-                    </tr>
-                  ))}
-                </MiniTable>
-              )}
-            </Section>
-            <Section title={C.sparksLedger} id="pd-ledger">
-              {!d.sparks.length ? (
-                <p className="text-muted text-[13px]">{C.noLedger}</p>
-              ) : (
-                <ul className="flex flex-col text-[13px]">
-                  {d.sparks.map((s) => (
-                    <li key={s.id} className="border-line flex items-center gap-2 border-t py-1.5 first:border-t-0">
-                      <span className={`num w-16 font-semibold ${s.amount < 0 ? "text-danger" : "text-accent"}`}>
-                        {s.amount > 0 ? "+" : ""}
-                        {fmt(s.amount)}
-                      </span>
-                      <span className="flex-1 truncate">{s.source.replace(/_/g, " ")}</span>
-                      <span className="num text-muted">{age(s.created_at)}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </Section>
-          </div>
+          <Card title={C.competitive} id="pd-ratings" hint={C.competitiveHint}>
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <div className="flex min-w-0 flex-col gap-1.5">
+                <h3 className="text-[14px] font-bold">{C.ratings}</h3>
+                {!d.ratings?.length ? (
+                  <p className="text-muted text-[13px]">{C.noRatings}</p>
+                ) : (
+                  <MiniTable head={C.ratingsHead} min={300}>
+                    {d.ratings.map((r) => (
+                      <tr key={r.track}>
+                        <td className={`${td} font-semibold`}>{cap(r.track)}</td>
+                        <td className={`${td} num`}>{Math.round(r.rating)}</td>
+                        <td className={`${td} num`}>{fmt(r.games)}</td>
+                        <td className={`${td} text-muted whitespace-nowrap`}>
+                          <When iso={r.updated_at} />
+                        </td>
+                      </tr>
+                    ))}
+                  </MiniTable>
+                )}
+              </div>
+              <div className="flex min-w-0 flex-col gap-1.5">
+                <h3 className="text-[14px] font-bold">{C.rankMoves}</h3>
+                {!d.rankMoves?.length ? (
+                  <p className="text-muted text-[13px]">{C.noRankMoves}</p>
+                ) : (
+                  <MiniTable head={C.rankMovesHead} min={340}>
+                    {d.rankMoves.map((r) => (
+                      <tr key={`${r.ref}:${r.created_at}`}>
+                        <td className={`${td} num text-muted`}>{r.ref}</td>
+                        <td className={td}>{r.track ? cap(r.track) : C.noEmail}</td>
+                        <td className={`${td} num font-semibold ${(r.delta ?? 0) < 0 ? "text-danger" : "text-accent"}`}>
+                          {r.delta === null ? C.noEmail : `${r.delta > 0 ? "+" : ""}${r.delta.toFixed(1)}`}
+                        </td>
+                        <td className={`${td} text-muted whitespace-nowrap`}>
+                          <When iso={r.created_at} />
+                        </td>
+                      </tr>
+                    ))}
+                  </MiniTable>
+                )}
+              </div>
+            </div>
+          </Card>
 
-          {/* R2-ADMIN: ratings, the Duel and Party rounds that moved them, and recent Board Games with their house rules */}
-          <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
-            <Section title={C.ratings} id="pd-ratings">
-              {!d.ratings?.length ? (
-                <p className="text-muted text-[13px]">{C.noRatings}</p>
-              ) : (
-                <MiniTable head={C.ratingsHead} min={320}>
-                  {d.ratings.map((r) => (
-                    <tr key={r.track}>
-                      <td className={`${td} font-semibold`}>{r.track}</td>
-                      <td className={`${td} num`}>{Math.round(r.rating)}</td>
-                      <td className={`${td} num`}>{fmt(r.games)}</td>
-                      <td className={`${td} num text-muted`}>{age(r.updated_at)}</td>
-                    </tr>
-                  ))}
-                </MiniTable>
-              )}
-            </Section>
-            <Section title={C.rankMoves} id="pd-rank-moves">
-              {!d.rankMoves?.length ? (
-                <p className="text-muted text-[13px]">{C.noRankMoves}</p>
-              ) : (
-                <MiniTable head={C.rankMovesHead} min={360}>
-                  {d.rankMoves.map((r) => (
-                    <tr key={`${r.ref}:${r.created_at}`}>
-                      <td className={`${td} num text-muted`}>{r.ref}</td>
-                      <td className={td}>{r.track ?? C.noEmail}</td>
-                      <td className={`${td} num font-semibold ${(r.delta ?? 0) < 0 ? "text-danger" : "text-accent"}`}>
-                        {r.delta === null ? C.noEmail : `${r.delta > 0 ? "+" : ""}${r.delta.toFixed(1)}`}
-                      </td>
-                      <td className={`${td} num text-muted`}>{age(r.created_at)}</td>
-                    </tr>
-                  ))}
-                </MiniTable>
-              )}
-            </Section>
-          </div>
-
-          <Section title={C.boardGames} id="pd-board">
+          <Card title={C.boardGames} id="pd-board">
             {!d.boardGames?.length ? (
               <p className="text-muted text-[13px]">{C.noBoardGames}</p>
             ) : (
@@ -363,23 +427,65 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
                   <tr key={m.id}>
                     <td className={`${td} font-semibold`}>{GAME_BY_ID[m.game_id]?.name ?? m.game_id}</td>
                     <td className={`${td} text-muted`}>
-                      {[m.mode, m.bot ? C.vsBot : null, m.rated ? C.rated : null].filter(Boolean).join(" · ")}
+                      {[C.boardModes[m.mode] ?? m.mode, m.bot ? C.vsBot : null, m.rated ? C.rated : null].filter(Boolean).join(" · ")}
                     </td>
                     <td className={td}>
-                      <Pill tone="neutral">{adminCopy.common.statusLabel(m.status)}</Pill>
+                      <Pill tone="neutral">{C.boardStatus[m.status] ?? adminCopy.common.statusLabel(m.status)}</Pill>
                     </td>
-                    <td className={`${td} text-muted`}>{[m.outcome, m.result].filter(Boolean).join(" · ") || C.noEmail}</td>
+                    <td className={`${td} text-muted`}>
+                      {[m.outcome ? (C.outcomes[m.outcome] ?? m.outcome) : null, m.result].filter(Boolean).join(" · ") || C.noEmail}
+                    </td>
                     <td className={td} data-house-rules>
                       {m.house === null ? C.noEmail : m.house.length ? m.house.map((k) => C.ludoRules[k] ?? k).join(", ") : C.standardRules}
                     </td>
-                    <td className={`${td} num text-muted`}>{C.ago(age(m.created_at))}</td>
+                    <td className={`${td} text-muted whitespace-nowrap`}>
+                      <When iso={m.created_at} />
+                    </td>
                   </tr>
                 ))}
               </MiniTable>
             )}
-          </Section>
+          </Card>
 
-          <Section title={C.inventory} id="pd-inv">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <Card title={C.sparksLedger} id="pd-ledger" hint={C.sparksHint}>
+              {!d.sparks.length ? (
+                <p className="text-muted text-[13px]">{C.noLedger}</p>
+              ) : (
+                <ul className="flex flex-col text-[13px]">
+                  {d.sparks.map((s) => (
+                    <li key={s.id} className="border-line flex items-center gap-2 border-t py-1.5 first:border-t-0">
+                      <span className={`num w-16 shrink-0 text-right font-semibold ${s.amount < 0 ? "text-danger" : "text-accent"}`}>
+                        {s.amount > 0 ? "+" : ""}
+                        {fmt(s.amount)}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate">{C.sparkSources[s.source] ?? C.sparkFallback(s.source)}</span>
+                      <When iso={s.created_at} className="text-muted shrink-0" />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+            <Card title={C.league} id="pd-league">
+              {!d.league.length ? (
+                <p className="text-muted text-[13px]">{C.noLeague}</p>
+              ) : (
+                <MiniTable head={C.leagueHead} min={340}>
+                  {d.league.map((l) => (
+                    <tr key={l.week_start}>
+                      <td className={`${td} whitespace-nowrap`}>{dayDate(l.week_start)}</td>
+                      <td className={td}>{LEAGUE_TIERS[l.tier] ?? l.tier}</td>
+                      <td className={`${td} num`}>{fmt(l.points)}</td>
+                      <td className={`${td} num`}>{l.rank ?? C.noEmail}</td>
+                      <td className={`${td} text-muted`}>{l.result ? (C.leagueResults[l.result] ?? l.result) : C.noEmail}</td>
+                    </tr>
+                  ))}
+                </MiniTable>
+              )}
+            </Card>
+          </div>
+
+          <Card title={C.inventory} id="pd-inv">
             {!d.inventory.length ? (
               <p className="text-muted text-[13px]">{C.noInventory}</p>
             ) : (
@@ -395,64 +501,45 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
                 ))}
               </ul>
             )}
-          </Section>
-
-          <Section title={C.audit} id="pd-audit">
-            {!d.audit.length ? <p className="text-muted text-[13px]">{C.noAudit}</p> : <AuditTable rows={d.audit} />}
-          </Section>
+          </Card>
         </div>
 
-        <div className="flex flex-col gap-3.5">
-          <Section title={C.accountTitle} id="pd-account">
-            <ReadField label={C.head.account} value={C.accounts[d.account.type]} />
-            <ReadField label={C.head.email} value={<span className="num truncate text-[13px]">{d.account.email ?? C.noEmail}</span>} />
-            {!d.account.emailVisible && d.account.email && <p className="text-muted text-[12px]">{C.emailMasked}</p>}
-            <ReadField label={C.signedInLast} value={d.account.lastSignInAt ? C.ago(age(d.account.lastSignInAt)) : C.never} />
-            <div className="flex flex-col gap-1">
-              <span className="num text-muted text-[12px] font-semibold">{C.identities}</span>
-              {!d.account.identities.length ? (
-                <span className="text-muted text-[13px]">{C.noIdentities}</span>
-              ) : (
-                <ul className="flex flex-col gap-1 text-[13px]">
-                  {d.account.identities.map((i) => (
-                    <li key={i.provider} className="flex items-center gap-2">
-                      <Pill tone="ok">{C.accounts[i.provider as keyof typeof C.accounts] ?? i.provider}</Pill>
-                      <span className="num text-muted">{i.created_at ? i.created_at.slice(0, 10) : ""}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            {d.account.isAdmin && <Notice icon="info">{C.adminAccount}</Notice>}
-          </Section>
-
-          <Section title={C.actions} id="pd-actions">
-            {!actions.length ? (
+        <div className="flex flex-col gap-4 xl:sticky xl:top-4 xl:self-start">
+          <Card title={C.actions} id="pd-actions" hint={groups.length ? C.actionsHint : undefined}>
+            {!groups.length ? (
               <p className="text-muted text-[13px]">{C.readOnly}</p>
             ) : (
-              <div className="flex flex-col gap-2">
-                {actions.map((a) => (
-                  <Btn
-                    key={a}
-                    size="lg"
-                    tone={a === "delete" ? "danger" : "secondary"}
-                    className="justify-start"
-                    onClick={() => {
-                      act.reset();
-                      setDone(null);
-                      if (a === "birth") {
-                        setBirthYear(p.birth_year ? String(p.birth_year) : "");
-                        setBirthMonth(p.birth_month ? String(p.birth_month) : "");
-                      }
-                      setOpen(a);
-                    }}
-                  >
-                    {C.actionLabels[a]}
-                  </Btn>
+              <div className="flex flex-col gap-3">
+                {groups.map((g) => (
+                  <div key={g.id} role="group" aria-labelledby={`pd-ag-${g.id}`} className="flex flex-col gap-1.5">
+                    <h3 id={`pd-ag-${g.id}`} className="text-muted text-[12px] font-semibold">
+                      {C.actionGroups[g.id]}
+                    </h3>
+                    {g.actions.map((a) => (
+                      <Btn
+                        key={a}
+                        size="lg"
+                        tone={a === "delete" ? "danger" : "secondary"}
+                        className="justify-start"
+                        title={C.actionHelp[a]}
+                        onClick={() => {
+                          act.reset();
+                          setDone(null);
+                          if (a === "birth") {
+                            setBirthYear(p.birth_year ? String(p.birth_year) : "");
+                            setBirthMonth(p.birth_month ? String(p.birth_month) : "");
+                          }
+                          setOpen(a);
+                        }}
+                      >
+                        {C.actionLabels[a]}
+                      </Btn>
+                    ))}
+                  </div>
                 ))}
               </div>
             )}
-          </Section>
+          </Card>
         </div>
       </div>
 
@@ -472,7 +559,7 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
           onConfirm={confirm}
         >
           {open === "sparks" && (
-            <Field label={C.amount} htmlFor="pd-amount">
+            <Field label={C.amount} htmlFor="pd-amount" hint={amountOk ? undefined : C.amountInvalid}>
               <input
                 id="pd-amount"
                 type="number"
@@ -523,7 +610,7 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
               </Field>
               {birthOk && (
                 <p role="status" className="text-muted col-span-2 text-[13px]">
-                  {birthBand ? `${C.ageBand}: ${birthBand}` : ageCopy.under13Title}
+                  {birthBand ? C.newBand(band(birthBand)) : ageCopy.under13Title}
                 </p>
               )}
             </div>
@@ -534,19 +621,48 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
   );
 }
 
-function AuditTable({ rows }: { rows: Detail["audit"] }) {
+function AttentionLink({ href, children }: { href: string; children: ReactNode }) {
   return (
-    <MiniTable head={C.auditHead} min={520}>
-      {rows.map((a) => (
-        <tr key={a.id}>
-          <td className={`${td} num text-muted whitespace-nowrap`}>{when(a.created_at)}</td>
-          <td className={`${td} max-w-[160px] truncate`}>{a.actor ?? C.system}</td>
-          <td className={`${td} num font-semibold`}>{a.action}</td>
-          <td className={`${td} num text-muted max-w-[280px] text-[12px]`}>
-            <span className="line-clamp-2 break-all">{JSON.stringify(a.detail)}</span>
-          </td>
-        </tr>
-      ))}
-    </MiniTable>
+    <Link
+      href={href}
+      className="bg-surface-raised hover:bg-line inline-flex h-10 shrink-0 items-center gap-1 rounded-[10px] px-3 text-[13px] font-semibold"
+    >
+      {children}
+      <Icon name="arrow-right" size={14} />
+    </Link>
+  );
+}
+
+/** What the team (or the app) did to this player, as sentences; the raw actions and data fold away underneath. */
+function AuditList({ rows }: { rows: Detail["audit"] }) {
+  return (
+    <>
+      <ul className="flex flex-col">
+        {rows.map((a) => {
+          const detail = (a.detail ?? {}) as Record<string, unknown>;
+          const reason = typeof detail.reason === "string" ? detail.reason : null;
+          const days = typeof detail.days === "number" ? detail.days : null;
+          return (
+            <li key={a.id} className="border-line flex flex-col gap-0.5 border-t py-2.5 text-[14px] first:border-t-0 first:pt-0">
+              <div className="flex flex-wrap items-baseline gap-x-2">
+                <span className="font-semibold">
+                  {C.auditActions[a.action] ?? C.auditFallback(a.action)}
+                  {days ? ` ${C.forDays(days)}` : ""}
+                </span>
+                <span className="text-muted text-[13px]">
+                  {C.byWho(a.actor ?? C.system)} · <When iso={a.created_at} />
+                </span>
+              </div>
+              {reason && <span className="text-muted text-[13px]">{C.banReason(reason)}</span>}
+            </li>
+          );
+        })}
+      </ul>
+      <TechDetails>
+        {rows.map((a) => (
+          <TechRow key={a.id} k={`${exactTime(a.created_at)} · ${a.action}`} v={JSON.stringify(a.detail)} />
+        ))}
+      </TechDetails>
+    </>
   );
 }
