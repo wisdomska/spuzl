@@ -181,9 +181,12 @@ export function AdminLogin({ next, reason }: { next: string; reason: string | nu
 
         {step === "password" && (
           <form onSubmit={signIn} className="flex flex-col gap-3.5">
-            <h1 className="font-display text-[20px] font-extrabold">{C.signIn}</h1>
+            <div className="flex flex-col gap-1">
+              <h1 className="font-display text-[20px] font-extrabold">{C.signIn}</h1>
+              <p className="text-muted text-[14px] leading-[1.4]">{C.signInIntro}</p>
+            </div>
             <Field label={C.email} htmlFor="email">
-              <input id="email" name="email" type="email" autoComplete="username" required className={`${inputCls} w-full`} />
+              <input id="email" name="email" type="email" autoComplete="username" required className={`${inputCls} h-11 w-full`} />
             </Field>
             <Field label={C.password} htmlFor="password">
               <input
@@ -192,19 +195,23 @@ export function AdminLogin({ next, reason }: { next: string; reason: string | nu
                 type="password"
                 autoComplete="current-password"
                 required
-                className={`${inputCls} w-full`}
+                className={`${inputCls} h-11 w-full`}
               />
             </Field>
             <Btn type="submit" tone="primary" size="lg" disabled={busy} className="mt-1 w-full">
               {C.continue}
             </Btn>
             <p className="text-muted text-[13px] leading-[1.4]">{C.signInNote}</p>
+            <p className="text-muted text-[13px] leading-[1.4]">{C.forgot}</p>
           </form>
         )}
 
         {step === "set-password" && (
           <form onSubmit={setPassword} className="flex flex-col gap-3.5">
-            <h1 className="font-display text-[20px] font-extrabold">{C.choosePassword}</h1>
+            <div className="flex flex-col gap-1">
+              <h1 className="font-display text-[20px] font-extrabold">{C.choosePassword}</h1>
+              <p className="text-muted text-[14px] leading-[1.4]">{C.choosePasswordIntro}</p>
+            </div>
             <Field label={C.newPassword} htmlFor="password" hint={C.newPasswordHint}>
               <input
                 id="password"
