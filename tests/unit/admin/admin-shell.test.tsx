@@ -41,8 +41,10 @@ describe("admin sidebar", () => {
     const nav = within(sidebar());
     for (const g of ["Players", "Games & content", "Insights", "Settings"])
       expect(nav.getByRole("button", { name: new RegExp(`^${g}`) })).toBeTruthy();
-    for (const l of ["Overview", "Reports", "Games", "Daily calendar", "Shop", "Live now", "Feature switches", "Activity log", "Team"])
+    for (const l of ["Overview", "Reports", "Games", "Daily calendar", "Shop", "Live now", "Activity log", "Team"])
       expect(nav.getByRole("link", { name: new RegExp(`^${l}`) })).toBeTruthy();
+    // Feature switches were removed: nothing read them (Game settings switches what players see).
+    expect(nav.queryByRole("link", { name: /^Feature switches/ })).toBeNull();
     // URLs did not change
     expect(nav.getByRole("link", { name: /^Reports/ }).getAttribute("href")).toBe("/admin/moderation");
     expect(nav.getByRole("link", { name: /^Activity log/ }).getAttribute("href")).toBe("/admin/audit");
@@ -111,17 +113,13 @@ describe("admin sidebar", () => {
     } catch {
       /* no storage */
     }
-    path = "/admin/flags";
+    path = "/admin/team";
     render(
       <AdminShell role="owner" email="o@example.com">
         <p>page</p>
       </AdminShell>,
     );
-    expect(
-      within(sidebar())
-        .getByRole("link", { name: /^Feature switches/ })
-        .getAttribute("aria-current"),
-    ).toBe("page");
+    expect(within(sidebar()).getByRole("link", { name: /^Team/ }).getAttribute("aria-current")).toBe("page");
   });
 
   it("puts the menu behind a Menu button on drill-in pages", () => {

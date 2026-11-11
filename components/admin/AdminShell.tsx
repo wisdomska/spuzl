@@ -66,7 +66,6 @@ const GROUPS: NavGroup[] = [
     id: "settings",
     items: [
       { href: "/admin/settings", label: N.settings, icon: "sliders-horizontal", perm: "settings.read" },
-      { href: "/admin/flags", label: N.flags, icon: "toggle-right", perm: "flags.read" },
       { href: "/admin/team", label: N.team, icon: "users-three", perm: "team.manage" },
       { href: "/admin/audit", label: N.audit, icon: "clock-counter-clockwise", perm: "audit.read" },
     ],

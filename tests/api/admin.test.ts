@@ -84,8 +84,6 @@ const ROUTES: Route[] = [
   { method: "GET", path: "/api/admin/liveops", perm: "liveops.read" },
   { method: "GET", path: "/api/admin/metrics", perm: "metrics.read" },
   { method: "POST", path: "/api/admin/metrics", perm: "metrics.read" },
-  { method: "GET", path: "/api/admin/flags", perm: "flags.read" },
-  { method: "PUT", path: "/api/admin/flags", perm: "flags.write" },
   { method: "GET", path: "/api/admin/catalog/quests", perm: "catalog.read" },
   { method: "PATCH", path: "/api/admin/catalog/quests", perm: "catalog.write" },
   { method: "POST", path: "/api/admin/catalog/quests", perm: "catalog.write" },
@@ -537,7 +535,7 @@ describe("moderation (FR-AD-05)", () => {
   });
 });
 
-describe("live ops, flags, catalogue, audit and team (FR-AD-04, 06, 07, 08)", () => {
+describe("live ops, catalogue, audit and team (FR-AD-04, 07, 08)", () => {
   it("serves the live-ops numbers from the admin RPCs", async () => {
     const r = await S.analyst.aal2("/api/admin/liveops");
     expect(r.data.kpis).toHaveProperty("dau");
@@ -547,17 +545,6 @@ describe("live ops, flags, catalogue, audit and team (FR-AD-04, 06, 07, 08)", ()
     expect(r.data.series).toHaveLength(48);
     expect(r.data.streaks.length).toBe(7);
     expect(r.data.byGame.length).toBeGreaterThan(10);
-  });
-
-  it("toggles feature flags (owner only) and logs before and after", async () => {
-    const key = `test.${uniq("f")}`;
-    expect((await S.owner.aal2("/api/admin/flags", { method: "PUT", json: { key, enabled: true, payload: { pct: 10 } } })).status).toBe(
-      200,
-    );
-    expect((await S.owner.aal2("/api/admin/flags", { method: "PUT", json: { key, enabled: false } })).status).toBe(200);
-    const a = await lastAudit(S.owner.userId, "flag.update");
-    expect(a?.detail).toMatchObject({ before: { enabled: true }, after: { enabled: false } });
-    expect((await S.owner.aal2("/api/admin/flags", { method: "PUT", json: { key: "Bad Key!", enabled: true } })).status).toBe(400);
   });
 
   it("edits quests, badges and cosmetics; only the owner changes Sparks prices", async () => {
@@ -642,7 +629,6 @@ describe("pagination on every admin list", () => {
     { path: "/api/admin/content", who: "content_editor" },
     { path: "/api/admin/content/files?game=quads", who: "content_editor" },
     { path: "/api/admin/puzzles", who: "content_editor" },
-    { path: "/api/admin/flags", who: "owner" },
     { path: "/api/admin/catalog/quests", who: "content_editor" },
     { path: "/api/admin/catalog/badges", who: "content_editor" },
     { path: "/api/admin/catalog/cosmetics", who: "owner" },
@@ -785,10 +771,9 @@ describe("pagination on every admin list", () => {
     expect((await S.content_editor.aal2("/api/admin/content/files?game=quads&show=maybe")).status).toBe(400);
   });
 
-  it("puzzles, flags and the catalogue page without repeats", async () => {
+  it("puzzles and the catalogue page without repeats", async () => {
     const cases: { path: string; who: Role }[] = [
       { path: "/api/admin/puzzles", who: "owner" },
-      { path: "/api/admin/flags", who: "owner" },
       { path: "/api/admin/catalog/badges", who: "owner" },
       { path: "/api/admin/team", who: "owner" },
     ];

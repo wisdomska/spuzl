@@ -136,7 +136,7 @@ function Body({ d, role, mod }: { d: OverviewData; role?: Role; mod: boolean }) 
           ["players", "/admin/players", "magnifying-glass", "players.read"],
           ["calendar", "/admin/calendar", "calendar-blank", "calendar.read"],
           ["metrics", "/admin/metrics", "chart-bar", "metrics.read"],
-          ["flags", "/admin/flags", "toggle-right", "flags.write"],
+          ["flags", "/admin/settings", "toggle-right", "settings.write"],
           ["team", "/admin/team", "user-plus", "team.manage"],
         ] as const
       ).filter(([, , , perm]) => can(role, perm))
