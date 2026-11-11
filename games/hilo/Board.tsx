@@ -62,7 +62,7 @@ export default function HiloBoard({ puzzle, initialState, hint, disabled, mode, 
       } else {
         streak.current = 0;
         setShakeN((n) => n + 1);
-        api.ruleBreak(t.slip(expr, values[i + 1], word, values[i], MAX_SLIPS - res.slips));
+        api.ruleBreak(t.slip(expr, values[i + 1], word, values[i], MAX_SLIPS - res.slips), { counts: true });
       }
       api.onMove({ calls: nextCalls }, { correctStreak: streak.current, mistake: !ok });
       if (res.failed) {
@@ -103,7 +103,7 @@ export default function HiloBoard({ puzzle, initialState, hint, disabled, mode, 
 
   return (
     <div
-      className={`flex flex-col gap-3 rounded-[20px] p-4 ${over && !r.failed ? "board-pulse" : ""}`}
+      className={`tiny:gap-2 tiny:p-3 flex flex-col gap-3 rounded-[20px] p-4 ${over && !r.failed ? "board-pulse" : ""}`}
       style={{
         width: "min(358px, calc(100vw - 36px))",
         background: "var(--board-bg)",
@@ -114,10 +114,13 @@ export default function HiloBoard({ puzzle, initialState, hint, disabled, mode, 
       role="group"
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="num text-[13px] font-semibold" aria-live="off">
-          {over ? t.callsDone(CALLS) : t.progress(calls.length, CALLS)}
+        <span className="num min-w-0 truncate text-[13px] font-semibold whitespace-nowrap" aria-live="off">
+          {r.failed ? t.runOver : over ? t.callsDone(CALLS) : t.progress(calls.length, CALLS)}
         </span>
-        <span className="num flex items-center gap-1 text-[13px] font-semibold" aria-label={t.slipsLabel(r.slips, MAX_SLIPS)}>
+        <span
+          className="num flex items-center gap-1 text-[13px] font-semibold whitespace-nowrap"
+          aria-label={t.slipsLabel(r.slips, MAX_SLIPS)}
+        >
           {Array.from({ length: MAX_SLIPS }, (_, k) => (
             <Icon
               key={k}
@@ -126,7 +129,8 @@ export default function HiloBoard({ puzzle, initialState, hint, disabled, mode, 
               className={k < r.slips ? "text-[var(--danger)]" : "text-muted"}
             />
           ))}
-          <span aria-hidden className="ml-1">
+          {/* Under 360 px the three marks (and their label) say it alone, so the call count keeps its line. */}
+          <span aria-hidden className="ml-1 max-[359px]:hidden">
             {t.slips(r.slips, MAX_SLIPS)}
           </span>
         </span>
@@ -140,7 +144,7 @@ export default function HiloBoard({ puzzle, initialState, hint, disabled, mode, 
               key={k}
               aria-label={t.pip(k + 1, res)}
               // the pip for the call just made pops as it fills
-              className={`flex h-6 items-center justify-center rounded-full ${flipN && k === calls.length - 1 ? (flipN % 2 ? "cell-pop-a" : "cell-pop-b") : ""}`}
+              className={`tiny:h-5 flex h-6 items-center justify-center rounded-full ${flipN && k === calls.length - 1 ? (flipN % 2 ? "cell-pop-a" : "cell-pop-b") : ""}`}
               style={{
                 background: res === "right" ? "var(--world)" : res === "slip" ? "var(--danger-tint)" : "var(--surface)",
                 color: res === "right" ? "var(--on-accent)" : res === "slip" ? "var(--danger)" : "var(--text-muted)",
@@ -156,7 +160,7 @@ export default function HiloBoard({ puzzle, initialState, hint, disabled, mode, 
       {/* The called card turns over into the "now showing" slot (a quarter flip, never on first show). */}
       <div
         key={`a-${at}`}
-        className={`${card} min-h-[96px]`}
+        className={`${card} short:min-h-[84px] tiny:min-h-[64px] tiny:py-1.5 min-h-[96px]`}
         style={{
           background: "var(--surface-raised)",
           boxShadow: "0 4px 0 var(--depth)",
@@ -165,14 +169,15 @@ export default function HiloBoard({ puzzle, initialState, hint, disabled, mode, 
         aria-label={t.anchorCard(show(anchor), anchorV)}
       >
         <span className="text-muted text-[13px] font-medium">{t.anchor}</span>
-        <span className="num text-[24px] leading-tight font-semibold">{show(anchor)}</span>
+        {/* A plain number is its own worth: show it once. */}
+        {show(anchor) !== String(anchorV) && <span className="num text-[24px] leading-tight font-semibold">{show(anchor)}</span>}
         <span className="num text-[32px] leading-none font-semibold text-[var(--world)] [[data-theme=light]_&]:text-[var(--world-ink)]">
           {anchorV}
         </span>
       </div>
 
       <div
-        className={`${card} relative min-h-[120px] ${hinted ? "hint-ring" : ""} ${shakeN ? (shakeN % 2 ? "cell-shake-a" : "cell-shake-b") : ""}`}
+        className={`${card} short:min-h-[104px] tiny:min-h-[84px] tiny:py-1.5 relative min-h-[120px] ${hinted ? "hint-ring" : ""} ${shakeN ? (shakeN % 2 ? "cell-shake-a" : "cell-shake-b") : ""}`}
         style={{
           background: "var(--surface-raised)",
           boxShadow: `0 4px 0 var(--depth), inset 0 0 0 ${hinted ? "3px var(--accent)" : "2px var(--world)"}`,
@@ -194,7 +199,7 @@ export default function HiloBoard({ puzzle, initialState, hint, disabled, mode, 
             disabled={locked}
             onClick={() => call(c)}
             aria-label={c === "hi" ? t.higherLabel(show(next), anchorV) : t.lowerLabel(show(next), anchorV)}
-            className="toy flex h-14 items-center justify-center gap-2 rounded-[16px] text-[18px] font-bold"
+            className="toy tiny:h-12 flex h-14 items-center justify-center gap-2 rounded-[16px] text-[18px] font-bold"
             style={{
               background: "var(--world)",
               color: "var(--on-accent)",

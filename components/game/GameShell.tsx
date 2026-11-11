@@ -343,11 +343,12 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
       feedback(text, tone = "info", icon) {
         setFeedback((f) => ({ text, tone, icon, n: f.n + 1 }));
       },
-      ruleBreak(rule) {
+      ruleBreak(rule, opts) {
         countMistake();
-        // The first slip ever also says what a slip is (SPZ-15).
+        // The first slip ever also says what a slip is (SPZ-15), unless this game's slips are limited (the tip
+        // says they never end the game).
         let message = rule;
-        if (!seenTips().has("slips")) {
+        if (!opts?.counts && !seenTips().has("slips")) {
           markTip("slips");
           message = `${rule} ${tipsCopy.slips}`;
         }

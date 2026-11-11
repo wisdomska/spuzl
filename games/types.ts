@@ -118,8 +118,11 @@ export interface BoardApi<St> {
   onFailed?(state: St, reason: string): void;
   /** Feedback line under the board. Never overlays the board. */
   feedback(text: string, tone?: FeedbackTone, icon?: string): void;
-  /** Rule break: shake + buzz + haptic + polite live-region announcement */
-  ruleBreak(message: string): void;
+  /**
+   * Rule break: shake + buzz + haptic + polite live-region announcement. `counts`: this slip uses up one of a
+   * limited number (Higher or Lower's three), so the shell's first-slip tip ("slips never end the game") stays out.
+   */
+  ruleBreak(message: string, opts?: { counts?: boolean }): void;
   /** Polite screen-reader announcement */
   announce(text: string): void;
   /** Register handlers for the controls row (Undo, Hint and game-specific actions) */

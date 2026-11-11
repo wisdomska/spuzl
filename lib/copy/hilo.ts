@@ -1,15 +1,20 @@
+/** "5 × 2 is 10," or, for a plain card, just "10 is" (never "10 is 10"). */
+const worth = (expr: string, v: number) => (expr === String(v) ? `${v} is` : `${expr} is ${v},`);
+
 /** Player-facing copy for Higher or Lower (games/hilo). */
 export const hilo = {
   /* Board */
   board: "Higher or Lower cards",
   progress: (made: number, total: number) => `Call ${Math.min(made + 1, total)} of ${total}`,
   callsDone: (total: number) => `${total} of ${total} calls made`,
+  /** the header once the third slip ends the run early */
+  runOver: "Run over",
   slips: (used: number, max: number) => `Slips ${used} of ${max}`,
   slipsLabel: (used: number, max: number) => `${used} of ${max} slips used`,
   anchor: "Now showing",
   challenger: "Next card",
   hidden: "?",
-  anchorCard: (expr: string, value: number) => `Now showing ${expr}, worth ${value}`,
+  anchorCard: (expr: string, value: number) => (expr === String(value) ? `Now showing ${value}` : `Now showing ${expr}, worth ${value}`),
   challengerCard: (expr: string, shown: number | null) =>
     shown === null ? `Next card ${expr}, value hidden` : `Next card ${expr}, worth ${shown}`,
   higher: "Higher",
@@ -24,9 +29,9 @@ export const hilo = {
   /* Feedback */
   start: "Is the next card higher or lower?",
   startTutorial: "Work out the next card. Tap Higher if it beats the card now showing, Lower if not.",
-  right: (expr: string, v: number, word: "higher" | "lower", prev: number) => `Right. ${expr} is ${v}, ${word} than ${prev}.`,
+  right: (expr: string, v: number, word: "higher" | "lower", prev: number) => `Right. ${worth(expr, v)} ${word} than ${prev}.`,
   slip: (expr: string, v: number, word: "higher" | "lower", prev: number, left: number) =>
-    `Slip. ${expr} is ${v}, ${word} than ${prev}. ${left === 1 ? "1 slip left." : `${left} slips left.`}`,
+    `Slip. ${worth(expr, v)} ${word} than ${prev}. ${left === 1 ? "1 slip left." : `${left} slips left.`}`,
   out: (right: number) => `Three slips. Run over with ${right} right.`,
   cleared: (right: number, total: number) => `Run done. ${right} of ${total} right.`,
   higherWord: "higher" as const,
