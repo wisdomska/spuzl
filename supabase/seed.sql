@@ -16,89 +16,65 @@ insert into public.games (id, world_id, name, status, phase, engine, scoring, is
   ('dusk', 'logic', 'Dusk', 'live', 'L', 'grid', 'time', true, 8000, 1),
   ('sixer', 'logic', 'Sixer', 'live', 'L', 'grid', 'time', true, 15000, 2),
   ('nine', 'logic', 'Nine', 'live', 'M3+', 'grid', 'time', true, 40000, 3),
-  ('weave', 'logic', 'Weave', 'live', 'L', 'grid', 'time', true, 5000, 4),
-  ('flowline', 'logic', 'Flowline', 'live', 'L', 'grid', 'time', true, 5000, 5),
-  ('pairup', 'logic', 'Pairup', 'live', 'M2', 'grid', 'time', true, 4000, 6),
-  ('lost', 'logic', 'Lost', 'live', 'M3+', 'grid', 'time', false, 5000, 7),
-  ('trotro', 'logic', 'Trotro Jam', 'live', 'M3+', 'grid', 'time', false, 5000, 8),
-  ('coil', 'word', 'Coil', 'live', 'L', 'word', 'time', false, 8000, 9),
-  ('rungs', 'word', 'Rungs', 'live', 'L', 'word', 'time', false, 10000, 10),
-  ('quads', 'word', 'Quads', 'live', 'L', 'word', 'time', false, 8000, 11),
-  ('seven', 'word', 'Seven', 'live', 'M2', 'word', 'score', false, 0, 12),
-  ('minicross', 'word', 'Minicross', 'live', 'L', 'word', 'time', false, 8000, 13),
-  ('buried', 'word', 'Buried', 'live', 'M3+', 'word', 'time', false, 8000, 14),
-  ('remix', 'word', 'Remix', 'live', 'M3+', 'word', 'time', false, 2000, 15),
-  ('quickfire', 'word', 'Quickfire', 'live', 'M2', 'custom', 'score', false, 2000, 16),
-  ('emojihits', 'word', 'Emoji Hits', 'live', 'M3+', 'custom', 'score', false, 4000, 17),
-  ('echo', 'reflex', 'Echo', 'live', 'L', 'custom', 'score', false, 0, 18),
-  ('twins', 'reflex', 'Twins', 'live', 'M2', 'custom', 'score', false, 4000, 19),
-  ('flinch', 'reflex', 'Flinch', 'live', 'M3+', 'custom', 'score', false, 0, 20),
-  ('beattap', 'reflex', 'Beat Tap', 'live', 'M3+', 'custom', 'score', false, 0, 21),
-  ('gotcha', 'reflex', 'Gotcha', 'live', 'L', 'phaser', 'deaths', false, 5000, 22),
-  ('dash', 'reflex', 'Dash', 'live', 'L', 'phaser', 'deaths', false, 5000, 23),
-  ('chess', 'board', 'Chess', 'live', 'L', 'board', 'time', true, 1500, 24),
-  ('draughts', 'board', 'Draughts', 'live', 'L', 'board', 'time', true, 1500, 25),
-  ('oware', 'board', 'Oware', 'live', 'L', 'board', 'time', false, 1500, 26),
-  ('ludo', 'board', 'Ludo', 'live', 'M2', 'board', 'time', false, 1500, 27),
-  ('fourup', 'board', 'Four Up', 'live', 'M2', 'board', 'time', true, 1500, 28),
-  ('blackout', 'logic', 'Blackout', 'retired', 'M2', 'grid', 'time', false, 3000, 29),
-  ('isles', 'line', 'Isles', 'retired', 'M3+', 'grid', 'time', true, 10000, 30),
-  ('quilt', 'shape', 'Quilt', 'retired', 'L', 'grid', 'time', true, 6000, 31),
-  ('snug', 'shape', 'Snug', 'retired', 'M2', 'grid', 'time', false, 6000, 32),
-  ('shuffle', 'shape', 'Shuffle', 'retired', 'M3+', 'grid', 'time', false, 8000, 33),
-  ('reflect', 'shape', 'Reflect', 'retired', 'M3+', 'grid', 'time', true, 4000, 34),
-  ('squint', 'shape', 'Squint', 'retired', 'M3+', 'custom', 'time', false, 4000, 35),
-  ('deadon', 'number', 'Dead On', 'retired', 'L', 'custom', 'score', false, 3000, 36),
-  ('merge', 'number', 'Merge', 'retired', 'M3+', 'grid', 'score', false, 0, 37),
-  ('sums', 'number', 'Sums', 'retired', 'M2', 'grid', 'time', true, 12000, 38),
-  ('equal', 'number', 'Equal', 'retired', 'M3+', 'grid', 'time', true, 8000, 39),
-  ('hunch', 'clue', 'Hunch', 'retired', 'L', 'custom', 'score', false, 2000, 40),
-  ('flipside', 'rage', 'Flipside', 'retired', 'M2', 'phaser', 'deaths', false, 5000, 41),
-  ('ricochet', 'rage', 'Ricochet', 'retired', 'M3+', 'phaser', 'score', false, 0, 42),
-  ('stacked', 'rage', 'Stacked', 'retired', 'M3+', 'phaser', 'score', false, 0, 43),
-  ('wobble', 'rage', 'Wobble', 'retired', 'M3+', 'phaser', 'deaths', false, 5000, 44),
-  ('grapple', 'rage', 'Grapple', 'retired', 'M3+', 'phaser', 'deaths', false, 5000, 45),
-  ('ghosted', 'rage', 'Ghosted', 'retired', 'M3+', 'phaser', 'deaths', false, 5000, 46),
-  ('slip', 'rage', 'Slip', 'retired', 'M3+', 'phaser', 'deaths', false, 5000, 47),
-  ('gauntlet', 'reflex', 'Gauntlet', 'retired', 'M3+', 'phaser', 'deaths', false, 10000, 48),
-  ('flip', 'board', 'Flip', 'retired', 'M3+', 'board', 'time', false, 1500, 49)
+  ('killer', 'logic', 'Killer Sums', 'live', 'M3+', 'grid', 'time', true, 15000, 4),
+  ('lightup', 'logic', 'Light Up', 'live', 'M3+', 'grid', 'time', true, 8000, 5),
+  ('pixl', 'logic', 'Pixl', 'live', 'M2', 'grid', 'time', true, 10000, 6),
+  ('tripwire', 'logic', 'Tripwire', 'live', 'M3+', 'grid', 'time', true, 8000, 7),
+  ('weave', 'logic', 'Weave', 'live', 'L', 'grid', 'time', true, 5000, 8),
+  ('flowline', 'logic', 'Flowline', 'live', 'L', 'grid', 'time', true, 5000, 9),
+  ('pairup', 'logic', 'Pairup', 'live', 'M2', 'grid', 'time', true, 4000, 10),
+  ('lost', 'logic', 'Lost', 'live', 'M3+', 'grid', 'time', false, 5000, 11),
+  ('trotro', 'logic', 'Trotro Jam', 'live', 'M3+', 'grid', 'time', false, 5000, 12),
+  ('market', 'logic', 'Market Run', 'live', 'M3+', 'custom', 'time', true, 8000, 13),
+  ('hilo', 'logic', 'Higher or Lower', 'live', 'M3+', 'custom', 'score', false, 6000, 14),
+  ('coil', 'word', 'Coil', 'live', 'L', 'word', 'time', false, 8000, 15),
+  ('rungs', 'word', 'Rungs', 'live', 'L', 'word', 'time', false, 10000, 16),
+  ('quads', 'word', 'Quads', 'live', 'L', 'word', 'time', false, 8000, 17),
+  ('seven', 'word', 'Seven', 'live', 'M2', 'word', 'score', false, 0, 18),
+  ('minicross', 'word', 'Minicross', 'live', 'L', 'word', 'time', false, 8000, 19),
+  ('buried', 'word', 'Buried', 'live', 'M3+', 'word', 'time', false, 8000, 20),
+  ('remix', 'word', 'Remix', 'live', 'M3+', 'word', 'time', false, 2000, 21),
+  ('five', 'word', 'Five', 'live', 'M3+', 'word', 'time', false, 4000, 22),
+  ('quickfire', 'word', 'Quickfire', 'live', 'M2', 'custom', 'score', false, 2000, 23),
+  ('emojihits', 'word', 'Emoji Hits', 'live', 'M3+', 'custom', 'score', false, 4000, 24),
+  ('pinned', 'word', 'Pinned', 'live', 'M3+', 'custom', 'score', false, 1000, 25),
+  ('flagged', 'word', 'Flagged', 'live', 'M3+', 'custom', 'score', false, 3000, 26),
+  ('twotruths', 'word', 'Two Truths and a Lie', 'live', 'M3+', 'custom', 'score', false, 8000, 27),
+  ('echo', 'reflex', 'Echo', 'live', 'L', 'custom', 'score', false, 0, 28),
+  ('twins', 'reflex', 'Twins', 'live', 'M2', 'custom', 'score', false, 4000, 29),
+  ('flinch', 'reflex', 'Flinch', 'live', 'M3+', 'custom', 'score', false, 0, 30),
+  ('beattap', 'reflex', 'Beat Tap', 'live', 'M3+', 'custom', 'score', false, 0, 31),
+  ('penalty', 'reflex', 'Penalty King', 'live', 'M3+', 'custom', 'score', false, 0, 32),
+  ('gotcha', 'reflex', 'Gotcha', 'live', 'L', 'phaser', 'deaths', false, 5000, 33),
+  ('dash', 'reflex', 'Dash', 'live', 'L', 'phaser', 'deaths', false, 5000, 34),
+  ('chess', 'board', 'Chess', 'live', 'L', 'board', 'time', true, 1500, 35),
+  ('draughts', 'board', 'Draughts', 'live', 'L', 'board', 'time', true, 1500, 36),
+  ('oware', 'board', 'Oware', 'live', 'L', 'board', 'time', false, 1500, 37),
+  ('ludo', 'board', 'Ludo', 'live', 'M2', 'board', 'time', false, 1500, 38),
+  ('fourup', 'board', 'Four Up', 'live', 'M2', 'board', 'time', true, 1500, 39),
+  ('dara', 'board', 'Dara', 'live', 'M3+', 'board', 'time', true, 1500, 40),
+  ('blackout', 'logic', 'Blackout', 'retired', 'M2', 'grid', 'time', false, 3000, 41),
+  ('isles', 'line', 'Isles', 'retired', 'M3+', 'grid', 'time', true, 10000, 42),
+  ('quilt', 'shape', 'Quilt', 'retired', 'L', 'grid', 'time', true, 6000, 43),
+  ('snug', 'shape', 'Snug', 'retired', 'M2', 'grid', 'time', false, 6000, 44),
+  ('shuffle', 'shape', 'Shuffle', 'retired', 'M3+', 'grid', 'time', false, 8000, 45),
+  ('reflect', 'shape', 'Reflect', 'retired', 'M3+', 'grid', 'time', true, 4000, 46),
+  ('squint', 'shape', 'Squint', 'retired', 'M3+', 'custom', 'time', false, 4000, 47),
+  ('deadon', 'number', 'Dead On', 'retired', 'L', 'custom', 'score', false, 3000, 48),
+  ('merge', 'number', 'Merge', 'retired', 'M3+', 'grid', 'score', false, 0, 49),
+  ('sums', 'number', 'Sums', 'retired', 'M2', 'grid', 'time', true, 12000, 50),
+  ('equal', 'number', 'Equal', 'retired', 'M3+', 'grid', 'time', true, 8000, 51),
+  ('hunch', 'clue', 'Hunch', 'retired', 'L', 'custom', 'score', false, 2000, 52),
+  ('flipside', 'rage', 'Flipside', 'retired', 'M2', 'phaser', 'deaths', false, 5000, 53),
+  ('ricochet', 'rage', 'Ricochet', 'retired', 'M3+', 'phaser', 'score', false, 0, 54),
+  ('stacked', 'rage', 'Stacked', 'retired', 'M3+', 'phaser', 'score', false, 0, 55),
+  ('wobble', 'rage', 'Wobble', 'retired', 'M3+', 'phaser', 'deaths', false, 5000, 56),
+  ('grapple', 'rage', 'Grapple', 'retired', 'M3+', 'phaser', 'deaths', false, 5000, 57),
+  ('ghosted', 'rage', 'Ghosted', 'retired', 'M3+', 'phaser', 'deaths', false, 5000, 58),
+  ('slip', 'rage', 'Slip', 'retired', 'M3+', 'phaser', 'deaths', false, 5000, 59),
+  ('gauntlet', 'reflex', 'Gauntlet', 'retired', 'M3+', 'phaser', 'deaths', false, 10000, 60),
+  ('flip', 'board', 'Flip', 'retired', 'M3+', 'board', 'time', false, 1500, 61)
 on conflict (id) do update set world_id = excluded.world_id, name = excluded.name, status = excluded.status, phase = excluded.phase, engine = excluded.engine, scoring = excluded.scoring, is_unique = excluded.is_unique, min_time_ms = excluded.min_time_ms, sort = excluded.sort;
-insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
-  ('five', 'word', 'Five', 'coming_soon', 'M3+', 'word', 'time', false, 4000, 50)
-on conflict (id) do nothing;
-insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
-  ('hilo', 'logic', 'Higher or Lower', 'coming_soon', 'M3+', 'custom', 'score', false, 6000, 51)
-on conflict (id) do nothing;
-insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
-  ('penalty', 'reflex', 'Penalty King', 'coming_soon', 'M3+', 'custom', 'score', false, 0, 52)
-on conflict (id) do nothing;
-insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
-  ('market', 'logic', 'Market Run', 'coming_soon', 'M3+', 'custom', 'time', true, 8000, 53)
-on conflict (id) do nothing;
-insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
-  ('lightup', 'logic', 'Light Up', 'coming_soon', 'M3+', 'grid', 'time', true, 8000, 54)
-on conflict (id) do nothing;
-insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
-  ('killer', 'logic', 'Killer Sums', 'coming_soon', 'M3+', 'grid', 'time', true, 15000, 55)
-on conflict (id) do nothing;
-insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
-  ('dara', 'board', 'Dara', 'coming_soon', 'M3+', 'board', 'time', true, 1500, 56)
-on conflict (id) do nothing;
-insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
-  ('pinned', 'word', 'Pinned', 'coming_soon', 'M3+', 'custom', 'score', false, 1000, 57)
-on conflict (id) do nothing;
-insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
-  ('flagged', 'word', 'Flagged', 'coming_soon', 'M3+', 'custom', 'score', false, 3000, 58)
-on conflict (id) do nothing;
-insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
-  ('tripwire', 'logic', 'Tripwire', 'coming_soon', 'M3+', 'grid', 'time', true, 8000, 59)
-on conflict (id) do nothing;
-insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
-  ('pixl', 'logic', 'Pixl', 'coming_soon', 'M2', 'grid', 'time', true, 10000, 60)
-on conflict (id) do nothing;
-insert into public.games (id, world_id, name, status, phase, engine, scoring, is_unique, min_time_ms, sort) values
-  ('twotruths', 'word', 'Two Truths and a Lie', 'coming_soon', 'M3+', 'custom', 'score', false, 8000, 61)
-on conflict (id) do nothing;
 insert into public.badges (id, family, tier, name, description, secret, sparks, rule, sort) values
   ('first-clear', 'starter', 'bronze', 'First Clear', 'Clear your first puzzle.', false, 10, '{"kind":"clears","n":1,"icon":"seal-check"}'::jsonb, 0),
   ('explorer-logic', 'explorer', 'gold', 'Puzzles Explorer', 'Clear every game in Puzzles.', false, 50, '{"kind":"world_all","world":"logic","icon":"puzzle-piece"}'::jsonb, 1),
@@ -130,17 +106,17 @@ insert into public.badges (id, family, tier, name, description, secret, sparks, 
   ('rage-5', 'rage', 'prism', 'Rage Survivor 5', 'Clear a Daily Gotcha or Dash with 5 deaths or fewer.', false, 100, '{"kind":"course_deaths","n":5,"icon":"skull"}'::jsonb, 27),
   ('social-5', 'social', 'bronze', 'Squad Up', 'Add 5 friends.', false, 10, '{"kind":"friends","n":5,"icon":"users-three"}'::jsonb, 28),
   ('social-beat-10', 'social', 'silver', 'Rival', 'Beat a friend''s time 10 times.', false, 25, '{"kind":"beat_friend","n":10,"icon":"sword"}'::jsonb, 29),
-  ('duel-10', 'duel', 'silver', 'Duellist', 'Win 10 Duels.', false, 25, '{"kind":"duel_wins","n":10,"icon":"sword"}'::jsonb, 31),
-  ('party-1', 'party', 'bronze', 'Life of the Party', 'Win a Party Race.', false, 10, '{"kind":"party_wins","n":1,"icon":"trophy"}'::jsonb, 32),
-  ('board-mate', 'board', 'bronze', 'Checkmate', 'Solve a chess puzzle.', false, 10, '{"kind":"game_clears","game":"chess","n":1,"icon":"horse"}'::jsonb, 33),
-  ('night-owl', 'time', 'silver', 'Night Owl', 'Clear a puzzle after midnight, local time.', false, 25, '{"kind":"night_owl","n":1,"icon":"moon"}'::jsonb, 34),
-  ('early-bird', 'time', 'silver', 'Early Bird', 'Clear a puzzle before 6 am, local time.', false, 25, '{"kind":"early_bird","n":1,"icon":"sun"}'::jsonb, 35),
-  ('secret-blink', 'secret', 'prism', 'Blink', 'Clear a puzzle in under 10 seconds.', true, 100, '{"kind":"under_ms","n":10000,"icon":"lightning"}'::jsonb, 36),
-  ('secret-comeback', 'secret', 'gold', 'Comeback', 'Win a Duel after losing round one.', true, 50, '{"kind":"duel_comeback","n":1,"icon":"arrows-clockwise"}'::jsonb, 37),
-  ('secret-photo', 'secret', 'gold', 'Photo Finish', 'Win a Party Race by under a second.', true, 50, '{"kind":"photo_finish","n":1,"icon":"flag-checkered"}'::jsonb, 38),
-  ('secret-undo', 'secret', 'silver', 'Second Thoughts', 'Undo 50 times in one puzzle and still clear it.', true, 25, '{"kind":"undo_50","n":1,"icon":"arrow-counter-clockwise"}'::jsonb, 39),
-  ('secret-midnight', 'secret', 'gold', 'Last Second', 'Clear a puzzle in the last minute of the day (GMT).', true, 50, '{"kind":"last_minute","n":1,"icon":"hourglass"}'::jsonb, 40),
-  ('secret-pacifist', 'secret', 'prism', 'Untouched', 'Clear a Gotcha, Dash or Gauntlet course with zero deaths.', true, 100, '{"kind":"zero_deaths","n":1,"icon":"ghost"}'::jsonb, 41)
+  ('duel-10', 'duel', 'silver', 'Duellist', 'Win 10 Duels.', false, 25, '{"kind":"duel_wins","n":10,"icon":"sword"}'::jsonb, 30),
+  ('party-1', 'party', 'bronze', 'Life of the Party', 'Win a Party Race.', false, 10, '{"kind":"party_wins","n":1,"icon":"trophy"}'::jsonb, 31),
+  ('board-mate', 'board', 'bronze', 'Checkmate', 'Solve a chess puzzle.', false, 10, '{"kind":"game_clears","game":"chess","n":1,"icon":"horse"}'::jsonb, 32),
+  ('night-owl', 'time', 'silver', 'Night Owl', 'Clear a puzzle after midnight, local time.', false, 25, '{"kind":"night_owl","n":1,"icon":"moon"}'::jsonb, 33),
+  ('early-bird', 'time', 'silver', 'Early Bird', 'Clear a puzzle before 6 am, local time.', false, 25, '{"kind":"early_bird","n":1,"icon":"sun"}'::jsonb, 34),
+  ('secret-blink', 'secret', 'prism', 'Blink', 'Clear a puzzle in under 10 seconds.', true, 100, '{"kind":"under_ms","n":10000,"icon":"lightning"}'::jsonb, 35),
+  ('secret-comeback', 'secret', 'gold', 'Comeback', 'Win a Duel after losing round one.', true, 50, '{"kind":"duel_comeback","n":1,"icon":"arrows-clockwise"}'::jsonb, 36),
+  ('secret-photo', 'secret', 'gold', 'Photo Finish', 'Win a Party Race by under a second.', true, 50, '{"kind":"photo_finish","n":1,"icon":"flag-checkered"}'::jsonb, 37),
+  ('secret-undo', 'secret', 'silver', 'Second Thoughts', 'Undo 50 times in one puzzle and still clear it.', true, 25, '{"kind":"undo_50","n":1,"icon":"arrow-counter-clockwise"}'::jsonb, 38),
+  ('secret-midnight', 'secret', 'gold', 'Last Second', 'Clear a puzzle in the last minute of the day (GMT).', true, 50, '{"kind":"last_minute","n":1,"icon":"hourglass"}'::jsonb, 39),
+  ('secret-pacifist', 'secret', 'prism', 'Untouched', 'Clear a Gotcha, Dash or Gauntlet course with zero deaths.', true, 100, '{"kind":"zero_deaths","n":1,"icon":"ghost"}'::jsonb, 40)
 on conflict (id) do update set name = excluded.name, description = excluded.description, sparks = excluded.sparks, rule = excluded.rule, sort = excluded.sort;
 insert into public.quests (id, kind, title, goal, xp, sparks, step) values
   ('d-clear-2-word', 'daily', 'Clear 2 games in Words & Quiz', '{"kind":"world_clears","world":"word","n":2}'::jsonb, 40, 15, null),

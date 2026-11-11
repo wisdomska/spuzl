@@ -1,22 +1,18 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(11);
+select plan(10);
 
 -- Migrations 20261116000001, 20261125000001 (Gauntlet), 20261201001401 (Quads back) and 20261203005101 (eleven back
 -- as lab games, R2-P5), 20261205005201 (Two Truths, a new lab game) and 20261207001401 (the R2-P5 part B dance game
--- removed, R3-14) plus the seed: 29 live games, 21 retired, 12 in the lab.
-select is((select count(*)::int from public.games where status = 'live'), 29, '29 live games');
+-- removed, R3-14) and 20261211300101 (the twelve lab games graduated) plus the seed: 41 live games, 21 retired, none
+-- in the lab (tests/230_graduate_lab_games.test.sql checks the graduation itself).
+select is((select count(*)::int from public.games where status = 'live'), 41, '41 live games');
 select is((select count(*)::int from public.games where status = 'retired'), 21, '21 retired games');
-select is((select count(*)::int from public.games where status = 'coming_soon'), 12, '12 lab games (R2-P5 part B added Two Truths)');
-select set_eq(
-  $$select id from public.games where status = 'coming_soon'$$,
-  array['five', 'hilo', 'penalty', 'market', 'lightup', 'killer', 'dara', 'pinned', 'flagged', 'tripwire', 'pixl', 'twotruths'],
-  'the eleven games brought back and the new ones are the lab games (R2-P5)'
-);
+select is((select count(*)::int from public.games where status = 'coming_soon'), 0, 'no lab games left (all twelve graduated)');
 select is(
-  (select count(*)::int from public.games where status = 'coming_soon' and world_id not in ('logic', 'word', 'reflex', 'board')),
+  (select count(*)::int from public.games where status = 'live' and world_id not in ('logic', 'word', 'reflex', 'board')),
   0,
-  'every lab game sits in a live group'
+  'every live game sits in a live group'
 );
 select set_eq(
   $$select id from public.games where id in ('trotro', 'emojihits', 'beattap') and status = 'live'$$,
@@ -34,7 +30,7 @@ select throws_ok(
 -- Retired rows stay readable, so old results keep their game name.
 set local role anon;
 select is((select count(*)::int from public.games where status = 'retired'), 21, 'retired rows stay readable');
-select is((select count(*)::int from public.games where status = 'coming_soon'), 12, 'lab rows stay readable');
+select is((select count(*)::int from public.games where status = 'live'), 41, 'live rows stay readable');
 reset role;
 
 select * from finish();
