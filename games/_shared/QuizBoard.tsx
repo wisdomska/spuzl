@@ -487,7 +487,7 @@ export function QuizBoard({
     <div
       // Wide: the quiz fills the board column (up to 760 px), the question reads larger and the answers sit
       // two by two; a computer also gets the answer keys in the side panel.
-      className="wide:w-[min(760px,100%)] wide:gap-4 wide:p-5 wide:[&_p]:text-[26px] flex w-[min(358px,calc(100vw-36px))] flex-col gap-3 rounded-[20px] p-3.5"
+      className="wide:w-[min(760px,100%)] wide:gap-4 wide:p-5 wide:[&_p]:text-[26px] tiny:[&_p]:text-[17px] tiny:[&_p]:leading-[1.25] tiny:gap-2 tiny:p-2.5 flex w-[min(358px,calc(100vw-36px))] flex-col gap-3 rounded-[20px] p-3.5"
       style={{ background: "var(--board-bg)" }}
     >
       {physical && phase !== "done" && (
@@ -502,14 +502,15 @@ export function QuizBoard({
         </ShellAside>
       )}
       <div className="flex items-center gap-2.5">
-        <div className="flex gap-[5px]" role="img" aria-label={t.answered(answers.length, total)}>
+        {/* Ten rounds on a 320 px phone: the dots narrow (never the step label, which stays on one line). */}
+        <div className="flex min-w-0 flex-1 gap-[5px]" role="img" aria-label={t.answered(answers.length, total)}>
           {Array.from({ length: total }, (_, k) => {
             const a = answers[k];
             const known = a && a.right !== undefined;
             return (
               <span
                 key={k}
-                className="flex h-4 w-4 items-center justify-center rounded-[5px]"
+                className="flex h-4 max-w-4 min-w-0 flex-1 items-center justify-center overflow-hidden rounded-[5px]"
                 style={{
                   background: !known
                     ? k === i && (phase === "asking" || waiting)
@@ -526,9 +527,8 @@ export function QuizBoard({
             );
           })}
         </div>
-        <span className="flex-1" />
         {phase !== "ready" && (
-          <span className="num text-muted text-[14px] font-semibold">
+          <span className="num text-muted flex-none text-[14px] font-semibold whitespace-nowrap">
             {phase === "done" ? t.summaryTitle : t.step(noun, Math.min(i + 1, total), total)}
           </span>
         )}
@@ -554,7 +554,7 @@ export function QuizBoard({
       </div>
 
       <div
-        className="wide:min-h-[200px] wide:px-6 flex min-h-[120px] flex-col items-center justify-center gap-2 rounded-[16px] px-3 py-3 text-center"
+        className="wide:min-h-[200px] wide:px-6 short:min-h-[104px] tiny:min-h-16 tiny:gap-1 tiny:py-2 tiny:[&_svg[role=img]]:h-auto tiny:[&_svg[role=img]]:max-w-[112px] flex min-h-[120px] flex-col items-center justify-center gap-2 rounded-[16px] px-3 py-3 text-center"
         style={{ background: "var(--surface)" }}
       >
         {phase === "done" ? (
@@ -587,18 +587,19 @@ export function QuizBoard({
 
       {phase !== "done" && (
         <div
-          className="wide:grid wide:grid-cols-2 wide:gap-3 flex flex-col gap-2"
+          className="wide:grid wide:grid-cols-2 wide:gap-3 tiny:gap-1.5 flex flex-col gap-2"
           role="group"
           aria-label={t.answers}
           aria-busy={phase === "checking" || phase === "opening"}
         >
           {phase === "ready" || !round
             ? // Answers stay hidden until Start (and until the question arrives): empty slots keep the layout still.
+              // A short screen drops them before Start, so the start card and the tool bar fit above the fold.
               Array.from({ length: round?.choices.length ?? 4 }, (_, k) => (
                 <div
                   key={k}
                   aria-hidden
-                  className="wide:min-h-[72px] min-h-[52px] rounded-[14px]"
+                  className={`wide:min-h-[72px] short:min-h-12 tiny:min-h-11 min-h-[52px] rounded-[14px] ${phase === "ready" ? "short:hidden" : ""}`}
                   style={{ background: "var(--surface-raised)", opacity: 0.35 }}
                 />
               ))
@@ -615,7 +616,7 @@ export function QuizBoard({
                     disabled={disabled || phase !== "asking" || gone}
                     onClick={() => commit(k)}
                     aria-label={`${LETTERS[k]}, ${c}${isRight ? t.rightAnswer : ""}${wrongPick ? t.yourWrongAnswer : ""}${mine ? t.yourAnswerChecking : ""}`}
-                    className={`press wide:min-h-[72px] wide:px-4 relative flex min-h-[52px] items-center gap-3 overflow-hidden rounded-[14px] px-3 text-left disabled:cursor-default ${wrongPick ? (shakeN % 2 ? "cell-shake-a" : "cell-shake-b") : isRight && picked ? "cell-pop-a" : ""}`}
+                    className={`press wide:min-h-[72px] wide:px-4 short:min-h-12 tiny:min-h-11 tiny:py-1.5 relative flex min-h-[52px] items-center gap-3 overflow-hidden rounded-[14px] px-3 text-left disabled:cursor-default ${wrongPick ? (shakeN % 2 ? "cell-shake-a" : "cell-shake-b") : isRight && picked ? "cell-pop-a" : ""}`}
                     style={{
                       background: isRight ? "var(--world)" : "var(--surface-raised)",
                       color: isRight ? INK : "var(--text)",
@@ -636,7 +637,11 @@ export function QuizBoard({
                     >
                       {isRight ? <Icon name="check" size={14} /> : wrongPick ? <Icon name="x" size={14} /> : LETTERS[k]}
                     </span>
-                    <span className={`wide:text-[19px] relative text-[16px] font-semibold ${gone ? "line-through" : ""}`}>{c}</span>
+                    <span
+                      className={`wide:text-[19px] tiny:text-[15px] tiny:leading-5 relative text-[16px] font-semibold ${gone ? "line-through" : ""}`}
+                    >
+                      {c}
+                    </span>
                   </button>
                 );
               })}
