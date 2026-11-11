@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.46.1 (11 November 2026)
+
+### For players
+
+- **All 12 new games are on:** Five, Higher or Lower, Penalty King, Market Run, Light Up, Killer Sums, Dara, Pinned,
+  Flagged, Tripwire, Pixl and Two Truths and a Lie, each in its world.
+- **They fit every screen** from a 320 × 568 phone to a laptop, with no scrolling. Quickfire fits small phones too.
+- **Higher or Lower:** no wrong "slips never end the game" tip, cards show their number once, and the header says
+  "Run over" after the third slip.
+- **Dara** plays with the arrow keys and Enter.
+- Each new game has its own page on the website and appears in How to play.
+
+### Admin
+
+- **Pagination on every long list:** Games, the Family Draw words and a player's history (past games, reports,
+  team actions, ratings, board games, Sparks and leagues).
+
 ## 1.46.0 (11 November 2026)
 
 The admin, rewritten for people who aren't developers.
