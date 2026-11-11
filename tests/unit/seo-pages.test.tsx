@@ -42,8 +42,10 @@ describe("public page metadata", () => {
 
   it("builds a static page for every live and lab game, and a lab game's only while it is switched on", async () => {
     expect(generateStaticParams()).toEqual([...GAMES, ...LAB_GAMES].map((g) => ({ id: g.id })));
-    // No database here: the settings are the defaults, with every lab game switched off.
-    expect(await gameMeta(params({ id: "five" }))).toEqual({});
+    // No database here: the settings are the defaults, with every lab game switched off. Five graduated from the
+    // lab (11 Nov 2026), so it has its page whatever the setting; a retired game never does.
+    expect((await gameMeta(params({ id: "five" }))).alternates?.canonical).toBe("/games/five");
+    expect(await gameMeta(params({ id: "blackout" }))).toEqual({});
     expect(await worldMeta(params({ id: "number" }))).toEqual({});
   });
 });

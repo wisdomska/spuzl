@@ -82,7 +82,7 @@ export const GAME_SEO: Record<string, { kind: string; where: string }> = {
   oware: { kind: "board game", where: "sow seeds anticlockwise and capture the 2s and 3s on your rival's side" },
   ludo: { kind: "ludo game", where: "roll a 6 to bring a piece out, then race all four pieces home" },
   fourup: { kind: "four in a row game", where: "drop discs and win by lining up four in any direction" },
-  // Lab games: on public pages only while switched on for players ("features.labGames").
+  // The twelve that graduated from the lab (11 Nov 2026).
   five: { kind: "word game", where: "guess the hidden 5-letter word in 6 tries, with tiles showing which letters fit where" },
   hilo: { kind: "maths card game", where: "call whether each next card is higher or lower, ten calls with three slips allowed" },
   penalty: { kind: "football game", where: "take five penalty kicks, tapping once to aim and again to set your power, to beat the keeper" },

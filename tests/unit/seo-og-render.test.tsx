@@ -25,6 +25,6 @@ describe("SEO link previews render", () => {
       const buf = await png(await Image({ params: Promise.resolve({ id: g.id }) }));
       if (process.env.OG_OUT) (await import("node:fs")).writeFileSync(`${process.env.OG_OUT}/seo-${g.id}.png`, buf);
     }
-    expect((await Image({ params: Promise.resolve({ id: "five" }) })).status).toBe(404);
+    expect((await Image({ params: Promise.resolve({ id: "blackout" }) })).status).toBe(404);
   }, 120_000);
 });

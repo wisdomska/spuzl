@@ -1,17 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { LAB_GAMES } from "@/lib/catalog";
+import { GAME_BY_ID, LAB_GAMES } from "@/lib/catalog";
 import { createRng } from "@/lib/rng";
 import { BOARDS } from "./board-registry";
 import { hasLogic, loadLogic } from "./logic-registry";
 
 /**
- * R2-P5: every lab game brought back from retirement has what the shell needs once "features.labGames" switches it
- * on: logic, a board, and a sensible practice round. The practice board is the game's own `practice()` or the
+ * R2-P5: every lab game brought back from retirement had what the shell needs once "features.labGames" switched it
+ * on: logic, a board, and a sensible practice round. The twelve graduated to live on 11 Nov 2026 and keep the check,
+ * along with any game in testing now. The practice board is the game's own `practice()` or the
  * seeded easy board from `tutorial:<id>` (lib/game/service.ts guidedSeed and loadFree), the same one the server
  * serves on GET /api/v1/guided/<id>.
  */
-describe("R2-P5: lab games' practice boards", () => {
-  for (const meta of LAB_GAMES) {
+const GRADUATED = ["five", "hilo", "penalty", "market", "lightup", "killer", "dara", "pinned", "flagged", "tripwire", "pixl", "twotruths"];
+
+describe("R2-P5: lab and graduated games' practice boards", () => {
+  for (const meta of [...GRADUATED.map((id) => GAME_BY_ID[id]), ...LAB_GAMES]) {
     it(`${meta.id}: has logic and a board, and a deterministic practice board`, async () => {
       expect(hasLogic(meta.id)).toBe(true);
       expect(BOARDS[meta.id], meta.id).toBeDefined();

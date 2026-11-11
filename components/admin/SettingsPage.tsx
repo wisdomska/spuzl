@@ -192,7 +192,9 @@ function Help({ def, summary = C.more }: { def: SettingDef; summary?: string }) 
 function SettingRow({ row, canWrite, busy, onSave }: { row: Row; canWrite: boolean; busy: boolean; onSave: SaveFn }) {
   const d = row.def;
   const labelId = useId();
-  if (d.kind === "set" && d.options.length > 0 && d.options.every((o) => GAME_BY_ID[o.id]))
+  // A set of games gets the card grid; an empty one only when it says what "none" means (Lab games with no game in
+  // testing), so other empty sets keep the plain list.
+  if (d.kind === "set" && d.options.every((o) => GAME_BY_ID[o.id]) && (d.options.length > 0 || setWords(row.key).empty))
     return <GameSetRow row={row} canWrite={canWrite} busy={busy} onSave={onSave} />;
   return (
     <div className="flex flex-col gap-3 border-t border-[var(--line)] pt-4 first-of-type:border-0 first-of-type:pt-0 md:flex-row md:items-start md:justify-between md:gap-6">
@@ -367,6 +369,8 @@ interface SetWords {
   on: string;
   off: string;
   toggle: (name: string) => string;
+  /** shown in place of the cards when the set has no options (no game in testing) */
+  empty?: string;
 }
 const setWords = (key: string): SetWords => (C.setWords as Record<string, SetWords | undefined>)[key] ?? C.setWords.other;
 
@@ -390,48 +394,57 @@ export function GameSetRow({ row, canWrite, busy, onSave }: { row: Row; canWrite
           </div>
           <Help def={d} summary={C.howItWorks} />
         </div>
-        <span className="bg-surface-raised flex h-8 shrink-0 items-center rounded-full px-3 text-[13px] font-semibold" aria-live="polite">
-          <span className={on ? "text-accent" : "text-muted"}>{w.count(on, d.options.length)}</span>
-        </span>
+        {d.options.length > 0 && (
+          <span className="bg-surface-raised flex h-8 shrink-0 items-center rounded-full px-3 text-[13px] font-semibold" aria-live="polite">
+            <span className={on ? "text-accent" : "text-muted"}>{w.count(on, d.options.length)}</span>
+          </span>
+        )}
       </div>
-      <ul role="list" aria-label={d.label} className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
-        {d.options.map((o) => {
-          const g = GAME_BY_ID[o.id];
-          const world = WORLD_BY_ID[g.world];
-          const isOn = picked.includes(o.id);
-          return (
-            <li
-              key={o.id}
-              className="bg-bg flex items-start gap-3 rounded-[14px] p-3 transition-shadow duration-150"
-              style={{ boxShadow: isOn ? "inset 0 0 0 2px var(--accent)" : "inset 0 0 0 1px var(--line)" }}
-              title={canWrite ? undefined : C.cannotEdit}
-            >
-              <GameIcon3D meta={g} size={44} />
-              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className="text-[15px] leading-tight font-bold">{g.name}</span>
-                <span className="text-muted flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[12px] font-medium">
-                  <span className="flex items-center gap-1.5 whitespace-nowrap">
-                    <span aria-hidden className="size-2 rounded-full" style={{ background: world?.color }} />
-                    {world?.name}
+      {d.options.length === 0 && w.empty && (
+        <p className="bg-bg text-muted rounded-[14px] p-3 text-[14px]" style={{ boxShadow: "inset 0 0 0 1px var(--line)" }}>
+          {w.empty}
+        </p>
+      )}
+      {d.options.length > 0 && (
+        <ul role="list" aria-label={d.label} className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+          {d.options.map((o) => {
+            const g = GAME_BY_ID[o.id];
+            const world = WORLD_BY_ID[g.world];
+            const isOn = picked.includes(o.id);
+            return (
+              <li
+                key={o.id}
+                className="bg-bg flex items-start gap-3 rounded-[14px] p-3 transition-shadow duration-150"
+                style={{ boxShadow: isOn ? "inset 0 0 0 2px var(--accent)" : "inset 0 0 0 1px var(--line)" }}
+                title={canWrite ? undefined : C.cannotEdit}
+              >
+                <GameIcon3D meta={g} size={44} />
+                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="text-[15px] leading-tight font-bold">{g.name}</span>
+                  <span className="text-muted flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[12px] font-medium">
+                    <span className="flex items-center gap-1.5 whitespace-nowrap">
+                      <span aria-hidden className="size-2 rounded-full" style={{ background: world?.color }} />
+                      {world?.name}
+                    </span>
+                    <span aria-hidden>·</span>
+                    <span className={`flex items-center gap-1 whitespace-nowrap ${isOn ? "text-accent font-semibold" : ""}`}>
+                      {isOn && <Icon name="check" size={12} />}
+                      {isOn ? w.on : w.off}
+                    </span>
                   </span>
-                  <span aria-hidden>·</span>
-                  <span className={`flex items-center gap-1 whitespace-nowrap ${isOn ? "text-accent font-semibold" : ""}`}>
-                    {isOn && <Icon name="check" size={12} />}
-                    {isOn ? w.on : w.off}
-                  </span>
-                </span>
-                <span className="text-muted mt-0.5 text-[13px] leading-snug">{g.rule}</span>
-              </div>
-              <Switch
-                checked={isOn}
-                label={w.toggle(g.name)}
-                disabled={!canWrite || busy}
-                onChange={(v) => onSave(v ? [...picked, o.id] : picked.filter((x) => x !== o.id))}
-              />
-            </li>
-          );
-        })}
-      </ul>
+                  <span className="text-muted mt-0.5 text-[13px] leading-snug">{g.rule}</span>
+                </div>
+                <Switch
+                  checked={isOn}
+                  label={w.toggle(g.name)}
+                  disabled={!canWrite || busy}
+                  onChange={(v) => onSave(v ? [...picked, o.id] : picked.filter((x) => x !== o.id))}
+                />
+              </li>
+            );
+          })}
+        </ul>
+      )}
       <DefaultLine row={row} canWrite={canWrite} busy={busy} onSave={onSave} />
       <TechDetails row={row} />
     </div>

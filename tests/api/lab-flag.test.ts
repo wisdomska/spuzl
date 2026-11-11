@@ -7,6 +7,8 @@ import { LAB_GAMES } from "@/lib/catalog";
  * R2-P5: lab games through the real API, behind "features.labGames" (a set of game ids). A lab game whose id is not
  * in the set answers like an unknown game everywhere a player can reach it (attempts in every mode, the practice
  * round, the guess route, archive, leaderboards, the play and bot pages); one in the set plays like a live game.
+ * The twelve R2-P5 lab games graduated on 11 Nov 2026, so none is in testing now: the switched-off check covers the
+ * next one, and the twelve are checked as live games that open whatever the setting holds.
  * Needs a server reading settings without a cache (development, or SETTINGS_CACHE_MS=0).
  * Run: API_BASE=http://localhost:<port> pnpm vitest run -c vitest.api.config.mts tests/api/lab-flag.test.ts
  */
@@ -29,6 +31,9 @@ const notFound = async (path: string) => {
   return r.status === 404 || body.includes("NEXT_HTTP_ERROR_FALLBACK;404");
 };
 
+/** The twelve R2-P5 lab games, live since 11 Nov 2026 (migration 20261211300101). */
+const GRADUATED = ["five", "hilo", "penalty", "market", "lightup", "killer", "dara", "pinned", "flagged", "tripwire", "pixl", "twotruths"];
+
 describe("api: lab games behind features.labGames", () => {
   it("switched off: every lab game is refused like an unknown game", async () => {
     await setSetting(KEY, []);
@@ -40,33 +45,31 @@ describe("api: lab games behind features.labGames", () => {
       }
       expect([id, (await g.api(`/api/v1/guided/${id}`)).status]).toEqual([id, 404]);
     }
-    // The guess route answers before it reads the token.
-    const guess = await g.api("/api/games/five/guess", { json: { ref: { game: "five", t: "1.AAAA" }, guess: "CRANE" } });
-    expect([guess.status, guess.data?.error]).toEqual([404, "unknown_game"]);
-    expect((await g.api("/api/v1/archive?game=pixl")).status).toBe(404);
-    expect((await g.api("/api/v1/leaderboards/pixl")).status).toBe(404);
-    for (const path of ["/play/five?mode=free", "/play/dara/bot"]) expect([path, await notFound(path)]).toEqual([path, true]);
   });
 
-  it("switched on per game: only the listed games open", { timeout: 90_000 }, async () => {
-    await setSetting(KEY, ["hilo", "dara"]);
-    const g = await guest(uniq("labon_"));
-    expect((await g.api("/api/v1/attempts", { json: { game: "hilo", mode: "free", difficulty: "easy" } })).status).toBe(200);
-    expect((await g.api("/api/v1/guided/hilo")).status).toBe(200);
-    expect((await g.api("/api/v1/leaderboards/hilo")).status).toBe(200);
-    // Pages read settings through the server's 30 s cache: wait for the new set to reach them.
-    let hidden = true;
-    for (let i = 0; i < 40 && hidden; i++) {
-      hidden = await notFound("/play/dara/bot");
-      if (hidden) await new Promise((r) => setTimeout(r, 1000));
+  it("graduated: the twelve open with the setting empty, like any live game", { timeout: 90_000 }, async () => {
+    await setSetting(KEY, []);
+    const g = await guest(uniq("labgrad_"));
+    for (const id of GRADUATED) {
+      const r = await g.api("/api/v1/attempts", { json: { game: id, mode: "free", difficulty: "easy" } });
+      expect([id, r.status]).toEqual([id, 200]);
+      expect([id, (await g.api(`/api/v1/guided/${id}`)).status]).toEqual([id, 200]);
     }
-    expect(hidden).toBe(false);
-    // Not listed: still refused.
-    expect((await g.api("/api/v1/attempts", { json: { game: "pixl", mode: "free", difficulty: "easy" } })).status).toBe(404);
-    expect((await g.api("/api/v1/guided/pixl")).status).toBe(404);
-    // The public settings carry the set, so the Library and worlds show the same games.
+    // The guess route reads the token now (a forged one is a bad ref, not an unknown game).
+    const guess = await g.api("/api/games/five/guess", { json: { ref: { game: "five", t: "1.AAAA" }, guess: "CRANE" } });
+    expect(guess.data?.error).not.toBe("unknown_game");
+    // Archive and leaderboards may be off with Dailies; either way they never answer "unknown game" for them.
+    expect((await g.api("/api/v1/archive?game=pixl")).data?.error).not.toBe("unknown_game");
+    expect((await g.api("/api/v1/leaderboards/pixl")).data?.error).not.toBe("unknown_game");
+    for (const path of ["/play/five?mode=free", "/play/dara/bot"]) expect([path, await notFound(path)]).toEqual([path, false]);
+  });
+
+  it("a value stored before the graduation still names the twelve: ignored, and the games stay open", async () => {
+    await setSetting(KEY, GRADUATED);
     const pub = await fetch(`${BASE}/api/v1/settings/game`).then((r) => r.json());
-    expect(pub[KEY]).toEqual(["hilo", "dara"]);
-    // (Duels and Parties never race a lab game, on or off: lib/catalog.test.ts, RACE_GAMES is live games only.)
+    expect(pub[KEY]).toEqual([]);
+    const g = await guest(uniq("labstale_"));
+    expect((await g.api("/api/v1/attempts", { json: { game: "hilo", mode: "free", difficulty: "easy" } })).status).toBe(200);
+    // (Duels and Parties race the graduated time games now: lib/catalog.test.ts and lib/multiplayer/scoreRace.test.ts.)
   });
 });

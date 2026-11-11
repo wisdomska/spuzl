@@ -69,12 +69,13 @@ test.describe("visitors and crawlers (no session)", () => {
     expect(og.headers()["content-type"]).toContain("image/png");
   });
 
-  test("/games lists every live game; an unknown or lab game is a 404", async ({ page }) => {
+  test("/games lists every live game (the graduated lab games too); an unknown or retired game is a 404", async ({ page }) => {
     await visit(page, "/games");
     await expectSeo(page, "/games", "/games");
     for (const g of GAMES) await expect(page.locator(`main a[href="/games/${g.id}"]`).first(), g.id).toBeAttached();
     expect((await page.request.get("/games/nope")).status()).toBe(404);
-    expect((await page.request.get("/games/five")).status()).toBe(404);
+    expect((await page.request.get("/games/five")).status()).toBe(200);
+    expect((await page.request.get("/games/blackout")).status()).toBe(404);
   });
 
   test("/world/word: the public world page links its games; unknown worlds are a real 404", async ({ page }) => {

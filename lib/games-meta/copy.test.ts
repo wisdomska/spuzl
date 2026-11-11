@@ -70,6 +70,8 @@ describe("per-game rule and card copy overrides (R2-ADMIN)", () => {
 describe("Daily Five typical score (owner decision S)", () => {
   it("has a valid default for the main score games and none for games scored on time", () => {
     for (const id of ["quickfire", "echo", "beattap"]) expect(DEFAULT_META[id].typicalScore, id).toBeGreaterThan(0);
+    // The score games that graduated from the lab (11 Nov 2026) each have one too.
+    for (const id of ["hilo", "penalty", "pinned", "flagged", "twotruths"]) expect(DEFAULT_META[id].typicalScore, id).toBeGreaterThan(0);
     for (const [id, m] of Object.entries(DEFAULT_META)) {
       if (m.typicalScore !== undefined) expect(GAME_BY_ID[id].scoring, id).toBe("score");
       expect(validateMeta({ typicalScore: m.typicalScore }), id).toBeNull();

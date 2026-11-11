@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { openTestBoard, seededBoardUrl } from "./harness";
 
 /**
- * Lab games switched on for players fit every screen like the live games: no page scroll and the tool bar fully on
+ * The twelve lab games (live since 11 Nov 2026) fit every screen like the other live games: no page scroll and the tool bar fully on
  * screen at 320 × 568, 375 × 667, 390 × 844 and 1280 × 800 (the wide two-column shell), with 44 px tools. Measured
  * on the /dev/board fixtures (no guests). Quickfire shares the quiz board with Flagged and Two Truths, so it is
  * checked too, and the three quiz games are also played through to the summary at 320 × 568 (every round, reveal

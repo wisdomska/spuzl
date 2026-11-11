@@ -3,8 +3,8 @@ import { admin } from "../api/helpers";
 import { expectOneTimer, keepFocus, onboardGuest, openTestBoard, playSeeded, solveSeeded, VIEWPORTS, waitForBoard } from "./harness";
 
 /**
- * R2-P5 part B: Two Truths and a Lie, an all-ages lab game behind "features.labGames" (id twotruths). Preset
- * statements only: every player, under-16s included, picks; nobody types. Answers are judged on the server.
+ * R2-P5 part B: Two Truths and a Lie, an all-ages game (id twotruths), live since it graduated from the lab on 11 Nov
+ * 2026. Preset statements only: every player, under-16s included, picks; nobody types. Answers are judged on the server.
  *
  * Sets the setting straight in game_settings (as r2-p5-lab-games.spec.ts does) and puts the old value back. Needs a
  * server with a database and dev routes, reading settings without a cache (development, or SETTINGS_CACHE_MS=0).
@@ -40,15 +40,11 @@ test("the seeded test board plays through in the shell and clears", async ({ pag
   await expect(page.locator("main.shell-solved")).toHaveCount(1, { timeout: 20_000 });
 });
 
-test("switched off it is not found; switched on an under-16 plays the practice round with picks only", async ({ page }) => {
+test("live with Lab games empty: an under-16 plays the practice round with picks only", async ({ page }) => {
   test.setTimeout(180_000);
   await setLab([]);
   await keepFocus(page);
   await onboardGuest(page, { age: "13-15", guided: true });
-  await page.goto("/play/twotruths?mode=free");
-  await expect(page.getByRole("heading", { name: "This page could not be found." })).toBeVisible();
-
-  await setLab(["twotruths"]);
   await page.goto("/play/twotruths?mode=free");
   await expect(page.getByText("First time playing Two Truths and a Lie?")).toBeVisible({ timeout: 45_000 });
   await waitForBoard(page, 45_000);

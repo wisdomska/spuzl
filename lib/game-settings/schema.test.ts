@@ -114,12 +114,13 @@ describe("R2-P5: features.labGames", () => {
     expect(d.help.startsWith("Switch on a game that is still in testing")).toBe(true);
     expect(d.more).toMatch(/never in Duels or Parties/);
     expect(d.options.map((o) => o.id)).toEqual(LAB_GAMES.map((g) => g.id));
-    expect(validateSetting("features.labGames", ["five", "pixl"])).toBeNull();
+    // Every lab game graduated (11 Nov 2026): no options, so only the empty list is valid.
+    expect(d.options).toEqual([]);
     expect(validateSetting("features.labGames", [])).toBeNull();
-    // Only lab games: a live or retired id is refused, and so is a repeat.
+    // Only lab games: a live (graduated too) or retired id is refused.
     expect(validateSetting("features.labGames", ["crownfall"])).toMatch(/Must be a list/);
+    expect(validateSetting("features.labGames", ["five", "pixl"])).toMatch(/Must be a list/);
     expect(validateSetting("features.labGames", ["blackout"])).toMatch(/Must be a list/);
-    expect(validateSetting("features.labGames", ["five", "five"])).toMatch(/at most once/);
   });
 
   it("every setting has a plain label, a one-line help and a known section", () => {
@@ -139,9 +140,14 @@ describe("R2-P5: features.labGames", () => {
     expect("features.newGames" in SETTINGS).toBe(false);
     const s = mergeSettings([
       { key: "features.newGames", value: true },
-      { key: "features.labGames", value: ["dara"] },
+      { key: "features.labGames", value: [] },
     ]);
-    expect(s["features.labGames"]).toEqual(["dara"]);
+    expect(s["features.labGames"]).toEqual([]);
     expect(Object.keys(s)).not.toContain("features.newGames");
+  });
+
+  it("ignores a stored value that still names graduated games, so the server and the admin page read none", () => {
+    const s = mergeSettings([{ key: "features.labGames", value: ["five", "dara", "twotruths"] }]);
+    expect(s["features.labGames"]).toEqual([]);
   });
 });

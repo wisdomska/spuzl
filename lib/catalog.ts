@@ -137,7 +137,7 @@ const g = (
 
 /** Every game the code knows, before retirement is applied. Use GAMES / ALL_GAMES below. */
 const MAIN_GAMES: GameMeta[] = [
-  // Puzzles: logic grids (the old Logic Lab)
+  // Puzzles: logic grids (the old Logic Lab; Killer Sums, Light Up, Pixl and Tripwire graduated from the lab)
   g(
     "crownfall",
     "Crownfall",
@@ -174,6 +174,43 @@ const MAIN_GAMES: GameMeta[] = [
     "Classic 9 by 9 sudoku",
     "1 to 9 once in every row, column and 3 × 3 box.",
     { unique: true, minTimeMs: 40000 },
+  ),
+  g("killer", killer.title, "logic", "circle-dashed", "M3+", "grid", killer.blurb, killer.rule, {
+    unique: true,
+    minTimeMs: 15000,
+  }),
+  g(
+    "lightup",
+    "Light Up",
+    "logic",
+    "lamp",
+    "M3+",
+    "grid",
+    "Light every cell with lamps",
+    "Light every white cell. No lamp lights another; a number counts lamps beside it.",
+    { unique: true, minTimeMs: 8000 },
+  ),
+  g(
+    "pixl",
+    "Pixl",
+    "logic",
+    "checkerboard",
+    "M2",
+    "grid",
+    "Number clues paint a picture",
+    "Fill cells so each row and column matches its number clues.",
+    { unique: true, minTimeMs: 10000 },
+  ),
+  g(
+    "tripwire",
+    "Tripwire",
+    "logic",
+    "bomb",
+    "M3+",
+    "grid",
+    "No-guess minesweeper",
+    "Reveal every safe tile. Numbers count the mines touching a tile.",
+    { unique: true, minTimeMs: 8000 },
   ),
   g(
     "blackout",
@@ -286,7 +323,30 @@ const MAIN_GAMES: GameMeta[] = [
     "Slide cars and trucks along their lanes until the trotro can drive out of the exit.",
     { minTimeMs: 5000, isNew: true },
   ),
-  // Number Den (retired world)
+  // Puzzles: number puzzles (were Number Den), graduated from the lab
+  g(
+    "market",
+    "Market Run",
+    "logic",
+    "storefront",
+    "M3+",
+    "custom",
+    "Shop Makola to the exact change",
+    "Buy 1 to 9 of each item so you bring back the exact change and every rule on the list holds.",
+    { unique: true, minTimeMs: 8000 },
+  ),
+  g(
+    "hilo",
+    "Higher or Lower",
+    "logic",
+    "arrows-down-up",
+    "M3+",
+    "custom",
+    "Call the next card",
+    "Work out the next card. Higher or lower than this one? Ten calls, three slips and you are out.",
+    { scoring: "score", minTimeMs: 6000 },
+  ),
+  // Number Den (retired world). Market Run and Higher or Lower (above) are Puzzles now.
   g(
     "deadon",
     "Dead On",
@@ -409,7 +469,19 @@ const MAIN_GAMES: GameMeta[] = [
     "Unscramble the word. Three rounds, against the clock.",
     { content: "curated", minTimeMs: 2000 },
   ),
-  // Words & Quiz: trivia (from Clue Cave; the rest stays there, retired)
+  g(
+    "five",
+    "Five",
+    "word",
+    "text-aa",
+    "M3+",
+    "word",
+    "Find the hidden 5-letter word",
+    "Guess the 5-letter word in 6 tries. Tiles show right spot, in the word, or not in it.",
+    { content: "curated", minTimeMs: 4000 },
+  ),
+  // Words & Quiz: trivia (from Clue Cave; the rest stays there, retired). Pinned, Flagged and Two Truths and a Lie
+  // graduated from the lab.
   g(
     "hunch",
     "Hunch",
@@ -436,6 +508,39 @@ const MAIN_GAMES: GameMeta[] = [
     "Name the hit from its emoji",
     "Name the song, film or TV show from the emoji. 5 rounds, 3 tries each.",
     { content: "curated", scoring: "score", minTimeMs: 4000, isNew: true },
+  ),
+  g(
+    "pinned",
+    "Pinned",
+    "word",
+    "map-pin",
+    "M3+",
+    "custom",
+    "Drop the pin on the map",
+    "Drop a pin where the landmark is. Closer scores more.",
+    { content: "curated", scoring: "score", minTimeMs: 1000 },
+  ),
+  g(
+    "flagged",
+    "Flagged",
+    "word",
+    "flag",
+    "M3+",
+    "custom",
+    "Flags, capitals, currencies",
+    "10 fast rounds of flags, capitals and currencies.",
+    { content: "curated", scoring: "score", minTimeMs: 3000 },
+  ),
+  g(
+    "twotruths",
+    "Two Truths and a Lie",
+    "word",
+    "seal-question",
+    "M3+",
+    "custom",
+    "Two are true. Spot the lie.",
+    "Three statements, two of them true. Tap the lie before the bar runs out.",
+    { content: "curated", scoring: "score", minTimeMs: 8000 },
   ),
   // Arcade: memory, rhythm and reflex (the old Reflex Rink)
   g(
@@ -474,6 +579,17 @@ const MAIN_GAMES: GameMeta[] = [
     "Tap on the beat",
     "Tap on every beat of the pattern. Perfect and Good score; extra taps cost points.",
     { scoring: "score", minTimeMs: 0, isNew: true },
+  ),
+  g(
+    "penalty",
+    "Penalty King",
+    "reflex",
+    "soccer-ball",
+    "M3+",
+    "custom",
+    "Five kicks to beat the keeper",
+    "Tap once to aim, again for power. Five kicks: most goals wins, then accuracy.",
+    { scoring: "score", minTimeMs: 0 },
   ),
   // Arcade: action (from Rage Ridge; the rest stays there, retired)
   g(
@@ -612,6 +728,11 @@ const MAIN_GAMES: GameMeta[] = [
     "Drop discs. Four in a line, any direction, wins.",
     { unique: true, minTimeMs: 1500, botPlay: true },
   ),
+  g("dara", dara.title, "board", "dots-three", "M3+", "board", dara.blurb, dara.rule, {
+    unique: true,
+    minTimeMs: 1500,
+    botPlay: true,
+  }),
   g(
     "flip",
     "Flip",
@@ -631,146 +752,19 @@ const MAIN_GAMES: GameMeta[] = [
  * pickers and the live Dailies stay the live games; player screens add the switched-on ones with `openLabGames` /
  * `labGamesInWorld`, and the server refuses the others like an unknown game (`openGame`, lib/game/service.ts
  * assertGameOpen). Add new games at the END of this list (one block per game).
- * Trotro Jam, Emoji Hits and Beat Tap graduated to the live list (2026-11). R2-P5 brought these eleven back from
- * retirement as lab games, in this order; the Number Den and Clue Cave ones now sit in the group that took their
- * kind of game (Puzzles, Words & Quiz), so a switched-on game shows on a live world.
+ * Trotro Jam, Emoji Hits and Beat Tap graduated to the live list (2026-11). The twelve R2-P5 lab games (eleven back
+ * from retirement, plus Two Truths and a Lie) graduated on 11 Nov 2026 (migration 20261211300101), so the list is
+ * empty for now: the next game in testing goes here, and the admin Lab games card says none are in testing.
  */
-const LAB_LIST: GameMeta[] = [
-  g(
-    "five",
-    "Five",
-    "word",
-    "text-aa",
-    "M3+",
-    "word",
-    "Find the hidden 5-letter word",
-    "Guess the 5-letter word in 6 tries. Tiles show right spot, in the word, or not in it.",
-    { content: "curated", minTimeMs: 4000, lab: true },
-  ),
-  g(
-    "hilo",
-    "Higher or Lower",
-    "logic",
-    "arrows-down-up",
-    "M3+",
-    "custom",
-    "Call the next card",
-    "Work out the next card. Higher or lower than this one? Ten calls, three slips and you are out.",
-    { scoring: "score", minTimeMs: 6000, lab: true },
-  ),
-  g(
-    "penalty",
-    "Penalty King",
-    "reflex",
-    "soccer-ball",
-    "M3+",
-    "custom",
-    "Five kicks to beat the keeper",
-    "Tap once to aim, again for power. Five kicks: most goals wins, then accuracy.",
-    { scoring: "score", minTimeMs: 0, lab: true },
-  ),
-  g(
-    "market",
-    "Market Run",
-    "logic",
-    "storefront",
-    "M3+",
-    "custom",
-    "Shop Makola to the exact change",
-    "Buy 1 to 9 of each item so you bring back the exact change and every rule on the list holds.",
-    { unique: true, minTimeMs: 8000, lab: true },
-  ),
-  g(
-    "lightup",
-    "Light Up",
-    "logic",
-    "lamp",
-    "M3+",
-    "grid",
-    "Light every cell with lamps",
-    "Light every white cell. No lamp lights another; a number counts lamps beside it.",
-    { unique: true, minTimeMs: 8000, lab: true },
-  ),
-  // Killer Sums (was Number Den): killer sudoku on the shared sudoku board
-  g("killer", killer.title, "logic", "circle-dashed", "M3+", "grid", killer.blurb, killer.rule, {
-    unique: true,
-    minTimeMs: 15000,
-    lab: true,
-  }),
-  // Dara (Board Games): West African three-in-a-row; puzzles in the shell plus a full game vs bot
-  g("dara", dara.title, "board", "dots-three", "M3+", "board", dara.blurb, dara.rule, {
-    unique: true,
-    minTimeMs: 1500,
-    botPlay: true,
-    lab: true,
-  }),
-  // Pinned and Flagged (were Clue Cave): curated geography content
-  g(
-    "pinned",
-    "Pinned",
-    "word",
-    "map-pin",
-    "M3+",
-    "custom",
-    "Drop the pin on the map",
-    "Drop a pin where the landmark is. Closer scores more.",
-    { content: "curated", scoring: "score", minTimeMs: 1000, lab: true },
-  ),
-  g(
-    "flagged",
-    "Flagged",
-    "word",
-    "flag",
-    "M3+",
-    "custom",
-    "Flags, capitals, currencies",
-    "10 fast rounds of flags, capitals and currencies.",
-    { content: "curated", scoring: "score", minTimeMs: 3000, lab: true },
-  ),
-  g(
-    "tripwire",
-    "Tripwire",
-    "logic",
-    "bomb",
-    "M3+",
-    "grid",
-    "No-guess minesweeper",
-    "Reveal every safe tile. Numbers count the mines touching a tile.",
-    { unique: true, minTimeMs: 8000, lab: true },
-  ),
-  g(
-    "pixl",
-    "Pixl",
-    "logic",
-    "checkerboard",
-    "M2",
-    "grid",
-    "Number clues paint a picture",
-    "Fill cells so each row and column matches its number clues.",
-    { unique: true, minTimeMs: 10000, lab: true },
-  ),
-  // R2-P5 part B: new games, lab only until the owner switches them on.
-  // Two Truths and a Lie (all ages): curated statements, pick the lie; answers judged on the server.
-  g(
-    "twotruths",
-    "Two Truths and a Lie",
-    "word",
-    "seal-question",
-    "M3+",
-    "custom",
-    "Two are true. Spot the lie.",
-    "Three statements, two of them true. Tap the lie before the bar runs out.",
-    { content: "curated", scoring: "score", minTimeMs: 8000, lab: true },
-  ),
-];
+const LAB_LIST: GameMeta[] = [];
 
 /**
  * Retired by the owner (2026-11, 61 to 29 games; Quads came back in R2-14, and eleven came back as lab games in
- * R2-P5). Code, boards and tests stay; players never see these and the server answers 404 unknown_game. The admin
+ * R2-P5, live since 11 Nov 2026: 41 games). Code, boards and tests stay; players never see these and the server answers 404 unknown_game. The admin
  * console lists them, marked retired, read-only for scheduling.
  */
 export const RETIRED_IDS: ReadonlySet<string> = new Set([
-  // Puzzles (was Logic Lab). Pixl, Tripwire and Light Up came back as lab games (R2-P5).
+  // Puzzles (was Logic Lab). Pixl, Tripwire and Light Up came back (R2-P5), now live.
   "blackout",
   // Line Lane
   "isles",
@@ -780,12 +774,12 @@ export const RETIRED_IDS: ReadonlySet<string> = new Set([
   "shuffle",
   "reflect",
   "squint",
-  // Number Den. Higher or Lower, Market Run and Killer Sums came back as lab games (R2-P5).
+  // Number Den. Higher or Lower, Market Run and Killer Sums came back (R2-P5), now live.
   "deadon",
   "merge",
   "sums",
   "equal",
-  // Clue Cave. Pinned and Flagged came back as lab games (R2-P5).
+  // Clue Cave. Pinned and Flagged came back (R2-P5), now live.
   "hunch",
   // Rage Ridge
   "flipside",
@@ -795,9 +789,9 @@ export const RETIRED_IDS: ReadonlySet<string> = new Set([
   "grapple",
   "ghosted",
   "slip",
-  // Arcade: Gauntlet was ten Gotcha rooms in a row, so Gotcha covers it. Penalty King came back as a lab game.
+  // Arcade: Gauntlet was ten Gotcha rooms in a row, so Gotcha covers it. Penalty King came back (R2-P5), now live.
   "gauntlet",
-  // Board Games (was Board Bay). Dara came back as a lab game (R2-P5).
+  // Board Games (was Board Bay). Dara came back (R2-P5), now live.
   "flip",
 ]);
 

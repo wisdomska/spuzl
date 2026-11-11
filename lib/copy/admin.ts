@@ -1502,6 +1502,8 @@ export const adminCopy = {
         on: "On for players",
         off: "Off",
         toggle: (name: string) => `${name}, on for players`,
+        /** no game is in testing (every lab game has graduated): the card grid shows this instead */
+        empty: "No games in testing right now",
       },
       "practice.disabled": {
         count: (on: number, total: number) => `${on} of ${total} skip practice`,

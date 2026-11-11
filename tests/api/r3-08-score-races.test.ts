@@ -10,7 +10,8 @@ import { roundSeed } from "@/lib/multiplayer/games";
  * R3-08: Party score races through the real API. A score game (Quickfire here) can be picked for a Party while
  * "party.scoreRaces" is on; everyone plays the same seeded round; answers go through the guess route, which judges
  * them like a solo attempt on a server log per racer and round; the finish is checked against that log and the
- * round is placed by the server's score (then time). Lab score games need "features.labGames"; Duels never take them.
+ * round is placed by the server's score (then time). Lab score games need "features.labGames" (none is in testing
+ * since the twelve graduated on 11 Nov 2026; Two Truths and a Lie races with no switch now); Duels never take them.
  * Run: API_BASE=http://localhost:<port> pnpm vitest run -c vitest.api.config.mts tests/api/r3-08-score-races.test.ts
  */
 type G = Awaited<ReturnType<typeof guest>>;
@@ -126,21 +127,22 @@ describe("api: Party score races (R3-08)", () => {
     expect((await p.api("/api/v1/duel/friend", { json: { game: "quickfire" } })).status).toBe(400);
   });
 
-  it("takes a lab score game only while Lab games has it", async () => {
+  it("races a graduated score game (Two Truths and a Lie) with Lab games empty, and not once score races go off", async () => {
     await setSetting("party.scoreRaces", true);
     await setSetting("features.labGames", []);
     const host = await guest(uniq("sl_"));
-    const off = await host.api("/api/v1/rooms", { json: { game: "twotruths", difficulty: "easy", maxPlayers: 4 } });
-    expect(off.status).toBe(400);
-    await setSetting("features.labGames", ["twotruths"]);
     const on = await host.api("/api/v1/rooms", { json: { game: "twotruths", difficulty: "easy", maxPlayers: 4 } });
     expect(on.status, JSON.stringify(on.data)).toBe(200);
-    // Switched off again before the start: the room can't start that game.
+    // Score races switched off before the start: the room can't start that game.
     const p2 = await guest(uniq("sl2_"));
     await p2.api(`/api/v1/rooms/${on.data.code}/join`, { json: {} });
     await p2.api(`/api/v1/rooms/${on.data.code}/ready`, { json: { ready: true } });
-    await setSetting("features.labGames", []);
-    const start = await host.api(`/api/v1/rooms/${on.data.code}/start`, { json: {} });
-    expect([start.status, start.data.error]).toEqual([409, "game_unavailable"]);
+    await setSetting("party.scoreRaces", false);
+    try {
+      const start = await host.api(`/api/v1/rooms/${on.data.code}/start`, { json: {} });
+      expect([start.status, start.data.error]).toEqual([409, "game_unavailable"]);
+    } finally {
+      await setSetting("party.scoreRaces", true);
+    }
   });
 });

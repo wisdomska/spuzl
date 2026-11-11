@@ -21,15 +21,25 @@ describe("score race games (R3-08)", () => {
     expect(isScoreRaceGame("crownfall")).toBe(false); // a time race
   });
 
-  it("follows the setting and the lab switch: a lab game only while Lab games has it", () => {
+  it("follows the setting: score games race only while score races are on", () => {
     expect(isPartyGame("quickfire", settings())).toBe(true);
     expect(isPartyGame("quickfire", settings({ on: false }))).toBe(false);
     expect(isPartyGame("crownfall", settings({ on: false }))).toBe(true);
-    expect(isPartyGame("twotruths", settings())).toBe(false);
-    expect(isPartyGame("twotruths", settings({ lab: ["twotruths"] }))).toBe(true);
-    expect(partyGames(settings()).some((g) => g.id === "twotruths")).toBe(false);
-    expect(partyGames(settings({ lab: ["twotruths"] })).some((g) => g.id === "twotruths")).toBe(true);
+    // Two Truths and a Lie graduated from the lab (11 Nov 2026): no Lab games switch needed any more.
+    expect(isPartyGame("twotruths", settings())).toBe(true);
+    expect(partyGames(settings()).some((g) => g.id === "twotruths")).toBe(true);
     expect(partyGames(settings({ on: false })).some((g) => g.scoring === "score")).toBe(false);
+  });
+
+  it("races the score games that graduated from the lab, and never Dara or a photosensitive game", () => {
+    const ids = SCORE_RACE_GAMES.map((g) => g.id);
+    for (const id of ["hilo", "penalty", "pinned", "flagged", "twotruths"]) {
+      expect(ids, id).toContain(id);
+      expect(isPartyGame(id, settings()), id).toBe(true);
+      expect(isRaceGame(id), id).toBe(false);
+    }
+    expect(isScoreRaceGame("dara")).toBe(false);
+    expect(isPartyGame("dara", settings())).toBe(false);
   });
 
   it("puts a picked score game in every round of a Party, and keeps Random mix and Duels to time races", () => {
@@ -38,9 +48,10 @@ describe("score race games (R3-08)", () => {
     const picked = pickGames(createRng("x"), null, 3, ["quickfire", "crownfall"], party);
     expect(new Set(picked)).toEqual(new Set(["quickfire", "crownfall"]));
     for (const g of pickGames(createRng("y"), null, 3, undefined, party)) expect(isRaceGame(g)).toBe(true);
-    // Without the Party rule (a Duel) a score game is never used, and a switched-off lab one never in a Party.
+    // Without the Party rule (a Duel) a score game is never used, nor in a Party while score races are off.
     for (const g of pickGames(createRng("x"), "quickfire", 3)) expect(isRaceGame(g)).toBe(true);
-    for (const g of pickGames(createRng("z"), null, 3, ["twotruths", "crownfall"], party)) expect(g).toBe("crownfall");
+    for (const g of pickGames(createRng("z"), null, 3, ["twotruths", "crownfall"], (id) => isPartyGame(id, settings({ on: false }))))
+      expect(g).toBe("crownfall");
   });
 });
 

@@ -2,7 +2,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { adminCopy } from "@/lib/copy/admin";
-import { LAB_GAMES } from "@/lib/catalog";
+import { GAME_BY_ID } from "@/lib/catalog";
 import {
   AUDIT_TYPES,
   auditDayLabel,
@@ -203,7 +203,8 @@ describe("activity log sentences", () => {
   });
 
   it("describes setting changes in plain words", () => {
-    const [a, b] = LAB_GAMES;
+    // Old rows name games that have since graduated from the lab; they still read by name.
+    const [a, b] = [GAME_BY_ID.five, GAME_BY_ID.dara];
     expect(say(row("setting.update", "setting:features.labGames", { before: null, after: [a.id, b.id] }))).toBe(
       `Senya switched on ${a.name} and ${b.name} in Games in testing (Lab games)`,
     );

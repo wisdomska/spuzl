@@ -1,6 +1,5 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { admin, guest, uniq } from "./helpers";
-import { setSetting } from "./setup";
 import { isRetired } from "@/lib/catalog";
 import { createRng } from "@/lib/rng";
 import type { Difficulty } from "@/games/types";
@@ -11,8 +10,7 @@ import penalty, { replayKick, type KickInput, type PenaltyPuzzle } from "@/games
 
 /**
  * Attempt-level checks for the guess-transport games that started in the lab, through the real API.
- * Emoji Hits is live now; Five and Penalty King are lab games again (R2-P5), switched on here through
- * "features.labGames" (the old value is put back after).
+ * Emoji Hits, Five and Penalty King are all live now (Five and Penalty King graduated from the lab on 11 Nov 2026).
  * Five and Emoji Hits reveals answer only on the player's own open attempt and a shown answer can't then clear;
  * Penalty King answers each shot with the keeper's dive only once the shot is kept on the attempt, and finish
  * audits the final kicks against those shots. Medium boards, so an attempt is never the public practice board.
@@ -22,17 +20,6 @@ import penalty, { replayKick, type KickInput, type PenaltyPuzzle } from "@/games
  */
 type G = Awaited<ReturnType<typeof guest>>;
 const D: Difficulty = "medium";
-
-let before: unknown = undefined;
-beforeAll(async () => {
-  const { data } = await admin().from("game_settings").select("value").eq("key", "features.labGames").maybeSingle();
-  before = data?.value;
-  await setSetting("features.labGames", ["five", "penalty"]);
-});
-afterAll(async () => {
-  if (before === undefined) await admin().from("game_settings").delete().eq("key", "features.labGames");
-  else await setSetting("features.labGames", before);
-});
 
 /** A free-play attempt, plus its solution rebuilt from the server-only seed (read with the service role). The puzzle
  * carries the served token as its `ref`; `raw` is the content reference behind it. */

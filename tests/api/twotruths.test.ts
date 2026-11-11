@@ -1,27 +1,14 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { admin, guest, uniq } from "./helpers";
-import { setSetting } from "./setup";
+import { describe, expect, it } from "vitest";
+import { guest, uniq } from "./helpers";
 import twotruths from "@/games/twotruths/logic";
 
 /**
  * R2-P5 part B: Two Truths and a Lie through the real API. The board gets the statements and an opaque token,
  * never which one is the lie; each round is opened and judged on the server, which sends the lie and what is true
- * instead only once the round is answered. The practice board is judged as practice. Behind "features.labGames".
- * Needs a server reading settings without a cache (development, or SETTINGS_CACHE_MS=0).
+ * instead only once the round is answered. The practice board is judged as practice. A live game since it graduated
+ * from the lab (11 Nov 2026), so no setting is needed.
  * Run: API_BASE=http://localhost:<port> pnpm vitest run -c vitest.api.config.mts tests/api/twotruths.test.ts
  */
-const KEY = "features.labGames";
-let before: unknown = undefined;
-beforeAll(async () => {
-  const { data } = await admin().from("game_settings").select("value").eq("key", KEY).maybeSingle();
-  before = data?.value;
-  await setSetting(KEY, ["twotruths"]);
-});
-afterAll(async () => {
-  if (before === undefined) await admin().from("game_settings").delete().eq("key", KEY);
-  else await setSetting(KEY, before);
-});
-
 type G = Awaited<ReturnType<typeof guest>>;
 const ask = (g: G, ref: unknown, body: unknown) => g.api("/api/games/twotruths/guess", { json: { ref, guess: body } });
 

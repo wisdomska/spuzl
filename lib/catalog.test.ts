@@ -41,6 +41,7 @@ import { siteCopy } from "./copy/site";
 import { copy } from "./copy";
 import { createRng } from "./rng";
 
+/** The 29 owner-picked games live since the 2026-11 cut (28, plus Quads back in R2-14). */
 const KEEP = [
   "crownfall",
   "dusk",
@@ -73,32 +74,59 @@ const KEEP = [
   "fourup",
 ];
 
-/** R2-P5 part B: new games, added after the eleven that came back (its dance game was removed in R3-14). */
-const NEW_LAB = ["twotruths"];
+/** The eleven R2-P5 brought back from retirement as lab games, then Two Truths and a Lie (R2-P5 part B). */
+const BACK = ["five", "hilo", "penalty", "market", "lightup", "killer", "dara", "pinned", "flagged", "tripwire", "pixl"];
+const GRADUATED = [...BACK, "twotruths"];
 
-describe("R2-P5 part B: new lab games", () => {
-  it("are lab only, in live worlds, with their own rule line", () => {
-    for (const id of NEW_LAB) {
-      expect(isLabGame(id), id).toBe(true);
-      expect(isLiveGame(id), id).toBe(false);
-      expect(isLiveWorld(GAME_BY_ID[id].world), id).toBe(true);
+describe("Graduate: the twelve lab games are live (11 Nov 2026)", () => {
+  it("makes all twelve live, none lab, none retired, each in its own world", () => {
+    for (const id of GRADUATED) {
+      expect(isLiveGame(id), id).toBe(true);
+      expect(isLabGame(id), id).toBe(false);
+      expect(isRetired(id), id).toBe(false);
+      expect(GAME_BY_ID[id].lab, id).toBeFalsy();
+      expect(
+        GAMES.map((g) => g.id),
+        id,
+      ).toContain(id);
     }
+    const world = Object.fromEntries(GRADUATED.map((id) => [id, GAME_BY_ID[id].world]));
+    expect(world).toEqual({
+      five: "word",
+      pinned: "word",
+      flagged: "word",
+      twotruths: "word",
+      hilo: "logic",
+      market: "logic",
+      lightup: "logic",
+      killer: "logic",
+      tripwire: "logic",
+      pixl: "logic",
+      penalty: "reflex",
+      dara: "board",
+    });
     expect(GAME_BY_ID.twotruths).toMatchObject({ world: "word", scoring: "score", content: "curated" });
+  });
+
+  it("leaves no game in testing", () => {
+    expect(LAB_GAMES).toEqual([]);
+    expect(ALL_GAMES.filter((g) => g.lab)).toEqual([]);
+    expect(GAME_COUNT).toBe(41);
   });
 });
 
 describe("catalog: retired games", () => {
-  it("keeps exactly the 29 owner-picked games live (28, plus Quads back in R2-14)", () => {
-    expect(GAMES.map((g) => g.id).sort()).toEqual([...KEEP].sort());
-    expect(GAME_COUNT).toBe(29);
+  it("keeps the 29 owner-picked games live, plus the twelve that graduated from the lab: 41", () => {
+    expect(GAMES.map((g) => g.id).sort()).toEqual([...KEEP, ...GRADUATED].sort());
+    expect(GAME_COUNT).toBe(41);
     expect(GAMES.every((g) => !g.retired && !g.lab)).toBe(true);
   });
 
   it("retires 21 of the others but keeps them in code (32, less the 11 lab games back in R2-P5)", () => {
     expect(RETIRED_IDS.size).toBe(21);
     expect(RETIRED_GAMES).toHaveLength(21);
-    // 61 before R2-P5 part B, plus its new lab games
-    expect(ALL_GAMES).toHaveLength(61 + NEW_LAB.length);
+    // 61 before R2-P5 part B, plus Two Truths and a Lie
+    expect(ALL_GAMES).toHaveLength(62);
     for (const id of RETIRED_IDS) {
       expect(GAME_BY_ID[id], id).toBeDefined();
       expect(GAME_BY_ID[id].retired, id).toBe(true);
@@ -138,10 +166,48 @@ describe("catalog: retired games", () => {
 
 describe("catalog: four groups", () => {
   const GROUPS: [WorldId, string, string[]][] = [
-    ["logic", "Puzzles", ["crownfall", "dusk", "sixer", "nine", "weave", "flowline", "pairup", "lost", "trotro"]],
-    ["word", "Words & Quiz", ["coil", "rungs", "quads", "seven", "minicross", "buried", "remix", "quickfire", "emojihits"]],
-    ["reflex", "Arcade", ["echo", "twins", "flinch", "beattap", "gotcha", "dash"]],
-    ["board", "Board Games", ["chess", "draughts", "oware", "ludo", "fourup"]],
+    [
+      "logic",
+      "Puzzles",
+      [
+        "crownfall",
+        "dusk",
+        "sixer",
+        "nine",
+        "killer",
+        "lightup",
+        "pixl",
+        "tripwire",
+        "weave",
+        "flowline",
+        "pairup",
+        "lost",
+        "trotro",
+        "market",
+        "hilo",
+      ],
+    ],
+    [
+      "word",
+      "Words & Quiz",
+      [
+        "coil",
+        "rungs",
+        "quads",
+        "seven",
+        "minicross",
+        "buried",
+        "remix",
+        "five",
+        "quickfire",
+        "emojihits",
+        "pinned",
+        "flagged",
+        "twotruths",
+      ],
+    ],
+    ["reflex", "Arcade", ["echo", "twins", "flinch", "beattap", "penalty", "gotcha", "dash"]],
+    ["board", "Board Games", ["chess", "draughts", "oware", "ludo", "fourup", "dara"]],
   ];
 
   it("shows exactly the 4 groups, in Home map order, with their games in order", () => {
@@ -200,61 +266,42 @@ describe("catalog: four groups", () => {
   });
 });
 
-describe("R2-P5: lab games behind features.labGames", () => {
-  const BACK = ["five", "hilo", "penalty", "market", "lightup", "killer", "dara", "pinned", "flagged", "tripwire", "pixl"];
+describe("R2-P5: the lab switch with no game in testing", () => {
   const none = { "features.labGames": [] as string[] };
-  const some = { "features.labGames": ["five", "dara"] };
+  // A setting stored before the graduation still names the twelve; it no longer changes anything.
+  const stale = { "features.labGames": GRADUATED };
 
-  it("brings the eleven back as lab games, in order, none retired, none live", () => {
-    expect(LAB_GAMES.map((g) => g.id)).toEqual([...BACK, ...NEW_LAB]);
-    // R3-14: twelve lab games (the R2-P5 part B dance game is gone).
-    expect(LAB_GAMES).toHaveLength(12);
-    for (const id of BACK) {
-      expect(isRetired(id), id).toBe(false);
-      expect(isLabGame(id), id).toBe(true);
-      expect(isLiveGame(id), id).toBe(false);
-      expect(playableGame(id)?.id, id).toBe(id);
+  it("opens the graduated games whatever the setting, and never a retired or unknown id", () => {
+    for (const s of [none, stale]) {
+      for (const id of GRADUATED) expect(openGame(id, s)?.id, id).toBe(id);
+      for (const id of GRADUATED) expect(isLabOn(id, s), id).toBe(false);
     }
-    expect(ALL_GAMES).toHaveLength(GAMES.length + LAB_GAMES.length + RETIRED_GAMES.length);
-  });
-
-  it("puts every lab game in a live group, so a switched-on game shows on a world", () => {
-    for (const g of LAB_GAMES) expect(isLiveWorld(g.world), g.id).toBe(true);
-    expect(["hilo", "market", "killer"].map((id) => GAME_BY_ID[id].world)).toEqual(["logic", "logic", "logic"]);
-    expect(["pinned", "flagged"].map((id) => GAME_BY_ID[id].world)).toEqual(["word", "word"]);
-  });
-
-  it("opens a lab game only while the setting has its id", () => {
-    expect(openGame("five", none)).toBeUndefined();
-    expect(openGame("five", some)?.id).toBe("five");
-    expect(openGame("hilo", some)).toBeUndefined();
-    expect(isLabOn("five", some)).toBe(true);
-    expect(isLabOn("hilo", some)).toBe(false);
-    // Live games are open whatever the setting; retired and unknown ids never, even when listed.
     expect(openGame("crownfall", none)?.id).toBe("crownfall");
     expect(openGame("blackout", { "features.labGames": ["blackout"] })).toBeUndefined();
     expect(openGame("nope", { "features.labGames": ["nope"] })).toBeUndefined();
     expect(isLabOn("crownfall", { "features.labGames": ["crownfall"] })).toBe(false);
   });
 
-  it("adds only switched-on lab games to the player lists", () => {
-    expect(playerGames(none)).toEqual(GAMES);
-    expect(openLabGames(none)).toEqual([]);
-    expect(playerGames(some).map((g) => g.id)).toEqual([...GAMES.map((g) => g.id), "five", "dara"]);
-    expect(labGamesInWorld("board", some).map((g) => g.id)).toEqual(["dara"]);
-    expect(labGamesInWorld("logic", some)).toEqual([]);
-    // Counts and the live world list never include lab games.
-    expect(GAME_COUNT).toBe(29);
+  it("adds nothing to the player lists, so they are exactly the live games", () => {
+    for (const s of [none, stale]) {
+      expect(playerGames(s)).toEqual(GAMES);
+      expect(openLabGames(s)).toEqual([]);
+      for (const w of WORLDS) expect(labGamesInWorld(w.id, s), w.id).toEqual([]);
+    }
     expect(WORLD_COUNT).toBe(4);
   });
 
-  it("keeps lab games out of Duel and Party (live races only), the classroom list and the launch Dailies", () => {
-    for (const id of BACK) {
+  it("races the graduated time games in Duels and Parties, never Dara (a board game) nor the score games", () => {
+    for (const id of ["five", "market", "lightup", "killer", "tripwire", "pixl"]) {
+      expect(isRaceGame(id), id).toBe(true);
+      expect(PARTY_GAME_IDS, id).toContain(id);
+    }
+    for (const id of ["dara", "hilo", "penalty", "pinned", "flagged", "twotruths"]) {
       expect(isRaceGame(id), id).toBe(false);
       expect(PARTY_GAME_IDS, id).not.toContain(id);
-      expect(LAUNCH_IDS, id).not.toContain(id);
     }
-    expect(pickGames(createRng("lab"), "five", 3, BACK).every((id) => !BACK.includes(id))).toBe(true);
+    // None is a launch (phase L) game, so "Today x of N" keeps its launch Dailies.
+    for (const id of GRADUATED) expect(LAUNCH_IDS, id).not.toContain(id);
   });
 });
 
