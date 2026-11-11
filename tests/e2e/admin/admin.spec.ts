@@ -128,14 +128,14 @@ test("moderation: clear a flagged score and rename a reported nickname", async (
 
   await signedIn(page, "moderator");
   await page.getByRole("link", { name: "Reports" }).click();
-  await page.getByRole("tab", { name: "Anti-cheat" }).click();
+  await page.getByRole("tab", { name: "Suspicious scores" }).click();
   await page
     .getByRole("button", { name: /Dusk 0:01/ })
     .first()
     .click();
   await expect(page.getByText("below human floor").first()).toBeVisible();
-  await page.getByRole("button", { name: "Clear to boards" }).click();
-  await expect(page.getByText(/cleared to the boards/)).toBeVisible();
+  await page.getByRole("button", { name: "Let it count" }).click();
+  await expect(page.getByText(/now counts on the leaderboards/)).toBeVisible();
   expect((await db.from("attempts").select("status").eq("id", a!.id).single()).data!.status).toBe("cleared");
 
   await page.getByRole("tab", { name: "Nicknames" }).click();

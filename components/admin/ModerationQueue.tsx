@@ -1,7 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type ReactNode } from "react";
-import { age, clock } from "@/lib/admin/dates";
+import { Icon } from "@/components/ui/Icon";
+import { clock } from "@/lib/admin/dates";
+import { daysSince, duration, exactTime, timeAgo } from "@/lib/admin/people-format";
 import { MODERATION_SORT } from "@/lib/admin/sorting";
 import { errorText, useAdminAction, useAdminQuery, type AdminPage } from "@/lib/client/admin";
 import { adminCopy } from "@/lib/copy/admin";
@@ -9,7 +12,8 @@ import { PEN_COLORS, PEN_WIDTHS, strokePath, type Stroke } from "@/lib/party-adu
 import { Pagination, usePager } from "./Pagination";
 import { SortHead, type HeadCol } from "./SortHeader";
 import { useUrlFilters, useUrlSort } from "./useUrlFilters";
-import { Btn, Empty, Notice, PageTitle, Pill, RowsSkeleton, Tabs, type PillTone } from "./ui";
+import { Fact, PageHead, TechDetails, TechRow, When } from "./people-ui";
+import { Btn, Empty, Notice, Pill, RowsSkeleton, Tabs, type PillTone } from "./ui";
 
 type Tab = "reports" | "nicknames" | "party" | "flagged";
 interface Row {
@@ -46,15 +50,19 @@ type SortKey = (typeof MODERATION_SORT.keys)[number];
 /** Flagged scores all share a kind and status, so only their age sorts. */
 const cols = (flagged: boolean): HeadCol<SortKey>[] => [
   { label: C.head[0] },
-  { label: C.head[1] },
-  { label: C.head[2], sort: flagged ? undefined : "kind" },
-  { label: C.head[3], sort: flagged ? undefined : "status" },
-  { label: C.head[4], sort: "created_at" },
+  { label: C.head[1], sort: flagged ? undefined : "kind" },
+  { label: C.head[2], sort: flagged ? undefined : "status" },
+  { label: C.head[3], sort: "created_at" },
 ];
 
 const STATUS_TONE: Record<string, PillTone> = { open: "danger", flagged: "danger", actioned: "ok", dismissed: "neutral" };
+const selectCls = "bg-bg text-text h-11 rounded-[10px] px-2 text-[14px] font-semibold shadow-[inset_0_0_0_1px_var(--line)]";
 
-/** Moderation queue (design: Admin moderation): reports, nickname reports and flagged scores, with a case panel. */
+/**
+ * Reports (was Moderation; design: Admin moderation): player reports, nickname reports, party rounds and suspicious
+ * scores, each with a case panel that says what happened and what every button does to the player. Actions that
+ * take something away from a player ask once more in plain words before they run.
+ */
 export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
   const [filters, setFilters] = useUrlFilters(FILTERS, ALLOWED);
   const tab = filters.tab as Tab;
@@ -72,7 +80,7 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
     { keepPrevious: true },
   );
   const selected = q.data?.rows.find((r) => r.id === sel) ?? q.data?.rows[0] ?? null;
-  // Open on the first tab with something waiting (the header count adds up all three tabs), once per visit.
+  // Open on the first tab with something waiting (the header count adds up all four tabs), once per visit.
   // Adjusted during render (React's pattern for state derived from the first response), not in an effect.
   const [picked, setPicked] = useState(false);
   const counts = q.data?.counts;
@@ -87,73 +95,60 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
 
   return (
     <div className="grid min-h-dvh grid-cols-1 xl:grid-cols-[1fr_440px]">
-      <div className="flex min-w-0 flex-col gap-3 px-6 py-5">
-        <PageTitle
+      <div className="flex min-w-0 flex-col gap-4 px-4 py-5 sm:px-6">
+        <PageHead
           title={C.title}
-          aside={
+          purpose={C.purpose}
+          meta={q.data && <Pill tone={q.data.open ? "danger" : "ok"}>{C.open(q.data.open)}</Pill>}
+        />
+        <div className="flex flex-col gap-2">
+          <div className="overflow-x-auto">
             <Tabs<Tab>
               label={C.queue}
               value={tab}
               onChange={(t) => (setFilters({ tab: t }), setSel(null), setDone(null))}
               items={TABS.map((id) => ({ id, label: C.tabs[id], count: q.data?.counts[id] }))}
             />
-          }
-        >
-          {q.data && <Pill tone={q.data.open ? "danger" : "ok"}>{C.open(q.data.open)}</Pill>}
-        </PageTitle>
-        {tab === "flagged" && (
-          <div className="flex flex-wrap items-center gap-3">
+          </div>
+          <p className="text-muted text-[13px]">{C.tabHelp[tab]}</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          {tab === "flagged" ? (
             <label className="text-muted flex items-center gap-2 text-[13px] font-semibold">
               {C.source}
-              <select
-                value={filters.source}
-                onChange={(e) => (setFilters({ source: e.target.value }), setSel(null))}
-                style={{ fontSize: 13 }}
-                className="bg-surface text-text h-11 rounded-[10px] px-2 font-semibold"
-              >
+              <select value={filters.source} onChange={(e) => (setFilters({ source: e.target.value }), setSel(null))} className={selectCls}>
                 <option value="">{C.sources.all}</option>
                 <option value="five">{C.sources.five}</option>
               </select>
             </label>
-          </div>
-        )}
-        {tab !== "flagged" && (
-          <div className="flex flex-wrap items-center gap-3">
-            <label className="text-muted flex items-center gap-2 text-[13px] font-semibold">
-              {C.showing}
-              <select
-                value={status}
-                onChange={(e) => (setFilters({ status: e.target.value }), setSel(null))}
-                style={{ fontSize: 13 }}
-                className="bg-surface text-text h-11 rounded-[10px] px-2 font-semibold"
-              >
-                {(["open", "actioned", "dismissed", "all"] as const).map((s) => (
-                  <option key={s} value={s}>
-                    {C.statuses[s]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {tab === "reports" && (
+          ) : (
+            <>
               <label className="text-muted flex items-center gap-2 text-[13px] font-semibold">
-                {C.kind}
-                <select
-                  value={kind}
-                  onChange={(e) => (setFilters({ kind: e.target.value }), setSel(null))}
-                  style={{ fontSize: 13 }}
-                  className="bg-surface text-text h-11 rounded-[10px] px-2 font-semibold"
-                >
-                  <option value="">{C.anyKind}</option>
-                  {KINDS.map((k) => (
-                    <option key={k} value={k}>
-                      {C.kinds[k]}
+                {C.showing}
+                <select value={status} onChange={(e) => (setFilters({ status: e.target.value }), setSel(null))} className={selectCls}>
+                  {(["open", "actioned", "dismissed", "all"] as const).map((s) => (
+                    <option key={s} value={s}>
+                      {C.statuses[s]}
                     </option>
                   ))}
                 </select>
               </label>
-            )}
-          </div>
-        )}
+              {tab === "reports" && (
+                <label className="text-muted flex items-center gap-2 text-[13px] font-semibold">
+                  {C.kind}
+                  <select value={kind} onChange={(e) => (setFilters({ kind: e.target.value }), setSel(null))} className={selectCls}>
+                    <option value="">{C.anyKind}</option>
+                    {KINDS.map((k) => (
+                      <option key={k} value={k}>
+                        {C.kinds[k]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+            </>
+          )}
+        </div>
         <div aria-live="polite" className="empty:hidden">
           {done && (
             <Notice tone="ok" icon="check-circle">
@@ -161,7 +156,7 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
             </Notice>
           )}
         </div>
-        <div className="bg-surface overflow-x-auto rounded-[12px]">
+        <div className="bg-surface max-h-[70dvh] overflow-auto rounded-[16px]">
           {q.isPending ? (
             <RowsSkeleton />
           ) : q.error ? (
@@ -171,15 +166,20 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
               </Notice>
             </div>
           ) : !q.data.rows.length ? (
-            <Empty>{q.data.open > 0 && status === "open" ? C.emptyOthers(q.data.open) : C.empty}</Empty>
+            <Empty icon="shield-check">
+              {q.data.open > 0 && status === "open"
+                ? C.emptyOthers(q.data.open)
+                : status === "open" || tab === "flagged"
+                  ? C.empty
+                  : C.emptyClosed}
+            </Empty>
           ) : (
-            <table className="w-full min-w-[620px] table-fixed border-collapse">
+            <table className="w-full min-w-[560px] table-fixed border-collapse [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-[1] [&_thead_th]:bg-[var(--surface-raised)]">
               <colgroup>
-                <col className="w-[90px]" />
                 <col />
-                <col className="w-[140px]" />
-                <col className="w-[120px]" />
-                <col className="w-[100px]" />
+                <col className="w-[150px]" />
+                <col className="w-[130px]" />
+                <col className="w-[130px]" />
               </colgroup>
               <SortHead cols={cols(tab === "flagged")} sort={sort} />
               <tbody>
@@ -191,17 +191,23 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
                       className={`border-line cursor-pointer border-t ${on ? "bg-[var(--success-tint)]" : "hover:bg-surface-raised/50"}`}
                       onClick={() => setSel(r.id)}
                     >
-                      <td className="num text-muted px-3 py-2.5 align-top text-[13px] font-semibold">{r.ref}</td>
-                      <td className="px-3 py-2.5 align-top text-[14px] font-medium">
-                        <button type="button" aria-pressed={on} onClick={() => setSel(r.id)} className="text-left hover:underline">
+                      <td className="px-3 py-2 align-middle text-[14px] font-medium">
+                        <button
+                          type="button"
+                          aria-pressed={on}
+                          onClick={() => setSel(r.id)}
+                          className="flex min-h-11 w-full items-center text-left hover:underline"
+                        >
                           {r.title}
                         </button>
                       </td>
-                      <td className="text-muted px-3 py-2.5 align-top text-[13px] font-medium">{r.kind}</td>
-                      <td className="px-3 py-2.5 align-top">
-                        <Pill tone={STATUS_TONE[r.status] ?? "warn"}>{r.status}</Pill>
+                      <td className="text-muted px-3 py-2 align-middle text-[13px] font-medium">{C.kindLabels[r.kind] ?? r.kind}</td>
+                      <td className="px-3 py-2 align-middle">
+                        <Pill tone={STATUS_TONE[r.status] ?? "warn"}>{C.statusPill[r.status] ?? r.status}</Pill>
                       </td>
-                      <td className="num text-muted px-3 py-2.5 align-top text-[13px]">{age(r.created_at)}</td>
+                      <td className="text-muted px-3 py-2 align-middle text-[13px]">
+                        <When iso={r.created_at} />
+                      </td>
                     </tr>
                   );
                 })}
@@ -213,7 +219,7 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
       </div>
       <aside
         aria-label={C.caseLabel}
-        className="bg-surface border-line flex min-h-[400px] flex-col gap-3 border-t p-5 xl:border-t-0 xl:border-l"
+        className="bg-surface border-line flex min-h-[400px] flex-col gap-3 border-t p-4 sm:p-5 xl:sticky xl:top-0 xl:max-h-dvh xl:overflow-y-auto xl:border-t-0 xl:border-l"
       >
         {!selected ? (
           <Empty icon="shield-check">{C.pickCase}</Empty>
@@ -227,21 +233,59 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
   );
 }
 
-function Stat({ value, label, tone }: { value: ReactNode; label: string; tone?: "danger" | "gold" }) {
+const accountAge = (iso: string) => {
+  const d = daysSince(iso);
+  return { text: K.accountAge(d), young: d < 7 };
+};
+
+function PlayerLink({ id }: { id: string }) {
   return (
-    <div className="bg-bg flex flex-col gap-0.5 rounded-[10px] p-2.5">
-      <span className={`num text-[18px] font-semibold ${tone === "danger" ? "text-danger" : tone === "gold" ? "text-gold" : ""}`}>
-        {value}
-      </span>
-      <span className="text-muted text-[12px] font-medium">{label}</span>
+    <Link
+      href={`/admin/players/${id}`}
+      className="text-accent inline-flex min-h-11 items-center gap-1 self-start text-[13px] font-semibold hover:underline"
+    >
+      {C.openPlayer}
+      <Icon name="arrow-right" size={14} />
+    </Link>
+  );
+}
+
+/** One more plain-words check before a button takes something away from a player. */
+interface Ask {
+  label: string;
+  help: string;
+  run: () => void;
+}
+function AskBox({ ask, busy, onCancel }: { ask: Ask; busy: boolean; onCancel: () => void }) {
+  return (
+    <div
+      role="group"
+      aria-label={K.sure(ask.label)}
+      className="flex flex-col gap-2 rounded-[12px] bg-[var(--danger-tint)] p-3 shadow-[inset_0_0_0_1px_var(--danger)]"
+    >
+      <p className="text-[14px] font-semibold">{K.sure(ask.label)}</p>
+      <p className="text-[13px]">{ask.help}</p>
+      <div className="grid grid-cols-2 gap-2">
+        <Btn size="lg" onClick={onCancel} disabled={busy}>
+          {K.cancel}
+        </Btn>
+        <Btn size="lg" tone="danger" disabled={busy} onClick={ask.run}>
+          {K.yes(ask.label)}
+        </Btn>
+      </div>
     </div>
   );
 }
 
-const accountAge = (iso: string) => {
-  const d = Math.floor((Date.now() - Date.parse(iso)) / 86_400_000);
-  return { text: K.accountAge(d), young: d < 7 };
-};
+/** A labelled button with the one-line consequence under it. */
+function Choice({ help, children }: { help: string; children: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1">
+      {children}
+      <span className="text-muted text-[12px] leading-snug">{help}</span>
+    </div>
+  );
+}
 
 function FlaggedCase({ id, canWrite, onDone }: { id: string; canWrite: boolean; onDone: (msg: string) => void }) {
   const q = useAdminQuery<{
@@ -265,94 +309,124 @@ function FlaggedCase({ id, canWrite, onDone }: { id: string; canWrite: boolean; 
     "POST",
     `/api/admin/moderation/flagged/${id}`,
   );
+  const [ask, setAsk] = useState<Ask | null>(null);
   if (q.isPending) return <RowsSkeleton rows={5} height={56} />;
-  if (q.error) return <Notice tone="danger">{errorText(q.error)}</Notice>;
+  if (q.error)
+    return (
+      <Notice tone="danger" icon="warning">
+        {errorText(q.error)}
+      </Notice>
+    );
   const { attempt: a, player, gaps } = q.data;
+  const who = player?.nickname ?? K.player;
   const acc = player ? accountAge(player.created_at) : null;
   const max = Math.max(1, ...gaps);
   const median = gaps.length ? [...gaps].sort((x, y) => x - y)[Math.floor(gaps.length / 2)] : null;
+  const decide = (body: Parameters<typeof act.mutateAsync>[0], msg: string) =>
+    void act.mutateAsync(body).then(
+      () => (setAsk(null), onDone(msg)),
+      () => setAsk(null),
+    );
   return (
     <>
-      <h2 className="font-display text-[16px] font-extrabold">
-        {a.ref} · {player?.nickname ?? K.player}
-      </h2>
+      <h2 className="font-display text-[18px] font-extrabold">{K.flaggedTitle(who, q.data.game.name)}</h2>
+      {player && <PlayerLink id={player.id} />}
       <div className="grid grid-cols-2 gap-2">
-        <Stat value={clock(a.time_ms)} label={K.claimedTime} tone="danger" />
-        <Stat value={q.data.bestMs ? clock(q.data.bestMs) : K.none} label={a.daily_date ? K.fastestThatDay : K.fastest} />
-        <Stat value={acc?.text ?? K.unknown} label={K.accountAgeLabel} tone={acc?.young ? "gold" : undefined} />
-        <Stat value={player?.reports ?? 0} label={K.reports} />
+        <Fact label={K.claimedTime} value={<span className="num">{duration(a.time_ms)}</span>} tone="danger" />
+        <Fact
+          label={a.daily_date ? K.fastestThatDay : K.fastest}
+          value={<span className="num">{q.data.bestMs ? duration(q.data.bestMs) : K.none}</span>}
+        />
+        <Fact
+          label={K.accountAgeLabel}
+          value={acc?.text ?? K.unknown}
+          hint={acc?.young ? K.newAccount : undefined}
+          tone={acc?.young ? "warn" : undefined}
+        />
+        <Fact label={K.reports} value={<span className="num">{player?.reports ?? 0}</span>} />
       </div>
-      <div className="bg-bg flex flex-col gap-1.5 rounded-[10px] p-3">
-        <span className="num text-muted text-[12px] font-semibold">{K.trace(q.data.game.name, a.dailyNumber, a.mode)}</span>
+      <div className="bg-bg flex flex-col gap-1.5 rounded-[12px] p-3">
+        <span className="text-[13px] font-semibold">{K.trace(q.data.game.name, a.dailyNumber, a.mode)}</span>
         {gaps.length ? (
-          <div className="flex h-[60px] items-end gap-0.5" role="img" aria-label={K.traceAria(gaps.length, median)}>
-            {gaps.slice(-40).map((g, i) => (
-              <span
-                key={i}
-                className="flex-1 rounded-[2px]"
-                style={{ height: `${Math.max(8, (g / max) * 100)}%`, background: g < 250 ? "var(--danger)" : "var(--admin-bar)" }}
-              />
-            ))}
-          </div>
+          <>
+            <div className="flex h-[60px] items-end gap-0.5" role="img" aria-label={K.traceAria(gaps.length)}>
+              {gaps.slice(-40).map((g, i) => (
+                <span
+                  key={i}
+                  className="flex-1 rounded-[2px]"
+                  style={{ height: `${Math.max(8, (g / max) * 100)}%`, background: g < 250 ? "var(--danger)" : "var(--admin-bar)" }}
+                />
+              ))}
+            </div>
+            <span className="text-muted text-[12px]">{K.traceHelp}</span>
+          </>
         ) : (
           <span className="text-muted text-[13px]">{K.noTrace}</span>
         )}
-        <span className="text-danger text-[12px] font-medium">
-          {K.flagLine(
-            a.flag_reason,
-            median,
-            q.data.game.minTimeMs ? clock(q.data.game.minTimeMs) : null,
-            q.data.wallMs !== null ? clock(q.data.wallMs) : null,
-          )}
-        </span>
       </div>
-      {act.error && <Notice tone="danger">{errorText(act.error)}</Notice>}
+      <p className="text-[14px]">
+        {K.why(a.flag_reason)} {q.data.game.minTimeMs ? K.floor(duration(q.data.game.minTimeMs)) : ""}
+      </p>
+      <TechDetails>
+        <TechRow k={K.techRef} v={a.ref} />
+        <TechRow k={K.techReason} v={a.flag_reason ?? "–"} />
+        <TechRow k={K.claimedTime} v={`${clock(a.time_ms)} (${a.time_ms} ms)`} />
+        {median !== null && <TechRow k={K.techMedian} v={`${median} ms`} />}
+        {q.data.wallMs !== null && <TechRow k={K.techWall} v={clock(q.data.wallMs)} />}
+      </TechDetails>
+      {act.error && (
+        <Notice tone="danger" icon="warning">
+          {errorText(act.error)}
+        </Notice>
+      )}
       {act.isSuccess && (
         <Notice tone="ok" icon="check-circle">
           {K.resolved}
         </Notice>
       )}
       {canWrite && !act.isSuccess && (
-        <div className="mt-auto flex flex-col gap-2">
-          <Btn
-            size="lg"
-            tone="danger"
-            disabled={act.isPending}
-            onClick={() =>
-              void act.mutateAsync({ decision: "reject", note: K.voidBan, ban: { days: 7 } }).then(
-                () => onDone(K.doneVoidBan(a.ref)),
-                () => undefined,
-              )
-            }
-          >
-            {K.voidBan}
-          </Btn>
-          <div className="grid grid-cols-2 gap-2">
-            <Btn
-              size="lg"
-              disabled={act.isPending}
-              onClick={() =>
-                void act.mutateAsync({ decision: "clear", note: K.clearedNote }).then(
-                  () => onDone(K.doneCleared(a.ref)),
-                  () => undefined,
-                )
-              }
-            >
-              {K.clear}
-            </Btn>
-            <Btn
-              size="lg"
-              disabled={act.isPending}
-              onClick={() =>
-                void act.mutateAsync({ decision: "reject", note: K.rejectedNote }).then(
-                  () => onDone(K.doneRejected(a.ref)),
-                  () => undefined,
-                )
-              }
-            >
-              {K.reject}
-            </Btn>
-          </div>
+        <div className="mt-auto flex flex-col gap-3">
+          {ask ? (
+            <AskBox ask={ask} busy={act.isPending} onCancel={() => setAsk(null)} />
+          ) : (
+            <>
+              <Choice help={K.clearHelp}>
+                <Btn
+                  size="lg"
+                  tone="primary"
+                  disabled={act.isPending}
+                  onClick={() => decide({ decision: "clear", note: K.clearedNote }, K.doneCleared(who))}
+                >
+                  {K.clear}
+                </Btn>
+              </Choice>
+              <Choice help={K.rejectHelp}>
+                <Btn
+                  size="lg"
+                  disabled={act.isPending}
+                  onClick={() => decide({ decision: "reject", note: K.rejectedNote }, K.doneRejected(who))}
+                >
+                  {K.reject}
+                </Btn>
+              </Choice>
+              <Choice help={K.voidBanHelp}>
+                <Btn
+                  size="lg"
+                  tone="danger"
+                  disabled={act.isPending}
+                  onClick={() =>
+                    setAsk({
+                      label: K.voidBan,
+                      help: K.voidBanHelp,
+                      run: () => decide({ decision: "reject", note: K.voidBan, ban: { days: 7 } }, K.doneVoidBan(who)),
+                    })
+                  }
+                >
+                  {K.voidBan}
+                </Btn>
+              </Choice>
+            </>
+          )}
         </div>
       )}
     </>
@@ -395,132 +469,210 @@ function ReportCase({
     { nickname: string | null }
   >("POST", (i) => `/api/admin/players/${i.pid}`);
   const [rename, setRename] = useState("");
+  const [ask, setAsk] = useState<Ask | null>(null);
   if (q.isPending) return <RowsSkeleton rows={5} height={56} />;
-  if (q.error) return <Notice tone="danger">{errorText(q.error)}</Notice>;
+  if (q.error)
+    return (
+      <Notice tone="danger" icon="warning">
+        {errorText(q.error)}
+      </Notice>
+    );
   const { report: r, target: t } = q.data;
   const acc = t ? accountAge(t.created_at) : null;
+  const who = t?.nickname ?? adminCopy.players.reportTargets[r.target_type] ?? r.target_type;
+  const reason = adminCopy.players.reportReasons[r.reason] ?? r.reason;
   const run = async (
     action: string,
     extra: { days?: number | null; reason?: string; nickname?: string } = {},
     close: "actioned" | null = "actioned",
   ) => {
     if (!t) return;
-    const r = await player.mutateAsync({ pid: t.id, action, ...extra });
-    if (close) await decide.mutateAsync({ decision: close, note: action });
-    onDone(r.nickname ? K.doneRenamed(q.data!.report.ref, r.nickname) : K.doneAction(q.data!.report.ref, action));
+    try {
+      const res = await player.mutateAsync({ pid: t.id, action, ...extra });
+      if (close) await decide.mutateAsync({ decision: close, note: action });
+      onDone(res.nickname ? K.doneRenamed(t.nickname, res.nickname) : K.doneAction(t.nickname, K.doneActions[action] ?? action));
+    } catch {
+      // the error shows in the panel (player.error / decide.error)
+    } finally {
+      setAsk(null);
+    }
   };
+  const confirmFirst = (label: string, help: string, go: () => void) => setAsk({ label, help, run: go });
   const err = decide.error ?? player.error;
+  const busy = player.isPending || decide.isPending;
+  const resolution = r.resolution ? (K.resolutionWords[r.resolution] ?? r.resolution) : null;
   return (
     <>
-      <h2 className="font-display text-[16px] font-extrabold">
-        {r.ref} · {t?.nickname ?? r.target_type}
-      </h2>
+      <h2 className="font-display text-[18px] font-extrabold">{K.reportTitle(who)}</h2>
+      {t && <PlayerLink id={t.id} />}
       <div className="grid grid-cols-2 gap-2">
-        <Stat value={r.reason} label={K.reason} tone="danger" />
-        <Stat value={t ? t.reports : q.data.related.length + 1} label={K.reportsOnTarget} />
-        <Stat value={acc?.text ?? K.notApplicable} label={K.accountAgeLabel} tone={acc?.young ? "gold" : undefined} />
-        <Stat value={t ? t.flagged : 0} label={K.flaggedScores} />
+        <Fact label={K.reason} value={reason} tone="danger" />
+        <Fact label={K.reportsOnTarget} value={<span className="num">{t ? t.reports : q.data.related.length + 1}</span>} />
+        <Fact
+          label={K.accountAgeLabel}
+          value={acc?.text ?? K.notApplicable}
+          hint={acc?.young ? K.newAccount : undefined}
+          tone={acc?.young ? "warn" : undefined}
+        />
+        <Fact label={K.flaggedScores} value={<span className="num">{t ? t.flagged : 0}</span>} />
       </div>
-      <div className="bg-bg flex flex-col gap-1 rounded-[10px] p-3 text-[13px]">
-        <span className="num text-muted text-[12px] font-semibold">{C.caseLabel}</span>
+      <div className="bg-bg flex flex-col gap-1 rounded-[12px] p-3 text-[14px]">
         <span>
-          {K.reportedBy(q.data.reporter?.nickname ?? K.aPlayer, age(r.created_at))} <b>{r.status}</b>
-          {K.resolution(r.resolution)}
+          <span title={exactTime(r.created_at)}>{K.reportedBy(q.data.reporter?.nickname ?? K.aPlayer, timeAgo(r.created_at))}</span>{" "}
+          <b>{K.statusNow(C.statusPill[r.status] ?? r.status)}</b>
+          {K.resolution(resolution)}
         </span>
         {t?.banned_at && <span className="text-danger font-semibold">{K.banned(t.banned_until ? t.banned_until.slice(0, 10) : null)}</span>}
         {t?.ranking_revoked && <span className="text-gold font-semibold">{K.rankingRevoked}</span>}
-        {q.data.related.length > 0 && <span className="text-muted">{K.also(q.data.related.map((x) => `${x.ref} ${x.reason}`))}</span>}
+        {q.data.related.length > 0 && (
+          <span className="text-muted text-[13px]">
+            {K.also(
+              q.data.related.map(
+                (x) => `${adminCopy.players.reportReasons[x.reason] ?? x.reason} (${(C.statusPill[x.status] ?? x.status).toLowerCase()})`,
+              ),
+            )}
+          </span>
+        )}
       </div>
       {r.target_type === "party" && r.snapshot && <PartySnapshotView s={r.snapshot} />}
       {r.target_type === "party" && q.data.blockDays !== null && r.status === "open" && (
-        <span className="text-muted text-[12px] font-medium">{C.party.blockNote(q.data.blockDays)}</span>
+        <span className="text-muted text-[13px] font-medium">{C.party.blockNote(q.data.blockDays)}</span>
       )}
-      {decide.data?.blockLifted ? (
-        <Notice tone="ok" icon="check-circle">
-          {decide.data.blockedUntil ? C.party.stillBlocked(decide.data.blockedUntil.slice(0, 10)) : C.party.unblocked}
-        </Notice>
-      ) : (
-        decide.data?.blockedUntil && (
+      <TechDetails>
+        <TechRow k={K.techRef} v={r.ref} />
+        <TechRow k="target" v={`${r.target_type}:${r.target_id}`} />
+        <TechRow k="status" v={r.status} />
+        {r.resolution && <TechRow k="resolution" v={r.resolution} />}
+        {q.data.related.length > 0 && <TechRow k="related" v={q.data.related.map((x) => x.ref).join(", ")} />}
+      </TechDetails>
+      <div aria-live="polite" className="flex flex-col gap-2 empty:hidden">
+        {decide.data?.blockLifted ? (
           <Notice tone="ok" icon="check-circle">
-            {C.party.blocked(decide.data.blockedUntil.slice(0, 10))}
+            {decide.data.blockedUntil ? C.party.stillBlocked(decide.data.blockedUntil.slice(0, 10)) : C.party.unblocked}
           </Notice>
-        )
-      )}
-      {err && <Notice tone="danger">{errorText(err)}</Notice>}
-      {player.data?.nickname && (
-        <Notice tone="ok" icon="check-circle">
-          {K.renamed(player.data.nickname)}
-        </Notice>
-      )}
-      {canWrite && t && nickname && (
-        <form
-          className="flex gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void run("rename", { nickname: rename || undefined });
-          }}
-        >
-          <label htmlFor="rename" className="sr-only">
-            {K.newNickname}
-          </label>
-          <input
-            id="rename"
-            value={rename}
-            onChange={(e) => setRename(e.target.value)}
-            placeholder={K.newNicknamePlaceholder}
-            className="bg-bg h-11 min-w-0 flex-1 rounded-[12px] px-3 text-[14px] shadow-[inset_0_0_0_1px_var(--line)]"
-          />
-          <Btn type="submit" size="lg" disabled={player.isPending}>
-            {K.rename}
-          </Btn>
-        </form>
-      )}
+        ) : (
+          decide.data?.blockedUntil && (
+            <Notice tone="ok" icon="check-circle">
+              {C.party.blocked(decide.data.blockedUntil.slice(0, 10))}
+            </Notice>
+          )
+        )}
+        {err && (
+          <Notice tone="danger" icon="warning">
+            {errorText(err)}
+          </Notice>
+        )}
+        {player.data?.nickname && (
+          <Notice tone="ok" icon="check-circle">
+            {K.renamed(player.data.nickname)}
+          </Notice>
+        )}
+      </div>
       {canWrite && (
-        <div className="mt-auto flex flex-col gap-2">
-          {t && (
-            <Btn
-              size="lg"
-              tone="danger"
-              disabled={player.isPending}
-              onClick={() => run(nickname ? "ban" : "ban_void", { days: 7, reason: K.banReason(r.ref, r.reason) })}
-            >
-              {nickname ? K.ban7 : K.voidBan}
-            </Btn>
+        <div className="mt-auto flex flex-col gap-4">
+          {ask ? (
+            <AskBox ask={ask} busy={busy} onCancel={() => setAsk(null)} />
+          ) : (
+            <>
+              {t && (
+                <div role="group" aria-labelledby="rc-act" className="flex flex-col gap-2">
+                  <h3 id="rc-act" className="text-muted text-[12px] font-semibold">
+                    {K.actOnPlayer}
+                  </h3>
+                  {nickname && (
+                    <form
+                      className="flex flex-col gap-1"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        void run("rename", { nickname: rename || undefined });
+                      }}
+                    >
+                      <label htmlFor="rename" className="text-muted text-[12px] font-semibold">
+                        {K.newNickname}
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          id="rename"
+                          value={rename}
+                          onChange={(e) => setRename(e.target.value)}
+                          placeholder={K.newNicknamePlaceholder}
+                          className="bg-bg h-11 min-w-0 flex-1 rounded-[12px] px-3 text-[14px] shadow-[inset_0_0_0_1px_var(--line)]"
+                        />
+                        <Btn type="submit" size="lg" disabled={busy}>
+                          {K.rename}
+                        </Btn>
+                      </div>
+                      <span className="text-muted text-[12px]">{K.renameHelp}</span>
+                    </form>
+                  )}
+                  <Choice help={nickname ? K.ban7Help : K.voidBanHelp}>
+                    <Btn
+                      size="lg"
+                      tone="danger"
+                      disabled={busy}
+                      onClick={() =>
+                        confirmFirst(
+                          nickname ? K.ban7 : K.voidBan,
+                          nickname ? K.ban7Help : K.voidBanHelp,
+                          () => void run(nickname ? "ban" : "ban_void", { days: 7, reason: K.banReason(r.ref, r.reason) }),
+                        )
+                      }
+                    >
+                      {nickname ? K.ban7 : K.voidBan}
+                    </Btn>
+                  </Choice>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                    <Btn
+                      disabled={busy}
+                      title={t.ranking_revoked ? undefined : K.revokeHelp}
+                      onClick={() =>
+                        t.ranking_revoked
+                          ? void run("restore_ranking", {}, null)
+                          : confirmFirst(K.revokeRanking, K.revokeHelp, () => void run("revoke_ranking", {}, null))
+                      }
+                    >
+                      {t.ranking_revoked ? K.restoreRanking : K.revokeRanking}
+                    </Btn>
+                    <Btn
+                      disabled={busy}
+                      title={K.resetHelp}
+                      onClick={() => confirmFirst(K.resetTimes, K.resetHelp, () => void run("reset", {}, null))}
+                    >
+                      {K.resetTimes}
+                    </Btn>
+                    <Btn
+                      disabled={busy || !t.banned_at}
+                      title={t.banned_at ? undefined : K.notBanned}
+                      onClick={() => void run("unban", {}, null)}
+                    >
+                      {K.unban}
+                    </Btn>
+                  </div>
+                </div>
+              )}
+              <div role="group" aria-labelledby="rc-close" className="flex flex-col gap-2">
+                <h3 id="rc-close" className="text-muted text-[12px] font-semibold">
+                  {K.closeReport}
+                </h3>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {r.status === "open" ? (
+                    <>
+                      <Btn size="lg" disabled={busy} onClick={() => decide.mutate({ decision: "actioned", note: K.handledNote })}>
+                        {K.markActioned}
+                      </Btn>
+                      <Btn size="lg" disabled={busy} onClick={() => decide.mutate({ decision: "dismiss", note: K.noActionNote })}>
+                        {K.dismiss}
+                      </Btn>
+                    </>
+                  ) : (
+                    <Btn size="lg" icon="arrow-counter-clockwise" disabled={busy} onClick={() => decide.mutate({ decision: "reopen" })}>
+                      {K.reopen}
+                    </Btn>
+                  )}
+                </div>
+              </div>
+            </>
           )}
-          {t && (
-            <div className="grid grid-cols-3 gap-2">
-              <Btn disabled={player.isPending} onClick={() => run(t.ranking_revoked ? "restore_ranking" : "revoke_ranking", {}, null)}>
-                {t.ranking_revoked ? K.restoreRanking : K.revokeRanking}
-              </Btn>
-              <Btn disabled={player.isPending} onClick={() => run("reset", {}, null)}>
-                {K.resetTimes}
-              </Btn>
-              <Btn disabled={player.isPending || !t.banned_at} onClick={() => run("unban", {}, null)}>
-                {K.unban}
-              </Btn>
-            </div>
-          )}
-          <div className="grid grid-cols-2 gap-2">
-            {r.status === "open" ? (
-              <>
-                <Btn size="lg" disabled={decide.isPending} onClick={() => decide.mutate({ decision: "actioned", note: K.handledNote })}>
-                  {K.markActioned}
-                </Btn>
-                <Btn size="lg" disabled={decide.isPending} onClick={() => decide.mutate({ decision: "dismiss", note: K.noActionNote })}>
-                  {K.dismiss}
-                </Btn>
-              </>
-            ) : (
-              <Btn
-                size="lg"
-                icon="arrow-counter-clockwise"
-                disabled={decide.isPending}
-                onClick={() => decide.mutate({ decision: "reopen" })}
-              >
-                {K.reopen}
-              </Btn>
-            )}
-          </div>
         </div>
       )}
     </>
@@ -545,8 +697,8 @@ interface PartySnapshot {
 function PartySnapshotView({ s }: { s: PartySnapshot }) {
   const P = C.party;
   return (
-    <div className="bg-bg flex flex-col gap-1.5 rounded-[10px] p-3 text-[13px]">
-      <span className="num text-muted text-[12px] font-semibold">
+    <div className="bg-bg flex flex-col gap-1.5 rounded-[12px] p-3 text-[13px]">
+      <span className="text-muted text-[12px] font-semibold">
         {P.snapshot}: {P.modes[s.room === "drawfam" ? "drawfam" : (s.mode ?? "")] ?? s.mode} {P.kinds[s.kind ?? ""]?.toLowerCase() ?? ""},{" "}
         {P.room(s.code ?? null, s.round ?? 0)}
       </span>
