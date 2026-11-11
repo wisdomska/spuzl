@@ -779,6 +779,12 @@ export const adminCopy = {
     value: "Value",
     save: "Save",
     wholeNumber: (min: number, max: number) => `Must be a whole number from ${min} to ${max}.`,
+    /** a set of games (Lab games): how many are on */
+    onCount: (on: number, total: number) => `${on} of ${total} on for players`,
+    howItWorks: "How it works",
+    gameOn: "On for players",
+    gameOff: "Off",
+    toggleGame: (name: string) => `${name}, on for players`,
   },
 
   /** Daily Five scheduler (R2-05). */

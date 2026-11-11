@@ -135,10 +135,10 @@ export const CONTENT: TruthsRound[] = [
     id: "wa-freetown",
     theme: "westafrica",
     level: 2,
-    truths: ["Cabo Verde is a group of islands in the Atlantic Ocean.", "Senegal and Côte d'Ivoire both use the CFA franc."],
+    truths: ["Cape Verde is a group of islands in the Atlantic Ocean.", "Senegal and Côte d'Ivoire both use the CFA franc."],
     lie: "Freetown is the capital of The Gambia.",
     fix: "Freetown is Sierra Leone's capital. The Gambia's capital is Banjul.",
-    source: "Britannica, Cabo Verde, Sierra Leone and The Gambia; BCEAO",
+    source: "Britannica, Cape Verde (Cabo Verde), Sierra Leone and The Gambia; BCEAO",
   },
   {
     id: "wa-mali",
