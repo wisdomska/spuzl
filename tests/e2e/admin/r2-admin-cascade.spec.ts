@@ -81,9 +81,9 @@ test("join-request log: a moderator exports it as CSV (audited); an analyst cann
   const acct = await signedIn(page, "moderator");
   await page.goto("/admin/join-requests");
   await expect(page.getByRole("heading", { name: "Join requests" })).toBeVisible();
-  await expect(page.getByText(/No chat or other content/)).toBeVisible();
+  await expect(page.getByText(/No chat is kept/)).toBeVisible();
   const download = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Export CSV" }).click();
+  await page.getByRole("button", { name: "Download list (CSV)" }).click();
   expect((await download).suggestedFilename()).toMatch(/\.csv$/);
   await expect.poll(async () => (await lastAction(acct.userId, "joinlog.export"))?.target).toBe("join_requests");
 
@@ -97,7 +97,7 @@ test("join-request log: a moderator exports it as CSV (audited); an analyst cann
 test("moderation: the flagged scores tab filters to the Daily Five", async ({ page }) => {
   await signedIn(page, "moderator");
   await page.goto("/admin/moderation?tab=flagged");
-  const source = page.getByRole("combobox", { name: "From" });
+  const source = page.getByRole("combobox", { name: "Games" });
   await expect(source).toBeVisible();
   await source.selectOption("five");
   await expect(page).toHaveURL(/source=five/);
