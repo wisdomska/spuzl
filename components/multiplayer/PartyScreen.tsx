@@ -63,6 +63,7 @@ import {
   type RoomRequest,
 } from "./party";
 import { Avatar, CountdownNumber, CountdownOverlay, Cta, LoadingScreen, MpToast, NeedProfile, Screen, TopButton, useToast } from "./ui";
+import { Modal } from "@/components/ui/Modal";
 
 /* ---------------- /party ---------------- */
 
@@ -691,32 +692,22 @@ function RoomSettings({
   });
   const [difficulty, setDifficulty] = useState<Diff>(view.difficulty as Diff);
   return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center">
-      <button type="button" aria-label="Close" className="absolute inset-0 bg-[rgba(6,7,13,.55)]" onClick={onClose} data-no-tick />
-      <div
-        role="dialog"
-        aria-modal
-        aria-label="Room settings"
-        className="bg-surface relative flex w-full max-w-[560px] flex-col gap-3.5 rounded-t-[32px] px-5 pt-3.5 pb-[max(28px,env(safe-area-inset-bottom))]"
+    <Modal open onOpenChange={(o) => !o && onClose()} zIndex={40} gap="gap-3.5" title="Room settings">
+      <GamePicker value={choice} onChange={setChoice} />
+      <DifficultyPicker value={difficulty} onChange={setDifficulty} />
+      <button
+        type="button"
+        onClick={onTv}
+        className="press bg-surface-raised flex min-h-12 items-center justify-center gap-2 rounded-[16px] text-[16px] font-semibold"
       >
-        <div className="bg-line h-[5px] w-11 self-center rounded-[3px]" />
-        <h2 className="font-display text-[22px] font-black">Room settings</h2>
-        <GamePicker value={choice} onChange={setChoice} />
-        <DifficultyPicker value={difficulty} onChange={setDifficulty} />
-        <button
-          type="button"
-          onClick={onTv}
-          className="press bg-surface-raised flex min-h-12 items-center justify-center gap-2 rounded-[16px] text-[16px] font-semibold"
-        >
-          <Icon name="television" size={20} />
-          TV mode
-        </button>
-        {tv && <TvSwitch {...tv} />}
-        <Cta disabled={!choiceReady(choice)} onClick={() => onSave({ game: choice.game, games: choice.picks, difficulty })}>
-          {choiceReady(choice) ? "Save" : partyCopy.host.pickMore(PARTY_PICK_MIN)}
-        </Cta>
-      </div>
-    </div>
+        <Icon name="television" size={20} />
+        TV mode
+      </button>
+      {tv && <TvSwitch {...tv} />}
+      <Cta disabled={!choiceReady(choice)} onClick={() => onSave({ game: choice.game, games: choice.picks, difficulty })}>
+        {choiceReady(choice) ? "Save" : partyCopy.host.pickMore(PARTY_PICK_MIN)}
+      </Cta>
+    </Modal>
   );
 }
 

@@ -1,34 +1,33 @@
 // @vitest-environment jsdom
-import { act, cleanup, render, screen } from "@testing-library/react";
-import { afterEach, beforeAll, describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
 import { Sheet } from "@/components/meta/Sheet";
-import { useSettings } from "@/lib/settings/store";
 
-beforeAll(() => {
-  // jsdom has no matchMedia; the OS setting reads as "no preference".
-  window.matchMedia ??= ((q: string) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {} })) as never;
-});
 afterEach(cleanup);
 
+/**
+ * Sheets slide (CSS `sheet-up` on `.sheet-content`), and fade instead with reduced motion: the in-app setting
+ * (`[data-motion="reduce"]` on <html>) and the OS setting both swap the slide for `sheet-fade`.
+ */
+const css = readFileSync(path.resolve(__dirname, "../../../app/globals.css"), "utf8");
+
 describe("Sheet motion", () => {
-  const open = () =>
+  it("is the shared sheet frame, which slides in", () => {
     render(
       <Sheet open onOpenChange={() => {}} title="Title">
         <p>Body</p>
       </Sheet>,
     );
-
-  it("slides in by default", () => {
-    act(() => useSettings.setState({ hydrated: true, reducedMotion: "off" }));
-    open();
-    expect(screen.getByRole("dialog").style.transform).toContain("translateY(100%)");
+    const sheet = screen.getByRole("dialog", { name: "Title" });
+    expect(sheet.className).toContain("sheet-content");
+    expect(css).toMatch(/\.sheet-content\[data-state="open"\] \{\s*animation: sheet-up/);
   });
 
-  it("fades instead of sliding with reduced motion on", () => {
-    act(() => useSettings.setState({ hydrated: true, reducedMotion: "on" }));
-    open();
-    const sheet = screen.getByRole("dialog");
-    expect(sheet.style.transform).toBe("");
-    expect(sheet.style.opacity).toBe("0");
+  it("fades instead of sliding with reduced motion (in-app and OS)", () => {
+    expect(css).toMatch(/\[data-motion="reduce"\] \.sheet-content\[data-state="open"\] \{\s*animation: sheet-fade/);
+    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\) \{\s*\.sheet-content\[data-state="open"\] \{\s*animation: sheet-fade/);
+    expect(css).toMatch(/\[data-motion="reduce"\] \.modal-content\[data-state="open"\],/);
   });
 });

@@ -39,6 +39,7 @@ import { ChatPanel, ChatPopup } from "../chat";
 import { alertIfAway, alertsAllowed, alertsSupported, askAlerts } from "@/lib/client/alerts";
 import { Avatar, Cta, EmoteBar, EmoteBubble, LoadingScreen, MpToast, NeedProfile, Screen, TopButton, useToast } from "../ui";
 import { LiveBoard } from "./boards";
+import { Modal } from "@/components/ui/Modal";
 
 /* ---------------- /bay: "Your move" inbox (B7) and new games ---------------- */
 
@@ -144,72 +145,69 @@ function NewBaySheet({
     }
   };
   return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center" style={{ ["--world" as string]: "var(--accent)" }}>
-      <button type="button" aria-label="Close" className="absolute inset-0 bg-[rgba(6,7,13,.55)]" onClick={onClose} data-no-tick />
-      <div
-        role="dialog"
-        aria-modal
-        aria-label="New game with a friend"
-        className="bg-surface relative flex max-h-[92dvh] w-full max-w-[560px] flex-col gap-3.5 overflow-y-auto overscroll-contain rounded-t-[32px] px-5 pt-3.5 pb-[max(28px,env(safe-area-inset-bottom))]"
-      >
-        <div className="bg-line h-[5px] w-11 self-center rounded-[3px]" />
-        <h2 className="font-display text-[22px] font-black">New game</h2>
-        <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Game">
-          {BAY_GAMES.map((g) => (
-            <button
-              key={g}
-              type="button"
-              role="radio"
-              aria-checked={game === g}
-              onClick={() => setGame(g)}
-              className="press flex h-[72px] flex-col items-center justify-center gap-1 rounded-[16px]"
-              style={{
-                background: game === g ? "color-mix(in srgb, var(--accent) 16%, var(--bg))" : "var(--surface-raised)",
-                boxShadow: game === g ? "inset 0 0 0 2px var(--accent)" : undefined,
-              }}
-            >
-              <Icon name={GAME_BY_ID[g].icon} size={22} />
-              <span className="text-[14px] font-semibold">{GAME_BY_ID[g].name}</span>
-            </button>
-          ))}
-        </div>
-        <div className="bg-bg flex gap-1 rounded-[16px] p-1" role="radiogroup" aria-label="Pace">
-          {(["async", "live"] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              role="radio"
-              aria-checked={mode === m}
-              onClick={() => setMode(m)}
-              className="flex h-11 flex-1 items-center justify-center rounded-[12px] text-[15px] font-semibold"
-              style={mode === m ? { background: "var(--surface-raised)" } : { color: "var(--text-muted)" }}
-            >
-              {m === "async" ? "24 h per move" : "Live, timed"}
-            </button>
-          ))}
-        </div>
-        {mode === "live" && <TimePicker game={game} value={minutes} onChange={setMinutes} />}
-        {game === "ludo" && <LudoSetup kicks={kicks} onKicks={setKicks} seats={seats} onSeats={setSeats} />}
-        <Cta onClick={() => create(false)} disabled={busy} icon="user-plus">
-          Invite a friend
-        </Cta>
-        {!relaxed && (
-          <Cta
-            tone="raised"
-            onClick={() =>
-              onLive(game, mode === "live" ? minutes : null, game === "ludo" ? kicksToParam(kicks) : "", game === "ludo" ? seats : 2)
-            }
-            disabled={busy}
-            icon="lightning"
+    <Modal
+      open
+      onOpenChange={(o) => !o && onClose()}
+      zIndex={40}
+      gap="gap-3.5"
+      title="New game"
+      style={{ ["--world" as string]: "var(--accent)" }}
+    >
+      <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Game">
+        {BAY_GAMES.map((g) => (
+          <button
+            key={g}
+            type="button"
+            role="radio"
+            aria-checked={game === g}
+            onClick={() => setGame(g)}
+            className="press flex h-[72px] flex-col items-center justify-center gap-1 rounded-[16px]"
+            style={{
+              background: game === g ? "color-mix(in srgb, var(--accent) 16%, var(--bg))" : "var(--surface-raised)",
+              boxShadow: game === g ? "inset 0 0 0 2px var(--accent)" : undefined,
+            }}
           >
-            {bayLive.playLive}
-          </Cta>
-        )}
-        <button type="button" onClick={() => create(true)} disabled={busy} className="text-muted min-h-12 text-[16px] font-semibold">
-          Play the Practice bot
-        </button>
+            <Icon name={GAME_BY_ID[g].icon} size={22} />
+            <span className="text-[14px] font-semibold">{GAME_BY_ID[g].name}</span>
+          </button>
+        ))}
       </div>
-    </div>
+      <div className="bg-bg flex gap-1 rounded-[16px] p-1" role="radiogroup" aria-label="Pace">
+        {(["async", "live"] as const).map((m) => (
+          <button
+            key={m}
+            type="button"
+            role="radio"
+            aria-checked={mode === m}
+            onClick={() => setMode(m)}
+            className="flex h-11 flex-1 items-center justify-center rounded-[12px] text-[15px] font-semibold"
+            style={mode === m ? { background: "var(--surface-raised)" } : { color: "var(--text-muted)" }}
+          >
+            {m === "async" ? "24 h per move" : "Live, timed"}
+          </button>
+        ))}
+      </div>
+      {mode === "live" && <TimePicker game={game} value={minutes} onChange={setMinutes} />}
+      {game === "ludo" && <LudoSetup kicks={kicks} onKicks={setKicks} seats={seats} onSeats={setSeats} />}
+      <Cta onClick={() => create(false)} disabled={busy} icon="user-plus">
+        Invite a friend
+      </Cta>
+      {!relaxed && (
+        <Cta
+          tone="raised"
+          onClick={() =>
+            onLive(game, mode === "live" ? minutes : null, game === "ludo" ? kicksToParam(kicks) : "", game === "ludo" ? seats : 2)
+          }
+          disabled={busy}
+          icon="lightning"
+        >
+          {bayLive.playLive}
+        </Cta>
+      )}
+      <button type="button" onClick={() => create(true)} disabled={busy} className="text-muted min-h-12 text-[16px] font-semibold">
+        Play the Practice bot
+      </button>
+    </Modal>
   );
 }
 

@@ -91,7 +91,7 @@ describe("Games page: state", () => {
     const group = within(rowOf("crownfall")).getByRole("radiogroup");
     fireEvent.click(within(group).getByRole("radio", { name: new RegExp(C.states.off.label) }));
     expect(flips).toEqual([]);
-    const dialog = screen.getByRole("dialog");
+    const dialog = screen.getByRole("alertdialog");
     expect(dialog.textContent).toContain("Players will no longer see or play");
     expect(dialog.textContent).toContain("Nobody can open it");
     fireEvent.click(within(dialog).getByRole("button", { name: C.confirmOff }));
@@ -106,7 +106,7 @@ describe("Games page: state", () => {
     render(<LibraryMetaPage canWrite canSwitch />);
     const group = within(rowOf("crownfall")).getByRole("radiogroup");
     fireEvent.click(within(group).getByRole("radio", { name: new RegExp(C.states.testing.label) }));
-    const dialog = screen.getByRole("dialog");
+    const dialog = screen.getByRole("alertdialog");
     expect(dialog.textContent).toContain("Only the team can still open it");
     fireEvent.click(within(dialog).getByRole("button", { name: C.confirmTesting }));
     expect(flips).toEqual([{ id: "crownfall", state: "testing" }]);

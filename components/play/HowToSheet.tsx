@@ -1,12 +1,11 @@
 "use client";
 
 import { useGameSettings } from "@/lib/game-settings/client";
-import { Dialog } from "radix-ui";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { WORLD_BY_ID, colourOf, type GameMeta } from "@/lib/catalog";
-import { useSheetSound } from "@/lib/audio/useSheetSound";
 import { useGameCopy } from "@/lib/games-meta/client";
+import { Modal } from "@/components/ui/Modal";
 
 export interface HowToTip {
   icon: string;
@@ -21,62 +20,54 @@ export function HowToSheet({ open, meta, onClose, tips }: { open: boolean; meta:
   const dailies = useGameSettings()["features.dailies"];
   const world = WORLD_BY_ID[meta.world];
   const { rule } = useGameCopy(meta);
-  useSheetSound(open);
   return (
-    <Dialog.Root open={open} onOpenChange={(o) => !o && onClose()}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="sheet-overlay fixed inset-0 z-50 bg-[rgb(6_7_13/.6)]" />
-        <Dialog.Content
-          className="sheet-content safe-bottom bg-surface fixed inset-x-0 bottom-0 z-50 mx-auto flex max-w-[560px] flex-col gap-4 rounded-t-[32px] px-5 pt-3.5 pb-7"
-          aria-describedby="howto-rule"
+    <Modal
+      open={open}
+      onOpenChange={(o) => !o && onClose()}
+      describedBy="howto-rule"
+      title={meta.name}
+      description={world.name}
+      leading={
+        <span
+          className="flex size-12 shrink-0 items-center justify-center rounded-[14px] text-[var(--ink-on-bright)]"
+          style={{ background: colourOf(meta).color }}
         >
-          <div className="bg-line h-[5px] w-11 self-center rounded-[3px]" />
-          <div className="flex items-center gap-3">
-            <span
-              className="flex size-12 items-center justify-center rounded-[14px] text-[#0E0F1A]"
-              style={{ background: colourOf(meta).color }}
-            >
-              <Icon name={meta.icon} size={26} />
-            </span>
-            <div>
-              <Dialog.Title className="font-display text-[22px] font-black">{meta.name}</Dialog.Title>
-              <p className="text-muted text-[14px]">{world.name}</p>
-            </div>
-          </div>
-          <p id="howto-rule" className="text-[17px] leading-normal font-medium">
-            {rule}
-          </p>
-          {tips ? (
-            <ul className="text-muted flex flex-col gap-2 text-[15px]">
-              {tips.map((tip) => (
-                <li key={tip.text} className="flex gap-2">
-                  <Icon name={tip.icon} size={18} /> {tip.text}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <ul className="text-muted flex flex-col gap-2 text-[15px]">
-              {dailies && (
-                <li className="flex gap-2">
-                  <Icon name="calendar-blank" size={18} /> One shared Daily for everyone, resets at midnight GMT.
-                </li>
-              )}
-              <li className="flex gap-2">
-                <Icon name="infinity" size={18} /> {dailies ? "Free play never runs out." : "New puzzles never run out."}
-              </li>
-              <li className="flex gap-2">
-                <Icon name="lightbulb" size={18} /> {dailies ? "Up to 3 hints. Hints halve the Daily XP." : "Up to 3 hints per puzzle."}
-              </li>
-              <li className="flex gap-2">
-                <Icon name="keyboard" size={18} /> Arrow keys move, Space marks, Enter confirms.
-              </li>
-            </ul>
+          <Icon name={meta.icon} size={26} />
+        </span>
+      }
+    >
+      <p id="howto-rule" className="text-[17px] leading-normal font-medium">
+        {rule}
+      </p>
+      {tips ? (
+        <ul className="text-muted flex flex-col gap-2 text-[15px]">
+          {tips.map((tip) => (
+            <li key={tip.text} className="flex gap-2">
+              <Icon name={tip.icon} size={18} /> {tip.text}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <ul className="text-muted flex flex-col gap-2 text-[15px]">
+          {dailies && (
+            <li className="flex gap-2">
+              <Icon name="calendar-blank" size={18} /> One shared Daily for everyone, resets at midnight GMT.
+            </li>
           )}
-          <Button size="lg" onClick={onClose} autoFocus>
-            Play
-          </Button>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+          <li className="flex gap-2">
+            <Icon name="infinity" size={18} /> {dailies ? "Free play never runs out." : "New puzzles never run out."}
+          </li>
+          <li className="flex gap-2">
+            <Icon name="lightbulb" size={18} /> {dailies ? "Up to 3 hints. Hints halve the Daily XP." : "Up to 3 hints per puzzle."}
+          </li>
+          <li className="flex gap-2">
+            <Icon name="keyboard" size={18} /> Arrow keys move, Space marks, Enter confirms.
+          </li>
+        </ul>
+      )}
+      <Button size="lg" onClick={onClose} autoFocus>
+        Play
+      </Button>
+    </Modal>
   );
 }

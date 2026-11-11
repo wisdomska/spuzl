@@ -12,6 +12,7 @@ import { duelGames } from "@/lib/multiplayer/games";
 import { useGameSettings } from "@/lib/game-settings/client";
 import { duelCopy } from "@/lib/copy/duel";
 import { useSheetSound } from "@/lib/audio/useSheetSound";
+import { MODAL_SCRIM, ModalClose } from "@/components/ui/Modal";
 
 const C = duelCopy.picker;
 
@@ -53,7 +54,7 @@ export function GamePickerSheet({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="sheet-overlay fixed inset-0 z-50 bg-[rgb(6_7_13/.6)]" />
+        <Dialog.Overlay className={`sheet-overlay z-50 ${MODAL_SCRIM}`} />
         <Dialog.Content
           onOpenAutoFocus={(e) => {
             opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -70,7 +71,7 @@ export function GamePickerSheet({
             e.preventDefault();
             el.focus();
           }}
-          className="sheet-content bg-bg fixed inset-x-0 top-[max(16px,env(safe-area-inset-top))] bottom-0 z-50 mx-auto flex max-w-[560px] flex-col rounded-t-[28px] lg:max-w-[720px]"
+          className="sheet-content bg-bg fixed inset-x-0 top-[max(16px,env(safe-area-inset-top))] bottom-0 z-50 mx-auto flex max-w-[560px] flex-col rounded-t-[28px] outline-none lg:max-w-[720px]"
           style={{ boxShadow: "0 -1px 0 var(--line)" }}
         >
           <div className="flex flex-col gap-3 px-4 pt-3 pb-2">
@@ -80,12 +81,7 @@ export function GamePickerSheet({
                 <Dialog.Title className="font-display text-[22px] leading-tight font-black">{C.title}</Dialog.Title>
                 <Dialog.Description className="text-muted text-[14px]">{C.body}</Dialog.Description>
               </div>
-              <Dialog.Close
-                aria-label={C.close}
-                className="press bg-surface-raised flex size-11 shrink-0 items-center justify-center rounded-[14px]"
-              >
-                <Icon name="x" size={20} />
-              </Dialog.Close>
+              <ModalClose />
             </div>
             <GameSearchField ref={search} value={q} onChange={setQ} placeholder={C.searchPlaceholder(raceGames.length)} />
             <GameFilterChips value={filter} onChange={setFilter} worlds={raceWorlds} showNew={newGameIds(raceGames, meta).length > 0} />

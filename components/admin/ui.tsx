@@ -6,7 +6,7 @@
  * technical details folded away (TechDetails).
  */
 import Link from "next/link";
-import { Dialog } from "radix-ui";
+import { Modal, ModalActions } from "@/components/ui/Modal";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -527,22 +527,25 @@ export function Confirm({
   onConfirm: () => void;
 }) {
   return (
-    <Dialog.Root open={open} onOpenChange={(o) => !o && !busy && onCancel()}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-[rgb(6_7_13/.6)]" />
-        <Dialog.Content className="bg-surface fixed top-1/2 left-1/2 z-50 flex w-[calc(100vw-32px)] max-w-[440px] -translate-x-1/2 -translate-y-1/2 flex-col gap-3 rounded-[16px] p-5 shadow-[inset_0_0_0_1px_var(--line)]">
-          <Dialog.Title className="font-display text-[18px] font-extrabold">{title}</Dialog.Title>
-          <Dialog.Description className="text-muted text-[14px] leading-[1.45]">{body}</Dialog.Description>
-          <div className="grid grid-cols-2 gap-2 pt-1">
-            <Btn size="lg" onClick={onCancel} disabled={busy}>
-              {adminCopy.ui.cancel}
-            </Btn>
-            <Btn size="lg" tone={danger ? "danger" : "primary"} disabled={busy} onClick={onConfirm}>
-              {busy ? adminCopy.ui.working : confirmLabel}
-            </Btn>
-          </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+    <Modal
+      kind="dialog"
+      role="alertdialog"
+      size="sm"
+      open={open}
+      onOpenChange={(o) => !o && onCancel()}
+      dismissible={!busy}
+      title={title}
+      description={body}
+      footer={
+        <ModalActions>
+          <Btn size="lg" onClick={onCancel} disabled={busy}>
+            {adminCopy.ui.cancel}
+          </Btn>
+          <Btn size="lg" tone={danger ? "danger" : "primary"} disabled={busy} onClick={onConfirm}>
+            {busy ? adminCopy.ui.working : confirmLabel}
+          </Btn>
+        </ModalActions>
+      }
+    />
   );
 }

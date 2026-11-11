@@ -7,6 +7,7 @@ import { INVITE_TARGETS, inviteHref, type InviteTarget } from "@/lib/share/targe
 import { shareCopy as T } from "@/lib/copy/share";
 import { play } from "@/lib/audio";
 import { useSheetSound } from "@/lib/audio/useSheetSound";
+import { MODAL_SCRIM, ModalClose } from "@/components/ui/Modal";
 
 /**
  * A Share button that opens a sheet of apps (WhatsApp, Snapchat, Instagram, TikTok, Telegram, Facebook, X,
@@ -67,20 +68,15 @@ export function InviteShare({
       </button>
       <Dialog.Root open={open} onOpenChange={setOpen}>
         <Dialog.Portal>
-          <Dialog.Overlay className="sheet-overlay fixed inset-0 z-[60] bg-[rgb(6_7_13/.6)]" />
-          <Dialog.Content className="sheet-content safe-bottom bg-surface fixed inset-x-0 bottom-0 z-[60] mx-auto flex max-w-[560px] flex-col gap-4 rounded-t-[28px] px-5 pt-3 pb-7">
-            <div aria-hidden className="bg-line mx-auto h-1.5 w-10 rounded-full" />
+          <Dialog.Overlay className={`sheet-overlay z-[60] ${MODAL_SCRIM}`} />
+          <Dialog.Content className="sheet-content bg-surface fixed inset-x-0 bottom-0 z-[60] mx-auto flex max-h-[90dvh] max-w-[560px] flex-col gap-4 overflow-y-auto overscroll-contain rounded-t-[28px] pt-3 pr-[max(20px,env(safe-area-inset-right))] pb-[max(28px,env(safe-area-inset-bottom))] pl-[max(20px,env(safe-area-inset-left))] outline-none">
+            <div aria-hidden className="bg-line mx-auto h-1.5 w-10 shrink-0 rounded-full" />
             <div className="flex items-start justify-between gap-3">
               <div className="flex flex-col gap-0.5">
                 <Dialog.Title className="font-display text-[22px] font-black">{title}</Dialog.Title>
                 <Dialog.Description className="text-muted text-[14px]">{T.description}</Dialog.Description>
               </div>
-              <Dialog.Close
-                aria-label="Close"
-                className="press bg-surface-raised flex size-11 shrink-0 items-center justify-center rounded-[14px]"
-              >
-                <Icon name="x" size={18} />
-              </Dialog.Close>
+              <ModalClose />
             </div>
             <ul className="grid grid-cols-4 gap-x-2 gap-y-3 max-[359px]:grid-cols-3">
               {INVITE_TARGETS.map((t) => (

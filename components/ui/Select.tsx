@@ -128,7 +128,7 @@ export function Select({
           sideOffset={6}
           collisionPadding={12}
           data-select-list
-          className="pop-content bg-surface text-text shadow-pop relative z-[90] max-h-[min(360px,var(--radix-select-content-available-height))] min-w-[max(var(--radix-select-trigger-width),160px)] overflow-hidden rounded-[14px]"
+          className="pop-content bg-surface text-text shadow-pop relative z-[90] max-h-[min(360px,var(--radix-select-content-available-height))] max-w-[calc(100vw-24px)] min-w-[max(var(--radix-select-trigger-width),160px)] overflow-hidden rounded-[14px]"
         >
           <RS.ScrollUpButton className="text-muted flex h-7 items-center justify-center">
             <Icon name="caret-up" size={14} />

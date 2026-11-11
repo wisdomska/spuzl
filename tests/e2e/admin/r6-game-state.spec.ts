@@ -36,7 +36,7 @@ async function setState(page: Page, label: "On" | "In testing" | "Off", stored: 
     .getByRole("radio", { name: label, exact: true })
     .click();
   if (label !== "On") {
-    const dialog = page.getByRole("dialog");
+    const dialog = page.getByRole("alertdialog");
     await expect(dialog).toContainText(`Players will no longer see or play ${NAME}`);
     await dialog.getByRole("button", { name: label === "Off" ? "Switch off" : "Put in testing" }).click();
   }

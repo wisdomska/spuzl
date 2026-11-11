@@ -1,14 +1,11 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Dialog } from "radix-ui";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { prefersReducedMotion, useSettings } from "@/lib/settings/store";
-import { useSheetSound } from "@/lib/audio/useSheetSound";
+import { Modal } from "@/components/ui/Modal";
 
 /**
- * Bottom sheet (r 32 top, handle, dimmed backdrop). Radix Dialog for focus trap, Escape and labelling.
- * Reduced motion (the OS setting or the in-app one) swaps the slide for a short fade.
+ * Bottom sheet for the social and meta screens: the shared Modal frame (components/ui/Modal.tsx) with its handle,
+ * scrim, title, 44 px close button, focus trap, Escape and sound. Reduced motion (OS or in-app) is a short fade.
  */
 export function Sheet({
   open,
@@ -23,50 +20,9 @@ export function Sheet({
   description?: ReactNode;
   children: ReactNode;
 }) {
-  const osReduce = useReducedMotion();
-  const appReduce = useSettings((s) => s.hydrated && prefersReducedMotion(s));
-  const reduce = !!osReduce || appReduce;
-  useSheetSound(open);
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <AnimatePresence>
-        {open && (
-          <Dialog.Portal forceMount>
-            <Dialog.Overlay asChild forceMount>
-              <motion.div
-                className="fixed inset-0 z-40 bg-[rgb(6_7_13/.6)]"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
-              />
-            </Dialog.Overlay>
-            <Dialog.Content asChild forceMount>
-              <motion.div
-                className="safe-bottom bg-surface fixed inset-x-0 bottom-0 z-40 mx-auto flex max-h-[90dvh] max-w-[560px] flex-col gap-2.5 overflow-y-auto rounded-t-[32px] px-5 pt-3.5 pb-7"
-                initial={reduce ? { opacity: 0 } : { transform: "translateY(100%)" }}
-                animate={reduce ? { opacity: 1 } : { transform: "translateY(0%)" }}
-                exit={
-                  reduce
-                    ? { opacity: 0, transition: { duration: 0.15 } }
-                    : { transform: "translateY(100%)", transition: { duration: 0.15, ease: [0.23, 1, 0.32, 1] } }
-                }
-                transition={reduce ? { duration: 0.2, ease: "linear" } : { duration: 0.32, ease: [0.32, 0.72, 0, 1] }}
-                style={{ boxShadow: "0 -1px 0 var(--line)" }}
-              >
-                <div aria-hidden className="bg-line h-[5px] w-11 shrink-0 self-center rounded-[3px]" />
-                <Dialog.Title className="font-display text-[18px] font-extrabold">{title}</Dialog.Title>
-                {description ? (
-                  <Dialog.Description className="text-muted text-[15px]">{description}</Dialog.Description>
-                ) : (
-                  <Dialog.Description className="sr-only">{title}</Dialog.Description>
-                )}
-                {children}
-              </motion.div>
-            </Dialog.Content>
-          </Dialog.Portal>
-        )}
-      </AnimatePresence>
-    </Dialog.Root>
+    <Modal open={open} onOpenChange={onOpenChange} title={title} description={description} zIndex={40} gap="gap-3">
+      {children}
+    </Modal>
   );
 }

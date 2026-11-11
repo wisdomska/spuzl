@@ -9,6 +9,7 @@ import { can, ROLE_LABEL, type Permission, type Role } from "@/lib/admin/roles";
 import { useAdminMe, type AdminMe } from "@/lib/client/admin";
 import { adminSignOut } from "@/lib/client/admin-auth";
 import { adminCopy } from "@/lib/copy/admin";
+import { MODAL_SCRIM } from "@/components/ui/Modal";
 
 /** Sidebar counts: things waiting on someone (open reports, puzzles and content to review, new feedback). */
 type BadgeKey = "moderation" | "review" | "content" | "feedback";
@@ -150,10 +151,10 @@ export function AdminShell({ role, email, children }: { role: Role; email: strin
             </button>
           </Dialog.Trigger>
           <Dialog.Portal>
-            <Dialog.Overlay className="fixed inset-0 z-50 bg-[rgb(6_7_13/.6)]" />
+            <Dialog.Overlay className={`sheet-overlay z-50 ${MODAL_SCRIM}`} />
             <Dialog.Content
               aria-describedby={undefined}
-              className="bg-surface fixed inset-y-0 left-0 z-50 flex w-[min(320px,calc(100vw-48px))] flex-col px-3 pt-3 pb-3 shadow-[inset_-1px_0_0_var(--line)]"
+              className="drawer-content bg-surface fixed inset-y-0 left-0 z-50 flex w-[min(320px,calc(100vw-48px))] flex-col pt-[max(12px,env(safe-area-inset-top))] pr-3 pb-[max(12px,env(safe-area-inset-bottom))] pl-[max(12px,env(safe-area-inset-left))] shadow-[inset_-1px_0_0_var(--line)] outline-none"
             >
               <div className="flex items-center justify-between pb-1">
                 <Dialog.Title asChild>

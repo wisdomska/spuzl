@@ -1,14 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { Dialog } from "radix-ui";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { track } from "@/lib/analytics/track";
 import { useSettings } from "@/lib/settings/store";
 import { smallCardSrc } from "@/lib/lowdata/images";
-import { useSheetSound } from "@/lib/audio/useSheetSound";
+import { Modal } from "@/components/ui/Modal";
 
 /**
  * Share sheet (FR-RS-03, FR-RS-04). Styled after the Components "Invite sheet".
@@ -116,7 +114,6 @@ export function ShareSheet({
   preview = { width: 108, height: 192 },
   options,
 }: ShareSheetProps) {
-  const reduce = useReducedMotion();
   const lowData = useSettings((s) => s.lowData);
   const image = smallCardSrc(imageProp, lowData);
   const [file, setFile] = useState<File | null>(null);
@@ -218,90 +215,63 @@ export function ShareSheet({
     [text, nativeShare, done, file, image, fileName, say, canFiles],
   );
 
-  useSheetSound(open);
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <AnimatePresence>
-        {open && (
-          <Dialog.Portal forceMount>
-            <Dialog.Overlay asChild forceMount>
-              <motion.div
-                className="fixed inset-0 bg-[rgb(6_7_13/.6)]"
-                style={{ zIndex: "var(--z-sheet)" }}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
-              />
-            </Dialog.Overlay>
-            <Dialog.Content asChild forceMount aria-describedby="share-desc">
-              <motion.div
-                data-testid="share-sheet"
-                className="safe-bottom bg-surface-raised fixed inset-x-0 bottom-0 mx-auto flex max-h-[92dvh] max-w-[560px] flex-col gap-3 overflow-y-auto rounded-t-[24px] px-4 pt-3.5 pb-6"
-                style={{ zIndex: "var(--z-sheet)" }}
-                initial={reduce ? { opacity: 0 } : { transform: "translateY(100%)" }}
-                animate={reduce ? { opacity: 1 } : { transform: "translateY(0%)" }}
-                exit={
-                  reduce
-                    ? { opacity: 0, transition: { duration: 0.15 } }
-                    : { transform: "translateY(100%)", transition: { duration: 0.15, ease: [0.23, 1, 0.32, 1] } }
-                }
-                transition={{ duration: reduce ? 0.2 : 0.32, ease: [0.32, 0.72, 0, 1] }}
-              >
-                <div className="bg-line h-[5px] w-11 self-center rounded-[3px]" />
-                <Dialog.Title className="font-display text-[17px] font-extrabold">{title}</Dialog.Title>
-                <p id="share-desc" className="sr-only">
-                  Share your result. No solution is ever included.
-                </p>
-                <div className="flex gap-3">
-                  {/* eslint-disable-next-line @next/next/no-img-element -- generated PNG, already sized */}
-                  <img
-                    src={image}
-                    alt={preview.alt ?? "Your share card"}
-                    width={preview.width}
-                    height={preview.height}
-                    style={{ width: preview.width, height: preview.height }}
-                    className="bg-bg shrink-0 rounded-[12px] object-cover"
-                  />
-                  <pre
-                    aria-label="Share text"
-                    className="bg-bg text-text m-0 min-w-0 flex-1 overflow-x-auto rounded-[14px] p-3 font-mono text-[13px] leading-[1.45] whitespace-pre-wrap shadow-[inset_0_0_0_1px_var(--line)]"
-                  >
-                    {text}
-                  </pre>
-                </div>
-                {options}
-                {canNative && (
-                  <Button size="lg" icon="share-fat" className="w-full text-[17px]" onClick={() => void run("native")}>
-                    Share
-                  </Button>
-                )}
-                <div className="grid grid-cols-3 gap-2">
-                  {TARGETS.map((t) => (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() => void run(t.id)}
-                      className="press flex min-h-11 flex-col items-center gap-1.5 rounded-[16px] py-1"
-                      data-share-target={t.id}
-                    >
-                      <span
-                        className={`flex size-[52px] items-center justify-center rounded-[16px] ${t.primary ? "bg-accent text-on-accent" : "bg-bg text-text shadow-[inset_0_0_0_1px_var(--line)]"}`}
-                      >
-                        <Icon name={t.icon} size={24} />
-                      </span>
-                      <span className="text-[12px] font-semibold">{t.label}</span>
-                    </button>
-                  ))}
-                </div>
-                <p role="status" aria-live="polite" className="text-muted min-h-5 text-center text-[14px]">
-                  {status}
-                </p>
-              </motion.div>
-            </Dialog.Content>
-          </Dialog.Portal>
-        )}
-      </AnimatePresence>
-    </Dialog.Root>
+    <Modal
+      open={open}
+      onOpenChange={onOpenChange}
+      title={title}
+      describedBy="share-desc"
+      zIndex={40}
+      gap="gap-3"
+      dataAttrs={{ "data-testid": "share-sheet" }}
+    >
+      <p id="share-desc" className="sr-only">
+        Share your result. No solution is ever included.
+      </p>
+      <div className="flex gap-3">
+        {/* eslint-disable-next-line @next/next/no-img-element -- generated PNG, already sized */}
+        <img
+          src={image}
+          alt={preview.alt ?? "Your share card"}
+          width={preview.width}
+          height={preview.height}
+          style={{ width: preview.width, height: preview.height }}
+          className="bg-bg shrink-0 rounded-[12px] object-cover"
+        />
+        <pre
+          aria-label="Share text"
+          className="bg-bg text-text m-0 min-w-0 flex-1 overflow-x-auto rounded-[14px] p-3 font-mono text-[13px] leading-[1.45] whitespace-pre-wrap shadow-[inset_0_0_0_1px_var(--line)]"
+        >
+          {text}
+        </pre>
+      </div>
+      {options}
+      {canNative && (
+        <Button size="lg" icon="share-fat" className="w-full text-[17px]" onClick={() => void run("native")}>
+          Share
+        </Button>
+      )}
+      <div className="grid grid-cols-3 gap-2">
+        {TARGETS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => void run(t.id)}
+            className="press flex min-h-11 flex-col items-center gap-1.5 rounded-[16px] py-1"
+            data-share-target={t.id}
+          >
+            <span
+              className={`flex size-[52px] items-center justify-center rounded-[16px] ${t.primary ? "bg-accent text-on-accent" : "bg-bg text-text shadow-[inset_0_0_0_1px_var(--line)]"}`}
+            >
+              <Icon name={t.icon} size={24} />
+            </span>
+            <span className="text-[12px] font-semibold">{t.label}</span>
+          </button>
+        ))}
+      </div>
+      <p role="status" aria-live="polite" className="text-muted min-h-5 text-center text-[14px]">
+        {status}
+      </p>
+    </Modal>
   );
 }

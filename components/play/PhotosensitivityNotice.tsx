@@ -3,6 +3,7 @@
 import { useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
+import { Modal } from "@/components/ui/Modal";
 
 const KEY = "spuzl.photosensitivity.ok";
 
@@ -21,36 +22,29 @@ export function PhotosensitivityNotice() {
   );
   const [dismissed, setDismissed] = useState(false);
   const open = needed && !dismissed;
-  if (!open) return null;
+  const ok = () => {
+    try {
+      localStorage.setItem(KEY, "1");
+    } catch {}
+    setDismissed(true);
+  };
+  // The shared sheet (focus trap, no page scroll behind); it needs an answer, so no close button or Escape.
   return (
-    <div
+    <Modal
+      open={open}
+      onOpenChange={(o) => !o && ok()}
       role="alertdialog"
-      aria-modal="true"
-      aria-labelledby="ps-title"
-      className="fixed inset-0 z-[80] flex items-end bg-[rgb(6_7_13/.8)] sm:items-center"
+      zIndex={80}
+      gap="gap-3"
+      close={false}
+      dismissible={false}
+      leading={<Icon name="warning" size={28} className="text-gold mt-0.5 shrink-0" />}
+      title="Heads up"
+      description="This game has quick movement and light flashes, kept slower than twice a second. If flashing lights affect you, pick a calmer game or turn on reduced motion in Settings."
     >
-      <div className="safe-bottom bg-surface mx-auto flex w-full max-w-[480px] flex-col gap-3 rounded-t-[32px] px-5 pt-6 pb-7 sm:rounded-[32px]">
-        <Icon name="warning" size={28} className="text-gold" />
-        <h2 id="ps-title" className="font-display text-[22px] font-black">
-          Heads up
-        </h2>
-        <p className="text-muted text-[16px] leading-normal">
-          This game has quick movement and light flashes, kept slower than twice a second. If flashing lights affect you, pick a calmer game
-          or turn on reduced motion in Settings.
-        </p>
-        <Button
-          size="lg"
-          autoFocus
-          onClick={() => {
-            try {
-              localStorage.setItem(KEY, "1");
-            } catch {}
-            setDismissed(true);
-          }}
-        >
-          Got it
-        </Button>
-      </div>
-    </div>
+      <Button size="lg" autoFocus onClick={ok}>
+        Got it
+      </Button>
+    </Modal>
   );
 }

@@ -26,6 +26,7 @@ import { formatClock } from "@/lib/format";
 import { libraryCopy as T } from "@/lib/copy/library";
 import { PLAY_NAV } from "@/lib/analytics/play-nav";
 import { useSheetSound } from "@/lib/audio/useSheetSound";
+import { MODAL_SCRIM, ModalClose } from "@/components/ui/Modal";
 
 /**
  * One game's card (SPZ-14): the rule, then one primary action (Play; with Dailies on, today's Daily then Free play
@@ -90,9 +91,9 @@ export function GameCard({
   return (
     <Dialog.Root open={!!meta} onOpenChange={(o) => !o && onClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="sheet-overlay fixed inset-0 z-50 bg-[rgb(6_7_13/.6)]" />
+        <Dialog.Overlay className={`sheet-overlay z-50 ${MODAL_SCRIM}`} />
         <Dialog.Content
-          className="sheet-content safe-bottom bg-surface fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[90dvh] max-w-[560px] flex-col gap-4 overflow-y-auto rounded-t-[28px] px-5 pt-3 pb-7"
+          className="sheet-content bg-surface fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[90dvh] max-w-[560px] flex-col gap-4 overflow-y-auto overscroll-contain rounded-t-[28px] pt-3 pr-[max(20px,env(safe-area-inset-right))] pb-[max(28px,env(safe-area-inset-bottom))] pl-[max(20px,env(safe-area-inset-left))] outline-none"
           style={world ? ({ "--world": UI_ACCENT } as React.CSSProperties) : undefined}
         >
           <div aria-hidden className="bg-line mx-auto h-1.5 w-10 shrink-0 rounded-full" />
@@ -113,12 +114,7 @@ export function GameCard({
                     </span>
                   </span>
                 </div>
-                <Dialog.Close
-                  aria-label="Close"
-                  className="press bg-surface-raised flex size-11 shrink-0 items-center justify-center self-start rounded-[14px]"
-                >
-                  <Icon name="x" size={18} />
-                </Dialog.Close>
+                <ModalClose className="self-start" />
               </div>
               <Dialog.Description className="bg-surface-raised rounded-[16px] px-4 py-3 text-[15px] leading-[1.45] font-medium">
                 <span className="text-muted block text-[12px] font-bold tracking-[0.04em] uppercase">{T.rule}</span>

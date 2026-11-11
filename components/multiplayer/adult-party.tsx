@@ -33,6 +33,7 @@ import {
 } from "@/lib/party-adult/ink";
 import type { AdultRoundView, MatchPlayerView, MatchView } from "@/lib/multiplayer/types";
 import { Avatar, Cta, TopButton } from "./ui";
+import { Modal, ModalActions } from "@/components/ui/Modal";
 
 type Toast = (t: string, k?: "info" | "bad" | "pass") => void;
 
@@ -126,32 +127,26 @@ export function ModePicker({
 
 export function AdultNotice({ onConfirm, onCancel, busy }: { onConfirm: () => void; onCancel: () => void; busy?: boolean }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
-      <button type="button" aria-label={C.notice.cancel} className="absolute inset-0 bg-[rgba(6,7,13,.55)]" onClick={onCancel} />
-      <div
-        role="alertdialog"
-        aria-modal
-        aria-labelledby="adult-notice-title"
-        aria-describedby="adult-notice-body"
-        className="bg-surface relative flex w-full max-w-[560px] flex-col gap-3 rounded-t-[32px] px-5 pt-3.5 pb-[max(28px,env(safe-area-inset-bottom))]"
-      >
-        <div className="bg-line h-[5px] w-11 self-center rounded-[3px]" />
-        <h2 id="adult-notice-title" className="font-display flex items-center gap-2 text-[22px] font-black">
-          <Icon name="shield-check" size={24} className="text-accent" />
-          {C.notice.title}
-        </h2>
-        <p id="adult-notice-body" className="text-[17px] font-semibold">
-          {C.notice.body}
-        </p>
-        <p className="text-muted text-[15px]">{C.notice.more}</p>
-        <Cta onClick={onConfirm} disabled={busy}>
-          {C.notice.confirm}
-        </Cta>
-        <Cta tone="raised" onClick={onCancel}>
-          {C.notice.cancel}
-        </Cta>
-      </div>
-    </div>
+    <Modal
+      open
+      onOpenChange={(o) => !o && onCancel()}
+      role="alertdialog"
+      gap="gap-3"
+      leading={<Icon name="shield-check" size={24} className="text-accent mt-2.5 shrink-0" />}
+      title={C.notice.title}
+      describedBy="adult-notice-body"
+    >
+      <p id="adult-notice-body" className="text-[17px] font-semibold">
+        {C.notice.body}
+      </p>
+      <p className="text-muted text-[15px]">{C.notice.more}</p>
+      <Cta onClick={onConfirm} disabled={busy}>
+        {C.notice.confirm}
+      </Cta>
+      <Cta tone="raised" onClick={onCancel}>
+        {C.notice.cancel}
+      </Cta>
+    </Modal>
   );
 }
 
@@ -159,20 +154,24 @@ export function AdultNotice({ onConfirm, onCancel, busy }: { onConfirm: () => vo
 
 type Reason = "harassment" | "spam" | "other";
 
-function Sheet({ label, onClose, children }: { label: string; onClose: () => void; children: React.ReactNode }) {
+/** The shared sheet (components/ui/Modal.tsx): focus trap, Escape, close button, safe areas. */
+function Sheet({
+  title,
+  description,
+  role,
+  onClose,
+  children,
+}: {
+  title: string;
+  description?: string;
+  role?: "alertdialog";
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
-      <button type="button" aria-label={C.report.cancel} className="absolute inset-0 bg-[rgba(6,7,13,.55)]" onClick={onClose} />
-      <div
-        role="dialog"
-        aria-modal
-        aria-label={label}
-        className="bg-surface relative flex max-h-[85dvh] w-full max-w-[560px] flex-col gap-3 overflow-y-auto rounded-t-[32px] px-5 pt-3.5 pb-[max(28px,env(safe-area-inset-bottom))]"
-      >
-        <div className="bg-line h-[5px] w-11 flex-none self-center rounded-[3px]" />
-        {children}
-      </div>
-    </div>
+    <Modal open onOpenChange={(o) => !o && onClose()} title={title} description={description} role={role} gap="gap-3">
+      {children}
+    </Modal>
   );
 }
 
@@ -184,9 +183,7 @@ export interface ReportTarget {
 
 function ReportSheet({ target, onPick, onClose }: { target: ReportTarget; onPick: (r: Reason) => void; onClose: () => void }) {
   return (
-    <Sheet label={C.report.title} onClose={onClose}>
-      <h2 className="font-display text-[22px] font-black">{target.label}</h2>
-      <p className="text-muted text-[15px]">{C.report.body}</p>
+    <Sheet title={target.label} description={C.report.body} onClose={onClose}>
       {(Object.keys(C.report.reasons) as Reason[]).map((r) => (
         <button
           key={r}
@@ -234,8 +231,7 @@ export function PlayersSheet({
 }) {
   const here = view.players.filter((p) => !p.left && !p.spectator).sort((a, b) => b.points - a.points);
   return (
-    <Sheet label={C.round.players} onClose={onClose}>
-      <h2 className="font-display text-[22px] font-black">{C.round.players}</h2>
+    <Sheet title={C.round.players} onClose={onClose}>
       <ul className="flex flex-col gap-1.5">
         {here.map((p) => (
           <li key={p.id} className="bg-surface-raised flex min-h-12 items-center gap-2.5 rounded-[14px] pr-1 pl-3">
@@ -266,15 +262,13 @@ export function PlayersSheet({
 
 export function KickConfirm({ player, onConfirm, onClose }: { player: MatchPlayerView; onConfirm: () => void; onClose: () => void }) {
   return (
-    <Sheet label={C.kick.title(player.nickname)} onClose={onClose}>
-      <h2 className="font-display text-[22px] font-black">{C.kick.title(player.nickname)}</h2>
-      <p className="text-muted text-[15px]">{C.kick.body}</p>
-      <div className="grid grid-cols-2 gap-2.5">
+    <Sheet role="alertdialog" title={C.kick.title(player.nickname)} description={C.kick.body} onClose={onClose}>
+      <ModalActions>
         <Cta tone="raised" onClick={onClose}>
           {C.kick.cancel}
         </Cta>
         <Cta onClick={onConfirm}>{C.kick.confirm}</Cta>
-      </div>
+      </ModalActions>
     </Sheet>
   );
 }
