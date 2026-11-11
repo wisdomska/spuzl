@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.50.0 (11 November 2026)
+
+### Everyone
+
+- **Party rooms hold up to 10 players** (was 8). Hosts still start at 8 and slide up to the limit.
+- **A full room fits the screen:** 9 or 10 seats sit five to a row in the lobby, and in a race with more than five
+  players the standings show the top three, you and the player just ahead of you, so the board stays in view.
+  "Show all" lists everyone.
+- Rooms of 7 or more send each player's progress once a second instead of twice, so big races stay smooth and
+  within the live connection's limits.
+
+### Admin
+
+- **New setting "Most players in a Party"** (Game settings, Duels and Parties): 2 to 10, 10 by default. Rooms
+  already open keep their size; a lower limit applies to new rooms.
+
 ## 1.49.0 (11 November 2026)
 
 ### Everyone

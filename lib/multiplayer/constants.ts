@@ -66,8 +66,25 @@ export const PARTY_GAMES = 3;
 /** A host's hand-picked list: at least two games (one is just "this game"), at most eight. */
 export const PARTY_PICK_MIN = 2;
 export const PARTY_PICK_MAX = 8;
-export const PARTY_MAX = 8;
+/**
+ * The hard ceiling for a Party room (the database check allows 2 to 10). The live limit is the admin setting
+ * party.maxPlayers (default 10): `partyMaxFor(setting)`. Hosts start at PARTY_DEFAULT and can go up to the limit.
+ */
+export const PARTY_MAX = 10;
+export const PARTY_DEFAULT = 8;
 export const PARTY_MIN = 2;
+/** Rooms with more racers than this send progress at half the rate (TIMING.progressMs doubled), to stay inside the Realtime budget. */
+export const PARTY_BUSY_ABOVE = 6;
+
+/** The largest room hosts may open, from the setting party.maxPlayers (a bad value allows the ceiling). */
+export function partyMaxFor(n: unknown): number {
+  return typeof n === "number" && Number.isInteger(n) && n >= PARTY_MIN && n <= PARTY_MAX ? n : PARTY_MAX;
+}
+
+/** How often one player's progress goes out in a room of `racers`: twice a second, once a second in a big room. */
+export function progressMsFor(racers: number): number {
+  return racers > PARTY_BUSY_ABOVE ? TIMING.progressMs * 2 : TIMING.progressMs;
+}
 
 /** Preset emotes only (FR-SO-04: no free text). Clients send the index, never the text. */
 export const EMOTES = ["🔥", "😂", "😤", "GG", "👏", "😮", "😅", "🤝"] as const;

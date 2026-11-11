@@ -4,7 +4,7 @@
  * hand-picked list (2 to 8 different race games); when set it wins over `game`.
  */
 import { z } from "zod";
-import { PARTY_MAX, PARTY_MIN, PARTY_PICK_MAX, PARTY_PICK_MIN } from "./constants";
+import { PARTY_DEFAULT, PARTY_MAX, PARTY_MIN, PARTY_PICK_MAX, PARTY_PICK_MIN } from "./constants";
 import { isRaceGame, isScoreRaceGame } from "./games";
 import { PARTY_MODES } from "@/lib/party-adult/modes";
 
@@ -24,7 +24,7 @@ export const RoomCreateInput = z.object({
   game: partyGame.nullable().default(null),
   games: partyPicks.nullable().default(null),
   difficulty: difficulty.default("medium"),
-  maxPlayers: z.number().int().min(PARTY_MIN).max(PARTY_MAX).default(PARTY_MAX),
+  maxPlayers: z.number().int().min(PARTY_MIN).max(PARTY_MAX).default(PARTY_DEFAULT),
   classroom: z.boolean().default(false),
   /** "race", an 18+ party game ("draw", "truths") or Family Draw ("drawfam", 16+); the route runs the gate for those */
   mode: z.enum(PARTY_MODES).default("race"),

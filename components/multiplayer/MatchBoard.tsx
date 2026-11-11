@@ -8,7 +8,7 @@ import { HttpError } from "@/lib/client/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { matchAction, matchKey } from "@/lib/client/multiplayer";
 import { throttle } from "@/lib/multiplayer/progress";
-import { TIMING } from "@/lib/multiplayer/constants";
+import { progressMsFor } from "@/lib/multiplayer/constants";
 import { isScoreRaceGame } from "@/lib/multiplayer/games";
 import type { MatchView } from "@/lib/multiplayer/types";
 import { HowItWorks, useNewToGame } from "./practice";
@@ -65,6 +65,8 @@ export function MatchBoard({
     mistakes.current = view.players.find((p) => p.id === view.me)?.mistakes ?? 0;
   }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Big rooms send progress once a second instead of twice (every update reaches everyone in the room).
+  const racers = view.players.filter((p) => !p.spectator).length;
   const send = useMemo(
     () =>
       throttle((state: unknown, m: number) => {
@@ -78,8 +80,8 @@ export function MatchBoard({
             ),
           )
           .catch(() => {});
-      }, TIMING.progressMs),
-    [view.id, round, qc],
+      }, progressMsFor(racers)),
+    [view.id, round, qc, racers],
   );
   useEffect(() => () => send.cancel(), [send]);
 

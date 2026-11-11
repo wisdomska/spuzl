@@ -83,6 +83,13 @@ export const partyCopy = {
     countdown: (game: number, of: number) => `Game ${game} of ${of}. Same round for everyone. Most points wins!`,
     roundScore: (n: number) => (n === 1 ? "1 point" : `${n} points`),
   },
+  /** the race rail in rooms bigger than five */
+  race: {
+    showAll: (n: number) => `Show all ${n}`,
+    showFewer: "Show fewer",
+    moreHidden: (n: number) =>
+      n === 1 ? "1 more player is hidden. Show all to see everyone." : `${n} more players are hidden. Show all to see everyone.`,
+  },
   /** the round-start countdown (Duel's 3-2-1-SPUZL!) over the board */
   countdown: {
     line: (game: number, of: number) => `Game ${game} of ${of}. Same puzzle for everyone. Go!`,

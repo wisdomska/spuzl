@@ -21,7 +21,16 @@ import { partyCopy } from "@/lib/copy/party";
 import { overtakes, raceOrder, standingOrder } from "@/lib/multiplayer/race";
 import { countdownBeat } from "@/lib/multiplayer/duel";
 import { readiness, shortNames } from "@/lib/multiplayer/readiness";
-import { PARTY_GAMES, PARTY_MAX, PARTY_MIN, PARTY_PICK_MAX, PARTY_PICK_MIN, type EmoteId } from "@/lib/multiplayer/constants";
+import { RAIL_ROWS, railWindow } from "@/lib/multiplayer/rail";
+import {
+  PARTY_DEFAULT,
+  PARTY_GAMES,
+  PARTY_MIN,
+  PARTY_PICK_MAX,
+  PARTY_PICK_MIN,
+  partyMaxFor,
+  type EmoteId,
+} from "@/lib/multiplayer/constants";
 import type { MatchPlayerView, MatchView } from "@/lib/multiplayer/types";
 import { useReduce } from "@/lib/client/multiplayer";
 import type { PartyMode } from "@/lib/party-adult/modes";
@@ -356,7 +365,10 @@ export function HostRoom({
   const allowed = picked === "race" || (picked === "drawfam" ? family : adult);
   const mode: PartyMode = allowed ? picked : "race";
   const [difficulty, setDifficulty] = useState<Diff>("medium");
-  const [size, setSize] = useState(PARTY_MAX);
+  // The slider ends at the admin's limit (party.maxPlayers) and starts at 8 (or the limit, when lower).
+  const most = partyMaxFor(useGameSettings()["party.maxPlayers"]);
+  const [chosenSize, setSize] = useState<number | null>(null);
+  const size = Math.min(chosenSize ?? PARTY_DEFAULT, most);
   const [classroom, setClassroom] = useState(false);
   const race = mode === "race";
   return (
@@ -379,11 +391,11 @@ export function HostRoom({
           id="room-size"
           type="range"
           min={PARTY_MIN}
-          max={PARTY_MAX}
+          max={most}
           value={size}
           onChange={(e) => setSize(Number(e.target.value))}
           className="room-range h-11 flex-1"
-          style={{ ["--fill" as string]: `${((size - PARTY_MIN) / (PARTY_MAX - PARTY_MIN)) * 100}%` }}
+          style={{ ["--fill" as string]: `${((size - PARTY_MIN) / Math.max(1, most - PARTY_MIN)) * 100}%` }}
         />
         <span className="num w-10 text-right text-[20px] font-semibold">{size}</span>
       </div>
@@ -529,6 +541,9 @@ export function Lobby({
   const waitingNames = shortNames(r.waiting.map((p) => (p.id === view.me ? partyCopy.results.you : p.nickname)));
   const L = partyCopy.lobby;
   const slots = Array.from({ length: view.maxPlayers }, (_, i) => here[i] ?? null);
+  // 9 or 10 seats sit five to a row in smaller cards, so the lobby stays two rows tall.
+  const wide = view.maxPlayers > 8;
+  const seatH = wide ? "h-[92px]" : "h-[104px]";
   const gameLine = partyCopy.host.gamesLine(roomGamesName(view.gameId, view.chosenGames), PARTY_GAMES);
   return (
     <div className="flex flex-1 flex-col pb-[max(28px,env(safe-area-inset-bottom))]" data-screen-label="P1 Lobby">
@@ -552,7 +567,7 @@ export function Lobby({
         />
       </div>
       {requests && <div className="mx-4 mt-3.5">{requests}</div>}
-      <ul className="mx-4 mt-3.5 grid grid-cols-4 gap-2" aria-label="Players">
+      <ul className={`mx-4 mt-3.5 grid gap-2 ${wide ? "grid-cols-5 gap-1.5" : "grid-cols-4"}`} aria-label="Players">
         <AnimatePresence initial={false}>
           {slots.map((p, i) =>
             p ? (
@@ -561,7 +576,7 @@ export function Lobby({
                 initial={reduce ? { opacity: 0 } : { opacity: 0, transform: "translateY(-40px) scale(0.8)" }}
                 animate={{ opacity: 1, transform: "translateY(0px) scale(1)" }}
                 transition={reduce ? { duration: 0.2 } : { ...SPRING_PARTY, duration: 0.42 }}
-                className="bg-surface relative flex h-[104px] flex-col items-center justify-center gap-1.5 rounded-[18px]"
+                className={`bg-surface relative flex ${seatH} min-w-0 flex-col items-center justify-center gap-1.5 rounded-[18px]`}
                 style={{ boxShadow: p.ready ? "inset 0 0 0 2px var(--accent)" : undefined }}
                 aria-label={`${p.id === view.me ? "You" : p.nickname}${p.host ? ", host" : ""}, ${p.ready ? "ready" : "not ready"}${present.size && !present.has(p.id) ? ", away" : ""}`}
               >
@@ -570,11 +585,13 @@ export function Lobby({
                   color={p.color}
                   hat={p.hat}
                   me={p.id === view.me}
-                  size={44}
-                  radius={14}
+                  size={wide ? 36 : 44}
+                  radius={wide ? 12 : 14}
                   dim={present.size > 0 && !present.has(p.id)}
                 />
-                <span className="max-w-full truncate px-1 text-[14px] font-semibold">{p.id === view.me ? "You" : p.nickname}</span>
+                <span className={`max-w-full truncate px-1 font-semibold ${wide ? "text-[13px]" : "text-[14px]"}`}>
+                  {p.id === view.me ? "You" : p.nickname}
+                </span>
                 {p.ready && (
                   <span className="bg-accent absolute top-1.5 right-1.5 flex size-[22px] items-center justify-center rounded-[8px] text-[var(--on-accent)]">
                     <Icon name="check" size={13} />
@@ -586,10 +603,10 @@ export function Lobby({
             ) : (
               <li
                 key={`open-${i}`}
-                className="flex h-[104px] flex-col items-center justify-center gap-1.5 rounded-[18px] shadow-[inset_0_0_0_2px_var(--line)]"
+                className={`flex ${seatH} min-w-0 flex-col items-center justify-center gap-1.5 rounded-[18px] shadow-[inset_0_0_0_2px_var(--line)]`}
               >
-                <span className="size-11" />
-                <span className="text-[14px] font-semibold text-[var(--text-faint)]">Open</span>
+                <span className={wide ? "size-9" : "size-11"} />
+                <span className={`font-semibold text-[var(--text-faint)] ${wide ? "text-[13px]" : "text-[14px]"}`}>Open</span>
               </li>
             ),
           )}
@@ -752,18 +769,36 @@ export function RaceRail({
       }
     prev.current = order;
   }, [order.join(",")]); // eslint-disable-line react-hooks/exhaustive-deps
-  const n = rows.length;
+  // Big rooms keep the board in view: the top three, you and the player just ahead of you, until "Show all".
+  const [all, setAll] = useState(false);
+  const shown = railWindow(order, view.me, all ? order.length : RAIL_ROWS);
+  const n = shown.length;
+  const hidden = rows.length - n;
   return (
     <div className="bg-surface -mx-3 flex flex-col gap-1.5 px-3 pt-1 pb-2.5" data-screen-label="P2 rail">
-      <div className="text-muted flex justify-between px-1 pb-1 text-[14px] font-medium">
+      <div className="text-muted flex items-center justify-between gap-3 px-1 pb-1 text-[14px] font-medium">
         <span>
           Game {view.round} of {view.games.length}
         </span>
-        {/* R3-08: a score game: places go by points, worked out by the server when the round ends. */}
-        {scoreRound && <span className="text-accent font-semibold">{partyCopy.scoreRace.rule}</span>}
+        <span className="flex items-center gap-3">
+          {/* R3-08: a score game: places go by points, worked out by the server when the round ends. */}
+          {scoreRound && <span className="text-accent font-semibold">{partyCopy.scoreRace.rule}</span>}
+          {rows.length > RAIL_ROWS && (
+            <button
+              type="button"
+              onClick={() => setAll((a) => !a)}
+              aria-expanded={all}
+              className="text-accent -my-2 min-h-9 px-1 font-semibold"
+            >
+              {all ? partyCopy.race.showFewer : partyCopy.race.showAll(rows.length)}
+            </button>
+          )}
+        </span>
       </div>
       <ol className="relative" style={{ height: n * ROW }} aria-label="Race standings">
         {rows.map((r, i) => {
+          const slot = shown.indexOf(i);
+          if (slot < 0) return null;
           const me = r.id === view.me;
           const [pbg, pfg] = i < 3 ? [PODIUM[i], "var(--ink-on-bright)"] : ["var(--surface-raised)", "var(--text-muted)"];
           return (
@@ -776,7 +811,7 @@ export function RaceRail({
                 opacity: r.gone || r.passed ? 0.5 : 1,
               }}
               initial={false}
-              animate={{ transform: `translateY(${i * ROW}px)` }}
+              animate={{ transform: `translateY(${slot * ROW}px)` }}
               transition={{ duration: reduce ? 0 : 0.5, ease: EASE_IN_OUT }}
               aria-label={`${placeLabel(i + 1)}, ${me ? "you" : r.nickname}, ${r.passed ? "skipped this round" : `${Math.round(r.progress * 100)} percent${r.finished ? ", cleared" : ""}`}`}
             >
@@ -808,6 +843,7 @@ export function RaceRail({
           );
         })}
       </ol>
+      {hidden > 0 && <p className="sr-only">{partyCopy.race.moreHidden(hidden)}</p>}
     </div>
   );
 }

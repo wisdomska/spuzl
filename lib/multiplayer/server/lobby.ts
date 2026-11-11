@@ -5,7 +5,7 @@ import type { CodeTarget } from "../types";
 import { ApiError } from "@/lib/api/server";
 import { serverBroadcast } from "@/lib/realtime/server";
 import { createRng } from "@/lib/rng";
-import { DUEL_ROUNDS, PARTY_GAMES, PARTY_MIN } from "../constants";
+import { DUEL_ROUNDS, PARTY_GAMES, PARTY_MIN, partyMaxFor } from "../constants";
 import { botTimes, firstRoundStart, newToGame, partyRoundStart, rankedPool, rulesBreakMs } from "../duel";
 import { isDuelGame, isPartyGame, pickGames } from "../games";
 import { getGameSettings } from "@/lib/game-settings/server";
@@ -327,7 +327,10 @@ export interface RoomInput {
   mode?: PartyMode;
 }
 
-export async function createRoom(admin: SupabaseClient, playerId: string, input: RoomInput) {
+export async function createRoom(admin: SupabaseClient, playerId: string, raw: RoomInput) {
+  // The admin's limit (party.maxPlayers): an older screen asking for more gets the largest room allowed.
+  const most = partyMaxFor((await getGameSettings())["party.maxPlayers"]);
+  const input = { ...raw, maxPlayers: Math.min(raw.maxPlayers, most) };
   if (isTurnMode(input.mode)) {
     // Draw It and Two Truths: no puzzle, no classroom; everyone takes a turn.
     const row = await insertWithCode(admin, {

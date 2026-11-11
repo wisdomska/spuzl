@@ -60,6 +60,12 @@ and a switched-on lab game has its public page, How to play entry, llms.txt line
 
 ## Reference notes
 
+- **Party size (1.50.0):** rooms hold up to 10 (the database's ceiling); the admin setting party.maxPlayers lowers
+  it. Every progress update reaches everyone in the room, so messages grow with the square of the room size: rooms of
+  7 or more send progress once a second (lib/multiplayer/constants progressMsFor). On Supabase's free Realtime plan
+  (about 100 messages a second, 2 million a month) one full room of 10 is near the per-second limit; several big
+  races at once, or more than 10, need the Pro plan.
+
 - **Leagues:** the weekly rollover merges a tier below `leagues.minGroup` into the nearest tier (players keep their own
   tier through `league_members.home_tier`). With few active players most of the ladder can share one group; the table
   shows each player's own zones, but the group name is the host tier's.

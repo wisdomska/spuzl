@@ -402,6 +402,17 @@ export const SETTINGS = {
     min: 2,
     max: 5,
   },
+  "party.maxPlayers": {
+    kind: "int",
+    group: PARTY,
+    label: "Most players in a Party",
+    help: "The biggest room a host can open. Hosts start at 8 and can pick any size up to this.",
+    more: "Up to 10, the most the live connection handles smoothly on the current plan: every move is sent to everyone in the room, so a bigger room sends many more messages. Rooms of 7 or more send each player's progress once a second instead of twice. Rooms already open keep their size; a lower limit applies to new rooms.",
+    default: 10,
+    min: 2,
+    max: 10,
+    noun: "players",
+  },
   "party.scoreRaces": {
     kind: "bool",
     group: PARTY,
