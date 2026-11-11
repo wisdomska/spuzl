@@ -11,7 +11,12 @@ export interface AdminMe {
   email: string | null;
   role: Role;
   permissions: Permission[];
-  counts: { puzzles: number; moderation: number | null };
+  /**
+   * Sidebar counts of things waiting on someone; null when the role cannot open that page. review: puzzles waiting
+   * for review; content: content items waiting for review; feedback: messages still new. (Older servers send only
+   * puzzles and moderation.)
+   */
+  counts: { puzzles: number; moderation: number | null; review?: number | null; content?: number | null; feedback?: number | null };
 }
 export const useAdminMe = () => useQuery({ queryKey: ["admin", "me"], queryFn: () => api<AdminMe>("/api/admin/me"), staleTime: 60_000 });
 
@@ -49,10 +54,12 @@ export function useAdminAction<I, O = unknown>(method: "POST" | "PATCH" | "PUT" 
 
 /** Human copy for API error codes. */
 export function errorText(e: unknown): string {
-  if (!(e instanceof HttpError)) return "Something went wrong. Try again.";
+  if (!(e instanceof HttpError)) return "Something went wrong. Check your connection and try again.";
   const map: Record<string, string> = {
-    forbidden: "Your role cannot do this.",
-    aal2_required: "Confirm your authenticator code to continue.",
+    forbidden: "Your role cannot do this. Ask the owner if you need it.",
+    aal2_required: "Enter the code we emailed you to continue.",
+    self: "You can't change your own access. Ask another owner.",
+    too_many: "Too many tries. Wait a minute and try again.",
     unauthenticated: "Your session ended. Sign in again.",
     not_admin: "This account has no admin role.",
     locked: "This Daily is locked.",
@@ -62,5 +69,7 @@ export function errorText(e: unknown): string {
     nickname_taken: "That nickname is taken.",
     not_flagged: "This score was already resolved.",
   };
-  return e.message && e.message !== e.code ? e.message : (map[e.code] ?? `Request failed (${e.code}).`);
+  return e.message && e.message !== e.code
+    ? e.message
+    : (map[e.code] ?? "That didn't work. Try again, and tell the owner if it keeps happening.");
 }
