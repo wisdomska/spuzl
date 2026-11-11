@@ -599,146 +599,285 @@ export function AuditPage() {
 
 /* ---------------- Team ---------------- */
 
+// Team's own imports from the shared console UI (kept with the section, so the pages above stay independent).
+import { Ago, Confirm, EmptyState, PageHeader, Section, TechDetails } from "./ui";
+
 const TEAM = adminCopy.team;
 const TEAM_FILTERS = { role: "" } as const;
 const TEAM_ALLOWED = { role: [...ROLES] };
 const TEAM_COLS: HeadCol<(typeof TEAM_SORT.keys)[number]>[] = [
-  { label: "Admin", sort: "email" },
-  { label: "Role", sort: "role" },
-  { label: "Email code", sort: "totp" },
-  { label: "Last sign-in" },
-  { label: "Access" },
+  { label: TEAM.head[0], sort: "email" },
+  { label: TEAM.head[1], sort: "role" },
+  { label: TEAM.head[2], sort: "totp" },
+  { label: TEAM.head[3] },
+  { label: TEAM.head[4] },
 ];
 
+interface TeamRow {
+  user_id: string;
+  role: Role;
+  email: string | null;
+  totp_enrolled: boolean;
+  disabled_at: string | null;
+  last_sign_in_at: string | null;
+}
+
+/** A change waiting for the owner's yes: a new role, or access removed or given back. */
+type TeamAsk = { row: TeamRow; who: string } & ({ kind: "role"; role: Role } | { kind: "access"; disabled: boolean });
+
+/**
+ * Team (owners only, admin overhaul): add someone with a role (the roles explained in plain words), then everyone
+ * with access: role, whether they finished their first sign-in, when they last signed in, and access. Role and
+ * access changes ask first and say what follows; the server still refuses changes to your own access.
+ */
 export function TeamPage() {
   const pager = usePager();
   const sort = useUrlSort(TEAM_SORT);
   const [{ role: roleFilter }, setFilters] = useUrlFilters(TEAM_FILTERS, TEAM_ALLOWED);
-  const q = useAdminQuery<
-    AdminPage<{
-      user_id: string;
-      role: Role;
-      email: string | null;
-      totp_enrolled: boolean;
-      disabled_at: string | null;
-      last_sign_in_at: string | null;
-    }> & { me: string }
-  >(
+  const q = useAdminQuery<AdminPage<TeamRow> & { me: string }>(
     ["team", roleFilter, sort.query, pager.query],
     `/api/admin/team?${roleFilter ? `role=${roleFilter}&` : ""}${sort.query}&${pager.query}`,
-    {
-      keepPrevious: true,
-    },
+    { keepPrevious: true },
   );
   const add = useAdminAction<{ email: string; role: Role }, { resetSent: boolean }>("POST", "/api/admin/team");
   const patch = useAdminAction<{ id: string; role?: Role; disabled?: boolean }>("PATCH", (i) => `/api/admin/team/${i.id}`);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<Role>("content_editor");
+  const [addedEmail, setAddedEmail] = useState("");
+  const [ask, setAsk] = useState<TeamAsk | null>(null);
+  const [done, setDone] = useState("");
+
+  const confirm = () => {
+    if (!ask) return;
+    const { row, who } = ask;
+    const input = ask.kind === "role" ? { id: row.user_id, role: ask.role } : { id: row.user_id, disabled: ask.disabled };
+    const message =
+      ask.kind === "role" ? TEAM.roleChanged(who, ROLE_LABEL[ask.role]) : ask.disabled ? TEAM.accessRemoved(who) : TEAM.accessRestored(who);
+    setDone("");
+    patch.mutate(input, { onSuccess: () => setDone(message), onSettled: () => setAsk(null) });
+  };
+
   return (
-    <div className="flex flex-col gap-3.5 px-6 py-5">
-      <PageTitle title={TEAM.title}>
-        <span className="text-muted text-[14px]">{TEAM.intro}</span>
-      </PageTitle>
-      <form
-        className="flex flex-wrap items-end gap-2"
-        onSubmit={(e) => {
-          e.preventDefault();
-          add.mutate({ email, role }, { onSuccess: () => (setEmail(""), pager.reset()) });
-        }}
-      >
-        <Field label={TEAM.email} htmlFor="t-email">
-          <input
-            id="t-email"
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className={`${inputCls} w-72`}
-          />
-        </Field>
-        <Field label={TEAM.role} htmlFor="t-role">
-          <select id="t-role" value={role} onChange={(e) => setRole(e.target.value as Role)} className={`${inputCls} w-48`}>
+    <div className="flex flex-col gap-4 px-4 py-5 sm:px-6">
+      <PageHeader title={TEAM.title} purpose={TEAM.intro} />
+
+      <div aria-live="polite" className="empty:hidden">
+        {done && (
+          <Notice tone="ok" icon="check-circle">
+            {done}
+          </Notice>
+        )}
+        {patch.error && <Notice tone="danger">{errorText(patch.error)}</Notice>}
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <Section id="team-add" title={TEAM.addTitle} description={TEAM.addIntro}>
+          <form
+            className="flex flex-wrap items-end gap-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const who = email.trim();
+              add.mutate(
+                { email: who, role },
+                {
+                  onSuccess: () => {
+                    setAddedEmail(who);
+                    setEmail("");
+                    pager.reset();
+                  },
+                },
+              );
+            }}
+          >
+            <div className="min-w-0 flex-[1_1_240px]">
+              <Field label={TEAM.email} htmlFor="t-email">
+                <input
+                  id="t-email"
+                  type="email"
+                  required
+                  autoComplete="off"
+                  placeholder={TEAM.emailPlaceholder}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={`${inputCls} h-11 w-full`}
+                />
+              </Field>
+            </div>
+            <div className="min-w-0 flex-[1_1_180px]">
+              <Field label={TEAM.role} htmlFor="t-role">
+                <select id="t-role" value={role} onChange={(e) => setRole(e.target.value as Role)} className={`${inputCls} h-11 w-full`}>
+                  {ROLES.map((r) => (
+                    <option key={r} value={r}>
+                      {ROLE_LABEL[r]}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+            <Btn type="submit" tone="primary" size="lg" icon="user-plus" disabled={add.isPending}>
+              {add.isPending ? TEAM.adding : TEAM.add}
+            </Btn>
+            <p className="text-muted w-full text-[13px] leading-[1.4]">
+              <span className="text-text font-semibold">{ROLE_LABEL[role]}:</span> {TEAM.roles[role]}
+            </p>
+          </form>
+          <div aria-live="polite" className="empty:hidden">
+            {add.error ? (
+              <Notice tone="danger">{errorText(add.error)}</Notice>
+            ) : add.data ? (
+              <Notice tone="ok" icon="check-circle">
+                {TEAM.added(addedEmail, add.data.resetSent)}
+              </Notice>
+            ) : null}
+          </div>
+        </Section>
+
+        <Section id="team-roles" title={TEAM.rolesTitle}>
+          <ul className="flex flex-col gap-2.5">
             {ROLES.map((r) => (
-              <option key={r} value={r}>
-                {ROLE_LABEL[r]}
-              </option>
+              <li key={r} className="flex flex-col gap-0.5 text-[14px]">
+                <span className="font-semibold">{ROLE_LABEL[r]}</span>
+                <span className="text-muted text-[13px] leading-[1.4]">{TEAM.roles[r]}</span>
+              </li>
             ))}
-          </select>
-        </Field>
-        <Btn type="submit" tone="primary" icon="user-plus" disabled={add.isPending}>
-          {TEAM.add}
-        </Btn>
-      </form>
-      {(add.error || patch.error) && <Notice tone="danger">{errorText(add.error ?? patch.error)}</Notice>}
-      {add.data && (
-        <Notice tone="ok" icon="check-circle">
-          {TEAM.added(add.data.resetSent)}
-        </Notice>
-      )}
-      <Field label={adminCopy.team.roleFilter} htmlFor="t-filter">
-        <select id="t-filter" value={roleFilter} onChange={(e) => setFilters({ role: e.target.value })} className={`${inputCls} h-11 w-48`}>
-          <option value="">{adminCopy.team.anyRole}</option>
+          </ul>
+        </Section>
+      </div>
+
+      <Section
+        id="team-list"
+        title={TEAM.listTitle}
+        aside={
+          <Field label={TEAM.roleFilter} htmlFor="t-filter">
+            <select
+              id="t-filter"
+              value={roleFilter}
+              onChange={(e) => setFilters({ role: e.target.value })}
+              className={`${inputCls} h-11 w-48`}
+            >
+              <option value="">{TEAM.anyRole}</option>
+              {ROLES.map((r) => (
+                <option key={r} value={r}>
+                  {ROLE_LABEL[r]}
+                </option>
+              ))}
+            </select>
+          </Field>
+        }
+      >
+        <div className="-mx-4 sm:-mx-5">
+          <Frame q={q}>
+            {() =>
+              q.data!.rows.length === 0 ? (
+                <EmptyState icon="users-three" title={roleFilter ? TEAM.empty : TEAM.emptyAll} />
+              ) : (
+                <Table head={TEAM_COLS} sort={sort} min={760}>
+                  {q.data!.rows.map((a) => (
+                    <TeamRowView key={a.user_id} a={a} self={a.user_id === q.data!.me} busy={patch.isPending} onAsk={setAsk} />
+                  ))}
+                </Table>
+              )
+            }
+          </Frame>
+        </div>
+        {q.data && q.data.total > 0 && <Pagination pager={pager} total={q.data.total} />}
+      </Section>
+
+      <Confirm
+        open={!!ask}
+        busy={patch.isPending}
+        danger={ask?.kind === "access" && ask.disabled}
+        title={
+          !ask
+            ? ""
+            : ask.kind === "role"
+              ? TEAM.confirmRoleTitle(ask.who, ROLE_LABEL[ask.role])
+              : ask.disabled
+                ? TEAM.confirmRemoveTitle(ask.who)
+                : TEAM.confirmRestoreTitle(ask.who)
+        }
+        body={
+          !ask
+            ? ""
+            : ask.kind === "role"
+              ? TEAM.confirmRoleBody(ROLE_LABEL[ask.role], TEAM.roles[ask.role])
+              : ask.disabled
+                ? TEAM.confirmRemoveBody
+                : TEAM.confirmRestoreBody(ROLE_LABEL[ask.row.role])
+        }
+        confirmLabel={!ask ? "" : ask.kind === "role" ? TEAM.changeRole : ask.disabled ? TEAM.remove : TEAM.restore}
+        onCancel={() => setAsk(null)}
+        onConfirm={confirm}
+      />
+    </div>
+  );
+}
+
+function TeamRowView({ a, self, busy, onAsk }: { a: TeamRow; self: boolean; busy: boolean; onAsk: (ask: TeamAsk) => void }) {
+  const who = a.email ?? TEAM.noEmail;
+  const locked = self ? TEAM.selfLocked : undefined;
+  return (
+    <tr className={a.disabled_at ? "text-muted" : undefined}>
+      <td className={td}>
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <span className="flex items-center gap-2 font-semibold break-all">
+            {who}
+            {self && <Pill tone="info">{TEAM.you}</Pill>}
+          </span>
+          <TechDetails summary={TEAM.idLabel} className="text-[12px]">
+            {a.user_id}
+          </TechDetails>
+        </div>
+      </td>
+      <td className={td}>
+        <select
+          aria-label={TEAM.roleAria(who)}
+          title={locked}
+          value={a.role}
+          disabled={self || busy}
+          onChange={(e) => onAsk({ kind: "role", role: e.target.value as Role, row: a, who })}
+          className={`${inputCls} h-11 w-44`}
+        >
           {ROLES.map((r) => (
             <option key={r} value={r}>
               {ROLE_LABEL[r]}
             </option>
           ))}
         </select>
-      </Field>
-      <Frame q={q}>
-        {() => (
-          <Table head={TEAM_COLS} sort={sort}>
-            {q.data!.rows.map((a) => {
-              const self = a.user_id === q.data!.me;
-              return (
-                <tr key={a.user_id}>
-                  <td className={`${td} font-semibold`}>
-                    {a.email ?? a.user_id.slice(0, 8)}
-                    {self && <span className="text-muted text-[13px] font-medium"> {TEAM.you}</span>}
-                  </td>
-                  <td className={td}>
-                    <select
-                      aria-label={TEAM.roleAria(a.email ?? a.user_id.slice(0, 8))}
-                      value={a.role}
-                      disabled={self || patch.isPending}
-                      onChange={(e) => patch.mutate({ id: a.user_id, role: e.target.value as Role })}
-                      className={`${inputCls} w-44`}
-                    >
-                      {ROLES.map((r) => (
-                        <option key={r} value={r}>
-                          {ROLE_LABEL[r]}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className={td}>
-                    {a.totp_enrolled ? <Pill tone="ok">{TEAM.totpOn}</Pill> : <Pill tone="warn">{TEAM.totpNotYet}</Pill>}
-                  </td>
-                  <td className={`${td} num text-muted text-[13px]`}>
-                    {a.last_sign_in_at ? TEAM.ago(age(a.last_sign_in_at)) : TEAM.never}
-                  </td>
-                  <td className={td}>
-                    {self ? (
-                      <span className="text-muted text-[13px]">{TEAM.active}</span>
-                    ) : (
-                      <Btn
-                        size="sm"
-                        tone={a.disabled_at ? "secondary" : "ghost"}
-                        icon={a.disabled_at ? "user-plus" : "user-minus"}
-                        disabled={patch.isPending}
-                        onClick={() => patch.mutate({ id: a.user_id, disabled: !a.disabled_at })}
-                      >
-                        {a.disabled_at ? TEAM.enable : TEAM.disable}
-                      </Btn>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </Table>
+      </td>
+      <td className={td}>
+        {a.totp_enrolled ? (
+          <Pill tone="ok">{TEAM.firstDone}</Pill>
+        ) : (
+          <Pill tone="warn" title={TEAM.firstNotYetHint}>
+            {TEAM.firstNotYet}
+          </Pill>
         )}
-      </Frame>
-      {q.data && <Pagination pager={pager} total={q.data.total} />}
-    </div>
+      </td>
+      <td className={`${td} text-[13px]`}>
+        <Ago iso={a.last_sign_in_at} />
+      </td>
+      <td className={td}>
+        <div className="flex flex-wrap items-center gap-2">
+          <Pill tone={a.disabled_at ? "danger" : "ok"} dot>
+            {a.disabled_at ? TEAM.removed : TEAM.canSignIn}
+          </Pill>
+          {self ? (
+            <span className="text-muted text-[12px]">{TEAM.selfLocked}</span>
+          ) : (
+            <Btn
+              size="sm"
+              tone={a.disabled_at ? "secondary" : "ghost"}
+              icon={a.disabled_at ? "user-plus" : "user-minus"}
+              disabled={busy}
+              className="h-11 sm:h-9"
+              onClick={() => onAsk({ kind: "access", disabled: !a.disabled_at, row: a, who })}
+            >
+              {a.disabled_at ? TEAM.restore : TEAM.remove}
+            </Btn>
+          )}
+        </div>
+      </td>
+    </tr>
   );
 }
