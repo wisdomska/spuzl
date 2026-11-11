@@ -2,10 +2,10 @@
  * /llms.txt and /llms-full.txt (llmstxt.org): what SPUZL is, for AI assistants and answer engines, in plain
  * Markdown. Built from the catalog and the SEO copy, so a new or retired game shows up (or drops out) by itself.
  */
-import { GAME_COUNT, WORLDS, WORLD_COUNT, gamesInWorld, type GameMeta } from "@/lib/catalog";
+import { WORLDS, WORLD_COUNT, type GameMeta, type LabSwitch } from "@/lib/catalog";
 import { SAFETY, SITE_FAQ, gamesCopy, llmsSummary, worldNames } from "@/lib/copy/seo";
 import { aboutCopy } from "@/lib/copy/about";
-import { gameDescription, gameFacts } from "./games";
+import { LIVE_ONLY, gameDescription, gameFacts, publicGames, publicGamesInWorld } from "./games";
 import { absoluteUrl } from "./site";
 
 const PAGES: [string, string, string][] = [
@@ -24,7 +24,7 @@ const asIs: CopyFn = (g) => g;
 const link = (path: string, name: string, note?: string) => `- [${name}](${absoluteUrl(path)})${note ? `: ${note}` : ""}`;
 
 /** The short index: H1, summary blockquote, then sections of links (llmstxt.org). */
-export function llmsTxt(copy: CopyFn = asIs): string {
+export function llmsTxt(copy: CopyFn = asIs, lab: LabSwitch = LIVE_ONLY): string {
   const out: string[] = [
     "# SPUZL",
     "",
@@ -36,11 +36,11 @@ export function llmsTxt(copy: CopyFn = asIs): string {
     "",
     "## Games",
     "",
-    link("/games", `All ${GAME_COUNT} games`, `the full catalogue, grouped by world`),
+    link("/games", `All ${publicGames(lab).length} games`, `the full catalogue, grouped by world`),
   ];
   for (const w of WORLDS) {
     out.push("", `### ${w.name}`, "", `${w.tagline}.`, "");
-    for (const g of gamesInWorld(w.id).map(copy)) out.push(link(`/games/${g.id}`, g.name, gameDescription(g)));
+    for (const g of publicGamesInWorld(w.id, lab).map(copy)) out.push(link(`/games/${g.id}`, g.name, gameDescription(g)));
   }
   out.push("", "## Guides and policies", "");
   for (const [path, name, note] of PAGES) out.push(link(path, name, note));
@@ -54,7 +54,7 @@ export function llmsTxt(copy: CopyFn = asIs): string {
 }
 
 /** Everything in one plain-text file: what SPUZL is, every game in full, the FAQ, safety for 13 to 15, links. */
-export function llmsFullTxt(copy: CopyFn = asIs): string {
+export function llmsFullTxt(copy: CopyFn = asIs, lab: LabSwitch = LIVE_ONLY): string {
   const out: string[] = [
     "# SPUZL",
     "",
@@ -65,7 +65,7 @@ export function llmsFullTxt(copy: CopyFn = asIs): string {
     SITE_FAQ[0].a,
     "",
     `- Website: ${absoluteUrl("/")}`,
-    `- Games: ${GAME_COUNT} in ${WORLD_COUNT} worlds (${worldNames})`,
+    `- Games: ${publicGames(lab).length} in ${WORLD_COUNT} worlds (${worldNames})`,
     "- Price: free. No download, no ads, nothing to buy with money. Nobody can pay to win.",
     "- Platforms: any modern web browser on Android, iPhone, tablets and computers; installable as an app (PWA).",
     "- Account: optional. Play as a guest; sign in with a 6-digit email code or Google to keep progress on any phone.",
@@ -80,9 +80,10 @@ export function llmsFullTxt(copy: CopyFn = asIs): string {
     "## Games",
   ];
   for (const w of WORLDS) {
-    out.push("", `### ${w.name}`, "", `${w.tagline}. ${gamesCopy.worldCount(gamesInWorld(w.id).length)}.`);
-    for (const g of gamesInWorld(w.id).map(copy)) {
-      const f = gameFacts(g);
+    const games = publicGamesInWorld(w.id, lab);
+    out.push("", `### ${w.name}`, "", `${w.tagline}. ${gamesCopy.worldCount(games.length)}.`);
+    for (const g of games.map(copy)) {
+      const f = gameFacts(g, lab);
       out.push(
         "",
         `#### ${g.name}`,

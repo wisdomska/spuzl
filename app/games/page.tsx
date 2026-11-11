@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { GAMES, WORLDS, gamesInWorld } from "@/lib/catalog";
+import { WORLDS } from "@/lib/catalog";
 import { Icon } from "@/components/ui/Icon";
 import { PublicShell } from "@/components/seo/PublicShell";
 import { GameLinkCard } from "@/components/seo/GameLinkCard";
@@ -7,6 +7,8 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { gamesCopy as T, seoMeta } from "@/lib/copy/seo";
 import { publicMetadata } from "@/lib/seo/site";
 import { servedCopy } from "@/lib/games-meta/server";
+import { servedLabSwitch } from "@/lib/game-settings/server";
+import { publicGames, publicGamesInWorld } from "@/lib/seo/games";
 import { breadcrumbs, gameList, graph } from "@/lib/seo/jsonld";
 
 export const metadata = publicMetadata({ path: "/games", ...seoMeta.games });
@@ -16,9 +18,10 @@ export const metadata = publicMetadata({ path: "/games", ...seoMeta.games });
  */
 export const revalidate = 3600;
 
-/** The crawlable game catalogue: every live game, grouped by world, each linking to its own page. Static. */
+/** The crawlable game catalogue: every game players can open, grouped by world, each linking to its own page. Static. */
 export default async function GamesIndex() {
   const copy = await servedCopy();
+  const lab = await servedLabSwitch();
   return (
     <PublicShell>
       <JsonLd
@@ -27,7 +30,7 @@ export default async function GamesIndex() {
             ["SPUZL", "/"],
             [T.allGames, "/games"],
           ]),
-          gameList(T.indexTitle, GAMES),
+          gameList(T.indexTitle, publicGames(lab)),
         )}
       />
       <h1 className="font-display text-[36px] leading-[1.02] font-black tracking-[-0.04em] text-balance sm:text-[56px]">{T.indexTitle}</h1>
@@ -41,7 +44,7 @@ export default async function GamesIndex() {
         ))}
       </ul>
       {WORLDS.map((w) => {
-        const games = gamesInWorld(w.id).map(copy);
+        const games = publicGamesInWorld(w.id, lab).map(copy);
         return (
           <section key={w.id} aria-labelledby={`world-${w.id}`} className="mt-12 flex flex-col gap-4">
             <div className="flex flex-wrap items-center justify-between gap-3">

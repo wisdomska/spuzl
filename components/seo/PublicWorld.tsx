@@ -1,19 +1,21 @@
 import Link from "next/link";
-import { WORLDS, WORLD_BY_ID, gamesInWorld, type WorldId } from "@/lib/catalog";
+import { WORLDS, WORLD_BY_ID, type LabSwitch, type WorldId } from "@/lib/catalog";
 import { Icon } from "@/components/ui/Icon";
 import { PublicShell } from "./PublicShell";
 import { GameLinkCard } from "./GameLinkCard";
 import { JsonLd } from "./JsonLd";
 import { gamesCopy, worldSeoCopy as T } from "@/lib/copy/seo";
 import { breadcrumbs, gameList, graph } from "@/lib/seo/jsonld";
+import { LIVE_ONLY, publicGamesInWorld } from "@/lib/seo/games";
 
 /**
  * A world for visitors and search engines (no session): what the world is, its games (each linking to its page),
  * Play now, and the other worlds. Server-rendered; players with a session get the World screen instead.
  */
-export function PublicWorld({ id }: { id: WorldId }) {
+export function PublicWorld({ id, lab = LIVE_ONLY }: { id: WorldId; lab?: LabSwitch }) {
   const w = WORLD_BY_ID[id];
-  const games = gamesInWorld(id);
+  // Its live games, then the lab games switched on for players (as on the World screen).
+  const games = publicGamesInWorld(id, lab);
   return (
     <PublicShell>
       <JsonLd

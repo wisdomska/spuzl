@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import sitemap from "@/app/sitemap";
+import { sitemapEntries as sitemap } from "./sitemap";
 import robots from "@/app/robots";
 import { ALL_GAMES, GAMES, LAB_GAMES, MERGED_WORLDS, RETIRED_GAMES, WORLDS } from "@/lib/catalog";
 import { GAME_SEO, SITE_FAQ, seoMeta } from "@/lib/copy/seo";
 import { AI_CRAWLERS, PRIVATE_PATHS } from "./crawlers";
-import { gameDescription, gameFacts, gameModes, gameTitle, publicGame } from "./games";
+import { gameDescription, gameFacts, gameModes, gameTitle, publicGame, publicGames, publicGamesInWorld } from "./games";
 import { llmsFullTxt, llmsTxt } from "./llms";
 import { breadcrumbs, faqPage, graph, jsonLdScript, organization, videoGame, webApplication, website } from "./jsonld";
 import { SITE_URL, absoluteUrl, publicMetadata } from "./site";
@@ -97,6 +97,46 @@ describe("llms.txt", () => {
     expect(full).toContain("13 and over");
     expect(full).toContain("Quick Match only ever pairs them with other 13 to 15 players");
     expect(full).toContain("preset phrases only");
+  });
+});
+
+describe("lab games switched on for players", () => {
+  const lab = { "features.labGames": LAB_GAMES.slice(0, 3).map((g) => g.id) };
+  const on = LAB_GAMES.slice(0, 3);
+  const off = LAB_GAMES.slice(3);
+
+  it("get a page, a sitemap entry, an llms.txt line and their world, after the live games", () => {
+    const urls = sitemap(lab).map((e) => e.url);
+    const short = llmsTxt(undefined, lab);
+    const full = llmsFullTxt(undefined, lab);
+    for (const g of on) {
+      expect(publicGame(g.id, lab), g.id).toBe(g);
+      expect(urls, g.id).toContain(absoluteUrl(`/games/${g.id}`));
+      expect(short, g.id).toContain(absoluteUrl(`/games/${g.id}`));
+      expect(full, g.id).toContain(`#### ${g.name}`);
+      const world = publicGamesInWorld(g.world, lab);
+      expect(world.indexOf(g), g.id).toBeGreaterThanOrEqual(world.filter((x) => !x.lab).length);
+    }
+    expect(publicGames(lab).length).toBe(GAMES.length + on.length);
+    expect(short).toContain(`All ${GAMES.length + on.length} games`);
+  });
+
+  it("never show while switched off", () => {
+    const urls = sitemap(lab).map((e) => e.url);
+    const short = llmsTxt(undefined, lab);
+    for (const g of off) {
+      expect(publicGame(g.id, lab), g.id).toBeUndefined();
+      expect(urls, g.id).not.toContain(absoluteUrl(`/games/${g.id}`));
+      expect(short, g.id).not.toContain(absoluteUrl(`/games/${g.id}`));
+    }
+    for (const g of RETIRED_GAMES) expect(publicGame(g.id, { "features.labGames": [g.id] }), g.id).toBeUndefined();
+  });
+
+  it("each have their own search wording, whole in the search description", () => {
+    for (const g of LAB_GAMES) {
+      expect(GAME_SEO[g.id], g.id).toBeTruthy();
+      expect(gameDescription(g), g.id).toContain(GAME_SEO[g.id].where);
+    }
   });
 });
 

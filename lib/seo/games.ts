@@ -1,9 +1,19 @@
 /**
  * Facts about each live game for the public game pages, JSON-LD and llms.txt. Everything is derived from the code
  * (catalog flags, level ladders, multiplayer rules, default play times), so a page can never claim a mode the game
- * does not have. Live games only: lab games stay off public pages, so a switched-off one never leaks.
+ * does not have. Live games, plus the lab games switched on for players (`lab`, "features.labGames"): a switched-off
+ * lab game never shows.
  */
-import { GAMES, WORLD_BY_ID, gamesInWorld, isLiveGame, type GameMeta } from "@/lib/catalog";
+import {
+  WORLD_BY_ID,
+  gamesInWorld,
+  labGamesInWorld,
+  openGame,
+  playerGames,
+  type GameMeta,
+  type LabSwitch,
+  type WorldId,
+} from "@/lib/catalog";
 import { durationLabel, defaultMetaFor } from "@/lib/games-meta";
 import { SEEDED_LADDERS, isLadderGame, levelCount } from "@/lib/game/levels";
 import { isRaceGame } from "@/lib/multiplayer/games";
@@ -32,8 +42,15 @@ export interface GameFacts {
   related: GameMeta[];
 }
 
-/** The live game for a public page, or undefined (unknown, retired and lab ids alike). */
-export const publicGame = (id: string): GameMeta | undefined => (isLiveGame(id) ? GAMES.find((g) => g.id === id) : undefined);
+/** No lab game switched on: the public pages show the live games only. */
+export const LIVE_ONLY: LabSwitch = { "features.labGames": [] };
+
+/** The game for a public page: live, or lab and switched on; undefined for unknown, retired and switched-off ids. */
+export const publicGame = (id: string, lab: LabSwitch = LIVE_ONLY): GameMeta | undefined => openGame(id, lab);
+/** Every game on the public pages: the live ones, then the switched-on lab games. */
+export const publicGames = (lab: LabSwitch = LIVE_ONLY): GameMeta[] => playerGames(lab);
+/** A world's games on the public pages: its live games, then its switched-on lab games (as on the World screen). */
+export const publicGamesInWorld = (w: WorldId, lab: LabSwitch = LIVE_ONLY): GameMeta[] => [...gamesInWorld(w), ...labGamesInWorld(w, lab)];
 
 export function gameModes(g: GameMeta): GameMode[] {
   const m: GameMode[] = ["free"];
@@ -44,7 +61,7 @@ export function gameModes(g: GameMeta): GameMode[] {
   return m;
 }
 
-export function gameFacts(g: GameMeta): GameFacts {
+export function gameFacts(g: GameMeta, lab: LabSwitch = LIVE_ONLY): GameFacts {
   const typicalSec = defaultMetaFor(g.id).typicalSec;
   const label = durationLabel(typicalSec);
   const levels = isLadderGame(g.id) ? levelCount(g.id) : undefined;
@@ -72,7 +89,7 @@ export function gameFacts(g: GameMeta): GameFacts {
     controls: CONTROLS[g.engine],
     scoring: SCORING[g.scoring],
     faq: faq.slice(0, 5),
-    related: gamesInWorld(g.world).filter((x) => x.id !== g.id),
+    related: publicGamesInWorld(g.world, lab).filter((x) => x.id !== g.id),
   };
 }
 

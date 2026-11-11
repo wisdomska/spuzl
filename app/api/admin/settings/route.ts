@@ -3,6 +3,7 @@ import { ApiError, body, handle, ok } from "@/lib/api/server";
 import { audit, requireAdmin } from "@/lib/admin/auth";
 import { DEFAULTS, SETTINGS, SETTING_LIST_MAX, mergeSettings, sameSetting, validateSetting } from "@/lib/game-settings/schema";
 import { getGameSettings, invalidateGameSettings } from "@/lib/game-settings/server";
+import { revalidatePublicCopy } from "@/lib/seo/revalidate";
 import { repickClosedGames } from "@/lib/daily-five/server";
 
 /** GET /api/admin/settings: every tunable with its definition, current value and last change. */
@@ -40,6 +41,8 @@ export const PUT = handle(async (req: Request) => {
     .upsert({ key, value, updated_by: ctx.user.id, updated_at: new Date().toISOString() }, { onConflict: "key" });
   if (error) throw error;
   invalidateGameSettings();
+  // A lab game switched on or off appears on (or leaves) the public game pages, How to play and llms.txt at once.
+  if (key === "features.labGames") revalidatePublicCopy();
   await audit(ctx, "setting.update", `setting:${key}`, { before: before?.value ?? null, after: value });
   // R4-06: a lab game switched off leaves today's and upcoming unlocked Daily Five days at once (audited), so the
   // server never refuses a slot it scheduled.

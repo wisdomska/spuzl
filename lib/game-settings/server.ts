@@ -1,7 +1,7 @@
 import "server-only";
 import { connection } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { openGame, type GameMeta } from "@/lib/catalog";
+import { openGame, type GameMeta, type LabSwitch } from "@/lib/catalog";
 import { DEFAULTS, mergeSettings, type GameSettings } from "./schema";
 
 let cache: { at: number; value: GameSettings } | null = null;
@@ -21,6 +21,10 @@ export async function getGameSettings(): Promise<GameSettings> {
   } catch {
     /* outside a request (scripts, tests, cron helpers): nothing to opt out of */
   }
+  return readSettings();
+}
+
+async function readSettings(): Promise<GameSettings> {
   if (cache && Date.now() - cache.at < TTL_MS) return cache.value;
   try {
     const { data, error } = await supabaseAdmin().from("game_settings").select("key, value");
@@ -39,6 +43,15 @@ export async function getGameSettings(): Promise<GameSettings> {
  */
 export async function openGameNow(id: string | null | undefined): Promise<GameMeta | undefined> {
   return openGame(id, await getGameSettings());
+}
+
+/**
+ * The lab games switched on, for the static public pages (game pages, games index, How to play, llms.txt) that are
+ * rebuilt hourly and at once after an admin changes "features.labGames" (lib/seo/revalidate). Unlike
+ * `getGameSettings` it does not make the page render per request.
+ */
+export async function servedLabSwitch(): Promise<LabSwitch> {
+  return { "features.labGames": (await readSettings())["features.labGames"] };
 }
 
 /** Drops the cache after an admin change so this instance serves the new value at once. */

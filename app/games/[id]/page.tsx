@@ -3,7 +3,7 @@ import { FaqAccordion } from "@/components/seo/FaqAccordion";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { GAMES, WORLD_BY_ID } from "@/lib/catalog";
+import { GAMES, LAB_GAMES, WORLD_BY_ID } from "@/lib/catalog";
 import { Icon } from "@/components/ui/Icon";
 import { PublicShell } from "@/components/seo/PublicShell";
 import { GameLinkCard } from "@/components/seo/GameLinkCard";
@@ -12,9 +12,13 @@ import { gamesCopy as T } from "@/lib/copy/seo";
 import { gameDescription, gameFacts, gameTitle, publicGame } from "@/lib/seo/games";
 import { publicMetadata } from "@/lib/seo/site";
 import { servedCopy } from "@/lib/games-meta/server";
+import { servedLabSwitch } from "@/lib/game-settings/server";
 import { breadcrumbs, faqPage, graph, videoGame } from "@/lib/seo/jsonld";
 
-/** One static page per live game. Lab and retired games have no public page (any other id is a real 404). */
+/**
+ * One static page per live game, and per lab game while it is switched on for players ("features.labGames"; a
+ * switched-off one is a 404, rebuilt at once when the admin switches it). Retired and unknown ids are a real 404.
+ */
 export const dynamicParams = false;
 /**
  * R4-10: the admin's rule and card copy (Library page) reach this page. Rebuilt at most hourly, and at once after a
@@ -23,12 +27,12 @@ export const dynamicParams = false;
 export const revalidate = 3600;
 
 export function generateStaticParams() {
-  return GAMES.map((g) => ({ id: g.id }));
+  return [...GAMES, ...LAB_GAMES].map((g) => ({ id: g.id }));
 }
 
 export async function generateMetadata({ params }: PageProps<"/games/[id]">): Promise<Metadata> {
   const { id } = await params;
-  const pg = publicGame(id);
+  const pg = publicGame(id, await servedLabSwitch());
   if (!pg) return {};
   const g = (await servedCopy())(pg);
   // The page's own opengraph-image.tsx fills in the share image (and Twitter inherits it).
@@ -41,11 +45,12 @@ const H2 = "font-display text-[24px] leading-tight font-black tracking-[-0.02em]
 
 export default async function GamePage({ params }: PageProps<"/games/[id]">) {
   const { id } = await params;
-  const pg = publicGame(id);
+  const lab = await servedLabSwitch();
+  const pg = publicGame(id, lab);
   if (!pg) notFound();
   const copy = await servedCopy();
   const g = copy(pg);
-  const facts0 = gameFacts(g);
+  const facts0 = gameFacts(g, lab);
   const f = { ...facts0, related: facts0.related.map(copy) };
   const world = WORLD_BY_ID[g.world];
   const crumbs = [

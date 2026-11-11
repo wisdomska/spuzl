@@ -82,6 +82,22 @@ export const GAME_SEO: Record<string, { kind: string; where: string }> = {
   oware: { kind: "board game", where: "sow seeds anticlockwise and capture the 2s and 3s on your rival's side" },
   ludo: { kind: "ludo game", where: "roll a 6 to bring a piece out, then race all four pieces home" },
   fourup: { kind: "four in a row game", where: "drop discs and win by lining up four in any direction" },
+  // Lab games: on public pages only while switched on for players ("features.labGames").
+  five: { kind: "word game", where: "guess the hidden 5-letter word in 6 tries, with tiles showing which letters fit where" },
+  hilo: { kind: "maths card game", where: "call whether each next card is higher or lower, ten calls with three slips allowed" },
+  penalty: { kind: "football game", where: "take five penalty kicks, tapping once to aim and again to set your power, to beat the keeper" },
+  market: { kind: "maths puzzle", where: "buy items at a Makola stall so you bring back the exact change and every rule holds" },
+  lightup: { kind: "logic puzzle", where: "place lamps to light every white cell, with no lamp shining on another" },
+  killer: {
+    kind: "killer sudoku",
+    where: "place each number once in every row, column and box, with every dotted cage adding up to its total",
+  },
+  dara: { kind: "board game", where: "step your stones across the board and take a rival stone each time you line up exactly three" },
+  pinned: { kind: "geography game", where: "drop a pin on the map where each landmark is, and the closer you get the more you score" },
+  flagged: { kind: "geography quiz", where: "name flags, capitals and currencies in 10 fast rounds of 10 seconds each" },
+  tripwire: { kind: "minesweeper", where: "reveal every safe tile without guessing, from numbers that count the mines touching each tile" },
+  pixl: { kind: "nonogram", where: "fill cells so every row and column matches its number clues, and a picture appears" },
+  twotruths: { kind: "trivia game", where: "spot the lie among three statements, two of them true, before the bar runs out" },
 };
 
 export const kindOf = (g: GameMeta) => GAME_SEO[g.id]?.kind ?? WORLD_KIND[g.world];

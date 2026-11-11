@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { FaqAccordion } from "@/components/seo/FaqAccordion";
 import Link from "next/link";
-import { WORLDS, gamesInWorld } from "@/lib/catalog";
+import { WORLDS } from "@/lib/catalog";
 import { Icon } from "@/components/ui/Icon";
 import { FreePlayRewards } from "@/components/info/FreePlayRewards";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -11,6 +11,8 @@ import { siteCopy } from "@/lib/copy/site";
 import { CONTROLS, PHOTOSENSITIVE, SCORING, SITE_FAQ, howToPlaySeoCopy as S, seoMeta } from "@/lib/copy/seo";
 import { publicMetadata } from "@/lib/seo/site";
 import { servedCopy } from "@/lib/games-meta/server";
+import { servedLabSwitch } from "@/lib/game-settings/server";
+import { publicGamesInWorld } from "@/lib/seo/games";
 import { breadcrumbs, faqPage, graph } from "@/lib/seo/jsonld";
 
 export const metadata: Metadata = publicMetadata({ path: "/how-to-play", ...seoMeta.howToPlay });
@@ -24,6 +26,7 @@ export const revalidate = 3600;
 // Copy for owner review before launch.
 export default async function HowToPlay() {
   const copy = await servedCopy();
+  const lab = await servedLabSwitch();
   return (
     <>
       <JsonLd
@@ -83,7 +86,7 @@ export default async function HowToPlay() {
             {w.name}
           </h2>
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-            {gamesInWorld(w.id)
+            {publicGamesInWorld(w.id, lab)
               .map(copy)
               .map((g) => (
                 <article key={g.id} className="bg-surface flex flex-col gap-1.5 rounded-[18px] p-4">
