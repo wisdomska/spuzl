@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import { Icon } from "@/components/ui/Icon";
-import { addDays, clock, compact, dayMonth, todayIso } from "@/lib/admin/dates";
-import { GAME_BY_ID } from "@/lib/catalog";
+import { addDays, compact, dayMonth, todayIso } from "@/lib/admin/dates";
+import { duration } from "@/lib/admin/format";
+import { change } from "@/lib/admin/insights";
+import { GAME_BY_ID, WORLD_BY_ID, type WorldId } from "@/lib/catalog";
 import { errorText, useAdminAction, useAdminQuery } from "@/lib/client/admin";
 import { adminCopy } from "@/lib/copy/admin";
-import { Notice, PageTitle, RowsSkeleton } from "./ui";
+import { Notice, RowsSkeleton } from "./ui";
 
 const C = adminCopy.liveops;
 
@@ -34,15 +36,28 @@ const stamp = (iso: string) => {
   const d = new Date(iso);
   return C.stamp(DAYS[d.getUTCDay()], d.getUTCDate(), MONTHS[d.getUTCMonth()], iso.slice(11, 16));
 };
-const delta = (now: number, then: number) => (then > 0 ? `${now >= then ? "+" : ""}${Math.round(((now - then) / then) * 100)}%` : null);
+const n = (v: number) => v.toLocaleString("en-US");
+const worldColor = (w: string) => WORLD_BY_ID[w as WorldId]?.color ?? "var(--line)";
 
-function Kpi({ label, value, sub, subTone }: { label: string; value: string; sub: string; subTone?: "ok" | "danger" }) {
+function Kpi({
+  label,
+  value,
+  sub,
+  help,
+  subTone,
+}: {
+  label: string;
+  value: string;
+  sub: string;
+  help?: string;
+  subTone?: "ok" | "danger";
+}) {
   return (
-    <div className="bg-surface flex flex-col gap-1 rounded-[12px] p-3.5">
-      <span className="text-muted text-[13px] font-medium">{label}</span>
-      <span className="num text-[28px] font-semibold">{value}</span>
+    <div className="bg-surface flex flex-col gap-1 rounded-[16px] p-4" title={help}>
+      <span className="text-[14px] font-semibold">{label}</span>
+      <span className="num text-[30px] leading-tight font-semibold">{value}</span>
       <span
-        className={`num text-[12px] font-semibold ${subTone === "ok" ? "text-accent" : subTone === "danger" ? "text-danger" : "text-muted"}`}
+        className={`text-[13px] leading-[1.35] font-medium ${subTone === "ok" ? "text-accent" : subTone === "danger" ? "text-danger" : "text-muted"}`}
       >
         {sub}
       </span>
@@ -63,82 +78,163 @@ function Alert({
 }) {
   const ring = tone === "danger" ? "var(--danger)" : tone === "warn" ? "var(--gold)" : "var(--line)";
   const bg = tone === "danger" ? "var(--danger-tint)" : tone === "warn" ? "var(--warn-tint)" : "var(--surface)";
-  const fg = tone === "danger" ? "text-danger" : tone === "warn" ? "text-gold" : "text-muted";
+  const fg = tone === "danger" ? "text-danger" : tone === "warn" ? "text-gold" : "text-accent";
   return (
     <div
-      className="flex min-h-[46px] items-center gap-2.5 rounded-[12px] px-3.5 py-3 text-[14px] font-medium"
+      className="flex min-h-[52px] flex-wrap items-center gap-2.5 rounded-[16px] px-4 py-3 text-[14px] font-medium"
       style={{ background: bg, boxShadow: `inset 0 0 0 1px ${ring}` }}
     >
       <Icon name={icon} size={20} className={fg} />
-      <span className="flex-1">{children}</span>
+      <span className="min-w-[200px] flex-1">{children}</span>
       {action}
     </div>
   );
 }
 
-/** Live ops dashboard (design: Admin live ops), FR-AD-06. Refreshes every minute. */
+const actionCls = "text-accent inline-flex h-11 items-center px-1 text-[14px] font-semibold hover:underline";
+
+/** Live now (was Live ops), FR-AD-06: what is happening right now and today, and what needs fixing. Refreshes every minute. */
 export function LiveOps({ canLock, canModerate }: { canLock: boolean; canModerate: boolean }) {
   const q = useAdminQuery<Live>(["liveops"], "/api/admin/liveops", { refetchInterval: 60_000 });
   const lock = useAdminAction<{ through: string }>("POST", "/api/admin/dailies/lock");
+  const ids = { attention: useId(), ccu: useId(), bygame: useId(), streaks: useId(), today: useId() };
   if (q.isPending) return <RowsSkeleton rows={10} height={56} />;
   if (q.error)
     return (
       <div className="p-6">
         <Notice tone="danger" icon="warning">
-          {errorText(q.error)}
+          {C.loadError} ({errorText(q.error)})
         </Notice>
       </div>
     );
   const d = q.data;
   const k = d.kpis;
-  const dauDelta = delta(k.dau, k.dau_last_week);
+  const vsWeek = k.dau_last_week > 0 ? change(k.dau, k.dau_last_week, "count") : null;
   const peak = Math.max(1, ...d.series.map((s) => s.players));
-  const top = d.byGame.slice(0, 8);
+  const top = d.byGame.filter((g) => g.clears || g.free_clears).slice(0, 8);
   const most = Math.max(1, ...top.map((g) => g.clears + g.free_clears));
   const streakMax = Math.max(1, ...d.streaks.map((s) => s.players));
   const label = (i: number) => (i === d.series.length - 1 ? C.now : d.series[i]?.slot_start.slice(11, 16));
   const lastWeekDay = DAYS[new Date(addDays(todayIso(), -7) + "T00:00:00Z").getUTCDay()];
+  const problems = (d.alerts.gapCount ? 1 : 0) + (d.alerts.unlocked ? 1 : 0) + (k.flagged ? 1 : 0);
+  const gap = d.alerts.gaps[0];
 
   return (
-    <div className="flex min-h-dvh flex-col gap-3.5 px-6 py-5">
-      <PageTitle title={C.title}>
-        <span className="num text-accent flex items-center gap-1.5 text-[13px] font-semibold">
-          <span aria-hidden className="bg-accent size-2 rounded-full" />
-          {C.live(stamp(d.now))}
-        </span>
-      </PageTitle>
+    <div className="flex min-h-dvh flex-col gap-5 px-4 py-5 md:px-6">
+      <header className="flex flex-col gap-1.5">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <h1 className="font-display text-[22px] font-extrabold tracking-[-0.01em]">{C.title}</h1>
+          <span className="num text-accent flex items-center gap-1.5 text-[13px] font-semibold">
+            <span aria-hidden className="bg-accent size-2 rounded-full" />
+            {C.live(stamp(d.now))}
+          </span>
+        </div>
+        <p className="text-[14px] leading-[1.45]">{C.purpose}</p>
+      </header>
 
-      <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-5">
-        <Kpi label={C.playersNow} value={k.players_now.toLocaleString("en-US")} sub={C.playersNowSub} />
-        <Kpi
-          label={C.dau}
-          value={compact(k.dau)}
-          sub={dauDelta ? C.vsLast(dauDelta, lastWeekDay) : C.yesterday(compact(k.dau_yesterday))}
-          subTone={dauDelta?.startsWith("+") ? "ok" : undefined}
-        />
-        <Kpi
-          label={C.d1}
-          value={d.retention.d1 === null ? C.notApplicable : C.percent(d.retention.d1)}
-          sub={C.cohort(d.retention.d1_cohort.toLocaleString("en-US"))}
-        />
-        <Kpi
-          label={C.d7}
-          value={d.retention.d7 === null ? C.notApplicable : C.percent(d.retention.d7)}
-          sub={C.cohort(d.retention.d7_cohort.toLocaleString("en-US"))}
-        />
-        <Kpi
-          label={C.flagged}
-          value={k.flagged.toLocaleString("en-US")}
-          sub={C.openReports(k.open_reports)}
-          subTone={k.flagged ? "danger" : undefined}
-        />
-      </div>
+      <section aria-labelledby={ids.attention} className="flex flex-col gap-2.5">
+        <h2 id={ids.attention} className="text-[17px] font-extrabold">
+          {C.needsAction}
+        </h2>
+        {!problems && <p className="text-muted text-[14px]">{C.allGood}</p>}
+        <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-3">
+          {d.alerts.gapCount ? (
+            <Alert
+              tone="danger"
+              icon="warning"
+              action={
+                <Link href={`/admin/calendar/${gap.game}/${gap.date}`} className={actionCls}>
+                  {C.fix}
+                </Link>
+              }
+            >
+              {d.alerts.gapCount === 1 ? C.oneGap(GAME_BY_ID[gap.game]?.name ?? gap.game, dayMonth(gap.date)) : C.gaps(d.alerts.gapCount)}
+            </Alert>
+          ) : (
+            <Alert tone="neutral" icon="check-circle">
+              {C.noGaps}
+            </Alert>
+          )}
+          {d.alerts.unlocked ? (
+            <Alert
+              tone="warn"
+              icon="lock-simple-open"
+              action={
+                canLock ? (
+                  <button
+                    type="button"
+                    disabled={lock.isPending}
+                    onClick={() => lock.mutate({ through: addDays(todayIso(), 7) })}
+                    className={`${actionCls} disabled:opacity-50`}
+                  >
+                    {lock.isPending ? C.locking : C.lock}
+                  </button>
+                ) : (
+                  <span className="text-muted text-[13px]">{C.noLockRole}</span>
+                )
+              }
+            >
+              {C.unlocked(d.alerts.unlocked)}
+            </Alert>
+          ) : (
+            <Alert tone="neutral" icon="lock-simple">
+              {C.allLocked}
+            </Alert>
+          )}
+          <Alert
+            tone={k.flagged ? "warn" : "neutral"}
+            icon={k.flagged ? "flag" : "check-circle"}
+            action={
+              k.flagged && canModerate ? (
+                <Link href="/admin/moderation" className={actionCls}>
+                  {C.view}
+                </Link>
+              ) : undefined
+            }
+          >
+            {k.flagged ? C.flaggedWaiting(k.flagged) : C.noFlagged}
+          </Alert>
+        </div>
+        <p role="status" aria-live="polite" className="text-[13px] font-medium">
+          {lock.isSuccess ? C.locked : lock.isError ? <span className="text-danger">{C.lockFailed}</span> : null}
+        </p>
+      </section>
+
+      <section aria-labelledby={ids.today} className="flex flex-col gap-2.5">
+        <h2 id={ids.today} className="sr-only">
+          {C.dau}
+        </h2>
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-5">
+          <Kpi label={C.playersNow} value={n(k.players_now)} sub={C.playersNowSub} />
+          <Kpi
+            label={C.dau}
+            value={n(k.dau)}
+            help={C.dauSub}
+            sub={vsWeek && vsWeek.amount !== null ? C.vsLast(vsWeek.dir, vsWeek.amount, lastWeekDay) : C.yesterday(n(k.dau_yesterday))}
+            subTone={vsWeek?.dir === "up" ? "ok" : undefined}
+          />
+          <Kpi
+            label={C.d1}
+            value={d.retention.d1 === null ? C.notApplicable : C.percent(d.retention.d1)}
+            sub={C.cohort(n(d.retention.d1_cohort))}
+          />
+          <Kpi
+            label={C.d7}
+            value={d.retention.d7 === null ? C.notApplicable : C.percent(d.retention.d7)}
+            sub={C.cohort(n(d.retention.d7_cohort))}
+          />
+          <Kpi label={C.flagged} value={n(k.flagged)} sub={C.openReports(k.open_reports)} subTone={k.flagged ? "danger" : undefined} />
+        </div>
+      </section>
 
       <div className="grid flex-1 grid-cols-1 gap-3.5 lg:grid-cols-[1.4fr_1fr]">
-        <section aria-labelledby="ccu" className="bg-surface flex min-h-[320px] flex-col gap-2.5 rounded-[12px] p-4">
-          <h2 id="ccu" className="text-[14px] font-bold">
-            {C.active}
-          </h2>
+        <section aria-labelledby={ids.ccu} className="bg-surface flex min-h-[320px] flex-col gap-2.5 rounded-[16px] p-4">
+          <div>
+            <h2 id={ids.ccu} className="text-[15px] font-bold">
+              {C.active}
+            </h2>
+            <p className="text-muted text-[13px]">{C.activeIntro}</p>
+          </div>
           <div className="flex flex-1 items-end gap-[3px]" role="img" aria-label={C.activeAria(peak, d.series.at(-1)?.players ?? 0)}>
             {d.series.map((s, i) => (
               <span
@@ -160,105 +256,51 @@ export function LiveOps({ canLock, canModerate }: { canLock: boolean; canModerat
         </section>
 
         <div className="flex flex-col gap-3.5">
-          <section aria-labelledby="bygame" className="bg-surface flex flex-col gap-2.5 rounded-[12px] p-4">
-            <h2 id="bygame" className="text-[14px] font-bold">
-              {C.byGame}
-            </h2>
-            {top.every((g) => !g.clears && !g.free_clears) && <span className="text-muted text-[13px]">{C.noClears}</span>}
+          <section aria-labelledby={ids.bygame} className="bg-surface flex flex-col gap-2.5 rounded-[16px] p-4">
+            <div>
+              <h2 id={ids.bygame} className="text-[15px] font-bold">
+                {C.byGame}
+              </h2>
+              <p className="text-muted text-[13px]">{C.byGameIntro}</p>
+            </div>
+            {!top.length && <span className="text-muted text-[14px]">{C.noClears}</span>}
             {top.map((g) => (
               <div key={g.game_id} className="flex items-center gap-2.5 text-[13px] font-medium">
-                <span aria-hidden className="size-2.5 shrink-0 rounded-[3px]" style={{ background: `var(--w-${g.world})` }} />
-                <span className="w-[86px] truncate">{g.name}</span>
+                <span aria-hidden className="size-2.5 shrink-0 rounded-[3px]" style={{ background: worldColor(g.world) }} />
+                <span className="w-[96px] truncate">{g.name}</span>
                 <div className="bg-line h-2 flex-1 overflow-hidden rounded-[4px]">
                   <div
                     className="h-full origin-left"
-                    style={{ width: `${((g.clears + g.free_clears) / most) * 100}%`, background: `var(--w-${g.world})` }}
+                    style={{ width: `${((g.clears + g.free_clears) / most) * 100}%`, background: worldColor(g.world) }}
                   />
                 </div>
-                <span className="num w-14 text-right text-[12px] font-semibold" title={C.clearsTitle(g.clears, g.free_clears)}>
+                <span className="num w-12 text-right text-[13px] font-semibold" title={C.clearsTitle(g.clears, g.free_clears)}>
                   {compact(g.clears + g.free_clears)}
                 </span>
-                <span className="num text-muted w-11 text-right text-[12px] font-medium">{clock(g.median_ms) || C.notApplicable}</span>
+                <span className="num text-muted w-[92px] text-right text-[12px] font-medium">
+                  {duration(g.median_ms) ? C.typicalTime(duration(g.median_ms)!) : ""}
+                </span>
               </div>
             ))}
           </section>
-          <section aria-labelledby="streaks" className="bg-surface flex flex-col gap-2 rounded-[12px] p-4">
-            <h2 id="streaks" className="text-[14px] font-bold">
-              {C.streaks}
-            </h2>
+          <section aria-labelledby={ids.streaks} className="bg-surface flex flex-col gap-2 rounded-[16px] p-4">
+            <div>
+              <h2 id={ids.streaks} className="text-[15px] font-bold">
+                {C.streaks}
+              </h2>
+              <p className="text-muted text-[13px]">{C.streaksIntro}</p>
+            </div>
             {d.streaks.map((s) => (
               <div key={s.bucket} className="flex items-center gap-2.5 text-[13px] font-medium">
-                <span className="num text-muted w-[72px] text-[12px]">{s.bucket}</span>
+                <span className="num text-muted w-[92px] text-[12px]">{C.streakBucket(s.bucket)}</span>
                 <div className="bg-line h-2 flex-1 overflow-hidden rounded-[4px]">
                   <div className="bg-accent h-full" style={{ width: `${(s.players / streakMax) * 100}%` }} />
                 </div>
-                <span className="num w-14 text-right text-[12px] font-semibold">{compact(s.players)}</span>
+                <span className="num w-14 text-right text-[13px] font-semibold">{compact(s.players)}</span>
               </div>
             ))}
           </section>
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-3">
-        {d.alerts.gapCount ? (
-          <Alert
-            tone="danger"
-            icon="warning"
-            action={
-              <Link
-                href={`/admin/calendar/${d.alerts.gaps[0].game}/${d.alerts.gaps[0].date}`}
-                className="text-accent text-[13px] font-semibold hover:underline"
-              >
-                {C.fix}
-              </Link>
-            }
-          >
-            {d.alerts.gapCount === 1
-              ? C.oneGap(GAME_BY_ID[d.alerts.gaps[0].game]?.name ?? d.alerts.gaps[0].game, dayMonth(d.alerts.gaps[0].date))
-              : C.gaps(d.alerts.gapCount)}
-          </Alert>
-        ) : (
-          <Alert tone="neutral" icon="check-circle">
-            {C.noGaps}
-          </Alert>
-        )}
-        {d.alerts.unlocked ? (
-          <Alert
-            tone="warn"
-            icon="lock-simple-open"
-            action={
-              canLock ? (
-                <button
-                  type="button"
-                  disabled={lock.isPending}
-                  onClick={() => lock.mutate({ through: addDays(todayIso(), 7) })}
-                  className="text-accent text-[13px] font-semibold hover:underline"
-                >
-                  {C.lock}
-                </button>
-              ) : undefined
-            }
-          >
-            {C.unlocked(d.alerts.unlocked)}
-          </Alert>
-        ) : (
-          <Alert tone="neutral" icon="lock-simple">
-            {C.allLocked}
-          </Alert>
-        )}
-        <Alert
-          tone={k.flagged ? "warn" : "neutral"}
-          icon="flag"
-          action={
-            canModerate ? (
-              <Link href="/admin/moderation" className="text-accent text-[13px] font-semibold hover:underline">
-                {C.view}
-              </Link>
-            ) : undefined
-          }
-        >
-          {k.flagged ? C.flaggedWaiting(k.flagged) : C.noFlagged}
-        </Alert>
       </div>
     </div>
   );

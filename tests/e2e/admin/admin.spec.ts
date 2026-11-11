@@ -217,7 +217,7 @@ test("tablet: calendar and live ops stay usable at 834 px, light theme", async (
   await page.goto("/admin/calendar");
   await expect(page.getByRole("heading", { name: "Daily calendar" })).toBeVisible();
   await page.goto("/admin/liveops");
-  await expect(page.getByText("D7 retention")).toBeVisible();
+  await expect(page.getByText("Came back a week later")).toBeVisible();
   const scroll = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(scroll).toBeLessThanOrEqual(0);
 });
