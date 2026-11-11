@@ -1,7 +1,6 @@
 "use client";
 
 import { useId, useState } from "react";
-import { Icon } from "@/components/ui/Icon";
 import { readYearInput } from "@/lib/age";
 import { ageCopy as C } from "@/lib/copy/age";
 
@@ -14,7 +13,9 @@ export interface Birth {
  * Birth month and year, never the day, each with a visible label and a 56 px target.
  *
  * R2-09 control choice (fastest on a mid-range Android phone, and accessible):
- * - Month: a native select. Twelve rows fit Android's picker dialog without scrolling, and screen readers know it.
+ * - Month: twelve buttons (Jan to Dec, 4 × 3, 48 px), one tap with no list to open: native radio buttons under the
+ *   app's styling, so screen readers hear "Month, group" and the full month name, and the arrow keys move between
+ *   them. (R7: replaced the native select, whose OS list didn't match the app.)
  * - Year: a 4-digit numeric field (numeric keypad via inputMode, autofill via `bday-year`). Four taps for any
  *   age, where a year list needs a fling through up to 87 rows in a dialog. It has no list to start at the wrong
  *   end, and an under-13 year can still be typed truthfully: the age gate then turns the visitor away and keeps
@@ -27,28 +28,35 @@ export function BirthPicker({ value, onChange, error }: { value: Birth; onChange
   const described = [`${id}-yh`, error ? `${id}-err` : null].filter(Boolean).join(" ");
   return (
     <div className="flex flex-col gap-2">
+      <fieldset role="radiogroup" className="flex min-w-0 flex-col gap-1.5" aria-describedby={error ? `${id}-err` : undefined}>
+        <legend className="mb-1.5 text-[15px] font-semibold">{C.month}</legend>
+        <div className="grid grid-cols-4 gap-2" data-birth-months>
+          {C.months.map((m, i) => {
+            const n = i + 1;
+            return (
+              <label key={m} className="relative">
+                <input
+                  type="radio"
+                  name={`${id}-month`}
+                  value={n}
+                  checked={value.month === n}
+                  onChange={() => onChange({ ...value, month: n })}
+                  className="peer absolute inset-0 z-[1] m-0 cursor-pointer appearance-none rounded-[14px] opacity-0"
+                />
+                <span
+                  aria-hidden
+                  className="bg-surface-raised text-text peer-focus-visible:outline-accent flex h-12 cursor-pointer items-center justify-center rounded-[14px] text-[16px] font-semibold shadow-[inset_0_0_0_2px_var(--line)] transition-transform duration-100 peer-checked:bg-[color-mix(in_srgb,var(--accent)_16%,var(--surface-raised))] peer-checked:font-bold peer-checked:shadow-[inset_0_0_0_2px_var(--accent)] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-active:scale-[0.97] motion-reduce:transition-none"
+                >
+                  {C.monthsShort[i]}
+                </span>
+                <span className="sr-only">{m}</span>
+              </label>
+            );
+          })}
+        </div>
+      </fieldset>
       <div className="flex gap-2.5">
-        <Field id={`${id}-m`} label={C.month} className="flex-[3]" caret>
-          <select
-            id={`${id}-m`}
-            value={value.month ?? ""}
-            onChange={(e) => onChange({ ...value, month: e.target.value ? Number(e.target.value) : null })}
-            aria-invalid={!!error}
-            aria-describedby={error ? `${id}-err` : undefined}
-            autoComplete="bday-month"
-            className="h-full w-full appearance-none bg-transparent pr-10 pl-4 text-[17px] font-semibold outline-none"
-          >
-            <option value="" className="bg-surface">
-              {C.pickMonth}
-            </option>
-            {C.months.map((m, i) => (
-              <option key={m} value={i + 1} className="bg-surface">
-                {m}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field id={`${id}-y`} label={C.year} className="flex-[2]">
+        <Field id={`${id}-y`} label={C.year} className="flex-1">
           <input
             id={`${id}-y`}
             type="text"
@@ -82,19 +90,7 @@ export function BirthPicker({ value, onChange, error }: { value: Birth; onChange
   );
 }
 
-function Field({
-  id,
-  label,
-  className,
-  caret,
-  children,
-}: {
-  id: string;
-  label: string;
-  className: string;
-  caret?: boolean;
-  children: React.ReactNode;
-}) {
+function Field({ id, label, className, children }: { id: string; label: string; className: string; children: React.ReactNode }) {
   return (
     <div className={`flex min-w-0 flex-col gap-1.5 ${className}`}>
       <label htmlFor={id} className="text-[15px] font-semibold">
@@ -106,7 +102,6 @@ function Field({
         style={{ boxShadow: "inset 0 0 0 2px var(--line)" }}
       >
         {children}
-        {caret && <Icon name="caret-down" size={18} className="text-muted pointer-events-none absolute right-3.5" />}
       </div>
     </div>
   );

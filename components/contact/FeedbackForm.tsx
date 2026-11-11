@@ -12,6 +12,7 @@ import { Icon } from "@/components/ui/Icon";
 import { HttpError, api } from "@/lib/client/api";
 import { contactCopy } from "@/lib/copy/contact";
 import { FEEDBACK_KINDS, MESSAGE_MAX, feedbackProblem, sanitiseFrom, type FeedbackKind } from "@/lib/feedback";
+import { Select } from "@/components/ui/Select";
 
 const C = contactCopy.form;
 type State = { s: "idle" } | { s: "sending" } | { s: "sent"; withEmail: boolean } | { s: "error"; text: string };
@@ -100,20 +101,15 @@ export function FeedbackForm({ from }: { from: string | null }) {
         <label htmlFor={`${id}-kind`} className={label}>
           {C.kind} <span className="text-muted text-[13px] font-medium">({C.kindOptional})</span>
         </label>
-        <select
+        <Select
           id={`${id}-kind`}
           name="kind"
+          tone="app"
           value={kind}
-          onChange={(e) => setKind(e.target.value as "" | FeedbackKind)}
-          className={`${field} appearance-auto`}
-        >
-          <option value="">{C.kindAny}</option>
-          {FEEDBACK_KINDS.map((k) => (
-            <option key={k} value={k}>
-              {C.kinds[k]}
-            </option>
-          ))}
-        </select>
+          onValueChange={(v) => setKind(v as "" | FeedbackKind)}
+          options={[{ value: "", label: C.kindAny }, ...FEEDBACK_KINDS.map((k) => ({ value: k, label: C.kinds[k] }))]}
+          className="w-full"
+        />
       </div>
 
       <div className="flex flex-col gap-1.5">

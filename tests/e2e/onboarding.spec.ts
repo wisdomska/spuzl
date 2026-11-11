@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { GAME_COUNT } from "@/lib/catalog";
-import { logGuest, pickBirth } from "./harness";
+import { logGuest, pickBirth, pickMonth } from "./harness";
 
 /** SPZ-15 + SPZ-05: plain start choices, lesson flows into "Make Spuz yours", CTA names the destination, lesson counts today. */
 test("onboarding: lesson, merged celebration, named CTA, counted on Home", async ({ page }, info) => {
@@ -39,12 +39,12 @@ test("onboarding: birth month and year first, under 13 keeps nothing", async ({ 
   await expect(page.getByText(/It's set once/)).toBeVisible();
   // Month and year only: no day picker.
   await expect(page.getByLabel("Day")).toHaveCount(0);
-  for (const name of ["Month", "Year"]) {
-    const box = await page.getByLabel(name, { exact: true }).boundingBox();
-    expect(box!.height).toBeGreaterThanOrEqual(44);
-  }
+  const chip = await page.getByRole("radiogroup", { name: "Month" }).locator("label").first().boundingBox();
+  expect(chip!.height).toBeGreaterThanOrEqual(44);
+  const yearBox = await page.getByLabel("Year", { exact: true }).boundingBox();
+  expect(yearBox!.height).toBeGreaterThanOrEqual(44);
   const y = new Date().getUTCFullYear();
-  await page.getByLabel("Month", { exact: true }).selectOption("1");
+  await pickMonth(page, 1);
   await page.getByLabel("Year", { exact: true }).fill(String(y - 10));
   await page.getByRole("button", { name: /^Continue\b/ }).click();
   await expect(page.getByRole("heading", { name: "SPUZL is for 13 and up" })).toBeVisible();

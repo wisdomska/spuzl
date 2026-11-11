@@ -1,5 +1,5 @@
 import { expect, test, type Browser } from "@playwright/test";
-import { ageOf, keepFocus, onboardGuest, runAxe, VIEWPORTS } from "./harness";
+import { ageOf, keepFocus, onboardGuest, pickMonth, runAxe, VIEWPORTS } from "./harness";
 
 /**
  * R2-09 birth step: month select + 4-digit numeric year field (numeric keypad, `bday-year` autofill), a Continue
@@ -32,10 +32,13 @@ for (const [w, viewport] of SIZES) {
       await expect(year).toHaveAttribute("autocomplete", "bday-year");
       await expect(year).toHaveAttribute("maxlength", "4");
       await expect(page.getByLabel("Day")).toHaveCount(0);
-      for (const name of ["Month", "Year"]) {
-        const box = await page.getByLabel(name, { exact: true }).boundingBox();
-        expect(box!.height).toBeGreaterThanOrEqual(44);
-      }
+      // R7: the month is twelve buttons (radios), each a 44 px target or more; the year a 44 px field.
+      const months = page.getByRole("radiogroup", { name: "Month" });
+      await expect(months.getByRole("radio")).toHaveCount(12);
+      const chip = await months.locator("label").first().boundingBox();
+      expect(chip!.height).toBeGreaterThanOrEqual(44);
+      const yearBox = await page.getByLabel("Year", { exact: true }).boundingBox();
+      expect(yearBox!.height).toBeGreaterThanOrEqual(44);
       await expect(page.getByText(/It's set once, so go with your real month and year/)).toBeVisible();
       await expect(page.getByText(/can't change this later/)).toHaveCount(0);
 
@@ -46,7 +49,7 @@ for (const [w, viewport] of SIZES) {
       expect(await runAxe(page)).toEqual([]);
 
       // Digits only, four at most; Continue waits for all four.
-      await page.getByLabel("Month", { exact: true }).selectOption("6");
+      await pickMonth(page, 6);
       await year.fill("20");
       await expect(go).toBeDisabled();
       await year.pressSequentially("0a815");
@@ -61,7 +64,7 @@ for (const [w, viewport] of SIZES) {
       const { ctx, page } = await birthStep(browser, viewport);
       const year = page.getByLabel("Year", { exact: true });
       const go = page.getByRole("button", { name: /^Continue\b/ });
-      await page.getByLabel("Month", { exact: true }).selectOption("1");
+      await pickMonth(page, 1);
       await year.fill(String(y + 1));
       await go.click();
       await expect(page.locator("main").getByRole("alert")).toHaveText("That's in the future. Check the month and year.");
@@ -76,7 +79,7 @@ for (const [w, viewport] of SIZES) {
 
     test("the keypad's Done key continues; under 13 is typed honestly and turned away", async ({ browser }) => {
       const { ctx, page } = await birthStep(browser, viewport);
-      await page.getByLabel("Month", { exact: true }).selectOption("1");
+      await pickMonth(page, 1);
       await page.getByLabel("Year", { exact: true }).fill(String(y - 10));
       await page.getByLabel("Year", { exact: true }).press("Enter");
       await expect(page.getByRole("heading", { name: "SPUZL is for 13 and up" })).toBeVisible();

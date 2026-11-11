@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { onboardGuest, runAxe, VIEWPORTS } from "./harness";
+import { onboardGuest, pickOption, runAxe, VIEWPORTS } from "./harness";
 
 /**
  * R4-02: feedback the way SPIL does it. A signed-out visitor sends a message from /contact; a signed-in guest opens
@@ -62,9 +62,7 @@ for (const [name, viewport] of Object.entries(VIEWPORTS)) {
     await link.click();
     await page.waitForURL((u) => u.pathname === "/contact" && u.searchParams.get("from") === "/settings");
     await expect(form(page).getByText("We'll add the page you came from: /settings")).toBeVisible();
-    await form(page)
-      .getByLabel(/What is it about\?/)
-      .selectOption({ label: "Idea" });
+    await pickOption(form(page), /What is it about\?/, "Idea");
     await form(page).getByLabel("Email, if you want a reply").fill("qa-feedback@example.com");
     await form(page).getByLabel("Message").fill(`Please add a dark theme timer option (qa ${Date.now()}).`);
     await page.screenshot({ path: `${SHOTS}/r4-02-settings-from-${w}.png`, fullPage: true });

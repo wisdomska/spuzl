@@ -13,6 +13,7 @@ import { SCOPES, SCOPE_LABEL, addDays, shortDate, type Scope } from "@/lib/meta"
 import { formatNumber, formatClock, gmtDate } from "@/lib/format";
 import { ordinal } from "@/lib/leagues";
 import { PLAY_NAV } from "@/lib/analytics/play-nav";
+import { Select } from "@/components/ui/Select";
 
 const NEEDS: Record<NonNullable<BoardRes["needs"]>, { title: string; body: string; href: string; cta: string }> = {
   crew: { title: "No crew yet", body: "Start one or join with a code, then race your crew every day.", href: "/crews", cta: "Find a crew" },
@@ -92,21 +93,14 @@ export default function LeaderboardsPage() {
           <span className="truncate">{meta?.name ?? "All games"}</span>
           <Icon name="caret-down" size={16} className="text-muted ml-auto" />
         </button>
-        <label className="bg-surface relative flex h-11 items-center gap-2 rounded-[14px] px-3 text-[15px] font-semibold">
-          <span className="sr-only">Day</span>
-          <select
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="appearance-none bg-transparent pr-6 text-[15px] font-semibold outline-none"
-          >
-            {dates.map((x, i) => (
-              <option key={x} value={x} className="bg-surface">
-                {i === 0 ? "Today" : i === 1 ? "Yesterday" : shortDate(x)}
-              </option>
-            ))}
-          </select>
-          <Icon name="caret-down" size={16} className="text-muted pointer-events-none absolute right-3" />
-        </label>
+        <Select
+          tone="chip"
+          aria-label="Day"
+          value={date}
+          onValueChange={setDate}
+          options={dates.map((x, i) => ({ value: x, label: i === 0 ? "Today" : i === 1 ? "Yesterday" : shortDate(x) }))}
+          className="w-auto shrink-0"
+        />
       </div>
 
       {q.isPending ? (

@@ -1,6 +1,8 @@
 /** Player-facing copy for age: the birth month and year step, the one-time ask for players from before, Settings. */
 export const ageCopy = {
   months: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+  /** The month buttons on the birth step show these; screen readers hear the full name. */
+  monthsShort: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
   bands: { "13-15": "13 to 15", "16-17": "16 to 17", "18+": "18 or older" } as Record<string, string>,
 
   /** Onboarding step, straight after choosing how to start (guest, Google, email). */

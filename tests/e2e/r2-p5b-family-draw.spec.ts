@@ -1,6 +1,6 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { admin } from "../api/helpers";
-import { birthFor, keepFocus, logGuest, onboardGuest, testSignIn, VIEWPORTS, type Age } from "./harness";
+import { birthFor, keepFocus, logGuest, onboardGuest, pickMonth, testSignIn, VIEWPORTS, type Age } from "./harness";
 
 /**
  * R2-P5 part B: Family Draw, Draw It for signed-in players aged 16 and over (party mode "drawfam", setting
@@ -46,7 +46,7 @@ async function member(browser: Browser, age: Age, viewport: { width: number; hei
   // A new account sets up like a new player: birth month and year, then a nickname.
   await expect(page.getByRole("heading", { name: /When were you born\?/ })).toBeVisible({ timeout: 30_000 });
   const b = birthFor(age);
-  await page.getByLabel("Month", { exact: true }).selectOption(String(b.month));
+  await pickMonth(page, b.month);
   await page.getByLabel("Year", { exact: true }).fill(String(b.year));
   await page.getByRole("button", { name: /^Continue\b/ }).click();
   await page.getByRole("button", { name: /Jump straight in|Go to the map/ }).click();

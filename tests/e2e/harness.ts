@@ -17,6 +17,8 @@
  *   openPartyRoom(page)                opens a Party room, returns its 4-character code
  *   duelFriend(browser, o)             two players in two contexts: host creates a friend duel, guest joins by code
  *   partyRoom(browser, n, o)           n players in n contexts in one Party room (host first)
+ *   pickOption(page|scope, label, opt) picks an option in the app's dropdown (components/ui/Select), by labels
+ *   pickMonth(page, month)             taps a birth month (1 to 12) on the onboarding age step
  *   runAxe(page, o)                    axe-core scan; returns serious/critical violations
  *   throttle(page, profile)            network profile via CDP (Chromium): "4g" | "slow3g" | "offline" | "none"
  *
@@ -24,6 +26,8 @@
  * today's Daily. The /dev routes exist only when ENABLE_DEV_ROUTES=1 or outside production.
  */
 import { expect, type Browser, type Page } from "@playwright/test";
+import { pickMonth } from "./pick";
+export { pickMonth, pickOption } from "./pick";
 import { GAMES, LAB_GAMES } from "@/lib/catalog";
 import { createRng } from "@/lib/rng";
 import type { Difficulty } from "@/games/types";
@@ -76,15 +80,15 @@ export async function logGuest(page: Page) {
 /** The onboarding step "When were you born?": picks a birth month and year (a band, or exact values) and continues. */
 export async function pickBirth(page: Page, age: Age | { year: number; month?: number } = "18+") {
   const b = typeof age === "string" ? birthFor(age) : { year: age.year, month: age.month ?? 12 };
-  const month = page.getByLabel("Month", { exact: true });
   const year = page.getByLabel("Year", { exact: true });
   const go = page.getByRole("button", { name: /^Continue\b/ });
   // A pick made before the page hydrates can be reset by React (the fields are controlled): pick again until it holds.
   await expect(async () => {
-    await month.selectOption(String(b.month));
+    // R7: the month is twelve buttons (radios), not a select.
+    const month = await pickMonth(page, b.month);
     // R2-09: the year is a 4-digit numeric field (it was a select).
     await year.fill(String(b.year));
-    await expect(month).toHaveValue(String(b.month), { timeout: 1000 });
+    await expect(month).toBeChecked({ timeout: 1000 });
     await expect(go).toBeEnabled({ timeout: 1000 });
   }).toPass({ timeout: 20_000 });
   await go.click();
