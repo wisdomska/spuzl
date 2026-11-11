@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { WORLDS } from "@/lib/catalog";
 import { addDays, isoWeek, mondayOf, shortDay, todayIso, weekRange } from "@/lib/admin/dates";
 import { errorText, useAdminAction, useAdminQuery } from "@/lib/client/admin";
 import { adminCopy } from "@/lib/copy/admin";
-import { Btn, Notice, PageTitle, RowsSkeleton, Swatch } from "./ui";
+import { PageHead, StateGuide, type StateWords } from "./content-ui";
+import { Btn, Notice, RowsSkeleton, Swatch } from "./ui";
 
 interface Cell {
   date: string;
@@ -27,12 +28,19 @@ interface Calendar {
 const C = adminCopy.calendar;
 const SHORT: Record<string, string> = C.short;
 const CELL = {
-  verified: { icon: "check-circle", cls: "bg-[var(--admin-ok-tint)] text-accent", label: C.cell.verified },
-  review: { icon: "eye", cls: "bg-[var(--warn-tint)] text-gold", label: C.cell.review },
-  missing: { icon: "warning", cls: "bg-[var(--danger-tint)] text-danger", label: C.cell.missing },
+  verified: { icon: "check-circle", cls: "bg-[var(--admin-ok-tint)] text-accent", ...C.cell.verified },
+  review: { icon: "hourglass", cls: "bg-[var(--warn-tint)] text-gold", ...C.cell.review },
+  missing: { icon: "warning", cls: "bg-[var(--danger-tint)] text-danger", ...C.cell.missing },
 } as const;
+const GUIDE: StateWords[] = [
+  { ...C.cell.verified, tone: "ok", icon: "check-circle" },
+  { ...C.cell.review, tone: "warn", icon: "hourglass" },
+  { ...C.cell.missing, tone: "danger", icon: "warning" },
+  { ...C.lockedState, tone: "neutral", icon: "lock-simple" },
+  { ...C.swappedState, tone: "neutral", icon: "swap" },
+];
 
-/** Content calendar (design: Admin calendar). One week of Dailies per game: verified, needs review or missing. */
+/** Daily calendar (design: Admin calendar). One week of Dailies per game: ready, needs review or missing. */
 export function CalendarView({ canWrite }: { canWrite: boolean }) {
   const [week, setWeek] = useState(() => todayIso());
   const [world, setWorld] = useState("");
@@ -40,73 +48,47 @@ export function CalendarView({ canWrite }: { canWrite: boolean }) {
   const fill = useAdminAction<{ days: number }, { made: number; pending: number }>("POST", "/api/admin/dailies/fill");
   const lock = useAdminAction<{ through: string }, { locked: number }>("POST", "/api/admin/dailies/lock");
   const from = q.data?.from;
+  const totals = useMemo(() => {
+    const t = { verified: 0, review: 0, missing: 0 };
+    for (const r of q.data?.rows ?? []) for (const c of r.cells) t[c.state]++;
+    return t;
+  }, [q.data]);
 
   return (
-    <div className="flex flex-col gap-3.5 px-6 py-5">
-      <PageTitle
+    <div className="flex flex-col gap-4 px-4 py-5 md:px-6">
+      <PageHead
         title={C.title}
+        purpose={C.intro}
         aside={
-          <>
-            <label className="bg-surface-raised flex h-9 items-center gap-1.5 rounded-[10px] pl-3 text-[13px] font-semibold">
-              <Icon name="funnel" size={14} />
-              <span className="sr-only">{C.world}</span>
-              <select
-                value={world}
-                onChange={(e) => setWorld(e.target.value)}
-                style={{ fontSize: 13 }}
-                className="h-9 cursor-pointer appearance-none bg-transparent pr-3 font-semibold outline-none"
+          canWrite && (
+            <>
+              <Btn
+                icon="lock-simple"
+                title={C.lockHelp}
+                disabled={lock.isPending}
+                onClick={() => lock.mutate({ through: addDays(todayIso(), 7) })}
               >
-                <option value="">{C.allWorlds}</option>
-                {WORLDS.map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {canWrite && (
-              <>
-                <Btn
-                  size="sm"
-                  icon="lock-simple"
-                  disabled={lock.isPending}
-                  onClick={() => lock.mutate({ through: addDays(todayIso(), 7) })}
-                >
-                  {C.lock}
-                </Btn>
-                <Btn size="sm" tone="primary" icon="magic-wand" disabled={fill.isPending} onClick={() => fill.mutate({ days: 21 })}>
-                  {fill.isPending ? C.generating : C.generate}
-                </Btn>
-              </>
-            )}
-          </>
+                {C.lock}
+              </Btn>
+              <Btn
+                tone="primary"
+                icon="magic-wand"
+                title={C.generateHelp}
+                disabled={fill.isPending}
+                onClick={() => fill.mutate({ days: 21 })}
+              >
+                {fill.isPending ? C.generating : C.generate}
+              </Btn>
+            </>
+          )
         }
-      >
-        <span className="text-muted text-[14px] font-medium">{from ? C.week(isoWeek(from), weekRange(from)) : " "}</span>
-        <div className="flex">
-          <Btn
-            size="sm"
-            tone="ghost"
-            icon="caret-left"
-            aria-label={C.prev}
-            className="px-0"
-            onClick={() => setWeek(addDays(from ?? week, -7))}
-          />
-          <Btn
-            size="sm"
-            tone="ghost"
-            icon="caret-right"
-            aria-label={C.next}
-            className="px-0"
-            onClick={() => setWeek(addDays(from ?? week, 7))}
-          />
-          {from && from !== mondayOf(todayIso()) && (
-            <Btn size="sm" tone="ghost" onClick={() => setWeek(todayIso())}>
-              {C.thisWeek}
-            </Btn>
-          )}
-        </div>
-      </PageTitle>
+      />
+      {canWrite && (
+        <p className="text-muted -mt-2 text-[13px]">
+          <b className="text-text font-semibold">{C.generate}:</b> {C.generateHelp} <b className="text-text font-semibold">{C.lock}:</b>{" "}
+          {C.lockHelp}
+        </p>
+      )}
 
       <div aria-live="polite" className="empty:hidden">
         {fill.data && (
@@ -126,13 +108,54 @@ export function CalendarView({ canWrite }: { canWrite: boolean }) {
         )}
       </div>
 
-      <div className="bg-surface overflow-x-auto rounded-[12px]">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center">
+          <Btn tone="ghost" icon="caret-left" aria-label={C.prev} onClick={() => setWeek(addDays(from ?? week, -7))} />
+          <span className="num min-w-[150px] text-center text-[14px] font-semibold">
+            {from ? C.week(isoWeek(from), weekRange(from)) : " "}
+          </span>
+          <Btn tone="ghost" icon="caret-right" aria-label={C.next} onClick={() => setWeek(addDays(from ?? week, 7))} />
+        </div>
+        {from && from !== mondayOf(todayIso()) && (
+          <Btn tone="ghost" onClick={() => setWeek(todayIso())}>
+            {C.thisWeek}
+          </Btn>
+        )}
+        <label className="bg-surface-raised ml-auto flex h-11 items-center gap-1.5 rounded-[10px] pl-3 text-[13px] font-semibold">
+          <Icon name="funnel" size={14} />
+          <span className="sr-only">{C.world}</span>
+          <select
+            value={world}
+            onChange={(e) => setWorld(e.target.value)}
+            style={{ fontSize: 13 }}
+            className="h-11 cursor-pointer appearance-none bg-transparent pr-3 font-semibold outline-none"
+          >
+            <option value="">{C.allWorlds}</option>
+            {WORLDS.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      {q.data && (
+        <Notice
+          tone={totals.missing ? "danger" : totals.review ? "warn" : "ok"}
+          icon={totals.missing || totals.review ? "info" : "check-circle"}
+        >
+          {totals.missing || totals.review ? C.summary(totals.verified, totals.review, totals.missing) : C.allGood}
+        </Notice>
+      )}
+
+      <div className="bg-surface overflow-x-auto rounded-[16px]">
         {q.isPending ? (
           <RowsSkeleton rows={12} height={32} />
         ) : q.error ? (
           <div className="p-3">
             <Notice tone="danger" icon="warning">
-              {errorText(q.error)}
+              {C.loadError} {errorText(q.error)}
             </Notice>
           </div>
         ) : (
@@ -175,7 +198,8 @@ export function CalendarView({ canWrite }: { canWrite: boolean }) {
                         <Link
                           href={`/admin/calendar/${r.game}/${c.date}`}
                           aria-label={C.cellAria(r.name, shortDay(c.date), s.label, c.difficulty, c.locked, c.swapped)}
-                          className={`num flex h-[26px] items-center gap-1 rounded-[7px] px-2 text-[12px] font-semibold hover:brightness-125 ${s.cls}`}
+                          title={s.meaning}
+                          className={`num flex h-8 items-center gap-1 rounded-[7px] px-2 text-[12px] font-semibold hover:brightness-125 ${s.cls}`}
                         >
                           <Icon name={s.icon} size={12} />
                           <span className="truncate">{text}</span>
@@ -196,26 +220,19 @@ export function CalendarView({ canWrite }: { canWrite: boolean }) {
         )}
       </div>
 
-      <div className="text-muted flex flex-wrap gap-4 text-[13px] font-medium">
-        {(["verified", "review", "missing"] as const).map((k) => (
-          <span key={k} className="flex items-center gap-1">
+      <ul aria-label={adminCopy.contentCommon.guide} className="text-muted flex flex-wrap gap-4 text-[13px] font-medium">
+        {GUIDE.map((g) => (
+          <li key={g.label} className="flex items-center gap-1" title={g.meaning}>
             <Icon
-              name={CELL[k].icon}
+              name={g.icon ?? "info"}
               size={14}
-              className={k === "verified" ? "text-accent" : k === "review" ? "text-gold" : "text-danger"}
+              className={g.tone === "ok" ? "text-accent" : g.tone === "warn" ? "text-gold" : g.tone === "danger" ? "text-danger" : ""}
             />
-            {CELL[k].label}
-          </span>
+            {g.label}
+          </li>
         ))}
-        <span className="flex items-center gap-1">
-          <Icon name="lock-simple" size={14} />
-          {C.legendLocked}
-        </span>
-        <span className="flex items-center gap-1">
-          <Icon name="swap" size={14} />
-          {C.legendSwapped}
-        </span>
-      </div>
+      </ul>
+      <StateGuide states={GUIDE} />
     </div>
   );
 }

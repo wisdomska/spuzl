@@ -7,6 +7,7 @@ import { dayMonth } from "@/lib/admin/dates";
 import { errorText, useAdminAction, useAdminQuery } from "@/lib/client/admin";
 import { adminCopy } from "@/lib/copy/admin";
 import { PuzzlePreview } from "./PuzzlePreview";
+import { StatePill } from "./content-ui";
 import { Btn, Empty, Notice, Pill, RowsSkeleton } from "./ui";
 
 export interface Slot {
@@ -68,8 +69,8 @@ export function DailySlot({
     );
   const meta = GAME_BY_ID[game];
   return (
-    <div className="flex flex-col gap-4 px-6 py-5">
-      <div className="flex items-center gap-3">
+    <div className="flex flex-col gap-4 px-4 py-5 md:px-6">
+      <div className="flex flex-wrap items-center gap-3">
         <Link
           href="/admin/calendar"
           aria-label={C.back}
@@ -77,22 +78,28 @@ export function DailySlot({
         >
           <Icon name="arrow-left" size={20} />
         </Link>
-        <h1 className="font-display text-[20px] font-extrabold">
+        <h1 className="font-display text-[22px] font-extrabold">
           {meta.name} · {dayMonth(date)}
         </h1>
-        <Pill tone="danger">{C.missing}</Pill>
+        <StatePill s={{ ...adminCopy.calendar.cell.missing, tone: "danger", icon: "warning" }} />
         {retired && <Pill tone="neutral">{adminCopy.retired.pill}</Pill>}
       </div>
       {note}
-      <div className="bg-surface max-w-[640px] rounded-[12px]">
+      <div className="bg-surface max-w-[640px] rounded-[16px]">
         <Empty icon="warning">
-          <span>{C.none(meta.name, dayMonth(date), q.data.difficulty)}</span>
+          <span className="text-text text-[15px] font-semibold">{C.none(meta.name, dayMonth(date), q.data.difficulty)}</span>
+          {date > q.data.today ? <span>{C.risk}</span> : <span>{C.past}</span>}
           {canWrite && date > q.data.today && (
-            <Btn tone="primary" icon="magic-wand" disabled={gen.isPending} onClick={() => gen.mutate({ date, game })}>
-              {gen.isPending ? C.generating : C.generate}
-            </Btn>
+            <>
+              <Btn tone="primary" size="lg" icon="magic-wand" disabled={gen.isPending} onClick={() => gen.mutate({ date, game })}>
+                {gen.isPending ? C.generating : C.generate}
+              </Btn>
+              <span className="text-[12px]">{C.generateHelp}</span>
+            </>
           )}
-          {gen.error && <span className="text-danger">{errorText(gen.error)}</span>}
+          <span aria-live="polite" className="text-danger empty:hidden">
+            {gen.error ? errorText(gen.error) : ""}
+          </span>
         </Empty>
       </div>
     </div>

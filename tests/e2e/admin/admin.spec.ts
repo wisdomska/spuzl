@@ -73,8 +73,8 @@ test("players and non-admin accounts never reach the console", async ({ page }) 
 
 test("calendar to preview: real board, solve-check, play test and approve", async ({ page }) => {
   await signedIn(page, "content_editor");
-  await expect(page.getByRole("heading", { name: "Content calendar" })).toBeVisible();
-  await expect(page.getByText("Scheduled, solver verified")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Daily calendar" })).toBeVisible();
+  await expect(page.getByText("Ready", { exact: true }).first()).toBeVisible();
   await page.getByRole("button", { name: "Next week" }).click();
   await page
     .getByLabel(/^Sixer .*: /)
@@ -82,8 +82,8 @@ test("calendar to preview: real board, solve-check, play test and approve", asyn
     .click();
   await expect(page.getByRole("heading", { name: /Sixer · / })).toBeVisible({ timeout: 30_000 });
   await expect(page.getByRole("grid")).toBeVisible({ timeout: 20_000 });
-  await expect(page.getByText("Unique solution")).toBeVisible({ timeout: 30_000 });
-  await expect(page.getByText("Verify accepts stored solution")).toBeVisible();
+  await expect(page.getByText("Only one correct answer")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText("Our answer checker accepts the answer")).toBeVisible();
   await page.getByRole("button", { name: "Show solution" }).click();
   await page.getByRole("button", { name: "Play test" }).click();
   await expect(page.getByRole("button", { name: "Restart test" })).toBeVisible();
@@ -99,9 +99,9 @@ test("emergency Swap Daily keeps the old puzzle as swapped_from", async ({ page 
   await signedIn(page, "owner");
   await page.goto(`/admin/calendar/sixer/${date}`);
   await page.getByRole("button", { name: "Swap Daily" }).click();
-  await page.getByLabel("What is broken?").fill("e2e: duplicate givens");
-  await page.getByRole("button", { name: "Confirm swap" }).click();
-  await expect(page.getByText("Swapped. The new puzzle is live.")).toBeVisible({ timeout: 45_000 });
+  await page.getByLabel(/What is broken\?/).fill("e2e: duplicate givens");
+  await page.getByRole("button", { name: "Swap it now" }).click();
+  await expect(page.getByText("Swapped. Players now get the new puzzle.")).toBeVisible({ timeout: 45_000 });
   const after = (await admin().from("dailies").select("puzzle_id, swapped_from").eq("game_id", "sixer").eq("date", date).single()).data!;
   expect(after.swapped_from).toBe(before.puzzle_id);
   expect(after.puzzle_id).not.toBe(before.puzzle_id);
@@ -215,7 +215,7 @@ test("tablet: calendar and live ops stay usable at 834 px, light theme", async (
   await expect(page.getByRole("navigation", { name: "Admin" }).getByRole("link", { name: "Daily calendar" })).toBeVisible();
   await page.keyboard.press("Escape");
   await page.goto("/admin/calendar");
-  await expect(page.getByRole("heading", { name: "Content calendar" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Daily calendar" })).toBeVisible();
   await page.goto("/admin/liveops");
   await expect(page.getByText("D7 retention")).toBeVisible();
   const scroll = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);

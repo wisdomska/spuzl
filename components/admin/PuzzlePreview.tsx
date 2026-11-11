@@ -8,12 +8,14 @@ import type { BoardApi, ControlSpec, FeedbackTone } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { GAME_BY_ID, UI_ACCENT } from "@/lib/catalog";
 import { dayMonth } from "@/lib/admin/dates";
+import { plainCheck } from "@/lib/admin/content-words";
 import { SOLVED_STATE } from "@/lib/admin/solved-state";
 import { api } from "@/lib/client/api";
 import { errorText, useAdminAction, useAdminQuery } from "@/lib/client/admin";
 import { adminCopy } from "@/lib/copy/admin";
 import type { Slot } from "./DailySlot";
-import { Btn, Notice, Pill, ReadField, RowsSkeleton, textareaCls } from "./ui";
+import { StatePill, TechDetails, TechLine, When, puzzleState } from "./content-ui";
+import { Btn, Notice, ReadField, RowsSkeleton, textareaCls } from "./ui";
 
 interface Check {
   id: string;
@@ -62,9 +64,9 @@ function sizeOf(p: Record<string, unknown>): string {
 }
 
 /**
- * Puzzle preview (design: Admin preview): the game's real Board in a phone frame, the solve-check list and the
- * publish panel. Show solution renders the solved board where the game has a solved-state shape; Play test
- * lets the reviewer solve it and asks the server's verify() for the verdict.
+ * Puzzle preview (design: Admin preview): the game's real Board in a phone frame, the checks in plain words and the
+ * publish panel. Show solution renders the solved board where the game has a solved-state shape; Play test lets the
+ * reviewer solve it and asks the server's answer checker for the verdict.
  */
 export function PuzzlePreview({
   puzzleId,
@@ -122,6 +124,7 @@ export function PuzzlePreview({
   const isToday = !!slot && date === slot.today;
   const future = !!slot && !!date && date > slot.today;
   const err = check.error ?? approve.error ?? regen.error ?? lock.error ?? swap.error ?? saveNote.error;
+  const state = puzzleState(p.status, isToday);
   const tags = [
     p.difficulty,
     date && [0, 6].includes(new Date(date + "T00:00:00Z").getUTCDay()) ? C.weekend : null,
@@ -129,10 +132,11 @@ export function PuzzlePreview({
   ]
     .filter(Boolean)
     .join(", ");
+  const regenBlocked = !future ? C.pastTitle : locked ? C.lockedTitle : undefined;
 
   return (
     <div className="grid min-h-dvh grid-cols-1 xl:grid-cols-[1fr_420px]">
-      <div className="flex min-w-0 flex-col gap-3.5 px-6 py-5">
+      <div className="flex min-w-0 flex-col gap-4 px-4 py-5 md:px-6">
         <div className="flex flex-wrap items-center gap-3">
           <Link
             href={date ? "/admin/calendar" : (backHref ?? "/admin/puzzles")}
@@ -141,103 +145,160 @@ export function PuzzlePreview({
           >
             <Icon name="arrow-left" size={20} />
           </Link>
-          <h1 className="font-display text-[20px] font-extrabold">
+          <h1 className="font-display text-[22px] font-extrabold">
             {meta.name} · {date ? dayMonth(date) : p.difficulty}
           </h1>
-          {p.status === "retired" ? (
-            <Pill>{C.retired}</Pill>
-          ) : review ? (
-            <Pill tone="warn">{C.needsReview}</Pill>
-          ) : (
-            <Pill tone="ok">{C.verified}</Pill>
-          )}
-          {locked && (
-            <Pill>
-              <Icon name="lock-simple" size={12} />
-              {C.locked}
-            </Pill>
-          )}
-          {slot?.slot?.swapped_from && (
-            <Pill tone="warn">
-              <Icon name="swap" size={12} />
-              {C.swapped}
-            </Pill>
+          <StatePill s={state} />
+          {locked && <StatePill s={{ ...adminCopy.calendar.lockedState, tone: "neutral", icon: "lock-simple" }} />}
+          {slot?.slot?.swapped_from && <StatePill s={{ ...adminCopy.calendar.swappedState, tone: "warn", icon: "swap" }} />}
+        </div>
+        <p className="text-muted max-w-[760px] text-[14px]">{state.meaning}</p>
+        <div aria-live="polite" className="empty:hidden">
+          {err && (
+            <Notice tone="danger" icon="warning">
+              {errorText(err)}
+            </Notice>
           )}
         </div>
-        {err && (
-          <Notice tone="danger" icon="warning">
-            {errorText(err)}
-          </Notice>
-        )}
         <div className="flex flex-col gap-5 lg:flex-row">
           <BoardFrame key={p.id} game={game} puzzle={p.data} solution={p.solution} puzzleId={p.id} />
-          <div className="flex min-w-0 flex-1 flex-col gap-2.5">
+          <section aria-labelledby="checks-title" className="flex min-w-0 flex-1 flex-col gap-2.5">
+            <div className="flex flex-col gap-0.5">
+              <h2 id="checks-title" className="text-[16px] font-bold">
+                {C.checksTitle}
+              </h2>
+              <p className="text-muted text-[13px]">{C.checksIntro}</p>
+            </div>
+            {report && (
+              <Notice tone={report.ok ? "ok" : "danger"} icon={report.ok ? "check-circle" : "warning"}>
+                {report.ok ? C.allPassed : C.hasProblem}
+              </Notice>
+            )}
             {report ? (
-              report.checks.map((c) => (
-                <div key={c.id} className="bg-surface flex min-h-11 items-center gap-2.5 rounded-[10px] px-3 py-2 text-[14px] font-medium">
-                  <Icon name={CHECK_ICON[c.status].icon} size={18} className={CHECK_ICON[c.status].cls} label={c.status} />
-                  <span className="flex-1">{c.label}</span>
-                  <span className="num text-muted text-right text-[13px] font-semibold">{c.value}</span>
-                </div>
-              ))
+              <ul className="flex flex-col gap-1.5">
+                {report.checks.map((raw) => {
+                  const c = plainCheck(raw);
+                  return (
+                    <li key={raw.id} className="bg-surface flex min-h-11 items-start gap-2.5 rounded-[10px] px-3 py-2.5 text-[14px]">
+                      <Icon name={CHECK_ICON[c.status].icon} size={18} className={`mt-0.5 ${CHECK_ICON[c.status].cls}`} />
+                      <span className="flex min-w-0 flex-1 flex-col">
+                        <span className="font-semibold">{c.label}</span>
+                        <span className="text-muted text-[13px]">{c.value}</span>
+                      </span>
+                      <span className={`text-[12px] font-semibold ${CHECK_ICON[c.status].cls}`}>{C.checkStatus[c.status]}</span>
+                    </li>
+                  );
+                })}
+              </ul>
             ) : check.isPending ? (
               <RowsSkeleton rows={6} height={44} />
             ) : (
               <Notice icon="info">{C.notChecked}</Notice>
             )}
-            {canWrite && (
-              <div className="flex items-center gap-2 pt-1">
-                <Btn size="sm" icon="arrows-clockwise" disabled={check.isPending} onClick={() => check.mutate()}>
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              {canWrite && (
+                <Btn size="md" icon="arrows-clockwise" disabled={check.isPending} onClick={() => check.mutate()}>
                   {check.isPending ? C.checking : C.runCheck}
                 </Btn>
-                {report && (
-                  <span className="num text-muted text-[12px]">{C.checkedAt(new Date(report.ranAt).toISOString().slice(11, 16))}</span>
-                )}
-              </div>
-            )}
-          </div>
+              )}
+              {report && (
+                <span className="text-muted text-[13px]">
+                  {C.checkedAt} <When iso={report.ranAt} />
+                </span>
+              )}
+            </div>
+            <TechDetails>
+              <TechLine name={C.techPuzzle} value={p.id} />
+              <TechLine name={C.techSeed} value={p.seed} />
+              <TechLine name={C.techStatus} value={p.status} />
+              {report?.checks.map((c) => (
+                <TechLine key={c.id} name={c.id} value={C.rawCheck(c.label, c.value)} />
+              ))}
+            </TechDetails>
+          </section>
         </div>
       </div>
 
       <aside aria-label={C.publish} className="bg-surface border-line flex flex-col gap-3 border-t p-5 xl:border-t-0 xl:border-l">
-        <h2 className="font-display text-[16px] font-extrabold">{C.publish}</h2>
-        <ReadField
-          label={C.dailyNumber}
-          value={slot ? `#${slot.number}` : q.data.dailies[0] ? `#${q.data.dailies[0].number}` : C.notScheduled}
-        />
+        <div className="flex flex-col gap-0.5">
+          <h2 className="font-display text-[17px] font-extrabold">{C.publish}</h2>
+          <p className="text-muted text-[13px]">{C.publishIntro}</p>
+        </div>
+        {p.status === "retired" && <Notice icon="prohibit">{C.retiredNote}</Notice>}
         <ReadField
           label={C.release}
           value={date ? C.releaseAt(dayMonth(date)) : q.data.dailies.map((d) => dayMonth(d.date)).join(", ") || C.notScheduled}
         />
-        <ReadField label={C.size} value={sizeOf(p.data)} />
-        <ReadField label={C.tags} value={tags} />
-        <ReadField label={C.grade} value={<span className="num">{C.gradeValue((p.grade / 10).toFixed(1))}</span>} />
+        <div className="grid grid-cols-2 gap-3">
+          <ReadField
+            label={C.dailyNumber}
+            value={slot ? `#${slot.number}` : q.data.dailies[0] ? `#${q.data.dailies[0].number}` : C.notScheduled}
+          />
+          <ReadField label={C.grade} value={<span className="num">{C.gradeValue((p.grade / 10).toFixed(1))}</span>} />
+          <ReadField label={C.size} value={sizeOf(p.data)} />
+          <ReadField label={C.tags} value={tags} />
+        </div>
         <div className="flex flex-col gap-1">
-          <label htmlFor="note" className="num text-muted text-[12px] font-semibold">
+          <label htmlFor="note" className="text-muted text-[12px] font-semibold">
             {C.reviewerNote}
           </label>
           <textarea
             id="note"
-            rows={4}
+            rows={3}
             readOnly={!canWrite}
             value={note ?? p.reviewer_note ?? ""}
             onChange={(e) => setNote(e.target.value)}
             onBlur={() => note !== null && note !== (p.reviewer_note ?? "") && saveNote.mutate({ note })}
             placeholder={canWrite ? C.notePlaceholder : C.noNote}
-            className={`${textareaCls} text-muted min-h-[90px] resize-y`}
+            className={`${textareaCls} min-h-[80px] resize-y`}
           />
+          <span aria-live="polite" className="text-accent text-[12px] font-semibold empty:hidden">
+            {saveNote.isSuccess ? C.noteSaved : ""}
+          </span>
         </div>
 
+        {canWrite && p.status !== "retired" && (
+          <div className="flex flex-col gap-2 rounded-[12px] pt-1">
+            <div className="grid grid-cols-2 gap-2">
+              <Btn
+                size="lg"
+                tone="primary"
+                disabled={approve.isPending || !review}
+                title={!review ? C.alreadyApproved : undefined}
+                onClick={() => approve.mutate({ note: note ?? undefined, date })}
+              >
+                {review ? (approve.isPending ? C.checking : C.approve) : C.approved}
+              </Btn>
+              {date && (
+                <Btn
+                  size="lg"
+                  disabled={!!regenBlocked || regen.isPending}
+                  title={regenBlocked}
+                  onClick={() => regen.mutate({ date, game })}
+                >
+                  {regen.isPending ? C.generating : C.regenerate}
+                </Btn>
+              )}
+            </div>
+            <p className="text-muted text-[12px] leading-[1.4]">
+              {C.approveHelp} {date ? C.regenerateHelp : ""}
+            </p>
+          </div>
+        )}
+
         {canWrite && slot?.slot && date && future && (
-          <Btn
-            size="md"
-            icon={locked ? "lock-simple-open" : "lock-simple"}
-            disabled={lock.isPending}
-            onClick={() => lock.mutate({ date, game, locked: !locked })}
-            className="self-start"
-          >
-            {locked ? C.unlock : C.lock}
-          </Btn>
+          <div className="flex flex-col gap-1.5">
+            <Btn
+              size="md"
+              icon={locked ? "lock-simple-open" : "lock-simple"}
+              disabled={lock.isPending}
+              onClick={() => lock.mutate({ date, game, locked: !locked })}
+              className="self-start"
+            >
+              {locked ? C.unlock : C.lock}
+            </Btn>
+            <p className="text-muted text-[12px] leading-[1.4]">{C.lockHelp(locked)}</p>
+          </div>
         )}
 
         {canSwap && slot?.slot && date && (isToday || (future && locked)) && (
@@ -256,7 +317,7 @@ export function PuzzlePreview({
                   swap.mutate({ game, date, reason: swapReason }, { onSuccess: () => setSwapReason(null) });
                 }}
               >
-                <label htmlFor="swap-reason" className="num text-muted text-[12px] font-semibold">
+                <label htmlFor="swap-reason" className="text-muted text-[12px] font-semibold">
                   {C.whatBroken}
                 </label>
                 <input
@@ -265,7 +326,7 @@ export function PuzzlePreview({
                   minLength={3}
                   value={swapReason}
                   onChange={(e) => setSwapReason(e.target.value)}
-                  className={`${textareaCls} h-10`}
+                  className={`${textareaCls} h-11`}
                 />
                 <div className="grid grid-cols-2 gap-2">
                   <Btn onClick={() => setSwapReason(null)}>{C.cancel}</Btn>
@@ -275,28 +336,9 @@ export function PuzzlePreview({
                 </div>
               </form>
             )}
-            {swap.data && <span className="text-accent text-[13px] font-semibold">{C.swappedLive}</span>}
-          </div>
-        )}
-
-        {canWrite && p.status !== "retired" && (
-          <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
-            <Btn
-              size="lg"
-              disabled={!future || locked || regen.isPending}
-              title={locked ? C.lockedTitle : undefined}
-              onClick={() => date && regen.mutate({ date, game })}
-            >
-              {regen.isPending ? C.generating : C.regenerate}
-            </Btn>
-            <Btn
-              size="lg"
-              tone="primary"
-              disabled={approve.isPending || !review}
-              onClick={() => approve.mutate({ note: note ?? undefined, date })}
-            >
-              {review ? (approve.isPending ? C.checking : C.approve) : C.approved}
-            </Btn>
+            <span aria-live="polite" className="text-accent text-[13px] font-semibold empty:hidden">
+              {swap.data ? C.swappedLive : ""}
+            </span>
           </div>
         )}
       </aside>

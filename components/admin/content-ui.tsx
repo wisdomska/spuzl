@@ -153,3 +153,24 @@ export function When({ iso, className = "" }: { iso: string; className?: string 
     </time>
   );
 }
+
+const PUZZLE_LOOK: Record<string, { tone: PillTone; icon: string }> = {
+  live: { tone: "ok", icon: "play-circle" },
+  draft: { tone: "neutral", icon: "pencil-simple" },
+  in_review: { tone: "warn", icon: "hourglass" },
+  approved: { tone: "ok", icon: "check-circle" },
+  scheduled: { tone: "ok", icon: "calendar-blank" },
+  retired: { tone: "neutral", icon: "prohibit" },
+};
+
+/** A stored puzzle's status in words (Puzzles list and the puzzle page): "Live today" wins when it is today's Daily. */
+export function puzzleState(status: string, liveToday = false): StateWords {
+  const key = liveToday && status !== "retired" ? "live" : status;
+  const words = adminCopy.puzzles.states[key] ?? { label: adminCopy.common.statusLabel(status), meaning: "" };
+  return { ...words, ...(PUZZLE_LOOK[key] ?? { tone: "neutral" }) };
+}
+
+/** Every puzzle status, for the page's guide. */
+export const PUZZLE_STATES: StateWords[] = ["live", "in_review", "scheduled", "approved", "draft", "retired"].map((k) =>
+  k === "live" ? puzzleState("scheduled", true) : puzzleState(k),
+);
