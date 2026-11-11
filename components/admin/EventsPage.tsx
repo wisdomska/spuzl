@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { WORLDS } from "@/lib/catalog";
+import Link from "next/link";
+import { WORLDS, WORLD_BY_ID } from "@/lib/catalog";
 import {
   EVENT_ACCENTS,
   EVENT_GOALS,
@@ -18,7 +19,8 @@ import { adminCopy } from "@/lib/copy/admin";
 import { Pagination, usePager } from "./Pagination";
 import { SortHead, type HeadCol } from "./SortHeader";
 import { useUrlFilters, useUrlSort } from "./useUrlFilters";
-import { Btn, Empty, Field, Notice, PageTitle, Pill, RowsSkeleton, inputCls, textareaCls } from "./ui";
+import { PageHead, StateGuide, StatePill, type StateWords } from "./content-ui";
+import { Btn, Empty, Field, Notice, RowsSkeleton, inputCls, textareaCls } from "./ui";
 
 /**
  * Seasonal events (Phase 5, "features.seasonal"): list, create, edit and delete; R2-P5 adds ready-made templates
@@ -56,12 +58,24 @@ interface Draft {
 
 const C = adminCopy.events;
 const GOAL_LABEL: Record<EventGoal, string> = C.goals;
-const STATUS_TONE: Record<AdminEventStatus, "ok" | "warn" | "neutral"> = {
-  live: "ok",
-  upcoming: "warn",
-  ended: "neutral",
-  draft: "neutral",
+const LOOK: Record<AdminEventStatus, { tone: "ok" | "warn" | "neutral"; icon: string }> = {
+  live: { tone: "ok", icon: "play-circle" },
+  upcoming: { tone: "warn", icon: "calendar-blank" },
+  ended: { tone: "neutral", icon: "check" },
+  draft: { tone: "neutral", icon: "pencil-simple" },
 };
+const STATE: Record<AdminEventStatus, StateWords> = Object.fromEntries(
+  (["draft", "upcoming", "live", "ended"] as const).map((s) => [s, { label: C.statuses[s], meaning: C.statusMeaning[s], ...LOOK[s] }]),
+) as Record<AdminEventStatus, StateWords>;
+const accentName = (a: string) =>
+  a.startsWith("w-")
+    ? C.worldColour((WORLD_BY_ID as Record<string, { name: string } | undefined>)[a.slice(2)]?.name ?? a.slice(2))
+    : (C.accentNames[a] ?? a);
+const goalWords = (q: EventQuest) =>
+  adminCopy.eventQuests.goal[q.kind](
+    q.n,
+    q.world ? ((WORLD_BY_ID as Record<string, { name: string } | undefined>)[q.world]?.name ?? q.world) : "",
+  );
 const E = adminCopy.events;
 const FILTERS = { status: "" } as const;
 const ALLOWED = { status: ["draft", "upcoming", "live", "ended"] };
@@ -162,9 +176,10 @@ export function EventsPage({ canWrite }: { canWrite: boolean }) {
   const error = create.error ?? edit.error ?? remove.error ?? schedule.error;
 
   return (
-    <div className="flex flex-col gap-3.5 px-6 py-5">
-      <PageTitle
+    <div className="flex flex-col gap-4 px-4 py-5 md:px-6">
+      <PageHead
         title={C.title}
+        purpose={C.intro}
         aside={
           canWrite && !editing ? (
             <Btn tone="primary" icon="plus" size="lg" onClick={() => (setDone(null), setEditing({ id: null, draft: blank() }))}>
@@ -172,20 +187,31 @@ export function EventsPage({ canWrite }: { canWrite: boolean }) {
             </Btn>
           ) : undefined
         }
-      >
-        <span className="text-muted text-[14px]">{C.intro}</span>
-      </PageTitle>
+      />
       {seasonalOn === false && (
-        <Notice tone="warn" icon="toggle-left">
+        <Notice
+          tone="warn"
+          icon="toggle-left"
+          action={
+            <Link href="/admin/settings" className="flex min-h-11 items-center font-semibold underline">
+              {C.offLink}
+            </Link>
+          }
+        >
           {C.off}
         </Notice>
       )}
-      {error && <Notice tone="danger">{errorText(error)}</Notice>}
-      {done && (
-        <Notice tone="ok" icon="check-circle">
-          {done}
-        </Notice>
-      )}
+      <div aria-live="polite" className="empty:hidden">
+        {error ? (
+          <Notice tone="danger" icon="warning">
+            {errorText(error)}
+          </Notice>
+        ) : done ? (
+          <Notice tone="ok" icon="check-circle">
+            {done}
+          </Notice>
+        ) : null}
+      </div>
       {canWrite && !editing && <Templates onAdded={(name) => setDone(C.templateAdded(name))} />}
       {editing && (
         <EventForm
@@ -202,6 +228,7 @@ export function EventsPage({ canWrite }: { canWrite: boolean }) {
           }}
         />
       )}
+      <StateGuide states={Object.values(STATE)} />
       <label className="text-muted flex items-center gap-2 self-start text-[13px] font-semibold">
         {E.statusFilter}
         <select value={status} onChange={(e) => setFilters({ status: e.target.value })} className={`${inputCls} h-11 w-44`}>
@@ -213,17 +240,17 @@ export function EventsPage({ canWrite }: { canWrite: boolean }) {
           ))}
         </select>
       </label>
-      <div className="bg-surface overflow-x-auto rounded-[12px]">
+      <div className="bg-surface overflow-x-auto rounded-[16px]">
         {q.isPending ? (
           <RowsSkeleton />
         ) : q.error ? (
           <div className="p-3">
             <Notice tone="danger" icon="warning">
-              {errorText(q.error)}
+              {C.loadError} {errorText(q.error)}
             </Notice>
           </div>
         ) : q.data!.rows.length === 0 ? (
-          <Empty icon="calendar-blank">{C.empty}</Empty>
+          <Empty icon="calendar-blank">{status ? C.emptyFiltered : C.empty}</Empty>
         ) : (
           <table className="w-full min-w-[760px] border-collapse text-[14px]">
             <SortHead cols={COLS} sort={sort} />
@@ -243,13 +270,13 @@ export function EventsPage({ canWrite }: { canWrite: boolean }) {
                     {C.runs(when(e.starts_at), when(e.ends_at))}
                   </td>
                   <td className="border-line border-t px-3 py-2">
-                    <Pill tone={STATUS_TONE[e.status]}>{E.statuses[e.status]}</Pill>
+                    <StatePill s={STATE[e.status]} />
                   </td>
                   <td className="border-line border-t px-3 py-2 text-[13px]">
                     {e.quest.title}
-                    <span className="num text-muted block text-[12px]">{C.questLine(e.quest.n, e.quest.xp, e.quest.sparks)}</span>
+                    <span className="text-muted block text-[12px]">{C.questLine(goalWords(e.quest), e.quest.xp, e.quest.sparks)}</span>
                   </td>
-                  <td className="border-line num border-t px-3 py-2">{e.completed}</td>
+                  <td className="border-line num border-t px-3 py-2 text-right">{e.completed.toLocaleString("en-US")}</td>
                   <td className="border-line border-t px-3 py-2">
                     {canWrite && (
                       <span className="flex justify-end gap-1">
@@ -259,6 +286,7 @@ export function EventsPage({ canWrite }: { canWrite: boolean }) {
                             tone="primary"
                             icon="calendar-blank"
                             aria-label={C.scheduleAria(e.name)}
+                            title={C.scheduleHelp}
                             disabled={schedule.isPending}
                             onClick={() =>
                               schedule.mutate({ id: e.id, scheduled: true }, { onSuccess: () => setDone(C.scheduled(e.name)) })
@@ -272,18 +300,22 @@ export function EventsPage({ canWrite }: { canWrite: boolean }) {
                             tone="ghost"
                             icon="pause"
                             aria-label={C.unscheduleAria(e.name)}
+                            title={C.unscheduleAria(e.name)}
                             disabled={schedule.isPending}
                             onClick={() => {
                               if (window.confirm(C.confirmUnschedule(e.name)))
                                 schedule.mutate({ id: e.id, scheduled: false }, { onSuccess: () => setDone(C.unscheduled(e.name)) });
                             }}
-                          />
+                          >
+                            {C.unschedule}
+                          </Btn>
                         ) : null}
                         <Btn
                           size="lg"
                           tone="ghost"
                           icon="pencil-simple"
                           aria-label={C.editAria(e.name)}
+                          title={C.editAria(e.name)}
                           onClick={() => (setDone(null), setEditing({ id: e.id, draft: draftOf(e) }))}
                         />
                         <Btn
@@ -291,6 +323,7 @@ export function EventsPage({ canWrite }: { canWrite: boolean }) {
                           tone="ghost"
                           icon="trash"
                           aria-label={C.deleteAria(e.name)}
+                          title={C.deleteAria(e.name)}
                           disabled={remove.isPending}
                           onClick={() => {
                             if (window.confirm(C.confirmDelete(e.name)))
@@ -361,11 +394,20 @@ function EventForm({
             className={inputCls}
           />
         </Field>
-        <Field label={C.accent} htmlFor="ev-accent" hint={<span style={{ color: `var(--${d.accent})` }}>{C.preview}</span>}>
+        <Field
+          label={C.accent}
+          htmlFor="ev-accent"
+          hint={
+            <span className="flex items-center gap-1.5">
+              <span aria-hidden className="size-3 rounded-[3px]" style={{ background: `var(--${d.accent})` }} />
+              {C.preview}
+            </span>
+          }
+        >
           <select id="ev-accent" value={d.accent} onChange={(e) => set("accent", e.target.value)} className={inputCls}>
             {EVENT_ACCENTS.map((a) => (
               <option key={a} value={a}>
-                {a}
+                {accentName(a)}
               </option>
             ))}
           </select>
@@ -416,7 +458,8 @@ function EventForm({
         />
       </Field>
       <fieldset className="flex flex-col gap-3">
-        <legend className="mb-1 text-[14px] font-bold">{C.bonusQuest}</legend>
+        <legend className="mb-1 text-[15px] font-bold">{C.bonusQuest}</legend>
+        <p className="text-muted -mt-2 text-[13px]">{C.bonusIntro}</p>
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label={C.questTitle} htmlFor="ev-title">
             <input

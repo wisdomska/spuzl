@@ -25,14 +25,14 @@ for (const [name, vp] of [
     await templates.getByRole("button", { name: "Add Detty December as a draft" }).click();
     await expect(page.getByText("Detty December added as a draft. Check the dates, then Schedule.")).toBeVisible();
     const row = page.getByRole("row").filter({ hasText: "Detty December" }).first();
-    await expect(row.getByText("Draft")).toBeVisible();
+    await expect(row.getByText("Draft", { exact: true })).toBeVisible();
     await row.getByRole("button", { name: "Schedule Detty December" }).click();
     await expect(page.getByText("Detty December is scheduled.")).toBeVisible();
-    await expect(row.getByText(/Upcoming|Live/)).toBeVisible();
+    await expect(row.getByText(/^(Scheduled|Live)$/)).toBeVisible();
     // Clean up: back to draft, then delete.
     page.once("dialog", (d) => void d.accept());
     await row.getByRole("button", { name: "Put Detty December back to draft" }).click();
-    await expect(row.getByText("Draft")).toBeVisible();
+    await expect(row.getByText("Draft", { exact: true })).toBeVisible();
     page.once("dialog", (d) => void d.accept());
     await row.getByRole("button", { name: "Delete Detty December" }).click();
   });
