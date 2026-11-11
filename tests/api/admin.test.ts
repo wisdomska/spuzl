@@ -846,38 +846,34 @@ describe("game settings (admin cascade)", () => {
     await S.owner.aal2("/api/admin/settings", { method: "PUT", json: { key: "duel.roundResultMs", value: 2000 } });
   });
 
-  it("features.labGames: all 41 games are live, so no game can be put in testing through it; it stays owner-only", async () => {
-    const before = (await S.owner.aal2("/api/admin/settings")).data.rows.find((r: { key: string }) => r.key === "features.labGames");
-    expect(before.def.kind).toBe("set");
-    expect(before.def.options).toEqual([]);
-    // A live game, a retired game or a malformed value is refused.
-    for (const value of [["crownfall"], ["hilo"], ["blackout"], "hilo"]) {
-      const bad = await S.owner.aal2("/api/admin/settings", { method: "PUT", json: { key: "features.labGames", value } });
-      expect([JSON.stringify(value), bad.status]).toEqual([JSON.stringify(value), 422]);
-    }
-    expect((await S.analyst.aal2("/api/admin/settings", { method: "PUT", json: { key: "features.labGames", value: [] } })).status).toBe(
-      403,
-    );
-    expect((await S.owner.aal2("/api/admin/settings", { method: "PUT", json: { key: "features.labGames", value: [] } })).status).toBe(200);
-    const lib = await S.content_editor.aal2("/api/admin/games/meta");
-    const row = (id: string) => lib.data.rows.find((r: { id: string }) => r.id === id);
-    expect(row("hilo")).toMatchObject({ lab: false, retired: false });
-    expect(row("crownfall")).toMatchObject({ lab: false });
+  it("Game state: the old Lab games switch is gone from Game settings, and so is the practice card", async () => {
+    const keys = ((await S.owner.aal2("/api/admin/settings")).data.rows as { key: string }[]).map((r) => r.key);
+    expect(keys).not.toContain("features.labGames");
+    expect(keys).not.toContain("practice.disabled");
+    const bad = await S.owner.aal2("/api/admin/settings", { method: "PUT", json: { key: "features.labGames", value: [] } });
+    expect([bad.status, bad.data.error]).toEqual([422, "invalid_setting"]);
   });
 
-  it("turns every game's practice round off at once (more than 20 games, R2-ADMIN)", async () => {
-    const rows = (await S.owner.aal2("/api/admin/settings")).data.rows as {
-      key: string;
-      value: string[];
-      def: { options: { id: string }[] };
-    }[];
-    const row = rows.find((r) => r.key === "practice.disabled")!;
-    const all = row.def.options.map((o) => o.id);
-    expect(all.length).toBeGreaterThan(20);
-    const put = await S.owner.aal2("/api/admin/settings", { method: "PUT", json: { key: "practice.disabled", value: all } });
-    expect(put.status).toBe(200);
-    expect((await lastAudit(S.owner.userId, "setting.update"))?.target).toBe("setting:practice.disabled");
-    await S.owner.aal2("/api/admin/settings", { method: "PUT", json: { key: "practice.disabled", value: row.value } });
+  it("turns every game's practice round off from the Games page, audited, then back on", async () => {
+    const meta = (await S.owner.aal2("/api/admin/games/meta")).data.rows as { id: string; hasPractice?: boolean; practiceOff?: boolean }[];
+    const ids = meta.filter((r) => r.hasPractice).map((r) => r.id);
+    expect(ids.length).toBeGreaterThan(20);
+    const { data: stored } = await admin().from("game_settings").select("value").eq("key", "practice.disabled").maybeSingle();
+    try {
+      for (const id of ids.slice(0, 3)) {
+        const r = await S.owner.aal2("/api/admin/games/state", { method: "PATCH", json: { id, practice: false } });
+        expect([id, r.status, r.data.practiceOff]).toEqual([id, 200, true]);
+      }
+      const pub = await fetch(`${BASE}/api/v1/settings/game`).then((r) => r.json());
+      for (const id of ids.slice(0, 3)) expect(pub["practice.disabled"]).toContain(id);
+      expect((await lastAudit(S.owner.userId, "game_state.update"))?.target).toBe(`game:${ids[2]}`);
+      // Content editors edit the details, not the switches.
+      const editor = await S.content_editor.aal2("/api/admin/games/state", { method: "PATCH", json: { id: ids[0], practice: true } });
+      expect(editor.status).toBe(403);
+    } finally {
+      if (stored) await admin().from("game_settings").upsert({ key: "practice.disabled", value: stored.value }, { onConflict: "key" });
+      else await admin().from("game_settings").delete().eq("key", "practice.disabled");
+    }
   });
 });
 

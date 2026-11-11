@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { errorText, useAdminAction, useAdminQuery } from "@/lib/client/admin";
-import { GAME_BY_ID } from "@/lib/catalog";
+import { GAME_BY_ID, GAME_STATES, type GameState } from "@/lib/catalog";
+import { STATE_FILTERS, byState, rowState, stateCounts, type RowState, type StateFilter } from "@/lib/game-state";
 import { COPY_MAX, TAGS, TYPICAL_SCORE_MAX, durationLabel, validateCopyLine, type GameMetaRow, type Tag } from "@/lib/games-meta";
 import { durationWords } from "@/lib/admin/content-words";
 import { adminCopy } from "@/lib/copy/admin";
@@ -13,7 +14,7 @@ import { hasLogic } from "@/games/logic-ids";
 import { PracticeBoardPreview } from "./PuzzlePreview";
 import { Paged } from "./Pagination";
 import { PageHead, StateGuide, StatePill, TechDetails, TechLine, type StateWords } from "./content-ui";
-import { Btn, Empty, Notice, Pill, RowsSkeleton, Tabs, inputCls, textareaCls } from "./ui";
+import { Btn, Confirm, Empty, Notice, Pill, RowsSkeleton, inputCls, textareaCls } from "./ui";
 
 const C = adminCopy.library;
 
@@ -29,9 +30,18 @@ type Row = Omit<GameMetaRow, "rule" | "blurb"> & {
   scored?: boolean;
   scoreOverridden?: boolean;
   retired?: boolean;
-  lab?: boolean;
-  labOn?: boolean;
+  /** On, In testing or Off (Games page state); absent on retired rows */
+  state?: GameState;
+  /** a race game: "Can be played in Duels and Parties" applies */
+  versusEligible?: boolean;
+  versus?: boolean;
+  /** a game with a practice round (it has logic) */
+  hasPractice?: boolean;
+  practiceOff?: boolean;
 };
+/** One switch on the Games page (PATCH /api/admin/games/state, owner only). */
+type Switch = { state?: GameState; versus?: boolean; practice?: boolean };
+type SwitchResult = { id: string; state: GameState; dailyFive?: { days: unknown[] } };
 type Patch = {
   typicalSec?: number | null;
   tags?: Tag[] | null;
@@ -39,59 +49,72 @@ type Patch = {
   blurb?: string | null;
   typicalScore?: number | null;
 };
-type Show = keyof typeof C.showTabs;
-
-const STATES: Record<"live" | "labOn" | "labOff" | "retired", StateWords> = {
-  live: { ...C.states.live, tone: "ok", icon: "check-circle" },
-  labOn: { ...C.states.labOn, tone: "ok", icon: "flask" },
-  labOff: { ...C.states.labOff, tone: "warn", icon: "flask" },
+/** Each state's pill: a word, a meaning and an icon (never colour alone). */
+const STATES: Record<RowState, StateWords> = {
+  on: { ...C.states.on, tone: "ok", icon: "check-circle" },
+  testing: { ...C.states.testing, tone: "warn", icon: "flask" },
+  off: { ...C.states.off, tone: "danger", icon: "eye-slash" },
   retired: { ...C.states.retired, tone: "neutral", icon: "prohibit" },
 };
-const stateOf = (r: Row) => (r.retired ? "retired" : r.lab ? (r.labOn ? "labOn" : "labOff") : "live");
-const kindOf = (r: Row): Exclude<Show, "all"> => (r.retired ? "retired" : r.lab ? "lab" : "live");
 const nameOf = (id: string) => GAME_BY_ID[id]?.name ?? id;
 
 /**
- * Admin Games page (was Library; SPZ-14, R2-ADMIN): per game, the play time on its card, its filter tags, its
- * one-line rule and card line, with the game's icon, its state for players and its practice round. Validated here
- * and on the server; every change is audited (game_meta.update).
+ * Admin Games page (was Library; SPZ-14, R2-ADMIN): every per-game edit on that game's row. Who can play it (On, In
+ * testing, Off: owner only, with a confirm before players lose it), whether it can be played in Duels and Parties and
+ * whether it has a practice round (owner only), then the play time on its card, its filter tags, its one-line rule and
+ * card line and (score games) its Daily Five typical score (content editors too). Validated here and on the server;
+ * every change is audited (game_meta.update, game_state.update).
  */
-export function LibraryMetaPage({ canWrite }: { canWrite: boolean }) {
+export function LibraryMetaPage({ canWrite, canSwitch = false }: { canWrite: boolean; canSwitch?: boolean }) {
   const q = useAdminQuery<{ rows: Row[]; export: Record<string, unknown> }>(["games-meta"], "/api/admin/games/meta");
   const patch = useAdminAction<{ id: string } & Patch>("PATCH", "/api/admin/games/meta");
+  const flip = useAdminAction<{ id: string } & Switch, SwitchResult>("PATCH", "/api/admin/games/state");
   const [find, setFind] = useState("");
-  const [show, setShow] = useState<Show>("all");
-  const [savedId, setSavedId] = useState<string | null>(null);
+  const [show, setShow] = useState<StateFilter>("all");
+  const [saved, setSaved] = useState<string | null>(null);
 
   const rows = useMemo(() => q.data?.rows ?? [], [q.data]);
-  const counts = useMemo(() => {
-    const c: Record<Show, number> = { all: rows.length, live: 0, lab: 0, retired: 0 };
-    for (const r of rows) c[kindOf(r)]++;
-    return c;
-  }, [rows]);
+  const counts = useMemo(() => stateCounts(rows), [rows]);
   const shown = useMemo(() => {
     const k = find.trim().toLowerCase();
-    return rows.filter((r) => (show === "all" || kindOf(r) === show) && (!k || nameOf(r.id).toLowerCase().includes(k)));
+    return byState(rows, show).filter((r) => !k || nameOf(r.id).toLowerCase().includes(k));
   }, [rows, find, show]);
 
   const save = (id: string, p: Patch) => {
-    setSavedId(null);
-    patch.mutate({ id, ...p }, { onSuccess: () => setSavedId(id) });
+    setSaved(null);
+    patch.mutate({ id, ...p }, { onSuccess: () => setSaved(C.savedNote(nameOf(id))) });
   };
+  const change = (id: string, s: Switch) => {
+    setSaved(null);
+    flip.mutate(
+      { id, ...s },
+      {
+        onSuccess: (res) => {
+          const moved = res?.dailyFive?.days.length ?? 0;
+          setSaved(
+            s.state
+              ? `${C.stateSaved(nameOf(id), STATES[s.state].label)}${moved ? ` ${C.dailyFiveMoved(moved)}` : ""}`
+              : C.savedNote(nameOf(id)),
+          );
+        },
+      },
+    );
+  };
+  const error = patch.error ?? flip.error;
 
   return (
     <div className="flex flex-col gap-4 px-4 py-5 md:px-6">
       <PageHead title={C.title} purpose={C.intro} />
-      {!canWrite && <Notice icon="info">{C.readOnly}</Notice>}
+      {!canWrite ? <Notice icon="info">{C.readOnly}</Notice> : !canSwitch ? <Notice icon="info">{C.switchReadOnly}</Notice> : null}
       <StateGuide states={Object.values(STATES)} />
       <div aria-live="polite" className="empty:hidden">
-        {patch.error ? (
+        {error ? (
           <Notice tone="danger" icon="warning">
-            {errorText(patch.error)}
+            {errorText(error)}
           </Notice>
-        ) : savedId ? (
+        ) : saved ? (
           <Notice tone="ok" icon="check-circle">
-            {C.savedNote(nameOf(savedId))}
+            {saved}
           </Notice>
         ) : null}
       </div>
@@ -106,12 +129,7 @@ export function LibraryMetaPage({ canWrite }: { canWrite: boolean }) {
             className={`${inputCls} h-11 w-64 max-w-full`}
           />
         </label>
-        <Tabs<Show>
-          label={C.show}
-          value={show}
-          onChange={setShow}
-          items={(Object.keys(C.showTabs) as Show[]).map((id) => ({ id, label: C.showTabs[id], count: counts[id] }))}
-        />
+        <StateTabs value={show} onChange={setShow} counts={counts} />
         {q.data && (
           <span className="num text-muted ml-auto text-[13px]" aria-live="polite">
             {C.count(shown.length, rows.length)}
@@ -135,7 +153,14 @@ export function LibraryMetaPage({ canWrite }: { canWrite: boolean }) {
             <ul className="flex flex-col gap-3">
               {page.map((r) => (
                 <li key={r.id}>
-                  <MetaRow row={r} canWrite={canWrite && !r.retired} busy={patch.isPending} onSave={(p) => save(r.id, p)} />
+                  <MetaRow
+                    row={r}
+                    canWrite={canWrite && !r.retired}
+                    canSwitch={canSwitch && !r.retired}
+                    busy={patch.isPending || flip.isPending}
+                    onSave={(p) => save(r.id, p)}
+                    onSwitch={(s) => change(r.id, s)}
+                  />
                 </li>
               ))}
             </ul>
@@ -143,6 +168,36 @@ export function LibraryMetaPage({ canWrite }: { canWrite: boolean }) {
         </Paged>
       )}
       <Backup canWrite={canWrite} data={q.data?.export} />
+    </div>
+  );
+}
+
+/** The state filter (All, On, In testing, Off, Retired), each with how many games it shows, zero included. */
+function StateTabs({
+  value,
+  onChange,
+  counts,
+}: {
+  value: StateFilter;
+  onChange: (v: StateFilter) => void;
+  counts: Record<StateFilter, number>;
+}) {
+  return (
+    <div role="tablist" aria-label={C.show} className="bg-surface flex flex-wrap gap-1 rounded-[10px] p-[3px]" data-state-filter>
+      {STATE_FILTERS.map((id) => (
+        <button
+          key={id}
+          role="tab"
+          type="button"
+          aria-selected={value === id}
+          onClick={() => onChange(id)}
+          data-filter={id}
+          className={`flex h-11 items-center gap-1.5 rounded-[8px] px-2.5 text-[13px] font-semibold ${value === id ? "bg-surface-raised text-text" : "text-muted hover:text-text"}`}
+        >
+          {C.showTabs[id]}
+          <span className="num text-muted text-[12px]">{counts[id]}</span>
+        </button>
+      ))}
     </div>
   );
 }
@@ -203,18 +258,33 @@ function Backup({ canWrite, data }: { canWrite: boolean; data?: Record<string, u
   );
 }
 
-function MetaRow({ row, canWrite, busy, onSave }: { row: Row; canWrite: boolean; busy: boolean; onSave: (p: Patch) => void }) {
+function MetaRow({
+  row,
+  canWrite,
+  canSwitch,
+  busy,
+  onSave,
+  onSwitch,
+}: {
+  row: Row;
+  canWrite: boolean;
+  canSwitch: boolean;
+  busy: boolean;
+  onSave: (p: Patch) => void;
+  onSwitch: (s: Switch) => void;
+}) {
   const [sec, setSec] = useState(String(row.typicalSec));
   const n = Number(sec);
   const bad = !Number.isInteger(n) || n < 10 || n > 3600;
   const toggle = (t: Tag) => onSave({ tags: row.tags.includes(t) ? row.tags.filter((x) => x !== t) : [...row.tags, t] });
   const meta = GAME_BY_ID[row.id];
   const name = meta?.name ?? row.id;
-  const state = STATES[stateOf(row)];
+  const st = rowState(row);
+  const state = STATES[st];
   const secId = `sec-${row.id}`;
   return (
     // One compact row per game (tile, name, state, play time, tags); it opens to edit, so 62 games stay scannable.
-    <details aria-label={name} className="group/game bg-surface rounded-[16px]" data-meta-row={row.id}>
+    <details aria-label={name} className="group/game bg-surface rounded-[16px]" data-meta-row={row.id} data-state={st}>
       <summary className="flex min-h-[72px] cursor-pointer list-none flex-wrap items-center gap-3 rounded-[16px] p-3 md:px-4 [&::-webkit-details-marker]:hidden">
         {meta && (
           <span role="img" aria-label={C.iconAria(name)} className="shrink-0">
@@ -229,14 +299,7 @@ function MetaRow({ row, canWrite, busy, onSave }: { row: Row; canWrite: boolean;
           <p className="text-muted text-[13px]">
             {row.retired ? adminCopy.retired.libraryNote : row.overridden ? C.changedFromDefault : C.usingDefaults}
           </p>
-          {row.lab && !row.retired && (
-            <p className="text-muted text-[13px]" data-lab-state={row.labOn ? "on" : "off"}>
-              {state.meaning}{" "}
-              <Link href="/admin/settings" className="hover:text-text font-semibold underline">
-                {C.labSwitch}
-              </Link>
-            </p>
-          )}
+          {st !== "on" && st !== "retired" && <p className="text-muted text-[13px]">{state.meaning}</p>}
         </div>
         {!row.retired && (
           <span className="text-muted flex flex-wrap items-center gap-1.5 text-[13px] font-medium">
@@ -258,6 +321,7 @@ function MetaRow({ row, canWrite, busy, onSave }: { row: Row; canWrite: boolean;
         </span>
       </summary>
       <div className="border-line flex flex-col gap-3 border-t p-4">
+        {!row.retired && row.state && <ForPlayers row={row} name={name} canSwitch={canSwitch} busy={busy} onSwitch={onSwitch} />}
         {row.overridden && canWrite && (
           <Btn
             tone="ghost"
@@ -380,6 +444,173 @@ function MetaRow({ row, canWrite, busy, onSave }: { row: Row; canWrite: boolean;
   );
 }
 
+/**
+ * Who can play the game (On, In testing, Off: a radio group with what each means, and a confirm saying what players
+ * lose before In testing or Off), then its Duels and Parties and practice round switches. Owner only (the server
+ * checks too).
+ */
+function ForPlayers({
+  row,
+  name,
+  canSwitch,
+  busy,
+  onSwitch,
+}: {
+  row: Row;
+  name: string;
+  canSwitch: boolean;
+  busy: boolean;
+  onSwitch: (s: Switch) => void;
+}) {
+  const [ask, setAsk] = useState<GameState | null>(null);
+  const current = row.state ?? "on";
+  const pick = (s: GameState) => {
+    if (s === current) return;
+    // Players lose the game: say what that means first. Back On needs no confirm.
+    if (s === "on") onSwitch({ state: s });
+    else setAsk(s);
+  };
+  const groupId = `state-${row.id}`;
+  return (
+    <section aria-labelledby={groupId} className="flex flex-col gap-3" data-for-players>
+      <div className="flex flex-col gap-1.5">
+        <h3 id={groupId} className="text-[13px] font-semibold">
+          {C.stateTitle}
+        </h3>
+        <div role="radiogroup" aria-label={C.stateAria(name)} className="bg-surface-raised flex w-fit flex-wrap gap-1 rounded-[12px] p-1">
+          {GAME_STATES.map((s) => {
+            const on = s === current;
+            return (
+              <button
+                key={s}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                disabled={!canSwitch || busy}
+                title={!canSwitch ? C.switchReadOnly : STATES[s].meaning}
+                data-state-option={s}
+                onClick={() => pick(s)}
+                className={`flex h-11 items-center gap-1.5 rounded-[10px] px-3 text-[14px] font-semibold disabled:cursor-not-allowed ${
+                  on
+                    ? s === "on"
+                      ? "bg-accent text-on-accent"
+                      : "bg-surface text-text shadow-[inset_0_0_0_2px_var(--line)]"
+                    : "text-muted hover:text-text"
+                } ${!on && (!canSwitch || busy) ? "opacity-50" : ""}`}
+              >
+                <Icon name={STATES[s].icon ?? "circle"} size={16} />
+                {STATES[s].label}
+              </button>
+            );
+          })}
+        </div>
+        <p className="text-muted text-[12px]">{STATES[current].meaning}</p>
+        {current === "testing" && (
+          <p className="flex flex-wrap items-center gap-2 text-[12px]">
+            <Link
+              href={`/play/${row.id}?mode=free`}
+              target="_blank"
+              rel="noopener"
+              aria-label={C.tryItAria(name)}
+              className="bg-surface-raised hover:text-text inline-flex h-11 items-center gap-1.5 rounded-[10px] px-3 text-[13px] font-semibold"
+              data-try-it
+            >
+              <Icon name="play" size={14} />
+              {C.tryIt}
+            </Link>
+            <span className="text-muted">{C.tryItHelp}</span>
+          </p>
+        )}
+      </div>
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        {row.versusEligible && (
+          <OnOff
+            id={`versus-${row.id}`}
+            label={C.versus}
+            help={C.versusHelp}
+            aria={C.versusAria(name)}
+            on={row.versus !== false}
+            disabled={!canSwitch || busy}
+            onChange={(v) => onSwitch({ versus: v })}
+          />
+        )}
+        {row.hasPractice && (
+          <OnOff
+            id={`practice-${row.id}`}
+            label={C.practiceSwitch}
+            help={C.practiceSwitchHelp}
+            aria={C.practiceSwitchAria(name)}
+            on={!row.practiceOff}
+            disabled={!canSwitch || busy}
+            onChange={(v) => onSwitch({ practice: v })}
+          />
+        )}
+      </div>
+      <Confirm
+        open={ask !== null}
+        title={ask ? C.confirmTitle(name, STATES[ask].label) : ""}
+        body={ask ? C.confirmLose(name, ask === "off") : ""}
+        confirmLabel={ask === "off" ? C.confirmOff : C.confirmTesting}
+        danger={ask === "off"}
+        busy={busy}
+        onCancel={() => setAsk(null)}
+        onConfirm={() => {
+          if (ask) onSwitch({ state: ask });
+          setAsk(null);
+        }}
+      />
+    </section>
+  );
+}
+
+/** One on/off switch with its label, a line of help and the current value in words. */
+function OnOff({
+  id,
+  label,
+  help,
+  aria,
+  on,
+  disabled,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  help: string;
+  aria: string;
+  on: boolean;
+  disabled: boolean;
+  onChange: (on: boolean) => void;
+}) {
+  return (
+    <div className="bg-surface-raised flex items-start gap-3 rounded-[12px] p-3" data-switch={id}>
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span id={`${id}-label`} className="text-[13px] font-semibold">
+          {label}
+        </span>
+        <span id={`${id}-help`} className="text-muted text-[12px]">
+          {help}
+        </span>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on}
+        aria-label={aria}
+        aria-describedby={`${id}-help`}
+        disabled={disabled}
+        title={disabled ? C.switchReadOnly : undefined}
+        onClick={() => onChange(!on)}
+        className={`flex h-11 min-w-[72px] shrink-0 items-center justify-center gap-1.5 rounded-full px-3 text-[13px] font-bold disabled:cursor-not-allowed disabled:opacity-50 ${
+          on ? "bg-accent text-on-accent" : "bg-surface text-muted shadow-[inset_0_0_0_2px_var(--line)]"
+        }`}
+      >
+        <Icon name={on ? "check" : "x"} size={14} />
+        {on ? C.switchOn : C.switchOff}
+      </button>
+    </div>
+  );
+}
+
 /** Owner decision S: a score game's Daily Five typical score (half the bonus at it, the full bonus at twice it). */
 function ScoreScale({ row, canWrite, busy, onSave }: { row: Row; canWrite: boolean; busy: boolean; onSave: (p: Patch) => void }) {
   const [text, setText] = useState(row.typicalScore != null ? String(row.typicalScore) : "");
@@ -432,7 +663,7 @@ function ScoreScale({ row, canWrite, busy, onSave }: { row: Row; canWrite: boole
   );
 }
 
-/** The game's practice round board, read only, loaded when opened (R2-07; the per-game off switch is in Game settings). */
+/** The game's practice round board, read only, loaded when opened (R2-07; its on/off switch is in "Who can play it"). */
 function PracticeBoard({ id }: { id: string }) {
   const [open, setOpen] = useState(false);
   const q = useAdminQuery<{ puzzle: unknown; solution: unknown; off: boolean; seed: string }>(

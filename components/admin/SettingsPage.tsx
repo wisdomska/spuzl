@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useId, useState, type KeyboardEvent, type ReactNode } from "react";
 import { age } from "@/lib/admin/dates";
 import { inputSpec, intText, settingValueText } from "@/lib/admin/setting-words";
@@ -64,6 +65,13 @@ export function SettingsPage({ canWrite }: { canWrite: boolean }) {
       </header>
 
       {!canWrite && q.data && <Notice icon="lock-simple">{C.readOnly}</Notice>}
+      {/* Games in testing and practice rounds moved to each game's row on the Games page. */}
+      <Notice icon="game-controller">
+        {C.gamesMoved}{" "}
+        <Link href="/admin/library" className="hover:text-text font-semibold underline">
+          {C.gamesMovedLink}
+        </Link>
+      </Notice>
       <div aria-live="polite" className="empty:hidden">
         {saved && !put.isPending && (
           <Notice tone="ok" icon="check-circle">
@@ -198,8 +206,8 @@ function Help({ def, summary = C.more }: { def: SettingDef; summary?: string }) 
 function SettingRow({ row, canWrite, busy, onSave }: { row: Row; canWrite: boolean; busy: boolean; onSave: SaveFn }) {
   const d = row.def;
   const labelId = useId();
-  // A set of games gets the card grid; an empty one only when it says what "none" means (Lab games with no game in
-  // testing), so other empty sets keep the plain list.
+  // A set of games gets the card grid; an empty one only when it says what "none" means, so other empty sets keep the
+  // plain list.
   if (d.kind === "set" && d.options.every((o) => GAME_BY_ID[o.id]) && (d.options.length > 0 || setWords(row.key).empty))
     return <GameSetRow row={row} canWrite={canWrite} busy={busy} onSave={onSave} />;
   return (
@@ -375,13 +383,13 @@ interface SetWords {
   on: string;
   off: string;
   toggle: (name: string) => string;
-  /** shown in place of the cards when the set has no options (no game in testing) */
+  /** shown in place of the cards when the set has no options */
   empty?: string;
 }
 const setWords = (key: string): SetWords => (C.setWords as Record<string, SetWords | undefined>)[key] ?? C.setWords.other;
 
 /**
- * A setting that is a set of games (Lab games, practice rounds): a card per game with its tile, world and rule, and
+ * A setting that is a set of games: a card per game with its tile, world and rule, and
  * a switch, so the owner can see what each game is before switching it on. The longer help folds under "How it works".
  */
 export function GameSetRow({ row, canWrite, busy, onSave }: { row: Row; canWrite: boolean; busy: boolean; onSave: SaveFn }) {

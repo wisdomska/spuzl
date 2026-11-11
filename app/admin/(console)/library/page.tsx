@@ -12,5 +12,7 @@ export const metadata: Metadata = { title: P.library.title };
 export default async function Page() {
   const { role, allowed } = await pageGate("content.read");
   if (!allowed) return <Forbidden what={P.library.what} />;
-  return <LibraryMetaPage canWrite={can(role, "content.write")} />;
+  // Who can play a game, its Duels and practice round: the owner (the permission the old Lab games and practice
+  // switches on Game settings had); its details: content editors too.
+  return <LibraryMetaPage canWrite={can(role, "content.write")} canSwitch={can(role, "settings.write")} />;
 }

@@ -125,6 +125,7 @@ const ACTIONS: [string, string | null, Record<string, unknown>, (string | null)?
   ["puzzle.approve", "puzzle:1", { game: "crownfall", date: "2026-11-12" }],
   ["puzzle.check", "puzzle:1", { ok: false, failed: ["unique"] }],
   ["game_meta.update", "game:crownfall", {}],
+  ["game_state.update", "game:pinned", { state: { before: "on", after: "testing" } }],
   ["event.create", "event:1", { after: { name: "Exam season" } }],
   ["event.update", "event:1", { after: { name: "Exam season" } }],
   ["event.delete", "event:1", { before: { name: "Exam season" } }],
@@ -200,6 +201,28 @@ describe("activity log sentences", () => {
     expect(say(row("player.ban", `player:${KOFI}`, { days: 7 }))).toBe("Senya banned Kofi for 7 days");
     // A deleted player keeps the nickname recorded with the row.
     expect(say(row("player.delete", `player:${MOD}`, { nickname: "Gone_1" }))).toBe("Senya deleted the account of Gone_1");
+  });
+
+  it("describes Games page switches in plain words (game_state.update)", () => {
+    const g = GAME_BY_ID.pinned.name;
+    const st = (before: string, after: string) => say(row("game_state.update", "game:pinned", { state: { before, after } }));
+    expect(st("on", "testing")).toBe(`Senya put ${g} in testing (only the team can open it)`);
+    expect(st("testing", "off")).toBe(`Senya switched ${g} off for everyone`);
+    expect(st("off", "on")).toBe(`Senya switched ${g} on for everyone`);
+    expect(say(row("game_state.update", "game:sixer", { versus: { before: true, after: false } }))).toBe(
+      `Senya took ${GAME_BY_ID.sixer.name} out of Duels and Parties`,
+    );
+    expect(say(row("game_state.update", "game:sixer", { practice: { before: true, after: false } }))).toBe(
+      `Senya turned ${GAME_BY_ID.sixer.name}'s practice round off`,
+    );
+    expect(say(row("game_state.update", "game:sixer", { versus: { after: true }, practice: { after: true } }))).toBe(
+      `Senya let players pick ${GAME_BY_ID.sixer.name} in Duels and Parties and turned ${GAME_BY_ID.sixer.name}'s practice round on`,
+    );
+    expect(say(row("game_state.update", "game:sixer", {}))).toContain("without changing them");
+    // The Daily Five re-pick that follows reads plainly too.
+    expect(say(row("daily_five.lab_repick", null, { off: ["pinned"], days: [{}, {}], kept: [] }))).toBe(
+      `Senya moved 2 Daily Five days to other games after ${g} was switched off or put in testing`,
+    );
   });
 
   it("describes setting changes in plain words", () => {

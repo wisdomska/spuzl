@@ -22,7 +22,7 @@ const S = adminCopy.audit.say;
  */
 export const AUDIT_TYPES = {
   players: ["player.%", "players.%", "report.%", "flagged.%", "feedback.%", "joinlog.%"],
-  content: ["content.%", "content_file.%", "drawword.%", "puzzle.%", "game_meta.%"],
+  content: ["content.%", "content_file.%", "drawword.%", "puzzle.%", "game_meta.%", "game_state.%"],
   daily: ["daily.%", "daily_five.%", "cron.daily%"],
   events: ["event.%", "cosmetics.%", "badges.%", "quests.%"],
   settings: ["setting.%", "flag.%"],
@@ -118,6 +118,17 @@ const optionList = (ids: string[], d: Extract<SettingDef, { kind: "set" }>) =>
 
 function describeSetting(r: AuditRow): string {
   const key = after(r.target, "setting:");
+  // The old lab switch (moved into each game's state on the Games page, 20261212010101): its rows still read by name.
+  if (key === LEGACY_LAB_KEY) {
+    const before = Array.isArray(r.detail.before) ? (r.detail.before as string[]) : [];
+    const next = Array.isArray(r.detail.after) ? (r.detail.after as string[]) : [];
+    const on = next.filter((x) => !before.includes(x)).map(gameName);
+    const off = before.filter((x) => !next.includes(x)).map(gameName);
+    if (on.length && off.length) return S.setBoth(S.list(on), S.list(off), S.legacyLabLabel);
+    if (on.length) return S.setOn(S.list(on), S.legacyLabLabel);
+    if (off.length) return S.setOff(S.list(off), S.legacyLabLabel);
+    return S.settingSame(S.legacyLabLabel);
+  }
   if (!key || !isSettingKey(key)) return S.settingUnknown;
   const d: SettingDef = SETTINGS[key];
   const was = r.detail.before === null || r.detail.before === undefined ? d.default : r.detail.before;
@@ -134,6 +145,22 @@ function describeSetting(r: AuditRow): string {
     return S.settingSame(d.label);
   }
   return S.changed(d.label, settingValueText(d, was), settingValueText(d, now));
+}
+
+/** The setting that switched lab games on before each game had a state (rows from before 20261212010101). */
+const LEGACY_LAB_KEY = "features.labGames";
+
+/** A Games page switch (game_state.update): the state, the Duels and Parties switch and the practice round. */
+function describeGameState(r: AuditRow): string {
+  const g = gameName(after(r.target, "game:"));
+  const parts: string[] = [];
+  const state = obj(r.detail.state);
+  if (typeof state.after === "string") parts.push(S.gameState(g, state.after));
+  const versus = obj(r.detail.versus);
+  if (typeof versus.after === "boolean") parts.push(S.gameVersus(g, versus.after));
+  const practice = obj(r.detail.practice);
+  if (typeof practice.after === "boolean") parts.push(S.gamePractice(g, practice.after));
+  return parts.length ? parts.join(" and ") : S.gameStateSame(g);
 }
 
 const FLAG_NAMES = adminCopy.flags.names as Record<string, { name: string } | undefined>;
@@ -313,6 +340,10 @@ export function describeAudit(r: AuditRow, names: AuditNames): AuditLine {
       case "game_meta":
         icon = "game-controller";
         text = S.gameMeta(gameName(after(r.target, "game:")));
+        break;
+      case "game_state":
+        icon = "toggle-right";
+        text = describeGameState(row);
         break;
       case "daily": {
         icon = "calendar-blank";

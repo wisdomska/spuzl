@@ -801,6 +801,20 @@ export const adminCopy = {
       puzzleCheckFail: (n: number) => `checked a puzzle: ${n === 1 ? "1 check" : `${n} checks`} failed`,
       puzzleNote: "added a note to a puzzle",
       gameMeta: (g: string) => `updated ${g}'s details on the Games page`,
+      /** Games page switches (game_state.update) */
+      gameState: (g: string, state: string) =>
+        state === "on"
+          ? `switched ${g} on for everyone`
+          : state === "testing"
+            ? `put ${g} in testing (only the team can open it)`
+            : state === "off"
+              ? `switched ${g} off for everyone`
+              : `changed ${g}'s state`,
+      gameVersus: (g: string, on: boolean) => (on ? `let players pick ${g} in Duels and Parties` : `took ${g} out of Duels and Parties`),
+      gamePractice: (g: string, on: boolean) => (on ? `turned ${g}'s practice round on` : `turned ${g}'s practice round off`),
+      gameStateSame: (g: string) => `saved ${g}'s switches on the Games page without changing them`,
+      /** the old lab switch's name, for rows from before each game had a state */
+      legacyLabLabel: "Games in testing (Lab games)",
 
       // Daily puzzles and Daily Five
       dailyLock: (g: string, day: string) => `locked the ${g} Daily for ${day}`,
@@ -827,7 +841,7 @@ export const adminCopy = {
           kept ? `kept ${games} on ${kept === 1 ? "1 locked day" : `${kept} locked days`}` : "",
         ]
           .filter(Boolean)
-          .join(" and ") + ` after ${games} was switched off`,
+          .join(" and ") + ` after ${games} was switched off or put in testing`,
 
       // Events and shop
       eventCreate: (name: string) => `created the event ${name}`,
@@ -1495,16 +1509,8 @@ export const adminCopy = {
         count: (noun: string) => noun.charAt(0).toUpperCase() + noun.slice(1),
       },
     },
-    /** a set of games (Lab games, practice): how many are switched on, and what "on" means for each */
+    /** a set of games: how many are switched on, and what "on" means for each */
     setWords: {
-      "features.labGames": {
-        count: (on: number, total: number) => `${on} of ${total} on for players`,
-        on: "On for players",
-        off: "Off",
-        toggle: (name: string) => `${name}, on for players`,
-        /** no game is in testing (every lab game has graduated): the card grid shows this instead */
-        empty: "No games in testing right now",
-      },
       "practice.disabled": {
         count: (on: number, total: number) => `${on} of ${total} skip practice`,
         on: "Skips practice",
@@ -1518,6 +1524,10 @@ export const adminCopy = {
         toggle: (name: string) => name,
       },
     },
+    /** Games in testing and practice rounds live on the Games page now (one switch on each game's row). */
+    gamesMoved:
+      "Switching a game on, off or into testing, its practice round and whether it can be played in Duels and Parties are on the Games page now.",
+    gamesMovedLink: "Open the Games page",
     onCount: (on: number, total: number) => `${on} of ${total} on for players`,
     howItWorks: "How it works",
     gameOn: "On for players",
@@ -1832,25 +1842,57 @@ export const adminCopy = {
     pageLabel: "Pages of games",
     title: "Games",
     intro:
-      "How each game shows up for players: how long it usually takes, its filter tags, its one-line rule and the line on its card. Changes reach players within 5 minutes.",
+      "Everything about each game in one place: whether players can play it, how long it takes, its tags, its rule and card text, its practice round and whether it can be played with friends. Changes reach players within 5 minutes.",
     find: "Find a game",
     findPlaceholder: "Game name",
     show: "Show",
-    showTabs: { all: "All", live: "Live", lab: "Testing", retired: "Retired" },
+    /** The state filter: every game, or only the ones in one state. */
+    showTabs: { all: "All", on: "On", testing: "In testing", off: "Off", retired: "Retired" },
     count: (shown: number, total: number) => (shown === total ? `${total} games` : `${shown} of ${total} games`),
     empty: "No game matches. Clear the search or pick All.",
     loadError: "The games didn't load. Refresh the page to try again.",
     readOnly: "You can look but not change these. Content editors and the owner can.",
+    /** Content editors can edit the details; only the owner switches games on or off. */
+    switchReadOnly: "Only the owner can switch a game on, off or into testing, or change its practice round and Duels.",
     /** Each game's state for players. */
     states: {
-      live: { label: "Live", meaning: "Players can find and play this game." },
-      labOn: { label: "Testing, on", meaning: "A game still in testing, switched on: players can find and play it." },
-      labOff: { label: "Testing, off", meaning: "A game still in testing, switched off: players can't see or play it." },
+      on: { label: "On", meaning: "Everyone can find and play this game." },
+      testing: {
+        label: "In testing",
+        meaning: "Only the team can open it, to try it out. Players can't see it or play it.",
+      },
+      off: { label: "Off", meaning: "Hidden from everyone. Nobody can open it, the team included." },
       retired: { label: "Retired", meaning: "Taken out of the app. Players can't reach it and nothing here can be changed." },
     },
+    /** The three-way switch on each game's row. */
+    stateTitle: "Who can play it",
+    stateAria: (name: string) => `Who can play ${name}`,
+    stateSaved: (name: string, label: string) => `${name} is now ${label}. Players see the change within 5 minutes.`,
+    tryIt: "Try it",
+    tryItAria: (name: string) => `Open ${name} to try it (opens in a new tab)`,
+    tryItHelp: "You're signed in to the admin, so you can open it while it's in testing.",
+    /** The confirm before players lose a game: what they lose, in plain words. */
+    confirmTitle: (name: string, label: string) => `Make ${name} ${label}?`,
+    confirmLose: (name: string, off: boolean) =>
+      `Players will no longer see or play ${name}. It leaves All games, its world, Home, the Daily Five, Duels and Parties, friend challenges and its public page. Today's and upcoming Daily Five days that have it get another game (locked days keep it). A board someone has open stops at their next move. ${
+        off ? "Nobody can open it, the team included." : "Only the team can still open it, to try it out."
+      } It takes up to 5 minutes to reach every phone.`,
+    confirmOff: "Switch off",
+    confirmTesting: "Put in testing",
+    stateOnHelp: "Switching it back on shows it to everyone again within 5 minutes.",
+    /** Duels and Parties (race games only). */
+    versus: "Can be played in Duels and Parties",
+    versusHelp: "Off: players can't pick it in a Duel or a Party, and the server refuses rooms with it.",
+    versusAria: (name: string) => `${name} can be played in Duels and Parties`,
+    /** The practice round switch (was on Game settings, "Games that skip the practice round"). */
+    practiceSwitch: "Practice round",
+    practiceSwitchHelp: "The short first try with free hints. Off: players go straight into a real game, everywhere.",
+    practiceSwitchAria: (name: string) => `${name} has a practice round`,
+    switchOn: "On",
+    switchOff: "Off",
+    dailyFiveMoved: (n: number) => (n === 1 ? "1 Daily Five day got another game." : `${n} Daily Five days got another game.`),
     usingDefaults: "Using the standard settings",
     changedFromDefault: "Changed from the standard settings",
-    labSwitch: "Switch it on or off in Game settings",
     iconAria: (name: string) => `${name} icon`,
     /** Typical play time (the duration chip on the game card). */
     time: "Typical play time",
@@ -1888,9 +1930,9 @@ export const adminCopy = {
     resetCopy: "Use standard",
     changed: "Changed",
     /** Practice board preview (R2-07 practice rounds): read only; the board is fixed in code. */
-    practice: "Practice round",
+    practice: "Practice board",
     practiceIntro:
-      "The short first try new players get, with free hints. Everyone gets this same easy board. It can't be changed here; you can switch a game's practice round off in Game settings.",
+      "The short first try new players get, with free hints. Everyone gets this same easy board. The board itself can't be changed; switch the practice round on or off above.",
     practiceOff: "Practice round off",
     practiceOn: "Practice round on",
     /** Backup and restore of the changes made here (JSON). */
