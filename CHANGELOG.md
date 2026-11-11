@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.49.0 (11 November 2026)
+
+### Everyone
+
+- **Dropdowns, date pickers and pop-ups in SPUZL's own style,** in the app and the admin, dark and light: no more
+  plain browser menus. Every dropdown opens a list on the app's surface with a lime check on the chosen option,
+  keyboard and type-to-find included. Dates open a SPUZL calendar.
+- **Every pop-up and sheet shares one look:** dimmed background, title, a close button top right, the main action
+  on the right, and focus kept inside while it's open.
+- **Birth month is now twelve buttons** (Jan to Dec): one tap, no list to open.
+- Admin confirmations (stopping or deleting an event, retiring content, switching off a setting) use the app's own
+  dialog with plain words instead of the browser's box.
+
 ## 1.48.0 (11 November 2026)
 
 ### Admin
