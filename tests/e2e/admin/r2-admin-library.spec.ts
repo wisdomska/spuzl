@@ -4,7 +4,7 @@ import { admin } from "../../api/helpers";
 import { signedIn } from "./helpers";
 
 /**
- * R2-ADMIN, admin Library page: each game's icon as a preview, its one-line rule and card copy overrides (validated,
+ * R2-ADMIN, admin Games page (was Library): each game's icon as a preview, its one-line rule and card copy overrides (validated,
  * audited, read by the game shell and the world page), and the practice board preview.
  * Needs local Supabase with 20261202000101 applied and a dev server:
  * PW_BASE_URL=http://localhost:3203 pnpm playwright test tests/e2e/admin/r2-admin-library.spec.ts --project=desktop-dark
@@ -21,11 +21,11 @@ test.afterAll(async () => {
 test("content editor overrides Dusk's rule and card copy; the game shell and world page show it; it is audited", async ({ page }) => {
   const acct = await signedIn(page, "content_editor");
   await page.goto("/admin/library");
-  await expect(page.getByRole("heading", { name: "Library" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Games", exact: true })).toBeVisible();
   // Icons: every row previews the game's tile.
   await expect(row(page, "dusk").getByRole("img", { name: "Dusk icon" })).toBeVisible();
 
-  await row(page, "dusk").getByText("Rule and card copy").click();
+  await row(page, "dusk").getByText("Rule and card text").click();
   const rule = row(page, "dusk").getByLabel("One-line rule", { exact: true });
   await expect(rule).toHaveValue(GAME_BY_ID.dusk.rule);
   // Validation as you type: over 130 characters cannot be saved.
@@ -33,11 +33,11 @@ test("content editor overrides Dusk's rule and card copy; the game shell and wor
   await expect(row(page, "dusk").getByText("The rule must be at most 130 characters (now 131)")).toBeVisible();
   await expect(rule).toHaveAttribute("aria-invalid", "true");
   await rule.fill(RULE);
-  await expect(row(page, "dusk").getByText(`${RULE.length} of 130`)).toBeVisible();
+  await expect(row(page, "dusk").getByText(`${RULE.length} of 130 characters`)).toBeVisible();
   await rule.press("Enter");
-  await expect(row(page, "dusk").getByText("Changed")).toBeVisible();
-  await row(page, "dusk").getByLabel("Card copy", { exact: true }).fill("Light and dark, side by side.");
-  await row(page, "dusk").getByLabel("Card copy", { exact: true }).press("Enter");
+  await expect(row(page, "dusk").getByText("Changed", { exact: true })).toBeVisible();
+  await row(page, "dusk").getByLabel("Card line", { exact: true }).fill("Light and dark, side by side.");
+  await row(page, "dusk").getByLabel("Card line", { exact: true }).press("Enter");
   await page.screenshot({ path: "docs/qa/screens/r2/r2-admin-library-copy-1280.png" });
 
   const { data: log } = await admin()
@@ -58,8 +58,8 @@ test("content editor overrides Dusk's rule and card copy; the game shell and wor
 
   // Use default puts the catalog's copy back.
   await page.goto("/admin/library");
-  await row(page, "dusk").getByText("Rule and card copy").click();
-  await row(page, "dusk").getByRole("button", { name: "Use default" }).first().click();
+  await row(page, "dusk").getByText("Rule and card text").click();
+  await row(page, "dusk").getByRole("button", { name: "Use standard" }).first().click();
   await expect(row(page, "dusk").getByLabel("One-line rule", { exact: true })).toHaveValue(GAME_BY_ID.dusk.rule);
 });
 
@@ -67,7 +67,7 @@ test("practice board preview: the real board, read only, with Show solution and 
   await signedIn(page, "content_editor");
   await page.goto("/admin/library");
   const preview = row(page, "crownfall").locator("[data-practice-preview]");
-  await preview.getByText("Practice board").click();
+  await preview.getByText("Practice round", { exact: true }).click();
   await expect(preview.getByText("Practice round on")).toBeVisible({ timeout: 15_000 });
   await expect(preview.getByText(GAME_BY_ID.crownfall.name)).toBeVisible();
   // Read only: no Play test (no stored puzzle to verify against), but the solution can be shown.
@@ -77,8 +77,8 @@ test("practice board preview: the real board, read only, with Show solution and 
   await page.screenshot({ path: "docs/qa/screens/r2/r2-admin-practice-preview-1280.png" });
 });
 
-test("roles: a moderator cannot open the Library page (content.read)", async ({ page }) => {
+test("roles: a moderator cannot open the Games page (content.read)", async ({ page }) => {
   await signedIn(page, "moderator");
   await page.goto("/admin/library");
-  await expect(page.getByText("Your role cannot open the games page.")).toBeVisible();
+  await expect(page.getByText("Your role cannot open the Games page.")).toBeVisible();
 });

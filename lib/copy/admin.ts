@@ -8,23 +8,23 @@ export const adminCopy = {
   /** Route titles and what the Forbidden page names for each admin page. */
   pages: {
     audit: { title: "Activity log", what: "the activity log" },
-    calendar: { title: "Daily calendar", what: "the daily calendar" },
-    dailyFive: { title: "Daily Five", what: "the Daily Five" },
-    content: { title: "Content", what: "the content editor" },
+    calendar: { title: "Daily calendar", what: "the Daily calendar" },
+    dailyFive: { title: "Daily Five", what: "the Daily Five planner" },
+    content: { title: "Content", what: "the Content page" },
     events: { title: "Events", what: "events" },
     flags: { title: "Feature switches", what: "feature switches" },
-    library: { title: "Games", what: "the games page" },
+    library: { title: "Games", what: "the Games page" },
     liveops: { title: "Live now", what: "Live now" },
     metrics: { title: "Metrics", what: "metrics" },
     moderation: { title: "Reports", what: "reports" },
     joinRequests: { title: "Join requests", what: "join requests" },
     feedback: { title: "Feedback", what: "player feedback" },
-    puzzles: { title: "Puzzles", what: "the puzzle library" },
+    puzzles: { title: "Puzzles", what: "the puzzle list" },
     settings: { title: "Game settings", what: "game settings" },
     shop: { title: "Shop", what: "the shop" },
-    team: { title: "Team", what: "the team page" },
-    dailySlot: { title: "Daily preview", what: "the calendar" },
-    puzzle: { title: "Puzzle", what: "the puzzle library" },
+    team: { title: "Team", what: "the Team page" },
+    dailySlot: { title: "Daily puzzle", what: "the Daily calendar" },
+    puzzle: { title: "Puzzle", what: "the puzzle list" },
     login: { title: "Sign in" },
   },
 
@@ -1328,9 +1328,9 @@ export const adminCopy = {
 
   /** Retired games (lib/catalog RETIRED_IDS): still listed in the console, read-only for scheduling. */
   retired: {
-    pill: "retired",
-    slotNote: "This game is retired. Players can't reach it and its Dailies are read-only.",
-    libraryNote: "Retired: hidden from players, read-only here.",
+    pill: "Retired",
+    slotNote: "This game is retired: players can't reach it. Its old Dailies stay here to look at, but nothing can be changed.",
+    libraryNote: "Retired: players can't reach it, so nothing can be changed.",
     option: (name: string) => `${name} (retired)`,
   },
 
@@ -1494,57 +1494,90 @@ export const adminCopy = {
     notApplicable: "n/a",
   },
 
-  /** Library duration chip and filter tags per game. */
+  /** Shared words of the Games and content pages (Games, Content, Puzzles, Daily calendar, Daily Five, Events, Shop). */
+  contentCommon: {
+    technical: "Technical details",
+    guide: "What do these labels mean?",
+    working: "Working…",
+    cancel: "Cancel",
+    close: "Close",
+  },
+
+  /** The Games page (was Library): how each game is shown to players. */
   library: {
-    title: "Library",
+    title: "Games",
     intro:
-      "Typical play time (the duration chip), filter tags, the one-line rule and the card copy per game. The new tag picks the games in Home's new-games banner and the New filter. Players see changes within 5 minutes.",
-    exportImport: "Export and import",
-    exportIntro: "Only overrides are exported. Import validates every row before saving any.",
-    export: "Export",
-    import: "Import",
-    badJson: "That isn't valid JSON.",
-    jsonAria: "Library metadata JSON",
-    rowNote: (overridden: boolean, duration: string, tags: readonly string[]) =>
-      `${overridden ? "Changed" : "Default"} · default ${duration}, ${tags.join(", ") || "no tags"}`,
-    secondsAria: (id: string) => `Typical seconds for ${id}`,
-    secondsUnit: "s",
-    /** Owner decision S: a score game's typical score, its par in Daily Five points. */
-    scoreLabel: "Daily Five typical score",
-    scoreHelp: (def: number | undefined) =>
-      `Daily Five points for this score game come from its score: half the bonus at this score, the full bonus at twice it. ${
-        def ? `Default ${def}.` : "No default: empty means it is scored on time like the other games."
-      }`,
-    scoreReset: "Use default",
-    save: "Save",
-    reset: "Reset",
-    /** Lab games (features.labGames): their state, switched on the Settings page. */
-    labOn: "lab: on for players",
-    labOff: "lab: off",
-    labNote: (on: boolean) =>
-      on
-        ? "In testing and switched on: players can find and play it."
-        : "In testing and switched off: hidden from players, and the server refuses it.",
-    labSwitch: "Switch on Settings",
-    /** Per-game copy (R2-ADMIN): the one-line rule and the card copy, each one line of at most 130 characters. */
-    copy: "Rule and card copy",
-    copyAria: (name: string) => `Rule and card copy for ${name}`,
-    rule: "One-line rule",
-    ruleHelp:
-      "Under the title until the first move, in the game menu, How to play, the Library game card and the Duel and Party How it works card.",
-    blurb: "Card copy",
-    blurbHelp: "The line under the game's name on its world page. Library search matches it too.",
-    chars: (n: number, max: number) => `${n} of ${max}`,
-    copyDefault: (text: string) => `Default: ${text}`,
-    resetCopy: "Use default",
-    changed: "Changed",
+      "How each game shows up for players: how long it usually takes, its filter tags, its one-line rule and the line on its card. Changes reach players within 5 minutes.",
+    find: "Find a game",
+    findPlaceholder: "Game name",
+    show: "Show",
+    showTabs: { all: "All", live: "Live", lab: "Testing", retired: "Retired" },
+    count: (shown: number, total: number) => (shown === total ? `${total} games` : `${shown} of ${total} games`),
+    empty: "No game matches. Clear the search or pick All.",
+    loadError: "The games didn't load. Refresh the page to try again.",
+    readOnly: "You can look but not change these. Content editors and the owner can.",
+    /** Each game's state for players. */
+    states: {
+      live: { label: "Live", meaning: "Players can find and play this game." },
+      labOn: { label: "Testing, on", meaning: "A game still in testing, switched on: players can find and play it." },
+      labOff: { label: "Testing, off", meaning: "A game still in testing, switched off: players can't see or play it." },
+      retired: { label: "Retired", meaning: "Taken out of the app. Players can't reach it and nothing here can be changed." },
+    },
+    usingDefaults: "Using the standard settings",
+    changedFromDefault: "Changed from the standard settings",
+    labSwitch: "Switch it on or off in Game settings",
     iconAria: (name: string) => `${name} icon`,
-    /** Practice board preview (R2-07 practice rounds): read only; the board is a fixed seed in code. */
-    practice: "Practice board",
+    /** Typical play time (the duration chip on the game card). */
+    time: "Typical play time",
+    timeHelp: (shown: string, def: string) => `Players see "${shown}" on the game card. Standard: ${def}.`,
+    timeUnit: "seconds",
+    timeBad: "Use a whole number of seconds from 10 to 3,600 (1 hour).",
+    timeAria: (name: string) => `Typical play time for ${name}, in seconds`,
+    /** Filter tags (Home's New banner and the Library filters). */
+    tags: "Tags",
+    tagsHelp: "Players can filter the game list by these. New also puts the game in the New games banner on Home.",
+    tagLabels: { quick: "Quick", calm: "Calm", competitive: "Competitive", new: "New" } as Record<string, string>,
+    tagAria: (tag: string, name: string, on: boolean) => `${tag} tag for ${name}: ${on ? "on, press to remove" : "off, press to add"}`,
+    save: "Save",
+    reset: "Back to standard",
+    resetAria: (name: string) => `Put ${name} back to its standard settings`,
+    confirmReset: (name: string) =>
+      `Put ${name} back to its standard play time, tags, rule and card line? Players see the standard ones within 5 minutes.`,
+    savedNote: (name: string) => `${name} saved. Players see it within 5 minutes.`,
+    /** Owner decision S: a score game's typical score, its par in Daily Five points. */
+    scoreLabel: "Typical score in the Daily Five",
+    scoreHelp: (def: number | undefined) =>
+      `For this points game, Daily Five bonus points come from the score: half the bonus at this score, the full bonus at twice it. ${
+        def ? `Standard: ${def.toLocaleString("en-US")}.` : "Leave it empty to score it on time like the other games."
+      }`,
+    scoreReset: "Use standard",
+    /** Per-game copy (R2-ADMIN): the one-line rule and the card copy, each one line of at most 130 characters. */
+    copy: "Rule and card text",
+    copyAria: (name: string) => `Rule and card text for ${name}`,
+    rule: "One-line rule",
+    ruleHelp: "Shown under the game's title before the first move, in How to play, on its game card and before Duels and Parties.",
+    blurb: "Card line",
+    blurbHelp: "The line under the game's name on its world page. Game search finds words in it too.",
+    chars: (n: number, max: number) => `${n} of ${max} characters`,
+    copyDefault: (text: string) => `Standard: ${text}`,
+    resetCopy: "Use standard",
+    changed: "Changed",
+    /** Practice board preview (R2-07 practice rounds): read only; the board is fixed in code. */
+    practice: "Practice round",
     practiceIntro:
-      "The short first try with free hints, the same board for everyone (fixed seed, easy). Read only: it changes in code. Turn a game's practice round off on the Settings page (Practice round off for).",
-    practiceOff: "Practice round off in Settings",
+      "The short first try new players get, with free hints. Everyone gets this same easy board. It can't be changed here; you can switch a game's practice round off in Game settings.",
+    practiceOff: "Practice round off",
     practiceOn: "Practice round on",
+    /** Backup and restore of the changes made here (JSON). */
+    backup: "Backup and restore",
+    backupIntro:
+      "Copy the changes made on this page to keep them safe, or paste a copy back to restore them. Every game is checked before anything is saved.",
+    export: "Show a copy",
+    import: "Restore from copy",
+    imported: "Restored. Players see the changes within 5 minutes.",
+    badJson: "That text isn't a copy from this page. Paste the whole copy, from the first { to the last }.",
+    jsonAria: "Copy of the Games page changes",
+    techId: "Game id",
   },
 
   /** Content calendar: one week of Dailies per game. */
