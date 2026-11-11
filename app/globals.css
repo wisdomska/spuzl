@@ -861,6 +861,104 @@ select {
   }
 }
 
+/* ---------- Shared dialogs and dropdowns (components/ui/Modal.tsx, Select.tsx, DateField.tsx) ----------
+   A centred dialog grows in from 96% and fades; dropdowns and the calendar pop from their trigger. Exits are
+   shorter than entries. Reduced motion (the OS setting or the in-app one) keeps a short fade only. */
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+@keyframes modal-out {
+  to {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+@keyframes pop-out {
+  to {
+    opacity: 0;
+  }
+}
+/* A dialog takes focus itself when it opens (nothing inside asked for it): no focus ring round the whole frame. */
+.modal-content:focus-visible {
+  box-shadow:
+    inset 0 0 0 1px var(--line),
+    var(--shadow-float);
+}
+.sheet-content:focus-visible {
+  box-shadow: none;
+}
+.modal-content[data-state="open"] {
+  animation: modal-in 200ms var(--ease-out);
+}
+.modal-content[data-state="closed"] {
+  animation: modal-out 140ms var(--ease-out) forwards;
+}
+/* The admin's side menu on phones slides in from the left. */
+@keyframes drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+}
+@keyframes drawer-out {
+  to {
+    transform: translateX(-100%);
+  }
+}
+.drawer-content[data-state="open"] {
+  animation: drawer-in 240ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.drawer-content[data-state="closed"] {
+  animation: drawer-out 160ms var(--ease-out) forwards;
+}
+[data-motion="reduce"] .drawer-content[data-state="open"] {
+  animation: sheet-fade 120ms ease-out;
+}
+[data-motion="reduce"] .drawer-content[data-state="closed"] {
+  animation: sheet-fade-out 100ms ease-out forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .drawer-content[data-state="open"] {
+    animation: sheet-fade 120ms ease-out;
+  }
+  .drawer-content[data-state="closed"] {
+    animation: sheet-fade-out 100ms ease-out forwards;
+  }
+}
+.pop-content {
+  transform-origin: var(--radix-select-content-transform-origin, var(--radix-popover-content-transform-origin, top));
+}
+.pop-content[data-state="open"] {
+  animation: pop-in 140ms var(--ease-out);
+}
+.pop-content[data-state="closed"] {
+  animation: pop-out 100ms var(--ease-out) forwards;
+}
+[data-motion="reduce"] .modal-content[data-state="open"],
+[data-motion="reduce"] .pop-content[data-state="open"] {
+  animation: sheet-fade 120ms ease-out;
+}
+[data-motion="reduce"] .modal-content[data-state="closed"] {
+  animation: sheet-fade-out 100ms ease-out forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .modal-content[data-state="open"],
+  .pop-content[data-state="open"] {
+    animation: sheet-fade 120ms ease-out;
+  }
+  .modal-content[data-state="closed"] {
+    animation: sheet-fade-out 100ms ease-out forwards;
+  }
+}
+
 /* ---------- #17 friendlier motion: tab screens ease in ---------- */
 /* Opacity only: a transform here would become the containing block for fixed bars (Home dock, nav). */
 @keyframes page-enter {

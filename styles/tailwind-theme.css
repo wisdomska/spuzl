@@ -15,6 +15,7 @@
   --color-danger: var(--danger);
   --color-freeze: var(--freeze);
   --color-depth: var(--depth);
+  --color-scrim: var(--scrim);
   --color-logic: var(--w-logic);
   --color-logic-ink: var(--w-logic-ink);
   --color-line-lane: var(--w-line);
@@ -49,6 +50,7 @@
   --shadow-toy: var(--shadow-btn);
   --shadow-toy-accent: var(--shadow-btn-accent);
   --shadow-float: var(--shadow-float);
+  --shadow-pop: var(--shadow-pop);
 
   --ease-out: var(--ease-out);
   --ease-in-out: var(--ease-in-out);

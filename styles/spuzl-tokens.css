@@ -143,6 +143,9 @@
   --shadow-btn: 0 var(--press-depth) 0 var(--depth);
   --shadow-btn-accent: 0 var(--press-depth) 0 var(--accent-depth);
   --shadow-float: 0 10px 30px rgb(0 0 0 / 0.45);
+  /* Modals, sheets and dropdowns (components/ui/Modal.tsx, Select.tsx, DateField.tsx) */
+  --scrim: rgb(6 7 13 / 0.6); /* the dimmed page behind every dialog and sheet, both themes */
+  --shadow-pop: 0 12px 32px rgb(0 0 0 / 0.45), 0 0 0 1px var(--line); /* an open dropdown or calendar */
   --focus-ring: 0 0 0 3px var(--surface), 0 0 0 6px var(--text);
 
   /* motion */
@@ -197,6 +200,7 @@
   --danger-tint: #fbe6e6;
   --warn-tint: #fbf1da;
   --text-faint: #8a8ea8;
+  --shadow-pop: 0 12px 32px rgb(18 19 29 / 0.16), 0 0 0 1px var(--line);
   /* Sign in with Google button (Google's light theme) */
   --google-bg: #ffffff;
   --google-line: #747775;
