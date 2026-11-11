@@ -16,12 +16,15 @@ test("analyst sees the new cards and exports each as CSV, audited", async ({ pag
   const acct = await signedIn(page, "analyst");
   await page.goto("/admin/metrics");
   await expect(page.getByRole("heading", { name: "Metrics", exact: true })).toBeVisible();
+  // The older cards sit folded under "More detail" and "App speed (technical)" (admin overhaul B).
+  await page.getByText("More detail", { exact: true }).click();
+  await page.getByText("App speed (technical)", { exact: true }).click();
   for (const id of NEW_CARDS) {
     const title = METRIC_BY_ID[id].title;
     const card = page.getByRole("region", { name: title, exact: true });
     await expect(card).toBeVisible();
     const download = page.waitForEvent("download");
-    await card.getByRole("button", { name: `Export ${title} as CSV` }).click();
+    await card.getByRole("button", { name: `Download ${title} as a spreadsheet (CSV)` }).click();
     const file = await download;
     expect(file.suggestedFilename()).toMatch(
       new RegExp(`^spuzl-${id.replace(/_/g, "-")}-\\d{4}-\\d{2}-\\d{2}-to-\\d{4}-\\d{2}-\\d{2}\\.csv$`),

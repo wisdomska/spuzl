@@ -135,14 +135,14 @@ describe("hint requests and onboarding funnel", () => {
       "date,welcome,age_step,start_step,tutorial_step,nickname_step,reached_home,completion_pct,players_created,tutorial_cleared,played_a_game",
     );
     expect(csv[1]).toBe("total,10,8,7,0,6,6,75,6,0,3");
-    expect(METRIC_BY_ID.onboarding.headline(row())).toBe("n/a");
+    expect(METRIC_BY_ID.onboarding.headline(row())).toBe("no data");
   });
 });
 
 describe("party start to first move (R2-03)", () => {
   it("shows p50 / p95 and exports count, p50 and p95 per day", () => {
     const total = row({ party_first_move_n: 12, party_first_move_p50: 900, party_first_move_p95: 14_200 });
-    expect(METRIC_BY_ID.party_first_move.headline(total)).toBe("900 ms / 14.2 s");
+    expect(METRIC_BY_ID.party_first_move.headline(total)).toBe("0.9 s typical");
     expect(METRIC_BY_ID.party_first_move.sub(total)).toContain("12 first moves");
     const csv = metricCsv("party_first_move", { rows: [row({ date: "2026-11-30" })], total })
       .trimEnd()
@@ -151,7 +151,7 @@ describe("party start to first move (R2-03)", () => {
   });
 
   it("reads rows from before the migration as no data", () => {
-    expect(METRIC_BY_ID.party_first_move.headline(row())).toBe("n/a / n/a");
+    expect(METRIC_BY_ID.party_first_move.headline(row())).toBe("no data");
   });
 });
 
@@ -167,7 +167,7 @@ describe("prompt acceptance by trigger (R2-04)", () => {
     expect(promptCounts(total, "alerts", "streak")).toEqual({ shown: 0, accepted: 0, dismissed: 0 });
     const p = METRIC_BY_ID.prompts;
     expect(p.headline(total)).toBe("40%");
-    expect(p.headline(row())).toBe("n/a");
+    expect(p.headline(row())).toBe("no data");
     const rows = p.breakdown!.rows(total);
     expect(rows.find((r) => r.key === "alerts.friend")?.values).toEqual([4, 2, 2, 50]);
     expect(rows.find((r) => r.key === "event.live")?.values).toEqual([0, 0, 0, null]);
@@ -197,7 +197,7 @@ describe("duels created by age band (R2-02)", () => {
     expect(csv[1]).toBe("2026-11-05,1,0,0,0,0,0,1,100");
     expect(csv[2]).toBe("total,3,1,2,0,1,3,10,30");
     expect(METRIC_BY_ID.duel_bands.headline(total)).toBe("10");
-    expect(METRIC_BY_ID.duel_bands.sub(row())).toContain("under 16 n/a");
+    expect(METRIC_BY_ID.duel_bands.sub(row())).toContain("under 16 no data");
   });
   it("reads rows from before the migration (no band fields) as 0", () => {
     expect(metricCsv("duel_bands", { rows: [], total: row() }).trimEnd().split("\r\n")[1]).toBe("total,0,0,0,0,0,0,0,");

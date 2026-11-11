@@ -1141,6 +1141,11 @@ describe("Metrics (admin cascade)", () => {
     const day1 = r.data.rows.find((x: { date: string }) => x.date === on);
     expect(day1).toMatchObject({ tap_n: 4, created: 2, shares: 2 });
     expect(r.data.rows.find((x: { date: string }) => x.date === end)).toMatchObject({ tap_n: 0, created: 0, tap_p50: null });
+    // Admin overhaul B: the owner numbers, and the same number of days before for the comparisons.
+    expect(r.data.previous).toMatchObject({ from: addDays(end, -13), to: addDays(end, -7) });
+    expect(typeof r.data.previous.total.active).toBe("number");
+    expect(typeof r.data.total.active).toBe("number");
+    expect(typeof r.data.total.top_games).toBe("object");
   });
 
   it("exports one metric as CSV, audited; refuses bad ranges and roles without metrics.read", async () => {
@@ -1157,6 +1162,9 @@ describe("Metrics (admin cascade)", () => {
     expect(x.data.filename).toBe(`spuzl-hints-${addDays(end, -6)}-to-${end}.csv`);
     const log = await lastAudit(S.content_editor.userId, "metrics.export");
     expect(log?.target).toBe("metric:hints");
+    const owner = await S.content_editor.aal2("/api/admin/metrics", { json: { metric: "players", days: 7, end } });
+    expect(owner.data.csv.split("\r\n")[0]).toBe("date,players,saved_account,guests");
+    expect((await lastAudit(S.content_editor.userId, "metrics.export"))?.target).toBe("metric:players");
 
     expect((await S.owner.aal2("/api/admin/metrics?days=14")).status).toBe(400);
     expect((await S.owner.aal2(`/api/admin/metrics?days=7&end=${day(2)}`)).status).toBe(400);

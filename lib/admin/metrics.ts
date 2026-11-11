@@ -1,11 +1,13 @@
 /**
- * Admin Metrics page (admin cascade): metric definitions, rates, percentiles and CSV. Pure and free of server
+ * Admin Metrics page (admin cascade): the detail and app-speed cards (folded on the page under the owner view in
+ * ./insights.ts), rates, percentiles and CSV. Pure and free of server
  * imports, so the /admin UI, the API route and the tests share one definition of every number.
  *
  * The database aggregates (public.svc_admin_metrics): one row per GMT day plus a range total. Percentiles there
  * are percentile_cont; `percentile` below is the same linear interpolation for code and tests.
  */
 import { addDays, ISO_DATE, todayIso } from "./dates";
+import { duration, percent } from "./format";
 import { PROMPT_LABELS, PROMPT_PAIRS, TRIGGER_LABELS } from "@/lib/prompts/ids";
 import { GAME_BY_ID } from "@/lib/catalog";
 
@@ -120,6 +122,42 @@ export interface MetricRow {
   wr_shared?: number;
   wr_played?: number;
   wr_dismissed?: number;
+  /**
+   * Admin overhaul B (20261211020101, private.admin_insights): the owner view. Test players left out, GMT days.
+   * active: players who started any game or made a board-game move (range total: each player once); active_saved:
+   * of them, with a saved account now; new_saved: new players with a saved account now; rt_*: next-day and
+   * week-later return measured on the row's day; the rest are counts of that day (see the migration header).
+   */
+  active?: number;
+  active_saved?: number;
+  /** Range total only: players active in the last 7 days of the range. */
+  active_last7?: number;
+  new_saved?: number;
+  rt_d1_cohort?: number;
+  rt_d1_kept?: number;
+  rt_d7_cohort?: number;
+  rt_d7_kept?: number;
+  puzzles_started?: number;
+  puzzles_cleared?: number;
+  board_plays?: number;
+  board_games?: number;
+  board_bot_games?: number;
+  duels?: number;
+  duels_vs_computer?: number;
+  parties?: number;
+  party_players?: number;
+  friends_made?: number;
+  sparks_earned?: number;
+  sparks_spent?: number;
+  shop_buys?: number;
+  shop_buyers?: number;
+  reports_sent?: number;
+  feedback_sent?: number;
+  /** Range total only, a count of right now: players on a 3+ (7+) day streak. */
+  streak_3?: number;
+  streak_7?: number;
+  /** Range total only: per game id, plays (puzzles started plus board-game plays) and distinct players. */
+  top_games?: Record<string, { plays: number; players: number }>;
 }
 
 export interface PracticeCounts {
@@ -140,6 +178,8 @@ export interface MetricsData {
   days: RangeDays;
   total: MetricRow;
   rows: MetricRow[];
+  /** The same number of days straight before `from` (range total only), for "up/down on the days before". */
+  previous?: { from: string; to: string; total: MetricRow };
 }
 
 /** Linear-interpolated percentile (same as Postgres percentile_cont). p in 0..1. Null for no values. */
@@ -186,9 +226,12 @@ export const METRIC_IDS = [
 ] as const;
 export type MetricId = (typeof METRIC_IDS)[number];
 
-type Col = { key: string; label: string; value: (r: MetricRow) => number | null };
+/** A by-day column; `ms` columns hold milliseconds (shown as "1.2 s", exported raw). */
+type Col = { key: string; label: string; value: (r: MetricRow) => number | null; unit?: "ms" };
 export interface MetricDef {
   id: MetricId;
+  /** Where the card sits on the page: under "More detail", or "App speed (technical)". Both are folded. */
+  group: "detail" | "speed";
   title: string;
   /** what the number means and where it comes from */
   note: string;
@@ -202,17 +245,12 @@ export interface MetricDef {
   csv?: (data: Pick<MetricsData, "rows" | "total">) => string;
 }
 
-const ms = (v: number | null) => (v === null ? "n/a" : v >= 10_000 ? `${(v / 1000).toFixed(1)} s` : `${Math.round(v)} ms`);
-const pct = (v: number | null) => (v === null ? "n/a" : `${v}%`);
-/** A long wait in words: seconds, minutes, hours, then days (landing to first clear). */
-export const span = (v: number | null) => {
-  if (v === null) return "n/a";
-  const s = v / 1000;
-  if (s < 60) return `${Math.round(s)} s`;
-  if (s < 3600) return `${Math.round(s / 60)} min`;
-  if (s < 48 * 3600) return `${(s / 3600).toFixed(1)} h`;
-  return `${(s / 86_400).toFixed(1)} d`;
-};
+/** Shown when there is nothing to measure (no data in the range, or a denominator of 0). */
+export const NO_DATA = "no data";
+const ms = (v: number | null) => duration(v) ?? NO_DATA;
+const pct = (v: number | null) => percent(v) ?? NO_DATA;
+/** "1.2 s typical", or "no data" when nothing was measured. */
+const typical = (v: number | null) => (v === null ? NO_DATA : `${ms(v)} typical`);
 const n = (v: number) => v.toLocaleString("en-US");
 /**
  * Hint requests that were not used: Cancel on the confirm (requests minus uses), plus `hint_cancel` rows from
@@ -285,57 +323,88 @@ function practiceCsv(data: Pick<MetricsData, "rows" | "total">): string {
 export const METRICS: readonly MetricDef[] = [
   {
     id: "tap_to_board",
-    title: "Tap to board",
-    note: "Time from the tap that opened a Play screen to its board being interactive (client measured). Cold load is from page navigation start.",
-    headline: (t) => `${ms(t.tap_p50)} / ${ms(t.tap_p95)}`,
-    sub: (t) => `p50 / p95 · ${n(t.tap_n)} taps · cold load p50 ${ms(t.load_p50)}`,
+    group: "speed",
+    title: "Opening a game",
+    note: "How long from tapping a game to its board being ready, measured on players' phones. Typical: half of opens are quicker. Slow end: 1 in 20 opens is slower. First load is opening the app straight onto a game.",
+    headline: (t) => typical(t.tap_p50),
+    sub: (t) => `slow end ${ms(t.tap_p95)} · ${n(t.tap_n)} opens · first load ${ms(t.load_p50)} typical`,
     cols: [
-      { key: "tap_count", label: "Taps", value: (r) => r.tap_n },
-      { key: "tap_p50_ms", label: "Tap p50 ms", value: (r) => r.tap_p50 },
-      { key: "tap_p95_ms", label: "Tap p95 ms", value: (r) => r.tap_p95 },
-      { key: "load_count", label: "Cold loads", value: (r) => r.load_n },
-      { key: "load_p50_ms", label: "Load p50 ms", value: (r) => r.load_p50 },
-      { key: "load_p95_ms", label: "Load p95 ms", value: (r) => r.load_p95 },
+      { key: "tap_count", label: "Opens", value: (r) => r.tap_n },
+      { key: "tap_p50_ms", label: "Typical", value: (r) => r.tap_p50, unit: "ms" },
+      { key: "tap_p95_ms", label: "Slow end", value: (r) => r.tap_p95, unit: "ms" },
+      { key: "load_count", label: "First loads", value: (r) => r.load_n },
+      { key: "load_p50_ms", label: "First load typical", value: (r) => r.load_p50, unit: "ms" },
+      { key: "load_p95_ms", label: "First load slow end", value: (r) => r.load_p95, unit: "ms" },
     ],
   },
   {
     id: "tap_warmth",
-    title: "Tap to board, cold and warm",
-    note: "Cold = the first board of the page session: the page opened straight on Play, or the first game tapped after it loaded (its code and data not loaded yet). Warm = every later board in the same page. Client measured (tap_to_board with warm); taps from older clients are only in Tap to board.",
-    headline: (t) => `${ms(t.cold_p50 ?? null)} / ${ms(t.warm_p50 ?? null)}`,
+    group: "speed",
+    title: "Opening a game: first and later",
+    note: "The first game opened in a visit has to download its code, so it is slower; later games in the same visit are quicker. Measured on players' phones (newer app versions only).",
+    headline: (t) =>
+      t.cold_p50 == null && t.warm_p50 == null ? NO_DATA : `${ms(t.cold_p50 ?? null)} first · ${ms(t.warm_p50 ?? null)} later`,
     sub: (t) =>
-      `cold p50 / warm p50 · cold p95 ${ms(t.cold_p95 ?? null)} (${n(t.cold_n ?? 0)}) · warm p95 ${ms(t.warm_p95 ?? null)} (${n(t.warm_n ?? 0)})`,
+      `typical times · slow end ${ms(t.cold_p95 ?? null)} first (${n(t.cold_n ?? 0)} opens), ${ms(t.warm_p95 ?? null)} later (${n(t.warm_n ?? 0)} opens)`,
     cols: [
-      { key: "cold_count", label: "Cold", value: (r) => r.cold_n ?? 0 },
-      { key: "cold_p50_ms", label: "Cold p50 ms", value: (r) => r.cold_p50 ?? null },
-      { key: "cold_p95_ms", label: "Cold p95 ms", value: (r) => r.cold_p95 ?? null },
-      { key: "warm_count", label: "Warm", value: (r) => r.warm_n ?? 0 },
-      { key: "warm_p50_ms", label: "Warm p50 ms", value: (r) => r.warm_p50 ?? null },
-      { key: "warm_p95_ms", label: "Warm p95 ms", value: (r) => r.warm_p95 ?? null },
+      { key: "cold_count", label: "First opens", value: (r) => r.cold_n ?? 0 },
+      { key: "cold_p50_ms", label: "First typical", value: (r) => r.cold_p50 ?? null, unit: "ms" },
+      { key: "cold_p95_ms", label: "First slow end", value: (r) => r.cold_p95 ?? null, unit: "ms" },
+      { key: "warm_count", label: "Later opens", value: (r) => r.warm_n ?? 0 },
+      { key: "warm_p50_ms", label: "Later typical", value: (r) => r.warm_p50 ?? null, unit: "ms" },
+      { key: "warm_p95_ms", label: "Later slow end", value: (r) => r.warm_p95 ?? null, unit: "ms" },
+    ],
+  },
+  {
+    id: "first_move",
+    group: "speed",
+    title: "Time to the first move",
+    note: "From a solo puzzle's start (Daily, free play, archive, challenges) to the player's first move. Long times can mean a puzzle is hard to get into.",
+    headline: (t) => typical(t.first_move_p50),
+    sub: (t) => `slow end ${ms(t.first_move_p95)} · ${n(t.first_move_n)} puzzles`,
+    cols: [
+      { key: "attempts", label: "Puzzles", value: (r) => r.first_move_n },
+      { key: "p50_ms", label: "Typical", value: (r) => r.first_move_p50, unit: "ms" },
+      { key: "p95_ms", label: "Slow end", value: (r) => r.first_move_p95, unit: "ms" },
+    ],
+  },
+  {
+    id: "party_first_move",
+    group: "speed",
+    title: "Party start to first move",
+    note: "From the end of a Party game's 3-2-1 countdown to each player's first move, on the server clock. One per player per game; coming back into a game already started is not counted again.",
+    headline: (t) => typical(t.party_first_move_p50 ?? null),
+    sub: (t) => `slow end ${ms(t.party_first_move_p95 ?? null)} · ${n(t.party_first_move_n ?? 0)} first moves`,
+    cols: [
+      { key: "first_moves", label: "First moves", value: (r) => r.party_first_move_n ?? 0 },
+      { key: "p50_ms", label: "Typical", value: (r) => r.party_first_move_p50 ?? null, unit: "ms" },
+      { key: "p95_ms", label: "Slow end", value: (r) => r.party_first_move_p95 ?? null, unit: "ms" },
     ],
   },
   {
     id: "first_clear",
-    title: "Landing to first clear",
-    note: "Players whose profile was made that day (the landing: Welcome makes a guest profile on the first visit), how many have cleared a board since (any mode but the onboarding tutorial), and the time from landing to that first clear. Server recorded (players and attempts), test players left out. Recent days keep growing as players come back.",
-    headline: (t) => `${span(t.fc_p50 ?? null)} / ${span(t.fc_p95 ?? null)}`,
+    group: "detail",
+    title: "New players' first solved puzzle",
+    note: "Players who arrived each day, how many have solved a puzzle since (the tutorial does not count), and how long that took from arriving. Recent days keep growing as players come back. Test players left out.",
+    headline: (t) => typical(t.fc_p50 ?? null),
     sub: (t) =>
-      `p50 / p95 · ${n(t.fc_cleared ?? 0)} of ${n(t.fc_cohort ?? 0)} new players cleared one (${pct(rate(t.fc_cleared ?? 0, t.fc_cohort ?? 0))})`,
+      `slow end ${ms(t.fc_p95 ?? null)} · ${n(t.fc_cleared ?? 0)} of ${n(t.fc_cohort ?? 0)} new players solved one (${pct(rate(t.fc_cleared ?? 0, t.fc_cohort ?? 0))})`,
     cols: [
       { key: "new_players", label: "New players", value: (r) => r.fc_cohort ?? 0 },
-      { key: "cleared", label: "Cleared one", value: (r) => r.fc_cleared ?? 0 },
-      { key: "cleared_pct", label: "Cleared %", value: (r) => rate(r.fc_cleared ?? 0, r.fc_cohort ?? 0) },
-      { key: "p50_ms", label: "p50 ms", value: (r) => r.fc_p50 ?? null },
-      { key: "p95_ms", label: "p95 ms", value: (r) => r.fc_p95 ?? null },
+      { key: "cleared", label: "Solved one", value: (r) => r.fc_cleared ?? 0 },
+      { key: "cleared_pct", label: "Solved %", value: (r) => rate(r.fc_cleared ?? 0, r.fc_cohort ?? 0) },
+      { key: "p50_ms", label: "Typical time", value: (r) => r.fc_p50 ?? null, unit: "ms" },
+      { key: "p95_ms", label: "Slow end", value: (r) => r.fc_p95 ?? null, unit: "ms" },
     ],
   },
   {
     id: "onboarding",
-    title: "Onboarding completion",
-    note: "Of new players who reached the age step of Welcome, the share that reached Home (first-party onboarding_step, client recorded). Step columns count each Welcome step once per visit; Created, Tutorial cleared and Played come from profiles and attempts.",
+    group: "detail",
+    title: "Getting started, step by step",
+    note: "How far new players get through the welcome screens (counted on their phones, once per visit). Finished = reached the home screen, out of those who reached the age question. New profiles, Tutorial solved and Played come from the server.",
     headline: (t) => pct(onboarded(t)),
     sub: (t) =>
-      `${n(t.onboarding_home ?? 0)} of ${n(t.onboarding_age ?? 0)} reached Home · ${n(t.played)} of ${n(t.created)} new profiles played`,
+      `${n(t.onboarding_home ?? 0)} of ${n(t.onboarding_age ?? 0)} reached the home screen · ${n(t.played)} of ${n(t.created)} new profiles played a game`,
     cols: [
       { key: "welcome", label: "Welcome (sign-in screen)", value: (r) => r.onboarding_hello ?? 0 },
       { key: "age_step", label: "Age", value: (r) => r.onboarding_age ?? 0 },
@@ -343,62 +412,65 @@ export const METRICS: readonly MetricDef[] = [
       { key: "tutorial_step", label: "Tutorial", value: (r) => r.onboarding_tutorial ?? 0 },
       { key: "nickname_step", label: "Nickname", value: (r) => r.onboarding_nickname ?? 0 },
       { key: "reached_home", label: "Home", value: (r) => r.onboarding_home ?? 0 },
-      { key: "completion_pct", label: "Completion %", value: onboarded },
-      { key: "players_created", label: "Created", value: (r) => r.created },
-      { key: "tutorial_cleared", label: "Tutorial cleared", value: (r) => r.tutorial_cleared },
+      { key: "completion_pct", label: "Finished %", value: onboarded },
+      { key: "players_created", label: "New profiles", value: (r) => r.created },
+      { key: "tutorial_cleared", label: "Tutorial solved", value: (r) => r.tutorial_cleared },
       { key: "played_a_game", label: "Played", value: (r) => r.played },
     ],
   },
   {
     id: "retention",
-    title: "D1 and D7 retention",
-    note: "Cohort = players whose first game started (or first Board Bay move was made) that GMT day (test players left out). D1 = of them, the share who started a game or made a Board Bay move the next day; D7 = 7 days later. A day shows n/a until that later day is over. Same rule as Live ops, by day.",
-    headline: (t) => `${pct(d1(t))} / ${pct(d7(t))}`,
+    group: "detail",
+    title: "Coming back, by first-play day",
+    note: "Players grouped by the GMT day of their first game (or first board-game move). Next day = how many played again the day after; a week later = on the 7th day after. A day shows no data until that later day is over. Test players left out.",
+    headline: (t) => (d1(t) === null && d7(t) === null ? NO_DATA : `${pct(d1(t))} next day · ${pct(d7(t))} a week later`),
     sub: (t) =>
-      `D1 / D7 · D1 ${n(t.ret_d1_kept ?? 0)} of ${n(t.ret_d1_cohort ?? 0)} · D7 ${n(t.ret_d7_kept ?? 0)} of ${n(t.ret_d7_cohort ?? 0)} · ${n(t.ret_cohort ?? 0)} new players`,
+      `${n(t.ret_d1_kept ?? 0)} of ${n(t.ret_d1_cohort ?? 0)} came back the next day · ${n(t.ret_d7_kept ?? 0)} of ${n(t.ret_d7_cohort ?? 0)} a week later · ${n(t.ret_cohort ?? 0)} new players`,
     cols: [
-      { key: "cohort", label: "Cohort", value: (r) => r.ret_cohort ?? 0 },
-      { key: "d1_kept", label: "Back D1", value: (r) => ((r.ret_d1_cohort ?? 0) > 0 ? (r.ret_d1_kept ?? 0) : null) },
-      { key: "d1_pct", label: "D1 %", value: d1 },
-      { key: "d7_kept", label: "Back D7", value: (r) => ((r.ret_d7_cohort ?? 0) > 0 ? (r.ret_d7_kept ?? 0) : null) },
-      { key: "d7_pct", label: "D7 %", value: d7 },
+      { key: "cohort", label: "New players", value: (r) => r.ret_cohort ?? 0 },
+      { key: "d1_kept", label: "Back next day", value: (r) => ((r.ret_d1_cohort ?? 0) > 0 ? (r.ret_d1_kept ?? 0) : null) },
+      { key: "d1_pct", label: "Next day %", value: d1 },
+      { key: "d7_kept", label: "Back a week later", value: (r) => ((r.ret_d7_cohort ?? 0) > 0 ? (r.ret_d7_kept ?? 0) : null) },
+      { key: "d7_pct", label: "Week later %", value: d7 },
     ],
   },
   {
     id: "game_over",
+    group: "detail",
     title: "Board game results",
-    note: "Full games (chess, draughts, Ludo, Oware and the other Board Games) as each player's game-over card showed them, once per game per browser tab (client recorded, game_over). With people = a friend or Play live; vs bot = the Practice bot or a bot seat. Every player of a game with people sends their own result, so its wins and losses roughly pair up.",
+    note: "Finished board games (chess, draughts, Ludo, Oware and the others) as each player's end card showed them, once per game (counted on players' phones). With people = a friend or a live opponent; against the computer = the practice bot. Both players of a game with people send a result, so wins and losses roughly pair up.",
     headline: (t) => pct(rate(t.go_bot_won ?? 0, botGames(t))),
     sub: (t) =>
-      `players' win rate vs the bot (${n(botGames(t))} games) · with people ${n(bayGames(t))} results: ${n(t.go_bay_won ?? 0)} won, ${n(t.go_bay_lost ?? 0)} lost, ${n(t.go_bay_draw ?? 0)} drawn`,
+      `players' wins against the computer (${n(botGames(t))} games) · with people ${n(bayGames(t))} results: ${n(t.go_bay_won ?? 0)} won, ${n(t.go_bay_lost ?? 0)} lost, ${n(t.go_bay_draw ?? 0)} drawn`,
     cols: [
       { key: "people_won", label: "People: won", value: (r) => r.go_bay_won ?? 0 },
       { key: "people_lost", label: "People: lost", value: (r) => r.go_bay_lost ?? 0 },
-      { key: "people_draw", label: "People: draw", value: (r) => r.go_bay_draw ?? 0 },
-      { key: "bot_won", label: "Bot: won", value: (r) => r.go_bot_won ?? 0 },
-      { key: "bot_lost", label: "Bot: lost", value: (r) => r.go_bot_lost ?? 0 },
-      { key: "bot_draw", label: "Bot: draw", value: (r) => r.go_bot_draw ?? 0 },
-      { key: "bot_win_pct", label: "Bot win %", value: (r) => rate(r.go_bot_won ?? 0, botGames(r)) },
+      { key: "people_draw", label: "People: drawn", value: (r) => r.go_bay_draw ?? 0 },
+      { key: "bot_won", label: "Computer: won", value: (r) => r.go_bot_won ?? 0 },
+      { key: "bot_lost", label: "Computer: lost", value: (r) => r.go_bot_lost ?? 0 },
+      { key: "bot_draw", label: "Computer: drawn", value: (r) => r.go_bot_draw ?? 0 },
+      { key: "bot_win_pct", label: "Won vs computer %", value: (r) => rate(r.go_bot_won ?? 0, botGames(r)) },
     ],
   },
   {
     id: "practice",
-    title: "Practice rounds",
-    note: "The short first try of a game with free hints (client recorded). Started = the practice board showed; finished = solved; skipped = Skip tapped; dropped = started but neither (the player left). Games whose practice round is off in Settings never start one.",
+    group: "detail",
+    title: "Practice rounds by game",
+    note: "The short first try of a game, with free hints (counted on players' phones). Finished = solved; skipped = Skip tapped; left early = started but neither. Games whose practice round is switched off in Game settings never show one.",
     headline: (t) => pct(rate(t.practice_finished ?? 0, t.practice_started ?? 0)),
     sub: (t) => {
       const c = practiceAll(t);
-      return `finished of ${n(c.started)} started · ${n(c.skipped)} skipped (${pct(rate(c.skipped, c.started))}) · ${n(practiceDropped(c))} dropped (${pct(rate(practiceDropped(c), c.started))})`;
+      return `finished of ${n(c.started)} started · ${n(c.skipped)} skipped (${pct(rate(c.skipped, c.started))}) · ${n(practiceDropped(c))} left early (${pct(rate(practiceDropped(c), c.started))})`;
     },
     cols: [
       { key: "started", label: "Started", value: (r) => r.practice_started ?? 0 },
       { key: "finished", label: "Finished", value: (r) => r.practice_finished ?? 0 },
       { key: "skipped", label: "Skipped", value: (r) => r.practice_skipped ?? 0 },
-      { key: "dropped", label: "Dropped", value: (r) => practiceDropped(practiceAll(r)) },
-      { key: "finish_pct", label: "Finish %", value: (r) => rate(r.practice_finished ?? 0, r.practice_started ?? 0) },
+      { key: "dropped", label: "Left early", value: (r) => practiceDropped(practiceAll(r)) },
+      { key: "finish_pct", label: "Finished %", value: (r) => rate(r.practice_finished ?? 0, r.practice_started ?? 0) },
     ],
     breakdown: {
-      head: ["Game", "Started", "Finished", "Skipped", "Dropped", "Finish %"],
+      head: ["Game", "Started", "Finished", "Skipped", "Left early", "Finished %"],
       rows: (t) =>
         practiceGames(t).map(([g, c]) => ({
           key: g,
@@ -409,70 +481,49 @@ export const METRICS: readonly MetricDef[] = [
     csv: practiceCsv,
   },
   {
-    id: "first_move",
-    title: "Time to first move",
-    note: "first_move_at minus started_at on solo attempts (Daily, free, archive, challenge) started in the range.",
-    headline: (t) => `${ms(t.first_move_p50)} / ${ms(t.first_move_p95)}`,
-    sub: (t) => `p50 / p95 · ${n(t.first_move_n)} attempts`,
-    cols: [
-      { key: "attempts", label: "Attempts", value: (r) => r.first_move_n },
-      { key: "p50_ms", label: "p50 ms", value: (r) => r.first_move_p50 },
-      { key: "p95_ms", label: "p95 ms", value: (r) => r.first_move_p95 },
-    ],
-  },
-  {
-    id: "party_first_move",
-    title: "Party start to first move",
-    note: "Time from a Party game's real start (the end of its 3-2-1-SPUZL! countdown) to each racer's first move on the board, on the server clock (client recorded, party_first_move). One per racer per game; a reload into a game already started is not counted again.",
-    headline: (t) => `${ms(t.party_first_move_p50 ?? null)} / ${ms(t.party_first_move_p95 ?? null)}`,
-    sub: (t) => `p50 / p95 · ${n(t.party_first_move_n ?? 0)} first moves`,
-    cols: [
-      { key: "first_moves", label: "First moves", value: (r) => r.party_first_move_n ?? 0 },
-      { key: "p50_ms", label: "p50 ms", value: (r) => r.party_first_move_p50 ?? null },
-      { key: "p95_ms", label: "p95 ms", value: (r) => r.party_first_move_p95 ?? null },
-    ],
-  },
-  {
     id: "hints",
-    title: "Hint use",
-    note: "Finished solo attempts that used a hint. Requested = taps on Hint; went ahead = hints the player confirmed or that needed no confirm (client recorded). Cancelled = requested minus went ahead. Accidental = hinted attempts later abandoned plus cancels, over hinted attempts plus cancels.",
+    group: "detail",
+    title: "Hints",
+    note: "Finished solo puzzles where the player used a hint. Asked = Hint tapped; used = the hint was shown. Cancelled = asked but not used. Possibly by accident = hinted puzzles later given up, plus cancels, out of hinted puzzles plus cancels.",
     headline: (t) => pct(rate(t.hinted, t.attempts)),
     sub: (t) =>
-      `${n(t.hints_used)} hints · ${n(t.hint_requests ?? 0)} requested, ${n(t.hint_uses ?? 0)} went ahead · accidental ${pct(accidental(t))} (${n(hintCancels(t))} cancels)`,
+      `of finished puzzles used a hint · ${n(t.hints_used)} hints · ${n(t.hint_requests ?? 0)} asked, ${n(t.hint_uses ?? 0)} used · possibly by accident ${pct(accidental(t))} (${n(hintCancels(t))} cancelled)`,
     cols: [
       { key: "finished_attempts", label: "Finished", value: (r) => r.attempts },
-      { key: "attempts_with_hint", label: "With hint", value: (r) => r.hinted },
+      { key: "attempts_with_hint", label: "With a hint", value: (r) => r.hinted },
       { key: "hints_used", label: "Hints", value: (r) => r.hints_used },
-      { key: "hint_use_pct", label: "Use %", value: (r) => rate(r.hinted, r.attempts) },
-      { key: "hinted_then_abandoned", label: "Hinted, abandoned", value: (r) => r.hinted_abandoned },
-      { key: "hint_requests", label: "Requested", value: (r) => r.hint_requests ?? 0 },
-      { key: "hint_went_ahead", label: "Went ahead", value: (r) => r.hint_uses ?? 0 },
+      { key: "hint_use_pct", label: "With a hint %", value: (r) => rate(r.hinted, r.attempts) },
+      { key: "hinted_then_abandoned", label: "Hinted, given up", value: (r) => r.hinted_abandoned },
+      { key: "hint_requests", label: "Asked", value: (r) => r.hint_requests ?? 0 },
+      { key: "hint_went_ahead", label: "Used", value: (r) => r.hint_uses ?? 0 },
       { key: "confirm_cancels", label: "Cancelled", value: hintCancels },
-      { key: "accidental_pct", label: "Accidental %", value: accidental },
+      { key: "accidental_pct", label: "By accident %", value: accidental },
     ],
   },
   {
     id: "duels",
-    title: "Duels",
-    note: "Duels created in the range. Abandon = ended because a player left or dropped, over duels that started. Bot fallback = bot matches over matchmade duels (no lobby code).",
+    group: "detail",
+    title: "Duels: left early and computer stand-ins",
+    note: "Duels created in these days. Left early = ended because a player left or lost connection, out of duels that started. Computer stand-in = a Quick Match that found no one and paired the player with the computer, out of Quick Match duels.",
     headline: (t) => pct(rate(t.duels_abandoned, t.duels_started)),
-    sub: (t) => `abandoned of ${n(t.duels_started)} started · bot fallback ${pct(rate(t.duels_bot, t.duels_matchmade))}`,
+    sub: (t) => `left early, of ${n(t.duels_started)} started · computer stand-in ${pct(rate(t.duels_bot, t.duels_matchmade))}`,
     cols: [
       { key: "duels_started", label: "Started", value: (r) => r.duels_started },
-      { key: "abandoned", label: "Abandoned", value: (r) => r.duels_abandoned },
-      { key: "abandon_pct", label: "Abandon %", value: (r) => rate(r.duels_abandoned, r.duels_started) },
-      { key: "matchmade", label: "Matchmade", value: (r) => r.duels_matchmade },
-      { key: "bot", label: "Bot", value: (r) => r.duels_bot },
-      { key: "bot_fallback_pct", label: "Bot %", value: (r) => rate(r.duels_bot, r.duels_matchmade) },
+      { key: "abandoned", label: "Left early", value: (r) => r.duels_abandoned },
+      { key: "abandon_pct", label: "Left early %", value: (r) => rate(r.duels_abandoned, r.duels_started) },
+      { key: "matchmade", label: "Quick Match", value: (r) => r.duels_matchmade },
+      { key: "bot", label: "Computer", value: (r) => r.duels_bot },
+      { key: "bot_fallback_pct", label: "Computer %", value: (r) => rate(r.duels_bot, r.duels_matchmade) },
     ],
   },
   {
     id: "duel_bands",
-    title: "Duels created by age band",
-    note: "Duels created in the range, by how (Challenge a friend or a Quick Match pairing) and the creator's age band, recorded by the server (duel_created). Under-16 Quick Match should always be 0: the server refuses it.",
+    group: "detail",
+    title: "Duels by age group",
+    note: "Duels created, by how (Challenge a friend or Quick Match) and the age group of the player who started it, recorded by the server. Under-16 Quick Match should always be 0: the server refuses it.",
     headline: (t) => n(createdDuels(t)),
     sub: (t) =>
-      `${n(friendDuels(t))} friend · ${n(quickDuels(t))} Quick Match · under 16 ${pct(rate(under16Duels(t), createdDuels(t)))} (${n(under16Duels(t))})`,
+      `${n(friendDuels(t))} with a friend · ${n(quickDuels(t))} Quick Match · under 16 ${pct(rate(under16Duels(t), createdDuels(t)))} (${n(under16Duels(t))})`,
     cols: [
       { key: "friend_13_15", label: "Friend 13-15", value: (r) => r.duels_friend_1315 ?? 0 },
       { key: "friend_16_17", label: "Friend 16-17", value: (r) => r.duels_friend_1617 ?? 0 },
@@ -486,20 +537,22 @@ export const METRICS: readonly MetricDef[] = [
   },
   {
     id: "daily",
-    title: "Daily completion",
-    note: "Daily attempts started in the range that were cleared (flagged and abandoned runs count as not cleared).",
+    group: "detail",
+    title: "Daily puzzles solved",
+    note: "Daily puzzles started in these days that were solved (given up and flagged runs count as not solved). Test players left out.",
     headline: (t) => pct(rate(t.daily_cleared, t.daily_started)),
-    sub: (t) => `${n(t.daily_cleared)} of ${n(t.daily_started)} Dailies started`,
+    sub: (t) => `${n(t.daily_cleared)} of ${n(t.daily_started)} Daily puzzles started`,
     cols: [
       { key: "started", label: "Started", value: (r) => r.daily_started },
-      { key: "cleared", label: "Cleared", value: (r) => r.daily_cleared },
-      { key: "completion_pct", label: "Completion %", value: (r) => rate(r.daily_cleared, r.daily_started) },
+      { key: "cleared", label: "Solved", value: (r) => r.daily_cleared },
+      { key: "completion_pct", label: "Solved %", value: (r) => rate(r.daily_cleared, r.daily_started) },
     ],
   },
   {
     id: "shares",
-    title: "Share rate",
-    note: "Shares from the share sheet (client recorded) per finished game: cleared solo attempts plus finished matches.",
+    group: "detail",
+    title: "Sharing",
+    note: "Shares from the share sheet (counted on players' phones) for each finished game: solved puzzles plus finished Duels and Parties.",
     headline: (t) => pct(rate(t.shares, t.finished_games)),
     sub: (t) => `${n(t.shares)} shares · ${n(t.finished_games)} finished games`,
     cols: [
@@ -510,19 +563,20 @@ export const METRICS: readonly MetricDef[] = [
   },
   {
     id: "prompts",
-    title: "Prompt acceptance by trigger",
-    note: "Prompts shown, accepted and dismissed (client recorded), by the trigger that earned them. Notifications: accepted = Turn on pressed. Low data: Turn on. Save your streak: the email was saved. Event banner: the quest link. Never more than one prompt per screen.",
+    group: "detail",
+    title: "Pop-up prompts",
+    note: "Prompts shown, accepted and closed (counted on players' phones), by what earned them. Notifications: accepted = Turn on. Low data: Turn on. Save your streak: the email was saved. Event banner: the quest was opened. Never more than one prompt on a screen.",
     headline: (t) => pct(accepted(t)),
     sub: (t) =>
-      `accepted of ${n(t.prompt_shown ?? 0)} shown · ${n(t.prompt_accepted ?? 0)} accepted, ${n(t.prompt_dismissed ?? 0)} dismissed`,
+      `accepted, of ${n(t.prompt_shown ?? 0)} shown · ${n(t.prompt_accepted ?? 0)} accepted, ${n(t.prompt_dismissed ?? 0)} closed`,
     cols: [
       { key: "shown", label: "Shown", value: (r) => r.prompt_shown ?? 0 },
       { key: "accepted", label: "Accepted", value: (r) => r.prompt_accepted ?? 0 },
-      { key: "dismissed", label: "Dismissed", value: (r) => r.prompt_dismissed ?? 0 },
-      { key: "accept_pct", label: "Accept %", value: accepted },
+      { key: "dismissed", label: "Closed", value: (r) => r.prompt_dismissed ?? 0 },
+      { key: "accept_pct", label: "Accepted %", value: accepted },
     ],
     breakdown: {
-      head: ["Prompt · trigger", "Shown", "Accepted", "Dismissed", "Accept %"],
+      head: ["Prompt · what earned it", "Shown", "Accepted", "Closed", "Accepted %"],
       rows: (t) =>
         PROMPT_PAIRS.map(({ prompt, trigger }) => {
           const c = promptCounts(t, prompt, trigger);
@@ -537,8 +591,9 @@ export const METRICS: readonly MetricDef[] = [
   },
   {
     id: "daily_five",
-    title: "Daily Five",
-    note: "Starts = players who began the day's five (daily5_start), completions = players who played all five (daily5_complete), shares = share grids sent or copied (daily5_share); client recorded. Players and Full fives come from Daily Five attempts on the server (test players left out).",
+    group: "detail",
+    title: "Daily Five details",
+    note: "Starts and completions = players beginning the day's five and playing all five; shares = result grids shared (counted on players' phones). Players and Full fives come from the server, each player once a day (test players left out).",
     headline: (t) => pct(rate(t.daily5_completes ?? 0, t.daily5_starts ?? 0)),
     sub: (t) =>
       `${n(t.daily5_completes ?? 0)} of ${n(t.daily5_starts ?? 0)} starts completed · ${n(t.daily5_shares ?? 0)} shares · ${n(t.daily5_players ?? 0)} players`,
@@ -546,16 +601,17 @@ export const METRICS: readonly MetricDef[] = [
       { key: "daily5_start", label: "Starts", value: (r) => r.daily5_starts ?? 0 },
       { key: "daily5_complete", label: "Completions", value: (r) => r.daily5_completes ?? 0 },
       { key: "daily5_share", label: "Shares", value: (r) => r.daily5_shares ?? 0 },
-      { key: "completion_pct", label: "Completion %", value: (r) => rate(r.daily5_completes ?? 0, r.daily5_starts ?? 0) },
-      { key: "share_pct", label: "Share %", value: (r) => rate(r.daily5_shares ?? 0, r.daily5_completes ?? 0) },
+      { key: "completion_pct", label: "Completed %", value: (r) => rate(r.daily5_completes ?? 0, r.daily5_starts ?? 0) },
+      { key: "share_pct", label: "Shared %", value: (r) => rate(r.daily5_shares ?? 0, r.daily5_completes ?? 0) },
       { key: "players", label: "Players", value: (r) => r.daily5_players ?? 0 },
       { key: "full_fives", label: "Full fives", value: (r) => r.daily5_full ?? 0 },
     ],
   },
   {
     id: "growth",
+    group: "detail",
     title: "Party TV and streak shields",
-    note: "TV views = times the big-screen Party view loaded a room (party_tv_view). Shields = guests who signed in from Save your streak and got the free Streak Freeze (streak_shield, once per player). Client recorded, anonymous.",
+    note: "TV views = times the big-screen Party view opened a room. Shields = guests who signed in from Save your streak and got the free Streak Freeze (once per player). Counted on players' phones, no names.",
     headline: (t) => n(t.gr_tv_views ?? 0),
     sub: (t) => `Party TV views · ${n(t.gr_shields ?? 0)} streak shields`,
     cols: [
@@ -565,27 +621,29 @@ export const METRICS: readonly MetricDef[] = [
   },
   {
     id: "streak_nudge",
-    title: "Streak-at-risk nudges",
-    note: "Evening pushes to players whose streak would end at midnight (admin Alerts settings), by the GMT day they went out. Sent = delivered to at least one device. Cleared in 3 h = of those, players who cleared a board within 3 hours of the push. Server recorded; test players left out.",
+    group: "detail",
+    title: "Streak reminders",
+    note: "Evening reminders to players whose streak would end at midnight (set in Game settings, Alerts), by the GMT day they went out. Sent = reached at least one phone. Solved within 3 h = of those, players who solved a puzzle within 3 hours. Test players left out.",
     headline: (t) => pct(rate(t.sn_cleared ?? 0, t.sn_sent ?? 0)),
-    sub: (t) => `cleared within 3 h · ${n(t.sn_cleared ?? 0)} of ${n(t.sn_sent ?? 0)} nudges sent`,
+    sub: (t) => `solved a puzzle within 3 h · ${n(t.sn_cleared ?? 0)} of ${n(t.sn_sent ?? 0)} reminders sent`,
     cols: [
       { key: "sent", label: "Sent", value: (r) => r.sn_sent ?? 0 },
-      { key: "cleared_3h", label: "Cleared in 3 h", value: (r) => r.sn_cleared ?? 0 },
-      { key: "cleared_pct", label: "Cleared %", value: (r) => rate(r.sn_cleared ?? 0, r.sn_sent ?? 0) },
+      { key: "cleared_3h", label: "Solved within 3 h", value: (r) => r.sn_cleared ?? 0 },
+      { key: "cleared_pct", label: "Solved %", value: (r) => rate(r.sn_cleared ?? 0, r.sn_sent ?? 0) },
     ],
   },
   {
     id: "weekly_recap",
-    title: "Weekly recap",
-    note: "Last week's recap card on Home, at most once a week per device (admin Features > Weekly recap). Shown = the card appeared (prompt_shown), Shared = shared or saved from its share sheet (share, kind recap), Played = Play today's Daily tapped, Closed = dismissed. Client recorded, anonymous.",
+    group: "detail",
+    title: "Weekly recap card",
+    note: "Last week's recap card on the home screen, at most once a week per phone (Feature switches, Weekly recap). Shown, shared, Play tapped and closed. Counted on players' phones, no names.",
     headline: (t) => pct(rate(t.wr_shared ?? 0, t.wr_shown ?? 0)),
     sub: (t) =>
-      `shared of ${n(t.wr_shown ?? 0)} shown · ${n(t.wr_shared ?? 0)} shares, ${n(t.wr_played ?? 0)} played, ${n(t.wr_dismissed ?? 0)} closed`,
+      `shared, of ${n(t.wr_shown ?? 0)} shown · ${n(t.wr_shared ?? 0)} shares, ${n(t.wr_played ?? 0)} played, ${n(t.wr_dismissed ?? 0)} closed`,
     cols: [
       { key: "shown", label: "Shown", value: (r) => r.wr_shown ?? 0 },
       { key: "shared", label: "Shared", value: (r) => r.wr_shared ?? 0 },
-      { key: "share_pct", label: "Share %", value: (r) => rate(r.wr_shared ?? 0, r.wr_shown ?? 0) },
+      { key: "share_pct", label: "Shared %", value: (r) => rate(r.wr_shared ?? 0, r.wr_shown ?? 0) },
       { key: "played", label: "Played", value: (r) => r.wr_played ?? 0 },
       { key: "closed", label: "Closed", value: (r) => r.wr_dismissed ?? 0 },
     ],

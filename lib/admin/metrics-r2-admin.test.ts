@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { d1, d7, METRIC_BY_ID, METRIC_IDS, metricCsv, practiceDropped, span, type MetricRow } from "./metrics";
+import { d1, d7, METRIC_BY_ID, METRIC_IDS, metricCsv, practiceDropped, type MetricRow } from "./metrics";
 
 /** R2-ADMIN: the Metrics cards added by the admin cascade audit (docs/qa/ADMIN_CASCADE_R2.md). */
 const row = (over: Partial<MetricRow> = {}): MetricRow =>
@@ -49,8 +49,8 @@ describe("tap to board, cold and warm (20261202000301)", () => {
   });
   it("shows cold and warm p50, with each p95 and count", () => {
     const total = row({ cold_n: 40, cold_p50: 2400, cold_p95: 11_800, warm_n: 120, warm_p50: 650, warm_p95: 1900 });
-    expect(METRIC_BY_ID.tap_warmth.headline(total)).toBe("2400 ms / 650 ms");
-    expect(METRIC_BY_ID.tap_warmth.sub(total)).toBe("cold p50 / warm p50 · cold p95 11.8 s (40) · warm p95 1900 ms (120)");
+    expect(METRIC_BY_ID.tap_warmth.headline(total)).toBe("2.4 s first · 0.7 s later");
+    expect(METRIC_BY_ID.tap_warmth.sub(total)).toBe("typical times · slow end 12 s first (40 opens), 1.9 s later (120 opens)");
     const csv = metricCsv("tap_warmth", { rows: [row({ date: "2026-12-02", cold_n: 2, cold_p50: 2000, cold_p95: 3000 })], total })
       .trimEnd()
       .split("\r\n");
@@ -61,30 +61,23 @@ describe("tap to board, cold and warm (20261202000301)", () => {
     ]);
   });
   it("reads rows from before the migration as no data", () => {
-    expect(METRIC_BY_ID.tap_warmth.headline(row())).toBe("n/a / n/a");
+    expect(METRIC_BY_ID.tap_warmth.headline(row())).toBe("no data");
   });
 });
 
 describe("landing to first clear (20261202000401)", () => {
-  it("writes long waits in words", () => {
-    expect(span(null)).toBe("n/a");
-    expect(span(42_000)).toBe("42 s");
-    expect(span(5 * 60_000)).toBe("5 min");
-    expect(span(3 * 3600_000)).toBe("3.0 h");
-    expect(span(3 * 86_400_000)).toBe("3.0 d");
-  });
   it("shows p50 / p95 and the share of new players who cleared one, with CSV", () => {
     const total = row({ fc_cohort: 8, fc_cleared: 6, fc_p50: 95_000, fc_p95: 7_200_000 });
-    expect(METRIC_BY_ID.first_clear.headline(total)).toBe("2 min / 2.0 h");
-    expect(METRIC_BY_ID.first_clear.sub(total)).toBe("p50 / p95 · 6 of 8 new players cleared one (75%)");
+    expect(METRIC_BY_ID.first_clear.headline(total)).toBe("1 min 35 s typical");
+    expect(METRIC_BY_ID.first_clear.sub(total)).toBe("slow end 2 h · 6 of 8 new players solved one (75%)");
     const csv = metricCsv("first_clear", { rows: [row({ date: "2026-12-02", fc_cohort: 3 })], total })
       .trimEnd()
       .split("\r\n");
     expect(csv).toEqual(["date,new_players,cleared,cleared_pct,p50_ms,p95_ms", "2026-12-02,3,0,0,,", "total,8,6,75,95000,7200000"]);
   });
   it("reads rows from before the migration as no data", () => {
-    expect(METRIC_BY_ID.first_clear.headline(row())).toBe("n/a / n/a");
-    expect(METRIC_BY_ID.first_clear.sub(row())).toContain("(n/a)");
+    expect(METRIC_BY_ID.first_clear.headline(row())).toBe("no data");
+    expect(METRIC_BY_ID.first_clear.sub(row())).toContain("(no data)");
   });
 });
 
@@ -97,7 +90,7 @@ describe("practice rounds (20261202000501)", () => {
   });
   it("shows finish rate, skips and drop-off, never a negative drop-off", () => {
     expect(METRIC_BY_ID.practice.headline(total)).toBe("60%");
-    expect(METRIC_BY_ID.practice.sub(total)).toBe("finished of 10 started · 3 skipped (30%) · 1 dropped (10%)");
+    expect(METRIC_BY_ID.practice.sub(total)).toBe("finished of 10 started · 3 skipped (30%) · 1 left early (10%)");
     expect(practiceDropped({ started: 1, finished: 1, skipped: 1 })).toBe(0);
   });
   it("breaks down by game, busiest first, with the game's name", () => {
@@ -122,7 +115,7 @@ describe("practice rounds (20261202000501)", () => {
     ]);
   });
   it("reads rows from before the migration as no data", () => {
-    expect(METRIC_BY_ID.practice.headline(row())).toBe("n/a");
+    expect(METRIC_BY_ID.practice.headline(row())).toBe("no data");
     expect(METRIC_BY_ID.practice.breakdown!.rows(row())).toEqual([]);
   });
 });
@@ -131,8 +124,8 @@ describe("D1 and D7 retention cohorts (20261202000601)", () => {
   it("rates only the cohorts that are due, and shows n/a until then", () => {
     const total = row({ ret_cohort: 30, ret_d1_cohort: 20, ret_d1_kept: 9, ret_d7_cohort: 10, ret_d7_kept: 2 });
     expect([d1(total), d7(total)]).toEqual([45, 20]);
-    expect(METRIC_BY_ID.retention.headline(total)).toBe("45% / 20%");
-    expect(METRIC_BY_ID.retention.sub(total)).toBe("D1 / D7 · D1 9 of 20 · D7 2 of 10 · 30 new players");
+    expect(METRIC_BY_ID.retention.headline(total)).toBe("45% next day · 20% a week later");
+    expect(METRIC_BY_ID.retention.sub(total)).toBe("9 of 20 came back the next day · 2 of 10 a week later · 30 new players");
     const recent = row({ date: "2026-12-06", ret_cohort: 4 }); // D1 and D7 not over yet
     const older = row({ date: "2026-11-20", ret_cohort: 5, ret_d1_cohort: 5, ret_d1_kept: 2, ret_d7_cohort: 5, ret_d7_kept: 0 });
     expect(
@@ -142,7 +135,7 @@ describe("D1 and D7 retention cohorts (20261202000601)", () => {
     ).toEqual(["date,cohort,d1_kept,d1_pct,d7_kept,d7_pct", "2026-11-20,5,2,40,0,0", "2026-12-06,4,,,,", "total,30,9,45,2,20"]);
   });
   it("reads rows from before the migration as no data", () => {
-    expect(METRIC_BY_ID.retention.headline(row())).toBe("n/a / n/a");
+    expect(METRIC_BY_ID.retention.headline(row())).toBe("no data");
   });
 });
 
@@ -151,7 +144,7 @@ describe("board game results (20261202000701)", () => {
     const total = row({ go_bay_won: 5, go_bay_lost: 4, go_bay_draw: 1, go_bot_won: 3, go_bot_lost: 9, go_bot_draw: 0 });
     expect(METRIC_BY_ID.game_over.headline(total)).toBe("25%");
     expect(METRIC_BY_ID.game_over.sub(total)).toBe(
-      "players' win rate vs the bot (12 games) · with people 10 results: 5 won, 4 lost, 1 drawn",
+      "players' wins against the computer (12 games) · with people 10 results: 5 won, 4 lost, 1 drawn",
     );
     expect(metricCsv("game_over", { rows: [], total }).trimEnd().split("\r\n")).toEqual([
       "date,people_won,people_lost,people_draw,bot_won,bot_lost,bot_draw,bot_win_pct",
@@ -159,7 +152,7 @@ describe("board game results (20261202000701)", () => {
     ]);
   });
   it("reads rows from before the migration as no data", () => {
-    expect(METRIC_BY_ID.game_over.headline(row())).toBe("n/a");
+    expect(METRIC_BY_ID.game_over.headline(row())).toBe("no data");
   });
 });
 

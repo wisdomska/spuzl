@@ -1605,14 +1605,215 @@ export const adminCopy = {
 
   metrics: {
     title: "Metrics",
-    range: "Range",
-    days: (n: number) => `${n} days`,
-    span: (from: string, to: string) => `${from} to ${to} GMT`,
-    exportAria: (title: string) => `Export ${title} as CSV`,
+    purpose:
+      "How SPUZL is doing: how many people play, whether they come back, what they play, and how the community and the shop are doing.",
+    range: "Days to show",
+    days: (n: number) => `Last ${n} days`,
+    span: (from: string, to: string) => `${from} to ${to}`,
+    todayLeftOut: "Today is still going, so it is left out. Today's numbers are on",
+    liveNow: "Live now",
+    compare: (n: number, from: string, to: string) => `Arrows compare with the ${n} days before (${from} to ${to}).`,
+    allDays: "All days are GMT (midnight to midnight). Test players are left out wherever the app knows who played.",
+    loadError: "The numbers didn't load. Check your connection and try again.",
+    retry: "Try again",
+    exportAria: (title: string) => `Download ${title} as a spreadsheet (CSV)`,
     csv: "CSV",
-    byDay: "By day",
+    exportError: "The download didn't work. Try again in a moment.",
+    byDay: "Day by day",
     day: "Day",
-    notApplicable: "n/a",
+    notApplicable: "no data",
+    noData: "No data yet",
+    rightNow: "Right now, whatever days you pick",
+    howCounted: "How this is counted",
+    /** Comparison with the previous period, in words (an arrow icon sits beside it). */
+    change: {
+      percent: (dir: "up" | "down", amount: number, n: number) => `${dir === "up" ? "Up" : "Down"} ${amount}% on the ${n} days before`,
+      points: (dir: "up" | "down", amount: number, n: number) =>
+        `${dir === "up" ? "Up" : "Down"} ${amount} point${amount === 1 ? "" : "s"} on the ${n} days before`,
+      same: (n: number) => `About the same as the ${n} days before`,
+      newNow: (n: number) => `Up from none in the ${n} days before`,
+      none: (n: number) => `Nothing to compare with in the ${n} days before`,
+    },
+    trendAria: (label: string, lo: string, loDay: string, hi: string, hiDay: string) =>
+      `${label} by day: lowest ${lo} on ${loDay}, highest ${hi} on ${hiDay}`,
+    trendEmpty: "No days to draw yet",
+    sections: {
+      people: { title: "How many people play", intro: "Players, new players and how many have saved their progress." },
+      return: { title: "Do they come back", intro: "Whether people who tried SPUZL play again, and who is on a streak." },
+      play: { title: "What they play", intro: "Games played, the Daily puzzles and the busiest games and worlds." },
+      together: { title: "Playing together", intro: "Duels, Party games, board games and new friendships." },
+      economy: { title: "Sparks and the shop", intro: "Sparks are earned by playing and spent in the shop. No real money." },
+      community: { title: "Community", intro: "Reports and feedback from players. Handle them on the Reports and Feedback pages." },
+      first: { title: "First time playing", intro: "How new players get on with the welcome screens and their first games." },
+    },
+    topGames: {
+      title: "Busiest games",
+      meaning: "Games by how many times they were played, with how many different people played each.",
+      head: ["Game", "Plays", "Players", "Change"],
+      worlds: "Plays by world",
+      empty: "No games played in these days yet.",
+      more: (n: number) => `Show all ${n} games`,
+      fewer: "Show the top 10",
+      newGame: "new",
+      other: "Other",
+      definition:
+        "Plays = puzzles started (the tutorial left out) plus board games a player made a move in (one per player per game). Players = different people. Change compares plays with the days before. Worlds add up their games' plays; games from retired worlds count in the world that took them. Test players left out.",
+    },
+    detail: {
+      title: "More detail",
+      intro: "Step-by-step and per-feature numbers: welcome screens, practice rounds, hints, prompts, reminders and more.",
+    },
+    speed: {
+      title: "App speed (technical)",
+      intro: "How quickly games open and how soon players make their first move. Typical: half are quicker. Slow end: 1 in 20 is slower.",
+    },
+    /**
+     * The owner cards. `detail` is the line under the big number; `definition` is exactly how it is counted
+     * (shown folded under "How this is counted").
+     */
+    cards: {
+      players: {
+        label: "Players",
+        meaning: "People who played at least one game.",
+        detail: (avg: string, saved: string, guests: string) => `About ${avg} a day · ${saved} with a saved account, ${guests} guests`,
+        last7: (n: string) => `${n} played in the last 7 of these days`,
+        definition:
+          "Everyone who started any game (a puzzle, the first-time tutorial, a Duel or a Party race round) or made a move in a board game. Each person counts once over the whole range; 'a day' is the average of each day's count. Saved account = signed in with email or Google today; guest = not yet. Draw It and Two Truths rounds on their own do not count as playing yet.",
+      },
+      new_players: {
+        label: "New players",
+        meaning: "People who opened SPUZL for the first time.",
+        detail: (saved: string, pct: string) => `${saved} of them have saved an account (${pct})`,
+        definition:
+          "Player profiles created on these days (the first visit makes a guest profile). 'Saved an account' is their status today.",
+      },
+      saved_accounts: {
+        label: "Saved accounts",
+        meaning: "Players whose progress is safe because they signed in.",
+        detail: (saved: string, all: string) => `${saved} of ${all} players`,
+        definition:
+          "Of the players above, the share signed in with email or Google today. Guests can lose their progress if their browser data is cleared.",
+      },
+      next_day: {
+        label: "Came back the next day",
+        meaning: "Of people who played for the first time, how many played again the day after.",
+        detail: (kept: string, all: string) => `${kept} of ${all} first-time players`,
+        definition:
+          "For each day shown: players whose first game ever was the day before, and how many of them played again on that day (any game, or a move in a board game). The big number adds up every day shown.",
+      },
+      week_later: {
+        label: "Came back a week later",
+        meaning: "Of people who played for the first time, how many played again 7 days later.",
+        detail: (kept: string, all: string) => `${kept} of ${all} first-time players`,
+        definition:
+          "For each day shown: players whose first game ever was 7 days before, and how many of them played on that day (any game, or a move in a board game). The big number adds up every day shown.",
+      },
+      streaks: {
+        label: "On a streak of 3+ days",
+        meaning: "Players who have solved a puzzle every day for at least 3 days in a row.",
+        detail: (week: string) => `${week} of them for 7 days or more`,
+        definition:
+          "Players whose current streak (days in a row with at least one puzzle solved, Streak Freezes included) is 3 or more, counted now. It does not change with the days you pick.",
+      },
+      games_played: {
+        label: "Games played",
+        meaning: "Every time someone started a puzzle or played a board game.",
+        detail: (solved: string, pct: string, board: string) =>
+          `${solved} puzzles solved (${pct} of puzzles started) · ${board} board-game plays`,
+        definition:
+          "Puzzles started (Daily, Daily Five, free play, archive, challenges, Duel and Party race rounds; the tutorial left out) plus board games a player made a move in (one per player per game, on the day the game was created). Solved = puzzles started on these days that were solved.",
+      },
+      daily_puzzles: {
+        label: "Daily puzzles solved",
+        meaning: "The puzzle of the day, solved.",
+        detail: (pct: string, started: string) => `${pct} of the ${started} Daily puzzles started`,
+        definition: "Daily puzzles started on these days and solved. Given-up and flagged runs count as not solved.",
+      },
+      daily_five_plays: {
+        label: "Daily Five players",
+        meaning: "People who played the Daily Five, counted once a day.",
+        detail: (full: string) => `${full} played all five`,
+        definition:
+          "Players who played at least one Daily Five game, once per player per day (someone who plays 3 days counts 3 times). All five = played all five games that day.",
+      },
+      duels_played: {
+        label: "Duels",
+        meaning: "One-on-one matches that started.",
+        detail: (bot: string) => `${bot} against the computer`,
+        definition:
+          "Duels created on these days that started (a round began), including ones a player left early. Against the computer = Quick Match found no one, or the player chose the computer.",
+      },
+      parties: {
+        label: "Party games",
+        meaning: "Party rooms that started a game.",
+        detail: (players: string) => `${players} different players took part`,
+        definition:
+          "Party rooms (races, Draw It, Two Truths) created on these days that started. Players = different people who played in them (spectators left out).",
+      },
+      board_games: {
+        label: "Board games",
+        meaning: "Chess, draughts, Ludo, Oware and the others, with at least one move.",
+        detail: (people: string, bot: string) => `${people} with other people, ${bot} against the computer`,
+        definition: "Board games created on these days with at least one move. Against the computer = the practice bot.",
+      },
+      friends: {
+        label: "New friendships",
+        meaning: "Friend requests that were accepted.",
+        detail: () => "Counted on the day the request was sent",
+        definition: "Accepted friendships, counted on the day the request was sent (the time it was accepted is not kept).",
+      },
+      sparks_earned: {
+        label: "Sparks earned",
+        meaning: "Sparks players got from playing, rewards and levelling up.",
+        detail: (perPlayer: string) => `About ${perPlayer} per player`,
+        definition:
+          "Sparks added to players' balances on these days. Sparks the team gave or took away on a player's page are left out. Per player = earned divided by players.",
+      },
+      sparks_spent: {
+        label: "Sparks spent",
+        meaning: "Sparks players spent in the shop.",
+        detail: (pct: string) => `${pct} of the Sparks earned in these days`,
+        definition: "Sparks taken out of players' balances on these days. Team corrections are left out.",
+      },
+      shop_buys: {
+        label: "Shop items bought",
+        meaning: "Hats, skins, Streak Freezes and hint packs bought with Sparks.",
+        detail: (buyers: string) => `${buyers} different players bought something`,
+        definition: "Paid shop purchases on these days. Free items are not counted. Buyers = different players.",
+      },
+      reports: {
+        label: "Reports",
+        meaning: "Players reporting a player, a nickname, a score or party content.",
+        detail: () => "More is not always worse: it can mean people trust the report button",
+        definition: "Reports filed by players on these days, whatever happened to them since.",
+      },
+      feedback: {
+        label: "Feedback messages",
+        meaning: "Messages sent from the feedback form.",
+        detail: () => "Includes visitors who were not signed in",
+        definition: "Messages sent from the feedback form on these days, including from signed-out visitors.",
+      },
+      onboarding_done: {
+        label: "Finished the welcome screens",
+        meaning: "Of new visitors who got to the age question, how many reached the home screen.",
+        detail: (home: string, age: string) => `${home} of ${age} reached the home screen`,
+        definition:
+          "Counted on players' phones without names, once per visit: visits that reached the home screen out of visits that reached the age question. Test players cannot be left out here.",
+      },
+      first_game: {
+        label: "New players who played a game",
+        meaning: "Of new players, how many went on to play a real game.",
+        detail: (played: string, all: string) => `${played} of ${all} new players`,
+        definition: "New players on these days who have played a game since (the tutorial does not count).",
+      },
+      practice_done: {
+        label: "Practice rounds finished",
+        meaning: "The short first try of a game, with free hints, played to the end.",
+        detail: (skipped: string, left: string) => `${skipped} skipped, ${left} left before the end`,
+        definition:
+          "Practice rounds started on these days that were solved. Skipped = the player tapped Skip; left before the end = neither. Counted on players' phones without names.",
+      },
+    },
   },
 
   /** Shared words of the Games and content pages (Games, Content, Puzzles, Daily calendar, Daily Five, Events, Shop). */
