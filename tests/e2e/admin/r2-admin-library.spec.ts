@@ -81,7 +81,7 @@ test("practice board preview: the real board, read only, with Show solution and 
   await page.goto("/admin/library");
   await openRow(page, "crownfall");
   const preview = row(page, "crownfall").locator("[data-practice-preview]");
-  await preview.getByText("Practice round", { exact: true }).click();
+  await preview.getByText("Practice board", { exact: true }).click();
   await expect(preview.getByText("Practice round on")).toBeVisible({ timeout: 15_000 });
   await expect(preview.getByText(GAME_BY_ID.crownfall.name)).toBeVisible();
   // Read only: no Play test (no stored puzzle to verify against), but the solution can be shown.

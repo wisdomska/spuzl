@@ -47,7 +47,7 @@ test("Game settings: every round 2 setting shows with its helper text, and range
     "dailyFive.world.logic",
     "dailyFive.bonus.board",
     "rooms.under16FriendsOnly",
-    "practice.disabled",
+    // practice.disabled moved to the Games page (each game's Practice round switch).
   ] as const) {
     // One section at a time: open the setting's tab first.
     await page.getByRole("tab", { name: SETTINGS[key].group, exact: true }).click();

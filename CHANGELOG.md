@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.48.0 (11 November 2026)
+
+### Admin
+
+- **Turn any game On, In testing or Off from the Games page.** On: everyone plays it. In testing: only your team
+  can open it (there's a "Try it" link), and players never see it. Off: hidden from everyone. The server enforces it
+  everywhere (the game list, worlds, Daily Five, Duels, Parties, challenges, the website and search listings), and
+  switching a game Off or into testing swaps it out of today's and upcoming Daily Five days.
+- **Every per-game edit lives on its row:** state, play time, tags, rule and card text, the Daily Five score scale,
+  the practice round and "Can be played in Duels and Parties". Filter the list by state, with counts.
+- Game counts players see follow the games that are On.
+- The Lab games card and the practice-round list left Game settings; the Games page owns them now.
+
 ## 1.47.0 (11 November 2026)
 
 ### For players
