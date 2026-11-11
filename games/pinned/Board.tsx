@@ -5,6 +5,7 @@ import type { BoardProps } from "@/games/types";
 import { play } from "@/lib/audio";
 import { sfx } from "@/games/_shared/sfx";
 import { unseal } from "@/games/_shared/cluecave";
+import { useFitHeight } from "@/components/game/useBoardSize";
 import { LAND, ringPath, VIEWS, WATER, type MapView } from "./geo";
 import { distanceKm, pointsFor, sealKey, type LatLon, type PinnedPuzzle, type PinnedState } from "./logic";
 
@@ -28,6 +29,9 @@ const km = (d: number) => `${Math.round(d).toLocaleString("en-GB")} km`;
  * tapped, then tap to drop the pin; drag to pan while zoomed. Arrow keys nudge the pin, + and -
  * zoom, Enter locks. After locking, the true spot appears with a dashed line and the distance.
  */
+/** The shortest the map gets on a short phone, in px (tap to zoom still places the pin precisely). */
+const MIN_MAP_H = 160;
+
 export default function PinnedBoard({ puzzle, initialState, hint, disabled, mode, api }: BoardProps<PinnedPuzzle, PinnedState>) {
   const spots = useMemo(() => unseal<LatLon[]>(puzzle.sealed, sealKey(puzzle.ref)), [puzzle]);
   const total = puzzle.rounds.length;
@@ -41,6 +45,7 @@ export default function PinnedBoard({ puzzle, initialState, hint, disabled, mode
   const [px, setPx] = useState(330);
   const [dropN, setDropN] = useState(0);
   const wrap = useRef<HTMLDivElement>(null);
+  const root = useRef<HTMLDivElement>(null);
   const svg = useRef<SVGSVGElement>(null);
   const drag = useRef<{ x: number; y: number; box: Box; moved: boolean } | null>(null);
   const pinsRef = useRef(pins);
@@ -54,8 +59,11 @@ export default function PinnedBoard({ puzzle, initialState, hint, disabled, mode
 
   const f = full(view);
   const zoomed = box.w < f.w - 0.01;
-  const k = box.w / px; // view units per screen pixel
-  const height = (px * f.h) / f.w;
+  // The map is as tall as its width allows, less on a short phone, so the clue, the map and the tool bar fit above
+  // the fold (useFitHeight, measured to the shell's tool bar). A shorter map keeps its shape (the SVG letterboxes).
+  const ideal = Math.round((px * f.h) / f.w);
+  const height = useFitHeight(ideal, Math.min(MIN_MAP_H, ideal), 1, root, "shell");
+  const k = Math.max(box.w / px, box.h / height); // view units per screen pixel
 
   const toLatLon = (clientX: number, clientY: number): LatLon | null => {
     const el = svg.current;
@@ -230,8 +238,12 @@ export default function PinnedBoard({ puzzle, initialState, hint, disabled, mode
   const pinShape = "M0 0C-5 -7 -9 -11 -9 -17A9 9 0 1 1 9 -17C9 -11 5 -7 0 0Z";
 
   return (
-    <div className="flex w-[min(358px,calc(100vw-36px))] flex-col gap-3 rounded-[20px] p-3" style={{ background: "var(--board-bg)" }}>
-      <div className="flex flex-col gap-1 rounded-[16px] px-3.5 py-3" style={{ background: "var(--surface)" }}>
+    <div
+      ref={root}
+      className="short:gap-2 flex w-[min(358px,calc(100vw-36px))] flex-col gap-3 rounded-[20px] p-3"
+      style={{ background: "var(--board-bg)" }}
+    >
+      <div className="short:py-2 flex flex-col gap-1 rounded-[16px] px-3.5 py-3" style={{ background: "var(--surface)" }}>
         <div className="flex items-center gap-2">
           <div className="flex gap-[5px]" role="img" aria-label={`Round ${i + 1} of ${total}`}>
             {Array.from({ length: total }, (_, j) => (
@@ -254,8 +266,8 @@ export default function PinnedBoard({ puzzle, initialState, hint, disabled, mode
             {round.map === "world" ? "World map" : "Africa map"}
           </span>
         </div>
-        <h2 className="font-display m-0 text-[20px] leading-tight font-black">{round.name}</h2>
-        <p className="text-muted m-0 text-[15px] leading-[1.35]">{round.line}</p>
+        <h2 className="font-display tiny:text-[18px] m-0 text-[20px] leading-tight font-black">{round.name}</h2>
+        <p className="text-muted tiny:text-[14px] tiny:leading-5 m-0 text-[15px] leading-[1.35]">{round.line}</p>
       </div>
 
       <div ref={wrap} className="relative overflow-hidden rounded-[14px]" style={{ height }}>
