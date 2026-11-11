@@ -16,7 +16,8 @@ import {
   type PageSize,
 } from "@/lib/admin/pagination";
 import { adminCopy } from "@/lib/copy/admin";
-import { Btn, inputCls } from "./ui";
+import { Btn } from "./ui";
+import { Select } from "@/components/ui/Select";
 
 const C = adminCopy.pagination;
 
@@ -131,24 +132,19 @@ export function Pagination({ pager, total, label = C.label }: { pager: Pager; to
       <p className="num text-muted text-[13px] font-medium" aria-live="polite" aria-atomic="true">
         {C.showing(fmt(first), fmt(last), fmt(total))}
       </p>
-      <label htmlFor={`${id}-size`} className="text-muted flex items-center gap-2 text-[13px] font-semibold">
-        {C.rows}
-        <select
+      <div className="text-muted flex items-center gap-2 text-[13px] font-semibold">
+        <label htmlFor={`${id}-size`}>{C.rows}</label>
+        <Select
           id={`${id}-size`}
-          value={pageSize}
-          onChange={(e) => {
-            const n = Number(e.target.value);
+          value={String(pageSize)}
+          onValueChange={(v) => {
+            const n = Number(v);
             if (isPageSize(n)) setPageSize(n);
           }}
-          className={`${inputCls} num h-11 w-20`}
-        >
-          {sizes.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
-      </label>
+          options={sizes.map((s) => ({ value: String(s), label: String(s) }))}
+          className="num h-11 w-20"
+        />
+      </div>
       <div className="ml-auto flex flex-wrap items-center gap-1.5">
         <Btn size="lg" disabled={page <= 1} onClick={() => setPage(1)} aria-label={C.firstAria} className="max-md:hidden">
           {C.first}

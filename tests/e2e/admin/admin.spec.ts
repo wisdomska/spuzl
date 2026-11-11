@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { admin, guest, uniq } from "../../api/helpers";
 import { login, loginCode, signedIn } from "./helpers";
+import { pickOption } from "../pick";
 
 /**
  * Admin console flows (FR-AD-01 to FR-AD-08). Desktop first, so the phone projects skip.
@@ -200,7 +201,8 @@ test("roles: the UI hides what a role cannot do and the server refuses the page"
   await page.goto("/admin/audit");
   await expect(page.getByRole("heading", { name: "Activity log", level: 1 })).toBeVisible();
   // Plain filters: the team's sign-in rows read as sentences, with the raw action under Technical details.
-  await page.getByLabel("Type of change").selectOption("team");
+  await pickOption(page, "Type of change", "Team and sign-in");
+  await expect(page).toHaveURL(/type=team/);
   await expect(page.getByText(/set up their sign-in codes|to the team/).first()).toBeVisible();
   await page.getByText("Technical details").first().click();
   await expect(page.getByText(/^admin\./).first()).toBeVisible();

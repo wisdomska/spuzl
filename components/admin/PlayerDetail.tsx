@@ -19,6 +19,7 @@ import { DaysField, STATUS_TONE } from "./PlayersPage";
 import { Card, Fact, Figure, TechDetails, TechRow, When } from "./people-ui";
 import { Btn, Empty, Field, Notice, Pill, RowsSkeleton, inputCls, type PillTone } from "./ui";
 import { Paged } from "./Pagination";
+import { Select } from "@/components/ui/Select";
 
 const C = adminCopy.players;
 const fmt = (n: number) => n.toLocaleString("en-US");
@@ -613,35 +614,26 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
           {open === "birth" && (
             <div className="grid grid-cols-2 gap-2">
               <Field label={C.birthMonth} htmlFor="pd-birth-month">
-                <select
+                <Select
                   id="pd-birth-month"
                   value={birthMonth}
-                  onChange={(e) => setBirthMonth(e.target.value)}
-                  className={`${inputCls} h-11`}
-                >
-                  <option value="">{ageCopy.pickMonth}</option>
-                  {ageCopy.months.map((m, i) => (
-                    <option key={m} value={i + 1}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={setBirthMonth}
+                  options={[{ value: "", label: ageCopy.pickMonth }, ...ageCopy.months.map((m, i) => ({ value: String(i + 1), label: m }))]}
+                  className="h-11 w-full"
+                />
               </Field>
               <Field label={C.birthYear} htmlFor="pd-birth-year">
-                <select
+                {/* R4-13: nobody under 13 has a profile, so the list starts at this year minus 13. */}
+                <Select
                   id="pd-birth-year"
                   value={birthYear}
-                  onChange={(e) => setBirthYear(e.target.value)}
-                  className={`${inputCls} num h-11`}
-                >
-                  <option value="">{ageCopy.pickYear}</option>
-                  {/* R4-13: nobody under 13 has a profile, so the list starts at this year minus 13. */}
-                  {birthYears(new Date(), MIN_AGE).map((y) => (
-                    <option key={y} value={y}>
-                      {y}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={setBirthYear}
+                  options={[
+                    { value: "", label: ageCopy.pickYear },
+                    ...birthYears(new Date(), MIN_AGE).map((y) => ({ value: String(y), label: String(y) })),
+                  ]}
+                  className="num h-11 w-full"
+                />
               </Field>
               {birthOk && (
                 <p role="status" className="text-muted col-span-2 text-[13px]">

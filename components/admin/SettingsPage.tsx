@@ -11,7 +11,8 @@ import { GAME_BY_ID, WORLD_BY_ID } from "@/lib/catalog";
 import { GameIcon3D } from "@/components/world/GameIcon3D";
 import { Switch } from "@/components/meta/ui";
 import { Icon } from "@/components/ui/Icon";
-import { Btn, Notice, Pill, RowsSkeleton, inputCls } from "./ui";
+import { Btn, Confirm, Notice, Pill, RowsSkeleton, inputCls } from "./ui";
+import { Select } from "@/components/ui/Select";
 
 type Value = number | boolean | string | string[];
 type Row = { key: string; def: SettingDef; value: Value; isDefault: boolean; updatedAt: string | null };
@@ -245,6 +246,8 @@ function Control({
 }) {
   const d = row.def;
   const disabledWhy = canWrite ? undefined : C.cannotEdit;
+  // The plain-words confirm before a switch that players notice goes off.
+  const [asking, setAsking] = useState(false);
   if (d.kind === "bool") {
     const on = row.value === true;
     const confirmOff = CONFIRM_OFF_GROUPS.has(d.group) || CONFIRM_OFF_KEYS.has(row.key);
@@ -257,9 +260,18 @@ function Control({
           checked={on}
           label={d.label}
           disabled={!canWrite || busy}
-          onChange={(v) => {
-            if (!v && confirmOff && !window.confirm(C.confirmOff(d.label))) return;
-            onSave(v);
+          onChange={(v) => (!v && confirmOff ? setAsking(true) : onSave(v))}
+        />
+        <Confirm
+          open={asking}
+          title={C.confirmOff.title(d.label)}
+          body={C.confirmOff.body}
+          confirmLabel={C.confirmOff.confirm}
+          danger
+          onCancel={() => setAsking(false)}
+          onConfirm={() => {
+            setAsking(false);
+            onSave(false);
           }}
         />
       </div>
@@ -267,20 +279,15 @@ function Control({
   }
   if (d.kind === "enum")
     return (
-      <select
+      <Select
         aria-labelledby={labelId}
         value={String(row.value)}
         disabled={!canWrite || busy}
         title={disabledWhy}
-        onChange={(e) => onSave(e.target.value)}
-        className={`${inputCls} h-11 w-44 font-semibold`}
-      >
-        {d.options.map((o) => (
-          <option key={o} value={o}>
-            {C.units.choice(o)}
-          </option>
-        ))}
-      </select>
+        onValueChange={(v) => onSave(v)}
+        options={d.options.map((o) => ({ value: o, label: C.units.choice(o) }))}
+        className="h-11 w-44 font-semibold"
+      />
     );
   if (d.kind === "set") {
     const picked = Array.isArray(row.value) ? row.value : [];

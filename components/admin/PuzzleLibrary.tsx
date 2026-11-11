@@ -11,7 +11,8 @@ import { Pagination, usePager } from "./Pagination";
 import { SortHead, type HeadCol } from "./SortHeader";
 import { useUrlFilters, useUrlSort } from "./useUrlFilters";
 import { PUZZLE_STATES, PageHead, StateGuide, StatePill, When, puzzleState } from "./content-ui";
-import { Empty, Field, Notice, RowsSkeleton, Swatch, inputCls } from "./ui";
+import { Empty, Field, Notice, RowsSkeleton, Swatch } from "./ui";
+import { Select } from "@/components/ui/Select";
 
 interface Row {
   id: string;
@@ -67,44 +68,34 @@ export function PuzzleLibrary() {
       <StateGuide states={PUZZLE_STATES} />
       <div className="flex flex-wrap items-end gap-2">
         <Field label={common.game} htmlFor="pz-game">
-          <select id="pz-game" value={game} onChange={(e) => setFilters({ game: e.target.value })} className={`${inputCls} h-11 w-48`}>
-            <option value="">{common.allGames}</option>
-            {ALL_GAMES.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.retired ? adminCopy.retired.option(g.name) : g.name}
-              </option>
-            ))}
-          </select>
+          <Select
+            id="pz-game"
+            value={game}
+            onValueChange={(v) => setFilters({ game: v })}
+            options={[
+              { value: "", label: common.allGames },
+              ...ALL_GAMES.map((g) => ({ value: g.id, label: g.retired ? adminCopy.retired.option(g.name) : g.name })),
+            ]}
+            className="h-11 w-48"
+          />
         </Field>
         <Field label={C.status} htmlFor="pz-status">
-          <select
+          <Select
             id="pz-status"
             value={status}
-            onChange={(e) => setFilters({ status: e.target.value })}
-            className={`${inputCls} h-11 w-44`}
-          >
-            <option value="">{C.anyStatus}</option>
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {puzzleState(s).label}
-              </option>
-            ))}
-          </select>
+            onValueChange={(v) => setFilters({ status: v })}
+            options={[{ value: "", label: C.anyStatus }, ...STATUSES.map((s) => ({ value: s, label: puzzleState(s).label }))]}
+            className="h-11 w-44"
+          />
         </Field>
         <Field label={C.source} htmlFor="pz-source">
-          <select
+          <Select
             id="pz-source"
             value={source}
-            onChange={(e) => setFilters({ source: e.target.value })}
-            className={`${inputCls} h-11 w-44`}
-          >
-            <option value="">{C.anySource}</option>
-            {SOURCES.map((s) => (
-              <option key={s} value={s}>
-                {C.sources[s] ?? s}
-              </option>
-            ))}
-          </select>
+            onValueChange={(v) => setFilters({ source: v })}
+            options={[{ value: "", label: C.anySource }, ...SOURCES.map((s) => ({ value: s, label: C.sources[s] ?? s }))]}
+            className="h-11 w-44"
+          />
         </Field>
       </div>
       <div className="bg-surface max-h-[75dvh] overflow-auto rounded-[16px] [&_thead]:sticky [&_thead]:top-0 [&_thead]:z-[1]">

@@ -4,6 +4,7 @@ import { packToJson } from "@/lib/admin/quads-pack";
 import { SETTINGS } from "@/lib/game-settings/schema";
 import { admin } from "../../api/helpers";
 import { signedIn } from "./helpers";
+import { pickOption } from "../pick";
 
 /**
  * R2-ADMIN: the round 2 admin screens that shipped without an admin E2E (docs/qa/ADMIN_CASCADE_R2.md): the round 2
@@ -109,7 +110,7 @@ test("moderation: the flagged scores tab filters to the Daily Five", async ({ pa
   await page.goto("/admin/moderation?tab=flagged");
   const source = page.getByRole("combobox", { name: "Games" });
   await expect(source).toBeVisible();
-  await source.selectOption("five");
+  await pickOption(page, "Games", "Daily Five only");
   await expect(page).toHaveURL(/source=five/);
 });
 

@@ -16,7 +16,9 @@ import { GAME_BY_ID, WORLD_BY_ID } from "@/lib/catalog";
 import { durationWords } from "@/lib/admin/content-words";
 import { Icon } from "@/components/ui/Icon";
 import { PageHead, StateGuide, StatePill, type StateWords } from "./content-ui";
-import { Btn, Field, Notice, RowsSkeleton, Swatch, inputCls, textareaCls } from "./ui";
+import { Btn, Field, Notice, RowsSkeleton, Swatch, textareaCls } from "./ui";
+import { Select } from "@/components/ui/Select";
+import { DateField } from "@/components/ui/DateField";
 
 const C = adminCopy.dailyFive;
 const SOURCE: Record<"preview" | "auto" | "manual", StateWords> = {
@@ -150,13 +152,7 @@ export function DailyFivePage({ canWrite }: { canWrite: boolean }) {
       <StateGuide states={GUIDE} />
       <div className="flex flex-wrap items-end gap-2">
         <Field label={C.from} htmlFor="d5-from">
-          <input
-            id="d5-from"
-            type="date"
-            value={from}
-            onChange={(e) => e.target.value && setFrom(e.target.value)}
-            className={`${inputCls} num h-11`}
-          />
+          <DateField id="d5-from" value={from} onChange={(v) => v && setFrom(v)} className="h-11 w-44" />
         </Field>
         <Btn size="lg" icon="caret-left" onClick={() => setFrom(addDays(from, -7))}>
           {C.earlier}
@@ -355,23 +351,23 @@ function PickForm({
     >
       {picks.map((p, i) => (
         <Field key={i} label={C.slot(i + 1)} htmlFor={`d5-${date}-${i}`}>
-          <select
+          <Select
             id={`d5-${date}-${i}`}
             value={p}
-            onChange={(e) => setPicks((cur) => cur.map((x, j) => (j === i ? e.target.value : x)))}
-            className={`${inputCls} w-44`}
-          >
-            <option value="">{C.slotEmpty}</option>
-            {games.map((g) => (
-              <option key={g.id} value={g.id}>
-                {C.gameOption(
+            onValueChange={(v) => setPicks((cur) => cur.map((x, j) => (j === i ? v : x)))}
+            options={[
+              { value: "", label: C.slotEmpty },
+              ...games.map((g) => ({
+                value: g.id,
+                label: C.gameOption(
                   g.name,
                   (WORLD_BY_ID as Record<string, { name: string } | undefined>)[g.world]?.name ?? g.world,
                   durationWords(g.typicalSec),
-                )}
-              </option>
-            ))}
-          </select>
+                ),
+              })),
+            ]}
+            className="w-44"
+          />
         </Field>
       ))}
       <Btn type="submit" size="lg" tone="primary" disabled={busy || !valid}>

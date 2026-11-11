@@ -14,6 +14,7 @@ import { SortHead, type HeadCol } from "./SortHeader";
 import { useUrlFilters, useUrlSort } from "./useUrlFilters";
 import { Fact, PageHead, TechDetails, TechRow, When } from "./people-ui";
 import { Btn, Empty, Notice, Pill, RowsSkeleton, Tabs, type PillTone } from "./ui";
+import { Select } from "@/components/ui/Select";
 
 type Tab = "reports" | "nicknames" | "party" | "flagged";
 interface Row {
@@ -56,7 +57,7 @@ const cols = (flagged: boolean): HeadCol<SortKey>[] => [
 ];
 
 const STATUS_TONE: Record<string, PillTone> = { open: "danger", flagged: "danger", actioned: "ok", dismissed: "neutral" };
-const selectCls = "bg-bg text-text h-11 rounded-[10px] px-2 text-[14px] font-semibold shadow-[inset_0_0_0_1px_var(--line)]";
+const selectCls = "h-11 w-auto min-w-36 font-semibold";
 
 /**
  * Reports (was Moderation; design: Admin moderation): player reports, nickname reports, party rounds and suspicious
@@ -114,37 +115,42 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {tab === "flagged" ? (
-            <label className="text-muted flex items-center gap-2 text-[13px] font-semibold">
-              {C.source}
-              <select value={filters.source} onChange={(e) => (setFilters({ source: e.target.value }), setSel(null))} className={selectCls}>
-                <option value="">{C.sources.all}</option>
-                <option value="five">{C.sources.five}</option>
-              </select>
-            </label>
+            <div className="text-muted flex items-center gap-2 text-[13px] font-semibold">
+              <span id="mq-source">{C.source}</span>
+              <Select
+                aria-labelledby="mq-source"
+                value={filters.source}
+                onValueChange={(v) => (setFilters({ source: v }), setSel(null))}
+                options={[
+                  { value: "", label: C.sources.all },
+                  { value: "five", label: C.sources.five },
+                ]}
+                className={selectCls}
+              />
+            </div>
           ) : (
             <>
-              <label className="text-muted flex items-center gap-2 text-[13px] font-semibold">
-                {C.showing}
-                <select value={status} onChange={(e) => (setFilters({ status: e.target.value }), setSel(null))} className={selectCls}>
-                  {(["open", "actioned", "dismissed", "all"] as const).map((s) => (
-                    <option key={s} value={s}>
-                      {C.statuses[s]}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <div className="text-muted flex items-center gap-2 text-[13px] font-semibold">
+                <span id="mq-status">{C.showing}</span>
+                <Select
+                  aria-labelledby="mq-status"
+                  value={status}
+                  onValueChange={(v) => (setFilters({ status: v }), setSel(null))}
+                  options={(["open", "actioned", "dismissed", "all"] as const).map((s) => ({ value: s, label: C.statuses[s] }))}
+                  className={selectCls}
+                />
+              </div>
               {tab === "reports" && (
-                <label className="text-muted flex items-center gap-2 text-[13px] font-semibold">
-                  {C.kind}
-                  <select value={kind} onChange={(e) => (setFilters({ kind: e.target.value }), setSel(null))} className={selectCls}>
-                    <option value="">{C.anyKind}</option>
-                    {KINDS.map((k) => (
-                      <option key={k} value={k}>
-                        {C.kinds[k]}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <div className="text-muted flex items-center gap-2 text-[13px] font-semibold">
+                  <span id="mq-kind">{C.kind}</span>
+                  <Select
+                    aria-labelledby="mq-kind"
+                    value={kind}
+                    onValueChange={(v) => (setFilters({ kind: v }), setSel(null))}
+                    options={[{ value: "", label: C.anyKind }, ...KINDS.map((k) => ({ value: k, label: C.kinds[k] }))]}
+                    className={selectCls}
+                  />
+                </div>
               )}
             </>
           )}

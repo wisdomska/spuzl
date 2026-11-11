@@ -12,7 +12,7 @@ import { PracticeBoardPreview } from "./PuzzlePreview";
 import { ReviewEntry } from "./ReviewEntry";
 import type { RebuildResult } from "@/lib/admin/rebuild";
 import { StateGuide, StatePill, type StateWords } from "./content-ui";
-import { Btn, Empty, Field, Notice, Pill, RowsSkeleton, Swatch, Tabs, inputCls, textareaCls, type PillTone } from "./ui";
+import { Btn, Confirm, Empty, Field, Notice, Pill, RowsSkeleton, Swatch, Tabs, inputCls, textareaCls, type PillTone } from "./ui";
 
 const C = adminCopy.content;
 const R = C.review;
@@ -113,9 +113,9 @@ export function ReviewQueue({
   const can = canWrite && (sum.data?.canReview ?? true);
   const decide = (indexes: number[], decision: "approve" | "retire") =>
     act.mutate({ game: game!, indexes, decision }, { onSuccess: () => setPicked(new Set()) });
-  const retireMany = () => {
-    if (window.confirm(R.confirmRetireAll(picked.size))) decide([...picked], "retire");
-  };
+  // The plain-words confirm before several entries are retired at once.
+  const [askRetire, setAskRetire] = useState(false);
+  const retireMany = () => setAskRetire(true);
   const pick = (g: string) => {
     setFilters({ game: g });
     setPicked(new Set());
@@ -127,6 +127,18 @@ export function ReviewQueue({
 
   return (
     <div className="flex flex-col gap-3">
+      <Confirm
+        open={askRetire}
+        title={R.confirmRetireAll.title(picked.size)}
+        body={R.confirmRetireAll.body(picked.size)}
+        confirmLabel={R.confirmRetireAll.confirm(picked.size)}
+        danger
+        onCancel={() => setAskRetire(false)}
+        onConfirm={() => {
+          setAskRetire(false);
+          decide([...picked], "retire");
+        }}
+      />
       <p className="text-muted max-w-[760px] text-[13px]">{R.intro}</p>
       <StateGuide states={ENTRY_STATES} />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[300px_1fr]">

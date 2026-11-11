@@ -9,6 +9,7 @@ import { errorText, useAdminAction, useAdminQuery } from "@/lib/client/admin";
 import { adminCopy } from "@/lib/copy/admin";
 import { PageHead, StateGuide, type StateWords } from "./content-ui";
 import { Btn, Notice, RowsSkeleton, Swatch } from "./ui";
+import { Select } from "@/components/ui/Select";
 
 interface Cell {
   date: string;
@@ -121,23 +122,25 @@ export function CalendarView({ canWrite }: { canWrite: boolean }) {
             {C.thisWeek}
           </Btn>
         )}
-        <label className="bg-surface-raised ml-auto flex h-11 items-center gap-1.5 rounded-[10px] pl-3 text-[13px] font-semibold">
-          <Icon name="funnel" size={14} />
-          <span className="sr-only">{C.world}</span>
-          <select
-            value={world}
-            onChange={(e) => setWorld(e.target.value)}
-            style={{ fontSize: 13 }}
-            className="h-11 cursor-pointer appearance-none bg-transparent pr-3 font-semibold outline-none"
-          >
-            <option value="">{C.allWorlds}</option>
-            {WORLDS.map((w) => (
-              <option key={w.id} value={w.id}>
-                {w.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <Select
+          aria-label={C.world}
+          value={world}
+          onValueChange={setWorld}
+          options={[
+            { value: "", label: C.allWorlds },
+            ...WORLDS.map((w) => ({
+              value: w.id,
+              textValue: w.name,
+              label: (
+                <span className="flex items-center gap-2">
+                  <span aria-hidden className="size-2.5 shrink-0 rounded-[3px]" style={{ background: `var(--w-${w.id})` }} />
+                  {w.name}
+                </span>
+              ),
+            })),
+          ]}
+          className="ml-auto h-11 w-44 font-semibold"
+        />
       </div>
 
       {q.data && (

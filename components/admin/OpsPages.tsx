@@ -442,50 +442,49 @@ export function AuditPage() {
       <section aria-label={AUDIT.filtersLabel} className="bg-surface flex flex-col gap-3 rounded-[16px] p-4">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Field label={AUDIT.person} htmlFor="a-actor">
-            <select
+            <Select
               id="a-actor"
               value={actor}
-              onChange={(e) => setFilters({ actor: e.target.value })}
-              className={`${inputCls} h-11 w-full`}
-            >
-              <option value="">{AUDIT.anyone}</option>
-              <option value="system">{AUDIT.automaticOnly}</option>
-              {q.data?.actors.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {AUDIT.personOption(a.nickname || a.email || a.id.slice(0, 8), ROLE_LABEL[a.role] ?? a.role)}
-                </option>
-              ))}
-            </select>
+              onValueChange={(v) => setFilters({ actor: v })}
+              options={[
+                { value: "", label: AUDIT.anyone },
+                { value: "system", label: AUDIT.automaticOnly },
+                ...(q.data?.actors ?? []).map((a) => ({
+                  value: a.id,
+                  label: AUDIT.personOption(a.nickname || a.email || a.id.slice(0, 8), ROLE_LABEL[a.role] ?? a.role),
+                })),
+              ]}
+              className="h-11 w-full"
+            />
           </Field>
           <Field label={AUDIT.type} htmlFor="a-type">
-            <select id="a-type" value={type} onChange={(e) => setFilters({ type: e.target.value })} className={`${inputCls} h-11 w-full`}>
-              <option value="">{AUDIT.anyType}</option>
-              {AUDIT_TYPE_IDS.map((t) => (
-                <option key={t} value={t}>
-                  {AUDIT.types[t]}
-                </option>
-              ))}
-            </select>
+            <Select
+              id="a-type"
+              value={type}
+              onValueChange={(v) => setFilters({ type: v })}
+              options={[{ value: "", label: AUDIT.anyType }, ...AUDIT_TYPE_IDS.map((t) => ({ value: t, label: AUDIT.types[t] }))]}
+              className="h-11 w-full"
+            />
           </Field>
           <Field label={AUDIT.from} htmlFor="a-from">
-            <input
+            <DateField
               id="a-from"
-              type="date"
+              clearable
               max={to || todayIso()}
               value={from}
-              onChange={(e) => setFilters({ from: e.target.value }, { replace: true })}
-              className={`${inputCls} h-11 w-full`}
+              onChange={(v) => setFilters({ from: v }, { replace: true })}
+              className="h-11 w-full"
             />
           </Field>
           <Field label={AUDIT.to} htmlFor="a-to">
-            <input
+            <DateField
               id="a-to"
-              type="date"
+              clearable
               min={from || undefined}
               max={todayIso()}
               value={to}
-              onChange={(e) => setFilters({ to: e.target.value }, { replace: true })}
-              className={`${inputCls} h-11 w-full`}
+              onChange={(v) => setFilters({ to: v }, { replace: true })}
+              className="h-11 w-full"
             />
           </Field>
         </div>
@@ -673,6 +672,8 @@ function AuditItem({ entry, names }: { entry: AuditEntry; names: AuditNames }) {
 
 // Team's own imports from the shared console UI (kept with the section, so the pages above stay independent).
 import { Ago, Confirm, EmptyState, PageHeader, Section, TechDetails } from "./ui";
+import { Select } from "@/components/ui/Select";
+import { DateField } from "@/components/ui/DateField";
 
 const TEAM = adminCopy.team;
 const TEAM_FILTERS = { role: "" } as const;
@@ -777,13 +778,13 @@ export function TeamPage() {
             </div>
             <div className="min-w-0 flex-[1_1_180px]">
               <Field label={TEAM.role} htmlFor="t-role">
-                <select id="t-role" value={role} onChange={(e) => setRole(e.target.value as Role)} className={`${inputCls} h-11 w-full`}>
-                  {ROLES.map((r) => (
-                    <option key={r} value={r}>
-                      {ROLE_LABEL[r]}
-                    </option>
-                  ))}
-                </select>
+                <Select
+                  id="t-role"
+                  value={role}
+                  onValueChange={(v) => setRole(v as Role)}
+                  options={ROLES.map((r) => ({ value: r, label: ROLE_LABEL[r] }))}
+                  className="h-11 w-full"
+                />
               </Field>
             </div>
             <Btn type="submit" tone="primary" size="lg" icon="user-plus" disabled={add.isPending}>
@@ -827,19 +828,13 @@ export function TeamPage() {
         title={TEAM.listTitle}
         aside={
           <Field label={TEAM.roleFilter} htmlFor="t-filter">
-            <select
+            <Select
               id="t-filter"
               value={roleFilter}
-              onChange={(e) => setFilters({ role: e.target.value })}
-              className={`${inputCls} h-11 w-48`}
-            >
-              <option value="">{TEAM.anyRole}</option>
-              {ROLES.map((r) => (
-                <option key={r} value={r}>
-                  {ROLE_LABEL[r]}
-                </option>
-              ))}
-            </select>
+              onValueChange={(v) => setFilters({ role: v })}
+              options={[{ value: "", label: TEAM.anyRole }, ...ROLES.map((r) => ({ value: r, label: ROLE_LABEL[r] }))]}
+              className="h-11 w-48"
+            />
           </Field>
         }
       >
@@ -908,20 +903,15 @@ function TeamRowView({ a, self, busy, onAsk }: { a: TeamRow; self: boolean; busy
         </div>
       </td>
       <td className={td}>
-        <select
+        <Select
           aria-label={TEAM.roleAria(who)}
           title={locked}
           value={a.role}
           disabled={self || busy}
-          onChange={(e) => onAsk({ kind: "role", role: e.target.value as Role, row: a, who })}
-          className={`${inputCls} h-11 w-44`}
-        >
-          {ROLES.map((r) => (
-            <option key={r} value={r}>
-              {ROLE_LABEL[r]}
-            </option>
-          ))}
-        </select>
+          onValueChange={(v) => onAsk({ kind: "role", role: v as Role, row: a, who })}
+          options={ROLES.map((r) => ({ value: r, label: ROLE_LABEL[r] }))}
+          className="h-11 w-44"
+        />
       </td>
       <td className={td}>
         {a.totp_enrolled ? (

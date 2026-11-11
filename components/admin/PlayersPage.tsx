@@ -30,6 +30,8 @@ import { SortHead, type HeadCol } from "./SortHeader";
 import { useDebouncedFilter, useUrlFilters, useUrlSort } from "./useUrlFilters";
 import { PageHead, When } from "./people-ui";
 import { Btn, Empty, Field, Notice, Pill, RowsSkeleton, inputCls, type PillTone } from "./ui";
+import { Select } from "@/components/ui/Select";
+import { DateField } from "@/components/ui/DateField";
 
 const C = adminCopy.players;
 type SortKey = (typeof PLAYER_SORT.keys)[number];
@@ -166,42 +168,36 @@ export function PlayersPage({ canModerate, canExport, emailVisible }: { canModer
   ];
   const select = (key: PlayerFilterKey, label: string, any: string | null, options: readonly string[], text: (o: string) => string) => (
     <Field label={label} htmlFor={`pf-${key}`}>
-      <select
+      <Select
         id={`pf-${key}`}
         value={f[key]}
-        onChange={(e) => setFilters({ [key]: e.target.value })}
-        className={`${inputCls} h-11 w-48 max-w-full`}
-      >
-        {any !== null && <option value="">{any}</option>}
-        {options.map((o) => (
-          <option key={o} value={o}>
-            {text(o)}
-          </option>
-        ))}
-      </select>
+        onValueChange={(v) => setFilters({ [key]: v })}
+        options={[...(any !== null ? [{ value: "", label: any }] : []), ...options.map((o) => ({ value: o, label: text(o) }))]}
+        className="h-11 w-48 max-w-full"
+      />
     </Field>
   );
   const dateRange = (fromKey: PlayerFilterKey, toKey: PlayerFilterKey, label: string) => (
     <fieldset className="flex flex-col gap-1">
       <legend className="num text-muted text-[12px] font-semibold">{label}</legend>
       <div className="flex items-center gap-1.5">
-        <input
-          type="date"
+        <DateField
+          clearable
           aria-label={C.rangeAria(label, C.from)}
           max={f[toKey] || todayIso()}
           value={f[fromKey]}
-          onChange={(e) => setFilters({ [fromKey]: e.target.value }, { replace: true })}
-          className={`${inputCls} h-11 w-[150px]`}
+          onChange={(v) => setFilters({ [fromKey]: v }, { replace: true })}
+          className="h-11 w-[164px]"
         />
         <span className="text-muted text-[13px]">{C.to}</span>
-        <input
-          type="date"
+        <DateField
+          clearable
           aria-label={C.rangeAria(label, C.to)}
           min={f[fromKey] || undefined}
           max={todayIso()}
           value={f[toKey]}
-          onChange={(e) => setFilters({ [toKey]: e.target.value }, { replace: true })}
-          className={`${inputCls} h-11 w-[150px]`}
+          onChange={(v) => setFilters({ [toKey]: v }, { replace: true })}
+          className="h-11 w-[164px]"
         />
       </div>
     </fieldset>
@@ -434,13 +430,13 @@ export function PlayersPage({ canModerate, canExport, emailVisible }: { canModer
 export function DaysField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
     <Field label={C.days} htmlFor="ban-days">
-      <select id="ban-days" value={value} onChange={(e) => onChange(e.target.value)} className={`${inputCls} h-11`}>
-        {Object.entries(C.dayOptions).map(([v, label]) => (
-          <option key={v} value={v}>
-            {label}
-          </option>
-        ))}
-      </select>
+      <Select
+        id="ban-days"
+        value={value}
+        onValueChange={onChange}
+        options={Object.entries(C.dayOptions).map(([v, label]) => ({ value: v, label }))}
+        className="h-11 w-full"
+      />
     </Field>
   );
 }

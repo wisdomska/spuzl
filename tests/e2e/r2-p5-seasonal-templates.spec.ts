@@ -29,12 +29,17 @@ for (const [name, vp] of [
     await row.getByRole("button", { name: "Schedule Detty December" }).click();
     await expect(page.getByText("Detty December is scheduled.")).toBeVisible();
     await expect(row.getByText(/^(Scheduled|Live)$/)).toBeVisible();
-    // Clean up: back to draft, then delete.
-    page.once("dialog", (d) => void d.accept());
+    // Clean up: back to draft, then delete. Each asks first in the app's own confirm (R7: no browser confirm box).
     await row.getByRole("button", { name: "Put Detty December back to draft" }).click();
+    const stop = page.getByRole("alertdialog", { name: "Stop Detty December?" });
+    await expect(stop).toContainText("Players stop seeing it straight away");
+    await stop.getByRole("button", { name: "Stop event" }).click();
     await expect(row.getByText("Draft", { exact: true })).toBeVisible();
-    page.once("dialog", (d) => void d.accept());
     await row.getByRole("button", { name: "Delete Detty December" }).click();
+    const del = page.getByRole("alertdialog", { name: "Delete Detty December?" });
+    await expect(del).toContainText("This can't be undone.");
+    await del.getByRole("button", { name: "Delete event" }).click();
+    await expect(del).toBeHidden();
   });
 }
 

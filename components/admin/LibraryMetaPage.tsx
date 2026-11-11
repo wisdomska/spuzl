@@ -274,6 +274,7 @@ function MetaRow({
   onSwitch: (s: Switch) => void;
 }) {
   const [sec, setSec] = useState(String(row.typicalSec));
+  const [askReset, setAskReset] = useState(false);
   const n = Number(sec);
   const bad = !Number.isInteger(n) || n < 10 || n > 3600;
   const toggle = (t: Tag) => onSave({ tags: row.tags.includes(t) ? row.tags.filter((x) => x !== t) : [...row.tags, t] });
@@ -323,19 +324,21 @@ function MetaRow({
       <div className="border-line flex flex-col gap-3 border-t p-4">
         {!row.retired && row.state && <ForPlayers row={row} name={name} canSwitch={canSwitch} busy={busy} onSwitch={onSwitch} />}
         {row.overridden && canWrite && (
-          <Btn
-            tone="ghost"
-            icon="arrow-counter-clockwise"
-            aria-label={C.resetAria(name)}
-            disabled={busy}
-            onClick={() => {
-              if (window.confirm(C.confirmReset(name)))
-                onSave({ typicalSec: null, tags: null, rule: null, blurb: null, ...(row.scored ? { typicalScore: null } : {}) });
-            }}
-          >
+          <Btn tone="ghost" icon="arrow-counter-clockwise" aria-label={C.resetAria(name)} disabled={busy} onClick={() => setAskReset(true)}>
             {C.reset}
           </Btn>
         )}
+        <Confirm
+          open={askReset}
+          title={C.confirmReset.title(name)}
+          body={C.confirmReset.body}
+          confirmLabel={C.confirmReset.confirm}
+          onCancel={() => setAskReset(false)}
+          onConfirm={() => {
+            setAskReset(false);
+            onSave({ typicalSec: null, tags: null, rule: null, blurb: null, ...(row.scored ? { typicalScore: null } : {}) });
+          }}
+        />
 
         {!row.retired && (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

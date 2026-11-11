@@ -8,6 +8,7 @@ import { adminCopy } from "@/lib/copy/admin";
 import { createRng } from "@/lib/rng";
 import { parsePack, repeatedWords, setDifficulty, toDraft, type QuadsPayload } from "@/lib/admin/quads-pack";
 import { Btn, Field, Notice, inputCls, textareaCls } from "./ui";
+import { Select } from "@/components/ui/Select";
 
 const Q = adminCopy.content.quads;
 const BG = ["var(--quad-0)", "var(--quad-1)", "var(--quad-2)", "var(--quad-3)"] as const;
@@ -40,18 +41,13 @@ export function QuadsEditor({ value, readOnly, onChange }: { value: unknown; rea
             >
               <Icon name={SHAPE[gi]} size={14} />
             </span>
-            <select
+            <Select
               aria-label={Q.difficulty(gi + 1)}
-              value={gi}
-              onChange={(e) => onChange({ groups: setDifficulty(draft.groups, gi, Number(e.target.value)) })}
-              className={`${inputCls} w-28`}
-            >
-              {Q.levels.map((l, i) => (
-                <option key={l} value={i}>
-                  {l}
-                </option>
-              ))}
-            </select>
+              value={String(gi)}
+              onValueChange={(v) => onChange({ groups: setDifficulty(draft.groups, gi, Number(v)) })}
+              options={Q.levels.map((l, i) => ({ value: String(i), label: l }))}
+              className="w-28"
+            />
             <input
               aria-label={Q.name(gi + 1)}
               value={g.label}

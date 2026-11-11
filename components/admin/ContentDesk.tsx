@@ -17,7 +17,12 @@ import { ReviewQueue } from "./ReviewQueue";
 import { SortHead, type HeadCol } from "./SortHeader";
 import { useUrlFilters, useUrlSort } from "./useUrlFilters";
 import { PageHead, StateGuide, StatePill, TechDetails, TechLine, When, type StateWords } from "./content-ui";
-import { Btn, Empty, Field, Notice, Pill, RowsSkeleton, Swatch, Tabs, inputCls, textareaCls, type PillTone } from "./ui";
+import { Btn, Empty, Field, Notice, Pill, RowsSkeleton, Swatch, Tabs, textareaCls, type PillTone } from "./ui";
+import { Select } from "@/components/ui/Select";
+import { DateField } from "@/components/ui/DateField";
+
+/** A content game's name in the pickers (a retired game says so). */
+const contentGameName = (g: string) => (GAME_BY_ID[g]?.retired ? adminCopy.retired.option(GAME_BY_ID[g].name) : (GAME_BY_ID[g]?.name ?? g));
 
 interface Item {
   id: string;
@@ -153,29 +158,25 @@ function Items({
         <StateGuide states={ITEM_STATES} />
         <div className="flex flex-wrap items-end gap-2">
           <Field label={C.status} htmlFor="ci-status">
-            <select
+            <Select
               id="ci-status"
               value={status}
-              onChange={(e) => setFilters({ status: e.target.value })}
-              className={`${inputCls} h-11 w-44`}
-            >
-              <option value="">{C.anyStatus}</option>
-              {ALLOWED.status.map((s) => (
-                <option key={s} value={s}>
-                  {itemState(s as Item["status"]).label}
-                </option>
-              ))}
-            </select>
+              onValueChange={(v) => setFilters({ status: v })}
+              options={[
+                { value: "", label: C.anyStatus },
+                ...ALLOWED.status.map((s) => ({ value: s, label: itemState(s as Item["status"]).label })),
+              ]}
+              className="h-11 w-44"
+            />
           </Field>
           <Field label={C.game} htmlFor="ci-game">
-            <select id="ci-game" value={game} onChange={(e) => setFilters({ game: e.target.value })} className={`${inputCls} h-11 w-44`}>
-              <option value="">{common.allGames}</option>
-              {CONTENT_GAMES.map((g) => (
-                <option key={g} value={g}>
-                  {GAME_BY_ID[g]?.retired ? adminCopy.retired.option(GAME_BY_ID[g].name) : (GAME_BY_ID[g]?.name ?? g)}
-                </option>
-              ))}
-            </select>
+            <Select
+              id="ci-game"
+              value={game}
+              onValueChange={(v) => setFilters({ game: v })}
+              options={[{ value: "", label: common.allGames }, ...CONTENT_GAMES.map((g) => ({ value: g, label: contentGameName(g) }))]}
+              className="h-11 w-44"
+            />
           </Field>
           {canWrite && (
             <Btn tone="primary" size="lg" icon="plus" className="ml-auto" onClick={() => setOpen("new")}>
@@ -333,22 +334,17 @@ function Editor({
       </div>
       {!item && (
         <Field label={common.game} htmlFor="game">
-          <select
+          <Select
             id="game"
             value={game}
-            onChange={(e) => {
-              const g = e.target.value as ContentGame;
+            onValueChange={(v) => {
+              const g = v as ContentGame;
               setGame(g);
               setText(JSON.stringify(TEMPLATES[g], null, 2));
             }}
-            className={`${inputCls} w-full`}
-          >
-            {CONTENT_GAMES.map((g) => (
-              <option key={g} value={g}>
-                {GAME_BY_ID[g]?.retired ? adminCopy.retired.option(GAME_BY_ID[g].name) : (GAME_BY_ID[g]?.name ?? g)}
-              </option>
-            ))}
-          </select>
+            options={CONTENT_GAMES.map((g) => ({ value: g, label: contentGameName(g) }))}
+            className="w-full"
+          />
         </Field>
       )}
       {item && <p className="text-muted text-[13px]">{itemState(item.status).meaning}</p>}
@@ -458,14 +454,7 @@ function Editor({
               }}
             >
               <Field label={E.scheduleOn} htmlFor="sched" hint={E.scheduleHelp}>
-                <input
-                  id="sched"
-                  type="date"
-                  min={addDays(todayIso(), 1)}
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className={inputCls}
-                />
+                <DateField id="sched" min={addDays(todayIso(), 1)} value={date} onChange={setDate} className="w-44" />
               </Field>
               <Btn type="submit" tone="primary" size="lg" disabled={schedule.isPending}>
                 {E.schedule}

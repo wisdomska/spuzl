@@ -20,7 +20,9 @@ import { Pagination, usePager } from "./Pagination";
 import { SortHead, type HeadCol } from "./SortHeader";
 import { useUrlFilters, useUrlSort } from "./useUrlFilters";
 import { PageHead, StateGuide, StatePill, type StateWords } from "./content-ui";
-import { Btn, Empty, Field, Notice, RowsSkeleton, inputCls, textareaCls } from "./ui";
+import { Btn, Confirm, Empty, Field, Notice, RowsSkeleton, inputCls, textareaCls } from "./ui";
+import { Select } from "@/components/ui/Select";
+import { DateTimeField } from "@/components/ui/DateField";
 
 /**
  * Seasonal events (Phase 5, "features.seasonal"): list, create, edit and delete; R2-P5 adds ready-made templates
@@ -173,6 +175,8 @@ export function EventsPage({ canWrite }: { canWrite: boolean }) {
   const schedule = useAdminAction<{ id: string; scheduled: boolean }>("POST", (i) => `/api/admin/events/${i.id}/schedule`);
   const [editing, setEditing] = useState<{ id: string | null; draft: Draft } | null>(null);
   const [done, setDone] = useState<string | null>(null);
+  // The plain-words confirm before an event stops or is deleted (replaces the browser's own confirm box).
+  const [ask, setAsk] = useState<{ what: "delete" | "unschedule"; id: string; name: string } | null>(null);
   const error = create.error ?? edit.error ?? remove.error ?? schedule.error;
 
   return (
@@ -229,17 +233,19 @@ export function EventsPage({ canWrite }: { canWrite: boolean }) {
         />
       )}
       <StateGuide states={Object.values(STATE)} />
-      <label className="text-muted flex items-center gap-2 self-start text-[13px] font-semibold">
-        {E.statusFilter}
-        <select value={status} onChange={(e) => setFilters({ status: e.target.value })} className={`${inputCls} h-11 w-44`}>
-          <option value="">{E.anyStatus}</option>
-          {ALLOWED.status.map((s) => (
-            <option key={s} value={s}>
-              {E.statuses[s as AdminEventStatus]}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="text-muted flex items-center gap-2 self-start text-[13px] font-semibold">
+        <span id="ev-status-filter">{E.statusFilter}</span>
+        <Select
+          aria-labelledby="ev-status-filter"
+          value={status}
+          onValueChange={(v) => setFilters({ status: v })}
+          options={[
+            { value: "", label: E.anyStatus },
+            ...ALLOWED.status.map((s) => ({ value: s, label: E.statuses[s as AdminEventStatus] })),
+          ]}
+          className="h-11 w-44"
+        />
+      </div>
       <div className="bg-surface relative overflow-x-auto rounded-[16px]">
         {q.isPending ? (
           <RowsSkeleton />
@@ -302,10 +308,7 @@ export function EventsPage({ canWrite }: { canWrite: boolean }) {
                             aria-label={C.unscheduleAria(e.name)}
                             title={C.unscheduleAria(e.name)}
                             disabled={schedule.isPending}
-                            onClick={() => {
-                              if (window.confirm(C.confirmUnschedule(e.name)))
-                                schedule.mutate({ id: e.id, scheduled: false }, { onSuccess: () => setDone(C.unscheduled(e.name)) });
-                            }}
+                            onClick={() => setAsk({ what: "unschedule", id: e.id, name: e.name })}
                           >
                             {C.unschedule}
                           </Btn>
@@ -325,10 +328,7 @@ export function EventsPage({ canWrite }: { canWrite: boolean }) {
                           aria-label={C.deleteAria(e.name)}
                           title={C.deleteAria(e.name)}
                           disabled={remove.isPending}
-                          onClick={() => {
-                            if (window.confirm(C.confirmDelete(e.name)))
-                              remove.mutate({ id: e.id }, { onSuccess: () => setDone(C.deleted(e.name)) });
-                          }}
+                          onClick={() => setAsk({ what: "delete", id: e.id, name: e.name })}
                         />
                       </span>
                     )}
@@ -340,6 +340,22 @@ export function EventsPage({ canWrite }: { canWrite: boolean }) {
         )}
       </div>
       {q.data && <Pagination pager={pager} total={q.data.total} />}
+      <Confirm
+        open={!!ask}
+        title={ask ? (ask.what === "delete" ? C.confirmDelete : C.confirmUnschedule).title(ask.name) : ""}
+        body={ask?.what === "delete" ? C.confirmDelete.body : C.confirmUnschedule.body}
+        confirmLabel={ask?.what === "delete" ? C.confirmDelete.confirm : C.confirmUnschedule.confirm}
+        danger
+        busy={remove.isPending || schedule.isPending}
+        onCancel={() => setAsk(null)}
+        onConfirm={() => {
+          if (!ask) return;
+          const { id, name } = ask;
+          const close = () => setAsk(null);
+          if (ask.what === "delete") remove.mutate({ id }, { onSuccess: () => setDone(C.deleted(name)), onSettled: close });
+          else schedule.mutate({ id, scheduled: false }, { onSuccess: () => setDone(C.unscheduled(name)), onSettled: close });
+        }}
+      />
     </div>
   );
 }
@@ -404,45 +420,38 @@ function EventForm({
             </span>
           }
         >
-          <select id="ev-accent" value={d.accent} onChange={(e) => set("accent", e.target.value)} className={inputCls}>
-            {EVENT_ACCENTS.map((a) => (
-              <option key={a} value={a}>
-                {accentName(a)}
-              </option>
-            ))}
-          </select>
+          <Select
+            id="ev-accent"
+            value={d.accent}
+            onValueChange={(v) => set("accent", v)}
+            options={EVENT_ACCENTS.map((a) => ({
+              value: a,
+              textValue: accentName(a),
+              label: (
+                <span className="flex items-center gap-2">
+                  <span aria-hidden className="size-3 shrink-0 rounded-[3px]" style={{ background: `var(--${a})` }} />
+                  {accentName(a)}
+                </span>
+              ),
+            }))}
+            className="w-full"
+          />
         </Field>
         <Field label={C.starts} htmlFor="ev-start">
-          <input
-            id="ev-start"
-            type="datetime-local"
-            required
-            value={d.startsAt}
-            onChange={(e) => set("startsAt", e.target.value)}
-            className={inputCls}
-          />
+          <DateTimeField id="ev-start" label={C.starts} value={d.startsAt} onChange={(v) => set("startsAt", v)} />
         </Field>
         <Field label={C.ends} htmlFor="ev-end" hint={problem ?? undefined}>
-          <input
-            id="ev-end"
-            type="datetime-local"
-            required
-            aria-invalid={!!problem}
-            value={d.endsAt}
-            onChange={(e) => set("endsAt", e.target.value)}
-            className={inputCls}
-          />
+          <DateTimeField id="ev-end" label={C.ends} aria-invalid={!!problem} value={d.endsAt} onChange={(v) => set("endsAt", v)} />
         </Field>
       </div>
       <Field label={C.quiz} htmlFor="ev-quiz" hint={C.quizHint}>
-        <select id="ev-quiz" value={d.quiz} onChange={(e) => set("quiz", e.target.value)} className={inputCls}>
-          <option value="">{C.quizNone}</option>
-          {EVENT_QUIZZES.map((q) => (
-            <option key={q} value={q}>
-              {C.quizzes[q]}
-            </option>
-          ))}
-        </select>
+        <Select
+          id="ev-quiz"
+          value={d.quiz}
+          onValueChange={(v) => set("quiz", v)}
+          options={[{ value: "", label: C.quizNone }, ...EVENT_QUIZZES.map((q) => ({ value: q, label: C.quizzes[q] }))]}
+          className="w-full"
+        />
       </Field>
       <Field label={C.banner} htmlFor="ev-banner" hint={C.bannerCount(d.banner.length)}>
         <textarea
@@ -474,26 +483,26 @@ function EventForm({
             />
           </Field>
           <Field label={C.goal} htmlFor="ev-kind">
-            <select id="ev-kind" value={d.kind} onChange={(e) => set("kind", e.target.value as EventGoal)} className={inputCls}>
-              {EVENT_GOALS.map((g) => (
-                <option key={g} value={g}>
-                  {GOAL_LABEL[g]}
-                </option>
-              ))}
-            </select>
+            <Select
+              id="ev-kind"
+              value={d.kind}
+              onValueChange={(v) => set("kind", v as EventGoal)}
+              options={EVENT_GOALS.map((g) => ({ value: g, label: GOAL_LABEL[g] }))}
+              className="w-full"
+            />
           </Field>
         </div>
         <div className="flex flex-wrap gap-3">
           {num("n", C.howMany, 1, 100)}
           {d.kind === "world_clears" && (
             <Field label={C.world} htmlFor="ev-world">
-              <select id="ev-world" value={d.world} onChange={(e) => set("world", e.target.value)} className={inputCls}>
-                {WORLDS.map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.name}
-                  </option>
-                ))}
-              </select>
+              <Select
+                id="ev-world"
+                value={d.world}
+                onValueChange={(v) => set("world", v)}
+                options={WORLDS.map((w) => ({ value: w.id, label: w.name }))}
+                className="w-48"
+              />
             </Field>
           )}
           {num("xp", C.xp, 0, 1000)}

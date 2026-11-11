@@ -303,8 +303,11 @@ export const adminCopy = {
       approveAll: (n: number) => (n ? `Approve ${n} selected` : "Approve selected"),
       retireAll: (n: number) => (n ? `Retire ${n} selected` : "Retire selected"),
       noneSelected: "Tick entries first",
-      confirmRetireAll: (n: number) =>
-        `Retire ${n} ${n === 1 ? "entry" : "entries"}? Players stop getting ${n === 1 ? "it" : "them"} straight away. You can restore them later.`,
+      confirmRetireAll: {
+        title: (n: number) => `Retire ${n} ${n === 1 ? "entry" : "entries"}?`,
+        body: (n: number) => `Players stop getting ${n === 1 ? "it" : "them"} straight away. You can restore them later.`,
+        confirm: (n: number) => (n === 1 ? "Retire entry" : `Retire ${n} entries`),
+      },
       selectAll: "Select all on this page",
       selectEntry: (i: number) => `Select entry ${i}`,
       entry: (i: number) => `Entry ${i}`,
@@ -1478,7 +1481,11 @@ export const adminCopy = {
     wholeNumber: (min: number, max: number) => `Must be a whole number from ${min} to ${max}.`,
     between: (from: string, to: string) => `Must be from ${from} to ${to}.`,
     willBe: (value: string) => `That is ${value}.`,
-    confirmOff: (label: string) => `Switch off “${label}” for every player? They notice within a minute.`,
+    confirmOff: {
+      title: (label: string) => `Switch off “${label}”?`,
+      body: "It goes off for every player. They notice within a minute.",
+      confirm: "Switch off",
+    },
     techDetails: "Technical details",
     tech: {
       key: "Setting key",
@@ -1908,8 +1915,11 @@ export const adminCopy = {
     save: "Save",
     reset: "Back to standard",
     resetAria: (name: string) => `Put ${name} back to its standard settings`,
-    confirmReset: (name: string) =>
-      `Put ${name} back to its standard play time, tags, rule and card line? Players see the standard ones within 5 minutes.`,
+    confirmReset: {
+      title: (name: string) => `Put ${name} back to standard?`,
+      body: "Its play time, tags, rule and card line go back to the standard ones. Players see them within 5 minutes.",
+      confirm: "Back to standard",
+    },
     savedNote: (name: string) => `${name} saved. Players see it within 5 minutes.`,
     /** Owner decision S: a score game's typical score, its par in Daily Five points. */
     scoreLabel: "Typical score in the Daily Five",
@@ -2125,8 +2135,11 @@ export const adminCopy = {
     questLine: (goal: string, xp: number, sparks: number) => `${goal}. Reward: ${xp} XP and ${sparks} Sparks`,
     editAria: (name: string) => `Edit ${name}`,
     deleteAria: (name: string) => `Delete ${name}`,
-    confirmDelete: (name: string) =>
-      `Delete ${name} for good? Players lose their progress on its bonus quest. Rewards they already claimed stay theirs.`,
+    confirmDelete: {
+      title: (name: string) => `Delete ${name}?`,
+      body: "This can't be undone. Players lose their progress on its bonus quest. Rewards they already claimed stay theirs.",
+      confirm: "Delete event",
+    },
     pickDates: "Pick both dates.",
     name: "Name",
     namePlaceholder: "Harmattan Week",
@@ -2171,8 +2184,11 @@ export const adminCopy = {
     unscheduleAria: (name: string) => `Put ${name} back to draft`,
     scheduled: (name: string) => `${name} is scheduled. Players see it from its start date.`,
     unscheduled: (name: string) => `${name} is a draft again. Players no longer see it.`,
-    confirmUnschedule: (name: string) =>
-      `Stop ${name} and put it back to draft? Players stop seeing it straight away. Their quest progress is kept.`,
+    confirmUnschedule: {
+      title: (name: string) => `Stop ${name}?`,
+      body: "It goes back to draft. Players stop seeing it straight away. Their quest progress is kept.",
+      confirm: "Stop event",
+    },
     draftNote: "Draft: not running",
   },
 

@@ -17,7 +17,8 @@ import { Pagination, usePager } from "./Pagination";
 import { useUrlFilters } from "./useUrlFilters";
 import { exactTime } from "@/lib/admin/people-format";
 import { PageHead, TechDetails, TechRow, When } from "./people-ui";
-import { Btn, Empty, Field, Notice, Pill, RowsSkeleton, inputCls, type PillTone } from "./ui";
+import { Btn, Empty, Field, Notice, Pill, RowsSkeleton, type PillTone } from "./ui";
+import { Select } from "@/components/ui/Select";
 
 const C = adminCopy.feedback;
 const FILTERS = { status: "", kind: "" } as const;
@@ -80,29 +81,22 @@ export function FeedbackPage({ canWrite, canOpenPlayers }: { canWrite: boolean; 
       />
       <div role="search" aria-label={C.title} className="bg-surface flex flex-wrap items-end gap-2 rounded-[16px] p-4">
         <Field label={C.status} htmlFor="fb-status">
-          <select
+          <Select
             id="fb-status"
             value={f.status}
-            onChange={(e) => setFilters({ status: e.target.value })}
-            className={`${inputCls} h-11 w-40`}
-          >
-            <option value="">{C.anyStatus}</option>
-            {FEEDBACK_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {C.statuses[s]}
-              </option>
-            ))}
-          </select>
+            onValueChange={(v) => setFilters({ status: v })}
+            options={[{ value: "", label: C.anyStatus }, ...FEEDBACK_STATUSES.map((s) => ({ value: s, label: C.statuses[s] }))]}
+            className="h-11 w-40"
+          />
         </Field>
         <Field label={C.kind} htmlFor="fb-kind">
-          <select id="fb-kind" value={f.kind} onChange={(e) => setFilters({ kind: e.target.value })} className={`${inputCls} h-11 w-52`}>
-            <option value="">{C.anyKind}</option>
-            {FEEDBACK_KINDS.map((k) => (
-              <option key={k} value={k}>
-                {C.kinds[k]}
-              </option>
-            ))}
-          </select>
+          <Select
+            id="fb-kind"
+            value={f.kind}
+            onValueChange={(v) => setFilters({ kind: v })}
+            options={[{ value: "", label: C.anyKind }, ...FEEDBACK_KINDS.map((k) => ({ value: k, label: C.kinds[k] }))]}
+            className="h-11 w-52"
+          />
         </Field>
         {filtered && (
           <Btn size="lg" tone="ghost" icon="x" onClick={() => setFilters({ status: null, kind: null })}>

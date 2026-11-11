@@ -16,6 +16,8 @@ import { Pagination, usePager } from "./Pagination";
 import { useDebouncedFilter, useUrlFilters } from "./useUrlFilters";
 import { PageHead, When } from "./people-ui";
 import { Btn, Empty, Field, Notice, Pill, RowsSkeleton, inputCls, type PillTone } from "./ui";
+import { Select } from "@/components/ui/Select";
+import { DateField } from "@/components/ui/DateField";
 
 const C = adminCopy.joinLog;
 const FILTERS = { status: "", kind: "", q: "", from: "", to: "" } as const;
@@ -87,49 +89,42 @@ export function JoinRequestsPage() {
           />
         </Field>
         <Field label={C.outcome} htmlFor="jr-status">
-          <select
+          <Select
             id="jr-status"
             value={f.status}
-            onChange={(e) => setFilters({ status: e.target.value })}
-            className={`${inputCls} h-11 w-44`}
-          >
-            <option value="">{C.anyOutcome}</option>
-            {JOIN_REQUEST_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {C.outcomes[s]}
-              </option>
-            ))}
-          </select>
+            onValueChange={(v) => setFilters({ status: v })}
+            options={[{ value: "", label: C.anyOutcome }, ...JOIN_REQUEST_STATUSES.map((s) => ({ value: s, label: C.outcomes[s] }))]}
+            className="h-11 w-44"
+          />
         </Field>
         <Field label={C.room} htmlFor="jr-kind">
-          <select id="jr-kind" value={f.kind} onChange={(e) => setFilters({ kind: e.target.value })} className={`${inputCls} h-11 w-44`}>
-            <option value="">{C.anyRoom}</option>
-            {JOIN_LOG_KINDS.map((k) => (
-              <option key={k} value={k}>
-                {C.rooms[k]}
-              </option>
-            ))}
-          </select>
+          <Select
+            id="jr-kind"
+            value={f.kind}
+            onValueChange={(v) => setFilters({ kind: v })}
+            options={[{ value: "", label: C.anyRoom }, ...JOIN_LOG_KINDS.map((k) => ({ value: k, label: C.rooms[k] }))]}
+            className="h-11 w-44"
+          />
         </Field>
         <Field label={C.from} htmlFor="jr-from">
-          <input
+          <DateField
             id="jr-from"
-            type="date"
+            clearable
             max={f.to || todayIso()}
             value={f.from}
-            onChange={(e) => setFilters({ from: e.target.value }, { replace: true })}
-            className={`${inputCls} h-11 w-40`}
+            onChange={(v) => setFilters({ from: v }, { replace: true })}
+            className="h-11 w-44"
           />
         </Field>
         <Field label={C.to} htmlFor="jr-to">
-          <input
+          <DateField
             id="jr-to"
-            type="date"
+            clearable
             min={f.from || undefined}
             max={todayIso()}
             value={f.to}
-            onChange={(e) => setFilters({ to: e.target.value }, { replace: true })}
-            className={`${inputCls} h-11 w-40`}
+            onChange={(v) => setFilters({ to: v }, { replace: true })}
+            className="h-11 w-44"
           />
         </Field>
         {filtered && (
