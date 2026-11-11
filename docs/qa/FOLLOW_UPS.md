@@ -21,6 +21,25 @@ item from earlier rounds that has since been done is gone from this list (see CH
   (Quickfire 400, Echo 8, Beat Tap 3000, Twins 550, Flinch 3000, Penalty 3000, ...). Tune them on the admin Library
   page after a week of play. Merge, Seven, Dead On, Stacked and Ricochet have none yet, so they score on time.
 
+## Lab games switched on (11 Nov)
+
+All 12 now fit 320 x 568, 375 x 667, 390 x 844 and 1280 x 800 on their easy boards (tests/e2e/r5-lab-fit.spec.ts),
+and a switched-on lab game has its public page, How to play entry, llms.txt line and sitemap entry. Still open:
+
+- **Graduate them when the owner is happy:** they are still lab games in code. GAME_COUNT ("29 games" on the landing
+  page, About and the llms summary) counts live games only, and the Explorer badges (clear every game in a world)
+  ignore lab clears. Graduating a game (drop `lab: true`, a migration setting `games.status` to 'live') fixes both.
+- **Hard boards on small phones:** Market Run mega (5 items, 5 rules) still scrolls about 200 px at 320 x 568 and
+  375 x 667 (medium: 16 and 5 px); Tripwire mega about 128 / 102 px (its cells stop at 32 px); Killer Sums mega 6 px
+  at 320 x 568. Market could fold its rule list behind a toggle on short screens; Tripwire mega needs pan and zoom
+  like Light Up.
+- **The first-slip tip:** once per device, the shell adds "That's a slip. Slips only lower your accuracy..." to the
+  first rule break. On a 320 x 568 phone that 4-line feedback line pushes the tool bar about 6 px (seen in Market
+  Run). A clamp on the feedback line would cover every game.
+- **Emoji Hits (live)** scrolls 88 px at 320 x 568 before Start. It has its own board, not the quiz board.
+- **Copy in code:** Tripwire, Pixl and Pinned keep some player-facing strings inline (cell labels, "World map",
+  "km away", the practice line) instead of lib/copy.
+
 ## Left as it is, on purpose
 
 - **Dusk swipe:** swipe up and down is not done; it would block page scroll when a finger starts on the board.
