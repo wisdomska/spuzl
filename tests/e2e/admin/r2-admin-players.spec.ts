@@ -49,6 +49,6 @@ test("player detail shows ratings, rank moves from Duels and Parties, and a Ludo
 test("Overview counts devices with push alerts on", async ({ page }) => {
   await signedIn(page, "moderator");
   await page.goto("/admin");
-  await expect(page.getByText("Devices with alerts on")).toBeVisible({ timeout: 20_000 });
-  await expect(page.getByText("Devices a push reached, last 30 days")).toBeVisible();
+  await expect(page.getByText("Players with alerts on")).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText("Players reached in the last 30 days")).toBeVisible();
 });
