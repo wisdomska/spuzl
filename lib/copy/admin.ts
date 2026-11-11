@@ -537,21 +537,265 @@ export const adminCopy = {
     tech: { page: "Sent from page", device: "Device and browser", id: "Message id" },
   },
 
+  /** Activity log (was Audit log): every change, as a sentence. Sentences are built in lib/admin/audit-log.ts. */
   audit: {
-    title: "Audit log",
-    intro: "Every admin action, newest first. Append-only.",
-    who: "Who",
+    title: "Activity log",
+    intro: "Everything the team changed, and what the app did by itself, newest first. Nothing here can be edited or deleted.",
+    filtersLabel: "Filter the activity log",
+    person: "Person",
     anyone: "Anyone",
-    system: "System (cron)",
-    systemShort: "system",
-    actionStarts: "Action starts with",
+    automaticOnly: "Automatic jobs only",
+    personOption: (name: string, role: string) => `${name} (${role})`,
+    type: "Type of change",
+    anyType: "Every type",
+    types: {
+      players: "Players, reports and feedback",
+      content: "Content and puzzles",
+      daily: "Daily puzzles and Daily Five",
+      events: "Events and shop",
+      settings: "Settings and switches",
+      team: "Team and sign-in",
+      exports: "Downloads",
+      automatic: "Automatic jobs",
+    },
+    from: "From",
+    to: "To",
+    showAuto: "Show automatic jobs",
+    showAutoHint: "Things the app does by itself, like picking the Daily Five or sending streak reminders.",
+    clear: "Clear filters",
+    advanced: "Technical filters",
+    actionStarts: "Action code starts with",
     actionPlaceholder: "daily.",
     targetContains: "Target contains",
     targetPlaceholder: "crownfall",
-    from: "From",
-    to: "To",
-    empty: "No actions match.",
-    head: ["When (GMT)", "Who", "Action", "Target", "Detail"],
+    empty: "Nothing here yet. Changes the team makes, and jobs the app runs, appear here as they happen.",
+    emptyFiltered: "Nothing matches these filters. Try a wider date range, or clear the filters.",
+    autoHidden: "Automatic jobs are hidden.",
+    showThem: "Show them",
+    loadError: "The activity log didn't load.",
+    retry: "Try again",
+    today: "Today",
+    yesterday: "Yesterday",
+    automatic: "Automatic",
+    techDetails: "Technical details",
+    tech: {
+      action: "Action code",
+      target: "Target",
+      role: "Their role then",
+      entry: "Entry number",
+      when: "Exact time (GMT)",
+      data: "Recorded data",
+      runs: "Runs folded into this line",
+    },
+    /** "2 hours ago" style times for today's rows. */
+    ago: {
+      now: "Just now",
+      minutes: (m: number) => (m === 1 ? "1 minute ago" : `${m} minutes ago`),
+      hours: (h: number) => (h === 1 ? "1 hour ago" : `${h} hours ago`),
+    },
+    exactTime: (day: string, time: string) => `${day}, ${time} GMT`,
+    noteLabel: "Reason or note:",
+    /** Sentence parts. Each returns the words after the person's name ("switched on Daily Five"). */
+    say: {
+      formerMember: "A former team member",
+      themselves: "their own account",
+      aTeamMember: "a team member",
+      aPlayer: "a player",
+      aGame: "a game",
+      aDay: "a day",
+      aNewName: "a new nickname",
+      anEvent: "an event",
+      item: (name: string) => `“${name}”`,
+      /** "A", "A and B", "A, B and C" */
+      list: (items: string[]) => (items.length <= 1 ? (items[0] ?? "") : `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`),
+      plural: (n: number, one: string, many: string) => `${n.toLocaleString("en-GB")} ${n === 1 ? one : many}`,
+
+      // Game settings
+      switchedOn: (label: string) => `switched on ${label}`,
+      switchedOff: (label: string) => `switched off ${label}`,
+      setOn: (items: string, label: string) => `switched on ${items} in ${label}`,
+      setOff: (items: string, label: string) => `switched off ${items} in ${label}`,
+      setBoth: (on: string, off: string, label: string) => `switched on ${on} and switched off ${off} in ${label}`,
+      settingSame: (label: string) => `saved ${label} without changing it`,
+      changed: (label: string, from: string, to: string) => `changed ${label} from ${from} to ${to}`,
+      settingUnknown: "changed a game setting",
+
+      // Feature switches
+      flagCreate: (name: string, on: boolean) => `added the feature switch ${name} (${on ? "on" : "off"})`,
+      flagOn: (name: string) => `switched on the feature switch ${name}`,
+      flagOff: (name: string) => `switched off the feature switch ${name}`,
+      flagOptions: (name: string) => `changed the extra options of the feature switch ${name}`,
+
+      // Team
+      adminAdd: (who: string, role: string | null) => `added ${who} to the team${role ? ` as ${role}` : ""}`,
+      adminRole: (who: string, role: string | null) => (role ? `changed ${who}'s role to ${role}` : `changed the role of ${who}`),
+      adminDisable: (who: string) => `turned off access for ${who}`,
+      adminEnable: (who: string) => `turned access back on for ${who}`,
+      adminReset: (who: string) => `sent a set-password email to ${who}`,
+      adminCodes: "set up their sign-in codes",
+
+      // Players
+      playersExport: (n: number) => `downloaded a list of ${n.toLocaleString("en-GB")} players`,
+      ban: (p: string, days: number | null) => (days ? `banned ${p} for ${days === 1 ? "1 day" : `${days} days`}` : `banned ${p}`),
+      banVoid: (p: string, days: number | null) =>
+        `banned ${p}${days ? ` for ${days === 1 ? "1 day" : `${days} days`}` : ""} and removed their leaderboard times`,
+      unban: (p: string) => `lifted the ban on ${p}`,
+      revokeRanking: (p: string) => `took ${p} off the leaderboards`,
+      restoreRanking: (p: string) => `put ${p} back on the leaderboards`,
+      resetTimes: (p: string) => `cleared ${p}'s times and streak`,
+      rename: (from: string, to: string) => `changed the nickname ${from} to ${to}`,
+      sparks: (p: string, amount: number) =>
+        amount < 0 ? `took ${(-amount).toLocaleString("en-GB")} Sparks from ${p}` : `gave ${p} ${amount.toLocaleString("en-GB")} Sparks`,
+      freeze: (p: string) => `gave ${p} a Streak Freeze`,
+      signout: (p: string) => `signed ${p} out on every device`,
+      birth: (p: string, from: string | null, to: string | null) =>
+        from && to && from !== to ? `corrected ${p}'s age group from ${from} to ${to}` : `corrected ${p}'s birth month and year`,
+      unblock: (p: string, fully: boolean) =>
+        fully ? `let ${p} back into 18+ party rooms (a report was reopened)` : `shortened ${p}'s time out of 18+ party rooms`,
+      shield: (p: string) => `gave ${p} a free streak shield for saving their account`,
+      shieldFull: (p: string) => `gave ${p} no streak shield: they already hold 2 Streak Freezes`,
+      deletePlayer: (name: string) => `deleted the account of ${name}`,
+      deleteFailed: (p: string) => `tried to delete ${p}'s account, but it did not finish`,
+      bulkBan: (n: number, days: number | null) =>
+        `banned ${n === 1 ? "1 player" : `${n} players`}${days ? ` for ${days === 1 ? "1 day" : `${days} days`}` : ""}`,
+      bulkRevoke: (n: number) => `took ${n === 1 ? "1 player" : `${n} players`} off the leaderboards`,
+      bulkOther: (n: number) => `changed ${n === 1 ? "1 player" : `${n} players`} at once`,
+
+      // Reports and feedback
+      reportPlayer: (p: string) => `${p}`,
+      reportKind: {
+        crew: "a crew",
+        score: "a score",
+        content: "a puzzle or quiz item",
+        party: "something said or drawn in a Party",
+        other: "something a player reported",
+      },
+      reportDismiss: (what: string) => `dismissed a report about ${what}`,
+      reportUphold: (what: string) => `upheld a report about ${what}`,
+      reportReopen: (what: string) => `reopened a report about ${what}`,
+      flaggedClear: (p: string, game: string) => `cleared ${p}'s flagged ${game} score (it stays on the leaderboard)`,
+      flaggedReject: (p: string, game: string) => `removed ${p}'s flagged ${game} score`,
+      feedbackMark: {
+        read: "marked a feedback message as read",
+        done: "marked a feedback message as done",
+        new: "marked a feedback message as new again",
+      },
+      feedbackExport: (n: number) => `downloaded ${n === 1 ? "1 feedback message" : `${n.toLocaleString("en-GB")} feedback messages`}`,
+      joinExport: (n: number) => `downloaded the join requests list (${n === 1 ? "1 row" : `${n.toLocaleString("en-GB")} rows`})`,
+      metricsExport: (metric: string, from: string, to: string) => `downloaded the “${metric}” numbers, ${from} to ${to}`,
+
+      // Content
+      contentCreate: (g: string) => `started a new ${g} item`,
+      contentEdit: (g: string) => `edited a ${g} item`,
+      contentSubmit: (g: string) => `sent a ${g} item for review`,
+      contentApprove: (g: string) => `approved a ${g} item`,
+      contentReject: (g: string) => `sent a ${g} item back to its writer`,
+      contentPool: (g: string) => `added a ${g} item to free play`,
+      contentUnpool: (g: string) => `took a ${g} item out of free play`,
+      contentExport: (n: number, g: string) => `downloaded ${n === 1 ? "1" : n.toLocaleString("en-GB")} ${g} ${n === 1 ? "item" : "items"}`,
+      contentImport: (n: number, g: string) => `imported ${n === 1 ? "1" : n.toLocaleString("en-GB")} ${g} ${n === 1 ? "item" : "items"}`,
+      contentRebuild: (g: string) => `remade the upcoming ${g} days from the latest content`,
+      contentSchedule: (g: string, day: string) => `scheduled a ${g} item for ${day}`,
+      fileEdit: (g: string) => `edited a built-in ${g} entry`,
+      fileApprove: (n: number, g: string) => `approved ${n === 1 ? "1 built-in" : `${n} built-in`} ${g} ${n === 1 ? "entry" : "entries"}`,
+      fileRetire: (n: number, g: string) => `retired ${n === 1 ? "1 built-in" : `${n} built-in`} ${g} ${n === 1 ? "entry" : "entries"}`,
+      wordAdd: (w: string) => `added “${w}” to the Draw It word list`,
+      wordEdit: (from: string, to: string) => `changed the Draw It word “${from}” to “${to}”`,
+      wordEditAlt: (w: string) => `edited the Draw It word “${w}”`,
+      wordRetire: (w: string) => `removed “${w}” from the Draw It word list`,
+      wordRestore: (w: string) => `put “${w}” back in the Draw It word list`,
+      wordImport: (n: number) => `imported ${n === 1 ? "1 Draw It word" : `${n.toLocaleString("en-GB")} Draw It words`}`,
+      puzzleApprove: (g: string, day: string | null) => `approved a ${g} puzzle${day ? ` for ${day}` : ""}`,
+      puzzleCheckOk: "checked a puzzle: it passed every check",
+      puzzleCheckFail: (n: number) => `checked a puzzle: ${n === 1 ? "1 check" : `${n} checks`} failed`,
+      puzzleNote: "added a note to a puzzle",
+      gameMeta: (g: string) => `updated ${g}'s details on the Games page`,
+
+      // Daily puzzles and Daily Five
+      dailyLock: (g: string, day: string) => `locked the ${g} Daily for ${day}`,
+      dailyLockRange: (n: number, from: string, to: string) =>
+        `locked ${n === 1 ? "1 Daily puzzle" : `${n} Daily puzzles`} from ${from} to ${to}`,
+      dailyUnlock: (g: string, day: string) => `unlocked the ${g} Daily for ${day}`,
+      dailyRegenerate: (g: string, day: string) => `made a new ${g} Daily for ${day}`,
+      dailySwap: (g: string, day: string) => `swapped the ${g} Daily for ${day}`,
+      dailyFill: (n: number) =>
+        n ? `made ${n === 1 ? "1 missing Daily puzzle" : `${n} missing Daily puzzles`}` : "checked for missing Daily puzzles: none",
+      fiveAuto: (day: string) => `re-picked the Daily Five for ${day}`,
+      fiveManual: (day: string) => `picked the Daily Five for ${day} by hand`,
+      fiveLock: (day: string) => `locked the Daily Five for ${day}`,
+      fiveUnlock: (day: string) => `unlocked the Daily Five for ${day}`,
+      fiveFill: (made: number, repicked: number) =>
+        made || repicked
+          ? `planned the Daily Five: ${made === 1 ? "1 new day" : `${made} new days`}${repicked ? `, ${repicked} re-picked` : ""}`
+          : "checked the Daily Five plan: nothing to change",
+      fiveExport: (n: number) => `downloaded the Daily Five plan (${n === 1 ? "1 day" : `${n} days`})`,
+      fiveImport: (n: number) => `uploaded a Daily Five plan (${n === 1 ? "1 day" : `${n} days`} saved)`,
+      fiveLabRepick: (games: string, moved: number, kept: number) =>
+        [
+          moved ? `moved ${moved === 1 ? "1 Daily Five day" : `${moved} Daily Five days`} to other games` : "",
+          kept ? `kept ${games} on ${kept === 1 ? "1 locked day" : `${kept} locked days`}` : "",
+        ]
+          .filter(Boolean)
+          .join(" and ") + ` after ${games} was switched off`,
+
+      // Events and shop
+      eventCreate: (name: string) => `created the event ${name}`,
+      eventUpdate: (name: string) => `edited the event ${name}`,
+      eventDelete: (name: string) => `deleted the event ${name}`,
+      eventSchedule: (name: string) => `scheduled the event ${name}`,
+      eventUnschedule: (name: string) => `took the event ${name} off the schedule`,
+      eventTemplate: (name: string) => `created the event ${name} from a template`,
+      catalogKind: { cosmetics: "the shop", badges: "the badges", quests: "the quests" },
+      catalogCreate: (item: string, where: string) => `added ${item} to ${where}`,
+      catalogActive: {
+        cosmetics: (item: string, on: boolean) => (on ? `put ${item} in the shop` : `took ${item} out of the shop`),
+        badges: (item: string, on: boolean) => (on ? `switched on the badge ${item}` : `switched off the badge ${item}`),
+        quests: (item: string, on: boolean) => (on ? `switched on the quest ${item}` : `switched off the quest ${item}`),
+      },
+      badgeSecret: (item: string, secret: boolean) => (secret ? `made the badge ${item} secret` : `made the badge ${item} visible`),
+      catalogReward: (item: string) => `changed the reward for ${item}`,
+      price: (item: string, from: number | null, to: number) =>
+        from === null ? `set the price of ${item} to ${to} Sparks` : `changed the price of ${item} from ${from} to ${to} Sparks`,
+
+      // Automatic jobs (shown after "Automatic:")
+      nudge: (sent: number) =>
+        sent ? `sent ${sent === 1 ? "1 streak reminder" : `${sent} streak reminders`}` : "checked for streak reminders: none to send",
+      nudgeRuns: (sent: number, runs: number) =>
+        `sent ${sent === 1 ? "1 streak reminder" : `${sent} streak reminders`} this day, in ${runs} hourly runs`,
+      fiveCronOne: (day: string, swapped: number) =>
+        `picked the Daily Five for ${day}${swapped ? ` and swapped out a switched-off game on ${swapped === 1 ? "1 day" : `${swapped} days`}` : ""}`,
+      fiveCron: (made: number, repicked: number, swapped: number) => {
+        const parts = [
+          made ? `picked the Daily Five for ${made === 1 ? "1 new day" : `${made} new days`}` : "",
+          repicked ? `re-picked ${repicked === 1 ? "1 day" : `${repicked} days`} after a rule change` : "",
+          swapped ? `swapped out a switched-off game on ${swapped === 1 ? "1 day" : `${swapped} days`}` : "",
+        ].filter(Boolean);
+        return parts.length ? parts.join(", ") : "checked the Daily Five plan: nothing to change";
+      },
+      generate: (made: number, pending: number) =>
+        (made ? `made ${made === 1 ? "1 new Daily puzzle" : `${made} new Daily puzzles`}` : "checked the Daily puzzles: all ready") +
+        (pending ? ` (${pending} left for the next run)` : ""),
+      rollover: (day: string, frozen: number, lost: number) =>
+        `closed the day ${day}: ${frozen === 1 ? "1 streak" : `${frozen} streaks`} saved by a Freeze, ${lost === 1 ? "1 streak" : `${lost} streaks`} ended`,
+      leagues: (groups: number, merged: number) =>
+        `started the new league week with ${groups === 1 ? "1 group" : `${groups} groups`}${merged ? ` (${merged} small ${merged === 1 ? "group" : "groups"} merged)` : ""}`,
+      autolock: (n: number) => `locked ${n === 1 ? "1 Daily puzzle" : `${n} Daily puzzles`} for the coming week`,
+      banExpiry: (n: number) => `lifted ${n === 1 ? "1 timed ban" : `${n} timed bans`} that had run out`,
+      ageBands: (n: number) => `moved ${n === 1 ? "1 player" : `${n} players`} into an older age group after a birthday`,
+
+      /** Unknown actions: a safe sentence; the raw action code is under Technical details. */
+      fallback: {
+        any: "made a change",
+        auto: "ran an automatic job",
+        admin: "changed the team",
+        player: "changed a player's account",
+        report: "handled a report",
+        feedback: "updated a feedback message",
+        content: "changed some content",
+        daily: "changed the Daily puzzles",
+        event: "changed an event",
+      },
+    },
   },
 
   /** Players list, a player's page and the actions on a player (also the shared confirm dialog's wording). */
@@ -1524,16 +1768,51 @@ export const adminCopy = {
     playTest: "Play test",
   },
 
+  /** Feature switches (was Feature flags). */
   flags: {
-    title: "Feature flags",
-    intro: "Every new game and event ships behind a flag. Changes are live at once.",
-    added: (key: string) => `Added ${key} (off). Flags are listed by key.`,
-    newKey: "New flag key",
+    title: "Feature switches",
+    intro: "On and off switches the team keeps for features and events that are being built or launched.",
+    gameSettingsNote:
+      "The features players see today are switched on Game settings, under Features for players. A switch here only changes the app once a developer has connected it to a feature.",
+    openSettings: "Open Game settings",
+    loadError: "The feature switches didn't load.",
+    retry: "Try again",
+    empty: "No switches yet. A developer adds one when a new feature needs it.",
+    readOnly: "You can see the switches, but only the owner can change them.",
+    on: "On",
+    off: "Off",
+    toggleAria: (name: string) => `${name} switch`,
+    changed: (ago: string) => `Changed ${ago}`,
+    confirmOff: (name: string) => `Switch off ${name}? Anything connected to this switch stops at once.`,
+    confirmOn: (name: string) => `Switch on ${name}? Anything connected to this switch starts at once.`,
+    savedOn: (name: string) => `${name} is now on.`,
+    savedOff: (name: string) => `${name} is now off.`,
+    savedOptions: (name: string) => `Saved the extra options for ${name}.`,
+    unknownAbout: "Added by the team. Ask a developer what it controls.",
+    techDetails: "Technical details",
+    keyLabel: "Switch key",
+    options: "Extra options (JSON)",
+    optionsHint: "Settings a developer reads with the switch, written as JSON. Leave as {} if unsure.",
+    optionsInvalid: "This isn't valid JSON (it must be an object, like {}).",
+    /** Adding a switch: folded away, it is a developer task. */
+    addHeading: "Add a new switch (for developers)",
+    addIntro: "New switches start off. Use lowercase letters, numbers and . _ : -",
+    added: (key: string) => `Added ${key}. It starts off.`,
+    newKey: "Switch key",
     keyPlaceholder: "event.exam_season",
-    add: "Add (off)",
-    head: ["Flag", "State", "Payload", "Changed"],
-    payloadAria: (key: string) => `${key} payload`,
-    save: "Save",
+    add: "Add switch",
+    payloadAria: (key: string) => `Extra options for ${key}`,
+    save: "Save options",
+    /** Known switches in plain words; any other key is shown as it is. */
+    names: {
+      duels: { name: "Duels", about: "One-on-one games against a friend." },
+      party: { name: "Party", about: "Rooms where a group of friends race the same games." },
+      board_bay_live: { name: "Board Bay live games", about: "Live board games against other players." },
+      crews: { name: "Crews", about: "Teams of players." },
+      music: { name: "Music", about: "Background music in the app." },
+      maintenance: { name: "Maintenance mode", about: "For planned downtime while the app is being updated." },
+      practice_bot: { name: "Practice against the bot", about: "Board games against the computer." },
+    },
   },
 
   /** Team (owners only): who can use this admin, and what their role lets them do. */

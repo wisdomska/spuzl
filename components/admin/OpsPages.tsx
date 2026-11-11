@@ -15,6 +15,20 @@ import { Pagination, usePager } from "./Pagination";
 import { SortHead, type HeadCol } from "./SortHeader";
 import { useDebouncedFilter, useUrlFilters, useUrlSort, type UrlSort } from "./useUrlFilters";
 import { Btn, Empty, Field, Notice, PageTitle, Pill, RowsSkeleton, Tabs, inputCls, type PillTone } from "./ui";
+import { Switch } from "@/components/meta/ui";
+import {
+  AUDIT_TYPE_IDS,
+  auditDayLabel,
+  auditTime,
+  byDay,
+  collapseRepeats,
+  describeEntry,
+  flagName,
+  type AuditActor,
+  type AuditEntry,
+  type AuditNames,
+  type AuditRow,
+} from "@/lib/admin/audit-log";
 
 function Table<K extends string = string>({
   head,
@@ -361,79 +375,155 @@ function EventQuests({ canWrite }: { canWrite: boolean }) {
   );
 }
 
-/* ---------------- Feature flags ---------------- */
+/* ---------------- Feature switches (was Feature flags) ---------------- */
 
 const FLAGS = adminCopy.flags;
+type FlagRow = { key: string; enabled: boolean; payload: Record<string, unknown>; updated_at: string };
+const FLAG_INFO = FLAGS.names as Record<string, { name: string; about: string } | undefined>;
+/** Switching these on also asks first (maintenance mode would stop play). */
+const CONFIRM_ON = new Set(["maintenance"]);
 
 export function FlagsPage({ canWrite }: { canWrite: boolean }) {
   const pager = usePager();
-  const q = useAdminQuery<AdminPage<{ key: string; enabled: boolean; payload: Record<string, unknown>; updated_at: string }>>(
-    ["flags", pager.query],
-    `/api/admin/flags?${pager.query}`,
-    { keepPrevious: true },
-  );
+  const q = useAdminQuery<AdminPage<FlagRow>>(["flags", pager.query], `/api/admin/flags?${pager.query}`, { keepPrevious: true });
   const put = useAdminAction<{ key: string; enabled: boolean; payload?: Record<string, unknown> }>("PUT", "/api/admin/flags");
   const [key, setKey] = useState("");
-  const [added, setAdded] = useState<string | null>(null);
+  const [done, setDone] = useState<string | null>(null);
+  const run = (input: { key: string; enabled: boolean; payload?: Record<string, unknown> }, message: string, after?: () => void) => {
+    setDone(null);
+    put.mutate(input, { onSuccess: () => (setDone(message), after?.()) });
+  };
+  const toggle = (f: FlagRow, on: boolean) => {
+    const name = flagName(f.key);
+    const ask = on ? (CONFIRM_ON.has(f.key) ? FLAGS.confirmOn(name) : null) : FLAGS.confirmOff(name);
+    if (ask && !window.confirm(ask)) return;
+    run({ key: f.key, enabled: on }, on ? FLAGS.savedOn(name) : FLAGS.savedOff(name));
+  };
   return (
-    <div className="flex flex-col gap-3.5 px-6 py-5">
-      <PageTitle title={FLAGS.title}>
-        <span className="text-muted text-[14px]">{FLAGS.intro}</span>
-      </PageTitle>
-      {put.error && <Notice tone="danger">{errorText(put.error)}</Notice>}
-      {added && (
-        <Notice tone="ok" icon="check-circle">
-          {FLAGS.added(added)}
+    <div className="flex flex-col gap-4 px-4 py-5 sm:px-6">
+      <header className="flex flex-col gap-1">
+        <h1 className="font-display text-[20px] font-extrabold tracking-[-0.01em]">{FLAGS.title}</h1>
+        <p className="text-muted max-w-[72ch] text-[14px]">{FLAGS.intro}</p>
+      </header>
+      <Notice
+        icon="info"
+        action={
+          <Link
+            href="/admin/settings#set-features-for-players"
+            className="text-accent flex min-h-11 shrink-0 items-center text-[13px] font-semibold hover:underline"
+          >
+            {FLAGS.openSettings}
+          </Link>
+        }
+      >
+        {FLAGS.gameSettingsNote}
+      </Notice>
+      {!canWrite && <Notice icon="lock-simple">{FLAGS.readOnly}</Notice>}
+      <div aria-live="polite" className="empty:hidden">
+        {done && !put.isPending && (
+          <Notice tone="ok" icon="check-circle">
+            {done}
+          </Notice>
+        )}
+      </div>
+      {put.error && (
+        <Notice tone="danger" icon="warning">
+          {errorText(put.error)}
         </Notice>
       )}
-      {canWrite && (
-        <form
-          className="flex items-end gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            put.mutate({ key, enabled: false }, { onSuccess: () => (setAdded(key), setKey("")) });
-          }}
+      {q.isPending ? (
+        <div className="bg-surface rounded-[16px]">
+          <RowsSkeleton rows={5} height={56} />
+        </div>
+      ) : q.error ? (
+        <Notice
+          tone="danger"
+          icon="warning"
+          action={
+            <Btn size="sm" icon="arrow-counter-clockwise" onClick={() => q.refetch()}>
+              {FLAGS.retry}
+            </Btn>
+          }
         >
-          <Field label={FLAGS.newKey} htmlFor="flagkey">
-            <input
-              id="flagkey"
-              value={key}
-              onChange={(e) => setKey(e.target.value.toLowerCase())}
-              placeholder={FLAGS.keyPlaceholder}
-              pattern="[a-z0-9_.:\-]{2,60}"
-              required
-              className={`${inputCls} w-72`}
-            />
-          </Field>
-          <Btn type="submit" icon="plus" disabled={put.isPending}>
-            {FLAGS.add}
-          </Btn>
-        </form>
+          {FLAGS.loadError} {errorText(q.error)}
+        </Notice>
+      ) : !q.data!.rows.length ? (
+        <div className="bg-surface rounded-[16px]">
+          <Empty icon="toggle-left">{FLAGS.empty}</Empty>
+        </div>
+      ) : (
+        <ul role="list" className="flex flex-col gap-2.5">
+          {q.data!.rows.map((f) => {
+            const info = FLAG_INFO[f.key];
+            const name = flagName(f.key);
+            return (
+              <li key={f.key} className="bg-surface flex flex-col gap-2 rounded-[16px] p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 flex-col gap-0.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-[15px] font-semibold">{name}</h2>
+                      <Pill tone={f.enabled ? "ok" : "neutral"}>{f.enabled ? FLAGS.on : FLAGS.off}</Pill>
+                    </div>
+                    <p className="text-muted text-[13px]">{info?.about ?? FLAGS.unknownAbout}</p>
+                    <p className="text-muted text-[12px]" title={new Date(f.updated_at).toLocaleString("en-GB")}>
+                      {FLAGS.changed(age(f.updated_at))}
+                    </p>
+                  </div>
+                  <div className="flex min-h-11 shrink-0 items-center" title={canWrite ? undefined : FLAGS.readOnly}>
+                    <Switch
+                      checked={f.enabled}
+                      label={FLAGS.toggleAria(name)}
+                      disabled={!canWrite || put.isPending}
+                      onChange={(v) => toggle(f, v)}
+                    />
+                  </div>
+                </div>
+                <details className="text-muted text-[12px]">
+                  <summary className="w-fit cursor-pointer py-1 font-semibold">{FLAGS.techDetails}</summary>
+                  <div className="mt-1 flex flex-col gap-2">
+                    <p>
+                      {FLAGS.keyLabel}: <span className="num text-[var(--text)]">{f.key}</span>
+                    </p>
+                    <PayloadCell
+                      flag={f}
+                      canWrite={canWrite}
+                      onSave={(payload) => run({ key: f.key, enabled: f.enabled, payload }, FLAGS.savedOptions(name))}
+                    />
+                  </div>
+                </details>
+              </li>
+            );
+          })}
+        </ul>
       )}
-      <Frame q={q}>
-        {() => (
-          <Table head={[...FLAGS.head]}>
-            {q.data!.rows.map((f) => (
-              <tr key={f.key}>
-                <td className={`${td} num font-semibold`}>{f.key}</td>
-                <td className={td}>
-                  <Toggle
-                    on={f.enabled}
-                    label={f.key}
-                    disabled={!canWrite || put.isPending}
-                    onChange={(v) => put.mutate({ key: f.key, enabled: v })}
-                  />
-                </td>
-                <td className={td}>
-                  <PayloadCell flag={f} canWrite={canWrite} onSave={(payload) => put.mutate({ key: f.key, enabled: f.enabled, payload })} />
-                </td>
-                <td className={`${td} num text-muted text-[13px]`}>{age(f.updated_at)}</td>
-              </tr>
-            ))}
-          </Table>
-        )}
-      </Frame>
       {q.data && <Pagination pager={pager} total={q.data.total} />}
+      {canWrite && (
+        <details className="bg-surface rounded-[16px] p-4">
+          <summary className="w-fit cursor-pointer text-[14px] font-semibold">{FLAGS.addHeading}</summary>
+          <form
+            className="mt-3 flex flex-wrap items-end gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              run({ key, enabled: false }, FLAGS.added(key), () => setKey(""));
+            }}
+          >
+            <Field label={FLAGS.newKey} htmlFor="flagkey" hint={FLAGS.addIntro}>
+              <input
+                id="flagkey"
+                value={key}
+                onChange={(e) => setKey(e.target.value.toLowerCase())}
+                placeholder={FLAGS.keyPlaceholder}
+                pattern="[a-z0-9_.:\-]{2,60}"
+                required
+                className={`${inputCls} h-11 w-72 max-w-full`}
+              />
+            </Field>
+            <Btn type="submit" size="lg" icon="plus" disabled={put.isPending}>
+              {FLAGS.add}
+            </Btn>
+          </form>
+        </details>
+      )}
     </div>
   );
 }
@@ -456,144 +546,303 @@ function PayloadCell({
   } catch {
     valid = false;
   }
+  const id = `flag-opts-${flag.key.replace(/\W/g, "-")}`;
   return (
-    <div className="flex items-center gap-2">
-      <input
-        aria-label={FLAGS.payloadAria(flag.key)}
-        value={text}
-        readOnly={!canWrite}
-        onChange={(e) => setText(e.target.value)}
-        aria-invalid={!valid}
-        className={`${inputCls} num min-w-[200px] text-[13px] ${valid ? "" : "shadow-[inset_0_0_0_2px_var(--danger)]"}`}
-      />
-      {canWrite && text !== initial && (
-        <Btn size="sm" disabled={!valid} onClick={() => onSave(JSON.parse(text))}>
-          {FLAGS.save}
-        </Btn>
-      )}
-    </div>
+    <Field
+      label={FLAGS.options}
+      htmlFor={id}
+      hint={valid ? FLAGS.optionsHint : <span className="text-danger font-semibold">{FLAGS.optionsInvalid}</span>}
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          id={id}
+          aria-label={FLAGS.payloadAria(flag.key)}
+          value={text}
+          readOnly={!canWrite}
+          onChange={(e) => setText(e.target.value)}
+          aria-invalid={!valid}
+          className={`${inputCls} num h-11 w-full max-w-[420px] text-[13px] ${valid ? "" : "shadow-[inset_0_0_0_2px_var(--danger)]"}`}
+        />
+        {canWrite && text !== initial && (
+          <Btn size="lg" disabled={!valid} onClick={() => onSave(JSON.parse(text))}>
+            {FLAGS.save}
+          </Btn>
+        )}
+      </div>
+    </Field>
   );
 }
 
-/* ---------------- Audit log ---------------- */
-
-interface AuditRow {
-  id: number;
-  actor_id: string | null;
-  action: string;
-  target: string | null;
-  detail: Record<string, unknown>;
-  created_at: string;
-}
+/* ---------------- Activity log (was Audit log) ---------------- */
 
 const AUDIT = adminCopy.audit;
-const AUDIT_FILTERS = { actor: "", action: "", target: "", from: "", to: "" } as const;
-const AUDIT_COLS: HeadCol<(typeof AUDIT_SORT.keys)[number]>[] = [
-  { label: AUDIT.head[0], sort: "created_at" },
-  { label: AUDIT.head[1] },
-  { label: AUDIT.head[2], sort: "action" },
-  { label: AUDIT.head[3], sort: "target" },
-  { label: AUDIT.head[4] },
-];
+/**
+ * URL filters: `auto` is "1" when automatic jobs are shown (hidden by default); `action` and `target` are the
+ * technical filters, folded away.
+ */
+const AUDIT_FILTERS = { actor: "", type: "", from: "", to: "", auto: "", action: "", target: "" } as const;
+const AUDIT_ALLOWED = { type: AUDIT_TYPE_IDS as string[], auto: ["1"] };
 
 export function AuditPage() {
-  const [{ actor, action, target, from, to }, setFilters] = useUrlFilters(AUDIT_FILTERS);
+  const [{ actor, type, from, to, auto, action, target }, setFilters] = useUrlFilters(AUDIT_FILTERS, AUDIT_ALLOWED);
   const [actionText, setActionText] = useDebouncedFilter(action, (v) => setFilters({ action: v }, { replace: true }));
   const [targetText, setTargetText] = useDebouncedFilter(target, (v) => setFilters({ target: v }, { replace: true }));
+  const [advancedOpen] = useState(() => !!(action || target));
   const pager = usePager();
   const sort = useUrlSort(AUDIT_SORT);
+  // Asking for automatic jobs (by person or type) shows them whatever the toggle says.
+  const showAuto = auto === "1" || actor === "system" || type === "automatic";
   const qs = new URLSearchParams({
     ...(actor && { actor }),
+    ...(type && { type }),
     ...(action && { action }),
     ...(target && { target }),
     ...(from && { from }),
     ...(to && { to }),
+    ...(!showAuto && { auto: "hide" }),
   });
-  const q = useAdminQuery<AdminPage<AuditRow> & { actors: { id: string; email: string | null; role: Role }[] }>(
+  const q = useAdminQuery<AdminPage<AuditRow> & { actors: AuditActor[]; players?: Record<string, string> }>(
     ["audit", qs.toString(), sort.query, pager.query],
-    `/api/admin/audit?${qs}${qs.size ? "&" : ""}${sort.query}&${pager.query}`,
+    `/api/admin/audit?${qs}&${sort.query}&${pager.query}`,
     { keepPrevious: true },
   );
-  const who = (id: string | null) => (id ? (q.data?.actors.find((a) => a.id === id)?.email ?? id.slice(0, 8)) : AUDIT.systemShort);
+  const names = { actors: q.data?.actors ?? [], players: q.data?.players ?? {} };
+  const filtered = !!(actor || type || from || to || action || target);
+  const days = q.data ? byDay(collapseRepeats(q.data.rows)) : [];
   return (
-    <div className="flex flex-col gap-3.5 px-6 py-5">
-      <PageTitle title={AUDIT.title}>
-        <span className="text-muted text-[14px]">{AUDIT.intro}</span>
-      </PageTitle>
-      <div className="flex flex-wrap items-end gap-2">
-        <Field label={AUDIT.who} htmlFor="a-actor">
-          <select id="a-actor" value={actor} onChange={(e) => setFilters({ actor: e.target.value })} className={`${inputCls} w-56`}>
-            <option value="">{AUDIT.anyone}</option>
-            <option value="system">{AUDIT.system}</option>
-            {q.data?.actors.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.email ?? a.id.slice(0, 8)} ({ROLE_LABEL[a.role]})
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label={AUDIT.actionStarts} htmlFor="a-action">
-          <input
-            id="a-action"
-            value={actionText}
-            placeholder={AUDIT.actionPlaceholder}
-            onChange={(e) => setActionText(e.target.value.toLowerCase())}
-            className={`${inputCls} w-40`}
-          />
-        </Field>
-        <Field label={AUDIT.targetContains} htmlFor="a-target">
-          <input
-            id="a-target"
-            value={targetText}
-            placeholder={AUDIT.targetPlaceholder}
-            onChange={(e) => setTargetText(e.target.value)}
-            className={`${inputCls} w-40`}
-          />
-        </Field>
-        <Field label={AUDIT.from} htmlFor="a-from">
-          <input
-            id="a-from"
-            type="date"
-            max={todayIso()}
-            value={from}
-            onChange={(e) => setFilters({ from: e.target.value }, { replace: true })}
-            className={`${inputCls} w-40`}
-          />
-        </Field>
-        <Field label={AUDIT.to} htmlFor="a-to">
-          <input
-            id="a-to"
-            type="date"
-            max={todayIso()}
-            value={to}
-            onChange={(e) => setFilters({ to: e.target.value }, { replace: true })}
-            className={`${inputCls} w-40`}
-          />
-        </Field>
-      </div>
-      <Frame q={q}>
-        {() =>
-          !q.data!.rows.length ? (
-            <Empty icon="clock-counter-clockwise">{AUDIT.empty}</Empty>
-          ) : (
-            <Table head={AUDIT_COLS} sort={sort} min={860}>
-              {q.data!.rows.map((r) => (
-                <tr key={r.id}>
-                  <td className={`${td} num text-muted text-[13px] whitespace-nowrap`}>{r.created_at.slice(0, 16).replace("T", " ")}</td>
-                  <td className={`${td} max-w-[200px] truncate text-[13px]`}>{who(r.actor_id)}</td>
-                  <td className={`${td} num text-[13px] font-semibold`}>{r.action}</td>
-                  <td className={`${td} num text-muted max-w-[200px] truncate text-[13px]`}>{r.target}</td>
-                  <td className={`${td} num text-muted max-w-[360px] text-[12px]`}>
-                    <span className="line-clamp-2 break-all">{JSON.stringify(r.detail)}</span>
-                  </td>
-                </tr>
+    <div className="flex flex-col gap-4 px-4 py-5 sm:px-6">
+      <header className="flex flex-col gap-1">
+        <h1 className="font-display text-[20px] font-extrabold tracking-[-0.01em]">{AUDIT.title}</h1>
+        <p className="text-muted max-w-[72ch] text-[14px]">{AUDIT.intro}</p>
+      </header>
+
+      <section aria-label={AUDIT.filtersLabel} className="bg-surface flex flex-col gap-3 rounded-[16px] p-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Field label={AUDIT.person} htmlFor="a-actor">
+            <select
+              id="a-actor"
+              value={actor}
+              onChange={(e) => setFilters({ actor: e.target.value })}
+              className={`${inputCls} h-11 w-full`}
+            >
+              <option value="">{AUDIT.anyone}</option>
+              <option value="system">{AUDIT.automaticOnly}</option>
+              {q.data?.actors.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {AUDIT.personOption(a.nickname || a.email || a.id.slice(0, 8), ROLE_LABEL[a.role] ?? a.role)}
+                </option>
               ))}
-            </Table>
-          )
-        }
-      </Frame>
+            </select>
+          </Field>
+          <Field label={AUDIT.type} htmlFor="a-type">
+            <select id="a-type" value={type} onChange={(e) => setFilters({ type: e.target.value })} className={`${inputCls} h-11 w-full`}>
+              <option value="">{AUDIT.anyType}</option>
+              {AUDIT_TYPE_IDS.map((t) => (
+                <option key={t} value={t}>
+                  {AUDIT.types[t]}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label={AUDIT.from} htmlFor="a-from">
+            <input
+              id="a-from"
+              type="date"
+              max={to || todayIso()}
+              value={from}
+              onChange={(e) => setFilters({ from: e.target.value }, { replace: true })}
+              className={`${inputCls} h-11 w-full`}
+            />
+          </Field>
+          <Field label={AUDIT.to} htmlFor="a-to">
+            <input
+              id="a-to"
+              type="date"
+              min={from || undefined}
+              max={todayIso()}
+              value={to}
+              onChange={(e) => setFilters({ to: e.target.value }, { replace: true })}
+              className={`${inputCls} h-11 w-full`}
+            />
+          </Field>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex min-h-11 items-center gap-3">
+            <Switch
+              checked={showAuto}
+              label={AUDIT.showAuto}
+              disabled={actor === "system" || type === "automatic"}
+              onChange={(v) => setFilters({ auto: v ? "1" : null })}
+            />
+            <span className="flex flex-col">
+              <span className="text-[14px] font-semibold" aria-hidden>
+                {AUDIT.showAuto}
+              </span>
+              <span className="text-muted text-[12px]">{AUDIT.showAutoHint}</span>
+            </span>
+          </div>
+          {filtered && (
+            <Btn
+              size="lg"
+              tone="ghost"
+              icon="x"
+              onClick={() => setFilters({ actor: null, type: null, from: null, to: null, action: null, target: null })}
+            >
+              {AUDIT.clear}
+            </Btn>
+          )}
+        </div>
+        <details open={advancedOpen} className="text-[13px]">
+          <summary className="text-muted w-fit cursor-pointer py-1 font-semibold">{AUDIT.advanced}</summary>
+          <div className="mt-2 flex flex-wrap items-end gap-3">
+            <Field label={AUDIT.actionStarts} htmlFor="a-action">
+              <input
+                id="a-action"
+                value={actionText}
+                placeholder={AUDIT.actionPlaceholder}
+                onChange={(e) => setActionText(e.target.value.toLowerCase())}
+                className={`${inputCls} num h-11 w-48`}
+              />
+            </Field>
+            <Field label={AUDIT.targetContains} htmlFor="a-target">
+              <input
+                id="a-target"
+                value={targetText}
+                placeholder={AUDIT.targetPlaceholder}
+                onChange={(e) => setTargetText(e.target.value)}
+                className={`${inputCls} num h-11 w-48`}
+              />
+            </Field>
+          </div>
+        </details>
+      </section>
+
+      {q.isPending ? (
+        <div className="bg-surface rounded-[16px]">
+          <RowsSkeleton rows={8} height={52} />
+        </div>
+      ) : q.error ? (
+        <Notice
+          tone="danger"
+          icon="warning"
+          action={
+            <Btn size="sm" icon="arrow-counter-clockwise" onClick={() => q.refetch()}>
+              {AUDIT.retry}
+            </Btn>
+          }
+        >
+          {AUDIT.loadError} {errorText(q.error)}
+        </Notice>
+      ) : !days.length ? (
+        <div className="bg-surface rounded-[16px]">
+          <Empty icon="clock-counter-clockwise">
+            <span className="max-w-[48ch]">{filtered ? AUDIT.emptyFiltered : AUDIT.empty}</span>
+            {!showAuto && (
+              <span>
+                {AUDIT.autoHidden}{" "}
+                <button
+                  type="button"
+                  onClick={() => setFilters({ auto: "1" })}
+                  className="text-accent min-h-11 font-semibold hover:underline"
+                >
+                  {AUDIT.showThem}
+                </button>
+              </span>
+            )}
+          </Empty>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {days.map(({ day, entries }) => (
+            <section key={day} aria-labelledby={`day-${day}`} className="flex flex-col gap-2">
+              <h2 id={`day-${day}`} className="text-muted text-[13px] font-bold tracking-[0.04em] uppercase">
+                {auditDayLabel(day)}
+              </h2>
+              <ul role="list" className="bg-surface flex flex-col rounded-[16px]">
+                {entries.map((e) => (
+                  <AuditItem key={e.row.id} entry={e} names={names} />
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+      )}
       {q.data && <Pagination pager={pager} total={q.data.total} />}
     </div>
+  );
+}
+
+const sentenceCase = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/** One line of the activity log: a sentence, its time, an optional note, and the raw row folded away. */
+function AuditItem({ entry, names }: { entry: AuditEntry; names: AuditNames }) {
+  const line = describeEntry(entry, names);
+  const r = entry.row;
+  const time = auditTime(r.created_at);
+  const actor = r.actor_id ? names.actors.find((a) => a.id === r.actor_id) : undefined;
+  const roleThen = typeof r.detail?.role === "string" ? r.detail.role : null;
+  const tech: [string, ReactNode][] = [
+    [AUDIT.tech.action, r.action],
+    [AUDIT.tech.target, r.target ?? "—"],
+    [AUDIT.tech.when, time.exact],
+    [AUDIT.tech.entry, String(r.id)],
+  ];
+  if (roleThen) tech.splice(2, 0, [AUDIT.tech.role, ROLE_LABEL[roleThen as Role] ?? roleThen]);
+  if (entry.rows.length > 1) tech.push([AUDIT.tech.runs, String(entry.rows.length)]);
+  return (
+    <li className="flex gap-3 border-t border-[var(--line)] px-4 py-3 first:border-0">
+      <span
+        aria-hidden
+        className={`mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full ${line.auto ? "bg-surface-raised text-muted" : "text-accent bg-[var(--success-tint)]"}`}
+      >
+        <Icon name={line.icon} size={16} />
+      </span>
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+          <p className="min-w-0 text-[14px] leading-snug">
+            {line.auto ? (
+              <>
+                <Pill className="mr-1.5 align-[1px]">{AUDIT.automatic}</Pill>
+                {sentenceCase(line.text)}
+              </>
+            ) : (
+              <>
+                <strong
+                  className="font-semibold"
+                  title={actor ? [actor.email, ROLE_LABEL[actor.role]].filter(Boolean).join(" · ") : undefined}
+                >
+                  {line.who}
+                </strong>{" "}
+                {line.text}
+              </>
+            )}
+          </p>
+          <time dateTime={r.created_at} title={time.exact} className="num text-muted shrink-0 text-[12px] whitespace-nowrap">
+            {time.text}
+          </time>
+        </div>
+        {line.note && (
+          <p className="text-muted text-[13px] break-words">
+            {AUDIT.noteLabel} “{line.note}”
+          </p>
+        )}
+        <details className="text-muted text-[12px]">
+          <summary className="w-fit cursor-pointer py-1 font-semibold">{AUDIT.techDetails}</summary>
+          <dl className="mt-1 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
+            {tech.map(([k, v]) => (
+              <div key={k} className="contents">
+                <dt>{k}</dt>
+                <dd className="num break-all text-[var(--text)]">{v}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="mt-2 font-semibold">{AUDIT.tech.data}</p>
+          <pre className="bg-bg num mt-1 max-h-64 overflow-auto rounded-[10px] p-2.5 text-[12px] break-all whitespace-pre-wrap text-[var(--text)]">
+            {JSON.stringify(entry.rows.length > 1 ? entry.rows.map((x) => x.detail) : r.detail, null, 2)}
+          </pre>
+        </details>
+      </div>
+    </li>
   );
 }
 

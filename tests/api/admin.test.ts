@@ -599,6 +599,17 @@ describe("live ops, flags, catalogue, audit and team (FR-AD-04, 06, 07, 08)", ()
       r.data.rows.every((x: { actor_id: string; action: string }) => x.actor_id === S.owner.userId && x.action.startsWith("flag.")),
     ).toBe(true);
     expect((await S.analyst.aal2("/api/admin/audit?action=DROP TABLE")).status).toBe(400);
+    // Plain types of change and hidden automatic jobs (Activity log).
+    const settings = await S.analyst.aal2(`/api/admin/audit?type=settings&auto=hide&from=${day(0)}`);
+    expect(settings.status).toBe(200);
+    expect(
+      settings.data.rows.every(
+        (x: { actor_id: string | null; action: string }) => x.actor_id !== null && /^(setting|flag)\./.test(x.action),
+      ),
+    ).toBe(true);
+    expect(settings.data.actors.every((a: { nickname?: unknown }) => "nickname" in a)).toBe(true);
+    expect(typeof settings.data.players).toBe("object");
+    expect((await S.analyst.aal2("/api/admin/audit?type=everything")).status).toBe(400);
     const { error } = await admin().from("audit_log").delete().eq("actor_id", S.owner.userId);
     expect(error?.message).toMatch(/append-only/);
   });
