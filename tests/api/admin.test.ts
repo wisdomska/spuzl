@@ -57,6 +57,7 @@ const ROUTES: Route[] = [
   { method: "POST", path: `/api/admin/content/${NIL}/pool`, perm: "content.write" },
   { method: "GET", path: "/api/admin/content/export?game=quads", perm: "content.read" },
   { method: "POST", path: "/api/admin/content/rebuild", perm: "calendar.write" },
+  { method: "PATCH", path: "/api/admin/games/state", perm: "settings.write" },
   // Round 3 item 11: Family Draw words in the database
   { method: "GET", path: "/api/admin/content/draw-words", perm: "content.read" },
   { method: "POST", path: "/api/admin/content/draw-words", perm: "content.write" },
@@ -985,11 +986,15 @@ describe("Library metadata (SPZ-14 admin cascade)", () => {
     expect((await S.owner.aal2("/api/admin/games/practice?game=crownfall")).data.puzzle).toEqual(a.data.puzzle);
     expect((await S.content_editor.aal2("/api/admin/games/practice?game=nope")).status).toBe(404);
     expect((await S.moderator.aal2("/api/admin/games/practice?game=crownfall")).status).toBe(403);
-    // The off switch from Settings shows on the preview.
-    const before = (await S.owner.aal2("/api/admin/settings")).data.rows.find((r: { key: string }) => r.key === "practice.disabled").value;
-    await S.owner.aal2("/api/admin/settings", { method: "PUT", json: { key: "practice.disabled", value: ["crownfall"] } });
-    expect((await S.content_editor.aal2("/api/admin/games/practice?game=crownfall")).data.off).toBe(true);
-    await S.owner.aal2("/api/admin/settings", { method: "PUT", json: { key: "practice.disabled", value: before } });
+    // The practice switch on the Games page shows on the preview.
+    expect((await S.owner.aal2("/api/admin/games/state", { method: "PATCH", json: { id: "crownfall", practice: false } })).status).toBe(
+      200,
+    );
+    try {
+      expect((await S.content_editor.aal2("/api/admin/games/practice?game=crownfall")).data.off).toBe(true);
+    } finally {
+      await S.owner.aal2("/api/admin/games/state", { method: "PATCH", json: { id: "crownfall", practice: true } });
+    }
   });
 
   it("lists retired games, marked, and refuses to change them", async () => {
