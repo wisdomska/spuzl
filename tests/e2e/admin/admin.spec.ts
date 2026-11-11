@@ -127,7 +127,7 @@ test("moderation: clear a flagged score and rename a reported nickname", async (
   await db.from("reports").insert({ reporter_id: reporter.userId, target_type: "nickname", target_id: target.userId, reason: "nickname" });
 
   await signedIn(page, "moderator");
-  await page.getByRole("link", { name: "Moderation" }).click();
+  await page.getByRole("link", { name: "Reports" }).click();
   await page.getByRole("tab", { name: "Anti-cheat" }).click();
   await page
     .getByRole("button", { name: /Dusk 0:01/ })
@@ -191,12 +191,12 @@ test("content editor: draft with schema validation, second person approves", asy
 test("roles: the UI hides what a role cannot do and the server refuses the page", async ({ page }) => {
   await signedIn(page, "analyst");
   const nav = page.getByRole("navigation", { name: "Admin" });
-  await expect(nav.getByRole("link", { name: "Live ops" })).toBeVisible();
-  await expect(nav.getByRole("link", { name: "Audit log" })).toBeVisible();
-  await expect(nav.getByRole("link", { name: "Moderation" })).toHaveCount(0);
+  await expect(nav.getByRole("link", { name: "Live now" })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "Activity log" })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "Reports" })).toHaveCount(0);
   await expect(nav.getByRole("link", { name: "Team" })).toHaveCount(0);
   await page.goto("/admin/moderation");
-  await expect(page.getByText("Your role cannot open moderation.")).toBeVisible();
+  await expect(page.getByText("Your role cannot open reports.")).toBeVisible();
   await page.goto("/admin/audit");
   await expect(page.getByRole("heading", { name: "Audit log" })).toBeVisible();
   await page.getByLabel("Action starts with").fill("admin.");
@@ -207,7 +207,10 @@ test("tablet: calendar and live ops stay usable at 834 px, light theme", async (
   await page.setViewportSize({ width: 834, height: 1112 });
   const acct = await import("./helpers").then((h) => h.adminSession("owner"));
   await login(page, acct, "light");
-  await expect(page.getByRole("link", { name: "Calendar" })).toBeVisible();
+  // Below 1024 px the grouped menu sits behind the Menu button.
+  await page.getByRole("button", { name: "Menu" }).click();
+  await expect(page.getByRole("navigation", { name: "Admin" }).getByRole("link", { name: "Daily calendar" })).toBeVisible();
+  await page.keyboard.press("Escape");
   await page.goto("/admin/calendar");
   await expect(page.getByRole("heading", { name: "Content calendar" })).toBeVisible();
   await page.goto("/admin/liveops");

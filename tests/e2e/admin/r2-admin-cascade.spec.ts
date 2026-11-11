@@ -90,7 +90,7 @@ test("join-request log: a moderator exports it as CSV (audited); an analyst cann
   const other = await browser.newPage();
   await signedIn(other, "analyst");
   await other.goto("/admin/join-requests");
-  await expect(other.getByText("Your role cannot open the join-request log.")).toBeVisible();
+  await expect(other.getByText("Your role cannot open join requests.")).toBeVisible();
   await other.close();
 });
 
