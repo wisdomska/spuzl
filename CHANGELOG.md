@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.45.1 (11 November 2026)
+
+- **Two Truths** says "Cape Verde", like Flagged.
+- **Admin, Lab games:** each game is a card with its tile, world, rule and an on/off switch, with a count of how many
+  are on for players. The long explanation folds under "How it works".
+
 ## 1.45.0 (10 November 2026)
 
 Every open follow-up the owner approved on 10 November.
