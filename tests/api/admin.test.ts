@@ -579,11 +579,14 @@ describe("live ops, catalogue, audit and team (FR-AD-04, 07, 08)", () => {
   });
 
   it("filters the audit log by actor, action prefix and date", async () => {
-    const r = await S.analyst.aal2(`/api/admin/audit?actor=${S.owner.userId}&action=flag.&from=${day(0)}`);
+    // A settings change by the owner to find (it saves the value the setting already has).
+    const cur = (await S.owner.aal2("/api/admin/settings")).data.rows.find((r: { key: string }) => r.key === "party.countdownSeconds");
+    expect((await S.owner.aal2("/api/admin/settings", { method: "PUT", json: { key: cur.key, value: cur.value } })).status).toBe(200);
+    const r = await S.analyst.aal2(`/api/admin/audit?actor=${S.owner.userId}&action=setting.&from=${day(0)}`);
     expect(r.status).toBe(200);
     expect(r.data.rows.length).toBeGreaterThan(0);
     expect(
-      r.data.rows.every((x: { actor_id: string; action: string }) => x.actor_id === S.owner.userId && x.action.startsWith("flag.")),
+      r.data.rows.every((x: { actor_id: string; action: string }) => x.actor_id === S.owner.userId && x.action.startsWith("setting.")),
     ).toBe(true);
     expect((await S.analyst.aal2("/api/admin/audit?action=DROP TABLE")).status).toBe(400);
     // Plain types of change and hidden automatic jobs (Activity log).
@@ -843,38 +846,23 @@ describe("game settings (admin cascade)", () => {
     await S.owner.aal2("/api/admin/settings", { method: "PUT", json: { key: "duel.roundResultMs", value: 2000 } });
   });
 
-  it("R2-P5: features.labGames switches lab games per game, audited, and the Library page shows each one's state", async () => {
+  it("features.labGames: all 41 games are live, so no game can be put in testing through it; it stays owner-only", async () => {
     const before = (await S.owner.aal2("/api/admin/settings")).data.rows.find((r: { key: string }) => r.key === "features.labGames");
     expect(before.def.kind).toBe("set");
-    expect(before.def.options.map((o: { id: string }) => o.id)).toContain("pixl");
-    // Only lab ids: a live or retired game is refused.
-    for (const value of [["crownfall"], ["blackout"], "hilo"]) {
+    expect(before.def.options).toEqual([]);
+    // A live game, a retired game or a malformed value is refused.
+    for (const value of [["crownfall"], ["hilo"], ["blackout"], "hilo"]) {
       const bad = await S.owner.aal2("/api/admin/settings", { method: "PUT", json: { key: "features.labGames", value } });
       expect([JSON.stringify(value), bad.status]).toEqual([JSON.stringify(value), 422]);
     }
-    expect(
-      (await S.analyst.aal2("/api/admin/settings", { method: "PUT", json: { key: "features.labGames", value: ["hilo"] } })).status,
-    ).toBe(403);
-    try {
-      const set = await S.owner.aal2("/api/admin/settings", { method: "PUT", json: { key: "features.labGames", value: ["hilo"] } });
-      expect(set.status).toBe(200);
-      const pub = await fetch(`${BASE}/api/v1/settings/game`).then((r) => r.json());
-      expect(pub["features.labGames"]).toEqual(["hilo"]);
-      const { data: log } = await admin()
-        .from("audit_log")
-        .select("action, target")
-        .eq("action", "setting.update")
-        .eq("target", "setting:features.labGames")
-        .limit(1);
-      expect(log?.length).toBe(1);
-      const lib = await S.content_editor.aal2("/api/admin/games/meta");
-      const row = (id: string) => lib.data.rows.find((r: { id: string }) => r.id === id);
-      expect(row("hilo")).toMatchObject({ lab: true, labOn: true, retired: false });
-      expect(row("five")).toMatchObject({ lab: true, labOn: false });
-      expect(row("crownfall")).toMatchObject({ lab: false, labOn: false });
-    } finally {
-      await S.owner.aal2("/api/admin/settings", { method: "PUT", json: { key: "features.labGames", value: before.value ?? [] } });
-    }
+    expect((await S.analyst.aal2("/api/admin/settings", { method: "PUT", json: { key: "features.labGames", value: [] } })).status).toBe(
+      403,
+    );
+    expect((await S.owner.aal2("/api/admin/settings", { method: "PUT", json: { key: "features.labGames", value: [] } })).status).toBe(200);
+    const lib = await S.content_editor.aal2("/api/admin/games/meta");
+    const row = (id: string) => lib.data.rows.find((r: { id: string }) => r.id === id);
+    expect(row("hilo")).toMatchObject({ lab: false, retired: false });
+    expect(row("crownfall")).toMatchObject({ lab: false });
   });
 
   it("turns every game's practice round off at once (more than 20 games, R2-ADMIN)", async () => {

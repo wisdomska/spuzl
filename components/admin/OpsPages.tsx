@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { Icon } from "@/components/ui/Icon";
-import { age, todayIso } from "@/lib/admin/dates";
+import { todayIso } from "@/lib/admin/dates";
 import { ROLES, ROLE_LABEL, type Role } from "@/lib/admin/roles";
 import { AUDIT_SORT, CATALOG_SORT, TEAM_SORT } from "@/lib/admin/sorting";
 import { WORLD_BY_ID } from "@/lib/catalog";
@@ -24,7 +24,6 @@ import {
   byDay,
   collapseRepeats,
   describeEntry,
-  flagName,
   type AuditActor,
   type AuditEntry,
   type AuditNames,
