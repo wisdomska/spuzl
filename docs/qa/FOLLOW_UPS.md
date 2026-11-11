@@ -26,9 +26,8 @@ item from earlier rounds that has since been done is gone from this list (see CH
 All 12 now fit 320 x 568, 375 x 667, 390 x 844 and 1280 x 800 on their easy boards (tests/e2e/r5-lab-fit.spec.ts),
 and a switched-on lab game has its public page, How to play entry, llms.txt line and sitemap entry. Still open:
 
-- **Graduate them when the owner is happy:** they are still lab games in code. GAME_COUNT ("29 games" on the landing
-  page, About and the llms summary) counts live games only, and the Explorer badges (clear every game in a world)
-  ignore lab clears. Graduating a game (drop `lab: true`, a migration setting `games.status` to 'live') fixes both.
+- **Graduated (done, 11 Nov 2026):** all twelve are live (migration 20261211300101); GAME_COUNT is 41 and the
+  Explorer badges count their clears.
 - **Hard boards on small phones:** Market Run mega (5 items, 5 rules) still scrolls about 200 px at 320 x 568 and
   375 x 667 (medium: 16 and 5 px); Tripwire mega about 128 / 102 px (its cells stop at 32 px); Killer Sums mega 6 px
   at 320 x 568. Market could fold its rule list behind a toggle on short screens; Tripwire mega needs pan and zoom

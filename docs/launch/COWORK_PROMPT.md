@@ -1,6 +1,6 @@
 # Get SPUZL indexed and listed
 
-You're helping me, Senya, launch my web app SPUZL: https://spuzl.vercel.app. It's 29 free puzzle games in
+You're helping me, Senya, launch my web app SPUZL: https://spuzl.vercel.app. It's 41 free puzzle games in
 four worlds (Puzzles, Words & Quiz, Arcade, Board Games) that run in the browser.
 
 The site's SEO is already done and live:
@@ -33,7 +33,7 @@ Don't invent features, numbers or reviews.
 ## 1. Google Search Console (checks only)
 
 1. Go to https://search.google.com/search-console and open the `https://spuzl.vercel.app/` property.
-2. Open **Sitemaps** and check that `sitemap.xml` reads **Success** with about 41 discovered pages. If it says
+2. Open **Sitemaps** and check that `sitemap.xml` reads **Success** with about 53 discovered pages. If it says
    "Couldn't fetch", note the exact message and tell me. Don't resubmit more than once.
 3. Open **URL Inspection** and click **Request indexing** for each of these:
    - `https://spuzl.vercel.app/`

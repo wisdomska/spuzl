@@ -8,11 +8,13 @@ Facts to keep consistent everywhere:
 
 - Name: **SPUZL**. Link: https://spuzl.vercel.app
 - Maker: Senya (https://wisdomska.site). Made in Ghana.
-- 29 free games in 4 worlds:
-  - Puzzles (9): Crownfall, Dusk, Sixer, Nine, Weave, Flowline, Pairup, Lost, Trotro Jam.
-  - Words & Quiz (9): Coil, Rungs, Quads, Seven, Minicross, Buried, Remix, Quickfire, Emoji Hits.
-  - Arcade (6): Echo, Twins, Flinch, Beat Tap, Gotcha, Dash.
-  - Board Games (5): Chess, Draughts, Oware, Ludo, Four Up.
+- 41 free games in 4 worlds:
+  - Puzzles (15): Crownfall, Dusk, Sixer, Nine, Killer Sums, Light Up, Pixl, Tripwire, Weave, Flowline, Pairup,
+    Lost, Trotro Jam, Market Run, Higher or Lower.
+  - Words & Quiz (13): Coil, Rungs, Quads, Seven, Minicross, Buried, Remix, Five, Quickfire, Emoji Hits, Pinned,
+    Flagged, Two Truths and a Lie.
+  - Arcade (7): Echo, Twins, Flinch, Beat Tap, Penalty King, Gotcha, Dash.
+  - Board Games (6): Chess, Draughts, Oware, Ludo, Four Up, Dara.
 - Runs in the browser on phones, tablets and computers. Add it to the home screen and it opens like an app. A
   puzzle already on screen can be finished offline.
 - Free. No download, no ads, nothing to buy with money. Sparks are earned by playing and buy looks for Spuz, the
@@ -41,12 +43,12 @@ Do not claim: download counts, user numbers, ratings or reviews, an app store ap
 
 **Name:** SPUZL
 
-**Tagline (60 max):** 29 free puzzle games in your browser, made in Ghana
+**Tagline (60 max):** 41 free puzzle games in your browser, made in Ghana
 
 **Topics:** Games, Web App, Puzzles
 
 **Description (260 max):**
-29 free puzzle games in your browser: logic grids, sudoku, word games, quick arcade runs, and board games like
+41 free puzzle games in your browser: logic grids, sudoku, word games, quick arcade runs, and board games like
 oware, chess and ludo. Duel a friend, race up to 8 phones in a Party, keep your streak. No download, no ads.
 
 **First comment (from the maker):**
@@ -56,12 +58,12 @@ I wanted one place for the small puzzles I play every day, plus the board games 
 install or ads in the way. SPUZL runs in the browser on any phone or computer, and you can add it to your home
 screen like an app.
 
-There are 29 games in four worlds:
+There are 41 games in four worlds:
 
-- **Puzzles:** logic grids like Crownfall and Nine.
-- **Words & Quiz:** Coil, Quads, Minicross, Quickfire and more.
-- **Arcade:** quick runs like Echo and Dash.
-- **Board Games:** chess, draughts, oware, ludo and Four Up, against a friend or the bot.
+- **Puzzles:** logic grids like Crownfall, Nine and Killer Sums.
+- **Words & Quiz:** Coil, Quads, Five, Quickfire and more.
+- **Arcade:** quick runs like Echo, Penalty King and Dash.
+- **Board Games:** chess, draughts, oware, ludo and Four Up against a friend or the bot, and Dara against the bot.
 
 Duel a friend on the same puzzle, best of three, or open a Party room and race up to 8 phones at once. The Daily
 Five gives you five quick games a day.
@@ -98,15 +100,15 @@ It's free, there are no ads, and nobody can pay to win. It's for ages 13 and up,
 **Tags:** puzzle, logic-puzzle, word-game, board-game, browser-game, no-ads, daily-puzzle, multiplayer
 
 **Short description:**
-29 free puzzle, word, arcade and board games in your browser. Duel friends, no download, no ads.
+41 free puzzle, word, arcade and board games in your browser. Duel friends, no download, no ads.
 
 **Long description:**
-SPUZL is a free web app with 29 short games in four worlds:
+SPUZL is a free web app with 41 short games in four worlds:
 
-- **Puzzles:** logic grids like Crownfall, Nine and Weave.
-- **Words & Quiz:** Coil, Quads, Minicross, Quickfire and Emoji Hits.
-- **Arcade:** quick runs like Echo, Flinch and Dash.
-- **Board Games:** chess, draughts, oware, ludo and Four Up, against a friend or the bot.
+- **Puzzles:** logic grids like Crownfall, Nine, Weave and Tripwire.
+- **Words & Quiz:** Coil, Quads, Minicross, Five, Quickfire, Emoji Hits and Flagged.
+- **Arcade:** quick runs like Echo, Flinch, Penalty King and Dash.
+- **Board Games:** chess, draughts, oware, ludo and Four Up against a friend or the bot, and Dara against the bot.
 
 Play as a guest in any browser, or add it to your home screen and it opens like an app. Duel a friend on the same
 puzzle, best of three. Race up to 8 phones in a Party room, or play the Daily Five. Every clear is checked on the
@@ -124,7 +126,7 @@ so. Post from your own account, reply to comments, and space posts out.
 
 ### r/WebGames
 
-**Title:** SPUZL: 29 free puzzle and board games in your browser (no download, no ads)
+**Title:** SPUZL: 41 free puzzle and board games in your browser (no download, no ads)
 
 **Body:**
 Maker here. SPUZL has logic grids, word games, quick arcade runs, and board games like oware, chess and ludo. Play
@@ -133,7 +135,7 @@ https://spuzl.vercel.app
 
 ### r/puzzles (check the self-promotion rules first)
 
-**Title:** I made a free browser app with 29 puzzle games, including a Queens-style logic grid
+**Title:** I made a free browser app with 41 puzzle games, including a Queens-style logic grid
 
 **Body:**
 Hi all, maker here. SPUZL is a free web app with logic puzzles (Crownfall is a crown-placing grid like Queens,
@@ -148,7 +150,7 @@ I'd love feedback on which puzzles feel too easy or too hard.
 **Title:** I built a free puzzle games app in Ghana, with oware and ludo you can play against friends
 
 **Body:**
-Hi everyone. I made SPUZL, a free web app with 29 short games: puzzles, word games, quick arcade games, and board
+Hi everyone. I made SPUZL, a free web app with 41 short games: puzzles, word games, quick arcade games, and board
 games like oware, draughts, chess and ludo. It runs in the browser on any phone, with no download and no ads. You
 can duel a friend or race up to 8 phones in a Party room.
 https://spuzl.vercel.app
@@ -158,14 +160,14 @@ https://spuzl.vercel.app
 ## Social (X, Threads, Instagram, LinkedIn, WhatsApp status)
 
 **Short:**
-29 free puzzle games in your browser: logic grids, word games, oware, chess, ludo and more. Duel your friends, no
+41 free puzzle games in your browser: logic grids, word games, oware, chess, ludo and more. Duel your friends, no
 download, no ads. https://spuzl.vercel.app
 
 **Game link (swap the game):**
 Can you beat me at Crownfall? Free puzzle on SPUZL, no download: https://spuzl.vercel.app/games/crownfall
 
 **Longer (LinkedIn):**
-I built SPUZL, a free puzzle games app that runs in the browser: 29 short games across logic puzzles, word games,
+I built SPUZL, a free puzzle games app that runs in the browser: 41 short games across logic puzzles, word games,
 quick arcade runs and the board games I grew up with, like oware, draughts and ludo. You can play as a guest, duel
 a friend on the same puzzle, or race up to 8 phones in a Party room. It has no ads, nothing to buy that helps you
 win, and every clear is checked on the server so the leaderboards stay fair. Made in Ghana:

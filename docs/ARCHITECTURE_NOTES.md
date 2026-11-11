@@ -17,13 +17,13 @@ Facts checked against the code on 6 Nov 2026 (release 1.33.0).
 
 ## Size
 
-| Thing                                  | Count | Where                                                                                               |
-| -------------------------------------- | ----- | --------------------------------------------------------------------------------------------------- |
-| Pages (`app/**/page.tsx`)              | 59    |                                                                                                     |
-| API route handlers (`app/**/route.ts`) | 141   | `/api/v1/*` player, `/api/admin/*`, `/api/cron/*`, `/api/og/*`                                      |
-| Migrations                             | 60    | `supabase/migrations/*.sql`, indexed with rollback notes in `docs/MIGRATIONS.md`                    |
-| Live games                             | 29    | `GAMES` in `lib/catalog.ts`; `LAB_GAMES` 13 (behind `features.labGames`, R2-P5), `RETIRED_GAMES` 21 |
-| Visible worlds                         | 4     | Puzzles 9, Words & Quiz 9, Arcade 6, Board Games 5 (`WORLDS`, `lib/catalog.ts`)                     |
+| Thing                                  | Count | Where                                                                                                                         |
+| -------------------------------------- | ----- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Pages (`app/**/page.tsx`)              | 59    |                                                                                                                               |
+| API route handlers (`app/**/route.ts`) | 141   | `/api/v1/*` player, `/api/admin/*`, `/api/cron/*`, `/api/og/*`                                                                |
+| Migrations                             | 60    | `supabase/migrations/*.sql`, indexed with rollback notes in `docs/MIGRATIONS.md`                                              |
+| Live games                             | 41    | `GAMES` in `lib/catalog.ts`; `LAB_GAMES` 0 (behind `features.labGames`; the twelve graduated 11 Nov 2026), `RETIRED_GAMES` 21 |
+| Visible worlds                         | 4     | Puzzles 15, Words & Quiz 13, Arcade 7, Board Games 6 (`WORLDS`, `lib/catalog.ts`)                                             |
 
 ## Routing
 
