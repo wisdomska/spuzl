@@ -666,7 +666,7 @@ const LAB_LIST: GameMeta[] = [
     "M3+",
     "custom",
     "Five kicks to beat the keeper",
-    "Tap to set your aim, tap again to set your power. Five kicks: most goals wins, then accuracy.",
+    "Tap once to aim, again for power. Five kicks: most goals wins, then accuracy.",
     { scoring: "score", minTimeMs: 0, lab: true },
   ),
   g(
@@ -688,7 +688,7 @@ const LAB_LIST: GameMeta[] = [
     "M3+",
     "grid",
     "Light every cell with lamps",
-    "Light every white cell. Lamps never shine on each other; a number counts the lamps beside it.",
+    "Light every white cell. No lamp lights another; a number counts lamps beside it.",
     { unique: true, minTimeMs: 8000, lab: true },
   ),
   // Killer Sums (was Number Den): killer sudoku on the shared sudoku board

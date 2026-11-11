@@ -2,7 +2,7 @@
 export const killer = {
   title: "Killer Sums",
   blurb: "Sudoku with sums in dotted cages",
-  rule: "1 to 6 (or 1 to 9) once in every row, column and box. Each dotted cage adds to its total, with no repeats.",
+  rule: "No repeats in a row, column, box or cage. Each dotted cage adds to its total.",
 } as const;
 
 /** Hint reasons (one sentence each), built by games/killer/logic.ts on the server. */
