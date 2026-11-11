@@ -102,7 +102,7 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
           meta={q.data && <Pill tone={q.data.open ? "danger" : "ok"}>{C.open(q.data.open)}</Pill>}
         />
         <div className="flex flex-col gap-2">
-          <div className="overflow-x-auto">
+          <div className="relative overflow-x-auto">
             <Tabs<Tab>
               label={C.queue}
               value={tab}

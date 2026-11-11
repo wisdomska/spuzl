@@ -43,7 +43,7 @@ const ACTIVITY_TONE: Record<string, PillTone> = { now: "ok", today: "ok", week: 
 
 function MiniTable({ head, children, min = 480 }: { head: readonly string[]; children: ReactNode; min?: number }) {
   return (
-    <div className="overflow-x-auto">
+    <div className="relative overflow-x-auto">
       <table className="w-full border-collapse text-[13px]" style={{ minWidth: min }}>
         <thead>
           <tr className="text-muted text-left text-[12px]">

@@ -256,13 +256,13 @@ function NavGroups({
           writeClosed([...next]);
         };
         return (
-          <div key={g.id} className="flex flex-col pt-2">
+          <div key={g.id} className="flex flex-col pt-1.5">
             <button
               type="button"
               aria-expanded={open}
               aria-controls={listId}
               onClick={toggle}
-              className="text-muted hover:text-text flex h-9 items-center gap-1.5 rounded-[8px] px-2.5 text-[12px] font-bold tracking-[0.04em] uppercase"
+              className="text-muted hover:text-text flex h-9 items-center gap-1.5 rounded-[8px] px-2.5 text-[12px] font-bold tracking-[0.04em] uppercase lg:h-7"
             >
               <span className="flex-1 text-left">{S.groups[g.id]}</span>
               {!open && total > 0 && (
@@ -273,7 +273,7 @@ function NavGroups({
               )}
               <Icon name="caret-down" size={14} className={`transition-transform duration-150 ${open ? "" : "-rotate-90"}`} />
             </button>
-            <ul id={listId} hidden={!open} className="flex flex-col gap-0.5">
+            <ul id={listId} hidden={!open} className="flex flex-col gap-0.5 lg:gap-0">
               {g.items.map((n) => (
                 <NavLink key={n.href} item={n} path={path} counts={counts} onNavigate={onNavigate} />
               ))}
@@ -304,11 +304,11 @@ function NavLink({
         href={n.href}
         aria-current={active ? "page" : undefined}
         onClick={onNavigate}
-        className={`relative flex h-11 items-center gap-2.5 rounded-[10px] px-2.5 text-[14px] font-semibold lg:h-10 ${
+        className={`relative flex h-11 items-center gap-2.5 rounded-[10px] px-2.5 text-[14px] font-semibold lg:h-8 ${
           active ? "bg-surface-raised text-text" : "text-muted hover:bg-surface-raised/60 hover:text-text"
         }`}
       >
-        {active && <span aria-hidden className="bg-accent absolute top-2 bottom-2 left-0 w-[3px] rounded-full" />}
+        {active && <span aria-hidden className="bg-accent absolute top-1.5 bottom-1.5 left-0 w-[3px] rounded-full" />}
         <Icon name={n.icon} size={18} className={active ? "text-accent" : undefined} />
         <span className="min-w-0 flex-1 truncate">{n.label}</span>
         {count > 0 && n.badge && (
@@ -324,14 +324,15 @@ function NavLink({
 
 function Account({ role, email }: { role: Role; email: string | null }) {
   const router = useRouter();
+  // One row (who, role, sign out) so the whole grouped menu fits a laptop screen without scrolling.
   return (
-    <div className="border-line flex flex-col gap-1 border-t px-1 pt-3">
-      <div className="flex min-w-0 flex-col px-1.5">
-        <span className="text-muted text-[12px]">{S.signedInAs}</span>
-        <span className="truncate text-[13px] font-semibold" title={email ?? undefined}>
+    <div className="border-line flex items-center gap-2 border-t px-1 pt-2.5">
+      <div className="flex min-w-0 flex-1 flex-col px-1.5">
+        <span className="truncate text-[13px] leading-tight font-semibold" title={email ?? undefined}>
+          <span className="sr-only">{S.signedInAs} </span>
           {email ?? S.navAria}
         </span>
-        <span className="text-muted text-[12px]">{ROLE_LABEL[role]}</span>
+        <span className="text-muted text-[12px] leading-tight">{ROLE_LABEL[role]}</span>
       </div>
       <button
         type="button"
@@ -339,10 +340,11 @@ function Account({ role, email }: { role: Role; email: string | null }) {
           await adminSignOut();
           router.replace("/admin/login");
         }}
-        className="text-muted hover:bg-surface-raised hover:text-text flex h-11 items-center gap-2 rounded-[10px] px-2.5 text-[13px] font-semibold lg:h-10"
+        aria-label={S.signOut}
+        title={S.signOut}
+        className="text-muted hover:bg-surface-raised hover:text-text flex size-11 shrink-0 items-center justify-center rounded-[10px] lg:size-9"
       >
         <Icon name="sign-out" size={18} />
-        {S.signOut}
       </button>
     </div>
   );

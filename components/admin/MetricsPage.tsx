@@ -95,7 +95,8 @@ function CsvButton({ id, title, data }: { id: MetricId | InsightId; title: strin
 
 /** The supporting line under each owner card's big number. */
 function detailLine(id: InsightDef["id"], t: MetricRow, rows: readonly MetricRow[]): string {
-  const pct = (v: number | null) => percent(v) ?? C.noData;
+  // null when there is nothing to divide by: each sentence then says so in its own words
+  const pct = (v: number | null) => percent(v);
   switch (id) {
     case "players":
       return K.players.detail(count(dailyAverage(rows, (r) => z(r.active)) ?? 0), count(z(t.active_saved)), count(guests(t)));
@@ -128,7 +129,7 @@ function detailLine(id: InsightDef["id"], t: MetricRow, rows: readonly MetricRow
     case "friends":
       return K.friends.detail();
     case "sparks_earned":
-      return K.sparks_earned.detail(z(t.active) ? count(z(t.sparks_earned) / z(t.active)) : C.noData);
+      return K.sparks_earned.detail(z(t.active) ? count(z(t.sparks_earned) / z(t.active)) : null);
     case "sparks_spent":
       return K.sparks_spent.detail(pct(rate(z(t.sparks_spent), z(t.sparks_earned))));
     case "shop_buys":
@@ -389,7 +390,7 @@ function MetricCard({ def, data }: { def: MetricDef; data: MetricsData }) {
       <span className="num text-muted text-[12px] font-semibold">{def.sub(data.total)}</span>
       <p className="text-muted text-[13px] leading-[1.4]">{def.note}</p>
       {def.breakdown && (
-        <div className="overflow-x-auto">
+        <div className="relative overflow-x-auto">
           <table className="w-full border-collapse text-[13px]">
             <thead>
               <tr className="bg-surface-raised num text-muted text-left text-[12px]">

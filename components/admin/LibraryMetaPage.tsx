@@ -8,6 +8,7 @@ import { COPY_MAX, TAGS, TYPICAL_SCORE_MAX, durationLabel, validateCopyLine, typ
 import { durationWords } from "@/lib/admin/content-words";
 import { adminCopy } from "@/lib/copy/admin";
 import { GameIcon3D } from "@/components/world/GameIcon3D";
+import { Icon } from "@/components/ui/Icon";
 import { hasLogic } from "@/games/logic-ids";
 import { PracticeBoardPreview } from "./PuzzlePreview";
 import { PageHead, StateGuide, StatePill, TechDetails, TechLine, type StateWords } from "./content-ui";
@@ -206,8 +207,9 @@ function MetaRow({ row, canWrite, busy, onSave }: { row: Row; canWrite: boolean;
   const state = STATES[stateOf(row)];
   const secId = `sec-${row.id}`;
   return (
-    <article aria-label={name} className="bg-surface flex flex-col gap-3 rounded-[16px] p-4" data-meta-row={row.id}>
-      <div className="flex flex-wrap items-center gap-3">
+    // One compact row per game (tile, name, state, play time, tags); it opens to edit, so 62 games stay scannable.
+    <details aria-label={name} className="group/game bg-surface rounded-[16px]" data-meta-row={row.id}>
+      <summary className="flex min-h-[72px] cursor-pointer list-none flex-wrap items-center gap-3 rounded-[16px] p-3 md:px-4 [&::-webkit-details-marker]:hidden">
         {meta && (
           <span role="img" aria-label={C.iconAria(name)} className="shrink-0">
             <GameIcon3D meta={meta} size={44} />
@@ -230,6 +232,26 @@ function MetaRow({ row, canWrite, busy, onSave }: { row: Row; canWrite: boolean;
             </p>
           )}
         </div>
+        {!row.retired && (
+          <span className="text-muted flex flex-wrap items-center gap-1.5 text-[13px] font-medium">
+            <span className="bg-surface-raised flex h-7 items-center gap-1 rounded-[8px] px-2">
+              <Icon name="timer" size={14} />
+              {durationLabel(row.typicalSec)}
+            </span>
+            {row.tags.map((t) => (
+              <span key={t} className="bg-surface-raised flex h-7 items-center rounded-[8px] px-2">
+                {C.tagLabels[t] ?? t}
+              </span>
+            ))}
+          </span>
+        )}
+        <span className="text-muted flex h-9 items-center gap-1 rounded-[10px] px-2 text-[13px] font-semibold">
+          <span className="group-open/game:hidden">{C.edit}</span>
+          <span className="hidden group-open/game:inline">{C.close}</span>
+          <Icon name="caret-down" size={16} className="transition-transform duration-150 group-open/game:rotate-180" />
+        </span>
+      </summary>
+      <div className="border-line flex flex-col gap-3 border-t p-4">
         {row.overridden && canWrite && (
           <Btn
             tone="ghost"
@@ -244,110 +266,111 @@ function MetaRow({ row, canWrite, busy, onSave }: { row: Row; canWrite: boolean;
             {C.reset}
           </Btn>
         )}
-      </div>
 
-      {!row.retired && (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <form
-            className="flex flex-col gap-1"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!bad) onSave({ typicalSec: n });
-            }}
-          >
-            <label htmlFor={secId} className="text-[13px] font-semibold">
-              {C.time}
-            </label>
-            <div className="flex flex-wrap items-center gap-2">
-              <input
-                id={secId}
-                className={`${inputCls} num h-11 w-24`}
-                inputMode="numeric"
-                value={sec}
-                onChange={(e) => setSec(e.target.value)}
-                aria-invalid={bad}
-                aria-describedby={`${secId}-help`}
-                disabled={!canWrite}
-              />
-              <span className="text-muted text-[13px]">
-                {C.timeUnit}
-                {!bad && ` (${durationWords(n)})`}
+        {!row.retired && (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <form
+              className="flex flex-col gap-1"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!bad) onSave({ typicalSec: n });
+              }}
+            >
+              <label htmlFor={secId} className="text-[13px] font-semibold">
+                {C.time}
+              </label>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  id={secId}
+                  className={`${inputCls} num h-11 w-24`}
+                  inputMode="numeric"
+                  value={sec}
+                  onChange={(e) => setSec(e.target.value)}
+                  aria-invalid={bad}
+                  aria-describedby={`${secId}-help`}
+                  disabled={!canWrite}
+                />
+                <span className="text-muted text-[13px]">
+                  {C.timeUnit}
+                  {!bad && ` (${durationWords(n)})`}
+                </span>
+                {/* type submit: the shared Btn defaults to a plain button, which would never submit this form */}
+                <Btn type="submit" tone="secondary" disabled={!canWrite || busy || bad || n === row.typicalSec}>
+                  {C.save}
+                </Btn>
+              </div>
+              <span id={`${secId}-help`} className={`text-[12px] ${bad ? "text-danger" : "text-muted"}`}>
+                {bad ? C.timeBad : C.timeHelp(durationLabel(row.typicalSec), durationWords(row.default.typicalSec))}
               </span>
-              {/* type submit: the shared Btn defaults to a plain button, which would never submit this form */}
-              <Btn type="submit" tone="secondary" disabled={!canWrite || busy || bad || n === row.typicalSec}>
-                {C.save}
-              </Btn>
+            </form>
+            <div role="group" aria-labelledby={`tags-${row.id}`} className="flex flex-col gap-1">
+              <span id={`tags-${row.id}`} className="text-[13px] font-semibold">
+                {C.tags}
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {TAGS.map((t) => {
+                  const on = row.tags.includes(t);
+                  return (
+                    <Btn
+                      key={t}
+                      tone={on ? "primary" : "secondary"}
+                      icon={on ? "check" : undefined}
+                      disabled={!canWrite || busy}
+                      onClick={() => toggle(t)}
+                      aria-pressed={on}
+                      title={C.tagAria(C.tagLabels[t] ?? t, name, on)}
+                    >
+                      {C.tagLabels[t] ?? t}
+                    </Btn>
+                  );
+                })}
+              </div>
+              <span className="text-muted text-[12px]">{C.tagsHelp}</span>
             </div>
-            <span id={`${secId}-help`} className={`text-[12px] ${bad ? "text-danger" : "text-muted"}`}>
-              {bad ? C.timeBad : C.timeHelp(durationLabel(row.typicalSec), durationWords(row.default.typicalSec))}
-            </span>
-          </form>
-          <div role="group" aria-labelledby={`tags-${row.id}`} className="flex flex-col gap-1">
-            <span id={`tags-${row.id}`} className="text-[13px] font-semibold">
-              {C.tags}
-            </span>
-            <div className="flex flex-wrap gap-1.5">
-              {TAGS.map((t) => {
-                const on = row.tags.includes(t);
-                return (
-                  <Btn
-                    key={t}
-                    tone={on ? "primary" : "secondary"}
-                    icon={on ? "check" : undefined}
-                    disabled={!canWrite || busy}
-                    onClick={() => toggle(t)}
-                    aria-pressed={on}
-                    title={C.tagAria(C.tagLabels[t] ?? t, name, on)}
-                  >
-                    {C.tagLabels[t] ?? t}
-                  </Btn>
-                );
-              })}
+          </div>
+        )}
+        {row.scored && !row.retired && <ScoreScale row={row} canWrite={canWrite} busy={busy} onSave={onSave} />}
+        {!row.retired && (
+          <details className="group/fold border-line border-t" data-copy-editor>
+            <summary className="hover:text-text flex min-h-11 cursor-pointer list-none items-center gap-2 text-[14px] font-semibold [&::-webkit-details-marker]:hidden">
+              <Icon name="caret-right" size={14} className="text-muted transition-transform duration-150 group-open/fold:rotate-90" />
+              {C.copy}
+              {(row.ruleOverridden || row.blurbOverridden) && <Pill tone="warn">{C.changed}</Pill>}
+            </summary>
+            <div role="group" aria-label={C.copyAria(name)} className="flex flex-col gap-3 pb-1">
+              <CopyLine
+                id={`rule-${row.id}`}
+                label={C.rule}
+                help={C.ruleHelp}
+                value={row.rule}
+                fallback={row.default.rule}
+                overridden={!!row.ruleOverridden}
+                canWrite={canWrite}
+                busy={busy}
+                what="The rule"
+                onSave={(v) => onSave({ rule: v })}
+              />
+              <CopyLine
+                id={`blurb-${row.id}`}
+                label={C.blurb}
+                help={C.blurbHelp}
+                value={row.blurb}
+                fallback={row.default.blurb}
+                overridden={!!row.blurbOverridden}
+                canWrite={canWrite}
+                busy={busy}
+                what="The card line"
+                onSave={(v) => onSave({ blurb: v })}
+              />
             </div>
-            <span className="text-muted text-[12px]">{C.tagsHelp}</span>
-          </div>
-        </div>
-      )}
-      {row.scored && !row.retired && <ScoreScale row={row} canWrite={canWrite} busy={busy} onSave={onSave} />}
-      {!row.retired && (
-        <details className="group border-line border-t" data-copy-editor>
-          <summary className="text-muted hover:text-text flex min-h-11 cursor-pointer items-center gap-2 text-[14px] font-semibold">
-            {C.copy}
-            {(row.ruleOverridden || row.blurbOverridden) && <Pill tone="warn">{C.changed}</Pill>}
-          </summary>
-          <div role="group" aria-label={C.copyAria(name)} className="flex flex-col gap-3 pb-1">
-            <CopyLine
-              id={`rule-${row.id}`}
-              label={C.rule}
-              help={C.ruleHelp}
-              value={row.rule}
-              fallback={row.default.rule}
-              overridden={!!row.ruleOverridden}
-              canWrite={canWrite}
-              busy={busy}
-              what="The rule"
-              onSave={(v) => onSave({ rule: v })}
-            />
-            <CopyLine
-              id={`blurb-${row.id}`}
-              label={C.blurb}
-              help={C.blurbHelp}
-              value={row.blurb}
-              fallback={row.default.blurb}
-              overridden={!!row.blurbOverridden}
-              canWrite={canWrite}
-              busy={busy}
-              what="The card line"
-              onSave={(v) => onSave({ blurb: v })}
-            />
-          </div>
-        </details>
-      )}
-      {!row.retired && hasLogic(row.id) && <PracticeBoard id={row.id} />}
-      <TechDetails>
-        <TechLine name={C.techId} value={row.id} />
-      </TechDetails>
-    </article>
+          </details>
+        )}
+        {!row.retired && hasLogic(row.id) && <PracticeBoard id={row.id} />}
+        <TechDetails>
+          <TechLine name={C.techId} value={row.id} />
+        </TechDetails>
+      </div>
+    </details>
   );
 }
 
@@ -411,8 +434,9 @@ function PracticeBoard({ id }: { id: string }) {
     open ? `/api/admin/games/practice?game=${encodeURIComponent(id)}` : null,
   );
   return (
-    <details data-practice-preview onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}>
-      <summary className="text-muted hover:text-text flex min-h-11 cursor-pointer items-center gap-2 text-[14px] font-semibold">
+    <details className="group/fold" data-practice-preview onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}>
+      <summary className="hover:text-text flex min-h-11 cursor-pointer list-none items-center gap-2 text-[14px] font-semibold [&::-webkit-details-marker]:hidden">
+        <Icon name="caret-right" size={14} className="text-muted transition-transform duration-150 group-open/fold:rotate-90" />
         {C.practice}
         {q.data && <Pill tone={q.data.off ? "warn" : "ok"}>{q.data.off ? C.practiceOff : C.practiceOn}</Pill>}
       </summary>

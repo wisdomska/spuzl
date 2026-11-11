@@ -166,7 +166,7 @@ export function DailyFivePage({ canWrite }: { canWrite: boolean }) {
           <Icon name="caret-right" size={16} />
         </Btn>
       </div>
-      <div className="bg-surface overflow-x-auto rounded-[16px]">
+      <div className="bg-surface relative overflow-x-auto rounded-[16px]">
         {q.isPending ? (
           <RowsSkeleton rows={8} height={56} />
         ) : q.error ? (

@@ -1683,7 +1683,7 @@ export const adminCopy = {
       new_players: {
         label: "New players",
         meaning: "People who opened SPUZL for the first time.",
-        detail: (saved: string, pct: string) => `${saved} of them have saved an account (${pct})`,
+        detail: (saved: string, pct: string | null) => (pct ? `${saved} of them have saved an account (${pct})` : "None yet"),
         definition:
           "Player profiles created on these days (the first visit makes a guest profile). 'Saved an account' is their status today.",
       },
@@ -1718,15 +1718,16 @@ export const adminCopy = {
       games_played: {
         label: "Games played",
         meaning: "Every time someone started a puzzle or played a board game.",
-        detail: (solved: string, pct: string, board: string) =>
-          `${solved} puzzles solved (${pct} of puzzles started) · ${board} board-game plays`,
+        detail: (solved: string, pct: string | null, board: string) =>
+          `${solved} puzzles solved${pct ? ` (${pct} of puzzles started)` : ""} · ${board} board-game plays`,
         definition:
           "Puzzles started (Daily, Daily Five, free play, archive, challenges, Duel and Party race rounds; the tutorial left out) plus board games a player made a move in (one per player per game, on the day the game was created). Solved = puzzles started on these days that were solved.",
       },
       daily_puzzles: {
         label: "Daily puzzles solved",
         meaning: "The puzzle of the day, solved.",
-        detail: (pct: string, started: string) => `${pct} of the ${started} Daily puzzles started`,
+        detail: (pct: string | null, started: string) =>
+          pct ? `${pct} of the ${started} Daily puzzles started` : "No Daily puzzles started",
         definition: "Daily puzzles started on these days and solved. Given-up and flagged runs count as not solved.",
       },
       daily_five_plays: {
@@ -1765,14 +1766,14 @@ export const adminCopy = {
       sparks_earned: {
         label: "Sparks earned",
         meaning: "Sparks players got from playing, rewards and levelling up.",
-        detail: (perPlayer: string) => `About ${perPlayer} per player`,
+        detail: (perPlayer: string | null) => (perPlayer ? `About ${perPlayer} per player` : "Nobody played in these days"),
         definition:
           "Sparks added to players' balances on these days. Sparks the team gave or took away on a player's page are left out. Per player = earned divided by players.",
       },
       sparks_spent: {
         label: "Sparks spent",
         meaning: "Sparks players spent in the shop.",
-        detail: (pct: string) => `${pct} of the Sparks earned in these days`,
+        detail: (pct: string | null) => (pct ? `${pct} of the Sparks earned in these days` : "No Sparks earned in these days"),
         definition: "Sparks taken out of players' balances on these days. Team corrections are left out.",
       },
       shop_buys: {
@@ -1824,6 +1825,8 @@ export const adminCopy = {
 
   /** The Games page (was Library): how each game is shown to players. */
   library: {
+    edit: "Edit",
+    close: "Close",
     title: "Games",
     intro:
       "How each game shows up for players: how long it usually takes, its filter tags, its one-line rule and the line on its card. Changes reach players within 5 minutes.",

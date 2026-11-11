@@ -240,7 +240,7 @@ export function EventsPage({ canWrite }: { canWrite: boolean }) {
           ))}
         </select>
       </label>
-      <div className="bg-surface overflow-x-auto rounded-[16px]">
+      <div className="bg-surface relative overflow-x-auto rounded-[16px]">
         {q.isPending ? (
           <RowsSkeleton />
         ) : q.error ? (

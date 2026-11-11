@@ -91,7 +91,7 @@ export function ContentDesk(props: { canWrite: boolean; canApprove: boolean; can
   return (
     <div className="flex flex-col gap-4 px-4 py-5 md:px-6">
       <PageHead title={C.title} purpose={C.intro} />
-      <div className="max-w-full self-start overflow-x-auto">
+      <div className="relative max-w-full self-start overflow-x-auto">
         <Tabs
           label={C.views}
           value={tab}
@@ -182,7 +182,7 @@ function Items({
             </Btn>
           )}
         </div>
-        <div className="bg-surface overflow-x-auto rounded-[16px]">
+        <div className="bg-surface relative overflow-x-auto rounded-[16px]">
           {q.isPending ? (
             <RowsSkeleton />
           ) : q.error ? (

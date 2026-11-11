@@ -15,7 +15,7 @@ import type { EventQuest, EventStatus } from "@/lib/events";
 import { Pagination, usePager } from "./Pagination";
 import { SortHead, type HeadCol } from "./SortHeader";
 import { useDebouncedFilter, useUrlFilters, useUrlSort, type UrlSort } from "./useUrlFilters";
-import { Btn, Empty, Field, Notice, PageTitle, Pill, RowsSkeleton, Tabs, inputCls, type PillTone } from "./ui";
+import { Btn, Empty, Field, Notice, Pill, RowsSkeleton, Tabs, inputCls, type PillTone } from "./ui";
 import { Switch } from "@/components/meta/ui";
 import {
   AUDIT_TYPE_IDS,
@@ -54,7 +54,7 @@ const td = "border-line border-t px-3 py-2 align-middle";
 
 function Frame({ q, children }: { q: { isPending: boolean; error: unknown }; children: () => ReactNode }) {
   return (
-    <div className="bg-surface overflow-x-auto rounded-[12px]">
+    <div className="bg-surface relative overflow-x-auto rounded-[12px]">
       {q.isPending ? (
         <RowsSkeleton />
       ) : q.error ? (

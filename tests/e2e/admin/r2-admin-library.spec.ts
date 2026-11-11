@@ -12,6 +12,12 @@ import { signedIn } from "./helpers";
 test.skip(({ viewport }) => (viewport?.width ?? 0) < 800, "the admin console is desktop and tablet only");
 
 const row = (page: Page, id: string) => page.locator(`[data-meta-row="${id}"]`);
+/** Each game is a compact row that opens to edit (admin overhaul): open it first. */
+async function openRow(page: Page, id: string) {
+  const r = row(page, id);
+  if ((await r.getAttribute("open")) === null) await r.locator("summary").first().click();
+  return r;
+}
 const RULE = "Sun and moon in every row and column, never three alike in a line.";
 
 test.afterAll(async () => {
@@ -24,6 +30,8 @@ test("content editor overrides Dusk's rule and card copy; the game shell and wor
   await expect(page.getByRole("heading", { name: "Games", exact: true })).toBeVisible();
   // Icons: every row previews the game's tile.
   await expect(row(page, "dusk").getByRole("img", { name: "Dusk icon" })).toBeVisible();
+
+  await openRow(page, "dusk");
 
   await row(page, "dusk").getByText("Rule and card text").click();
   const rule = row(page, "dusk").getByLabel("One-line rule", { exact: true });
@@ -38,6 +46,10 @@ test("content editor overrides Dusk's rule and card copy; the game shell and wor
   await expect(row(page, "dusk").getByText("Changed", { exact: true })).toBeVisible();
   await row(page, "dusk").getByLabel("Card line", { exact: true }).fill("Light and dark, side by side.");
   await row(page, "dusk").getByLabel("Card line", { exact: true }).press("Enter");
+  // Wait for the save to land before reading the database.
+  await expect
+    .poll(async () => (await admin().from("games").select("blurb").eq("id", "dusk").single()).data?.blurb, { timeout: 15_000 })
+    .toBe("Light and dark, side by side.");
   await page.screenshot({ path: "docs/qa/screens/r2/r2-admin-library-copy-1280.png" });
 
   const { data: log } = await admin()
@@ -58,6 +70,7 @@ test("content editor overrides Dusk's rule and card copy; the game shell and wor
 
   // Use default puts the catalog's copy back.
   await page.goto("/admin/library");
+  await openRow(page, "dusk");
   await row(page, "dusk").getByText("Rule and card text").click();
   await row(page, "dusk").getByRole("button", { name: "Use standard" }).first().click();
   await expect(row(page, "dusk").getByLabel("One-line rule", { exact: true })).toHaveValue(GAME_BY_ID.dusk.rule);
@@ -66,6 +79,7 @@ test("content editor overrides Dusk's rule and card copy; the game shell and wor
 test("practice board preview: the real board, read only, with Show solution and the Settings switch state", async ({ page }) => {
   await signedIn(page, "content_editor");
   await page.goto("/admin/library");
+  await openRow(page, "crownfall");
   const preview = row(page, "crownfall").locator("[data-practice-preview]");
   await preview.getByText("Practice round", { exact: true }).click();
   await expect(preview.getByText("Practice round on")).toBeVisible({ timeout: 15_000 });

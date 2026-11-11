@@ -149,7 +149,7 @@ export function CalendarView({ canWrite }: { canWrite: boolean }) {
         </Notice>
       )}
 
-      <div className="bg-surface overflow-x-auto rounded-[16px]">
+      <div className="bg-surface relative overflow-x-auto rounded-[16px]">
         {q.isPending ? (
           <RowsSkeleton rows={12} height={32} />
         ) : q.error ? (
