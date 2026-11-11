@@ -74,7 +74,7 @@ export function BirthPicker({ value, onChange, error }: { value: Birth; onChange
             }}
             aria-invalid={!!error}
             aria-describedby={described}
-            className="num placeholder:text-muted h-full w-full bg-transparent px-4 text-[17px] font-semibold outline-none"
+            className="num placeholder:text-muted h-full w-full rounded-[16px] bg-transparent px-4 text-[17px] font-semibold outline-none focus-visible:shadow-none"
           />
         </Field>
       </div>
