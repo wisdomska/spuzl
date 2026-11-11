@@ -10,6 +10,7 @@ import { AUDIT_SORT, CATALOG_SORT, TEAM_SORT } from "@/lib/admin/sorting";
 import { WORLD_BY_ID } from "@/lib/catalog";
 import { errorText, useAdminAction, useAdminQuery, type AdminPage } from "@/lib/client/admin";
 import { adminCopy } from "@/lib/copy/admin";
+import { PageHead, StatePill } from "./content-ui";
 import type { EventQuest, EventStatus } from "@/lib/events";
 import { Pagination, usePager } from "./Pagination";
 import { SortHead, type HeadCol } from "./SortHeader";
@@ -174,44 +175,54 @@ export function ShopPage({
     />
   );
   return (
-    <div className="flex flex-col gap-3.5 px-6 py-5">
-      <PageTitle
-        title={SHOP.title}
-        aside={
-          <Tabs<Kind>
-            label={SHOP.catalogue}
-            value={kind}
-            onChange={(k) => setFilters({ kind: k, q: null, sort: null, dir: null })}
-            items={SHOP_ALLOWED.kind.map((id) => ({ id: id as Kind, label: SHOP.tabs[id as Kind] }))}
-          />
-        }
-      />
-      <Field label={SHOP.search} htmlFor="shop-q">
-        <input
-          id="shop-q"
-          type="search"
-          value={search}
-          placeholder={SHOP.searchPlaceholder}
-          onChange={(e) => setSearch(e.target.value)}
-          className={`${inputCls} h-11 w-72 max-w-full`}
+    <div className="flex flex-col gap-4 px-4 py-5 md:px-6">
+      <PageHead title={SHOP.title} purpose={SHOP.intro} />
+      <div className="flex flex-wrap items-end gap-3">
+        <Tabs<Kind>
+          label={SHOP.catalogue}
+          value={kind}
+          onChange={(k) => setFilters({ kind: k, q: null, sort: null, dir: null })}
+          items={SHOP_ALLOWED.kind.map((id) => ({ id: id as Kind, label: SHOP.tabs[id as Kind] }))}
         />
-      </Field>
-      {kind === "cosmetics" && !canPrice && <Notice icon="info">{SHOP.ownerPrices}</Notice>}
-      {patch.error && <Notice tone="danger">{errorText(patch.error)}</Notice>}
-      {patch.isSuccess && (
-        <Notice tone="ok" icon="check-circle">
-          {adminCopy.common.savedAndLogged}
-        </Notice>
+        <Field label={SHOP.search} htmlFor="shop-q">
+          <input
+            id="shop-q"
+            type="search"
+            value={search}
+            placeholder={SHOP.searchPlaceholder}
+            onChange={(e) => setSearch(e.target.value)}
+            className={`${inputCls} h-11 w-72 max-w-full`}
+          />
+        </Field>
+      </div>
+      <p className="text-muted max-w-[760px] text-[13px]">{SHOP.tabIntro[kind]}</p>
+      {!canWrite ? (
+        <Notice icon="info">{SHOP.readOnly}</Notice>
+      ) : (
+        kind === "cosmetics" && !canPrice && <Notice icon="info">{SHOP.ownerPrices}</Notice>
       )}
+      <div aria-live="polite" className="empty:hidden">
+        {patch.error ? (
+          <Notice tone="danger" icon="warning">
+            {errorText(patch.error)}
+          </Notice>
+        ) : patch.isSuccess ? (
+          <Notice tone="ok" icon="check-circle">
+            {SHOP.saved}
+          </Notice>
+        ) : null}
+      </div>
       <Frame q={q}>
         {() =>
-          kind === "cosmetics" ? (
+          !q.data!.rows.length ? (
+            <Empty icon="magnifying-glass">{SHOP.empty}</Empty>
+          ) : kind === "cosmetics" ? (
             <Table head={COSMETIC_COLS} sort={cosmeticSort}>
               {q.data!.rows.map((r) => (
                 <tr key={r.id}>
                   <td className={`${td} font-semibold`}>{r.name}</td>
-                  <td className={`${td} text-muted text-[13px]`}>{r.type?.replace("_", " ")}</td>
-                  <td className={`${td} text-muted text-[13px]`}>{r.rarity}</td>
+                  <td className={`${td} text-muted text-[13px]`}>{SHOP.types[r.type ?? ""] ?? SHOP.words(r.type ?? "")}</td>
+                  <td className={`${td} text-muted text-[13px]`}>{SHOP.rarities[r.rarity ?? ""] ?? SHOP.words(r.rarity ?? "")}</td>
                   <td className={td}>{numCell(r, "price_sparks", canPrice)}</td>
                   <td className={td}>
                     <Toggle
@@ -232,8 +243,8 @@ export function ShopPage({
                     <span className="font-semibold">{r.name}</span>
                     <span className="text-muted block text-[13px]">{r.description}</span>
                   </td>
-                  <td className={`${td} text-muted text-[13px]`}>{r.family}</td>
-                  <td className={`${td} text-[13px]`}>{r.tier}</td>
+                  <td className={`${td} text-muted text-[13px]`}>{SHOP.words(r.family ?? "")}</td>
+                  <td className={`${td} text-[13px]`}>{SHOP.tiers[r.tier ?? ""] ?? SHOP.words(r.tier ?? "")}</td>
                   <td className={td}>{numCell(r, "sparks", canWrite)}</td>
                   <td className={td}>
                     <Toggle
@@ -251,7 +262,7 @@ export function ShopPage({
               {q.data!.rows.map((r) => (
                 <tr key={r.id}>
                   <td className={`${td} font-semibold`}>{r.title}</td>
-                  <td className={`${td} text-muted text-[13px]`}>{r.kind}</td>
+                  <td className={`${td} text-muted text-[13px]`}>{SHOP.questKinds[r.kind ?? ""] ?? SHOP.words(r.kind ?? "")}</td>
                   <td className={td}>{numCell(r, "xp", canWrite)}</td>
                   <td className={td}>{numCell(r, "sparks", canWrite)}</td>
                   <td className={td}>
@@ -333,12 +344,17 @@ function EventQuests({ canWrite }: { canWrite: boolean }) {
           {c.manage}
         </Link>
       </div>
-      {save.error && <Notice tone="danger">{errorText(save.error)}</Notice>}
-      {save.isSuccess && (
-        <Notice tone="ok" icon="check-circle">
-          {adminCopy.common.savedAndLogged}
-        </Notice>
-      )}
+      <div aria-live="polite" className="empty:hidden">
+        {save.error ? (
+          <Notice tone="danger" icon="warning">
+            {errorText(save.error)}
+          </Notice>
+        ) : save.isSuccess ? (
+          <Notice tone="ok" icon="check-circle">
+            {SHOP.saved}
+          </Notice>
+        ) : null}
+      </div>
       <Frame q={q}>
         {() =>
           !q.data!.rows.length ? (
@@ -351,7 +367,13 @@ function EventQuests({ canWrite }: { canWrite: boolean }) {
                   <td className={td}>
                     <span className="flex flex-wrap items-center gap-2">
                       <span className="text-[13px] font-semibold">{e.name}</span>
-                      <Pill tone={EVENT_TONE[e.status]}>{e.status}</Pill>
+                      <StatePill
+                        s={{
+                          label: adminCopy.events.statuses[e.status],
+                          meaning: adminCopy.events.statusMeaning[e.status],
+                          tone: EVENT_TONE[e.status],
+                        }}
+                      />
                     </span>
                   </td>
                   <td className={`${td} num text-muted text-[13px] whitespace-nowrap`}>
