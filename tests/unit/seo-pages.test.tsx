@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { Metadata } from "next";
 import { renderToStaticMarkup } from "react-dom/server";
 vi.mock("server-only", () => ({}));
-import { GAMES, WORLDS } from "@/lib/catalog";
+import { GAMES, LAB_GAMES, WORLDS } from "@/lib/catalog";
 import { metadata as landing } from "@/app/(landing)/about/page";
 import { metadata as games } from "@/app/games/page";
 import GamesIndex from "@/app/games/page";
@@ -40,8 +40,9 @@ describe("public page metadata", () => {
     expect(new Set(titles).size).toBe(titles.length);
   });
 
-  it("builds a static page for every live game only", async () => {
-    expect(generateStaticParams()).toEqual(GAMES.map((g) => ({ id: g.id })));
+  it("builds a static page for every live and lab game, and a lab game's only while it is switched on", async () => {
+    expect(generateStaticParams()).toEqual([...GAMES, ...LAB_GAMES].map((g) => ({ id: g.id })));
+    // No database here: the settings are the defaults, with every lab game switched off.
     expect(await gameMeta(params({ id: "five" }))).toEqual({});
     expect(await worldMeta(params({ id: "number" }))).toEqual({});
   });
