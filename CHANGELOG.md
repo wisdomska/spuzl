@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.47.0 (11 November 2026)
+
+### For players
+
+- **41 games, all permanent:** the 12 newest games are regular games now. They count toward Explorer badges, and the
+  ones that suit a race can be played in Duels and Party races (Five, Market Run, Light Up, Killer Sums, Tripwire
+  and Pixl in time races; Higher or Lower, Penalty King, Pinned, Flagged and Two Truths in score races).
+- The landing page, FAQ and search listings say 41 games.
+
+### Admin
+
+- **Game settings as tabs:** one section at a time instead of one long page.
+- **Players list:** Player, Email, Account, Joined, Last played and Level first; reviews and status at the end.
+- **Shop** sits under Games & content. **"What each role can do"** on Team folds away.
+- **Feature switches removed:** nothing in the app read them. Old links open Game settings.
+- **Content** uses the full width until you open an item.
+- Pagination no longer has the "Page … of … Go" box.
+
 ## 1.46.1 (11 November 2026)
 
 ### For players
