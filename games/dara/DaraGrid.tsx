@@ -2,6 +2,7 @@
 
 import { Icon } from "@/components/ui/Icon";
 import { useCellSize } from "@/components/game/useBoardSize";
+import { useGridKeys } from "@/components/game/useGridKeys";
 import { BayStyles } from "@/games/_shared/BayStyles";
 import { dara as t } from "@/lib/copy/dara";
 import { COLS, ROWS, type Board } from "./rules";
@@ -34,7 +35,8 @@ const PADDING = 8;
 /**
  * The Dara board (5 rows × 6 columns) shared by the puzzle board and the vs-bot board. Every cell is a real
  * button named "Row r, column c, …" with what is on it and what a tap does. Your stones are light; theirs
- * are dark with a ring and a dot, so the sides never rely on colour alone.
+ * are dark with a ring and a dot, so the sides never rely on colour alone. Keyboard: one Tab stop, the arrows move
+ * between cells (roving focus), and Space or Enter press the focused cell like a tap (the button's own press).
  */
 export function DaraGrid({
   board,
@@ -52,6 +54,7 @@ export function DaraGrid({
 }: DaraGridProps) {
   const cell = useCellSize(COLS, GAP, PADDING, 60);
   const stone = Math.round(cell * 0.72);
+  const keys = useGridKeys(ROWS, COLS, onTap);
   return (
     <>
       <BayStyles />
@@ -60,6 +63,10 @@ export function DaraGrid({
         aria-label={t.grid}
         aria-rowcount={ROWS}
         aria-colcount={COLS}
+        // Arrows only: Space and Enter stay with the focused button, so a press is never handled twice.
+        onKeyDown={(e) => {
+          if (e.key !== " " && e.key !== "Enter") keys.onKeyDown(e);
+        }}
         className="grid rounded-[16px] bg-[var(--bay-well)] p-1 shadow-[inset_0_-6px_0_rgba(0,0,0,.25)]"
         style={{ gridTemplateColumns: `repeat(${COLS}, ${cell}px)`, gap: GAP }}
       >
@@ -87,6 +94,9 @@ export function DaraGrid({
                   key={i}
                   type="button"
                   role="gridcell"
+                  data-i={i}
+                  tabIndex={keys.focus === i ? 0 : -1}
+                  onFocus={() => keys.setFocus(i)}
                   aria-label={parts.join(", ")}
                   aria-selected={sel}
                   onClick={() => onTap(i)}
