@@ -15,6 +15,8 @@ export const TRUTHS_THEME_LABEL: Record<TruthsTheme, string> = {
 export const twoTruths = {
   /** the card's question, the same every round */
   ask: "Two are true. Which one is the lie?",
+  /** the ask on the shortest phones (one line, so a long verdict and the tool bar still fit) */
+  askShort: "Which one is the lie?",
   noun: "Round",
   /** the hint control: it strikes out one of the two truths */
   hint: "Hint",

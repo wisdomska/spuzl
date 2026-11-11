@@ -47,7 +47,12 @@ export default function TwoTruthsBoard({ puzzle, initialState, hint, disabled, m
       puzzle.rounds.map((r) => ({
         tag: TRUTHS_THEME_LABEL[r.theme] ?? r.theme,
         say: `${TRUTHS_THEME_LABEL[r.theme] ?? r.theme}. ${t.ask}`,
-        prompt: <p className="m-0 text-[19px] leading-[1.3] font-semibold text-balance">{t.ask}</p>,
+        prompt: (
+          <p className="m-0 text-[19px] leading-[1.3] font-semibold text-balance">
+            <span className="tiny:hidden">{t.ask}</span>
+            <span className="tiny:inline hidden">{t.askShort}</span>
+          </p>
+        ),
         choices: r.statements,
       })),
     [puzzle],
