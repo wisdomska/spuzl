@@ -436,6 +436,7 @@ export const adminCopy = {
     },
     /** Family Draw (16+ Draw It) words: the stored list (round 3, item 11) with add, edit, retire, preview and packs. */
     drawit: {
+      pageLabel: "Pages of words",
       title: "Family Draw words",
       intro: (n: number) =>
         `${n} words in use for Draw It in Family rooms (16+). One player draws the word; the others pick it from four choices, so nobody types. Words must be letters and spaces only and pass the party word filter.`,
@@ -891,6 +892,7 @@ export const adminCopy = {
 
   /** Players list, a player's page and the actions on a player (also the shared confirm dialog's wording). */
   players: {
+    pageLabel: (what: string) => `Pages of ${what.toLowerCase()}`,
     title: "Players",
     nav: "Players",
     total: (n: string) => `${n} players`,
@@ -1827,6 +1829,7 @@ export const adminCopy = {
   library: {
     edit: "Edit",
     close: "Close",
+    pageLabel: "Pages of games",
     title: "Games",
     intro:
       "How each game shows up for players: how long it usually takes, its filter tags, its one-line rule and the line on its card. Changes reach players within 5 minutes.",

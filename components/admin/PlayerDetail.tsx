@@ -18,6 +18,7 @@ import { ageCopy } from "@/lib/copy/age";
 import { DaysField, STATUS_TONE } from "./PlayersPage";
 import { Card, Fact, Figure, TechDetails, TechRow, When } from "./people-ui";
 import { Btn, Empty, Field, Notice, Pill, RowsSkeleton, inputCls, type PillTone } from "./ui";
+import { Paged } from "./Pagination";
 
 const C = adminCopy.players;
 const fmt = (n: number) => n.toLocaleString("en-US");
@@ -319,23 +320,27 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
             {!d.attempts.length ? (
               <Empty icon="puzzle-piece">{C.noAttempts}</Empty>
             ) : (
-              <MiniTable head={C.recentHead}>
-                {d.attempts.map((a) => (
-                  <tr key={a.id}>
-                    <td className={`${td} font-semibold`}>{GAME_BY_ID[a.game_id]?.name ?? a.game_id}</td>
-                    <td className={`${td} text-muted`}>{C.modes[a.mode] ?? cap(a.mode)}</td>
-                    <td className={`${td} num`}>{a.time_ms !== null ? duration(a.time_ms) : C.noEmail}</td>
-                    <td className={td}>
-                      <Pill tone={ATTEMPT_TONE[a.status] ?? "neutral"}>
-                        {C.attemptStatus[a.status] ?? adminCopy.common.statusLabel(a.status)}
-                      </Pill>
-                    </td>
-                    <td className={`${td} text-muted whitespace-nowrap`}>
-                      <When iso={a.started_at} />
-                    </td>
-                  </tr>
-                ))}
-              </MiniTable>
+              <Paged items={d.attempts} label={C.pageLabel(C.recent)}>
+                {(rows) => (
+                  <MiniTable head={C.recentHead}>
+                    {rows.map((a) => (
+                      <tr key={a.id}>
+                        <td className={`${td} font-semibold`}>{GAME_BY_ID[a.game_id]?.name ?? a.game_id}</td>
+                        <td className={`${td} text-muted`}>{C.modes[a.mode] ?? cap(a.mode)}</td>
+                        <td className={`${td} num`}>{a.time_ms !== null ? duration(a.time_ms) : C.noEmail}</td>
+                        <td className={td}>
+                          <Pill tone={ATTEMPT_TONE[a.status] ?? "neutral"}>
+                            {C.attemptStatus[a.status] ?? adminCopy.common.statusLabel(a.status)}
+                          </Pill>
+                        </td>
+                        <td className={`${td} text-muted whitespace-nowrap`}>
+                          <When iso={a.started_at} />
+                        </td>
+                      </tr>
+                    ))}
+                  </MiniTable>
+                )}
+              </Paged>
             )}
           </Card>
 
@@ -350,27 +355,37 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
                 {!list.length ? (
                   none
                 ) : (
-                  <MiniTable head={C.reportsHead} min={340}>
-                    {list.map((r) => (
-                      <tr key={r.id}>
-                        <td className={`${td} font-semibold`}>{C.reportReasons[r.reason] ?? cap(r.reason)}</td>
-                        <td className={`${td} text-muted`}>{C.reportTargets[r.target_type] ?? r.target_type}</td>
-                        <td className={td}>
-                          <Pill tone={REPORT_TONE[r.status] ?? "neutral"}>{C.reportStatus[r.status] ?? r.status}</Pill>
-                        </td>
-                        <td className={`${td} text-muted whitespace-nowrap`}>
-                          <When iso={r.created_at} />
-                        </td>
-                      </tr>
-                    ))}
-                  </MiniTable>
+                  <Paged items={list} label={C.pageLabel(title)}>
+                    {(rows) => (
+                      <MiniTable head={C.reportsHead} min={340}>
+                        {rows.map((r) => (
+                          <tr key={r.id}>
+                            <td className={`${td} font-semibold`}>{C.reportReasons[r.reason] ?? cap(r.reason)}</td>
+                            <td className={`${td} text-muted`}>{C.reportTargets[r.target_type] ?? r.target_type}</td>
+                            <td className={td}>
+                              <Pill tone={REPORT_TONE[r.status] ?? "neutral"}>{C.reportStatus[r.status] ?? r.status}</Pill>
+                            </td>
+                            <td className={`${td} text-muted whitespace-nowrap`}>
+                              <When iso={r.created_at} />
+                            </td>
+                          </tr>
+                        ))}
+                      </MiniTable>
+                    )}
+                  </Paged>
                 )}
               </Card>
             ))}
           </div>
 
           <Card title={C.moderation} id="pd-audit" hint={C.moderationHint}>
-            {!d.audit.length ? <p className="text-muted text-[13px]">{C.noModeration}</p> : <AuditList rows={d.audit} />}
+            {!d.audit.length ? (
+              <p className="text-muted text-[13px]">{C.noModeration}</p>
+            ) : (
+              <Paged items={d.audit} label={C.pageLabel(C.moderation)}>
+                {(rows) => <AuditList rows={rows} />}
+              </Paged>
+            )}
           </Card>
 
           <Card title={C.competitive} id="pd-ratings" hint={C.competitiveHint}>
@@ -399,20 +414,24 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
                 {!d.rankMoves?.length ? (
                   <p className="text-muted text-[13px]">{C.noRankMoves}</p>
                 ) : (
-                  <MiniTable head={C.rankMovesHead} min={340}>
-                    {d.rankMoves.map((r) => (
-                      <tr key={`${r.ref}:${r.created_at}`}>
-                        <td className={`${td} num text-muted`}>{r.ref}</td>
-                        <td className={td}>{r.track ? cap(r.track) : C.noEmail}</td>
-                        <td className={`${td} num font-semibold ${(r.delta ?? 0) < 0 ? "text-danger" : "text-accent"}`}>
-                          {r.delta === null ? C.noEmail : `${r.delta > 0 ? "+" : ""}${r.delta.toFixed(1)}`}
-                        </td>
-                        <td className={`${td} text-muted whitespace-nowrap`}>
-                          <When iso={r.created_at} />
-                        </td>
-                      </tr>
-                    ))}
-                  </MiniTable>
+                  <Paged items={d.rankMoves} label={C.pageLabel(C.rankMoves)}>
+                    {(rows) => (
+                      <MiniTable head={C.rankMovesHead} min={340}>
+                        {rows.map((r) => (
+                          <tr key={`${r.ref}:${r.created_at}`}>
+                            <td className={`${td} num text-muted`}>{r.ref}</td>
+                            <td className={td}>{r.track ? cap(r.track) : C.noEmail}</td>
+                            <td className={`${td} num font-semibold ${(r.delta ?? 0) < 0 ? "text-danger" : "text-accent"}`}>
+                              {r.delta === null ? C.noEmail : `${r.delta > 0 ? "+" : ""}${r.delta.toFixed(1)}`}
+                            </td>
+                            <td className={`${td} text-muted whitespace-nowrap`}>
+                              <When iso={r.created_at} />
+                            </td>
+                          </tr>
+                        ))}
+                      </MiniTable>
+                    )}
+                  </Paged>
                 )}
               </div>
             </div>
@@ -422,28 +441,36 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
             {!d.boardGames?.length ? (
               <p className="text-muted text-[13px]">{C.noBoardGames}</p>
             ) : (
-              <MiniTable head={C.boardHead}>
-                {d.boardGames.map((m) => (
-                  <tr key={m.id}>
-                    <td className={`${td} font-semibold`}>{GAME_BY_ID[m.game_id]?.name ?? m.game_id}</td>
-                    <td className={`${td} text-muted`}>
-                      {[C.boardModes[m.mode] ?? m.mode, m.bot ? C.vsBot : null, m.rated ? C.rated : null].filter(Boolean).join(" · ")}
-                    </td>
-                    <td className={td}>
-                      <Pill tone="neutral">{C.boardStatus[m.status] ?? adminCopy.common.statusLabel(m.status)}</Pill>
-                    </td>
-                    <td className={`${td} text-muted`}>
-                      {[m.outcome ? (C.outcomes[m.outcome] ?? m.outcome) : null, m.result].filter(Boolean).join(" · ") || C.noEmail}
-                    </td>
-                    <td className={td} data-house-rules>
-                      {m.house === null ? C.noEmail : m.house.length ? m.house.map((k) => C.ludoRules[k] ?? k).join(", ") : C.standardRules}
-                    </td>
-                    <td className={`${td} text-muted whitespace-nowrap`}>
-                      <When iso={m.created_at} />
-                    </td>
-                  </tr>
-                ))}
-              </MiniTable>
+              <Paged items={d.boardGames} label={C.pageLabel(C.boardGames)}>
+                {(rows) => (
+                  <MiniTable head={C.boardHead}>
+                    {rows.map((m) => (
+                      <tr key={m.id}>
+                        <td className={`${td} font-semibold`}>{GAME_BY_ID[m.game_id]?.name ?? m.game_id}</td>
+                        <td className={`${td} text-muted`}>
+                          {[C.boardModes[m.mode] ?? m.mode, m.bot ? C.vsBot : null, m.rated ? C.rated : null].filter(Boolean).join(" · ")}
+                        </td>
+                        <td className={td}>
+                          <Pill tone="neutral">{C.boardStatus[m.status] ?? adminCopy.common.statusLabel(m.status)}</Pill>
+                        </td>
+                        <td className={`${td} text-muted`}>
+                          {[m.outcome ? (C.outcomes[m.outcome] ?? m.outcome) : null, m.result].filter(Boolean).join(" · ") || C.noEmail}
+                        </td>
+                        <td className={td} data-house-rules>
+                          {m.house === null
+                            ? C.noEmail
+                            : m.house.length
+                              ? m.house.map((k) => C.ludoRules[k] ?? k).join(", ")
+                              : C.standardRules}
+                        </td>
+                        <td className={`${td} text-muted whitespace-nowrap`}>
+                          <When iso={m.created_at} />
+                        </td>
+                      </tr>
+                    ))}
+                  </MiniTable>
+                )}
+              </Paged>
             )}
           </Card>
 
@@ -452,35 +479,43 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
               {!d.sparks.length ? (
                 <p className="text-muted text-[13px]">{C.noLedger}</p>
               ) : (
-                <ul className="flex flex-col text-[13px]">
-                  {d.sparks.map((s) => (
-                    <li key={s.id} className="border-line flex items-center gap-2 border-t py-1.5 first:border-t-0">
-                      <span className={`num w-16 shrink-0 text-right font-semibold ${s.amount < 0 ? "text-danger" : "text-accent"}`}>
-                        {s.amount > 0 ? "+" : ""}
-                        {fmt(s.amount)}
-                      </span>
-                      <span className="min-w-0 flex-1 truncate">{C.sparkSources[s.source] ?? C.sparkFallback(s.source)}</span>
-                      <When iso={s.created_at} className="text-muted shrink-0" />
-                    </li>
-                  ))}
-                </ul>
+                <Paged items={d.sparks} label={C.pageLabel(C.sparksLedger)}>
+                  {(rows) => (
+                    <ul className="flex flex-col text-[13px]">
+                      {rows.map((s) => (
+                        <li key={s.id} className="border-line flex items-center gap-2 border-t py-1.5 first:border-t-0">
+                          <span className={`num w-16 shrink-0 text-right font-semibold ${s.amount < 0 ? "text-danger" : "text-accent"}`}>
+                            {s.amount > 0 ? "+" : ""}
+                            {fmt(s.amount)}
+                          </span>
+                          <span className="min-w-0 flex-1 truncate">{C.sparkSources[s.source] ?? C.sparkFallback(s.source)}</span>
+                          <When iso={s.created_at} className="text-muted shrink-0" />
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </Paged>
               )}
             </Card>
             <Card title={C.league} id="pd-league">
               {!d.league.length ? (
                 <p className="text-muted text-[13px]">{C.noLeague}</p>
               ) : (
-                <MiniTable head={C.leagueHead} min={340}>
-                  {d.league.map((l) => (
-                    <tr key={l.week_start}>
-                      <td className={`${td} whitespace-nowrap`}>{dayDate(l.week_start)}</td>
-                      <td className={td}>{LEAGUE_TIERS[l.tier] ?? l.tier}</td>
-                      <td className={`${td} num`}>{fmt(l.points)}</td>
-                      <td className={`${td} num`}>{l.rank ?? C.noEmail}</td>
-                      <td className={`${td} text-muted`}>{l.result ? (C.leagueResults[l.result] ?? l.result) : C.noEmail}</td>
-                    </tr>
-                  ))}
-                </MiniTable>
+                <Paged items={d.league} label={C.pageLabel(C.league)}>
+                  {(rows) => (
+                    <MiniTable head={C.leagueHead} min={340}>
+                      {rows.map((l) => (
+                        <tr key={l.week_start}>
+                          <td className={`${td} whitespace-nowrap`}>{dayDate(l.week_start)}</td>
+                          <td className={td}>{LEAGUE_TIERS[l.tier] ?? l.tier}</td>
+                          <td className={`${td} num`}>{fmt(l.points)}</td>
+                          <td className={`${td} num`}>{l.rank ?? C.noEmail}</td>
+                          <td className={`${td} text-muted`}>{l.result ? (C.leagueResults[l.result] ?? l.result) : C.noEmail}</td>
+                        </tr>
+                      ))}
+                    </MiniTable>
+                  )}
+                </Paged>
               )}
             </Card>
           </div>
@@ -634,7 +669,7 @@ function AttentionLink({ href, children }: { href: string; children: ReactNode }
 }
 
 /** What the team (or the app) did to this player, as sentences; the raw actions and data fold away underneath. */
-function AuditList({ rows }: { rows: Detail["audit"] }) {
+function AuditList({ rows }: { rows: readonly Detail["audit"][number][] }) {
   return (
     <>
       <ul className="flex flex-col">

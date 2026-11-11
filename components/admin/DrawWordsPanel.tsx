@@ -12,6 +12,7 @@ import { api } from "@/lib/client/api";
 import { PackPanel } from "./PackPanel";
 import { StatePill } from "./content-ui";
 import { Btn, Empty, Field, Notice, RowsSkeleton, Tabs, inputCls } from "./ui";
+import { Paged } from "./Pagination";
 
 const W = adminCopy.content.drawit;
 
@@ -115,55 +116,60 @@ export function DrawWordsPanel({ canWrite }: { canWrite: boolean }) {
       {!shown.length ? (
         <Empty icon="magnifying-glass">{W.emptyList}</Empty>
       ) : (
-        <ul className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 xl:grid-cols-3" aria-label={W.title}>
-          {shown.map((r) =>
-            editing === r.id ? (
-              <EditWord key={r.id} row={r} onDone={() => setEditing(null)} />
-            ) : (
-              <li key={r.id} className="bg-surface flex min-h-11 items-center gap-2 rounded-[10px] py-1.5 pr-1.5 pl-2.5">
-                <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="flex items-center gap-1.5 text-[14px] font-semibold capitalize">
-                    {r.word}
-                    {r.retired_at && (
-                      <StatePill s={{ label: W.retiredPill, meaning: W.retiredMeaning, tone: "neutral", icon: "prohibit" }} />
+        // 30 words a page; a new search or filter starts again from page 1 (the key).
+        <Paged key={`${show}:${find}`} items={shown} size={30} label={W.pageLabel}>
+          {(page) => (
+            <ul className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 xl:grid-cols-3" aria-label={W.title}>
+              {page.map((r) =>
+                editing === r.id ? (
+                  <EditWord key={r.id} row={r} onDone={() => setEditing(null)} />
+                ) : (
+                  <li key={r.id} className="bg-surface flex min-h-11 items-center gap-2 rounded-[10px] py-1.5 pr-1.5 pl-2.5">
+                    <span className="flex min-w-0 flex-1 flex-col">
+                      <span className="flex items-center gap-1.5 text-[14px] font-semibold capitalize">
+                        {r.word}
+                        {r.retired_at && (
+                          <StatePill s={{ label: W.retiredPill, meaning: W.retiredMeaning, tone: "neutral", icon: "prohibit" }} />
+                        )}
+                      </span>
+                      {r.alt.length ? <span className="text-muted truncate text-[12px]">{W.also(r.alt.join(", "))}</span> : null}
+                    </span>
+                    {!r.retired_at && (
+                      <Btn size="sm" tone="ghost" icon="eye" aria-label={W.previewWord(r.word)} onClick={() => setPreview(r.word)} />
                     )}
-                  </span>
-                  {r.alt.length ? <span className="text-muted truncate text-[12px]">{W.also(r.alt.join(", "))}</span> : null}
-                </span>
-                {!r.retired_at && (
-                  <Btn size="sm" tone="ghost" icon="eye" aria-label={W.previewWord(r.word)} onClick={() => setPreview(r.word)} />
-                )}
-                {canWrite && (
-                  <>
-                    <Btn size="sm" tone="ghost" icon="pencil-simple" aria-label={W.editWord(r.word)} onClick={() => setEditing(r.id)} />
-                    {r.retired_at ? (
-                      <Btn
-                        size="sm"
-                        tone="ghost"
-                        aria-label={W.restoreWord(r.word)}
-                        disabled={patch.isPending}
-                        onClick={() => patch.mutate({ id: r.id, retired: false })}
-                      >
-                        {W.restore}
-                      </Btn>
-                    ) : (
-                      <Btn
-                        size="sm"
-                        tone="ghost"
-                        aria-label={W.retireWord(r.word)}
-                        disabled={patch.isPending || atMin}
-                        title={atMin ? W.minNote(min) : undefined}
-                        onClick={() => patch.mutate({ id: r.id, retired: true })}
-                      >
-                        {W.retire}
-                      </Btn>
+                    {canWrite && (
+                      <>
+                        <Btn size="sm" tone="ghost" icon="pencil-simple" aria-label={W.editWord(r.word)} onClick={() => setEditing(r.id)} />
+                        {r.retired_at ? (
+                          <Btn
+                            size="sm"
+                            tone="ghost"
+                            aria-label={W.restoreWord(r.word)}
+                            disabled={patch.isPending}
+                            onClick={() => patch.mutate({ id: r.id, retired: false })}
+                          >
+                            {W.restore}
+                          </Btn>
+                        ) : (
+                          <Btn
+                            size="sm"
+                            tone="ghost"
+                            aria-label={W.retireWord(r.word)}
+                            disabled={patch.isPending || atMin}
+                            title={atMin ? W.minNote(min) : undefined}
+                            onClick={() => patch.mutate({ id: r.id, retired: true })}
+                          >
+                            {W.retire}
+                          </Btn>
+                        )}
+                      </>
                     )}
-                  </>
-                )}
-              </li>
-            ),
+                  </li>
+                ),
+              )}
+            </ul>
           )}
-        </ul>
+        </Paged>
       )}
       <PackPanel
         id="drawit"

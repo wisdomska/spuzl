@@ -11,6 +11,7 @@ import { GameIcon3D } from "@/components/world/GameIcon3D";
 import { Icon } from "@/components/ui/Icon";
 import { hasLogic } from "@/games/logic-ids";
 import { PracticeBoardPreview } from "./PuzzlePreview";
+import { Paged } from "./Pagination";
 import { PageHead, StateGuide, StatePill, TechDetails, TechLine, type StateWords } from "./content-ui";
 import { Btn, Empty, Notice, Pill, RowsSkeleton, Tabs, inputCls, textareaCls } from "./ui";
 
@@ -128,13 +129,18 @@ export function LibraryMetaPage({ canWrite }: { canWrite: boolean }) {
           <Empty icon="magnifying-glass">{C.empty}</Empty>
         </div>
       ) : (
-        <ul className="flex flex-col gap-3">
-          {shown.map((r) => (
-            <li key={r.id}>
-              <MetaRow row={r} canWrite={canWrite && !r.retired} busy={patch.isPending} onSave={(p) => save(r.id, p)} />
-            </li>
-          ))}
-        </ul>
+        // 25 games a page; a new search or filter starts again from page 1 (the key).
+        <Paged key={`${show}:${find}`} items={shown} size={25} label={C.pageLabel}>
+          {(page) => (
+            <ul className="flex flex-col gap-3">
+              {page.map((r) => (
+                <li key={r.id}>
+                  <MetaRow row={r} canWrite={canWrite && !r.retired} busy={patch.isPending} onSave={(p) => save(r.id, p)} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </Paged>
       )}
       <Backup canWrite={canWrite} data={q.data?.export} />
     </div>

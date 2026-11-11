@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { Icon } from "@/components/ui/Icon";
 import {
@@ -55,6 +55,51 @@ export function usePager(): Pager {
     if (page !== 1) write({ page: 1, pageSize }, true);
   }, [page, pageSize, write]);
   return { page, pageSize, query: pageQueryString({ page, pageSize }), setPage, setPageSize, reset };
+}
+
+/**
+ * Page and page size held on the page itself (not in the address bar): for a long list that loads all at once,
+ * or for several lists on one page (a player's history), where one `?page=` can't serve them all.
+ */
+export function useLocalPager(initialSize = 25): Pager {
+  const [state, setState] = useState<PageParams>({ page: 1, pageSize: initialSize as PageSize });
+  const setPage = useCallback((p: number) => setState((s) => ({ ...s, page: Math.max(1, p) })), []);
+  const setPageSize = useCallback((size: PageSize) => setState({ page: 1, pageSize: size }), []);
+  const reset = useCallback(() => setState((s) => (s.page === 1 ? s : { ...s, page: 1 })), []);
+  return { ...state, query: pageQueryString(state), setPage, setPageSize, reset };
+}
+
+/** One page of `items` for `pager`. */
+export function pageOf<T>(items: readonly T[], pager: Pick<Pager, "page" | "pageSize">): readonly T[] {
+  return items.slice((pager.page - 1) * pager.pageSize, pager.page * pager.pageSize);
+}
+
+/**
+ * A long list shown a page at a time (`size` rows), with the pagination bar under it once there is more than one
+ * page. `children` draws the rows of the current page.
+ */
+export function Paged<T>({
+  items,
+  size = 10,
+  label,
+  children,
+}: {
+  items: readonly T[];
+  size?: number;
+  label: string;
+  children: (rows: readonly T[]) => ReactNode;
+}) {
+  const pager = useLocalPager(size);
+  return (
+    <>
+      {children(pageOf(items, pager))}
+      {items.length > size && (
+        <div className="pt-3">
+          <Pagination pager={pager} total={items.length} label={label} />
+        </div>
+      )}
+    </>
+  );
 }
 
 /**
