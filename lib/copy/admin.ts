@@ -2269,7 +2269,7 @@ export const adminCopy = {
 
     rolesTitle: "What each role can do",
     roles: {
-      owner: "Everything, including this Team page, feature switches, game settings, prices, Sparks and deleting accounts.",
+      owner: "Everything, including this Team page, game settings, prices, Sparks and deleting accounts.",
       content_editor: "Plans the Dailies and Daily Five, writes and approves content, runs the shop and events. Can't see players.",
       moderator: "Handles reports, players (nicknames, bans), join requests and feedback.",
       analyst: "Looks but doesn't change: players, metrics, Live now, settings and the activity log.",

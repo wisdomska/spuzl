@@ -151,17 +151,18 @@ export function PlayersPage({ canModerate, canExport, emailVisible }: { canModer
           } satisfies HeadCol<SortKey>,
         ]
       : []),
+    // Owner's order (11 Nov): who they are first, then activity and progress; review and status at the end.
     { label: C.head.nickname, sort: "nickname" },
-    { label: C.head.status },
-    { label: C.head.reports, sort: "reports" },
-    { label: C.head.lastActive, sort: "last_active" },
+    { label: C.head.email },
     { label: C.head.account, sort: "account" },
-    { label: C.head.age, sort: "age_band" },
     { label: C.head.joined, sort: "joined" },
+    { label: C.head.lastActive, sort: "last_active" },
     { label: C.head.level, sort: "level", className: num },
     { label: C.head.sparks, sort: "sparks", className: num },
     { label: C.head.streak, sort: "streak", className: num },
-    { label: C.head.email },
+    { label: C.head.age, sort: "age_band" },
+    { label: C.head.reports, sort: "reports" },
+    { label: C.head.status },
   ];
   const select = (key: PlayerFilterKey, label: string, any: string | null, options: readonly string[], text: (o: string) => string) => (
     <Field label={label} htmlFor={`pf-${key}`}>
@@ -351,15 +352,26 @@ export function PlayersPage({ canModerate, canExport, emailVisible }: { canModer
                         {r.nickname}
                       </Link>
                     </td>
-                    <td className="px-3 py-2">
-                      <span className="flex flex-wrap gap-1">
-                        {listStatuses(r).map((s) => (
-                          <Pill key={s} tone={STATUS_TONE[s]}>
-                            {C.statuses[s]}
-                          </Pill>
-                        ))}
-                      </span>
+                    <td className="num text-muted max-w-[220px] truncate px-3 py-2 text-[13px]" title={r.email ?? undefined}>
+                      {r.email ?? C.noEmail}
                     </td>
+                    <td className="px-3 py-2">
+                      <Pill tone={r.account_type === "guest" ? "neutral" : "ok"} className="!font-medium">
+                        {C.accountKind[r.account_type]}
+                      </Pill>
+                    </td>
+                    <td className="text-muted px-3 py-2 text-[13px] whitespace-nowrap" title={exactTime(r.created_at)}>
+                      {dayDate(r.created_at)}
+                    </td>
+                    <td className="text-muted px-3 py-2 text-[13px] whitespace-nowrap">
+                      <When iso={r.last_active} fallback={C.never} />
+                    </td>
+                    <td className="num px-3 py-2 text-right text-[13px] whitespace-nowrap" title={C.xpTitle(fmt(r.xp))}>
+                      {r.level}
+                    </td>
+                    <td className="num px-3 py-2 text-right text-[13px]">{fmt(r.sparks)}</td>
+                    <td className="num px-3 py-2 text-right text-[13px] whitespace-nowrap">{C.streakDays(r.streak)}</td>
+                    <td className="px-3 py-2 text-[13px] whitespace-nowrap">{C.ageBands[r.age_band] ?? r.age_band}</td>
                     <td className="px-3 py-2 text-[13px]">
                       {r.reports_open || r.flagged ? (
                         <span className="flex flex-wrap gap-1">
@@ -372,25 +384,14 @@ export function PlayersPage({ canModerate, canExport, emailVisible }: { canModer
                         </span>
                       )}
                     </td>
-                    <td className="text-muted px-3 py-2 text-[13px] whitespace-nowrap">
-                      <When iso={r.last_active} fallback={C.never} />
-                    </td>
                     <td className="px-3 py-2">
-                      <Pill tone={r.account_type === "guest" ? "neutral" : "ok"} className="!font-medium">
-                        {C.accountKind[r.account_type]}
-                      </Pill>
-                    </td>
-                    <td className="px-3 py-2 text-[13px] whitespace-nowrap">{C.ageBands[r.age_band] ?? r.age_band}</td>
-                    <td className="text-muted px-3 py-2 text-[13px] whitespace-nowrap" title={exactTime(r.created_at)}>
-                      {dayDate(r.created_at)}
-                    </td>
-                    <td className="num px-3 py-2 text-right text-[13px] whitespace-nowrap" title={C.xpTitle(fmt(r.xp))}>
-                      {r.level}
-                    </td>
-                    <td className="num px-3 py-2 text-right text-[13px]">{fmt(r.sparks)}</td>
-                    <td className="num px-3 py-2 text-right text-[13px] whitespace-nowrap">{C.streakDays(r.streak)}</td>
-                    <td className="num text-muted max-w-[220px] truncate px-3 py-2 text-[13px]" title={r.email ?? undefined}>
-                      {r.email ?? C.noEmail}
+                      <span className="flex flex-wrap gap-1">
+                        {listStatuses(r).map((s) => (
+                          <Pill key={s} tone={STATUS_TONE[s]}>
+                            {C.statuses[s]}
+                          </Pill>
+                        ))}
+                      </span>
                     </td>
                   </tr>
                 );

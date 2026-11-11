@@ -805,8 +805,14 @@ export function TeamPage() {
           </div>
         </Section>
 
-        <Section id="team-roles" title={TEAM.rolesTitle}>
-          <ul className="flex flex-col gap-2.5">
+        {/* Reference, folded away until needed (owner request). */}
+        <details id="team-roles" className="group/roles bg-surface self-start rounded-[16px]">
+          <summary className="flex min-h-14 cursor-pointer list-none items-center gap-2 rounded-[16px] px-4 py-3 md:px-5 [&::-webkit-details-marker]:hidden">
+            <Icon name="info" size={18} className="text-muted" />
+            <span className="flex-1 text-[15px] font-bold">{TEAM.rolesTitle}</span>
+            <Icon name="caret-down" size={16} className="text-muted transition-transform duration-150 group-open/roles:rotate-180" />
+          </summary>
+          <ul className="border-line flex flex-col gap-2.5 border-t px-4 py-3 md:px-5">
             {ROLES.map((r) => (
               <li key={r} className="flex flex-col gap-0.5 text-[14px]">
                 <span className="font-semibold">{ROLE_LABEL[r]}</span>
@@ -814,7 +820,7 @@ export function TeamPage() {
               </li>
             ))}
           </ul>
-        </Section>
+        </details>
       </div>
 
       <Section

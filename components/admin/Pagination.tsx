@@ -104,7 +104,8 @@ export function Paged<T>({
 
 /**
  * Accessible pagination bar for admin tables: "Showing 26–50 of 312", rows per page (25, 50 or 100), First,
- * Previous, numbered pages with gaps (always the first and last), Next, Last and a jump-to-page field. 44 px
+ * Previous, numbered pages with gaps (always the first and last), Next and Last (the jump-to-page field was
+ * removed at the owner's request). 44 px
  * targets, real buttons, disabled ends. Steps back to the last page by itself when the current one no longer
  * exists (rows resolved or deleted).
  */
@@ -191,46 +192,7 @@ export function Pagination({ pager, total, label = C.label }: { pager: Pager; to
         >
           {C.last}
         </Btn>
-        {pages > 1 && <PageJump key={current} page={current} pages={pages} onGo={setPage} id={`${id}-jump`} />}
       </div>
     </nav>
-  );
-}
-
-function PageJump({ page, pages, onGo, id }: { page: number; pages: number; onGo: (p: number) => void; id: string }) {
-  const [text, setText] = useState(String(page));
-  const n = Number(text);
-  const valid = Number.isInteger(n) && n >= 1 && n <= pages;
-  return (
-    <form
-      aria-label={C.jumpAria}
-      className="flex items-center gap-2"
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (valid) onGo(n);
-      }}
-    >
-      <label htmlFor={id} className="text-muted text-[13px] font-semibold">
-        {C.page}
-      </label>
-      <input
-        id={id}
-        type="number"
-        inputMode="numeric"
-        min={1}
-        max={pages}
-        value={text}
-        aria-invalid={!valid}
-        aria-describedby={`${id}-of`}
-        onChange={(e) => setText(e.target.value)}
-        className={`${inputCls} num h-11 w-20`}
-      />
-      <span id={`${id}-of`} className="num text-muted text-[13px]">
-        {C.of(pages.toLocaleString("en-US"))}
-      </span>
-      <Btn type="submit" size="lg" disabled={!valid || n === page}>
-        {C.go}
-      </Btn>
-    </form>
   );
 }

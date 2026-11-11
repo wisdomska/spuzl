@@ -52,9 +52,9 @@ const GROUPS: NavGroup[] = [
       { href: "/admin/calendar", label: N.calendar, icon: "calendar-blank", perm: "calendar.read" },
       { href: "/admin/daily-five", label: N.dailyFive, icon: "star", perm: "dailyFive.read" },
       { href: "/admin/events", label: N.events, icon: "confetti", perm: "events.read" },
+      { href: "/admin/shop", label: N.shop, icon: "storefront", perm: "catalog.read" },
     ],
   },
-  { id: "shop", items: [{ href: "/admin/shop", label: N.shop, icon: "storefront", perm: "catalog.read" }] },
   {
     id: "insights",
     items: [

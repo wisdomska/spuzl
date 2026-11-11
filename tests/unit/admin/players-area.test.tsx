@@ -195,7 +195,9 @@ describe("admin players list", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Players" })).toBeTruthy();
     expect(screen.getByText(/Find any player/)).toBeTruthy();
     const headers = screen.getAllByRole("columnheader").map((h) => h.textContent);
-    expect(headers.slice(1, 4)).toEqual(["Player", "Status", "To review"]);
+    // Owner's order (11 Nov): who they are, then activity and progress; review and status at the end.
+    expect(headers.slice(1, 7)).toEqual(["Player", "Email", "Account", "Joined", "Last played", "Level"]);
+    expect(headers.slice(-2)).toEqual(["To review", "Status"]);
     const table = within(screen.getByRole("table"));
     expect(table.getByRole("link", { name: "Kofi" })).toBeTruthy();
     expect(table.getByText("In good standing")).toBeTruthy();

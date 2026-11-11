@@ -146,7 +146,8 @@ function Items({
   if (found && found !== held) setHeld(found);
   const item = open && open !== "new" ? (found ?? (held?.id === open ? held : undefined)) : undefined;
   return (
-    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_480px]">
+    // The editor column only exists while an item is open, so the list uses the full width otherwise.
+    <div className={`grid grid-cols-1 gap-4 ${open ? "xl:grid-cols-[1fr_480px]" : ""}`}>
       <div className="flex min-w-0 flex-col gap-3">
         <p className="text-muted max-w-[760px] text-[13px]">{C.itemsIntro}</p>
         <StateGuide states={ITEM_STATES} />
