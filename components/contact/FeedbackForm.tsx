@@ -27,9 +27,9 @@ export function FeedbackFormFromQuery() {
   return <FeedbackForm from={sanitiseFrom(sp.get("from"))} />;
 }
 
-export function FeedbackForm({ from }: { from: string | null }) {
+export function FeedbackForm({ from, defaultKind }: { from: string | null; defaultKind?: FeedbackKind }) {
   const id = useId();
-  const [kind, setKind] = useState<"" | FeedbackKind>("");
+  const [kind, setKind] = useState<"" | FeedbackKind>(defaultKind ?? "");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [state, setState] = useState<State>({ s: "idle" });
@@ -60,7 +60,7 @@ export function FeedbackForm({ from }: { from: string | null }) {
       });
       setState({ s: "sent", withEmail: !!email.trim() });
       setMessage("");
-      setKind("");
+      setKind(defaultKind ?? "");
     } catch (err) {
       const text =
         err instanceof HttpError

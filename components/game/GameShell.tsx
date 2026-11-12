@@ -18,6 +18,8 @@ import { BOARD_THEMES } from "@/lib/gamification/cosmetics";
 import { play } from "@/lib/audio";
 import { formatClock } from "@/lib/format";
 import { PauseOverlay } from "./PauseOverlay";
+import { Modal } from "@/components/ui/Modal";
+import { FeedbackForm } from "@/components/contact/FeedbackForm";
 import { HintConfirm, hintConfirmed, rememberHintConfirmed } from "./HintConfirm";
 import { track } from "@/lib/analytics/track";
 import { copy } from "@/lib/copy";
@@ -226,7 +228,8 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   const hintText = useRef<((hint: Hint) => string) | null>(null);
 
   // The open menu holds the game like Pause does (clock stopped, board hidden), where the mode can pause.
-  const menuHold = menuOpen && canPause && !solved;
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const menuHold = (menuOpen || feedbackOpen) && canPause && !solved;
 
   // Leaving (lib/game/leave.ts): Back, the menu's Leave game, Pause's Quit, Escape and the back gesture.
   const managed = leaveContext === "managed";
@@ -457,13 +460,8 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
       /* share sheet dismissed or clipboard refused */
     }
   };
-  const report = () => {
-    const email = process.env.NEXT_PUBLIC_SUPPORT_EMAIL;
-    const subject = M.reportSubject(meta.name, label);
-    if (email)
-      window.location.assign(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(window.location.href)}`);
-    else window.open("/contact", "_blank", "noopener");
-  };
+  // Feedback opens over the board (owner, 12 Nov): the Contact form, tagged with this page, and the game waits.
+  const report = openSheet(() => setFeedbackOpen(true));
   // Starting over can't be undone, so once the board has moves on it (this visit, or a resumed board) the menu's
   // Restart asks first. An untouched board restarts at once; a board with its own confirm (`confirms`) is not asked
   // twice.
@@ -516,7 +514,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
     ],
     [
       { kind: "action", id: "share", label: M.share, icon: "share-network", onSelect: () => void share() },
-      { kind: "action", id: "report", label: M.report, icon: "flag", onSelect: report },
+      { kind: "action", id: "report", label: M.report, icon: "chat-circle-text", onSelect: report },
     ],
     // Last, on its own: the way out, whatever the mode (a confirm follows only where leaving costs something).
     [{ kind: "action", id: "leave", label: leaveCopy.menu, icon: "sign-out", onSelect: requestLeave }],
@@ -785,6 +783,9 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
               : undefined
           }
         />
+        <Modal open={feedbackOpen} onOpenChange={setFeedbackOpen} title={M.feedbackTitle} description={M.feedbackIntro(meta.name)}>
+          {feedbackOpen && <FeedbackForm from={window.location.pathname} />}
+        </Modal>
         <HintConfirm
           open={confirmHint}
           daily={mode === "daily"}

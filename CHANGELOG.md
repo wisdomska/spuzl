@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.53.0 (12 November 2026)
+
+### Everyone
+
+- **Send feedback without leaving the game:** the game menu's "Send feedback" (was "Report a problem", which opened
+  an email or a new tab) opens the feedback form over the board; the clock waits and the message carries the game's
+  page. Board Bay has the same button at the top.
+- Contact: "Adults can write to us to remove a young player's account" (was "Parents and teachers").
+
+### Admin
+
+- **A player's page in tabs:** Overview (who they are, progress), Games (recent games, ratings, board games),
+  Reports (reports about and by them, team actions; the tab shows open reports) and Sparks & league (Sparks history,
+  league, items). What needs action and the Actions panel stay in view; the tab is in the address, so links open it.
+- Tabs everywhere in the admin move with the arrow keys, Home and End.
+- **Activity log:** the "Technical filters" (action code and target) are gone.
+
 ## 1.52.0 (12 November 2026)
 
 ### Everyone

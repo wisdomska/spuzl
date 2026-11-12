@@ -418,9 +418,6 @@ const AUDIT_ALLOWED = { type: AUDIT_TYPE_IDS as string[], auto: ["1"] };
 
 export function AuditPage() {
   const [{ actor, type, from, to, auto, action, target }, setFilters] = useUrlFilters(AUDIT_FILTERS, AUDIT_ALLOWED);
-  const [actionText, setActionText] = useDebouncedFilter(action, (v) => setFilters({ action: v }, { replace: true }));
-  const [targetText, setTargetText] = useDebouncedFilter(target, (v) => setFilters({ target: v }, { replace: true }));
-  const [advancedOpen] = useState(() => !!(action || target));
   const pager = usePager();
   const sort = useUrlSort(AUDIT_SORT);
   // Asking for automatic jobs (by person or type) shows them whatever the toggle says.
@@ -524,29 +521,6 @@ export function AuditPage() {
             </Btn>
           )}
         </div>
-        <details open={advancedOpen} className="text-[13px]">
-          <summary className="disclosure text-muted w-fit cursor-pointer py-1 font-semibold">{AUDIT.advanced}</summary>
-          <div className="mt-2 flex flex-wrap items-end gap-3">
-            <Field label={AUDIT.actionStarts} htmlFor="a-action">
-              <input
-                id="a-action"
-                value={actionText}
-                placeholder={AUDIT.actionPlaceholder}
-                onChange={(e) => setActionText(e.target.value.toLowerCase())}
-                className={`${inputCls} num h-11 w-48`}
-              />
-            </Field>
-            <Field label={AUDIT.targetContains} htmlFor="a-target">
-              <input
-                id="a-target"
-                value={targetText}
-                placeholder={AUDIT.targetPlaceholder}
-                onChange={(e) => setTargetText(e.target.value)}
-                className={`${inputCls} num h-11 w-48`}
-              />
-            </Field>
-          </div>
-        </details>
       </section>
 
       {q.isPending ? (

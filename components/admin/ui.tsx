@@ -7,7 +7,7 @@
  */
 import Link from "next/link";
 import { Modal, ModalActions } from "@/components/ui/Modal";
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { ButtonHTMLAttributes, KeyboardEvent, ReactNode } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { adminCopy } from "@/lib/copy/admin";
@@ -375,28 +375,53 @@ export function PageTitle({ title, children, aside }: { title: string; children?
   );
 }
 
-/** Segmented tabs (moderation): surface track, raised active tab. */
+/**
+ * Segmented tabs: surface track, raised active tab. Arrow keys, Home and End move between tabs (the focused tab is the
+ * only one in the Tab order). Pass `idBase` to link each tab to its panel (`${idBase}-panel-${id}`).
+ */
 export function Tabs<T extends string>({
   value,
   onChange,
   items,
   label,
+  idBase,
 }: {
   value: T;
   onChange: (v: T) => void;
   items: { id: T; label: string; count?: number }[];
   label: string;
+  idBase?: string;
 }) {
+  const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
+    const i = items.findIndex((t) => t.id === value);
+    const next =
+      e.key === "ArrowRight"
+        ? (i + 1) % items.length
+        : e.key === "ArrowLeft"
+          ? (i - 1 + items.length) % items.length
+          : e.key === "Home"
+            ? 0
+            : e.key === "End"
+              ? items.length - 1
+              : -1;
+    if (next < 0) return;
+    e.preventDefault();
+    onChange(items[next].id);
+    (e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next] ?? null)?.focus();
+  };
   return (
-    <div role="tablist" aria-label={label} className="bg-surface flex gap-1 rounded-[10px] p-[3px]">
+    <div role="tablist" aria-label={label} onKeyDown={onKey} className="bg-surface flex flex-wrap gap-1 rounded-[10px] p-[3px]">
       {items.map((t) => (
         <button
           key={t.id}
           role="tab"
           type="button"
+          id={idBase ? `${idBase}-tab-${t.id}` : undefined}
+          aria-controls={idBase ? `${idBase}-panel-${t.id}` : undefined}
           aria-selected={value === t.id}
+          tabIndex={value === t.id ? 0 : -1}
           onClick={() => onChange(t.id)}
-          className={`flex h-[38px] items-center gap-1.5 rounded-[8px] px-2.5 text-[13px] font-semibold ${value === t.id ? "bg-surface-raised text-text" : "text-muted hover:text-text"}`}
+          className={`admin-press flex h-[38px] items-center gap-1.5 rounded-[8px] px-2.5 text-[13px] font-semibold ${value === t.id ? "bg-surface-raised text-text" : "text-muted hover:text-text"}`}
         >
           {t.label}
           {t.count ? <span className="num text-muted text-[12px]">{t.count}</span> : null}

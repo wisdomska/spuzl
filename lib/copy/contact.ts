@@ -49,7 +49,7 @@ export const contactCopy = {
     dataTitle: "Your data or account",
     dataBefore: "You can download or delete everything yourself in ",
     dataLink: "Settings, Account",
-    dataAfter: ". Parents and teachers can write to us to remove a young player's account.",
+    dataAfter: ". Adults can write to us to remove a young player's account.",
   },
   /** In-app entry points (Settings, Me, the landing footer). */
   entry: "Send feedback",

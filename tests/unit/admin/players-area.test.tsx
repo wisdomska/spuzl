@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 
 /**
  * Admin overhaul, Players area: a player's page leads with who they are (guest or saved account and what that
@@ -102,7 +102,10 @@ function detail(over: { account?: string; band?: string; openReport?: boolean; f
   };
 }
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  window.history.replaceState(null, "", "/"); // a tab picked in one test stays in the address otherwise
+});
 
 describe("admin player page", () => {
   it("explains a guest aged 13 to 15 and lists what needs action", () => {
@@ -121,9 +124,16 @@ describe("admin player page", () => {
         .getByRole("link", { name: /Open Reports/ })
         .getAttribute("href"),
     ).toBe("/admin/moderation");
+    // Tabs (owner, 12 Nov): team actions sit under Reports, and the tab shows the open report count.
+    const reportsTab = screen.getByRole("tab", { name: /Reports/ });
+    expect(reportsTab.textContent).toContain("1");
+    fireEvent.click(reportsTab);
+    expect(reportsTab.getAttribute("aria-selected")).toBe("true");
     // Team actions read as sentences, with who and why.
     expect(screen.getByText("Changed their Sparks")).toBeTruthy();
     expect(screen.getByText("Reason given: lost Sparks bug")).toBeTruthy();
+    // The Sparks history is on its own tab.
+    fireEvent.click(screen.getByRole("tab", { name: "Sparks & league" }));
     expect(screen.getByText("Changed by the team")).toBeTruthy();
   });
 

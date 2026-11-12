@@ -7,6 +7,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useWide } from "@/components/game/useBoardSize";
 import { useLeave } from "@/components/game/useLeave";
 import { LeaveConfirm } from "@/components/game/LeaveConfirm";
+import { FeedbackForm } from "@/components/contact/FeedbackForm";
+import { gameMenuCopy } from "@/lib/copy/game-menu";
 import { leavePolicy, type LeaveContext } from "@/lib/game/leave";
 import { sidePanel } from "@/lib/copy/side-panel";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -242,6 +244,7 @@ export function BayMatch({ id }: { id: string }) {
   const [busy, setBusy] = useState(false);
   const [live, setLive] = useState("");
   const [emoteOpen, setEmoteOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   // Resign (and a draw offer to the bot, which it always takes) ends the game, so it asks first.
   const [asking, setAsking] = useState<{ id: string; kind: "resign" | "draw" } | null>(null);
   const meId = v && v.mySeat !== null ? v.players[v.mySeat]?.id : undefined;
@@ -783,6 +786,7 @@ export function BayMatch({ id }: { id: string }) {
           {v.mode === "live" ? "Live" : "24 h per move"}
           {v.bot ? " · Practice bot" : ""}
         </span>
+        <TopButton icon="chat-circle-text" label={gameMenuCopy.feedbackTitle} onClick={() => setFeedbackOpen(true)} />
         {!v.bot && alertsSupported() && !alertsOn && v.status !== "finished" && (
           <TopButton
             icon="bell"
@@ -843,6 +847,14 @@ export function BayMatch({ id }: { id: string }) {
           )}
         </div>
       )}
+      <Modal
+        open={feedbackOpen}
+        onOpenChange={setFeedbackOpen}
+        title={gameMenuCopy.feedbackTitle}
+        description={gameMenuCopy.feedbackIntro(meta?.name ?? "this game")}
+      >
+        {feedbackOpen && <FeedbackForm from={window.location.pathname} />}
+      </Modal>
       {leavePlan.kind !== "none" && (
         <LeaveConfirm
           kind={leavePlan.kind}

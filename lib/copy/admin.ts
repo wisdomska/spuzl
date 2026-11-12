@@ -995,6 +995,8 @@ export const adminCopy = {
 
     // A player's page
     purposeDetail: "Who they are, what needs action, history.",
+    /** The player page's tabs (owner, 12 Nov: too long to scroll). */
+    tabs: { label: "Player details", overview: "Overview", games: "Games", reports: "Reports", rewards: "Sparks & league" },
     whoTitle: "Who they are",
     accountTitle: "Account",
     email: "Email",

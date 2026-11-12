@@ -25,12 +25,14 @@ export const gameMenuCopy = {
   haptics: "Haptics",
   settings: "Settings",
   share: "Share",
-  report: "Report a problem",
+  report: "Send feedback",
+  /** the in-game feedback sheet (owner, 12 Nov): the Contact form, without leaving the game */
+  feedbackTitle: "Send feedback",
+  feedbackIntro: (game: string) => `About ${game}, or anything else. The game waits.`,
   on: "On",
   off: "Off",
   shareTitle: (game: string) => `${game} on SPUZL`,
   shareText: (game: string) => `Play ${game} with me on SPUZL`,
   linkCopied: "Link copied.",
-  reportSubject: (game: string, label: string) => `Problem with ${game} (${label})`,
   hint: (label: string, left: string) => `${label}. ${left}`,
 } as const;

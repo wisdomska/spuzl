@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { ACTION_PERMISSION, SPARKS_LIMIT, playerStatuses, type PlayerAction } from "@/lib/admin/player-filters";
@@ -17,7 +17,7 @@ import { MIN_AGE, ageBandOf, birthProblem, birthYears } from "@/lib/age";
 import { ageCopy } from "@/lib/copy/age";
 import { DaysField, STATUS_TONE } from "./PlayersPage";
 import { Card, Fact, Figure, TechDetails, When } from "./people-ui";
-import { Btn, Empty, Field, Notice, Pill, RowsSkeleton, inputCls, type PillTone } from "./ui";
+import { Btn, Empty, Field, Notice, Pill, RowsSkeleton, Tabs, inputCls, type PillTone } from "./ui";
 import { Paged } from "./Pagination";
 import { Select } from "@/components/ui/Select";
 
@@ -70,6 +70,10 @@ const none = <p className="text-muted text-[13px]">{C.noReports}</p>;
  * history. Raw ids sit under Technical details. Every action opens a dialog that asks for a reason; deleting also
  * needs the nickname typed. The server checks all of it again.
  */
+const TABS = ["overview", "games", "reports", "rewards"] as const;
+type Tab = (typeof TABS)[number];
+const isTab = (x: string | null): x is Tab => !!x && (TABS as readonly string[]).includes(x);
+
 export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; backHref: string }) {
   const router = useRouter();
   const q = useAdminQuery<Detail>(["player", id], `/api/admin/players/${id}/detail`);
@@ -80,6 +84,17 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
   const [birthYear, setBirthYear] = useState("");
   const [birthMonth, setBirthMonth] = useState("");
   const [done, setDone] = useState<string | null>(null);
+  // Tabs (owner, 12 Nov): one part of the history at a time, kept in the address bar (?tab=) so a link opens it.
+  const sp = useSearchParams();
+  const fromUrl = sp.get("tab");
+  const [tab, setTab] = useState<Tab>(isTab(fromUrl) ? fromUrl : "overview");
+  const pick = (t: Tab) => {
+    setTab(t);
+    const u = new URL(window.location.href);
+    if (t === "overview") u.searchParams.delete("tab");
+    else u.searchParams.set("tab", t);
+    window.history.replaceState(null, "", u.toString());
+  };
 
   const back = (
     <Link href={backHref} className="text-muted hover:text-text flex h-11 items-center gap-1.5 self-start text-[13px] font-semibold">
@@ -225,305 +240,338 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
             )}
           </Card>
 
-          <Card title={C.whoTitle} id="pd-who">
-            <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-              <Fact
-                label={C.accountTitle}
-                value={C.accountKind[d.account.type]}
-                hint={C.accountMeaning[d.account.type]}
-                tone={d.account.type === "guest" ? "warn" : undefined}
-              />
-              <Fact
-                label={C.ageBand}
-                value={
-                  <>
-                    {band(p.age_band)}
-                    {can(role, "players.age") && (
-                      <span className="text-muted block text-[13px] font-medium">
-                        {C.birth}:{" "}
-                        {p.birth_year && p.birth_month ? `${ageCopy.months[p.birth_month - 1]} ${p.birth_year}` : C.birthNotGiven}
-                      </span>
+          <Tabs<Tab>
+            label={C.tabs.label}
+            idBase="pd"
+            value={tab}
+            onChange={pick}
+            items={[
+              { id: "overview", label: C.tabs.overview },
+              { id: "games", label: C.tabs.games },
+              { id: "reports", label: C.tabs.reports, count: openReports || undefined },
+              { id: "rewards", label: C.tabs.rewards },
+            ]}
+          />
+          <div
+            key={tab}
+            role="tabpanel"
+            id={`pd-panel-${tab}`}
+            aria-labelledby={`pd-tab-${tab}`}
+            className="admin-fade flex flex-col gap-4"
+          >
+            {tab === "overview" && (
+              <>
+                <Card title={C.whoTitle} id="pd-who">
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                    <Fact
+                      label={C.accountTitle}
+                      value={C.accountKind[d.account.type]}
+                      hint={C.accountMeaning[d.account.type]}
+                      tone={d.account.type === "guest" ? "warn" : undefined}
+                    />
+                    <Fact
+                      label={C.ageBand}
+                      value={
+                        <>
+                          {band(p.age_band)}
+                          {can(role, "players.age") && (
+                            <span className="text-muted block text-[13px] font-medium">
+                              {C.birth}:{" "}
+                              {p.birth_year && p.birth_month ? `${ageCopy.months[p.birth_month - 1]} ${p.birth_year}` : C.birthNotGiven}
+                            </span>
+                          )}
+                        </>
+                      }
+                      hint={C.ageMeaning[p.age_band]}
+                    />
+                    <Fact
+                      label={C.lastSeen}
+                      value={C.activity[activity]}
+                      hint={p.last_seen_at ? <When iso={p.last_seen_at} /> : undefined}
+                      tone={activity === "quiet" ? "warn" : undefined}
+                    />
+                    <Fact
+                      label={C.joinedOn}
+                      value={<span title={exactTime(p.created_at)}>{dayDate(p.created_at)}</span>}
+                      hint={timeAgo(p.created_at)}
+                    />
+                    {d.account.type !== "guest" && (
+                      <Fact
+                        label={C.email}
+                        value={<span className="num text-[14px] break-all">{d.account.email ?? C.noEmail}</span>}
+                        hint={!d.account.emailVisible && d.account.email ? C.emailMasked : undefined}
+                      />
                     )}
-                  </>
-                }
-                hint={C.ageMeaning[p.age_band]}
-              />
-              <Fact
-                label={C.lastSeen}
-                value={C.activity[activity]}
-                hint={p.last_seen_at ? <When iso={p.last_seen_at} /> : undefined}
-                tone={activity === "quiet" ? "warn" : undefined}
-              />
-              <Fact
-                label={C.joinedOn}
-                value={<span title={exactTime(p.created_at)}>{dayDate(p.created_at)}</span>}
-                hint={timeAgo(p.created_at)}
-              />
-              {d.account.type !== "guest" && (
-                <Fact
-                  label={C.email}
-                  value={<span className="num text-[14px] break-all">{d.account.email ?? C.noEmail}</span>}
-                  hint={!d.account.emailVisible && d.account.email ? C.emailMasked : undefined}
-                />
-              )}
-              {d.account.type !== "guest" && (
-                <Fact label={C.signedInLast} value={d.account.lastSignInAt ? <When iso={d.account.lastSignInAt} /> : C.never} />
-              )}
-            </div>
-            {d.account.isAdmin && <Notice icon="info">{C.adminAccount}</Notice>}
-          </Card>
-
-          <Card title={C.progress} id="pd-progress">
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              <Figure value={p.level} label={C.statLabels.level} />
-              <Figure value={fmt(d.stats.clears)} label={C.statLabels.clears} />
-              <Figure value={d.stats.streak} label={C.statLabels.streak} />
-              <Figure value={fmt(p.sparks)} label={C.statLabels.sparks} />
-            </div>
-            <TechDetails label={C.moreStats}>
-              <dl className="grid grid-cols-1 gap-x-6 gap-y-1.5 sm:grid-cols-2">
-                {(
-                  [
-                    [C.statLabels.xp, fmt(p.xp)],
-                    [C.statLabels.best, d.stats.bestStreak],
-                    [C.statLabels.freezes, d.stats.freezes],
-                    [C.statLabels.shield, d.stats.shieldAt ? dayDate(d.stats.shieldAt) : C.shieldNone],
-                    [C.statLabels.attempts, fmt(d.stats.attempts)],
-                    [C.statLabels.daily, fmt(d.stats.dailyClears)],
-                    [C.statLabels.badges, d.stats.badges],
-                    [C.statLabels.flagged, d.stats.flagged],
-                  ] as const
-                ).map(([k, v]) => (
-                  <div key={k} className="flex justify-between gap-3">
-                    <dt className="text-muted">{k}</dt>
-                    <dd className="num font-semibold">{v}</dd>
+                    {d.account.type !== "guest" && (
+                      <Fact label={C.signedInLast} value={d.account.lastSignInAt ? <When iso={d.account.lastSignInAt} /> : C.never} />
+                    )}
                   </div>
-                ))}
-              </dl>
-            </TechDetails>
-          </Card>
-
-          <Card title={C.recent} id="pd-attempts" hint={C.recentHint}>
-            {!d.attempts.length ? (
-              <Empty icon="puzzle-piece">{C.noAttempts}</Empty>
-            ) : (
-              <Paged items={d.attempts} label={C.pageLabel(C.recent)}>
-                {(rows) => (
-                  <MiniTable head={C.recentHead}>
-                    {rows.map((a) => (
-                      <tr key={a.id}>
-                        <td className={`${td} font-semibold`}>{GAME_BY_ID[a.game_id]?.name ?? a.game_id}</td>
-                        <td className={`${td} text-muted`}>{C.modes[a.mode] ?? cap(a.mode)}</td>
-                        <td className={`${td} num`}>{a.time_ms !== null ? duration(a.time_ms) : C.noEmail}</td>
-                        <td className={td}>
-                          <Pill tone={ATTEMPT_TONE[a.status] ?? "neutral"}>
-                            {C.attemptStatus[a.status] ?? adminCopy.common.statusLabel(a.status)}
+                  {d.account.isAdmin && <Notice icon="info">{C.adminAccount}</Notice>}
+                </Card>
+                <Card title={C.progress} id="pd-progress">
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    <Figure value={p.level} label={C.statLabels.level} />
+                    <Figure value={fmt(d.stats.clears)} label={C.statLabels.clears} />
+                    <Figure value={d.stats.streak} label={C.statLabels.streak} />
+                    <Figure value={fmt(p.sparks)} label={C.statLabels.sparks} />
+                  </div>
+                  <TechDetails label={C.moreStats}>
+                    <dl className="grid grid-cols-1 gap-x-6 gap-y-1.5 sm:grid-cols-2">
+                      {(
+                        [
+                          [C.statLabels.xp, fmt(p.xp)],
+                          [C.statLabels.best, d.stats.bestStreak],
+                          [C.statLabels.freezes, d.stats.freezes],
+                          [C.statLabels.shield, d.stats.shieldAt ? dayDate(d.stats.shieldAt) : C.shieldNone],
+                          [C.statLabels.attempts, fmt(d.stats.attempts)],
+                          [C.statLabels.daily, fmt(d.stats.dailyClears)],
+                          [C.statLabels.badges, d.stats.badges],
+                          [C.statLabels.flagged, d.stats.flagged],
+                        ] as const
+                      ).map(([k, v]) => (
+                        <div key={k} className="flex justify-between gap-3">
+                          <dt className="text-muted">{k}</dt>
+                          <dd className="num font-semibold">{v}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </TechDetails>
+                </Card>
+              </>
+            )}
+            {tab === "games" && (
+              <>
+                <Card title={C.recent} id="pd-attempts" hint={C.recentHint}>
+                  {!d.attempts.length ? (
+                    <Empty icon="puzzle-piece">{C.noAttempts}</Empty>
+                  ) : (
+                    <Paged items={d.attempts} label={C.pageLabel(C.recent)}>
+                      {(rows) => (
+                        <MiniTable head={C.recentHead}>
+                          {rows.map((a) => (
+                            <tr key={a.id}>
+                              <td className={`${td} font-semibold`}>{GAME_BY_ID[a.game_id]?.name ?? a.game_id}</td>
+                              <td className={`${td} text-muted`}>{C.modes[a.mode] ?? cap(a.mode)}</td>
+                              <td className={`${td} num`}>{a.time_ms !== null ? duration(a.time_ms) : C.noEmail}</td>
+                              <td className={td}>
+                                <Pill tone={ATTEMPT_TONE[a.status] ?? "neutral"}>
+                                  {C.attemptStatus[a.status] ?? adminCopy.common.statusLabel(a.status)}
+                                </Pill>
+                              </td>
+                              <td className={`${td} text-muted whitespace-nowrap`}>
+                                <When iso={a.started_at} />
+                              </td>
+                            </tr>
+                          ))}
+                        </MiniTable>
+                      )}
+                    </Paged>
+                  )}
+                </Card>
+                <Card title={C.competitive} id="pd-ratings" hint={C.competitiveHint}>
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                    <div className="flex min-w-0 flex-col gap-1.5">
+                      <h3 className="text-[14px] font-bold">{C.ratings}</h3>
+                      {!d.ratings?.length ? (
+                        <p className="text-muted text-[13px]">{C.noRatings}</p>
+                      ) : (
+                        <MiniTable head={C.ratingsHead} min={300}>
+                          {d.ratings.map((r) => (
+                            <tr key={r.track}>
+                              <td className={`${td} font-semibold`}>{cap(r.track)}</td>
+                              <td className={`${td} num`}>{Math.round(r.rating)}</td>
+                              <td className={`${td} num`}>{fmt(r.games)}</td>
+                              <td className={`${td} text-muted whitespace-nowrap`}>
+                                <When iso={r.updated_at} />
+                              </td>
+                            </tr>
+                          ))}
+                        </MiniTable>
+                      )}
+                    </div>
+                    <div className="flex min-w-0 flex-col gap-1.5">
+                      <h3 className="text-[14px] font-bold">{C.rankMoves}</h3>
+                      {!d.rankMoves?.length ? (
+                        <p className="text-muted text-[13px]">{C.noRankMoves}</p>
+                      ) : (
+                        <Paged items={d.rankMoves} label={C.pageLabel(C.rankMoves)}>
+                          {(rows) => (
+                            <MiniTable head={C.rankMovesHead} min={340}>
+                              {rows.map((r) => (
+                                <tr key={`${r.ref}:${r.created_at}`}>
+                                  <td className={`${td} num text-muted`}>{r.ref}</td>
+                                  <td className={td}>{r.track ? cap(r.track) : C.noEmail}</td>
+                                  <td className={`${td} num font-semibold ${(r.delta ?? 0) < 0 ? "text-danger" : "text-accent"}`}>
+                                    {r.delta === null ? C.noEmail : `${r.delta > 0 ? "+" : ""}${r.delta.toFixed(1)}`}
+                                  </td>
+                                  <td className={`${td} text-muted whitespace-nowrap`}>
+                                    <When iso={r.created_at} />
+                                  </td>
+                                </tr>
+                              ))}
+                            </MiniTable>
+                          )}
+                        </Paged>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+                <Card title={C.boardGames} id="pd-board">
+                  {!d.boardGames?.length ? (
+                    <p className="text-muted text-[13px]">{C.noBoardGames}</p>
+                  ) : (
+                    <Paged items={d.boardGames} label={C.pageLabel(C.boardGames)}>
+                      {(rows) => (
+                        <MiniTable head={C.boardHead}>
+                          {rows.map((m) => (
+                            <tr key={m.id}>
+                              <td className={`${td} font-semibold`}>{GAME_BY_ID[m.game_id]?.name ?? m.game_id}</td>
+                              <td className={`${td} text-muted`}>
+                                {[C.boardModes[m.mode] ?? m.mode, m.bot ? C.vsBot : null, m.rated ? C.rated : null]
+                                  .filter(Boolean)
+                                  .join(" · ")}
+                              </td>
+                              <td className={td}>
+                                <Pill tone="neutral">{C.boardStatus[m.status] ?? adminCopy.common.statusLabel(m.status)}</Pill>
+                              </td>
+                              <td className={`${td} text-muted`}>
+                                {[m.outcome ? (C.outcomes[m.outcome] ?? m.outcome) : null, m.result].filter(Boolean).join(" · ") ||
+                                  C.noEmail}
+                              </td>
+                              <td className={td} data-house-rules>
+                                {m.house === null
+                                  ? C.noEmail
+                                  : m.house.length
+                                    ? m.house.map((k) => C.ludoRules[k] ?? k).join(", ")
+                                    : C.standardRules}
+                              </td>
+                              <td className={`${td} text-muted whitespace-nowrap`}>
+                                <When iso={m.created_at} />
+                              </td>
+                            </tr>
+                          ))}
+                        </MiniTable>
+                      )}
+                    </Paged>
+                  )}
+                </Card>
+              </>
+            )}
+            {tab === "reports" && (
+              <>
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  {(
+                    [
+                      ["pd-rr", C.reportsReceived, d.reportsReceived],
+                      ["pd-rm", C.reportsMade, d.reportsMade],
+                    ] as const
+                  ).map(([sid, title, list]) => (
+                    <Card key={sid} title={title} id={sid}>
+                      {!list.length ? (
+                        none
+                      ) : (
+                        <Paged items={list} label={C.pageLabel(title)}>
+                          {(rows) => (
+                            <MiniTable head={C.reportsHead} min={340}>
+                              {rows.map((r) => (
+                                <tr key={r.id}>
+                                  <td className={`${td} font-semibold`}>{C.reportReasons[r.reason] ?? cap(r.reason)}</td>
+                                  <td className={`${td} text-muted`}>{C.reportTargets[r.target_type] ?? r.target_type}</td>
+                                  <td className={td}>
+                                    <Pill tone={REPORT_TONE[r.status] ?? "neutral"}>{C.reportStatus[r.status] ?? r.status}</Pill>
+                                  </td>
+                                  <td className={`${td} text-muted whitespace-nowrap`}>
+                                    <When iso={r.created_at} />
+                                  </td>
+                                </tr>
+                              ))}
+                            </MiniTable>
+                          )}
+                        </Paged>
+                      )}
+                    </Card>
+                  ))}
+                </div>
+                <Card title={C.moderation} id="pd-audit" hint={C.moderationHint}>
+                  {!d.audit.length ? (
+                    <p className="text-muted text-[13px]">{C.noModeration}</p>
+                  ) : (
+                    <Paged items={d.audit} label={C.pageLabel(C.moderation)}>
+                      {(rows) => <AuditList rows={rows} />}
+                    </Paged>
+                  )}
+                </Card>
+              </>
+            )}
+            {tab === "rewards" && (
+              <>
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  <Card title={C.sparksLedger} id="pd-ledger" hint={C.sparksHint}>
+                    {!d.sparks.length ? (
+                      <p className="text-muted text-[13px]">{C.noLedger}</p>
+                    ) : (
+                      <Paged items={d.sparks} label={C.pageLabel(C.sparksLedger)}>
+                        {(rows) => (
+                          <ul className="flex flex-col text-[13px]">
+                            {rows.map((s) => (
+                              <li key={s.id} className="border-line flex items-center gap-2 border-t py-1.5 first:border-t-0">
+                                <span
+                                  className={`num w-16 shrink-0 text-right font-semibold ${s.amount < 0 ? "text-danger" : "text-accent"}`}
+                                >
+                                  {s.amount > 0 ? "+" : ""}
+                                  {fmt(s.amount)}
+                                </span>
+                                <span className="min-w-0 flex-1 truncate">{C.sparkSources[s.source] ?? C.sparkFallback(s.source)}</span>
+                                <When iso={s.created_at} className="text-muted shrink-0" />
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </Paged>
+                    )}
+                  </Card>
+                  <Card title={C.league} id="pd-league">
+                    {!d.league.length ? (
+                      <p className="text-muted text-[13px]">{C.noLeague}</p>
+                    ) : (
+                      <Paged items={d.league} label={C.pageLabel(C.league)}>
+                        {(rows) => (
+                          <MiniTable head={C.leagueHead} min={340}>
+                            {rows.map((l) => (
+                              <tr key={l.week_start}>
+                                <td className={`${td} whitespace-nowrap`}>{dayDate(l.week_start)}</td>
+                                <td className={td}>{LEAGUE_TIERS[l.tier] ?? l.tier}</td>
+                                <td className={`${td} num`}>{fmt(l.points)}</td>
+                                <td className={`${td} num`}>{l.rank ?? C.noEmail}</td>
+                                <td className={`${td} text-muted`}>{l.result ? (C.leagueResults[l.result] ?? l.result) : C.noEmail}</td>
+                              </tr>
+                            ))}
+                          </MiniTable>
+                        )}
+                      </Paged>
+                    )}
+                  </Card>
+                </div>
+                <Card title={C.inventory} id="pd-inv">
+                  {!d.inventory.length ? (
+                    <p className="text-muted text-[13px]">{C.noInventory}</p>
+                  ) : (
+                    <ul className="flex flex-wrap gap-1.5">
+                      {d.inventory.map((i) => (
+                        <li key={i.id}>
+                          <Pill tone={i.equipped ? "ok" : "neutral"}>
+                            {i.name}
+                            {i.type ? ` · ${i.type.replace(/_/g, " ")}` : ""}
+                            {i.equipped ? ` · ${C.equipped}` : ""}
                           </Pill>
-                        </td>
-                        <td className={`${td} text-muted whitespace-nowrap`}>
-                          <When iso={a.started_at} />
-                        </td>
-                      </tr>
-                    ))}
-                  </MiniTable>
-                )}
-              </Paged>
-            )}
-          </Card>
-
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            {(
-              [
-                ["pd-rr", C.reportsReceived, d.reportsReceived],
-                ["pd-rm", C.reportsMade, d.reportsMade],
-              ] as const
-            ).map(([sid, title, list]) => (
-              <Card key={sid} title={title} id={sid}>
-                {!list.length ? (
-                  none
-                ) : (
-                  <Paged items={list} label={C.pageLabel(title)}>
-                    {(rows) => (
-                      <MiniTable head={C.reportsHead} min={340}>
-                        {rows.map((r) => (
-                          <tr key={r.id}>
-                            <td className={`${td} font-semibold`}>{C.reportReasons[r.reason] ?? cap(r.reason)}</td>
-                            <td className={`${td} text-muted`}>{C.reportTargets[r.target_type] ?? r.target_type}</td>
-                            <td className={td}>
-                              <Pill tone={REPORT_TONE[r.status] ?? "neutral"}>{C.reportStatus[r.status] ?? r.status}</Pill>
-                            </td>
-                            <td className={`${td} text-muted whitespace-nowrap`}>
-                              <When iso={r.created_at} />
-                            </td>
-                          </tr>
-                        ))}
-                      </MiniTable>
-                    )}
-                  </Paged>
-                )}
-              </Card>
-            ))}
-          </div>
-
-          <Card title={C.moderation} id="pd-audit" hint={C.moderationHint}>
-            {!d.audit.length ? (
-              <p className="text-muted text-[13px]">{C.noModeration}</p>
-            ) : (
-              <Paged items={d.audit} label={C.pageLabel(C.moderation)}>
-                {(rows) => <AuditList rows={rows} />}
-              </Paged>
-            )}
-          </Card>
-
-          <Card title={C.competitive} id="pd-ratings" hint={C.competitiveHint}>
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <div className="flex min-w-0 flex-col gap-1.5">
-                <h3 className="text-[14px] font-bold">{C.ratings}</h3>
-                {!d.ratings?.length ? (
-                  <p className="text-muted text-[13px]">{C.noRatings}</p>
-                ) : (
-                  <MiniTable head={C.ratingsHead} min={300}>
-                    {d.ratings.map((r) => (
-                      <tr key={r.track}>
-                        <td className={`${td} font-semibold`}>{cap(r.track)}</td>
-                        <td className={`${td} num`}>{Math.round(r.rating)}</td>
-                        <td className={`${td} num`}>{fmt(r.games)}</td>
-                        <td className={`${td} text-muted whitespace-nowrap`}>
-                          <When iso={r.updated_at} />
-                        </td>
-                      </tr>
-                    ))}
-                  </MiniTable>
-                )}
-              </div>
-              <div className="flex min-w-0 flex-col gap-1.5">
-                <h3 className="text-[14px] font-bold">{C.rankMoves}</h3>
-                {!d.rankMoves?.length ? (
-                  <p className="text-muted text-[13px]">{C.noRankMoves}</p>
-                ) : (
-                  <Paged items={d.rankMoves} label={C.pageLabel(C.rankMoves)}>
-                    {(rows) => (
-                      <MiniTable head={C.rankMovesHead} min={340}>
-                        {rows.map((r) => (
-                          <tr key={`${r.ref}:${r.created_at}`}>
-                            <td className={`${td} num text-muted`}>{r.ref}</td>
-                            <td className={td}>{r.track ? cap(r.track) : C.noEmail}</td>
-                            <td className={`${td} num font-semibold ${(r.delta ?? 0) < 0 ? "text-danger" : "text-accent"}`}>
-                              {r.delta === null ? C.noEmail : `${r.delta > 0 ? "+" : ""}${r.delta.toFixed(1)}`}
-                            </td>
-                            <td className={`${td} text-muted whitespace-nowrap`}>
-                              <When iso={r.created_at} />
-                            </td>
-                          </tr>
-                        ))}
-                      </MiniTable>
-                    )}
-                  </Paged>
-                )}
-              </div>
-            </div>
-          </Card>
-
-          <Card title={C.boardGames} id="pd-board">
-            {!d.boardGames?.length ? (
-              <p className="text-muted text-[13px]">{C.noBoardGames}</p>
-            ) : (
-              <Paged items={d.boardGames} label={C.pageLabel(C.boardGames)}>
-                {(rows) => (
-                  <MiniTable head={C.boardHead}>
-                    {rows.map((m) => (
-                      <tr key={m.id}>
-                        <td className={`${td} font-semibold`}>{GAME_BY_ID[m.game_id]?.name ?? m.game_id}</td>
-                        <td className={`${td} text-muted`}>
-                          {[C.boardModes[m.mode] ?? m.mode, m.bot ? C.vsBot : null, m.rated ? C.rated : null].filter(Boolean).join(" · ")}
-                        </td>
-                        <td className={td}>
-                          <Pill tone="neutral">{C.boardStatus[m.status] ?? adminCopy.common.statusLabel(m.status)}</Pill>
-                        </td>
-                        <td className={`${td} text-muted`}>
-                          {[m.outcome ? (C.outcomes[m.outcome] ?? m.outcome) : null, m.result].filter(Boolean).join(" · ") || C.noEmail}
-                        </td>
-                        <td className={td} data-house-rules>
-                          {m.house === null
-                            ? C.noEmail
-                            : m.house.length
-                              ? m.house.map((k) => C.ludoRules[k] ?? k).join(", ")
-                              : C.standardRules}
-                        </td>
-                        <td className={`${td} text-muted whitespace-nowrap`}>
-                          <When iso={m.created_at} />
-                        </td>
-                      </tr>
-                    ))}
-                  </MiniTable>
-                )}
-              </Paged>
-            )}
-          </Card>
-
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <Card title={C.sparksLedger} id="pd-ledger" hint={C.sparksHint}>
-              {!d.sparks.length ? (
-                <p className="text-muted text-[13px]">{C.noLedger}</p>
-              ) : (
-                <Paged items={d.sparks} label={C.pageLabel(C.sparksLedger)}>
-                  {(rows) => (
-                    <ul className="flex flex-col text-[13px]">
-                      {rows.map((s) => (
-                        <li key={s.id} className="border-line flex items-center gap-2 border-t py-1.5 first:border-t-0">
-                          <span className={`num w-16 shrink-0 text-right font-semibold ${s.amount < 0 ? "text-danger" : "text-accent"}`}>
-                            {s.amount > 0 ? "+" : ""}
-                            {fmt(s.amount)}
-                          </span>
-                          <span className="min-w-0 flex-1 truncate">{C.sparkSources[s.source] ?? C.sparkFallback(s.source)}</span>
-                          <When iso={s.created_at} className="text-muted shrink-0" />
                         </li>
                       ))}
                     </ul>
                   )}
-                </Paged>
-              )}
-            </Card>
-            <Card title={C.league} id="pd-league">
-              {!d.league.length ? (
-                <p className="text-muted text-[13px]">{C.noLeague}</p>
-              ) : (
-                <Paged items={d.league} label={C.pageLabel(C.league)}>
-                  {(rows) => (
-                    <MiniTable head={C.leagueHead} min={340}>
-                      {rows.map((l) => (
-                        <tr key={l.week_start}>
-                          <td className={`${td} whitespace-nowrap`}>{dayDate(l.week_start)}</td>
-                          <td className={td}>{LEAGUE_TIERS[l.tier] ?? l.tier}</td>
-                          <td className={`${td} num`}>{fmt(l.points)}</td>
-                          <td className={`${td} num`}>{l.rank ?? C.noEmail}</td>
-                          <td className={`${td} text-muted`}>{l.result ? (C.leagueResults[l.result] ?? l.result) : C.noEmail}</td>
-                        </tr>
-                      ))}
-                    </MiniTable>
-                  )}
-                </Paged>
-              )}
-            </Card>
-          </div>
-
-          <Card title={C.inventory} id="pd-inv">
-            {!d.inventory.length ? (
-              <p className="text-muted text-[13px]">{C.noInventory}</p>
-            ) : (
-              <ul className="flex flex-wrap gap-1.5">
-                {d.inventory.map((i) => (
-                  <li key={i.id}>
-                    <Pill tone={i.equipped ? "ok" : "neutral"}>
-                      {i.name}
-                      {i.type ? ` · ${i.type.replace(/_/g, " ")}` : ""}
-                      {i.equipped ? ` · ${C.equipped}` : ""}
-                    </Pill>
-                  </li>
-                ))}
-              </ul>
+                </Card>
+              </>
             )}
-          </Card>
+          </div>
         </div>
 
         <div className="flex flex-col gap-4 xl:sticky xl:top-4 xl:self-start">

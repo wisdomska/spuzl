@@ -29,7 +29,7 @@ for (const g of ALL_GAMES) {
     await header.getByRole("button", { name: "Game menu" }).click();
     const menu = page.getByRole("menu");
     await expect(menu).toBeVisible();
-    for (const name of [/Sound/, /Haptics/, /Settings/, /Share/, /Report a problem/, /Leave game/]) {
+    for (const name of [/Sound/, /Haptics/, /Settings/, /Share/, /Send feedback/, /Leave game/]) {
       const b = await menu.getByRole(/Sound|Haptics/.test(String(name)) ? "menuitemcheckbox" : "menuitem", { name }).boundingBox();
       expect(b!.height, `${name} height`).toBeGreaterThanOrEqual(44);
     }
