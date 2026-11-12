@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { CSSProperties } from "react";
 import { FaqAccordion } from "@/components/seo/FaqAccordion";
 import Image from "next/image";
 import Link from "next/link";
@@ -71,7 +72,7 @@ export default async function GamePage({ params }: PageProps<"/games/[id]">) {
     [T.facts.plays, T.facts.playsValue],
   ];
   return (
-    <PublicShell>
+    <PublicShell back="/games">
       <JsonLd data={graph(videoGame(f), breadcrumbs(crumbs), faqPage(f.faq))} />
       <nav aria-label={T.nav.breadcrumb} className="text-muted text-[14px]">
         <ol className="flex flex-wrap items-center gap-1.5">
@@ -98,7 +99,7 @@ export default async function GamePage({ params }: PageProps<"/games/[id]">) {
 
       <article className="mt-6 flex flex-col gap-10">
         <header className="flex flex-col gap-5">
-          <div className="flex items-center gap-4">
+          <div className="hero-in flex items-center gap-4">
             <Image src={`/3d/icons/${g.id}.webp`} alt={`${g.name} game icon`} width={88} height={88} priority className="rounded-[22px]" />
             <div className="flex flex-col gap-2">
               <h1 className="font-display text-[40px] leading-none font-black tracking-[-0.04em] sm:text-[56px]">{g.name}</h1>
@@ -112,8 +113,10 @@ export default async function GamePage({ params }: PageProps<"/games/[id]">) {
               </Link>
             </div>
           </div>
-          <p className="max-w-[70ch] text-[18px] leading-relaxed sm:text-[20px]">{f.definition}</p>
-          <div className="flex flex-col gap-2">
+          <p className="hero-in max-w-[70ch] text-[18px] leading-relaxed sm:text-[20px]" style={{ "--i": 1 } as CSSProperties}>
+            {f.definition}
+          </p>
+          <div className="hero-in flex flex-col gap-2" style={{ "--i": 2 } as CSSProperties}>
             <Link href={`/play/${g.id}`} prefetch={false} className={CTA}>
               <Icon name="play" size={20} />
               {T.cta(g.name)}
@@ -135,7 +138,7 @@ export default async function GamePage({ params }: PageProps<"/games/[id]">) {
               <p className="bg-surface border-line rounded-[18px] border p-4 text-[17px] leading-relaxed">{g.rule}</p>
               {g.photosensitive && <p className="text-gold text-[14px]">{T.photosensitive}</p>}
             </section>
-            <section aria-labelledby="how" className="flex flex-col gap-3">
+            <section aria-labelledby="how" data-reveal className="flex flex-col gap-3">
               <h2 id="how" className={H2}>
                 {T.howTitle(g.name)}
               </h2>
@@ -145,7 +148,7 @@ export default async function GamePage({ params }: PageProps<"/games/[id]">) {
                 ))}
               </ol>
             </section>
-            <section aria-labelledby="modes" className="flex flex-col gap-3">
+            <section aria-labelledby="modes" data-reveal className="flex flex-col gap-3">
               <h2 id="modes" className={H2}>
                 {T.modesTitle}
               </h2>
@@ -155,7 +158,7 @@ export default async function GamePage({ params }: PageProps<"/games/[id]">) {
                 ))}
               </ul>
             </section>
-            <section aria-labelledby="faq" className="flex flex-col gap-3">
+            <section aria-labelledby="faq" data-reveal className="flex flex-col gap-3">
               <h2 id="faq" className={H2}>
                 {T.faqTitle(g.name)}
               </h2>
@@ -194,8 +197,8 @@ export default async function GamePage({ params }: PageProps<"/games/[id]">) {
             {T.moreTitle(world.name)}
           </h2>
           <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {f.related.map((x) => (
-              <GameLinkCard key={x.id} game={x} />
+            {f.related.map((x, i) => (
+              <GameLinkCard key={x.id} game={x} index={i} />
             ))}
           </ul>
         </section>

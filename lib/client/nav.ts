@@ -18,6 +18,11 @@ export function backAction(s: { entry: string | null; navigated: boolean; curren
   return s.current === s.entry ? "home" : "back";
 }
 
+/** Where this page load started and whether the app has navigated since (for Back links outside React state). */
+export function navState() {
+  return { entry, navigated };
+}
+
 /** Mount once (Providers): records the landing path and every client-side navigation after it. */
 export function useNavTracker() {
   const path = usePathname();

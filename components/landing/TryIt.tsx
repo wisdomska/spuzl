@@ -13,6 +13,7 @@ import { aboutCopy as T } from "@/lib/copy/about";
 import { play } from "@/lib/audio";
 import { EmbeddedBoard } from "@/components/game/useBoardSize";
 import { rememberDemoClear } from "@/lib/client/onboarding";
+import { SoundToggle } from "./SoundToggle";
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
@@ -68,7 +69,10 @@ export function TryIt() {
       <div className="bg-surface border-line rounded-[36px] border p-5 shadow-[0_30px_60px_rgb(0_0_0/0.35)]">
         <div className="flex items-center justify-between">
           <p className="font-display text-logic text-[20px] font-black">{T.tryIt.game}</p>
-          <span className="text-muted font-mono text-[12px] tracking-widest uppercase">4 × 4</span>
+          <div className="-my-2 -mr-2 flex items-center gap-1">
+            <span className="text-muted font-mono text-[12px] tracking-widest uppercase">4 × 4</span>
+            <SoundToggle />
+          </div>
         </div>
         <ul className="mt-3 flex flex-col gap-1.5">
           {T.tryIt.rules.map((r, i) => (

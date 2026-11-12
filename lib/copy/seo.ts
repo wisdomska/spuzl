@@ -239,23 +239,20 @@ export const seoMeta = {
 
 /** The game catalogue (/games) and the game pages (/games/<id>). */
 export const gamesCopy = {
-  nav: { home: "SPUZL home", games: "Games", how: "How to play", play: "Play", breadcrumb: "Breadcrumb", footer: "Footer" },
+  nav: { home: "SPUZL home", games: "Games", how: "How to play", play: "Play", breadcrumb: "Breadcrumb", footer: "Footer", back: "Back" },
   indexTitle: "All SPUZL games",
-  indexLede: `SPUZL has ${GAME_COUNT} free online games in ${WORLD_COUNT} worlds: ${worldNames}. Every one plays in your browser on a phone or a computer, any time, as often as you like.`,
+  indexLede: `${GAME_COUNT} free games in ${WORLD_COUNT} worlds. Play in your browser, any time.`,
   /** The same, counting the games that are On (the /games page follows the Games page state). */
-  indexLedeFor: (games: number, worlds: number, names: string) =>
-    `SPUZL has ${games} free online games in ${worlds} worlds: ${names}. Every one plays in your browser on a phone or a computer, any time, as often as you like.`,
-  indexPoints: [
-    "Free to play, no download and no ads.",
-    "No sign-up needed: play as a guest, sign in later to keep your streak.",
-    "Most games take one to three minutes.",
-  ],
+  indexLedeFor: (games: number, worlds: number) => `${games} free games in ${worlds} worlds. Play in your browser, any time.`,
+  indexPoints: ["No download, no ads", "No sign-up needed", "1 to 3 minutes a game"],
+  /** the world tabs on /games */
+  worldsLabel: "Worlds",
   worldCount: (n: number) => (n === 1 ? "1 game" : `${n} games`),
   allGames: "All games",
   /** Under the game list on a world page */
-  seeAll: "See every SPUZL game",
+  seeAll: "See all games",
   cta: (game: string) => `Play ${game} free`,
-  ctaNote: "No sign-up needed. Play as a guest.",
+  ctaNote: "No sign-up. Play as a guest.",
   ctaTitle: (game: string) => `Ready for ${game}?`,
   /** foot of the game's link preview */
   ogFoot: "Free · no download · spuzl.vercel.app",
@@ -263,10 +260,10 @@ export const gamesCopy = {
   howTitle: (game: string) => `How to play ${game}`,
   howSteps: (g: GameMeta) => [
     `Open ${g.name} on SPUZL in any browser. No download.`,
-    "First time? Most games start with a short practice round with free hints. Nothing counts yet.",
+    "First time? A short practice round with free hints shows you how.",
     g.rule,
     CONTROLS[g.engine],
-    ...(g.engine === "grid" ? ["Stuck? Use up to 3 hints on a puzzle. Each one shows a single safe next step."] : []),
+    ...(g.engine === "grid" ? ["Stuck? Up to 3 hints a puzzle, each one safe next step."] : []),
     SCORING[g.scoring],
   ],
   factsTitle: "Quick facts",
@@ -339,7 +336,7 @@ export const gamesCopy = {
 /** How to play: the FAQ and the link from each game to its page. */
 export const howToPlaySeoCopy = {
   crumb: "How to play",
-  faqTitle: "Questions people ask",
+  faqTitle: "Frequently Asked",
   more: (game: string) => `All about ${game}`,
 } as const;
 
@@ -349,13 +346,13 @@ export const landingSeoCopy = {
   catalogueTitleFor: (n: number) => `All ${n} games, one tap away.`,
   catalogueMore: "See every game",
   faqEyebrow: "Questions",
-  faqTitle: "Good to know.",
+  faqTitle: "Frequently Asked.",
 } as const;
 
 /** Public world pages (visitors and crawlers). */
 export const worldSeoCopy = {
-  lede: (name: string, tagline: string, n: number) =>
-    `${name} is a world of ${n} free online games on SPUZL: ${tagline.toLowerCase()}. Play any of them in your browser, as often as you like.`,
+  /** "Logic grids, paths and sliding jams. 15 free games." (the H1 names the world) */
+  lede: (tagline: string, n: number) => `${tagline}. ${n === 1 ? "1 free game" : `${n} free games`}.`,
   gamesTitle: (name: string) => `${name} games`,
   otherWorlds: "Other worlds",
   play: "Play now",

@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import { WORLD_BY_ID, playerWorlds, type GameSwitch, type WorldId } from "@/lib/catalog";
 import { Icon } from "@/components/ui/Icon";
@@ -17,7 +18,7 @@ export function PublicWorld({ id, lab = LIVE_ONLY }: { id: WorldId; lab?: GameSw
   // Its games that are On (as on the World screen).
   const games = publicGamesInWorld(id, lab);
   return (
-    <PublicShell>
+    <PublicShell back="/games">
       <JsonLd
         data={graph(
           breadcrumbs([
@@ -33,17 +34,25 @@ export function PublicWorld({ id, lab = LIVE_ONLY }: { id: WorldId; lab?: GameSw
         style={{ backgroundColor: `color-mix(in srgb, ${w.color} 18%, var(--bg))` }}
       >
         <span
-          className="flex size-14 items-center justify-center rounded-[18px]"
-          style={{ background: w.color, color: "var(--on-accent)" }}
+          className="hero-in flex size-14 items-center justify-center rounded-[18px]"
+          style={{ background: w.color, color: "var(--on-accent)", "--i": 1 } as CSSProperties}
           aria-hidden
         >
           <Icon name={w.icon} size={28} />
         </span>
-        <h1 className="font-display text-[40px] leading-none font-black tracking-[-0.04em] sm:text-[56px]">{w.name}</h1>
-        <p className="max-w-[640px] text-[17px] leading-relaxed">{T.lede(w.name, w.tagline, games.length)}</p>
+        <h1
+          className="font-display hero-in text-[40px] leading-none font-black tracking-[-0.04em] sm:text-[56px]"
+          style={{ "--i": 2 } as CSSProperties}
+        >
+          {w.name}
+        </h1>
+        <p className="hero-in text-[17px] leading-relaxed" style={{ "--i": 3 } as CSSProperties}>
+          {T.lede(w.tagline, games.length)}
+        </p>
         <Link
           href="/welcome/play"
-          className="press bg-accent text-on-accent flex h-14 w-fit items-center gap-2 rounded-full px-7 text-[17px] font-bold shadow-[0_5px_0_var(--accent-depth)]"
+          style={{ "--i": 4 } as CSSProperties}
+          className="hero-in press bg-accent text-on-accent flex h-14 w-fit items-center gap-2 rounded-full px-7 text-[17px] font-bold shadow-[0_5px_0_var(--accent-depth)]"
         >
           <Icon name="play" size={20} />
           {T.play}
@@ -54,12 +63,12 @@ export function PublicWorld({ id, lab = LIVE_ONLY }: { id: WorldId; lab?: GameSw
           {T.gamesTitle(w.name)}
         </h2>
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {games.map((g) => (
-            <GameLinkCard key={g.id} game={g} />
+          {games.map((g, i) => (
+            <GameLinkCard key={g.id} game={g} index={i} />
           ))}
         </ul>
       </section>
-      <section aria-labelledby="worlds" className="mt-12 flex flex-col gap-4">
+      <section aria-labelledby="worlds" data-reveal className="mt-12 flex flex-col gap-4">
         <h2 id="worlds" className="font-display text-[22px] font-black">
           {T.otherWorlds}
         </h2>

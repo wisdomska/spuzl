@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { CSSProperties } from "react";
 import { FaqAccordion } from "@/components/seo/FaqAccordion";
 import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
@@ -6,6 +7,7 @@ import { Spuz } from "@/components/brand/Spuz";
 import { Wordmark } from "@/components/brand/Wordmark";
 import { TryIt } from "@/components/landing/TryIt";
 import { NoMusic } from "@/components/landing/NoMusic";
+import { Reveal } from "@/components/landing/Reveal";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { aboutCopy as T } from "@/lib/copy/about";
 import { landingSeoCopy as S, seoMeta, siteFaq } from "@/lib/copy/seo";
@@ -42,7 +44,8 @@ export default async function Landing() {
   const C = T.counted(counts.games, counts.worlds);
   const faq = siteFaq(counts.games, counts.worlds, counts.names);
   return (
-    <div className="safe-top min-h-dvh overflow-x-clip">
+    // R6: same-page links glide (data-smooth-scroll), the hero rises in once, sections reveal on scroll (Reveal).
+    <div data-smooth-scroll className="safe-top min-h-dvh overflow-x-clip">
       <JsonLd
         data={graph(
           organization(),
@@ -53,6 +56,7 @@ export default async function Landing() {
         )}
       />
       <NoMusic />
+      <Reveal />
       {/* Nav */}
       <header className="sticky top-0 z-20 px-4 pt-3">
         <nav className="bg-surface/85 border-line mx-auto flex h-16 max-w-[1160px] items-center justify-between rounded-full border px-4 backdrop-blur-md sm:px-6">
@@ -90,17 +94,25 @@ export default async function Landing() {
         {/* Hero */}
         <section className="grid items-center gap-12 pt-10 pb-16 lg:grid-cols-[1.15fr_1fr] lg:pt-16 lg:pb-24">
           <div className="flex flex-col gap-6">
-            <p className="bg-surface-raised text-muted flex w-fit items-center gap-2 rounded-full px-3.5 py-1.5 text-[13px] font-semibold">
+            <p className="hero-in bg-surface-raised text-muted flex w-fit items-center gap-2 rounded-full px-3.5 py-1.5 text-[13px] font-semibold">
               <span className="text-text font-display font-black">{T.name}</span>
               <span aria-hidden>·</span>
               {C.eyebrow}
             </p>
-            <h1 className="font-display text-[46px] leading-[0.98] font-black tracking-[-0.045em] text-balance sm:text-[64px] lg:text-[80px]">
+            <h1
+              style={{ "--i": 1 } as CSSProperties}
+              className="hero-in font-display text-[46px] leading-[0.98] font-black tracking-[-0.045em] text-balance sm:text-[64px] lg:text-[80px]"
+            >
               <span className="sr-only">{T.name}: </span>
               {T.headline[0]} {T.headline[1]} <span className="text-accent">{T.headlineAccent}</span>
             </h1>
-            <p className="text-muted max-w-[540px] text-[17px] leading-relaxed sm:text-[18px]">{T.lede}</p>
-            <div className="flex flex-col gap-3 sm:flex-row">
+            <p
+              style={{ "--i": 2 } as CSSProperties}
+              className="hero-in text-muted max-w-[540px] text-[17px] leading-relaxed sm:text-[18px]"
+            >
+              {T.lede}
+            </p>
+            <div style={{ "--i": 3 } as CSSProperties} className="hero-in flex flex-col gap-3 sm:flex-row">
               <Link href="/welcome/play" className={PRIMARY}>
                 <Icon name="play" size={20} />
                 {T.play}
@@ -109,16 +121,18 @@ export default async function Landing() {
                 {T.signIn}
               </Link>
             </div>
-            <p className="text-muted flex items-center gap-2 text-[14px]">
+            <p style={{ "--i": 4 } as CSSProperties} className="hero-in text-muted flex items-center gap-2 text-[14px]">
               <Icon name="lock-simple" size={16} />
               {T.trust}
             </p>
           </div>
-          <TryIt />
+          <div style={{ "--i": 2 } as CSSProperties} className="hero-in">
+            <TryIt />
+          </div>
         </section>
 
         {/* Stats */}
-        <section aria-label="SPUZL in numbers" className="border-line grid grid-cols-3 border-y py-8">
+        <section aria-label="SPUZL in numbers" data-reveal className="border-line grid grid-cols-3 border-y py-8">
           {C.stats.map(([n, label]) => (
             <div key={label} className="flex flex-col items-center gap-1">
               <span className="font-display text-[34px] leading-none font-black tracking-[-0.03em] sm:text-[48px]">{n}</span>
@@ -129,11 +143,18 @@ export default async function Landing() {
 
         {/* How it works */}
         <section id="how" className="scroll-mt-24 py-16 sm:py-24">
-          <p className={EYEBROW}>{T.howEyebrow}</p>
-          <h2 className={`${H2} mt-3`}>{T.howTitle}</h2>
+          <div data-reveal>
+            <p className={EYEBROW}>{T.howEyebrow}</p>
+            <h2 className={`${H2} mt-3`}>{T.howTitle}</h2>
+          </div>
           <ol className="mt-10 grid gap-8 md:grid-cols-3">
             {T.steps.map(([title, body], i) => (
-              <li key={title} className={`border-t-2 pt-5 ${i === 2 ? "border-accent" : "border-text"}`}>
+              <li
+                key={title}
+                data-reveal
+                style={{ "--i": i } as CSSProperties}
+                className={`border-t-2 pt-5 ${i === 2 ? "border-accent" : "border-text"}`}
+              >
                 <span className="text-muted font-mono text-[13px] font-semibold">0{i + 1}</span>
                 <p
                   className={`font-display mt-2 text-[34px] leading-none font-black tracking-[-0.04em] sm:text-[40px] ${i === 2 ? "text-accent" : ""}`}
@@ -148,13 +169,20 @@ export default async function Landing() {
 
         {/* Worlds */}
         <section id="worlds" className="scroll-mt-24 pb-16 sm:pb-24">
-          <p className={EYEBROW}>{T.worldsEyebrow}</p>
-          <h2 className={`${H2} mt-3`}>{C.worldsTitle}</h2>
+          <div data-reveal>
+            <p className={EYEBROW}>{T.worldsEyebrow}</p>
+            <h2 className={`${H2} mt-3`}>{C.worldsTitle}</h2>
+          </div>
           <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {playerWorlds(sw).map((w) => {
+            {playerWorlds(sw).map((w, i) => {
               const games = publicGamesInWorld(w.id, sw);
               return (
-                <li key={w.id} className="bg-surface border-line flex flex-col gap-3 rounded-[24px] border p-5">
+                <li
+                  key={w.id}
+                  data-reveal
+                  style={{ "--i": i } as CSSProperties}
+                  className="bg-surface border-line flex flex-col gap-3 rounded-[24px] border p-5"
+                >
                   <div className="flex items-center gap-3">
                     <span
                       className="flex size-11 items-center justify-center rounded-[14px]"
@@ -193,11 +221,18 @@ export default async function Landing() {
 
         {/* Friends */}
         <section id="friends" className="scroll-mt-24 pb-16 sm:pb-24">
-          <p className={EYEBROW}>{T.friendsEyebrow}</p>
-          <h2 className={`${H2} mt-3`}>{T.friendsTitle}</h2>
+          <div data-reveal>
+            <p className={EYEBROW}>{T.friendsEyebrow}</p>
+            <h2 className={`${H2} mt-3`}>{T.friendsTitle}</h2>
+          </div>
           <ul className="mt-10 grid gap-4 md:grid-cols-3">
-            {T.friends.map(([icon, title, body]) => (
-              <li key={title} className="bg-surface-raised flex flex-col gap-3 rounded-[24px] p-6">
+            {T.friends.map(([icon, title, body], i) => (
+              <li
+                key={title}
+                data-reveal
+                style={{ "--i": i } as CSSProperties}
+                className="bg-surface-raised flex flex-col gap-3 rounded-[24px] p-6"
+              >
                 <Icon name={icon} size={28} className="text-accent" />
                 <p className="font-display text-[22px] font-black">{title}</p>
                 <p className="text-muted text-[15px] leading-relaxed">{body}</p>
@@ -207,7 +242,7 @@ export default async function Landing() {
         </section>
 
         {/* Sister app: SPIL, as a compact card (mirrors SPIL's own "From the same studio" card for SPUZL) */}
-        <section aria-labelledby="spil" className="pb-16 sm:pb-24">
+        <section aria-labelledby="spil" data-reveal className="pb-16 sm:pb-24">
           <div className="bg-surface border-line flex flex-col gap-6 rounded-[28px] border p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
             <div className="flex max-w-[60ch] flex-col gap-2">
               <p className={EYEBROW}>{T.spil.eyebrow}</p>
@@ -231,15 +266,20 @@ export default async function Landing() {
 
         {/* Questions people (and AI answers) ask, answered from facts in the code (lib/copy/seo.ts) */}
         <section id="faq" aria-labelledby="faq-title" className="scroll-mt-24 pb-16 sm:pb-24">
-          <p className={EYEBROW}>{S.faqEyebrow}</p>
-          <h2 id="faq-title" className={`${H2} mt-3`}>
-            {S.faqTitle}
-          </h2>
+          <div data-reveal>
+            <p className={EYEBROW}>{S.faqEyebrow}</p>
+            <h2 id="faq-title" className={`${H2} mt-3`}>
+              {S.faqTitle}
+            </h2>
+          </div>
           <FaqAccordion items={faq} className="mt-10" />
         </section>
 
         {/* Final call to action */}
-        <section className="bg-accent text-on-accent relative mb-16 flex flex-col items-center gap-5 overflow-hidden rounded-[36px] px-6 py-12 text-center sm:py-16">
+        <section
+          data-reveal
+          className="bg-accent text-on-accent relative mb-16 flex flex-col items-center gap-5 overflow-hidden rounded-[36px] px-6 py-12 text-center sm:py-16"
+        >
           <Spuz mood="wave" size={120} color="var(--surface)" decorative />
           <h2 className="font-display max-w-[640px] text-[30px] leading-[1.05] font-black tracking-[-0.03em] text-balance sm:text-[44px]">
             {T.ctaTitle}
