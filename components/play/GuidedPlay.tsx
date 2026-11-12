@@ -1,5 +1,6 @@
 "use client";
 
+import { takeGuided } from "@/lib/client/guided-prefetch";
 import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { GameShell } from "@/components/game/GameShell";
@@ -50,7 +51,7 @@ export function GuidedPlay({
   useEffect(() => {
     let live = true;
     recorded.current = { game: meta.id, start: false, end: false };
-    api<{ puzzle: unknown }>(`/api/v1/guided/${meta.id}`)
+    takeGuided(meta.id)
       .then((r) => {
         if (!live) return;
         setPuzzle(r.puzzle);

@@ -1,5 +1,6 @@
 "use client";
 
+import { prefetchGuided } from "@/lib/client/guided-prefetch";
 import { whenQuiet } from "@/lib/perf/quiet";
 import { primeAttempt, takePrimed } from "@/lib/client/early-attempt";
 import { useRouter } from "next/navigation";
@@ -215,6 +216,11 @@ export function PlayScreen({
     initialMode === "five" ? fiveSlot?.state === "in_progress" : today.data?.games.find((g) => g.id === meta.id)?.state === "in_progress";
   // First try of a game: a short guided practice round before the real one (skippable).
   const [guided, setGuided] = useState(false);
+  // New-device speed (owner, 12 Nov): a game this browser hasn't learned starts loading its practice board now,
+  // alongside /me, instead of after it.
+  useEffect(() => {
+    if (hasLogic(meta.id) && !learnedGames().has(meta.id) && !settings["practice.disabled"].includes(meta.id)) prefetchGuided(meta.id);
+  }, [meta.id]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     // Never waits on /today (SPZ-01): its in-progress flag is used only when already cached.
     if (!playerId) return;

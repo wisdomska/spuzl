@@ -20,7 +20,7 @@ import { canStart, clampPan, LENGTH_MS, prune, resolve, variation, type Schedule
 import { RECIPES, type Kit } from "./voices";
 import type { MusicPlayer, StyleId } from "./music";
 import { createRecordedPlayer } from "./recorded";
-import { loadSamples, sampleFor, sampleRate } from "./samples";
+import { loadSamples, sampleFor, sampleRate, wantSample } from "./samples";
 
 /** Music sits well under the sound effects. */
 const MUSIC_LEVEL = 0.32;
@@ -175,6 +175,7 @@ export function play(name: string, o: PlayOptions = {}) {
       } else out.connect(sfxBus);
       // A recorded sample when it has loaded; the synth recipe otherwise (and in low-data mode)
       const buf = runtime.lowData ? null : sampleFor(key);
+      if (!buf && !runtime.lowData) wantSample(key);
       let sampleMs = 0;
       if (buf) {
         const src = a.createBufferSource();

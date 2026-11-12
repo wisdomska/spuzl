@@ -14,20 +14,43 @@ export const SAMPLED: ReadonlySet<SfxName> = new Set(VOICES.filter((v) => !SYNTH
 const buffers = new Map<SfxName, AudioBuffer>();
 let loading = false;
 
+/** The voices heard on almost every screen: loaded in the background. Every other voice loads the first time it plays. */
+const CORE: SfxName[] = ["tick", "nav", "pop", "tile", "buzz", "success", "toggle", "sheet_open", "sheet_close"];
+const requested = new Set<SfxName>();
+let audio: AudioContext | null = null;
+
+/** Sign-up and the intro: no background downloads while a new player's account is being made. */
+const onboarding = () => typeof location !== "undefined" && /^\/(welcome|intro)(\/|$)/.test(location.pathname);
+const outOfOnboarding = () =>
+  new Promise<void>((done) => {
+    const check = () => (onboarding() ? setTimeout(check, 2000) : done());
+    check();
+  });
+
 /**
- * Fetches and decodes every sample, two at a time, most-used first, at low priority. Safe to call more than once.
- * R2-01: starts only once the game on screen is ready and the network is quiet (lib/perf/quiet.ts), and never on a
- * data-saving or 2G connection, so 55 small files never compete with a first board.
+ * Starts the sample loader: the core voices, two at a time, at low priority. Safe to call more than once.
+ * R2-01: only once the game on screen is ready and the network is quiet (lib/perf/quiet.ts), never on a data-saving
+ * or 2G connection. New-device speed (owner, 12 Nov): never during sign-up, and only the 9 core voices up front
+ * (the other 46 used to download on a first visit too); the rest load one by one the first time they play.
  */
 export function loadSamples(a: AudioContext) {
   if (loading || typeof fetch === "undefined" || constrainedNetwork()) return;
   loading = true;
-  void whenQuiet().then(() => fetchAll(a));
+  audio = a;
+  void outOfOnboarding()
+    .then(() => whenQuiet())
+    .then(() => fetchQueue(a, CORE));
 }
 
-function fetchAll(a: AudioContext) {
-  const first: SfxName[] = ["tick", "nav", "pop", "tile", "buzz", "success", "toggle", "sheet_open", "sheet_close"];
-  const queue = [...first, ...[...SAMPLED].filter((n) => !first.includes(n))];
+/** A voice just played on its synth recipe because its recording isn't here yet: fetch it for next time. */
+export function wantSample(name: SfxName) {
+  if (!audio || !loading || !SAMPLED.has(name) || buffers.has(name) || requested.has(name) || constrainedNetwork()) return;
+  void fetchQueue(audio, [name], 1);
+}
+
+function fetchQueue(a: AudioContext, names: SfxName[], workers = 2) {
+  const queue = names.filter((n) => SAMPLED.has(n) && !requested.has(n));
+  queue.forEach((n) => requested.add(n));
   const worker = async () => {
     for (let n = queue.shift(); n; n = queue.shift()) {
       // checked before every file: a Play tap mid-way pauses the rest until that board is up
@@ -41,7 +64,7 @@ function fetchAll(a: AudioContext) {
       }
     }
   };
-  void Promise.all([worker(), worker()]);
+  return Promise.all(Array.from({ length: workers }, worker));
 }
 
 export const sampleFor = (name: SfxName) => buffers.get(name) ?? null;
