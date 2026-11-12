@@ -8,6 +8,7 @@ import { Wordmark } from "@/components/brand/Wordmark";
 import { TryIt } from "@/components/landing/TryIt";
 import { NoMusic } from "@/components/landing/NoMusic";
 import { Reveal } from "@/components/landing/Reveal";
+import { SmoothAnchors } from "@/components/landing/SmoothAnchors";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { aboutCopy as T } from "@/lib/copy/about";
 import { landingSeoCopy as S, seoMeta, siteFaq } from "@/lib/copy/seo";
@@ -57,6 +58,7 @@ export default async function Landing() {
       />
       <NoMusic />
       <Reveal />
+      <SmoothAnchors />
       {/* Nav */}
       <header className="sticky top-0 z-20 px-4 pt-3">
         <nav className="bg-surface/85 border-line mx-auto flex h-16 max-w-[1160px] items-center justify-between rounded-full border px-4 backdrop-blur-md sm:px-6">
@@ -293,32 +295,6 @@ export default async function Landing() {
             {T.play}
           </Link>
         </section>
-
-        {/* Accounts and data (required by Google's OAuth branding review) */}
-        {/* Full width like every other section: heading left, text right on wide screens, stacked on phones */}
-        <section
-          aria-labelledby="data"
-          className="border-line grid gap-4 border-t pt-10 pb-12 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] md:gap-10"
-        >
-          <h2 id="data" className="font-display flex items-center gap-2 self-start text-[22px] font-black">
-            <Icon name="shield-check" size={22} className="text-accent" />
-            {T.accountTitle}
-          </h2>
-          <div className="text-muted flex flex-col gap-3 text-[15px] leading-relaxed">
-            {T.account.map((p) => (
-              <p key={p}>{p}</p>
-            ))}
-            <p>
-              <Link href="/privacy" className="text-text font-semibold underline underline-offset-4">
-                {T.privacy}
-              </Link>
-              {" · "}
-              <Link href="/terms" className="text-text font-semibold underline underline-offset-4">
-                {T.terms}
-              </Link>
-            </p>
-          </div>
-        </section>
       </main>
 
       <footer className="border-line border-t px-4 py-8 sm:px-6">
@@ -337,6 +313,13 @@ export default async function Landing() {
               </a>
             </div>
             <span className="text-muted text-[13px]">{T.made}</span>
+            {/* Google's OAuth branding review: the home page says what Google sign-in shares and links the policy. */}
+            <span className="text-muted text-[13px]">
+              {T.googleData}{" "}
+              <Link href="/privacy" className="hover:text-text underline underline-offset-4">
+                {T.privacy}
+              </Link>
+            </span>
           </div>
           <nav aria-label="Footer" className="flex flex-wrap gap-x-5 gap-y-1">
             {T.footer.map(([href, label]) => (

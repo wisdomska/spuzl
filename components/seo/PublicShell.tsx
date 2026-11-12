@@ -6,6 +6,7 @@ import { gamesCopy as T } from "@/lib/copy/seo";
 import { MakerCredit } from "@/components/seo/MakerCredit";
 import { BackLink } from "@/components/seo/BackLink";
 import { Reveal } from "@/components/landing/Reveal";
+import { SmoothAnchors } from "@/components/landing/SmoothAnchors";
 
 /**
  * Frame of the public, crawlable pages (the game catalogue, game pages, public world pages): the landing page's nav
@@ -16,6 +17,7 @@ export function PublicShell({ children, back }: { children: ReactNode; back?: st
   return (
     <div data-smooth-scroll className="safe-top min-h-dvh overflow-x-clip">
       <Reveal />
+      <SmoothAnchors />
       <header className="sticky top-0 z-20 px-4 pt-3">
         <nav className="bg-surface/85 border-line mx-auto flex h-16 max-w-[1160px] items-center justify-between gap-2 rounded-full border px-4 backdrop-blur-md sm:px-6">
           {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- a full page load: visitors get the landing page at "/" (proxy.ts), players Home */}

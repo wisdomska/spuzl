@@ -71,12 +71,8 @@ export const aboutCopy = {
     ["users-three", "Party", `Share a code. Race up to ${PARTY_MAX} phones at once.`],
     ["trophy", "Leagues", "A new league of 30 every Monday. Top 7 move up."],
   ] as const,
-  accountTitle: "Accounts and your data",
-  account: [
-    "Play as a guest, no account needed. To keep your progress on any phone, sign in with an email code or Google.",
-    "With Google, SPUZL gets only your name, email address and profile picture. We use your email to sign you in and recover your account. We never post for you, read your contacts or sell your data.",
-    "Download or delete your data any time in Settings.",
-  ] as const,
+  /** Footer line for Google's OAuth branding review (what Google sign-in shares), next to the policy link. */
+  googleData: "Google sign-in uses only your name, email and photo.",
   privacy: "Privacy policy",
   terms: "Terms of use",
   /**

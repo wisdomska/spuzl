@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.51.1 (12 November 2026)
+
+- **Landing page links now glide** to How it works, Games and Friends (they still jumped: the smooth-scroll style
+  was dropped from the production build, so the glide now runs in script, 0.25 to 0.5 s). Reduced motion jumps.
+- **"Accounts and your data" left the landing page.** One footer line keeps what Google's sign-in review needs:
+  "Google sign-in uses only your name, email and photo." with the Privacy policy link.
+
 ## 1.51.0 (12 November 2026)
 
 ### Everyone

@@ -1093,13 +1093,7 @@ select {
   }
 }
 /* ---------- Public pages (landing, /games, game and world pages, info pages): R6 motion ---------- */
-/* Same-page links (#how, #worlds, #faq) glide instead of jump, only while a public page is on screen (route changes
-   elsewhere stay instant) and never under reduced motion. Targets set their own scroll-margin for the sticky bar. */
-@media (prefers-reduced-motion: no-preference) {
-  html:not([data-motion="reduce"]):has([data-smooth-scroll]) {
-    scroll-behavior: smooth;
-  }
-}
+/* Same-page links glide in script (components/landing/SmoothAnchors.tsx); targets keep their scroll-margin. */
 /* Hero entrance: once per load, a 40 ms stagger (--i), 240 ms each, all done by 400 ms. Pure CSS, so the text is in
    the HTML and visible without JS; `backwards` only holds the first frame during the delay. */
 @keyframes hero-in {
