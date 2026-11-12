@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.54.1 (12 November 2026)
+
+- **Faster on a new phone or browser:** sign-up no longer shares the connection with 55 sound files. Only the 9
+  everyday sounds load in the background, after you're in; each other sound loads the first time it's needed (a
+  built-in version plays meanwhile). A new game's practice round now starts loading the moment its page opens,
+  instead of after your account is checked.
+
 ## 1.54.0 (12 November 2026)
 
 ### Everyone
