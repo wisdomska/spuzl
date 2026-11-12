@@ -35,8 +35,8 @@ export const challengeCopy = {
   expiredTitle: "This challenge ran out",
   expiredBody: (days: number) => `Challenges last ${days} days. Ask for a fresh link.`,
   missingTitle: "No challenge here",
-  missingBody: "That link doesn't open a challenge. Check it, or ask your friend to send it again.",
+  missingBody: "That link doesn't work. Ask your friend for a new one.",
   offTitle: "Challenges are resting",
-  offBody: "Friend challenges are switched off for now. Try a free game instead.",
+  offBody: "Switched off for now. Try a free game.",
   backHome: "Back to The Grid",
 } as const;

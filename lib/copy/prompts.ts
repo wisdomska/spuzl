@@ -5,9 +5,9 @@ export const promptsCopy = {
     title: "Know when it's your turn",
     /** the line under the title, by what earned the ask */
     body: {
-      friend: "You've got a friend on SPUZL now. Get a buzz when they invite you or it's your move, even with SPUZL closed.",
-      invite: "Never miss an invite. Get a buzz when a friend challenges you or it's your move, even with SPUZL closed.",
-      streak: (days: number) => `${days} days strong! Get a buzz for invites and your turn, even with SPUZL closed.`,
+      friend: "Get a buzz when a friend invites you or it's your move.",
+      invite: "Never miss an invite or your move.",
+      streak: (days: number) => `${days} days strong! Get a buzz for invites and your turn.`,
     },
     notNow: "Not now",
     turnOn: "Turn on",

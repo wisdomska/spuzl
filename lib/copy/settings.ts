@@ -5,25 +5,25 @@ export const settingsCopy = {
   nickname: {
     row: "Nickname",
     title: "Change your nickname",
-    description: "This is how friends, leagues and duels see you.",
+    description: "What friends and rivals see.",
     label: "Nickname",
     help: "3 to 16 letters, numbers or _. No real names, no phone numbers.",
     save: "Save nickname",
     saving: "Saving…",
     taken: "That name is taken. Try another.",
     same: "That's already your nickname.",
-    failed: "Couldn't save. Check your connection and try again.",
+    failed: "Couldn't save. Try again.",
     saved: (name: string) => `You're now ${name}.`,
   },
   account: {
     checking: "Checking your account…",
     /** A visitor with no profile yet (they haven't started playing). */
-    notStarted: "You haven't started yet. Play as a guest, or sign in to keep your progress on any phone.",
+    notStarted: "Not started yet. Play as a guest, or sign in to save progress.",
     start: "Play as a guest or sign in with email",
     notStartedShort: "Not started",
     /** The confirmation email is on its way: the email joins this account once the link is tapped. */
-    linkSent: (email: string) => `Check ${email}. Tap the link in the email to finish. Your progress stays put.`,
+    linkSent: (email: string) => `Check ${email} and tap the link. Progress stays put.`,
     /** The project applied the email change at once (no confirmation step), so no email was sent. */
-    linkApplied: (email: string) => `Saved. This account now uses ${email}, so your progress is safe. No email needed.`,
+    linkApplied: (email: string) => `Saved. This account now uses ${email}.`,
   },
 } as const;

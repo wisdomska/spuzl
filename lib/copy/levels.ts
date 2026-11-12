@@ -6,7 +6,7 @@ export const levelsCopy = {
   status: (top: number, next: number, done: boolean) =>
     done ? `All ${top} levels cleared` : top > 0 ? `Level ${top} · Next: ${next}` : `Start at Level ${next}`,
   sheetTitle: (game: string) => `${game} levels`,
-  sheetLead: "Clear a level to open the next one. Cleared levels replay any time.",
+  sheetLead: "Clear one to open the next. Replay any time.",
   play: (n: number) => `Play Level ${n}`,
   allLevels: "All levels",
   best: (time: string) => `Best ${time}`,
@@ -18,7 +18,7 @@ export const levelsCopy = {
         : `Level ${n}, locked`,
   levelCleared: (n: number) => `Level ${n} cleared!`,
   nextLevel: (n: number) => `Next level: ${n}`,
-  ladderDone: "Every level cleared. Free play never runs out.",
+  ladderDone: "All levels cleared. Free play is endless.",
   tryAgain: "Try again",
   failedTitle: "Not this time",
   errorTitle: "Something broke",
@@ -29,5 +29,5 @@ export const levelsCopy = {
   /** every fifth level of a puzzle ladder (lib/game/levels.ts isBossLevel) */
   boss: "Boss level",
   loading: "Loading levels…",
-  loadFailed: "Couldn't load your levels. Try again in a moment.",
+  loadFailed: "Levels didn't load. Try again.",
 } as const;

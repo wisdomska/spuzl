@@ -3,7 +3,7 @@ import { GAME_COUNT } from "@/lib/catalog";
 /** Library ("All games") copy, SPZ-14. */
 export const libraryCopy = {
   title: "All games",
-  subtitle: "Pick one and play. Every game, any time.",
+  subtitle: "Every game, any time.",
   back: "Back",
   search: "Search games",
   searchPlaceholder: `Search ${GAME_COUNT} games`,
@@ -27,7 +27,7 @@ export const libraryCopy = {
   hostParty: "Host a party",
   vsBot: "Full game vs bot",
   count: (n: number) => (n === 1 ? "1 game" : `${n} games`),
-  empty: "No games match. Try another word or filter.",
+  empty: "No match. Try another word or filter.",
   showAll: "Show all games",
   rule: "How it works",
 } as const;

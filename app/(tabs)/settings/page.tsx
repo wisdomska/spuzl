@@ -73,11 +73,7 @@ function SettingsScreen() {
   });
   const auth = params.get("auth");
   const [status, setStatus] = useState<string | null>(
-    auth === "linked"
-      ? "Signed in. Your progress is saved to your account."
-      : auth === "failed"
-        ? "Sign-in didn't finish. Try again."
-        : null,
+    auth === "linked" ? "Signed in. Progress saved." : auth === "failed" ? "Sign-in didn't finish. Try again." : null,
   );
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reduce = s.hydrated && prefersReducedMotion(s);
@@ -199,7 +195,7 @@ function SettingsScreen() {
       <Choice
         open={open === "cb"}
         title="Colour-blind mode"
-        description="Swaps world and state colours and adds patterns, so nothing relies on colour alone."
+        description="Adds patterns so nothing relies on colour alone."
         options={Object.entries(CB)}
         value={s.cb}
         onPick={(v) => save("cb", v as Settings["cb"])}
@@ -265,7 +261,7 @@ function AlertsRow({ me }: { me: boolean }) {
       <Row
         icon="bell-ringing"
         label="Turn and invite alerts"
-        hint={blocked ? "Blocked in your browser settings" : "Your turn, nudges and invites, even with SPUZL closed"}
+        hint={blocked ? "Blocked in your browser settings" : "Your turn, nudges and invites"}
       >
         <Switch
           checked={on}
@@ -504,9 +500,7 @@ function AccountSheet({ open, onClose, onDelete }: { open: boolean; onClose: () 
     if (error) {
       setBusy(false);
       setErr(
-        /already/i.test(error.message)
-          ? "That email has an account. Use “Sign in instead” below."
-          : "That didn't send. Check the address and try again.",
+        /already/i.test(error.message) ? "That email has an account. Use “Sign in instead” below." : "Didn't send. Check the address.",
       );
       return;
     }
@@ -539,7 +533,7 @@ function AccountSheet({ open, onClose, onDelete }: { open: boolean; onClose: () 
           : !d
             ? settingsCopy.account.notStarted
             : d.guest
-              ? "You're playing as a guest. Sign in to keep your streak, Sparks and friends on any phone."
+              ? "Playing as a guest. Sign in to keep your streak, Sparks and friends."
               : `Signed in as ${d.nickname}${d.email ? ` (${d.email})` : ""}.`
       }
     >
@@ -681,7 +675,7 @@ function DeleteSheet({ open, onClose }: { open: boolean; onClose: () => void }) 
       open={open}
       onOpenChange={(o) => !o && onClose()}
       title="Delete your account?"
-      description="This removes your profile, streak, Sparks, badges, friends and every result. It can't be undone."
+      description="Removes your profile, streak, Sparks, badges, friends and results. It can't be undone."
     >
       <label htmlFor="del-confirm" className="text-[15px] font-semibold">
         Type <span className="num text-danger">{nick}</span> to confirm

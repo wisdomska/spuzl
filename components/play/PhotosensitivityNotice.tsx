@@ -40,7 +40,7 @@ export function PhotosensitivityNotice() {
       dismissible={false}
       leading={<Icon name="warning" size={28} className="text-gold mt-0.5 shrink-0" />}
       title="Heads up"
-      description="This game has quick movement and light flashes, kept slower than twice a second. If flashing lights affect you, pick a calmer game or turn on reduced motion in Settings."
+      description="Quick movement and light flashes, under twice a second. If flashing lights affect you, pick a calmer game or turn on reduced motion in Settings."
     >
       <Button size="lg" autoFocus onClick={ok}>
         Got it

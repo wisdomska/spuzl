@@ -226,7 +226,7 @@ export function ShareSheet({
       dataAttrs={{ "data-testid": "share-sheet" }}
     >
       <p id="share-desc" className="sr-only">
-        Share your result. No solution is ever included.
+        Share your result. No answers included.
       </p>
       <div className="flex gap-3">
         {/* eslint-disable-next-line @next/next/no-img-element -- generated PNG, already sized */}

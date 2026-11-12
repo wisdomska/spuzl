@@ -13,7 +13,7 @@ export const streakNudgeCopy = {
   },
   settings: {
     label: "Streak reminders",
-    hint: "One evening buzz when your streak is about to end",
-    failed: "Couldn't save that. Check your connection and try again.",
+    hint: "One evening buzz before your streak ends",
+    failed: "Couldn't save. Try again.",
   },
 } as const;

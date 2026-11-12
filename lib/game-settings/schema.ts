@@ -233,7 +233,7 @@ export const SETTINGS = {
     group: FEATURES,
     label: "Free streak shield for signing in",
     help: "A guest who saves their account with an email or Google gets one free Streak Freeze.",
-    more: 'Once per account, and none if they already hold 2. The "Save your streak" prompt says so ("Sign in and get a free streak shield"). Each one given shows in the Activity log. Off: no shield is given and the prompt keeps its plain wording.',
+    more: 'Once per account, and none if they already hold 2. The "Save your streak" prompt says so ("Sign in for a free shield"). Each one given shows in the Activity log. Off: no shield is given and the prompt keeps its plain wording.',
     default: true,
   },
   "features.seasonal": {

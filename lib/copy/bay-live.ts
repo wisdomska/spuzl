@@ -14,13 +14,13 @@ export const bayLive = {
   chip: (minutes: number) => `Live, ${minutes} min each`,
   chipPick: "Live, rated",
   pickTitle: (game: string) => `Live ${game}`,
-  pickHint: "Pick your time. Each player gets this much on their clock.",
+  pickHint: "Minutes on each player's clock.",
   findOpponent: (minutes: number) => `Find an opponent, ${minutes} min`,
   title: "Finding an opponent",
   sub: (game: string, minutes: number) => `${game}, rated, ${minutes} minutes each`,
   searching: "searching",
   othersWaiting: (n: number) => (n === 1 ? "1 other waiting" : `${n} others waiting`),
-  hint: "We pair you with someone waiting for the same game, close to your level when we can.",
+  hint: "Paired with someone near your level.",
   found: "Found someone. Setting up the board…",
   cancel: "Cancel",
   back: "Back",
@@ -37,5 +37,5 @@ export const bayLive = {
   retired: "This game has left Board Bay.",
   /** Duel entry and Friends: where live board games live */
   duelLink: "Board games, live",
-  duelLinkSub: "Chess, draughts and more against real people",
+  duelLinkSub: "Chess, draughts and more, live",
 } as const;

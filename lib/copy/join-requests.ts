@@ -1,25 +1,25 @@
 /** R2-13: friends-only rooms for under-16 hosts, and requests to join them. */
 export const joinRequestsCopy = {
   /** the server's answer to a non-friend joining by code */
-  friendsOnly: "This room is for the host's friends only. Ask to join and the host can let you in.",
+  friendsOnly: "Friends only. Ask, and the host can let you in.",
   friendsOnlyTitle: (host: string | null) => (host ? `${host}'s room is friends only` : "This room is friends only"),
   /** R4-02: a Board Bay invite from an under-16 host, opened by someone who isn't their friend */
-  bayFriendsOnly: "This game is for the host's friends only. Ask them to add you as a friend, then join.",
-  friendsOnlyBody: "Only the host's friends can join straight away. Send a request and the host can let you in.",
+  bayFriendsOnly: "Friends only. Ask the host to add you, then join.",
+  friendsOnlyBody: "Only the host's friends join straight away. Ask, and they can let you in.",
   ask: "Request to join",
   asking: "Sending your request…",
   waitingTitle: "Request sent",
   waiting: (host: string | null) => (host ? `Waiting for ${host} to let you in.` : "Waiting for the host to let you in."),
   approved: "You're in. Joining now…",
   declinedTitle: "Not this time",
-  declined: "The host said no to this room. Try another room or ask them to add you as a friend.",
+  declined: "The host said no. Try another room.",
   cancel: "Cancel request",
   failed: "Couldn't send your request. Try again.",
-  tooMany: "This room has lots of requests waiting. Try again in a bit.",
+  tooMany: "Lots of requests waiting. Try again soon.",
   gone: "That room has closed.",
   back: "Back",
   // Host side, in the lobby
-  hostNote: "Friends only. Anyone else has to ask, and you decide.",
+  hostNote: "Friends only. Others ask; you decide.",
   hostTitle: (n: number) => (n === 1 ? "1 player wants to join" : `${n} players want to join`),
   hostAnnounce: (name: string) => `${name} wants to join your room`,
   wantsIn: "wants to join",

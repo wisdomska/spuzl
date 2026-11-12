@@ -68,7 +68,7 @@ export function ResultsScreen({
   const flagged = result.status === "flagged";
   const scoreGame = meta.scoring === "score" && result.score !== undefined;
   const line = flagged
-    ? "Cleared. That was quick, so a moderator will check it before it counts."
+    ? "Cleared. Very fast, so a moderator checks it first."
     : relaxed
       ? `Relaxed clear. ${hints ? `${hints} hint${hints > 1 ? "s" : ""}.` : "No hints."}`
       : hints === 0 && mistakes === 0

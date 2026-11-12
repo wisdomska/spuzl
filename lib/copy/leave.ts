@@ -24,5 +24,5 @@ export const leaveCopy = {
     leave: "Leave room",
   },
   /** the leave call failed (offline): the player still leaves, the server settles it when they are gone */
-  failed: "Couldn't tell the server. You're out; the match settles on its own.",
+  failed: "You're out. The match settles on its own.",
 } as const;

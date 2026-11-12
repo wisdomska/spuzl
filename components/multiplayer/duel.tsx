@@ -723,7 +723,7 @@ export function OppDisconnected({
         <div className="bg-surface flex w-full max-w-[420px] flex-col items-center gap-2 rounded-[24px] px-5 py-6 text-center">
           {meta && <GameIcon3D meta={meta} size={72} />}
           <p className="font-display text-[17px] font-extrabold">{meta ? `Your ${meta.name} board is saved` : "Your board is saved"}</p>
-          <p className="text-muted text-[14px] leading-[1.45]">It comes back the moment they do, right where you left it.</p>
+          <p className="text-muted text-[14px] leading-[1.45]">It resumes the moment they're back.</p>
         </div>
       </div>
       <div className="px-4 pt-3 pb-[max(28px,env(safe-area-inset-bottom))]">

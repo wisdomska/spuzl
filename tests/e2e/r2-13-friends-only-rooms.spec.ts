@@ -32,7 +32,7 @@ test("party: a stranger asks to join an under-16 host's room, the host lets them
   const host = await player(browser, "13-15");
   const guest = await player(browser, "18+");
   const code = await openPartyRoom(host.page);
-  await expect(host.page.getByText("Friends only. Anyone else has to ask, and you decide.")).toBeVisible();
+  await expect(host.page.getByText("Friends only. Others ask; you decide.")).toBeVisible();
 
   await guest.page.goto(`/party/${code}`);
   await expect(guest.page.getByRole("heading", { name: /friends only/i })).toBeVisible();

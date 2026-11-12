@@ -14,7 +14,7 @@ export const gameMenuCopy = {
   /** the menu's Restart (or Reset) once the board has moves on it (components/game/RestartConfirm.tsx) */
   restartConfirm: {
     title: "Start this puzzle over?",
-    body: "Your moves on this board are cleared, and Undo can't bring them back.",
+    body: "Your moves are cleared. Undo can't bring them back.",
     keep: "Keep playing",
     restart: "Start over",
   },
@@ -30,7 +30,7 @@ export const gameMenuCopy = {
   off: "Off",
   shareTitle: (game: string) => `${game} on SPUZL`,
   shareText: (game: string) => `Play ${game} with me on SPUZL`,
-  linkCopied: "Link copied. Send it to a friend.",
+  linkCopied: "Link copied.",
   reportSubject: (game: string, label: string) => `Problem with ${game} (${label})`,
   hint: (label: string, left: string) => `${label}. ${left}`,
 } as const;

@@ -141,7 +141,7 @@ function AddByName({ minor }: { minor: boolean }) {
     return (
       <p className="bg-surface text-muted flex items-center gap-2.5 rounded-[14px] px-3.5 py-3 text-[14px]">
         <Icon name="shield-check" size={18} className="text-accent shrink-0" />
-        Players under 16 add friends with an invite link or QR code. Share yours above.
+        Under 16, friends join by invite link or QR code. Share yours above.
       </p>
     );
   const addName = async (n: string) => {
@@ -292,7 +292,7 @@ function FriendsTab({ minor }: { minor: boolean }) {
             <EmptyState
               mood="sad"
               title="No rivals yet. Send a link, start beef."
-              body="Friends you add show up here with their streaks and who's online."
+              body="Friends show here with streaks and who's online."
             />
           ) : (
             <section aria-label="Your friends" className="flex flex-col">
@@ -379,13 +379,7 @@ function ActivityTab() {
   if (q.isError) return <ErrorState onRetry={() => q.refetch()} />;
   const items = q.data!.items;
   if (!items.length)
-    return (
-      <EmptyState
-        mood="wave"
-        title="Quiet in here."
-        body="Clears, streaks and badges from you and your friends show up here. Go make some noise."
-      />
-    );
+    return <EmptyState mood="wave" title="Quiet in here." body="Clears, streaks and badges land here. Go make some noise." />;
   const tap = (it: FeedItem, r: Reaction) => {
     const next = it.mine === r ? null : r;
     if (next) play("emote");

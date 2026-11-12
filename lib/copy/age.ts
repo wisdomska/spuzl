@@ -8,9 +8,9 @@ export const ageCopy = {
   /** Onboarding step, straight after choosing how to start (guest, Google, email). */
   greeting: "Akwaaba, Spuzler.",
   title: "When were you born?",
-  why: "Your birth month and year set what's on for your age, to keep SPUZL safe and fair. We never show them to anyone.",
+  why: "It sets what's on for your age, to keep SPUZL safe. Never shown to anyone.",
   /** R2-09: honest that it's set once, and why, without the warning tone. */
-  lockedNote: "It's set once, so go with your real month and year. That's how we keep the right features on for you.",
+  lockedNote: "Set once, so use your real month and year.",
   month: "Month",
   year: "Year",
   pickMonth: "Pick a month",
@@ -25,7 +25,7 @@ export const ageCopy = {
 
   /** Under 13: no profile, nothing kept. */
   under13Title: "SPUZL is for 13 and up",
-  under13Body: "Come back when you turn 13. Spuz will keep your seat warm. We haven't kept anything you entered.",
+  under13Body: "Come back when you turn 13. We haven't kept anything you entered.",
   back: "Back",
 
   /** API messages (shown as they are). */
@@ -37,12 +37,12 @@ export const ageCopy = {
   /** Once, for players who joined before birth month and year were asked. */
   ask: {
     title: "When were you born?",
-    body: "We now keep your birth month and year (never the day) to apply the age rules. It's asked once and can't be changed later.",
+    body: "Month and year only, for the age rules. Asked once; it can't be changed.",
     save: "Save",
     saving: "Saving…",
     later: "Not now",
     saved: "Saved. Thanks!",
-    failed: "Couldn't save. Check your connection and try again.",
+    failed: "Couldn't save. Try again.",
   },
 
   /** Settings: the band, read-only. */

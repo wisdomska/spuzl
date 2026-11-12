@@ -39,7 +39,7 @@ for (const [w, viewport] of SIZES) {
       expect(chip!.height).toBeGreaterThanOrEqual(44);
       const yearBox = await page.getByLabel("Year", { exact: true }).boundingBox();
       expect(yearBox!.height).toBeGreaterThanOrEqual(44);
-      await expect(page.getByText(/It's set once, so go with your real month and year/)).toBeVisible();
+      await expect(page.getByText(/Set once, so use your real month and year/)).toBeVisible();
       await expect(page.getByText(/can't change this later/)).toHaveCount(0);
 
       const go = page.getByRole("button", { name: "Continue with this birth month and year" });

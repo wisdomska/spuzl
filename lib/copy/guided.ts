@@ -1,13 +1,13 @@
 /** Guided first play copy. */
 export const guidedCopy = {
   title: (game: string) => `First time playing ${game}?`,
-  body: "A quick practice round. Hints are free and pop up when you pause. Nothing counts yet.",
+  body: "A quick practice round. Free hints, nothing counts.",
   /** the one-line banner's note after the title */
   short: "Free hints, nothing counts yet.",
   skip: "Skip",
   skipAria: (game: string) => `Skip the ${game} practice round`,
   doneTitle: "You've got it!",
-  doneBody: "That's the whole idea. Now for real.",
+  doneBody: "That's it. Now for real.",
   goDaily: "Play today's Daily",
   goFree: "Start playing",
   label: "Practice round",

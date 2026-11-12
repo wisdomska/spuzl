@@ -98,7 +98,7 @@ export default function MePage() {
               style={{ boxShadow: "inset 0 0 0 2px var(--line)" }}
             >
               <Icon name="shield-check" size={22} className="text-accent shrink-0" />
-              <span className="flex-1 text-[14px] font-medium">Playing as a guest. Sign in to keep your progress on any phone.</span>
+              <span className="flex-1 text-[14px] font-medium">Playing as a guest. Sign in to save your progress.</span>
               <Icon name="caret-right" size={16} className="text-muted" />
             </Link>
           )}

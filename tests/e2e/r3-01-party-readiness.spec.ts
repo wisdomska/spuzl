@@ -39,7 +39,7 @@ test("Start waits for everyone; the lobby names who isn't ready; Start without t
 
     await without.click();
     // The race starts for the ready two; the late player watches and is told why.
-    await expect(late.page.getByText("The race started without you.", { exact: false })).toBeVisible({ timeout: 20_000 });
+    await expect(late.page.getByText("Started without you.", { exact: false })).toBeVisible({ timeout: 20_000 });
     await expect(host.page.getByTestId("lobby-waiting")).toHaveCount(0);
   } finally {
     for (const p of players) await p.ctx.close();

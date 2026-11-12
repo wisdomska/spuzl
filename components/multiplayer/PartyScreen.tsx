@@ -159,7 +159,7 @@ function CrewNote({ id }: { id: string }) {
     <p className="bg-surface flex items-center gap-2.5 rounded-[14px] px-3.5 py-2.5 text-[14px]" role="note">
       <span className="size-3 flex-none rounded-full" style={{ background: crew.data.color }} aria-hidden />
       <span>
-        Party for <b className="font-semibold">{crew.data.name}</b>. Open a room, then share its code with your crew.
+        Party for <b className="font-semibold">{crew.data.name}</b>. Open a room and share the code.
       </span>
     </p>
   );

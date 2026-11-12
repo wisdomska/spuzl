@@ -22,7 +22,7 @@ test("retired games are hidden and refused; the promoted games play", async ({ p
     await expect(page.getByRole("link", { name: new RegExp(`^${name} `) })).toHaveCount(0);
   await expect(page.getByRole("button", { name: WORLD_BY_ID.number.name })).toHaveCount(0);
   await page.getByRole("searchbox").fill("hunch");
-  await expect(page.getByText("No games match.", { exact: false })).toBeVisible();
+  await expect(page.getByText("No match. Try another word or filter.", { exact: false })).toBeVisible();
 
   // Home: one island per live world.
   await page.goto("/");

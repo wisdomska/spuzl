@@ -70,7 +70,7 @@ function Crews() {
           <div className="flex items-center gap-3 py-2">
             <Spuz mood="wave" size={84} decorative />
             <p className="text-[15px] leading-snug font-medium text-pretty">
-              A crew is up to 20 Spuzlers. Every clear adds XP to your crew, and each week you clash with another crew.
+              Up to 20 Spuzlers. Every clear adds crew XP; each week you clash with another crew.
             </p>
           </div>
           <form onSubmit={onJoin} className="bg-surface flex flex-col gap-3 rounded-[20px] p-4">

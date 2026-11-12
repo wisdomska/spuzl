@@ -262,7 +262,7 @@ function DayCard({ d, game }: { d: Day; game: string }) {
       </div>
       {d.access === "locked" ? (
         <>
-          <p className="text-muted text-[14px]">Dailies older than 7 days arrive with SPUZL+. The last 7 days are always free.</p>
+          <p className="text-muted text-[14px]">The last 7 days are free. Older Dailies come with SPUZL+.</p>
           <span className="bg-surface-raised text-muted font-display flex h-[52px] items-center justify-center gap-2 rounded-[16px] text-[15px] font-extrabold">
             <Icon name="lock-simple" size={18} />
             SPUZL+
@@ -270,9 +270,7 @@ function DayCard({ d, game }: { d: Day; game: string }) {
         </>
       ) : (
         <>
-          <p className="text-muted text-[14px]">
-            Archive clears earn half XP and no Sparks. They never count for streaks, ratings or boards.
-          </p>
+          <p className="text-muted text-[14px]">Half XP, no Sparks. Never counts for streaks, ratings or boards.</p>
           <Link
             href={`/play/${game}?mode=archive&date=${d.date}`}
             {...PLAY_NAV}

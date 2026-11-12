@@ -16,16 +16,16 @@ import { PLAY_NAV } from "@/lib/analytics/play-nav";
 import { Select } from "@/components/ui/Select";
 
 const NEEDS: Record<NonNullable<BoardRes["needs"]>, { title: string; body: string; href: string; cta: string }> = {
-  crew: { title: "No crew yet", body: "Start one or join with a code, then race your crew every day.", href: "/crews", cta: "Find a crew" },
+  crew: { title: "No crew yet", body: "Start one or join with a code.", href: "/crews", cta: "Find a crew" },
   city: {
     title: "Add your city",
-    body: "Pick your city in Settings to see who's fastest near you.",
+    body: "Set your city in Settings to see it.",
     href: "/settings#place",
     cta: "Open Settings",
   },
   country: {
     title: "Add your country",
-    body: "Pick your country in Settings to see your country's board.",
+    body: "Set your country in Settings to see it.",
     href: "/settings#place",
     cta: "Open Settings",
   },
@@ -125,7 +125,7 @@ export default function LeaderboardsPage() {
         <EmptyState
           mood="wave"
           title="Nobody yet. Be first."
-          body={date === today ? "Clear today's Daily and your time leads the board." : "No clears on this board that day."}
+          body={date === today ? "Clear today's Daily to lead the board." : "No clears on this board that day."}
           action={
             date === today && meta ? (
               <Link

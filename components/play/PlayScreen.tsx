@@ -181,7 +181,7 @@ export function PlayScreen({
         setPhase("playing");
       } catch (e) {
         if (e instanceof HttpError && e.code === "daily_done" && m === "daily") {
-          setNotice("Today's Daily is done. Free play is open, no limit.");
+          setNotice("Daily done. Free play is open.");
           return beginRef.current("free");
         }
         // Daily Five: already played today, or not in today's five (an old link): back to today's five.
@@ -298,12 +298,12 @@ export function PlayScreen({
           localHour: new Date().getHours(),
         });
         if (out.queued) {
-          setNotice("Saved on this phone. We'll sync your clear when you're back online.");
+          setNotice("Saved here. It syncs when you're back online.");
           return;
         }
         res = out.result;
       } catch {
-        setNotice("Could not reach the server. Your progress is saved; try again in a moment.");
+        setNotice("Can't reach the server. Progress saved; try again soon.");
         return;
       }
       dropResume(meta.id, attempt.attemptId);

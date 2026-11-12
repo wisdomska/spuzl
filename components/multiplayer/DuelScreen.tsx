@@ -232,9 +232,7 @@ function DuelLobby({
         <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
           <Icon name="timer" size={40} className="text-muted" />
           <h1 className="font-display text-[24px] font-black">Duels need the clock</h1>
-          <p className="text-muted text-[16px]">
-            Relaxed mode hides timers, so Duels and Party Races are off. Turn it off in Settings to race.
-          </p>
+          <p className="text-muted text-[16px]">Relaxed mode hides timers, so races are off. Turn it off in Settings.</p>
           <Cta tone="raised" onClick={() => router.push("/")} className="w-full max-w-[358px]">
             Back to The Grid
           </Cta>

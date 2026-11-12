@@ -104,7 +104,7 @@ export function InviteFriends({ kind, target, collapsible = false }: { kind: Inv
           })}
         </ul>
       )}
-      <p className="text-muted text-[13px]">Friends who are online get a pop-up to join. Anyone else can use the code or link.</p>
+      <p className="text-muted text-[13px]">Online friends get a pop-up. Others use the code or link.</p>
     </section>
   );
 }

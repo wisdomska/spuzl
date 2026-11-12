@@ -19,13 +19,13 @@ export const partyCopy = {
     players: "Players",
     playersValue: (n: number) => `Up to ${n}`,
     classroom: "Classroom mode",
-    classroomHint: "You run the race on a big screen for the room and don't play yourself.",
+    classroomHint: "Run the race on a big screen. You don't play.",
     open: "Open room",
     failed: "Couldn't open a room. Try again.",
   },
   join: {
     heading: "Got a room code?",
-    body: "Ask the host for the 4-character code on their screen.",
+    body: "The 4-character code on the host's screen.",
     label: "Room code",
     placeholder: "ABCD",
     cta: "Join room",
@@ -38,7 +38,7 @@ export const partyCopy = {
     /** on results and the free-play end bar, where "Challenge a friend" (beat my time) already sits */
     live: "Race live",
     title: (game: string) => `Race ${game}`,
-    body: "Same puzzle, same clock. Pick how you want to play.",
+    body: "Same puzzle, same clock.",
     friend: "Duel a friend",
     friendHint: "Send a link. Best of 3, unranked.",
     quick: "Quick Match",
@@ -52,7 +52,7 @@ export const partyCopy = {
     partyHintScore: "2 to 8 players with a room code. Most points wins.",
     close: "Close",
     beat: "Beat my time",
-    beatHint: "Send this exact puzzle. They race your time.",
+    beatHint: "They race your time on this puzzle.",
   },
   /** R3-01: the lobby's Start and who is still getting ready */
   lobby: {
@@ -66,13 +66,13 @@ export const partyCopy = {
       return `Waiting for ${line}`;
     },
     startWithout: "Start without them",
-    startWithoutHint: "They watch this set and join the next one.",
+    startWithoutHint: "They join the next set.",
     /** server refusals */
     notReady: (name: string) => `${name} is still getting ready.`,
     needReady: "Two ready Spuzlers make a race.",
     needPlayers: "Two Spuzlers make a race. Share the code.",
     /** a player the host started without */
-    satOut: "The race started without you. Watch this set; you're in for the next one.",
+    satOut: "Started without you. You're in the next set.",
   },
   /** R3-08: score races (score games in a Party: most points wins, then the faster finish) */
   scoreRace: {
@@ -87,8 +87,7 @@ export const partyCopy = {
   race: {
     showAll: (n: number) => `Show all ${n}`,
     showFewer: "Show fewer",
-    moreHidden: (n: number) =>
-      n === 1 ? "1 more player is hidden. Show all to see everyone." : `${n} more players are hidden. Show all to see everyone.`,
+    moreHidden: (n: number) => (n === 1 ? "1 more player hidden." : `${n} more players hidden.`),
   },
   /** the round-start countdown (Duel's 3-2-1-SPUZL!) over the board */
   countdown: {
@@ -122,15 +121,15 @@ export const partyCopy = {
     pageTitle: "Party on the big screen",
     loading: "Finding the room…",
     closedTitle: "This room isn't on the big screen",
-    closedBody: "Ask the host to turn on Big-screen view in Room settings. Then this page fills in by itself.",
+    closedBody: "Ask the host to turn on Big-screen view. This page fills in by itself.",
     missingTitle: (code: string) => `No room called ${code}`,
-    missingBody: "Codes expire 2 h after everyone leaves. Check the code on the host's phone.",
+    missingBody: "Codes expire 2 h after everyone leaves. Check the host's phone.",
     offTitle: "Big-screen view is resting",
-    offBody: "It's switched off for now. Players can still race on their phones.",
+    offBody: "Off for now. Phones can still race.",
     retrying: "Checking again every few seconds.",
     /** host switch in Room settings */
     switchLabel: "Big-screen view",
-    switchHelp: "Anyone with the code can watch on a TV or projector: nicknames and scores only, no chat.",
+    switchHelp: "Anyone with the code can watch: nicknames and scores, no chat.",
     switchUnder16: "Opens for hosts 16 and over.",
     openLink: "Open big-screen view",
     linkLabel: (url: string) => `Watch at ${url}`,

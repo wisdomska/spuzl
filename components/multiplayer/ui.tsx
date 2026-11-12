@@ -361,7 +361,7 @@ export function NeedProfile() {
       <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
         <Spuz mood="wave" size={120} />
         <h1 className="font-display text-[24px] font-black">Pick a nickname first</h1>
-        <p className="text-muted text-[16px]">Multiplayer needs a name your rivals can see. It takes a minute.</p>
+        <p className="text-muted text-[16px]">Pick a name rivals can see. It takes a minute.</p>
         <Link
           href="/welcome"
           className="toy font-display bg-accent text-on-accent flex h-[60px] w-full max-w-[358px] items-center justify-center rounded-[20px] text-[17px] font-black [--btn-depth:var(--accent-depth)]"

@@ -104,7 +104,7 @@ export default function LeaguesPage() {
           )}
           {members.length <= 1 && <LeagueInvite />}
           {members.length > 1 && members.length < 13 && (
-            <p className="text-muted px-1 text-[14px]">Fewer than 13 players this week, so nobody drops a league.</p>
+            <p className="text-muted px-1 text-[14px]">Under 13 players this week, so nobody drops.</p>
           )}
         </>
       )}

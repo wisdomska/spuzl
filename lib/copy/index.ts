@@ -10,19 +10,19 @@ export const en = {
     emailPlaceholder: "you@example.com",
     sendCode: "Send me a code",
     sending: "Sending your code…",
-    emailHelp: "We'll email you a 6-digit code. No password needed.",
+    emailHelp: "We'll email a 6-digit code. No password.",
     sentTo: "We sent a code to",
     codeLabel: "6-digit code",
-    codeOrLink: "Type the 6-digit code from the email, or tap the sign-in link in it.",
+    codeOrLink: "Type the code, or tap the link in the email.",
     signIn: "Sign in",
     signingIn: "Signing you in…",
     otherEmail: "Use another email",
     resend: "Resend code",
     resendIn: (s: number) => `Resend in ${s}s`,
-    tooMany: "Too many codes in a row. Wait a minute and try again.",
-    sendFailed: "We couldn't send a code. Check the email and try again.",
+    tooMany: "Too many codes. Wait a minute.",
+    sendFailed: "Couldn't send a code. Check the email.",
     // Supabase answers "Token has expired or is invalid" for both cases, so don't guess which.
-    badCode: "That code didn't work. Check it against the email, or send a new one.",
+    badCode: "That code didn't work. Check it or send a new one.",
     // Google's approved button wording.
     google: "Continue with Google",
     googleOpening: "Opening Google…",
@@ -31,7 +31,7 @@ export const en = {
   },
   account: {
     signInExisting: "Sign in to an existing account",
-    signInLeavesGuest: "Signing in to another account leaves this guest's progress on this phone behind.",
+    signInLeavesGuest: "This guest's progress stays behind on this phone.",
     backToSaving: "Back to saving this guest",
   },
   shell: {
@@ -46,7 +46,7 @@ export const en = {
           : keptPct === 0
             ? "You won't earn Daily XP after using a hint."
             : `You keep ${keptPct}% of the Daily XP after using a hint.`,
-    hintConfirmFree: "Free play hints come from your 3 per puzzle, then your hint packs. No XP is lost.",
+    hintConfirmFree: "Uses your 3 free hints, then hint packs. No XP lost.",
     cancel: "Cancel",
     useHint: "Use hint",
   },
@@ -78,9 +78,9 @@ export const en = {
     brokeTitle: "Something broke",
     brokeBody: "Try again in a moment.",
     offlineTitle: "You're offline",
-    offlineBody: "This puzzle needs a connection to start. Connect and try again.",
+    offlineBody: "Connect to start this puzzle.",
     failedTitle: "Not this time",
-    failedBody: "Shake it off. Free play never runs out.",
+    failedBody: "Shake it off. Go again.",
     freePlay: "Free play",
   },
   welcome: {

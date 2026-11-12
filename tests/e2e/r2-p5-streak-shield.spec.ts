@@ -46,10 +46,10 @@ for (const [name, vp] of [
     const prompt = page.locator('[data-prompt="save_streak"]');
     await expect(prompt).toBeVisible({ timeout: 15_000 });
     await expect(prompt.getByRole("heading", { name: "Save your streak" })).toBeVisible();
-    await expect(prompt).toContainText("Sign in and get a free streak shield");
+    await expect(prompt).toContainText("Sign in for a free shield");
     await page.screenshot({ path: `docs/qa/screens/r2/p5-streak-shield-${name}.png` });
-    await prompt.getByRole("button", { name: "Sign in and get a free streak shield" }).click();
-    await expect(page.getByRole("dialog", { name: "Save your streak" })).toContainText("a free Streak Freeze lands in your bag");
+    await prompt.getByRole("button", { name: "Sign in for a free shield" }).click();
+    await expect(page.getByRole("dialog", { name: "Save your streak" })).toContainText("plus a free Streak Freeze");
     await page.screenshot({ path: `docs/qa/screens/r2/p5-streak-shield-sheet-${name}.png` });
   });
 }
