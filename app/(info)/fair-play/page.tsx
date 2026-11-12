@@ -10,23 +10,20 @@ export default function FairPlay() {
   return (
     <>
       <h1>Fair play</h1>
-      <p className="lede">SPUZL is free, and nobody can pay to win. Here is how we keep the boards honest and the game friendly.</p>
+      <p className="lede">SPUZL is free, and nobody can pay to win. Here&apos;s how we keep it fair and friendly.</p>
 
       <h2>Every clear is checked</h2>
       <ul>
-        <li>Puzzle answers stay on our servers until you clear. Your board is checked there before any XP, Sparks or rank is given.</li>
-        <li>
-          Each game has a fastest humanly possible time. Clears faster than that are flagged and kept off the boards until a moderator
-          looks.
-        </li>
+        <li>Answers stay on our servers. Your board is checked there before any XP, Sparks or rank.</li>
+        <li>Clears faster than humanly possible are flagged and kept off the boards until a moderator looks.</li>
         <li>We keep your moves for 90 days, so top and flagged results can be checked step by step.</li>
       </ul>
 
       <h2>No paid advantages</h2>
       <ul>
         <li>Sparks are earned by playing. They can&apos;t be bought, sold or swapped for money.</li>
-        <li>Sparks only buy looks for Spuz, board themes, Streak Freezes and practice hints. Nothing in the Shop helps you win.</li>
-        <li>There are no loot boxes and no gambling of any kind.</li>
+        <li>Sparks buy looks, board themes, Streak Freezes and practice hints. Nothing in the Shop helps you win.</li>
+        <li>No loot boxes. No gambling of any kind.</li>
       </ul>
 
       <h2>Friendly by design</h2>
@@ -47,15 +44,12 @@ export default function FairPlay() {
         <li>Making extra accounts to climb boards or leagues.</li>
       </ul>
       <p>
-        Depending on what happened, we may hide a result, reset a nickname, remove ranking access or close an account. If you think we got
-        it wrong, <Link href="/contact">tell us</Link>.
+        We may hide a result, reset a nickname, remove ranking access or close an account. Think we got it wrong?{" "}
+        <Link href="/contact">Tell us</Link>.
       </p>
 
       <h2>Look after yourself</h2>
-      <p>
-        Puzzles are better with breaks. A Streak Freeze means one missed day is fine, and Relaxed mode hides the timer if racing the clock
-        stops being fun.
-      </p>
+      <p>Puzzles are better with breaks. A Streak Freeze covers a missed day, and Relaxed mode hides the timer.</p>
     </>
   );
 }

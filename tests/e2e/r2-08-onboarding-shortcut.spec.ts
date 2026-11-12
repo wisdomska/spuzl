@@ -55,7 +55,7 @@ for (const [w, viewport] of SIZES) {
     test("a solved landing demo is the first clear: no lesson, straight to Crownfall", async ({ browser }) => {
       const { ctx, page } = await visitor(browser, viewport);
       await solveLandingDemo(page);
-      await expect(page.getByText("That counts as your first clear. No lesson needed.")).toBeVisible();
+      await expect(page.getByText("It counts as your first clear.")).toBeVisible();
       await page.screenshot({ path: shot("demo-solved", w) });
 
       await page.getByRole("link", { name: "Play now" }).first().click();

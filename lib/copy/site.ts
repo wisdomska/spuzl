@@ -7,8 +7,7 @@ import { GAME_COUNT, WORLD_COUNT } from "@/lib/catalog";
 export const siteCopy = {
   title: `SPUZL · ${GAME_COUNT} games, one Grid`,
   description: `Puzzles, skill games and classic board games across ${WORLD_COUNT} worlds. Play anytime, duel your friends, keep your streak alive.`,
-  howToPlayLede: `${GAME_COUNT} games in ${WORLD_COUNT} worlds. Every game is playable any time, as often as you like.`,
+  howToPlayLede: `${GAME_COUNT} games in ${WORLD_COUNT} worlds. Every rule at a glance.`,
   /** The same, counting the games that are On (How to play follows the Games page state). */
-  howToPlayLedeFor: (games: number, worlds: number) =>
-    `${games} games in ${worlds} worlds. Every game is playable any time, as often as you like.`,
+  howToPlayLedeFor: (games: number, worlds: number) => `${games} games in ${worlds} worlds. Every rule at a glance.`,
 } as const;

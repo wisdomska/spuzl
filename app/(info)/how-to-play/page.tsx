@@ -53,27 +53,27 @@ export default async function HowToPlay() {
             <strong className="font-display mb-1 block text-[16px] font-extrabold">{freePlayCopy.howToPlayLead}</strong> <FreePlayRewards />
           </li>
           <li className="bg-surface rounded-[18px] p-4 text-[15px] leading-relaxed">
-            <strong className="font-display mb-1 block text-[16px] font-extrabold">First try.</strong> The first time you open a game, a
-            short practice round with free hints shows you how it works. You can skip it.
+            <strong className="font-display mb-1 block text-[16px] font-extrabold">First try.</strong> A short practice round with free
+            hints. Skip it if you like.
           </li>
           <li className="bg-surface rounded-[18px] p-4 text-[15px] leading-relaxed">
-            <strong className="font-display mb-1 block text-[16px] font-extrabold">Hints.</strong> Up to 3 per puzzle. Each one shows a
-            single safe next step. A clear with hints earns half the XP.
+            <strong className="font-display mb-1 block text-[16px] font-extrabold">Hints.</strong> Up to 3 a puzzle, each one safe next
+            step. Half XP with hints.
           </li>
           <li className="bg-surface rounded-[18px] p-4 text-[15px] leading-relaxed">
-            <strong className="font-display mb-1 block text-[16px] font-extrabold">Streaks.</strong> Clear at least one game a day to keep
-            your streak. A Streak Freeze covers one missed day. You can hold 2.
+            <strong className="font-display mb-1 block text-[16px] font-extrabold">Streaks.</strong> Clear one game a day. A Streak Freeze
+            covers a missed day; hold up to 2.
           </li>
           <li className="bg-surface rounded-[18px] p-4 text-[15px] leading-relaxed">
-            <strong className="font-display mb-1 block text-[16px] font-extrabold">Leagues.</strong> Every Monday you join a league of 30.
-            XP you earn in the week is your score. The top 7 move up, the bottom 5 move down.
+            <strong className="font-display mb-1 block text-[16px] font-extrabold">Leagues.</strong> A new league of 30 every Monday. Your
+            week&apos;s XP is your score. Top 7 move up, bottom 5 down.
           </li>
           <li className="bg-surface rounded-[18px] p-4 text-[15px] leading-relaxed">
-            <strong className="font-display mb-1 block text-[16px] font-extrabold">Relaxed mode.</strong> Turn it on in{" "}
+            <strong className="font-display mb-1 block text-[16px] font-extrabold">Relaxed mode.</strong> Hide timers while you play, in{" "}
             <Link href="/settings" className="text-accent font-semibold underline underline-offset-3">
               Settings
-            </Link>{" "}
-            to hide timers while you play. Your time still shows on the results screen.
+            </Link>
+            .
           </li>
         </ul>
       </div>

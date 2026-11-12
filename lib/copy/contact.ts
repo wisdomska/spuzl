@@ -7,7 +7,7 @@ export const FALLBACK_SUPPORT_EMAIL = "wisdomska@gmail.com";
 /** /contact (R4-02): the feedback form first, then where to go for each kind of problem. */
 export const contactCopy = {
   title: "Contact",
-  lede: "Found a bug, a puzzle that looks wrong or a better idea? Tell us. We read every message.",
+  lede: "A bug, a broken puzzle or an idea? Tell us. We read every message.",
   form: {
     label: "Send us feedback",
     kind: "What is it about?",
@@ -43,14 +43,13 @@ export const contactCopy = {
   orEmail: "Or email",
   sections: {
     unkindTitle: "Someone is being unkind or cheating",
-    unkind:
-      "Open their profile or tap the three dots on their activity, then Report. Pick a reason and, if you like, block them in the same step. A moderator checks every report within a day.",
+    unkind: "Open their profile or the three dots on their activity, then Report. You can block them too. A moderator checks within a day.",
     puzzleTitle: "A puzzle looks broken",
-    puzzle: 'Pick "A puzzle looks wrong" above and tell us the game and the date. If a puzzle is broken we can fix it.',
+    puzzle: 'Pick "A puzzle looks wrong" above, with the game and the date.',
     dataTitle: "Your data or account",
     dataBefore: "You can download or delete everything yourself in ",
     dataLink: "Settings, Account",
-    dataAfter: ". Parents and teachers who need a young player's account removed can write to us.",
+    dataAfter: ". Parents and teachers can write to us to remove a young player's account.",
   },
   /** In-app entry points (Settings, Me, the landing footer). */
   entry: "Send feedback",
