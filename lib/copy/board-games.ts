@@ -99,7 +99,7 @@ export const boardGames = {
     /** Help sheet tips for a game vs the bot (in place of the solo puzzle tips: no hints or XP here) */
     help: {
       casual: "A casual game against the computer. No XP, nothing ranked.",
-      level: "Pick Easy, Medium or Hard from the game menu (the three dots). A new level starts a new game.",
+      level: "Pick Easy, Medium or Hard in the ⋯ menu. A new level starts a new game.",
       undo: "Undo takes back your last move.",
     },
     /** rule line under the title, in place of the puzzle rule */

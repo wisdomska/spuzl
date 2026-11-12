@@ -205,7 +205,7 @@ export default function MePage() {
           <section aria-label="Your games" className="flex flex-col gap-2">
             <h2 className="text-[16px] font-bold">Your games</h2>
             {p!.games.length === 0 ? (
-              <p className="text-muted bg-surface rounded-[16px] px-3.5 py-3 text-[14px]">Clear a puzzle and your best times land here.</p>
+              <p className="text-muted bg-surface rounded-[16px] px-3.5 py-3 text-[14px]">Your best times land here.</p>
             ) : (
               <table className="bg-surface w-full rounded-[16px] text-left">
                 <caption className="sr-only">Clears, best and average time per game</caption>

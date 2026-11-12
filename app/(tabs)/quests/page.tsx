@@ -143,7 +143,7 @@ function QuestList() {
         <p className="flex-1 text-[15px] leading-[1.4] font-medium">
           {current
             ? `Next: ${current.title.charAt(0).toLowerCase()}${current.title.slice(1)}. Finish all 5 for ${last.sparks} Sparks and ${last.xp} XP.`
-            : "Chain done for the week. A new one starts Monday."}
+            : "Chain done. A new one starts Monday."}
         </p>
       </div>
     </>
