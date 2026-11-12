@@ -1090,6 +1090,8 @@ select {
 @media (prefers-reduced-motion: reduce) {
   .pop-in {
     animation: fade-in 120ms ease-out;
+  }
+}
 /* ---------- Public pages (landing, /games, game and world pages, info pages): R6 motion ---------- */
 /* Same-page links (#how, #worlds, #faq) glide instead of jump, only while a public page is on screen (route changes
    elsewhere stay instant) and never under reduced motion. Targets set their own scroll-margin for the sticky bar. */
@@ -1161,6 +1163,7 @@ html.reveal-armed [data-reveal]:not([data-revealed]) {
   :is(.lift:hover, .lift:active) {
     transform: none;
   }
+}
 /* Admin console motion (round 6). A work tool opened many times a day, so only small, fast feedback: a press on
    buttons, a 150 ms fade when a tab panel or folded section opens, a quick rise for action results, and the menu
    groups folding (180 ms). Nothing when the change came from the keyboard; reduced motion keeps opacity only. */
