@@ -6,6 +6,7 @@ import { getGameSettings } from "@/lib/game-settings/server";
 import { MAX_LEVEL } from "@/lib/game/levels";
 import { fiveDate, rulesFrom } from "@/lib/daily-five";
 import { ensureDay, fiveSlot } from "@/lib/daily-five/server";
+import { dailyFiveCopy } from "@/lib/copy/daily-five";
 
 const Start = z.object({
   game: z.string().min(2).max(24),
@@ -36,7 +37,7 @@ export const POST = handle(async (req: Request) => {
   if (input.mode === "five") {
     // Daily Five: its own switch, on whether or not Dailies are. The day and the puzzle are the server's.
     const settings = await getGameSettings();
-    if (!settings["dailyFive.enabled"]) throw new ApiError(404, "daily_five_off", "The Daily Five is resting today. Free play is open.");
+    if (!settings["dailyFive.enabled"]) throw new ApiError(404, "daily_five_off", dailyFiveCopy.off);
     await rateLimit(admin, `attempt:${player.id}`, 120, 3600);
     const rules = rulesFrom(settings);
     const date = fiveDate(new Date(), rules.resetHour);
