@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.51.0 (12 November 2026)
+
+### Everyone
+
+- **Smooth, quick motion across SPUZL:** screens and cards rise in, progress bars fill, buttons press, menus grow
+  from where you tapped. Nothing takes longer than a blink, and Reduced motion turns it off.
+- **Shorter words everywhere:** the landing page, game pages, the app and its prompts say the same in far fewer
+  words.
+- **Landing page:** the menu links glide to their section; the hero eases in and sections appear as you scroll; a
+  Sound on/off switch on the Try it board (remembered on your device).
+- **All games:** the four worlds are tabs (Puzzles, Words & Quiz, Arcade, Board Games), each with its own link.
+- **Back** on every game page, world page, All games and the info pages.
+- **"Frequently Asked"** (was "Good to know"), and the answers open and close smoothly.
+
+### Admin
+
+- Every page, setting and metric explains itself in a line or less; details stay under "More".
+- Quick, light motion: button presses, tab and section fades, menu groups that fold.
+
+### Search and AI assistants
+
+- The FAQ now answers what the Daily Five is, playing with friends (Party up to 10, score races, challenge links,
+  Board Bay) and keyboard and screen reader play.
+- `llms-full.txt` gains a Features list (Daily Five, Duel, Party, Draw It, Challenges and Ghost Races, Board Bay,
+  leagues, crews, the Shop, accessibility, offline play, feedback and your data).
+- Structured data lists SPUZL's features and accessibility, and each game says how many can play (up to 10 in a
+  Party, 2 in a Duel or Board Bay). The landing description mentions Party.
+
 ## 1.50.0 (11 November 2026)
 
 ### Everyone
