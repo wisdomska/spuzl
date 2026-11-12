@@ -28,7 +28,7 @@ for (const vp of [
       });
       const others = [];
       for (let i = 0; i < 9; i++) {
-        const g = await guest(uniq("ten"));
+        const g = await guest(uniq("racer"));
         expect((await g.api(`/api/v1/rooms/${made.code}/join`, { json: {} })).status).toBe(200);
         others.push(g);
       }
