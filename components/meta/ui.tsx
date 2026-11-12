@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useBackOr } from "@/lib/client/nav";
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Button } from "@/components/ui/Button";
@@ -176,26 +176,51 @@ export function Segmented<T extends string>({
   value,
   onChange,
   label,
+  idBase,
 }: {
   items: readonly { id: T; label: string }[];
   value: T;
   onChange: (v: T) => void;
   label: string;
+  /** links each tab to its panel (`${idBase}-panel-${id}`) */
+  idBase?: string;
 }) {
+  // Arrow keys, Home and End move between tabs; only the chosen one is in the Tab order.
+  const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
+    const i = items.findIndex((t) => t.id === value);
+    const next =
+      e.key === "ArrowRight"
+        ? (i + 1) % items.length
+        : e.key === "ArrowLeft"
+          ? (i - 1 + items.length) % items.length
+          : e.key === "Home"
+            ? 0
+            : e.key === "End"
+              ? items.length - 1
+              : -1;
+    if (next < 0) return;
+    e.preventDefault();
+    onChange(items[next].id);
+    e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
+  };
   return (
-    <div role="tablist" aria-label={label} className="bg-surface flex gap-1 rounded-[16px] p-1">
+    <div role="tablist" aria-label={label} onKeyDown={onKey} className="bg-surface flex gap-1 rounded-[16px] p-1">
       {items.map((t) => {
         const on = t.id === value;
         return (
           <button
             key={t.id}
             role="tab"
+            type="button"
+            id={idBase ? `${idBase}-tab-${t.id}` : undefined}
+            aria-controls={idBase ? `${idBase}-panel-${t.id}` : undefined}
             aria-selected={on}
+            tabIndex={on ? 0 : -1}
             onClick={() => onChange(t.id)}
-            className="press flex h-11 flex-1 items-center justify-center rounded-[12px] text-[15px] font-semibold transition-colors duration-150"
+            className="press flex h-11 min-w-0 flex-1 items-center justify-center rounded-[12px] px-1 text-[15px] font-semibold transition-colors duration-150"
             style={{ background: on ? "var(--surface-raised)" : "transparent", color: on ? "var(--text)" : "var(--text-muted)" }}
           >
-            {t.label}
+            <span className="truncate">{t.label}</span>
           </button>
         );
       })}

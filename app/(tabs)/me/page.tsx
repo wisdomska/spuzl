@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMe } from "@/lib/client/api";
 import { useProfile } from "@/lib/client/social";
 import { TabPage } from "@/components/meta/TabPage";
-import { Bar, ErrorState, Hex, ListSkeleton, StatCard } from "@/components/meta/ui";
+import { Bar, ErrorState, Hex, ListSkeleton, Segmented, StatCard } from "@/components/meta/ui";
 import { BadgeGrid, Medallion } from "@/components/meta/Badges";
 import { SpuzWear } from "@/components/meta/SpuzWear";
 import { StatusShare } from "@/components/share/StatusShare";
@@ -29,8 +29,26 @@ function shiftMonth(month: string, by: number) {
   return d.toISOString().slice(0, 7);
 }
 
-/** S2 Profile, own: avatar, level, rank per world, streak calendar, badges by family, per-game stats. */
+const ME_TABS = ["overview", "streak", "games", "badges"] as const;
+type MeTab = (typeof ME_TABS)[number];
+const isMeTab = (x: string): x is MeTab => (ME_TABS as readonly string[]).includes(x);
+
+/**
+ * S2 Profile, own: avatar, level and the guest prompt on top, then tabs (owner, 12 Nov: too long to scroll):
+ * Overview (stats, rank per world, latest badges), Streak (the calendar), Games (per-game stats) and Badges. The tab
+ * is in the address hash (#streak), so a link or Back opens it.
+ */
 export default function MePage() {
+  const [tab, setTab] = useState<MeTab>("overview");
+  useEffect(() => {
+    const h = window.location.hash.slice(1);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- the hash is client-only; read after hydration
+    if (isMeTab(h)) setTab(h);
+  }, []);
+  const pick = (t: MeTab) => {
+    setTab(t);
+    window.history.replaceState(null, "", t === "overview" ? window.location.pathname : `#${t}`);
+  };
   const thisMonth = gmtDate().slice(0, 7);
   const [month, setMonth] = useState(thisMonth);
   const me = useMe();
@@ -103,170 +121,197 @@ export default function MePage() {
             </Link>
           )}
 
-          <StatusShare />
+          <Segmented<MeTab>
+            label="Your profile"
+            idBase="me"
+            items={[
+              { id: "overview", label: "Overview" },
+              { id: "streak", label: "Streak" },
+              { id: "games", label: "Games" },
+              { id: "badges", label: "Badges" },
+            ]}
+            value={tab}
+            onChange={pick}
+          />
+          <div key={tab} role="tabpanel" id={`me-panel-${tab}`} aria-labelledby={`me-tab-${tab}`} className="rise-in flex flex-col gap-4">
+            {tab === "overview" && (
+              <>
+                <StatusShare />
 
-          <div className="grid grid-cols-3 gap-2">
-            <StatCard value={d.streak.current} label="day streak" color="var(--gold)" />
-            <StatCard value={formatNumber(p!.clears)} label="clears" />
-            <StatCard
-              value={p!.duelRating !== null ? formatNumber(Math.round(p!.duelRating)) : "New"}
-              label="duel rating"
-              color="var(--accent)"
-            />
-          </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <StatCard value={d.streak.current} label="day streak" color="var(--gold)" />
+                  <StatCard value={formatNumber(p!.clears)} label="clears" />
+                  <StatCard
+                    value={p!.duelRating !== null ? formatNumber(Math.round(p!.duelRating)) : "New"}
+                    label="duel rating"
+                    color="var(--accent)"
+                  />
+                </div>
 
-          <section aria-label="Rank per world" className="flex flex-col gap-2">
-            <h2 className="text-[16px] font-bold">Rank per world</h2>
-            <ul className="grid grid-cols-9 gap-1">
-              {p!.worlds.map((w) => {
-                const world = WORLD_BY_ID[w.world as WorldId];
-                const label = w.rank ? `${w.rank.name}${w.rank.division ? ` ${w.rank.division}` : ""}` : "Locked";
-                return (
-                  <li key={w.world} className="flex flex-col items-center gap-1" aria-label={`${world.name}: ${label}`}>
-                    <Hex w={36} h={40} bg={w.rank ? world.color : "var(--line)"}>
-                      <Icon
-                        name={w.rank ? world.icon : "lock-simple"}
-                        size={16}
-                        style={{ color: w.rank ? "#0E0F1A" : "var(--text-muted)" }}
-                      />
-                    </Hex>
-                    <span className="text-muted max-w-full truncate text-[10px] font-semibold" aria-hidden>
-                      {w.rank ? w.rank.name : "Locked"}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-
-          <section aria-label="Streak calendar" className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <h2 className="text-[16px] font-bold">Streak calendar</h2>
-              <div className="flex items-center gap-1">
-                <button
-                  aria-label="Previous month"
-                  onClick={() => setMonth(shiftMonth(month, -1))}
-                  className="text-muted flex size-11 items-center justify-center"
-                >
-                  <Icon name="caret-left" size={16} />
-                </button>
-                <span className="text-muted min-w-[72px] text-center text-[14px] font-medium">{monthName}</span>
-                <button
-                  aria-label="Next month"
-                  disabled={month >= thisMonth}
-                  onClick={() => setMonth(shiftMonth(month, 1))}
-                  className="text-muted flex size-11 items-center justify-center disabled:opacity-30"
-                >
-                  <Icon name="caret-right" size={16} />
-                </button>
-              </div>
-            </div>
-            <ol className="grid grid-cols-[repeat(16,1fr)] gap-[3px] sm:grid-cols-[repeat(16,1fr)]">
-              {p!.calendar.days.map((c) => {
-                const s = CAL[c.state];
-                return (
-                  <li
-                    key={c.date}
-                    className="flex aspect-square items-center justify-center rounded-[4px]"
-                    style={{ background: s.bg, color: "#0E0F1A" }}
-                    aria-label={`${Number(c.date.slice(8))} ${monthName}: ${s.label}`}
-                  >
-                    {s.icon && <Icon name={s.icon} size={9} />}
-                  </li>
-                );
-              })}
-            </ol>
-            <div className="text-muted flex gap-3 text-[12px] font-medium" aria-hidden>
-              {(["full", "played", "frozen"] as const).map((k) => (
-                <span key={k} className="flex items-center gap-1">
-                  <span className="size-2.5 rounded-[3px]" style={{ background: CAL[k].bg }} />
-                  {CAL[k].label}
-                </span>
-              ))}
-            </div>
-          </section>
-
-          {p!.pinned.length > 0 && (
-            <section aria-label="Latest badges" className="flex flex-col gap-2">
-              <div className="flex justify-between">
-                <h2 className="text-[16px] font-bold">Latest badges</h2>
-                <a href="#badges" className="text-accent text-[14px] font-medium">
-                  All {p!.badges.earned}
-                </a>
-              </div>
-              <div className="flex gap-2.5">
-                {p!.pinned.map((b) => (
-                  <Medallion key={b.id} b={b} />
-                ))}
-              </div>
-            </section>
-          )}
-
-          <section aria-label="Your games" className="flex flex-col gap-2">
-            <h2 className="text-[16px] font-bold">Your games</h2>
-            {p!.games.length === 0 ? (
-              <p className="text-muted bg-surface rounded-[16px] px-3.5 py-3 text-[14px]">Your best times land here.</p>
-            ) : (
-              <table className="bg-surface w-full rounded-[16px] text-left">
-                <caption className="sr-only">Clears, best and average time per game</caption>
-                <thead className="sr-only">
-                  <tr>
-                    <th>Game</th>
-                    <th>Clears</th>
-                    <th>Average</th>
-                    <th>Best</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {p!.games.slice(0, 12).map((g) => {
-                    const meta = GAME_BY_ID[g.game];
-                    const w = WORLD_BY_ID[meta.world];
-                    const score = meta.scoring === "score";
-                    return (
-                      <tr key={g.game} className="h-[42px]">
-                        <th scope="row" className="py-0 pl-3 font-normal">
-                          <span className="flex items-center gap-2.5">
-                            <span
-                              className="flex size-[26px] shrink-0 items-center justify-center rounded-[8px]"
-                              style={{ background: w.color, color: "#0E0F1A" }}
-                            >
-                              <Icon name={meta.icon} size={14} />
-                            </span>
-                            <span className="text-[15px] font-semibold">{meta.name}</span>
+                <section aria-label="Rank per world" className="flex flex-col gap-2">
+                  <h2 className="text-[16px] font-bold">Rank per world</h2>
+                  <ul className="grid grid-cols-9 gap-1">
+                    {p!.worlds.map((w) => {
+                      const world = WORLD_BY_ID[w.world as WorldId];
+                      const label = w.rank ? `${w.rank.name}${w.rank.division ? ` ${w.rank.division}` : ""}` : "Locked";
+                      return (
+                        <li key={w.world} className="flex flex-col items-center gap-1" aria-label={`${world.name}: ${label}`}>
+                          <Hex w={36} h={40} bg={w.rank ? world.color : "var(--line)"}>
+                            <Icon
+                              name={w.rank ? world.icon : "lock-simple"}
+                              size={16}
+                              style={{ color: w.rank ? "#0E0F1A" : "var(--text-muted)" }}
+                            />
+                          </Hex>
+                          <span className="text-muted max-w-full truncate text-[10px] font-semibold" aria-hidden>
+                            {w.rank ? w.rank.name : "Locked"}
                           </span>
-                        </th>
-                        <td className="num text-muted text-right text-[13px] font-medium whitespace-nowrap">{g.clears} clears</td>
-                        <td className="num text-muted pl-2 text-right text-[13px] whitespace-nowrap">
-                          {score ? "" : `avg ${formatClock(g.avgMs ?? 0)}`}
-                        </td>
-                        <td className="num w-[64px] pr-3 text-right text-[14px] font-semibold">
-                          {score ? formatNumber(g.bestScore ?? 0) : formatClock(g.bestMs ?? 0)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
+
+                {p!.pinned.length > 0 && (
+                  <section aria-label="Latest badges" className="flex flex-col gap-2">
+                    <div className="flex justify-between">
+                      <h2 className="text-[16px] font-bold">Latest badges</h2>
+                      <button type="button" onClick={() => pick("badges")} className="text-accent text-[14px] font-medium">
+                        All {p!.badges.earned}
+                      </button>
+                    </div>
+                    <div className="flex gap-2.5">
+                      {p!.pinned.map((b) => (
+                        <Medallion key={b.id} b={b} />
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {/* R4-02: feedback from the profile, noting it came from here */}
+                <Link
+                  href={feedbackHref("/me")}
+                  className="press-card bg-surface flex min-h-[52px] items-center gap-3 rounded-[16px] px-3.5 py-2"
+                >
+                  <Icon name="chat-circle-text" size={20} className="text-muted shrink-0" />
+                  <span className="flex flex-1 flex-col">
+                    <span className="text-[15px] font-semibold">{contactCopy.entry}</span>
+                    <span className="text-muted text-[13px]">{contactCopy.entryHint}</span>
+                  </span>
+                  <Icon name="caret-right" size={14} className="text-muted" />
+                </Link>
+              </>
             )}
-          </section>
-
-          <section id="badges" aria-label="Badges" className="flex scroll-mt-16 flex-col gap-2">
-            <h2 className="text-[16px] font-bold">Badges</h2>
-            <BadgeGrid data={p!.badges} />
-          </section>
-
-          {/* R4-02: feedback from the profile, noting it came from here */}
-          <Link
-            href={feedbackHref("/me")}
-            className="press-card bg-surface flex min-h-[52px] items-center gap-3 rounded-[16px] px-3.5 py-2"
-          >
-            <Icon name="chat-circle-text" size={20} className="text-muted shrink-0" />
-            <span className="flex flex-1 flex-col">
-              <span className="text-[15px] font-semibold">{contactCopy.entry}</span>
-              <span className="text-muted text-[13px]">{contactCopy.entryHint}</span>
-            </span>
-            <Icon name="caret-right" size={14} className="text-muted" />
-          </Link>
+            {tab === "streak" && (
+              <>
+                <section aria-label="Streak calendar" className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-[16px] font-bold">Streak calendar</h2>
+                    <div className="flex items-center gap-1">
+                      <button
+                        aria-label="Previous month"
+                        onClick={() => setMonth(shiftMonth(month, -1))}
+                        className="text-muted flex size-11 items-center justify-center"
+                      >
+                        <Icon name="caret-left" size={16} />
+                      </button>
+                      <span className="text-muted min-w-[72px] text-center text-[14px] font-medium">{monthName}</span>
+                      <button
+                        aria-label="Next month"
+                        disabled={month >= thisMonth}
+                        onClick={() => setMonth(shiftMonth(month, 1))}
+                        className="text-muted flex size-11 items-center justify-center disabled:opacity-30"
+                      >
+                        <Icon name="caret-right" size={16} />
+                      </button>
+                    </div>
+                  </div>
+                  <ol className="grid grid-cols-[repeat(16,1fr)] gap-[3px] sm:grid-cols-[repeat(16,1fr)]">
+                    {p!.calendar.days.map((c) => {
+                      const s = CAL[c.state];
+                      return (
+                        <li
+                          key={c.date}
+                          className="flex aspect-square items-center justify-center rounded-[4px]"
+                          style={{ background: s.bg, color: "#0E0F1A" }}
+                          aria-label={`${Number(c.date.slice(8))} ${monthName}: ${s.label}`}
+                        >
+                          {s.icon && <Icon name={s.icon} size={9} />}
+                        </li>
+                      );
+                    })}
+                  </ol>
+                  <div className="text-muted flex gap-3 text-[12px] font-medium" aria-hidden>
+                    {(["full", "played", "frozen"] as const).map((k) => (
+                      <span key={k} className="flex items-center gap-1">
+                        <span className="size-2.5 rounded-[3px]" style={{ background: CAL[k].bg }} />
+                        {CAL[k].label}
+                      </span>
+                    ))}
+                  </div>
+                </section>
+              </>
+            )}
+            {tab === "games" && (
+              <>
+                <section aria-label="Your games" className="flex flex-col gap-2">
+                  <h2 className="text-[16px] font-bold">Your games</h2>
+                  {p!.games.length === 0 ? (
+                    <p className="text-muted bg-surface rounded-[16px] px-3.5 py-3 text-[14px]">Your best times land here.</p>
+                  ) : (
+                    <table className="bg-surface w-full rounded-[16px] text-left">
+                      <caption className="sr-only">Clears, best and average time per game</caption>
+                      <thead className="sr-only">
+                        <tr>
+                          <th>Game</th>
+                          <th>Clears</th>
+                          <th>Average</th>
+                          <th>Best</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {p!.games.slice(0, 12).map((g) => {
+                          const meta = GAME_BY_ID[g.game];
+                          const w = WORLD_BY_ID[meta.world];
+                          const score = meta.scoring === "score";
+                          return (
+                            <tr key={g.game} className="h-[42px]">
+                              <th scope="row" className="py-0 pl-3 font-normal">
+                                <span className="flex items-center gap-2.5">
+                                  <span
+                                    className="flex size-[26px] shrink-0 items-center justify-center rounded-[8px]"
+                                    style={{ background: w.color, color: "#0E0F1A" }}
+                                  >
+                                    <Icon name={meta.icon} size={14} />
+                                  </span>
+                                  <span className="text-[15px] font-semibold">{meta.name}</span>
+                                </span>
+                              </th>
+                              <td className="num text-muted text-right text-[13px] font-medium whitespace-nowrap">{g.clears} clears</td>
+                              <td className="num text-muted pl-2 text-right text-[13px] whitespace-nowrap">
+                                {score ? "" : `avg ${formatClock(g.avgMs ?? 0)}`}
+                              </td>
+                              <td className="num w-[64px] pr-3 text-right text-[14px] font-semibold">
+                                {score ? formatNumber(g.bestScore ?? 0) : formatClock(g.bestMs ?? 0)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  )}
+                </section>
+              </>
+            )}
+            {tab === "badges" && (
+              <>
+                <section id="badges" aria-label="Badges" className="flex scroll-mt-16 flex-col gap-2">
+                  <h2 className="text-[16px] font-bold">Badges</h2>
+                  <BadgeGrid data={p!.badges} />
+                </section>
+              </>
+            )}
+          </div>
         </>
       )}
     </TabPage>

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.55.0 (12 November 2026)
+
+- **Your profile in tabs:** under your name and Spuz, Me has Overview (your numbers, rank per world, latest badges),
+  Streak (the calendar), Games (your best times) and Badges. Less scrolling; "All badges" opens the Badges tab, and
+  the tab stays on reload.
+- Tabs across the app (Me, Quests) move with the arrow keys, Home and End.
+
 ## 1.54.2 (12 November 2026)
 
 - A game you haven't played on this device starts loading its practice round the moment you tap it.
