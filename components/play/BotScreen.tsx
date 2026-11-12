@@ -4,7 +4,7 @@ import { GameOverBanner } from "@/components/game/GameOverBanner";
 import { gameOverCopy } from "@/lib/copy/game-over";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GameShell } from "@/components/game/GameShell";
 import { BoardSkeleton } from "@/components/game/BoardSkeleton";
 import { Button } from "@/components/ui/Button";
@@ -20,7 +20,7 @@ import { Icon } from "@/components/ui/Icon";
 import { LudoSetup, NO_KICKS, type LudoKicks } from "@/components/multiplayer/bay/LudoSetup";
 import type { BotExtra, BotPuzzle } from "./BotBoard";
 import { GuidedPlay } from "./GuidedPlay";
-import { useMe } from "@/lib/client/api";
+import { api, useMe } from "@/lib/client/api";
 import { useGameSettings } from "@/lib/game-settings/client";
 import { useMarkLearned } from "@/lib/client/learned";
 import { allLearned, learnedGames, needsGuided } from "@/lib/guided";
@@ -62,6 +62,23 @@ export function BotScreen({ meta, game, initialLevel }: { meta: GameMeta; game: 
     ],
     [game],
   );
+
+  // Each finished game goes on the player's record (owner, 12 Nov): the game, level, result and time. No reward.
+  const startedAt = useRef(0);
+  const logged = useRef<string | null>(null);
+  useEffect(() => {
+    startedAt.current = Date.now();
+  }, [round, level]);
+  useEffect(() => {
+    const id = `${game}:${level}:${round}`;
+    if (!outcome || logged.current === id) return;
+    logged.current = id;
+    void api("/api/v1/bot-games", {
+      json: { game, level, outcome, durationMs: Math.min(86_400_000, Date.now() - startedAt.current) },
+    }).catch(() => {
+      /* offline or signed out: a casual game, nothing to retry */
+    });
+  }, [outcome, game, level, round]);
 
   const restart = useCallback(() => {
     setOutcome(null);

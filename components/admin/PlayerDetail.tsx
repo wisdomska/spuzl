@@ -426,10 +426,27 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
                           {rows.map((m) => (
                             <tr key={m.id}>
                               <td className={`${td} font-semibold`}>{GAME_BY_ID[m.game_id]?.name ?? m.game_id}</td>
+                              <td className={td}>
+                                {m.against.kind === "bot" ? (
+                                  <span className="text-muted inline-flex items-center gap-1.5 whitespace-nowrap">
+                                    <Icon name="robot" size={14} />
+                                    {C.againstBot(m.against.level)}
+                                  </span>
+                                ) : m.against.players.length ? (
+                                  m.against.players.map((o, i) => (
+                                    <span key={o.id}>
+                                      {i > 0 && ", "}
+                                      <Link href={`/admin/players/${o.id}`} className="font-semibold underline-offset-4 hover:underline">
+                                        {o.nickname}
+                                      </Link>
+                                    </span>
+                                  ))
+                                ) : (
+                                  <span className="text-muted">{C.againstUnknown}</span>
+                                )}
+                              </td>
                               <td className={`${td} text-muted`}>
-                                {[C.boardModes[m.mode] ?? m.mode, m.bot ? C.vsBot : null, m.rated ? C.rated : null]
-                                  .filter(Boolean)
-                                  .join(" · ")}
+                                {[C.boardModes[m.mode] ?? m.mode, m.rated ? C.rated : null].filter(Boolean).join(" · ")}
                               </td>
                               <td className={td}>
                                 <Pill tone="neutral">{C.boardStatus[m.status] ?? adminCopy.common.statusLabel(m.status)}</Pill>

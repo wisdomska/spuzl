@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.54.0 (12 November 2026)
+
+### Everyone
+
+- **Games against the bot count on your record:** each finished game (the game, the bot's level, won, lost or drawn,
+  and how long it took) is saved to your account and included in your data download. Still no XP, Sparks or rating
+  from the bot. Practice rounds stay unsaved.
+
+### Admin
+
+- **A player's board games say who they played:** a new Against column shows "Bot" with its level (Easy, Medium,
+  Hard) or the other players by name, each linking to their page. Games against the bot from a game's page now sit
+  in the same list, newest first.
+
 ## 1.53.0 (12 November 2026)
 
 ### Everyone

@@ -30,6 +30,8 @@ const OWNED: [string, string][] = [
   ["streak_nudges", "player_id"],
   // R4-02: the feedback messages they sent from /contact (with the email they chose to leave, if any)
   ["feedback", "player_id"],
+  // Games against the bot from /play/<game>/bot (owner, 12 Nov 2026)
+  ["bot_games", "player_id"],
 ];
 
 /**

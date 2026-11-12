@@ -137,6 +137,41 @@ describe("admin player page", () => {
     expect(screen.getByText("Changed by the team")).toBeTruthy();
   });
 
+  it("says who each board game was against: the bot with its level, or the person by name", () => {
+    const THEM = "22222222-2222-4222-8222-222222222222";
+    const base = { status: "finished", result: null, rated: false, house: null, durationMs: null };
+    data = {
+      ...(detail() as Record<string, unknown>),
+      boardGames: [
+        {
+          ...base,
+          id: "b1",
+          game_id: "chess",
+          mode: "bot",
+          outcome: "won",
+          bot: true,
+          against: { kind: "bot", level: "hard" },
+          created_at: new Date().toISOString(),
+        },
+        {
+          ...base,
+          id: "m1",
+          game_id: "oware",
+          mode: "async",
+          outcome: "lost",
+          bot: false,
+          against: { kind: "people", players: [{ id: THEM, nickname: "Kofi" }] },
+          created_at: new Date().toISOString(),
+        },
+      ],
+    };
+    render(<PlayerDetail id={ID} role="owner" backHref="/admin/players" />);
+    fireEvent.click(screen.getByRole("tab", { name: "Games" }));
+    expect(screen.getByText("Against")).toBeTruthy();
+    expect(screen.getByText("Bot · Hard")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Kofi" }).getAttribute("href")).toBe(`/admin/players/${THEM}`);
+  });
+
   it("shows no technical details: no raw ids or keys (owner, 12 Nov)", () => {
     data = detail();
     render(<PlayerDetail id={ID} role="owner" backHref="/admin/players" />);

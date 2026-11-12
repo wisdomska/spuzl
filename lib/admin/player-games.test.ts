@@ -41,3 +41,35 @@ describe("player detail: board games and house rules (R2-ADMIN)", () => {
     expect(roundRef("odd")).toBe("odd");
   });
 });
+
+describe("player detail: who they played (owner, 12 Nov)", () => {
+  it("names the people at the table, never the player or the bot seat", async () => {
+    const { BOT_ID, opponentIds } = await import("./player-games");
+    const m = match({ players: [ME, THEM, BOT_ID] });
+    expect(opponentIds(m, ME)).toEqual([THEM]);
+    expect(boardGameRow(m, ME, { [THEM]: "Kofi" }).against).toEqual({ kind: "people", players: [{ id: THEM, nickname: "Kofi" }] });
+    expect(boardGameRow(match({ bot: true, players: [ME, BOT_ID] }), ME).against).toEqual({ kind: "bot", level: null });
+  });
+
+  it("puts games against the bot in the same list, newest first, with the level", async () => {
+    const { mergeBoardGames } = await import("./player-games");
+    const rows = mergeBoardGames(
+      [match({ id: "old", created_at: "2026-12-01T10:00:00Z", players: [ME, THEM] })],
+      [
+        { id: "b1", game_id: "chess", level: "hard", outcome: "won", duration_ms: 600_000, created_at: "2026-12-02T10:00:00Z" },
+        { id: "b0", game_id: "fourup", level: "easy", outcome: "lost", duration_ms: null, created_at: "2026-11-30T10:00:00Z" },
+      ],
+      ME,
+      { [THEM]: "Ama" },
+    );
+    expect(rows.map((r) => r.id)).toEqual(["b1", "old", "b0"]);
+    expect(rows[0]).toMatchObject({
+      mode: "bot",
+      outcome: "won",
+      against: { kind: "bot", level: "hard" },
+      durationMs: 600_000,
+      rated: false,
+    });
+    expect(rows[1].against).toEqual({ kind: "people", players: [{ id: THEM, nickname: "Ama" }] });
+  });
+});

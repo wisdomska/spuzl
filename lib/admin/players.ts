@@ -7,7 +7,7 @@ import { rangeOf, type PageParams } from "./pagination";
 import { accountTypeOf, maskEmail, type AccountType, type PlayerRow, type PlayerSqlFilters } from "./player-filters";
 import { can } from "./roles";
 import { shortRef } from "./moderation";
-import { boardGameRow, roundRef, type BoardMatchRow } from "./player-games";
+import { mergeBoardGames, opponentIds, roundRef, type BoardMatchRow, type BotGameRow } from "./player-games";
 import { effectiveBand } from "@/lib/age";
 import type { SortState } from "./sorting";
 
@@ -102,6 +102,7 @@ export async function playerDetail(ctx: AdminCtx, id: string) {
     { data: ratings },
     { data: rankMoves },
     { data: boardMatches },
+    { data: botGames },
     { data: shieldRow },
   ] = await Promise.all([
     db.auth.admin.getUserById(id),
@@ -155,10 +156,17 @@ export async function playerDetail(ctx: AdminCtx, id: string) {
       .limit(25),
     db
       .from("board_matches")
-      .select("id, game_id, mode, status, result, winner_id, rated, bot, created_at, opts:state->opts")
+      .select("id, game_id, mode, status, result, winner_id, rated, bot, created_at, players, opts:state->opts")
       .contains("players", [id])
       .order("created_at", { ascending: false })
-      .limit(10),
+      .limit(30),
+    // Games against the bot from /play/<game>/bot (owner, 12 Nov).
+    db
+      .from("bot_games")
+      .select("id, game_id, level, outcome, duration_ms, created_at")
+      .eq("player_id", id)
+      .order("created_at", { ascending: false })
+      .limit(30),
     // R2-P5: the sign-in streak shield's once-only ledger ref (svc_signin_shield).
     db.from("sparks_ledger").select("created_at").eq("player_id", id).eq("source", "shield").eq("ref_id", "signin").maybeSingle(),
   ]);
@@ -190,6 +198,14 @@ export async function playerDetail(ctx: AdminCtx, id: string) {
     .sort((a, b) => b.week_start.localeCompare(a.week_start))
     .slice(0, 6);
 
+  // The people they played at the table, by name (one lookup for every match shown).
+  const matches = (boardMatches ?? []) as BoardMatchRow[];
+  const ids = [...new Set(matches.flatMap((m) => opponentIds(m, id)))];
+  const names: Record<string, string> = {};
+  if (ids.length) {
+    const { data: people } = await db.from("players").select("id, nickname").in("id", ids);
+    for (const pl of people ?? []) names[pl.id] = pl.nickname;
+  }
   return {
     // Birth month and year only for roles that may correct it (players.age); everyone else sees the band.
     profile: {
@@ -245,7 +261,7 @@ export async function playerDetail(ctx: AdminCtx, id: string) {
       delta: r.delta === null || r.delta === undefined ? null : Number(r.delta),
       created_at: r.created_at as string,
     })),
-    boardGames: ((boardMatches ?? []) as BoardMatchRow[]).map((m) => boardGameRow(m, id)),
+    boardGames: mergeBoardGames(matches, (botGames ?? []) as BotGameRow[], id, names),
   };
 }
 

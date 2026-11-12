@@ -1136,11 +1136,13 @@ export const adminCopy = {
     noRankMoves: "No rank changes yet.",
     /** R2-ADMIN: recent Board Games (chess, Ludo...) with the house rules each match was played with. */
     boardGames: "Board games",
-    boardHead: ["Game", "How", "Status", "Result", "House rules", "Started"],
+    boardHead: ["Game", "Against", "How", "Status", "Result", "House rules", "Started"],
+    /** who they played (owner, 12 Nov): the bot with its level, or the people by name */
+    againstBot: (level: string | null) => (level ? `Bot · ${level[0].toUpperCase()}${level.slice(1)}` : "Bot"),
+    againstUnknown: "Someone",
     noBoardGames: "No board games yet.",
     standardRules: "Standard",
     ludoRules: { backKick: "Back-kick", sideKick: "Side-kick", homeKick: "Home-kick" } as Record<string, string>,
-    vsBot: "vs computer",
     rated: "rated",
     boardModes: { async: "Turn by turn", live: "Live", bot: "Against the computer", local: "Same device" } as Record<string, string>,
     boardStatus: { active: "Playing", waiting: "Waiting", finished: "Finished", abandoned: "Left early" } as Record<string, string>,
