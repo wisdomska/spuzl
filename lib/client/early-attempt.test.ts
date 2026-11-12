@@ -4,6 +4,8 @@ const start = vi.fn(() => Promise.resolve({ attemptId: "a" }));
 vi.mock("./api", () => ({ startAttempt: (...a: unknown[]) => start(...(a as [])) }));
 vi.mock("./resume", () => ({ resumeIdFor: () => undefined }));
 vi.mock("@/lib/perf/quiet", () => ({ markPlayTap: () => {} }));
+const prefetched: string[] = [];
+vi.mock("./guided-prefetch", () => ({ prefetchGuided: (g: string) => prefetched.push(g) }));
 
 import { parsePlayHref, primableLink, primeAttempt, setPrimeGate, takePrimed } from "./early-attempt";
 
@@ -53,6 +55,8 @@ describe("R2-07: no priming before a practice round", () => {
     primeAttempt("/play/dusk?mode=level");
     expect(start).not.toHaveBeenCalled();
     expect(takePrimed("dusk", "level")).toBeNull();
+    // ...and fetches its practice board at the tap instead
+    expect(prefetched).toContain("dusk");
     primeAttempt("/play/nine?mode=free");
     expect(start).toHaveBeenCalledTimes(1);
     expect(takePrimed("nine", "free")).not.toBeNull();

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.54.2 (12 November 2026)
+
+- A game you haven't played on this device starts loading its practice round the moment you tap it.
+
 ## 1.54.1 (12 November 2026)
 
 - **Faster on a new phone or browser:** sign-up no longer shares the connection with 55 sound files. Only the 9

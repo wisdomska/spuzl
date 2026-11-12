@@ -4,6 +4,7 @@ import { startAttempt, type StartRes } from "./api";
 import { resumeIdFor } from "./resume";
 import { markPlayTap } from "@/lib/perf/quiet";
 import { isSheetLink } from "@/lib/analytics/play-nav";
+import { prefetchGuided } from "./guided-prefetch";
 
 /**
  * SPZ-01: start a game's attempt the moment it is tapped, in parallel with loading the Play route, so the board
@@ -51,7 +52,8 @@ export function primeAttempt(href: string) {
   const t = parsePlayHref(href);
   if (!t) return;
   markPlayTap(); // background downloads wait for this board (lib/perf/quiet.ts)
-  if (!gate(t.game)) return;
+  // A game that opens on its practice round: fetch that board at the tap instead (owner, 12 Nov: new devices).
+  if (!gate(t.game)) return prefetchGuided(t.game);
   const k = keyOf(t.game, t.mode, t.mode === "level" ? t.level : t.difficulty);
   const hit = primed.get(k);
   if (hit && Date.now() - hit.at < TTL_MS) return;
