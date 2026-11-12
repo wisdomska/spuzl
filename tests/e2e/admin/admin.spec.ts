@@ -136,7 +136,7 @@ test("moderation: clear a flagged score and rename a reported nickname", async (
     .click();
   await expect(page.getByText("below human floor").first()).toBeVisible();
   await page.getByRole("button", { name: "Let it count" }).click();
-  await expect(page.getByText(/now counts on the leaderboards/)).toBeVisible();
+  await expect(page.getByText(/score allowed/)).toBeVisible();
   expect((await db.from("attempts").select("status").eq("id", a!.id).single()).data!.status).toBe("cleared");
 
   await page.getByRole("tab", { name: "Nicknames" }).click();
@@ -197,7 +197,7 @@ test("roles: the UI hides what a role cannot do and the server refuses the page"
   await expect(nav.getByRole("link", { name: "Reports" })).toHaveCount(0);
   await expect(nav.getByRole("link", { name: "Team" })).toHaveCount(0);
   await page.goto("/admin/moderation");
-  await expect(page.getByText("Your role cannot open reports.")).toBeVisible();
+  await expect(page.getByText("Your role can't open reports.")).toBeVisible();
   await page.goto("/admin/audit");
   await expect(page.getByRole("heading", { name: "Activity log", level: 1 })).toBeVisible();
   // Plain filters: the team's sign-in rows read as sentences, with the raw action under Technical details.

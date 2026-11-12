@@ -37,7 +37,7 @@ describe("admin Overview: home", () => {
   it("says all clear when nothing is waiting", () => {
     data = { ...base, newFeedback: 0, attention: { puzzlesToReview: 0, contentToReview: 0, joinRequestsToday: 0, joinRequestsWaiting: 0 } };
     render(<Overview role="owner" />);
-    expect(attention().getByText("All clear. Nothing is waiting for you right now.")).toBeTruthy();
+    expect(attention().getByText("All clear. Nothing waiting.")).toBeTruthy();
     expect(attention().getAllByText("Nothing waiting").length).toBe(5);
   });
 
@@ -60,7 +60,7 @@ describe("admin Overview: home", () => {
     // content is hidden for a role that can't open it (null); join requests are information, last
     expect(attention().queryByText("Content waiting for approval")).toBeNull();
     expect(rows[rows.length - 1].textContent).toContain("Join requests today");
-    expect(rows[rows.length - 1].textContent).toContain("1 still waiting for the host");
+    expect(rows[rows.length - 1].textContent).toContain("1 waiting on the host");
   });
 
   it("shows today's numbers in plain words with yesterday for comparison", () => {
@@ -94,7 +94,7 @@ describe("admin Overview: home", () => {
     }));
     const { Overview: Fresh } = await import("@/components/admin/Overview");
     render(<Fresh role="owner" />);
-    expect(screen.getByText(/The overview didn't load/)).toBeTruthy();
+    expect(screen.getByText(/Overview didn't load/)).toBeTruthy();
     vi.doUnmock("@/lib/client/admin");
   });
 });

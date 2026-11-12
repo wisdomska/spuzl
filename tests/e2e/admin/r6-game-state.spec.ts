@@ -37,7 +37,7 @@ async function setState(page: Page, label: "On" | "In testing" | "Off", stored: 
     .click();
   if (label !== "On") {
     const dialog = page.getByRole("alertdialog");
-    await expect(dialog).toContainText(`Players will no longer see or play ${NAME}`);
+    await expect(dialog).toContainText(`Players lose ${NAME} everywhere`);
     await dialog.getByRole("button", { name: label === "Off" ? "Switch off" : "Put in testing" }).click();
   }
   await expect.poll(status, { timeout: 15_000 }).toBe(stored);

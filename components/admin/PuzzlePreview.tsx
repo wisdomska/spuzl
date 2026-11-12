@@ -220,10 +220,7 @@ export function PuzzlePreview({
       </div>
 
       <aside aria-label={C.publish} className="bg-surface border-line flex flex-col gap-3 border-t p-5 xl:border-t-0 xl:border-l">
-        <div className="flex flex-col gap-0.5">
-          <h2 className="font-display text-[17px] font-extrabold">{C.publish}</h2>
-          <p className="text-muted text-[13px]">{C.publishIntro}</p>
-        </div>
+        <h2 className="font-display text-[17px] font-extrabold">{C.publish}</h2>
         {p.status === "retired" && <Notice icon="prohibit">{C.retiredNote}</Notice>}
         <ReadField
           label={C.release}

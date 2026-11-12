@@ -59,7 +59,7 @@ test("Game settings: every round 2 setting shows with its helper text, and range
   const countdown = await settingRow(page, SETTINGS["party.countdownSeconds"].label);
   await countdown.getByText("Technical details").click();
   await expect(countdown.getByText("party.countdownSeconds", { exact: true })).toBeVisible();
-  await expect(countdown.getByText(/The number every Duel round and Party game counts down from/)).toBeVisible();
+  await expect(countdown.getByText(/Count before each Duel or Party round/)).toBeVisible();
   const input = countdown.getByRole("textbox");
   await input.fill("9");
   await expect(input).toHaveAttribute("aria-invalid", "true");
@@ -92,7 +92,7 @@ test("join-request log: a moderator exports it as CSV (audited); an analyst cann
   const acct = await signedIn(page, "moderator");
   await page.goto("/admin/join-requests");
   await expect(page.getByRole("heading", { name: "Join requests" })).toBeVisible();
-  await expect(page.getByText(/No chat is kept/)).toBeVisible();
+  await expect(page.getByText(/Asks to join games hosted by 13 to 15s/)).toBeVisible();
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download list (CSV)" }).click();
   expect((await download).suggestedFilename()).toMatch(/\.csv$/);
@@ -101,7 +101,7 @@ test("join-request log: a moderator exports it as CSV (audited); an analyst cann
   const other = await browser.newPage();
   await signedIn(other, "analyst");
   await other.goto("/admin/join-requests");
-  await expect(other.getByText("Your role cannot open join requests.")).toBeVisible();
+  await expect(other.getByText("Your role can't open join requests.")).toBeVisible();
   await other.close();
 });
 

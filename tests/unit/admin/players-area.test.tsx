@@ -110,12 +110,12 @@ describe("admin player page", () => {
     render(<PlayerDetail id={ID} role="owner" backHref="/admin/players" />);
     expect(screen.getByRole("heading", { level: 1, name: "Kofi" })).toBeTruthy();
     expect(screen.getByText("Guest", { selector: "span[class*=font-bold]" })).toBeTruthy();
-    expect(screen.getByText(/progress is gone and we cannot bring it back/)).toBeTruthy();
-    expect(screen.getByText(/Our most protected group/)).toBeTruthy();
+    expect(screen.getByText(/Lost progress can't be recovered/)).toBeTruthy();
+    expect(screen.getByText(/Most protected: invite-only friends/)).toBeTruthy();
     expect(screen.getAllByText("Active today").length).toBeGreaterThan(0);
     const attention = screen.getByRole("region", { name: "Needs your attention" });
-    expect(within(attention).getByText("1 report about this player waiting for review.")).toBeTruthy();
-    expect(within(attention).getByText(/2 scores too fast to be believable/)).toBeTruthy();
+    expect(within(attention).getByText("1 report waiting for review.")).toBeTruthy();
+    expect(within(attention).getByText(/2 suspicious scores waiting for review/)).toBeTruthy();
     expect(
       within(attention)
         .getByRole("link", { name: /Open Reports/ })
@@ -143,14 +143,14 @@ describe("admin player page", () => {
     render(<PlayerDetail id={ID} role="owner" backHref="/admin/players" />);
     expect(screen.getByText(/Nothing needs action/)).toBeTruthy();
     expect(screen.getByText("Saved account (Google)")).toBeTruthy();
-    expect(screen.getByText(/follows them to any device/)).toBeTruthy();
-    expect(screen.getByText(/including the 18\+ party rooms/)).toBeTruthy();
+    expect(screen.getByText(/Progress is safe on any device/)).toBeTruthy();
+    expect(screen.getByText(/including 18\+ party rooms/)).toBeTruthy();
   });
 
   it("shows a ban with when it ends, and offers Lift ban instead of Ban", () => {
     data = detail({ banned: true });
     render(<PlayerDetail id={ID} role="owner" backHref="/admin/players" />);
-    expect(screen.getByText(/They can't play until the ban ends in 3 days/)).toBeTruthy();
+    expect(screen.getByText(/The ban ends in 3 days/)).toBeTruthy();
     expect(screen.getByRole("button", { name: "Lift ban" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Ban from playing" })).toBeNull();
   });
@@ -158,7 +158,7 @@ describe("admin player page", () => {
   it("an analyst sees the page read-only", () => {
     data = detail();
     render(<PlayerDetail id={ID} role="analyst" backHref="/admin/players" />);
-    expect(screen.getByText("Your role can look at players but not change them.")).toBeTruthy();
+    expect(screen.getByText("Your role can view players, not change them.")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Delete account" })).toBeNull();
   });
 });
@@ -193,7 +193,7 @@ describe("admin players list", () => {
     data = { rows: [row()], page: 1, pageSize: 25, total: 1, emailVisible: false };
     render(<PlayersPage canModerate canExport emailVisible={false} />);
     expect(screen.getByRole("heading", { level: 1, name: "Players" })).toBeTruthy();
-    expect(screen.getByText(/Find any player/)).toBeTruthy();
+    expect(screen.getByText(/Find a player and open their page/)).toBeTruthy();
     const headers = screen.getAllByRole("columnheader").map((h) => h.textContent);
     // Owner's order (11 Nov): who they are, then activity and progress; review and status at the end.
     expect(headers.slice(1, 7)).toEqual(["Player", "Email", "Account", "Joined", "Last played", "Level"]);

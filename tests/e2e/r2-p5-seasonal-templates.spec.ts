@@ -23,7 +23,7 @@ for (const [name, vp] of [
     await page.screenshot({ path: `docs/qa/screens/r2/p5-event-templates-${name}.png`, fullPage: true });
 
     await templates.getByRole("button", { name: "Add Detty December as a draft" }).click();
-    await expect(page.getByText("Detty December added as a draft. Check the dates, then Schedule.")).toBeVisible();
+    await expect(page.getByText("Detty December added as a draft.")).toBeVisible();
     const row = page.getByRole("row").filter({ hasText: "Detty December" }).first();
     await expect(row.getByText("Draft", { exact: true })).toBeVisible();
     await row.getByRole("button", { name: "Schedule Detty December" }).click();
@@ -32,12 +32,12 @@ for (const [name, vp] of [
     // Clean up: back to draft, then delete. Each asks first in the app's own confirm (R7: no browser confirm box).
     await row.getByRole("button", { name: "Put Detty December back to draft" }).click();
     const stop = page.getByRole("alertdialog", { name: "Stop Detty December?" });
-    await expect(stop).toContainText("Players stop seeing it straight away");
+    await expect(stop).toContainText("Players stop seeing it now");
     await stop.getByRole("button", { name: "Stop event" }).click();
     await expect(row.getByText("Draft", { exact: true })).toBeVisible();
     await row.getByRole("button", { name: "Delete Detty December" }).click();
     const del = page.getByRole("alertdialog", { name: "Delete Detty December?" });
-    await expect(del).toContainText("This can't be undone.");
+    await expect(del).toContainText("Can't be undone.");
     await del.getByRole("button", { name: "Delete event" }).click();
     await expect(del).toBeHidden();
   });

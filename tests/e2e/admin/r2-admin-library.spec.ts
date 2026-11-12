@@ -94,5 +94,5 @@ test("practice board preview: the real board, read only, with Show solution and 
 test("roles: a moderator cannot open the Games page (content.read)", async ({ page }) => {
   await signedIn(page, "moderator");
   await page.goto("/admin/library");
-  await expect(page.getByText("Your role cannot open the Games page.")).toBeVisible();
+  await expect(page.getByText("Your role can't open the Games page.")).toBeVisible();
 });

@@ -138,8 +138,9 @@ describe("Game state: the lab switch moved to the Games page", () => {
     for (const [key, d] of Object.entries(SETTINGS)) {
       expect(groups, key).toContain(d.group);
       expect(d.label.length, key).toBeGreaterThan(3);
-      // One short line; the rest belongs in `more`.
-      expect(d.help.length, key).toBeLessThanOrEqual(150);
+      // One short line (about ten words); the rest belongs in `more`, kept short too (round 6: concise copy).
+      expect(d.help.length, key).toBeLessThanOrEqual(80);
+      if ("more" in d && d.more) expect(d.more.length, key).toBeLessThanOrEqual(120);
       // No setting keys or developer units in what the owner reads.
       for (const text of [d.label, d.help, "more" in d ? (d.more ?? "") : ""])
         expect(text, key).not.toMatch(/\bms\b|[a-z]+\.[a-z]+[A-Z]|\/[a-z]+\//);

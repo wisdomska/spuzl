@@ -287,7 +287,7 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
             </TechDetails>
           </Card>
 
-          <Card title={C.progress} id="pd-progress" hint={C.progressHint}>
+          <Card title={C.progress} id="pd-progress">
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               <Figure value={p.level} label={C.statLabels.level} />
               <Figure value={fmt(d.stats.clears)} label={C.statLabels.clears} />

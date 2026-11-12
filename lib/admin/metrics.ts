@@ -325,7 +325,7 @@ export const METRICS: readonly MetricDef[] = [
     id: "tap_to_board",
     group: "speed",
     title: "Opening a game",
-    note: "How long from tapping a game to its board being ready, measured on players' phones. Typical: half of opens are quicker. Slow end: 1 in 20 opens is slower. First load is opening the app straight onto a game.",
+    note: "Tap to board ready, on phones. Typical: half are quicker. Slow end: 1 in 20 is slower.",
     headline: (t) => typical(t.tap_p50),
     sub: (t) => `slow end ${ms(t.tap_p95)} · ${n(t.tap_n)} opens · first load ${ms(t.load_p50)} typical`,
     cols: [
@@ -341,7 +341,7 @@ export const METRICS: readonly MetricDef[] = [
     id: "tap_warmth",
     group: "speed",
     title: "Opening a game: first and later",
-    note: "The first game opened in a visit has to download its code, so it is slower; later games in the same visit are quicker. Measured on players' phones (newer app versions only).",
+    note: "A visit's first game downloads its code, so it is slower. Newer app versions only.",
     headline: (t) =>
       t.cold_p50 == null && t.warm_p50 == null ? NO_DATA : `${ms(t.cold_p50 ?? null)} first · ${ms(t.warm_p50 ?? null)} later`,
     sub: (t) =>
@@ -359,7 +359,7 @@ export const METRICS: readonly MetricDef[] = [
     id: "first_move",
     group: "speed",
     title: "Time to the first move",
-    note: "From a solo puzzle's start (Daily, free play, archive, challenges) to the player's first move. Long times can mean a puzzle is hard to get into.",
+    note: "Solo puzzle start to first move. Long times can mean a hard start.",
     headline: (t) => typical(t.first_move_p50),
     sub: (t) => `slow end ${ms(t.first_move_p95)} · ${n(t.first_move_n)} puzzles`,
     cols: [
@@ -372,7 +372,7 @@ export const METRICS: readonly MetricDef[] = [
     id: "party_first_move",
     group: "speed",
     title: "Party start to first move",
-    note: "From the end of a Party game's 3-2-1 countdown to each player's first move, on the server clock. One per player per game; coming back into a game already started is not counted again.",
+    note: "Countdown end to each player's first move, once per player per game.",
     headline: (t) => typical(t.party_first_move_p50 ?? null),
     sub: (t) => `slow end ${ms(t.party_first_move_p95 ?? null)} · ${n(t.party_first_move_n ?? 0)} first moves`,
     cols: [
@@ -385,7 +385,7 @@ export const METRICS: readonly MetricDef[] = [
     id: "first_clear",
     group: "detail",
     title: "New players' first solved puzzle",
-    note: "Players who arrived each day, how many have solved a puzzle since (the tutorial does not count), and how long that took from arriving. Recent days keep growing as players come back. Test players left out.",
+    note: "New players per day, how many solved a puzzle since, and how fast. Recent days still grow.",
     headline: (t) => typical(t.fc_p50 ?? null),
     sub: (t) =>
       `slow end ${ms(t.fc_p95 ?? null)} · ${n(t.fc_cleared ?? 0)} of ${n(t.fc_cohort ?? 0)} new players solved one (${pct(rate(t.fc_cleared ?? 0, t.fc_cohort ?? 0))})`,
@@ -401,7 +401,7 @@ export const METRICS: readonly MetricDef[] = [
     id: "onboarding",
     group: "detail",
     title: "Getting started, step by step",
-    note: "How far new players get through the welcome screens (counted on their phones, once per visit). Finished = reached the home screen, out of those who reached the age question. New profiles, Tutorial solved and Played come from the server.",
+    note: "Welcome screens, once per visit. Finished = reached Home after the age question.",
     headline: (t) => pct(onboarded(t)),
     sub: (t) =>
       `${n(t.onboarding_home ?? 0)} of ${n(t.onboarding_age ?? 0)} reached the home screen · ${n(t.played)} of ${n(t.created)} new profiles played a game`,
@@ -422,7 +422,7 @@ export const METRICS: readonly MetricDef[] = [
     id: "retention",
     group: "detail",
     title: "Coming back, by first-play day",
-    note: "Players grouped by the GMT day of their first game (or first board-game move). Next day = how many played again the day after; a week later = on the 7th day after. A day shows no data until that later day is over. Test players left out.",
+    note: "Grouped by first-play day (GMT). A day fills in once the later day is over.",
     headline: (t) => (d1(t) === null && d7(t) === null ? NO_DATA : `${pct(d1(t))} next day · ${pct(d7(t))} a week later`),
     sub: (t) =>
       `${n(t.ret_d1_kept ?? 0)} of ${n(t.ret_d1_cohort ?? 0)} came back the next day · ${n(t.ret_d7_kept ?? 0)} of ${n(t.ret_d7_cohort ?? 0)} a week later · ${n(t.ret_cohort ?? 0)} new players`,
@@ -438,7 +438,7 @@ export const METRICS: readonly MetricDef[] = [
     id: "game_over",
     group: "detail",
     title: "Board game results",
-    note: "Finished board games (chess, draughts, Ludo, Oware and the others) as each player's end card showed them, once per game (counted on players' phones). With people = a friend or a live opponent; against the computer = the practice bot. Both players of a game with people send a result, so wins and losses roughly pair up.",
+    note: "Finished board games, once per player per game. With people = friend or live opponent.",
     headline: (t) => pct(rate(t.go_bot_won ?? 0, botGames(t))),
     sub: (t) =>
       `players' wins against the computer (${n(botGames(t))} games) · with people ${n(bayGames(t))} results: ${n(t.go_bay_won ?? 0)} won, ${n(t.go_bay_lost ?? 0)} lost, ${n(t.go_bay_draw ?? 0)} drawn`,
@@ -456,7 +456,7 @@ export const METRICS: readonly MetricDef[] = [
     id: "practice",
     group: "detail",
     title: "Practice rounds by game",
-    note: "The short first try of a game, with free hints (counted on players' phones). Finished = solved; skipped = Skip tapped; left early = started but neither. Games whose practice round is switched off in Game settings never show one.",
+    note: "Finished = solved; skipped = Skip tapped; left early = neither.",
     headline: (t) => pct(rate(t.practice_finished ?? 0, t.practice_started ?? 0)),
     sub: (t) => {
       const c = practiceAll(t);
@@ -484,7 +484,7 @@ export const METRICS: readonly MetricDef[] = [
     id: "hints",
     group: "detail",
     title: "Hints",
-    note: "Finished solo puzzles where the player used a hint. Asked = Hint tapped; used = the hint was shown. Cancelled = asked but not used. Possibly by accident = hinted puzzles later given up, plus cancels, out of hinted puzzles plus cancels.",
+    note: "Asked = Hint tapped; used = shown; cancelled = asked, not used.",
     headline: (t) => pct(rate(t.hinted, t.attempts)),
     sub: (t) =>
       `of finished puzzles used a hint · ${n(t.hints_used)} hints · ${n(t.hint_requests ?? 0)} asked, ${n(t.hint_uses ?? 0)} used · possibly by accident ${pct(accidental(t))} (${n(hintCancels(t))} cancelled)`,
@@ -504,7 +504,7 @@ export const METRICS: readonly MetricDef[] = [
     id: "duels",
     group: "detail",
     title: "Duels: left early and computer stand-ins",
-    note: "Duels created in these days. Left early = ended because a player left or lost connection, out of duels that started. Computer stand-in = a Quick Match that found no one and paired the player with the computer, out of Quick Match duels.",
+    note: "Left early = a player left or dropped. Stand-in = Quick Match found no one.",
     headline: (t) => pct(rate(t.duels_abandoned, t.duels_started)),
     sub: (t) => `left early, of ${n(t.duels_started)} started · computer stand-in ${pct(rate(t.duels_bot, t.duels_matchmade))}`,
     cols: [
@@ -520,7 +520,7 @@ export const METRICS: readonly MetricDef[] = [
     id: "duel_bands",
     group: "detail",
     title: "Duels by age group",
-    note: "Duels created, by how (Challenge a friend or Quick Match) and the age group of the player who started it, recorded by the server. Under-16 Quick Match should always be 0: the server refuses it.",
+    note: "By how they started and the starter's age group. Under-16 Quick Match is always 0.",
     headline: (t) => n(createdDuels(t)),
     sub: (t) =>
       `${n(friendDuels(t))} with a friend · ${n(quickDuels(t))} Quick Match · under 16 ${pct(rate(under16Duels(t), createdDuels(t)))} (${n(under16Duels(t))})`,
@@ -539,7 +539,7 @@ export const METRICS: readonly MetricDef[] = [
     id: "daily",
     group: "detail",
     title: "Daily puzzles solved",
-    note: "Daily puzzles started in these days that were solved (given up and flagged runs count as not solved). Test players left out.",
+    note: "Started and solved. Given-up and flagged runs count as not solved.",
     headline: (t) => pct(rate(t.daily_cleared, t.daily_started)),
     sub: (t) => `${n(t.daily_cleared)} of ${n(t.daily_started)} Daily puzzles started`,
     cols: [
@@ -552,7 +552,7 @@ export const METRICS: readonly MetricDef[] = [
     id: "shares",
     group: "detail",
     title: "Sharing",
-    note: "Shares from the share sheet (counted on players' phones) for each finished game: solved puzzles plus finished Duels and Parties.",
+    note: "Share-sheet shares after solved puzzles, Duels and Parties.",
     headline: (t) => pct(rate(t.shares, t.finished_games)),
     sub: (t) => `${n(t.shares)} shares · ${n(t.finished_games)} finished games`,
     cols: [
@@ -565,7 +565,7 @@ export const METRICS: readonly MetricDef[] = [
     id: "prompts",
     group: "detail",
     title: "Pop-up prompts",
-    note: "Prompts shown, accepted and closed (counted on players' phones), by what earned them. Notifications: accepted = Turn on. Low data: Turn on. Save your streak: the email was saved. Event banner: the quest was opened. Never more than one prompt on a screen.",
+    note: "Shown, accepted and closed, by what earned them. One prompt per screen at most.",
     headline: (t) => pct(accepted(t)),
     sub: (t) =>
       `accepted, of ${n(t.prompt_shown ?? 0)} shown · ${n(t.prompt_accepted ?? 0)} accepted, ${n(t.prompt_dismissed ?? 0)} closed`,
@@ -593,7 +593,7 @@ export const METRICS: readonly MetricDef[] = [
     id: "daily_five",
     group: "detail",
     title: "Daily Five details",
-    note: "Starts and completions = players beginning the day's five and playing all five; shares = result grids shared (counted on players' phones). Players and Full fives come from the server, each player once a day (test players left out).",
+    note: "Starts, full fives and shared grids. Each player once a day.",
     headline: (t) => pct(rate(t.daily5_completes ?? 0, t.daily5_starts ?? 0)),
     sub: (t) =>
       `${n(t.daily5_completes ?? 0)} of ${n(t.daily5_starts ?? 0)} starts completed · ${n(t.daily5_shares ?? 0)} shares · ${n(t.daily5_players ?? 0)} players`,
@@ -611,7 +611,7 @@ export const METRICS: readonly MetricDef[] = [
     id: "growth",
     group: "detail",
     title: "Party TV and streak shields",
-    note: "TV views = times the big-screen Party view opened a room. Shields = guests who signed in from Save your streak and got the free Streak Freeze (once per player). Counted on players' phones, no names.",
+    note: "TV views of Party rooms, and free Streak Freezes for signing in.",
     headline: (t) => n(t.gr_tv_views ?? 0),
     sub: (t) => `Party TV views · ${n(t.gr_shields ?? 0)} streak shields`,
     cols: [
@@ -623,7 +623,7 @@ export const METRICS: readonly MetricDef[] = [
     id: "streak_nudge",
     group: "detail",
     title: "Streak reminders",
-    note: "Evening reminders to players whose streak would end at midnight (set in Game settings, Alerts), by the GMT day they went out. Sent = reached at least one phone. Solved within 3 h = of those, players who solved a puzzle within 3 hours. Test players left out.",
+    note: "Evening reminders by GMT day. Solved within 3 h = played after the reminder.",
     headline: (t) => pct(rate(t.sn_cleared ?? 0, t.sn_sent ?? 0)),
     sub: (t) => `solved a puzzle within 3 h · ${n(t.sn_cleared ?? 0)} of ${n(t.sn_sent ?? 0)} reminders sent`,
     cols: [
@@ -636,7 +636,7 @@ export const METRICS: readonly MetricDef[] = [
     id: "weekly_recap",
     group: "detail",
     title: "Weekly recap card",
-    note: "Last week's recap card on the home screen, at most once a week per phone (Feature switches, Weekly recap). Shown, shared, Play tapped and closed. Counted on players' phones, no names.",
+    note: "Shown, shared, Play tapped and closed. Once a week per phone.",
     headline: (t) => pct(rate(t.wr_shared ?? 0, t.wr_shown ?? 0)),
     sub: (t) =>
       `shared, of ${n(t.wr_shown ?? 0)} shown · ${n(t.wr_shared ?? 0)} shares, ${n(t.wr_played ?? 0)} played, ${n(t.wr_dismissed ?? 0)} closed`,

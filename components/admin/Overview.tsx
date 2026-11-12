@@ -147,7 +147,6 @@ function Body({ d, role, mod }: { d: OverviewData; role?: Role; mod: boolean }) 
       <Section
         id="ov-attention"
         title={C.attention}
-        description={C.attentionIntro}
         aside={waiting.length === 0 ? undefined : <span className="text-muted text-[12px]">{C.updated}</span>}
       >
         {waiting.length === 0 && (

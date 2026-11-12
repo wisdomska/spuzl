@@ -80,7 +80,7 @@ describe("admin Reports page", () => {
     fireEvent.click(screen.getByRole("button", { name: "Reset times" }));
     expect(mutateAsync).not.toHaveBeenCalled();
     expect(screen.getByText("Reset times?")).toBeTruthy();
-    expect(screen.getByText(/Removes all their Daily scores, ratings and streak/)).toBeTruthy();
+    expect(screen.getByText(/Removes Daily scores, ratings and streak/)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Yes, reset times" }));
     await vi.waitFor(() => expect(mutateAsync).toHaveBeenCalledWith({ pid: PID, action: "reset" }));
   });
