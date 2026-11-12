@@ -16,7 +16,7 @@ import { ConfirmDialog } from "./ConfirmDialog";
 import { MIN_AGE, ageBandOf, birthProblem, birthYears } from "@/lib/age";
 import { ageCopy } from "@/lib/copy/age";
 import { DaysField, STATUS_TONE } from "./PlayersPage";
-import { Card, Fact, Figure, TechDetails, TechRow, When } from "./people-ui";
+import { Card, Fact, Figure, TechDetails, When } from "./people-ui";
 import { Btn, Empty, Field, Notice, Pill, RowsSkeleton, inputCls, type PillTone } from "./ui";
 import { Paged } from "./Pagination";
 import { Select } from "@/components/ui/Select";
@@ -271,20 +271,6 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
               )}
             </div>
             {d.account.isAdmin && <Notice icon="info">{C.adminAccount}</Notice>}
-            <TechDetails>
-              <TechRow k={C.tech.playerId} v={p.id} />
-              <TechRow
-                k={C.tech.signIns}
-                v={
-                  d.account.identities.length
-                    ? d.account.identities.map((i) => C.tech.linked(i.provider, i.created_at ? exactTime(i.created_at) : "?")).join("; ")
-                    : "anonymous"
-                }
-              />
-              <TechRow k={C.tech.storedBand} v={p.age_band} />
-              <TechRow k={C.tech.created} v={exactTime(p.created_at)} />
-              <TechRow k={C.tech.lastSeen} v={p.last_seen_at ? exactTime(p.last_seen_at) : "null"} />
-            </TechDetails>
           </Card>
 
           <Card title={C.progress} id="pd-progress">
@@ -685,11 +671,6 @@ function AuditList({ rows }: { rows: readonly Detail["audit"][number][] }) {
           );
         })}
       </ul>
-      <TechDetails>
-        {rows.map((a) => (
-          <TechRow key={a.id} k={`${exactTime(a.created_at)} · ${a.action}`} v={JSON.stringify(a.detail)} />
-        ))}
-      </TechDetails>
     </>
   );
 }

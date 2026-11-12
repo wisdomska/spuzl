@@ -235,7 +235,7 @@ function InsightCard({ def, data }: { def: InsightDef; data: MetricsData }) {
       </p>
       {!def.snapshot && <Trend def={def} label={copy.label} rows={data.rows} />}
       <details className="mt-auto">
-        <summary className="text-muted hover:text-text flex h-11 cursor-pointer items-center text-[13px] font-semibold">
+        <summary className="disclosure text-muted hover:text-text flex h-11 cursor-pointer items-center text-[13px] font-semibold">
           {C.howCounted}
         </summary>
         <p className="text-muted text-[13px] leading-[1.45]">{copy.definition}</p>
@@ -339,7 +339,7 @@ function TopGames({ data }: { data: MetricsData }) {
         </div>
       )}
       <details>
-        <summary className="text-muted hover:text-text flex h-11 cursor-pointer items-center text-[13px] font-semibold">
+        <summary className="disclosure text-muted hover:text-text flex h-11 cursor-pointer items-center text-[13px] font-semibold">
           {C.howCounted}
         </summary>
         <p className="text-muted text-[13px] leading-[1.45]">{T.definition}</p>
@@ -419,7 +419,9 @@ function MetricCard({ def, data }: { def: MetricDef; data: MetricsData }) {
         </div>
       )}
       <details>
-        <summary className="text-muted hover:text-text flex h-11 cursor-pointer items-center text-[13px] font-semibold">{C.byDay}</summary>
+        <summary className="disclosure text-muted hover:text-text flex h-11 cursor-pointer items-center text-[13px] font-semibold">
+          {C.byDay}
+        </summary>
         <div className="max-h-[420px] overflow-auto">
           <table className="w-full border-collapse text-[13px]">
             <thead className="sticky top-0">

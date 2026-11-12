@@ -13,7 +13,7 @@ import { Icon } from "@/components/ui/Icon";
 import { hasLogic } from "@/games/logic-ids";
 import { PracticeBoardPreview } from "./PuzzlePreview";
 import { Paged } from "./Pagination";
-import { PageHead, StateGuide, StatePill, TechDetails, TechLine, type StateWords } from "./content-ui";
+import { PageHead, StateGuide, StatePill, type StateWords } from "./content-ui";
 import { Btn, Confirm, Empty, Notice, Pill, RowsSkeleton, inputCls, textareaCls } from "./ui";
 
 const C = adminCopy.library;
@@ -209,7 +209,7 @@ function Backup({ canWrite, data }: { canWrite: boolean; data?: Record<string, u
   const [parseErr, setParseErr] = useState<string | null>(null);
   return (
     <details className="group bg-surface rounded-[16px] px-4 md:px-5">
-      <summary className="flex min-h-12 cursor-pointer items-center gap-2 text-[15px] font-semibold">
+      <summary className="disclosure flex min-h-12 cursor-pointer items-center gap-2 text-[15px] font-semibold">
         {C.backup}
         <span className="text-muted ml-auto text-[12px] font-medium group-open:hidden">{adminCopy.contentCommon.technical}</span>
       </summary>
@@ -439,9 +439,6 @@ function MetaRow({
           </details>
         )}
         {!row.retired && hasLogic(row.id) && <PracticeBoard id={row.id} />}
-        <TechDetails>
-          <TechLine name={C.techId} value={row.id} />
-        </TechDetails>
       </div>
     </details>
   );

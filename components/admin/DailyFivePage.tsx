@@ -207,7 +207,7 @@ export function DailyFivePage({ canWrite }: { canWrite: boolean }) {
         open={importOpen}
         onToggle={(e) => setImportOpen((e.currentTarget as HTMLDetailsElement).open)}
       >
-        <summary className="flex min-h-12 cursor-pointer items-center gap-2 text-[15px] font-semibold">{C.backup}</summary>
+        <summary className="disclosure flex min-h-12 cursor-pointer items-center gap-2 text-[15px] font-semibold">{C.backup}</summary>
         <div className="flex flex-col gap-3 pb-4">
           <p className="text-muted text-[13px]">{C.backupIntro}</p>
           <Btn icon="download-simple" className="self-start" onClick={() => void exportJson()}>

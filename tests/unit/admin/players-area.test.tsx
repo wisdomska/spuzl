@@ -4,7 +4,7 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 
 /**
  * Admin overhaul, Players area: a player's page leads with who they are (guest or saved account and what that
- * means, age group and what it allows, how active), then what needs action; raw ids stay under Technical details.
+ * means, age group and what it allows, how active), then what needs action; no raw ids or technical details.
  */
 let data: unknown = null;
 vi.mock("@/lib/client/admin", () => ({
@@ -127,14 +127,11 @@ describe("admin player page", () => {
     expect(screen.getByText("Changed by the team")).toBeTruthy();
   });
 
-  it("keeps the player id and raw data folded under Technical details", () => {
+  it("shows no technical details: no raw ids or keys (owner, 12 Nov)", () => {
     data = detail();
     render(<PlayerDetail id={ID} role="owner" backHref="/admin/players" />);
-    const id = screen.getByText(ID);
-    const fold = id.closest("details");
-    expect(fold).not.toBeNull();
-    expect(fold!.open).toBe(false);
-    expect(within(fold!).getByText("Technical details")).toBeTruthy();
+    expect(screen.queryByText("Technical details")).toBeNull();
+    expect(screen.queryByText(ID)).toBeNull();
     expect(screen.queryByText("player.sparks")).toBeNull();
   });
 

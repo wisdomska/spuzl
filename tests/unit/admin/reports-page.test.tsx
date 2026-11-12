@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 
 /**
- * Admin overhaul, Reports (was Moderation): plain status words, the reference only under Technical details, and
+ * Admin overhaul, Reports (was Moderation): plain status words, no technical details, and
  * actions that take something away from a player ask once more, in words, before they run.
  */
 const byKey: Record<string, unknown> = {};
@@ -63,7 +63,7 @@ byKey.report = {
 afterEach(cleanup);
 
 describe("admin Reports page", () => {
-  it("reads in plain words and keeps the reference folded away", () => {
+  it("reads in plain words, with no technical reference on show", () => {
     render(<ModerationQueue canWrite />);
     expect(screen.getByRole("heading", { level: 1, name: "Reports" })).toBeTruthy();
     expect(screen.getByText("1 to review")).toBeTruthy();
@@ -71,7 +71,8 @@ describe("admin Reports page", () => {
     expect(screen.getByText("Report about Kofi")).toBeTruthy();
     expect(screen.getByText("Reported by Ama 2 hours ago.")).toBeTruthy();
     expect(screen.getByText("New account")).toBeTruthy();
-    expect(screen.getByText("R-AB12").closest("details")?.open).toBe(false);
+    expect(screen.queryByText("R-AB12")).toBeNull();
+    expect(screen.queryByText("Technical details")).toBeNull();
     expect(screen.getByRole("link", { name: /Open player page/ }).getAttribute("href")).toBe(`/admin/players/${PID}`);
   });
 

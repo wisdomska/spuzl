@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useId, useState, type KeyboardEvent } from "react";
 import { age } from "@/lib/admin/dates";
 import { inputSpec, intText, settingValueText } from "@/lib/admin/setting-words";
 import { errorText, useAdminAction, useAdminQuery } from "@/lib/client/admin";
@@ -165,30 +165,6 @@ function DefaultLine({ row, canWrite, busy, onSave }: { row: Row; canWrite: bool
   );
 }
 
-/** Raw key and stored values, folded away. */
-function TechDetails({ row }: { row: Row }) {
-  const d = row.def;
-  const items: [string, ReactNode][] = [
-    [C.tech.key, row.key],
-    [C.tech.stored, JSON.stringify(row.value)],
-    [C.tech.defaultStored, JSON.stringify(d.default)],
-  ];
-  if (d.kind === "int") items.push([C.tech.range, `${d.min} to ${d.max}${d.unit ? ` ${d.unit}` : ""}`]);
-  return (
-    <details className="text-muted text-[12px]">
-      <summary className="w-fit cursor-pointer py-1 font-semibold">{C.techDetails}</summary>
-      <dl className="mt-1 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
-        {items.map(([k, v]) => (
-          <div key={k} className="contents">
-            <dt>{k}</dt>
-            <dd className="num break-all text-[var(--text)]">{v}</dd>
-          </div>
-        ))}
-      </dl>
-    </details>
-  );
-}
-
 /** The help line, and the longer text folded under "More". */
 function Help({ def, summary = C.more }: { def: SettingDef; summary?: string }) {
   return (
@@ -196,7 +172,7 @@ function Help({ def, summary = C.more }: { def: SettingDef; summary?: string }) 
       <p className="text-muted max-w-[68ch] text-[13px] leading-snug">{def.help}</p>
       {def.more && (
         <details className="text-muted max-w-[68ch] text-[13px] leading-snug">
-          <summary className="w-fit cursor-pointer py-0.5 font-semibold text-[var(--text)]">{summary}</summary>
+          <summary className="disclosure w-fit cursor-pointer py-0.5 font-semibold text-[var(--text)]">{summary}</summary>
           <p className="mt-1">{def.more}</p>
         </details>
       )}
@@ -222,7 +198,6 @@ function SettingRow({ row, canWrite, busy, onSave }: { row: Row; canWrite: boole
         </div>
         <Help def={d} />
         <DefaultLine row={row} canWrite={canWrite} busy={busy} onSave={onSave} />
-        <TechDetails row={row} />
       </div>
       <div className="shrink-0 md:max-w-[50%]">
         <Control row={row} labelId={labelId} canWrite={canWrite} busy={busy} onSave={onSave} />
@@ -467,7 +442,6 @@ export function GameSetRow({ row, canWrite, busy, onSave }: { row: Row; canWrite
         </ul>
       )}
       <DefaultLine row={row} canWrite={canWrite} busy={busy} onSave={onSave} />
-      <TechDetails row={row} />
     </div>
   );
 }

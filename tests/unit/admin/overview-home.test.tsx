@@ -9,7 +9,11 @@ vi.mock("@/lib/client/admin", () => ({
   errorText: (e: unknown) => String(e),
 }));
 vi.mock("next/link", () => ({
-  default: ({ children, href }: { children: unknown; href: string }) => <a href={href}>{children as never}</a>,
+  default: ({ children, href, ...rest }: { children: unknown; href: string } & Record<string, unknown>) => (
+    <a href={href} {...rest}>
+      {children as never}
+    </a>
+  ),
 }));
 
 import { Overview } from "@/components/admin/Overview";
@@ -38,7 +42,9 @@ describe("admin Overview: home", () => {
     data = { ...base, newFeedback: 0, attention: { puzzlesToReview: 0, contentToReview: 0, joinRequestsToday: 0, joinRequestsWaiting: 0 } };
     render(<Overview role="owner" />);
     expect(attention().getByText("All clear. Nothing waiting.")).toBeTruthy();
-    expect(attention().getAllByText("Nothing waiting").length).toBe(5);
+    // six compact tiles, each a link that still says what it is and that nothing is waiting
+    expect(attention().getAllByRole("link")).toHaveLength(6);
+    expect(attention().getAllByRole("link", { name: /Nothing waiting/ })).toHaveLength(5);
   });
 
   it("lists the work waiting, biggest first, with a verb to go and do it", () => {
@@ -50,17 +56,17 @@ describe("admin Overview: home", () => {
     };
     render(<Overview role="owner" />);
     const rows = attention().getAllByRole("listitem");
-    expect(rows[0].textContent).toContain("New messages from players");
-    expect(rows[1].textContent).toContain("Player reports to look at");
+    expect(rows[0].textContent).toContain("Messages");
+    expect(rows[1].textContent).toContain("Reports");
     expect(
       within(rows[1])
-        .getByRole("link", { name: /Review reports/ })
+        .getByRole("link", { name: /Player reports to look at.*Review reports/ })
         .getAttribute("href"),
     ).toBe("/admin/moderation");
     // content is hidden for a role that can't open it (null); join requests are information, last
-    expect(attention().queryByText("Content waiting for approval")).toBeNull();
-    expect(rows[rows.length - 1].textContent).toContain("Join requests today");
-    expect(rows[rows.length - 1].textContent).toContain("1 waiting on the host");
+    expect(attention().queryByText("Content to approve")).toBeNull();
+    expect(rows[rows.length - 1].textContent).toContain("Join requests");
+    expect(rows[rows.length - 1].textContent).toContain("1 with the host");
   });
 
   it("shows today's numbers in plain words with yesterday for comparison", () => {

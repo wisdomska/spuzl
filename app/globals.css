@@ -1241,3 +1241,187 @@ html.reveal-armed [data-reveal]:not([data-revealed]) {
 [data-motion="reduce"] .admin-collapse[data-open="false"] {
   transition: none;
 }
+
+/* ---------- Form controls in SPUZL's own style (owner, 12 Nov 2026) ----------
+   Native checkboxes, radios, search clear buttons, number spinners, file buttons, autofill and scrollbars, branded
+   once here so every screen (app and admin) gets them. In the base layer: a control's own classes still win, and the
+   custom controls (.mp-switch, hidden peer inputs, sr-only) keep their look. */
+@layer base {
+  :root {
+    --check-mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5 10.5l3.2 3.2L15 6.8' fill='none' stroke='%230e0f1a' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --check-dash: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5.5 10h9' stroke='%230e0f1a' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E");
+    --search-x: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M6 6l8 8M14 6l-8 8' stroke='%23a2a6c2' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E");
+    accent-color: var(--accent);
+    caret-color: var(--accent);
+    scrollbar-color: var(--line) transparent;
+  }
+  [data-theme="light"] {
+    --check-mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5 10.5l3.2 3.2L15 6.8' fill='none' stroke='%23ffffff' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --check-dash: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5.5 10h9' stroke='%23ffffff' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E");
+    --search-x: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M6 6l8 8M14 6l-8 8' stroke='%235b607d' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E");
+  }
+
+  /* Checkbox: rounded square, lime when ticked, a dash when part of a list is ticked. */
+  input[type="checkbox"]:not(.mp-switch, .peer, .sr-only),
+  input[type="radio"]:not(.peer, .sr-only) {
+    appearance: none;
+    flex: none;
+    width: 22px;
+    height: 22px;
+    margin: 0;
+    display: inline-grid;
+    place-content: center;
+    border: 2px solid var(--line);
+    background: var(--surface);
+    cursor: pointer;
+    vertical-align: middle;
+    transition:
+      background-color 120ms var(--ease-out),
+      border-color 120ms var(--ease-out),
+      transform 120ms var(--ease-out);
+  }
+  input[type="checkbox"]:not(.mp-switch, .peer, .sr-only) {
+    border-radius: 7px;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 18px;
+  }
+  input[type="checkbox"]:not(.mp-switch, .peer, .sr-only):checked {
+    border-color: var(--check-color, var(--accent));
+    background-color: var(--check-color, var(--accent));
+    background-image: var(--check-mark);
+  }
+  input[type="checkbox"]:not(.mp-switch, .peer, .sr-only):indeterminate {
+    border-color: var(--check-color, var(--accent));
+    background-color: var(--check-color, var(--accent));
+    background-image: var(--check-dash);
+  }
+  /* Radio: a ring that fills with a dot. */
+  input[type="radio"]:not(.peer, .sr-only) {
+    border-radius: 50%;
+  }
+  input[type="radio"]:not(.peer, .sr-only):checked {
+    border-color: var(--check-color, var(--accent));
+    background: radial-gradient(circle, var(--check-color, var(--accent)) 0 5px, var(--surface) 5.5px);
+  }
+  input[type="checkbox"]:not(.mp-switch, .peer, .sr-only):active:not(:disabled),
+  input[type="radio"]:not(.peer, .sr-only):active:not(:disabled) {
+    transform: scale(0.92);
+  }
+  input[type="checkbox"]:not(.mp-switch, .peer, .sr-only):focus-visible,
+  input[type="radio"]:not(.peer, .sr-only):focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+  input[type="checkbox"]:not(.mp-switch, .peer, .sr-only):disabled,
+  input[type="radio"]:not(.peer, .sr-only):disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    input[type="checkbox"]:not(.mp-switch, .peer, .sr-only):not(:checked, :indeterminate, :disabled):hover,
+    input[type="radio"]:not(.peer, .sr-only):not(:checked, :disabled):hover {
+      border-color: var(--text-muted);
+    }
+  }
+
+  /* Search fields: the browser's clear button becomes a muted cross. */
+  input[type="search"]::-webkit-search-cancel-button {
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    margin-left: 8px;
+    background: var(--search-x) center / 18px no-repeat;
+    cursor: pointer;
+    opacity: 0.8;
+  }
+  input[type="search"]::-webkit-search-cancel-button:hover {
+    opacity: 1;
+  }
+  input[type="search"]::-webkit-search-decoration {
+    appearance: none;
+  }
+
+  /* Number fields: no grey spinner arrows (the arrow keys still step the value). */
+  input[type="number"] {
+    appearance: textfield;
+    -moz-appearance: textfield;
+  }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    appearance: none;
+    margin: 0;
+  }
+
+  /* File pickers: the "Choose file" button looks like the app's quiet button. */
+  input[type="file"] {
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+  input[type="file"]::file-selector-button {
+    margin-right: 12px;
+    height: 40px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--surface-raised);
+    color: var(--text);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 120ms var(--ease-out);
+  }
+  input[type="file"]::file-selector-button:hover {
+    background: var(--line);
+  }
+
+  /* Autofilled fields keep the app's colours instead of the browser's yellow or blue. */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--text);
+    caret-color: var(--accent);
+    box-shadow: 0 0 0 1000px var(--surface) inset;
+    transition: background-color 9999s;
+  }
+
+  /* Selected text in the brand colour. */
+  ::selection {
+    background: color-mix(in srgb, var(--accent) 35%, transparent);
+    color: var(--text);
+  }
+}
+
+/* Disclosure toggles (<details>): no browser triangle anywhere; `.disclosure` summaries get the app's caret, which
+   turns down when open. Summaries with their own caret icon keep it. */
+@layer base {
+  summary {
+    list-style: none;
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+}
+summary.disclosure {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+summary.disclosure::before {
+  content: "";
+  flex: none;
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M181.66 133.66l-80 80a8 8 0 0 1-11.32-11.32L164.69 128 90.34 53.66a8 8 0 0 1 11.32-11.32l80 80a8 8 0 0 1 0 11.32z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M181.66 133.66l-80 80a8 8 0 0 1-11.32-11.32L164.69 128 90.34 53.66a8 8 0 0 1 11.32-11.32l80 80a8 8 0 0 1 0 11.32z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  transition: transform 150ms var(--ease-out);
+}
+details[open] > summary.disclosure::before {
+  transform: rotate(90deg);
+}
+[data-motion="reduce"] summary.disclosure::before {
+  transition: none;
+}

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { Icon } from "@/components/ui/Icon";
-import { clock } from "@/lib/admin/dates";
 import { daysSince, duration, exactTime, timeAgo } from "@/lib/admin/people-format";
 import { MODERATION_SORT } from "@/lib/admin/sorting";
 import { errorText, useAdminAction, useAdminQuery, type AdminPage } from "@/lib/client/admin";
@@ -12,7 +11,7 @@ import { PEN_COLORS, PEN_WIDTHS, strokePath, type Stroke } from "@/lib/party-adu
 import { Pagination, usePager } from "./Pagination";
 import { SortHead, type HeadCol } from "./SortHeader";
 import { useUrlFilters, useUrlSort } from "./useUrlFilters";
-import { Fact, PageHead, TechDetails, TechRow, When } from "./people-ui";
+import { Fact, PageHead, When } from "./people-ui";
 import { Btn, Empty, Notice, Pill, RowsSkeleton, Tabs, type PillTone } from "./ui";
 import { Select } from "@/components/ui/Select";
 
@@ -329,7 +328,6 @@ function FlaggedCase({ id, canWrite, onDone }: { id: string; canWrite: boolean; 
   const who = player?.nickname ?? K.player;
   const acc = player ? accountAge(player.created_at) : null;
   const max = Math.max(1, ...gaps);
-  const median = gaps.length ? [...gaps].sort((x, y) => x - y)[Math.floor(gaps.length / 2)] : null;
   const decide = (body: Parameters<typeof act.mutateAsync>[0], msg: string) =>
     void act.mutateAsync(body).then(
       () => (setAsk(null), onDone(msg)),
@@ -375,13 +373,6 @@ function FlaggedCase({ id, canWrite, onDone }: { id: string; canWrite: boolean; 
       <p className="text-[14px]">
         {K.why(a.flag_reason)} {q.data.game.minTimeMs ? K.floor(duration(q.data.game.minTimeMs)) : ""}
       </p>
-      <TechDetails>
-        <TechRow k={K.techRef} v={a.ref} />
-        <TechRow k={K.techReason} v={a.flag_reason ?? "–"} />
-        <TechRow k={K.claimedTime} v={`${clock(a.time_ms)} (${a.time_ms} ms)`} />
-        {median !== null && <TechRow k={K.techMedian} v={`${median} ms`} />}
-        {q.data.wallMs !== null && <TechRow k={K.techWall} v={clock(q.data.wallMs)} />}
-      </TechDetails>
       {act.error && (
         <Notice tone="danger" icon="warning">
           {errorText(act.error)}
@@ -546,13 +537,6 @@ function ReportCase({
       {r.target_type === "party" && q.data.blockDays !== null && r.status === "open" && (
         <span className="text-muted text-[13px] font-medium">{C.party.blockNote(q.data.blockDays)}</span>
       )}
-      <TechDetails>
-        <TechRow k={K.techRef} v={r.ref} />
-        <TechRow k="target" v={`${r.target_type}:${r.target_id}`} />
-        <TechRow k="status" v={r.status} />
-        {r.resolution && <TechRow k="resolution" v={r.resolution} />}
-        {q.data.related.length > 0 && <TechRow k="related" v={q.data.related.map((x) => x.ref).join(", ")} />}
-      </TechDetails>
       <div aria-live="polite" className="flex flex-col gap-2 empty:hidden">
         {decide.data?.blockLifted ? (
           <Notice tone="ok" icon="check-circle">

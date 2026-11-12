@@ -16,7 +16,7 @@ import { DrawWordsPanel } from "./DrawWordsPanel";
 import { ReviewQueue } from "./ReviewQueue";
 import { SortHead, type HeadCol } from "./SortHeader";
 import { useUrlFilters, useUrlSort } from "./useUrlFilters";
-import { PageHead, StateGuide, StatePill, TechDetails, TechLine, When, type StateWords } from "./content-ui";
+import { PageHead, StateGuide, StatePill, When, type StateWords } from "./content-ui";
 import { Btn, Empty, Field, Notice, Pill, RowsSkeleton, Swatch, Tabs, textareaCls, type PillTone } from "./ui";
 import { Select } from "@/components/ui/Select";
 import { DateField } from "@/components/ui/DateField";
@@ -361,7 +361,7 @@ function Editor({
       )}
       {game === "quads" ? (
         <details>
-          <summary className="text-muted hover:text-text flex min-h-11 cursor-pointer items-center text-[13px] font-semibold">
+          <summary className="disclosure text-muted hover:text-text flex min-h-11 cursor-pointer items-center text-[13px] font-semibold">
             {E.payloadFolded}
           </summary>
           {payloadField}
@@ -475,11 +475,6 @@ function Editor({
       )}
       {item && item.game_id === "quads" && item.source !== "content_file" && ["approved", "scheduled"].includes(item.status) && (
         <QuadsPool item={item} canWrite={canWrite} />
-      )}
-      {item && (
-        <TechDetails>
-          <TechLine name={E.techItem} value={item.id} />
-        </TechDetails>
       )}
     </aside>
   );

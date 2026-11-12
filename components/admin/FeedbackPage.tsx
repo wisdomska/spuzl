@@ -16,7 +16,7 @@ import { adminCopy } from "@/lib/copy/admin";
 import { Pagination, usePager } from "./Pagination";
 import { useUrlFilters } from "./useUrlFilters";
 import { exactTime } from "@/lib/admin/people-format";
-import { PageHead, TechDetails, TechRow, When } from "./people-ui";
+import { PageHead, When } from "./people-ui";
 import { Btn, Empty, Field, Notice, Pill, RowsSkeleton, type PillTone } from "./ui";
 import { Select } from "@/components/ui/Select";
 
@@ -177,13 +177,6 @@ export function FeedbackPage({ canWrite, canOpenPlayers }: { canWrite: boolean; 
                     </dd>
                   </div>
                 </dl>
-                {(r.from_path || r.user_agent) && (
-                  <TechDetails>
-                    {r.from_path && <TechRow k={C.tech.page} v={r.from_path} />}
-                    {r.user_agent && <TechRow k={C.tech.device} v={r.user_agent} />}
-                    <TechRow k={C.tech.id} v={r.id} />
-                  </TechDetails>
-                )}
                 {canWrite && (
                   <div className="flex flex-wrap gap-2">
                     {r.emailVisible && r.email && (

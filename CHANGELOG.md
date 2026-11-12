@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.52.0 (12 November 2026)
+
+### Everyone
+
+- **Checkboxes and radio buttons in SPUZL's style,** dark and light: rounded, lime with a tick when on, a dash when
+  only some of a list is ticked, a ring and dot for radios (red for "the lie" in Two Truths).
+- Search fields get a quiet clear cross, number fields lose the grey arrows, autofilled fields keep the app's
+  colours, scrollbars and selected text follow the theme.
+
+### Admin
+
+- **Needs your attention is one row of tiles:** each shows its count and a short label and opens its page; anything
+  waiting is gold and comes first, and "All clear" sits in the heading. About a third of the old height.
+- **No more "Technical details":** the folded raw ids, setting keys and stored values are gone from Game settings,
+  the Activity log, Players, Reports, Feedback, Puzzles, Content and Games.
+- Every "More" and "By day" toggle has the app's caret instead of the browser's triangle.
+- "Select all" shows a dash when only some players or entries are ticked.
+
 ## 1.51.1 (12 November 2026)
 
 - **Landing page links now glide** to How it works, Games and Friends (they still jumped: the smooth-scroll style

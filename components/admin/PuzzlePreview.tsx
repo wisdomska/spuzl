@@ -14,7 +14,7 @@ import { api } from "@/lib/client/api";
 import { errorText, useAdminAction, useAdminQuery } from "@/lib/client/admin";
 import { adminCopy } from "@/lib/copy/admin";
 import type { Slot } from "./DailySlot";
-import { StatePill, TechDetails, TechLine, When, puzzleState } from "./content-ui";
+import { StatePill, When, puzzleState } from "./content-ui";
 import { Btn, Notice, ReadField, RowsSkeleton, textareaCls } from "./ui";
 
 interface Check {
@@ -207,14 +207,6 @@ export function PuzzlePreview({
                 </span>
               )}
             </div>
-            <TechDetails>
-              <TechLine name={C.techPuzzle} value={p.id} />
-              <TechLine name={C.techSeed} value={p.seed} />
-              <TechLine name={C.techStatus} value={p.status} />
-              {report?.checks.map((c) => (
-                <TechLine key={c.id} name={c.id} value={C.rawCheck(c.label, c.value)} />
-              ))}
-            </TechDetails>
           </section>
         </div>
       </div>

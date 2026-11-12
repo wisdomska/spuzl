@@ -91,16 +91,6 @@ export function TechDetails({ children, label = adminCopy.players.tech.title }: 
   );
 }
 
-/** A key and its raw value inside Technical details. */
-export function TechRow({ k, v }: { k: string; v: ReactNode }) {
-  return (
-    <div className="flex min-w-0 flex-wrap gap-x-2">
-      <span className="text-muted font-semibold">{k}</span>
-      <span className="num min-w-0 break-all">{v}</span>
-    </div>
-  );
-}
-
 /** "2 hours ago", with the exact GMT time on hover and for screen readers via the time element. */
 export function When({ iso, fallback = "", className = "" }: { iso: string | null | undefined; fallback?: string; className?: string }) {
   if (!iso) return <span className={className}>{fallback}</span>;

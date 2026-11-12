@@ -1012,7 +1012,7 @@ function WriteForm({ r, post, refresh, onToast }: Pick<RoundProps, "r" | "post" 
               checked={lie === i}
               onChange={() => setLie(i)}
               aria-label={C.truths.markLie(i)}
-              className="size-5 accent-[var(--danger)]"
+              className="size-5 [--check-color:var(--danger)]"
             />
           </label>
           <label htmlFor={`truth-${i}`} className="sr-only">

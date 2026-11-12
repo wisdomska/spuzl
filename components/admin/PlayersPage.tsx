@@ -144,9 +144,13 @@ export function PlayersPage({ canModerate, canExport, emailVisible }: { canModer
                 type="checkbox"
                 aria-label={C.selectAll}
                 checked={allOn}
+                // Some rows ticked: the box shows a dash (and says "mixed" to screen readers).
+                ref={(el) => {
+                  if (el) el.indeterminate = !allOn && rows.some((r) => selected.has(r.id));
+                }}
                 disabled={!rows.length}
                 onChange={() => setSelected(allOn ? new Set() : new Set(rows.map((r) => r.id)))}
-                className="size-5 accent-[var(--accent)]"
+                className="size-5"
               />
             ),
             className: "w-12",
@@ -336,7 +340,7 @@ export function PlayersPage({ canModerate, canExport, emailVisible }: { canModer
                           aria-label={C.selectRow(r.nickname)}
                           checked={on}
                           onChange={() => toggle(r.id)}
-                          className="size-5 accent-[var(--accent)]"
+                          className="size-5"
                         />
                       </td>
                     )}

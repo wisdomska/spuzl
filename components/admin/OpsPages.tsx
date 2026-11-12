@@ -525,7 +525,7 @@ export function AuditPage() {
           )}
         </div>
         <details open={advancedOpen} className="text-[13px]">
-          <summary className="text-muted w-fit cursor-pointer py-1 font-semibold">{AUDIT.advanced}</summary>
+          <summary className="disclosure text-muted w-fit cursor-pointer py-1 font-semibold">{AUDIT.advanced}</summary>
           <div className="mt-2 flex flex-wrap items-end gap-3">
             <Field label={AUDIT.actionStarts} htmlFor="a-action">
               <input
@@ -658,21 +658,6 @@ function AuditItem({ entry, names }: { entry: AuditEntry; names: AuditNames }) {
             {AUDIT.noteLabel} “{line.note}”
           </p>
         )}
-        <details className="text-muted text-[12px]">
-          <summary className="w-fit cursor-pointer py-1 font-semibold">{AUDIT.techDetails}</summary>
-          <dl className="mt-1 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
-            {tech.map(([k, v]) => (
-              <div key={k} className="contents">
-                <dt>{k}</dt>
-                <dd className="num break-all text-[var(--text)]">{v}</dd>
-              </div>
-            ))}
-          </dl>
-          <p className="mt-2 font-semibold">{AUDIT.tech.data}</p>
-          <pre className="bg-bg num mt-1 max-h-64 overflow-auto rounded-[10px] p-2.5 text-[12px] break-all whitespace-pre-wrap text-[var(--text)]">
-            {JSON.stringify(entry.rows.length > 1 ? entry.rows.map((x) => x.detail) : r.detail, null, 2)}
-          </pre>
-        </details>
       </div>
     </li>
   );

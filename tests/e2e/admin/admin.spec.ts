@@ -200,12 +200,11 @@ test("roles: the UI hides what a role cannot do and the server refuses the page"
   await expect(page.getByText("Your role can't open reports.")).toBeVisible();
   await page.goto("/admin/audit");
   await expect(page.getByRole("heading", { name: "Activity log", level: 1 })).toBeVisible();
-  // Plain filters: the team's sign-in rows read as sentences, with the raw action under Technical details.
+  // Plain filters: the team's sign-in rows read as sentences; no raw actions or Technical details.
   await pickOption(page, "Type of change", "Team and sign-in");
   await expect(page).toHaveURL(/type=team/);
   await expect(page.getByText(/set up their sign-in codes|to the team/).first()).toBeVisible();
-  await page.getByText("Technical details").first().click();
-  await expect(page.getByText(/^admin\./).first()).toBeVisible();
+  await expect(page.getByText("Technical details")).toHaveCount(0);
 });
 
 test("tablet: calendar and live ops stay usable at 834 px, light theme", async ({ page }) => {

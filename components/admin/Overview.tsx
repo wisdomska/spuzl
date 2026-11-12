@@ -46,9 +46,13 @@ interface Todo {
   icon: string;
   count: number;
   label: string;
+  /** the tile's short label; the full label is in its tooltip and accessible name */
+  short: string;
   hint: string;
   action: string;
   href: string;
+  /** a second line under the count (join requests still with the host) */
+  sub?: string;
   /** Information rather than work (join requests): never counted as waiting, never coloured. */
   info?: boolean;
 }
@@ -115,7 +119,9 @@ function Body({ d, role, mod }: { d: OverviewData; role?: Role; mod: boolean }) 
       icon: "hand-waving",
       count: a.joinRequestsToday,
       label: C.todo.joins.label,
+      short: C.todo.joins.short,
       hint: C.todo.joins.hint(fmtNum(a.joinRequestsWaiting ?? 0)),
+      sub: a.joinRequestsWaiting ? C.todo.joins.waiting(fmtNum(a.joinRequestsWaiting)) : undefined,
       action: C.todo.joins.action,
       href: `/admin/join-requests?from=${today()}`,
       info: true,
@@ -147,17 +153,21 @@ function Body({ d, role, mod }: { d: OverviewData; role?: Role; mod: boolean }) 
       <Section
         id="ov-attention"
         title={C.attention}
-        aside={waiting.length === 0 ? undefined : <span className="text-muted text-[12px]">{C.updated}</span>}
+        aside={
+          waiting.length === 0 ? (
+            <span role="status" className="text-accent inline-flex items-center gap-1.5 text-[13px] font-semibold">
+              <Icon name="check-circle" size={18} />
+              {C.allClear}
+            </span>
+          ) : (
+            <span className="text-muted text-[12px]">{C.updated}</span>
+          )
+        }
       >
-        {waiting.length === 0 && (
-          <p role="status" className="text-accent flex items-center gap-2 text-[14px] font-semibold">
-            <Icon name="check-circle" size={20} />
-            {C.allClear}
-          </p>
-        )}
-        <ul className="flex flex-col">
+        {/* One row of compact tiles: work waiting first and in gold, the clear ones muted, information last. */}
+        <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
           {ordered.map((t) => (
-            <TodoRow key={t.key} t={t} />
+            <TodoTile key={t.key} t={t} />
           ))}
         </ul>
       </Section>
@@ -285,31 +295,33 @@ function Body({ d, role, mod }: { d: OverviewData; role?: Role; mod: boolean }) 
   );
 }
 
-function TodoRow({ t }: { t: Todo }) {
+function TodoTile({ t }: { t: Todo }) {
   const busy = !t.info && t.count > 0;
+  const sub = t.info ? t.sub : undefined;
+  const status = !t.info && t.count === 0 ? C.nothing : t.hint;
   return (
-    <li className="border-line flex flex-wrap items-center gap-x-3 gap-y-2 border-t py-3 first:border-t-0 first:pt-0 last:pb-0">
-      <span
-        aria-hidden
-        className={`flex size-10 shrink-0 items-center justify-center rounded-[10px] ${busy ? "text-gold bg-[var(--warn-tint)]" : "bg-surface-raised text-muted"}`}
-      >
-        <Icon name={t.icon} size={20} />
-      </span>
-      <span className="flex min-w-0 flex-1 basis-[220px] flex-col">
-        <span className="flex items-baseline gap-2 text-[15px] font-semibold">
-          <span className={`num text-[20px] ${busy ? "text-gold" : t.info ? "" : "text-muted"}`}>{fmtNum(t.count)}</span>
-          <span>{t.label}</span>
-        </span>
-        <span className="text-muted text-[13px] leading-[1.4]">{!t.info && t.count === 0 ? C.nothing : t.hint}</span>
-      </span>
+    <li>
       <Link
         href={t.href}
-        className={`inline-flex h-11 items-center gap-1.5 rounded-[10px] px-3.5 text-[13px] font-bold whitespace-nowrap sm:h-10 ${
-          busy ? "bg-accent text-on-accent hover:brightness-110" : "bg-surface-raised text-text hover:bg-line font-semibold"
+        title={`${t.label}. ${status}`}
+        aria-label={`${fmtNum(t.count)} ${t.label}. ${status}. ${t.action}`}
+        className={`admin-press group flex h-full min-h-[92px] flex-col justify-between gap-2 rounded-[14px] border p-3 transition-colors duration-150 ${
+          busy
+            ? "border-[color-mix(in_srgb,var(--gold)_45%,transparent)] bg-[var(--warn-tint)] hover:border-[var(--gold)]"
+            : "border-line bg-bg hover:bg-surface-raised"
         }`}
       >
-        {t.action}
-        <Icon name="arrow-right" size={14} />
+        <span className="flex items-center justify-between gap-2">
+          <Icon name={t.icon} size={18} className={busy ? "text-gold" : "text-muted"} />
+          <Icon name="arrow-right" size={14} className="text-muted opacity-0 transition-opacity duration-150 group-hover:opacity-100" />
+        </span>
+        <span className="flex flex-col">
+          <span className={`num text-[24px] leading-none font-semibold ${busy ? "text-gold" : t.info ? "text-text" : "text-muted"}`}>
+            {fmtNum(t.count)}
+          </span>
+          <span className={`mt-1 text-[13px] leading-[1.25] font-semibold ${busy || t.info ? "text-text" : "text-muted"}`}>{t.short}</span>
+          {sub && <span className="text-muted mt-0.5 text-[12px]">{sub}</span>}
+        </span>
       </Link>
     </li>
   );

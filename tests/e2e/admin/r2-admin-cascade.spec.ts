@@ -37,7 +37,7 @@ async function settingRow(page: Page, label: string) {
 test("Game settings: every round 2 setting shows with its helper text, and ranges are checked", async ({ page }) => {
   await signedIn(page, "owner");
   await page.goto("/admin/settings");
-  // Plain labels on the page; the setting keys only under Technical details.
+  // Plain labels on the page; setting keys never show (no Technical details, owner 12 Nov).
   for (const key of [
     "prompts.alertsTriggers",
     "prompts.alertsCooldownDays",
@@ -57,8 +57,7 @@ test("Game settings: every round 2 setting shows with its helper text, and range
   }
   await page.getByRole("tab", { name: SETTINGS["party.countdownSeconds"].group, exact: true }).click();
   const countdown = await settingRow(page, SETTINGS["party.countdownSeconds"].label);
-  await countdown.getByText("Technical details").click();
-  await expect(countdown.getByText("party.countdownSeconds", { exact: true })).toBeVisible();
+  await expect(countdown.getByText("Technical details")).toHaveCount(0);
   await expect(countdown.getByText(/Count before each Duel or Party round/)).toBeVisible();
   const input = countdown.getByRole("textbox");
   await input.fill("9");

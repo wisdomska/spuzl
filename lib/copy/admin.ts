@@ -1252,27 +1252,34 @@ export const adminCopy = {
     todo: {
       reports: {
         label: "Player reports to look at",
+        short: "Reports",
         hint: "Such as unkind nicknames.",
         action: "Review reports",
       },
       flagged: {
         label: "Scores that look too good to be real",
+        short: "Odd scores",
         hint: "Faster than a person. Decide if they count.",
         action: "Check scores",
       },
-      feedback: { label: "New messages from players", hint: "From the contact form.", action: "Read feedback" },
+      feedback: { label: "New messages from players", short: "Messages", hint: "From the contact form.", action: "Read feedback" },
       puzzles: {
         label: "Puzzles waiting for a check",
+        short: "Puzzles to check",
         hint: "Replacement Dailies go live once approved.",
         action: "Review puzzles",
       },
       content: {
         label: "Content waiting for approval",
+        short: "Content to approve",
         hint: "Needs a second person's approval.",
         action: "Review content",
       },
       joins: {
         label: "Join requests today",
+        short: "Join requests",
+        /** under the count on the tile, only when some are waiting */
+        waiting: (n: string) => `${n} with the host`,
         hint: (waiting: string) => `${waiting} waiting on the host. No action needed.`,
         action: "See requests",
       },

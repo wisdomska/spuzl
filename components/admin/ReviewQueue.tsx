@@ -251,6 +251,10 @@ export function ReviewQueue({
                       <input
                         type="checkbox"
                         checked={entries.every((e) => picked.has(e.index))}
+                        // Some ticked: a dash (and "mixed" for screen readers).
+                        ref={(el) => {
+                          if (el) el.indeterminate = !entries.every((e) => picked.has(e.index)) && entries.some((e) => picked.has(e.index));
+                        }}
                         onChange={(ev) => {
                           const n = new Set(picked);
                           for (const x of entries) {
@@ -259,7 +263,7 @@ export function ReviewQueue({
                           }
                           setPicked(n);
                         }}
-                        className="size-5 accent-[var(--accent)]"
+                        className="size-5"
                       />
                       {R.selectAll}
                     </label>
@@ -279,7 +283,7 @@ export function ReviewQueue({
                                 else n.delete(e.index);
                                 setPicked(n);
                               }}
-                              className="size-5 accent-[var(--accent)]"
+                              className="size-5"
                             />
                           )}
                           <span className="num text-muted text-[13px]">{R.entry(e.index)}</span>

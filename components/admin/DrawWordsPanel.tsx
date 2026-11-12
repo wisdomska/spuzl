@@ -196,12 +196,7 @@ export function DrawWordsPanel({ canWrite }: { canWrite: boolean }) {
       >
         {canWrite && (
           <label className="flex min-h-11 items-center gap-2 text-[14px]">
-            <input
-              type="checkbox"
-              checked={retireMissing}
-              onChange={(e) => setRetireMissing(e.target.checked)}
-              className="size-5 accent-[var(--accent)]"
-            />
+            <input type="checkbox" checked={retireMissing} onChange={(e) => setRetireMissing(e.target.checked)} className="size-5" />
             {W.retireMissing}
           </label>
         )}

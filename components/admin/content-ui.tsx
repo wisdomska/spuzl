@@ -75,29 +75,6 @@ export function Section({
   );
 }
 
-/** Raw ids, keys and JSON: there when needed, folded away by default. */
-export function TechDetails({ children, summary = G.technical }: { children: ReactNode; summary?: string }) {
-  return (
-    <details className="group text-[13px]">
-      <summary className="text-muted hover:text-text flex min-h-11 w-fit cursor-pointer items-center gap-1.5 font-semibold">
-        <Icon name="caret-right" size={12} className="transition-transform group-open:rotate-90" />
-        {summary}
-      </summary>
-      <div className="text-muted flex flex-col gap-1.5 pb-1 pl-4">{children}</div>
-    </details>
-  );
-}
-
-/** One "name: value" line inside Technical details. */
-export function TechLine({ name, value }: { name: string; value: ReactNode }) {
-  return (
-    <span className="flex flex-wrap gap-x-2">
-      <span className="font-semibold">{name}</span>
-      <code className="num break-all">{value}</code>
-    </span>
-  );
-}
-
 export interface StateWords {
   label: string;
   tone: PillTone;
