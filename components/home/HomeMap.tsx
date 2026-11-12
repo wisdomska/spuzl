@@ -74,8 +74,8 @@ export interface WorldProgress {
 /** easeOutQuad / easeInQuad (easings.net): the rise and fall of one hop. */
 const UP = [0.5, 1, 0.89, 1] as const;
 const DOWN = [0.11, 0, 0.5, 0] as const;
-/** take-off times (s) of the three hops in the 700 ms trip */
-const HOPS = [0, 0.233, 0.466];
+/** take-off times (s) of the three hops in the 500 ms trip (the world opens as Spuz lands) */
+const HOPS = [0, 0.166, 0.333];
 
 export function HomeMap({
   progress,
@@ -148,7 +148,7 @@ export function HomeMap({
     };
   }, [router, worlds]);
 
-  // World travel (Handoff): camera + Spuz hops along the dotted path in 3 arcs over 700 ms; RM cross-fades.
+  // World travel (Handoff): camera + Spuz hops along the dotted path in 3 arcs over 500 ms; RM cross-fades.
   const travel = (w: WorldId) => {
     if (busy.current) return;
     busy.current = true;
@@ -160,11 +160,11 @@ export function HomeMap({
     setHopTo({ x: to.x + 6, y: to.y - 8 });
     // A hop on each take-off and a soft landing at the end, scheduled on the audio clock with the arcs.
     HOPS.forEach((t) => play("hop", { delay: t }));
-    play("land", { delay: 0.7, gain: 0.7 });
+    play("land", { delay: 0.5, gain: 0.7 });
     setTimeout(() => {
       setSpuzAt(w);
       router.push(`/world/${w}`);
-    }, 720);
+    }, 520);
   };
 
   const from = SLOTS[idx(spuzAt)];
@@ -212,7 +212,7 @@ export function HomeMap({
             animate={
               hopTo ? { transform: `translate(${hopTo.x}px, ${hopTo.y}px)` } : { transform: `translate(${from.x + 6}px, ${from.y - 8}px)` }
             }
-            transition={{ duration: 0.7, ease: [0.77, 0, 0.175, 1] }}
+            transition={{ duration: 0.5, ease: [0.77, 0, 0.175, 1] }}
             style={{ left: 0, top: 0 }}
           >
             <motion.div
@@ -232,7 +232,7 @@ export function HomeMap({
                   : undefined
               }
               // Gravity: each arc decelerates up and accelerates down, so the three hops read as jumps.
-              transition={{ duration: 0.7, ease: [UP, DOWN, UP, DOWN, UP, DOWN] }}
+              transition={{ duration: 0.5, ease: [UP, DOWN, UP, DOWN, UP, DOWN] }}
             >
               <MySpuz mood={hopTo ? "cheer" : mood} size={64} decorative />
             </motion.div>

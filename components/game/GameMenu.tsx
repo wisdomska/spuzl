@@ -159,8 +159,11 @@ function Entry({ e }: { e: GameMenuEntry }) {
           <DropdownMenu.SubContent
             sideOffset={4}
             collisionPadding={12}
-            className="bg-surface text-text z-50 flex w-[200px] flex-col rounded-[20px] p-1.5"
-            style={{ boxShadow: "0 0 0 1px var(--line), var(--shadow-float)" }}
+            className="pop-content bg-surface text-text z-50 flex w-[200px] flex-col rounded-[20px] p-1.5"
+            style={{
+              transformOrigin: "var(--radix-dropdown-menu-content-transform-origin)",
+              boxShadow: "0 0 0 1px var(--line), var(--shadow-float)",
+            }}
           >
             <DropdownMenu.RadioGroup value={e.value} onValueChange={e.onChange}>
               {e.options.map((o) => (

@@ -94,7 +94,7 @@ export default function MePage() {
           {d.guest && (
             <Link
               href="/settings#account"
-              className="bg-surface flex items-center gap-3 rounded-[16px] px-3.5 py-3"
+              className="press-card bg-surface flex items-center gap-3 rounded-[16px] px-3.5 py-3"
               style={{ boxShadow: "inset 0 0 0 2px var(--line)" }}
             >
               <Icon name="shield-check" size={22} className="text-accent shrink-0" />
@@ -256,7 +256,10 @@ export default function MePage() {
           </section>
 
           {/* R4-02: feedback from the profile, noting it came from here */}
-          <Link href={feedbackHref("/me")} className="bg-surface flex min-h-[52px] items-center gap-3 rounded-[16px] px-3.5 py-2">
+          <Link
+            href={feedbackHref("/me")}
+            className="press-card bg-surface flex min-h-[52px] items-center gap-3 rounded-[16px] px-3.5 py-2"
+          >
             <Icon name="chat-circle-text" size={20} className="text-muted shrink-0" />
             <span className="flex flex-1 flex-col">
               <span className="text-[15px] font-semibold">{contactCopy.entry}</span>

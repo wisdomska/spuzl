@@ -145,7 +145,7 @@ export function HomeScreen() {
           </div>
         </header>
 
-        <div className="relative z-10 flex flex-col gap-2 px-3">
+        <div className="stagger relative z-10 flex flex-col gap-2 px-3">
           <OfflineBanner context="home" />
           {gameSettings["rooms.under16FriendsOnly"] && hostIsUnder16(d) && <HostRequestsCard />}
           <FirstTips order={HOME_TIPS} />
@@ -178,12 +178,12 @@ export function HomeScreen() {
           className="pointer-events-none fixed inset-x-0 bottom-0 z-10 h-[250px] lg:absolute lg:h-[200px]"
           style={{ background: "linear-gradient(transparent, var(--bg) 40%)" }}
         />
-        <div className="fixed inset-x-3 bottom-[92px] z-20 mx-auto flex max-w-[536px] flex-col gap-2.5 lg:absolute lg:bottom-6">
+        <div className="rise-in fixed inset-x-3 bottom-[92px] z-20 mx-auto flex max-w-[536px] flex-col gap-2.5 lg:absolute lg:bottom-6">
           {atRisk && (
             <motion.div
-              initial={{ opacity: 0, transform: "translateY(-12px)" }}
+              initial={{ opacity: 0, transform: "translateY(-8px)" }}
               animate={{ opacity: 1, transform: "translateY(0px)" }}
-              transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+              transition={{ duration: 0.24, ease: [0.23, 1, 0.32, 1] }}
               className="bg-surface flex items-center gap-1.5 rounded-[22px] py-3 pr-3.5 pl-2"
               style={{ boxShadow: "inset 0 0 0 2px var(--gold)" }}
             >
@@ -309,7 +309,7 @@ function PlayCard({
             strokeLinecap="round"
             strokeDasharray={c}
             strokeDashoffset={c * (1 - pct)}
-            style={{ transition: "stroke-dashoffset 600ms cubic-bezier(.23,1,.32,1)" }}
+            style={{ transition: "stroke-dashoffset 400ms cubic-bezier(.23,1,.32,1)" }}
           />
         </svg>
         <span className="num text-[13px] leading-none font-black">

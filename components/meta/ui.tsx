@@ -210,12 +210,15 @@ export function Bar({
   height = 8,
   track = "var(--line)",
   label,
+  still,
 }: {
   value: number;
   color?: string;
   height?: number;
   track?: string;
   label?: string;
+  /** no fill-in on first paint (bars repeated down a long grid, like the badge grid) */
+  still?: boolean;
 }) {
   const v = Math.max(0, Math.min(1, value));
   return (
@@ -228,14 +231,10 @@ export function Bar({
       className="flex-1 overflow-hidden"
       style={{ height, borderRadius: height / 2, background: track }}
     >
+      {/* Fills from empty on first paint, then follows the value (`.bar-fill`: transform only, 360 ms ease-out). */}
       <div
-        className="h-full origin-left transition-transform duration-500"
-        style={{
-          transform: `scaleX(${v})`,
-          background: color,
-          borderRadius: height / 2,
-          transitionTimingFunction: "cubic-bezier(0.23, 1, 0.32, 1)",
-        }}
+        className={`bar-fill h-full ${still ? "bar-still" : ""}`}
+        style={{ "--fill": v, background: color, borderRadius: height / 2 } as CSSProperties}
       />
     </div>
   );

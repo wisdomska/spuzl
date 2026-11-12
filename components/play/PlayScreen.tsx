@@ -753,8 +753,7 @@ function Toast({ text, onDone }: { text: string; onDone: () => void }) {
   return (
     <div
       role="status"
-      className="bg-surface-raised fixed inset-x-4 top-[max(12px,env(safe-area-inset-top))] z-[60] mx-auto max-w-[520px] rounded-[14px] px-4 py-3 text-[15px] font-medium shadow-[var(--shadow-float)]"
-      style={{ animation: "fade-in 180ms var(--ease-out)" }}
+      className="drop-in bg-surface-raised fixed inset-x-4 top-[max(12px,env(safe-area-inset-top))] z-[60] mx-auto max-w-[520px] rounded-[14px] px-4 py-3 text-[15px] font-medium shadow-[var(--shadow-float)]"
     >
       {text}
     </div>

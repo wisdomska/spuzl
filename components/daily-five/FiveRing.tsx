@@ -17,7 +17,7 @@ export function FiveRing({ done, total, size = 48 }: { done: number; total: numb
           strokeLinecap="round"
           strokeDasharray={c}
           strokeDashoffset={c * (1 - pct)}
-          className="motion-safe:transition-[stroke-dashoffset] motion-safe:duration-[600ms] motion-safe:ease-[cubic-bezier(.23,1,.32,1)]"
+          className="motion-safe:transition-[stroke-dashoffset] motion-safe:duration-[400ms] motion-safe:ease-[cubic-bezier(.23,1,.32,1)]"
         />
       </svg>
       <span className="num text-[13px] leading-none font-black">

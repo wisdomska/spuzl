@@ -64,14 +64,14 @@ export function BadgeGrid({ data }: { data: BadgesRes }) {
               <li key={b.id}>
                 <button
                   onClick={() => setOpen(b)}
-                  className="flex w-full flex-col items-center gap-1.5 rounded-[14px] py-1"
+                  className="press flex w-full flex-col items-center gap-1.5 rounded-[14px] py-1"
                   aria-label={`${b.name}, ${TIER_FILL[b.tier].label}, ${b.earned ? "earned" : b.progress ? `${b.progress.have} of ${b.progress.need}` : "locked"}`}
                 >
                   <Medallion b={b} size={54} />
                   <span className="line-clamp-2 text-center text-[12px] leading-tight font-semibold">{b.name}</span>
                   {!b.earned && b.progress && (
                     <span className="flex w-full items-center gap-1 px-1">
-                      <Bar value={b.progress.have / b.progress.need} height={4} />
+                      <Bar value={b.progress.have / b.progress.need} height={4} still />
                     </span>
                   )}
                 </button>

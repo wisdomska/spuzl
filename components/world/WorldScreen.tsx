@@ -115,7 +115,7 @@ export function WorldScreen({ id }: { id: WorldId }) {
             <li
               key={g.id}
               className="list-in bg-surface overflow-hidden rounded-[20px]"
-              style={{ animationDelay: `${Math.min(i, 8) * 40}ms`, boxShadow: inProgress ? "inset 0 0 0 2px var(--world)" : undefined }}
+              style={{ animationDelay: `${Math.min(i, 5) * 35}ms`, boxShadow: inProgress ? "inset 0 0 0 2px var(--world)" : undefined }}
             >
               <Link
                 href={resumeLevel ? `/play/${g.id}?mode=level` : done || resume || !dailiesOn ? `/play/${g.id}?mode=free` : `/play/${g.id}`}

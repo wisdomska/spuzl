@@ -112,7 +112,7 @@ export function ShareCode({ code, url, text, count }: { code: string; url: strin
       </div>
       {qr && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={qr} alt={`QR code to join room ${code}`} className="mx-auto size-[200px] rounded-[16px] bg-white p-2" />
+        <img src={qr} alt={`QR code to join room ${code}`} className="rise-in mx-auto size-[200px] rounded-[16px] bg-white p-2" />
       )}
     </div>
   );

@@ -76,7 +76,7 @@ export function SidePanelBody() {
             <Link
               href="/shop"
               data-wallet
-              className="bg-surface-raised flex h-[52px] items-center justify-center gap-2 rounded-[14px]"
+              className="press bg-surface-raised flex h-[52px] items-center justify-center gap-2 rounded-[14px]"
               aria-label={`${formatNumber(d.sparks)} Sparks`}
             >
               <Icon name="lightning" size={20} className="text-gold" />

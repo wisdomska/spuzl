@@ -994,3 +994,101 @@ select {
     animation: none;
   }
 }
+
+/* ---------- R6 player app motion (helper A) ----------
+   Tab and screen content rises in: the direct children of a `.stagger` stack fade up 6 px in 200 ms, 30 ms apart,
+   the first six only (the rest land with the sixth). Fixed bars inside the stack keep still. `backwards` fill only,
+   so no transform is left behind once it ends (fixed descendants keep the viewport as their containing block).
+   Reduced motion (the OS setting or the in-app one): no rise, no delay. */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.rise-in {
+  animation: rise-in 200ms var(--ease-out) backwards;
+}
+/* Zero specificity, so a child's own animation (a Button's error shake) still wins. */
+:where(.stagger) > :where(:not(.fixed)) {
+  animation: rise-in 200ms var(--ease-out) backwards;
+}
+:where(.stagger) > :where(:nth-child(2)) {
+  animation-delay: 30ms;
+}
+:where(.stagger) > :where(:nth-child(3)) {
+  animation-delay: 60ms;
+}
+:where(.stagger) > :where(:nth-child(4)) {
+  animation-delay: 90ms;
+}
+:where(.stagger) > :where(:nth-child(5)) {
+  animation-delay: 120ms;
+}
+:where(.stagger) > :where(:nth-child(n + 6)) {
+  animation-delay: 150ms;
+}
+[data-motion="reduce"] .rise-in,
+:where([data-motion="reduce"] .stagger) > * {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rise-in,
+  :where(.stagger) > * {
+    animation: none;
+  }
+}
+/* Wide pressable cards (a full-width link card, a list row card): a softer press than `.press`. */
+.press-card {
+  transition: transform 140ms var(--ease-out);
+}
+.press-card:active:not(:disabled) {
+  transform: scale(0.98);
+}
+[data-motion="reduce"] .press-card:active:not(:disabled) {
+  transform: none;
+}
+/* Progress and XP bars (components/meta/ui.tsx Bar): fill from empty on first paint, then follow the value. */
+.bar-fill {
+  transform: scaleX(var(--fill, 0));
+  transform-origin: left;
+  transition: transform 360ms var(--ease-out);
+}
+@starting-style {
+  .bar-fill {
+    transform: scaleX(0);
+  }
+}
+.bar-still {
+  transition: none;
+}
+/* A top toast drops in 8 px from where it sits (reduced motion: a fade only). */
+@keyframes drop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+.drop-in {
+  animation: drop-in 200ms var(--ease-out) backwards;
+}
+[data-motion="reduce"] .drop-in {
+  animation: fade-in 150ms var(--ease-out) backwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .drop-in {
+    animation: fade-in 150ms var(--ease-out) backwards;
+  }
+}
+/* A small popover with no Radix state (the Duel emote bar): grows from its trigger (set `origin-*` on it). */
+.pop-in {
+  animation: pop-in 140ms var(--ease-out);
+}
+[data-motion="reduce"] .pop-in {
+  animation: fade-in 120ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pop-in {
+    animation: fade-in 120ms ease-out;
+  }
+}

@@ -24,7 +24,7 @@ export function LevelRing({
   return (
     <Link
       href="/me"
-      className="relative flex items-center justify-center rounded-full"
+      className="press relative flex items-center justify-center rounded-full"
       style={{ width: size, height: size, background: `conic-gradient(var(--accent) 0 ${p}%, var(--line) ${p}% 100%)` }}
     >
       {/* A ring, not a disc: the progress shows in a 3 px band and Spuz sits on the page colour inside it. */}
@@ -61,7 +61,7 @@ export function SparksChip({ sparks }: { sparks: number }) {
     <Link
       href="/shop"
       aria-label={`${formatNumber(sparks)} Sparks`}
-      className="bg-surface-raised flex h-10 items-center gap-1.5 rounded-[14px] px-3"
+      className="press bg-surface-raised flex h-10 items-center gap-1.5 rounded-[14px] px-3"
       data-wallet
     >
       <Icon name="lightning" size={18} style={{ color: "var(--gold)" }} />

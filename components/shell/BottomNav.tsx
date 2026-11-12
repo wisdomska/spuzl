@@ -93,7 +93,7 @@ export function DesktopRail() {
             onPointerEnter={intent(n.href)}
             onTouchStart={intent(n.href)}
             aria-current={active ? "page" : undefined}
-            className="flex h-16 w-16 flex-col items-center justify-center gap-1 rounded-[18px] transition-colors duration-150"
+            className="press flex h-16 w-16 flex-col items-center justify-center gap-1 rounded-[18px]"
             style={{ color: active ? "var(--accent)" : "var(--text-muted)", background: active ? "var(--surface-raised)" : "transparent" }}
           >
             <Icon name={n.icon} size={24} />
@@ -101,7 +101,11 @@ export function DesktopRail() {
           </Link>
         );
       })}
-      <Link href="/settings" aria-label="Settings" className="text-muted mt-auto flex h-12 w-12 items-center justify-center rounded-[14px]">
+      <Link
+        href="/settings"
+        aria-label="Settings"
+        className="press text-muted mt-auto flex h-12 w-12 items-center justify-center rounded-[14px]"
+      >
         <Icon name="gear-six" size={22} />
       </Link>
     </nav>

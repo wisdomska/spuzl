@@ -176,7 +176,7 @@ export default function LeaderboardsPage() {
             <Link
               href={`/play/${meta.id}`}
               {...PLAY_NAV}
-              className="bg-surface flex h-14 items-center gap-2.5 rounded-[16px] px-3 text-[15px] font-semibold"
+              className="press-card bg-surface flex h-14 items-center gap-2.5 rounded-[16px] px-3 text-[15px] font-semibold"
               style={{ boxShadow: "inset 0 0 0 2px var(--line), 0 -10px 24px var(--bg)" }}
             >
               <Icon name="play" size={18} className="text-accent" />

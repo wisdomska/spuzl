@@ -68,7 +68,7 @@ export default function CrewPage({ params }: PageProps<"/crews/[id]">) {
               </div>
               <div className="relative h-3.5 overflow-hidden rounded-[7px]" style={{ background: "var(--accent)" }} aria-hidden>
                 <div
-                  className="bg-accent absolute inset-0 origin-left transition-transform duration-500"
+                  className="bg-accent absolute inset-0 origin-left transition-transform duration-[360ms] ease-[cubic-bezier(0.23,1,0.32,1)]"
                   style={{ transform: `scaleX(${c.clash.us + c.clash.them ? c.clash.us / (c.clash.us + c.clash.them) : 0.5})` }}
                 />
               </div>

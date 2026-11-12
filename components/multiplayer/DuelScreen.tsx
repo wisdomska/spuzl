@@ -603,7 +603,7 @@ function DuelMatch({ id }: { id: string }) {
           {chat.unread > 0 && <span aria-hidden className="bg-accent absolute -top-1 -right-1 size-3 rounded-full" />}
         </button>
         {emoteOpen && (
-          <div className="bg-surface absolute top-full right-0 z-30 mt-1 w-[300px] rounded-[18px] p-2 shadow-[0_10px_30px_rgba(0,0,0,.4)]">
+          <div className="pop-in bg-surface absolute top-full right-0 z-30 mt-1 w-[300px] origin-top-right rounded-[18px] p-2 shadow-[0_10px_30px_rgba(0,0,0,.4)]">
             <EmoteBar
               onSend={sendEmote}
               onChat={
