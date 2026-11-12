@@ -4,7 +4,8 @@
  * XSS guard the Next.js JSON-LD guide asks for).
  */
 import { GAME_COUNT, WORLD_BY_ID, type GameMeta } from "@/lib/catalog";
-import { WORLD_GENRES, qaText, type QA } from "@/lib/copy/seo";
+import { FEATURES, WORLD_GENRES, qaText, type QA } from "@/lib/copy/seo";
+import { PARTY_MAX } from "@/lib/multiplayer/constants";
 import { siteCopy } from "@/lib/copy/site";
 import { aboutCopy } from "@/lib/copy/about";
 import { SITE_URL, absoluteUrl } from "./site";
@@ -57,6 +58,8 @@ export const webApplication = (): Thing => ({
   inLanguage: "en",
   isAccessibleForFree: true,
   offers: FREE_OFFER,
+  featureList: [...FEATURES],
+  accessibilityFeature: ["keyboardNavigation", "colorPatterns", "reducedMotion", "screenReaderLabels"],
   publisher: { "@id": ORG_ID },
   creator: MAKER_REF,
   author: MAKER_REF,
@@ -78,6 +81,12 @@ export function videoGame(f: GameFacts): Thing {
     applicationCategory: "Game",
     operatingSystem: "Any",
     playMode: f.modes.some((m) => m === "duel" || m === "party" || m === "bay") ? ["SinglePlayer", "MultiPlayer"] : "SinglePlayer",
+    // Party races hold up to PARTY_MAX players; Duel and Board Bay are two.
+    ...(f.modes.includes("party")
+      ? { numberOfPlayers: { "@type": "QuantitativeValue", minValue: 1, maxValue: PARTY_MAX } }
+      : f.modes.some((m) => m === "duel" || m === "bay")
+        ? { numberOfPlayers: { "@type": "QuantitativeValue", minValue: 1, maxValue: 2 } }
+        : {}),
     inLanguage: "en",
     isAccessibleForFree: true,
     offers: { ...FREE_OFFER, url },

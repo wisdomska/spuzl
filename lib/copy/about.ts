@@ -12,7 +12,7 @@ const spelled = (n: number) => SPELLED[n] ?? String(n);
 export const aboutCopy = {
   /** Search title and description of "/" (under 60 and 155 characters; lib/copy/seo.ts seoMeta.landing) */
   metaTitle: `SPUZL: ${GAME_COUNT} free puzzle games to play online`,
-  metaDescription: `Play ${GAME_COUNT} free puzzle, word, arcade and board games in your browser. No download, no sign-up. Duel friends and climb weekly leagues.`,
+  metaDescription: `Play ${GAME_COUNT} free puzzle, word, arcade and board games in your browser. No download, no sign-up. Duel friends or race a party of ${PARTY_MAX}.`,
   name: "SPUZL",
   nav: { how: "How it works", worlds: "Games", friends: "Friends", signIn: "Sign in", play: "Play" },
   eyebrow: `${GAME_COUNT} free games · ${WORLD_COUNT} worlds`,

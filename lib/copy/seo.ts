@@ -164,7 +164,11 @@ export const siteFaq = (games: number = GAME_COUNT, worlds: number = WORLD_COUNT
   },
   {
     q: "Can I play with friends?",
-    a: `Yes. Duel a friend live on the same puzzle, best of three. Open a Party room, share the code and race up to ${PARTY_MAX} phones at once. Challenge a friend to chess, draughts, oware, ludo or Four Up. Every Monday you also join a weekly league of 30 players.`,
+    a: `Yes. Duel a friend live on the same puzzle, best of three. Open a Party room, share the code and race up to ${PARTY_MAX} players at once, on puzzles or on score games like Quickfire. Send a challenge link to any puzzle you cleared, or play chess, draughts, oware, ludo and Four Up live or one move a day in Board Bay. Every Monday you also join a weekly league of 30 players.`,
+  },
+  {
+    q: "What is the Daily Five?",
+    a: "Five quick games picked fresh every day, the same five for everyone. One go each, about 5 minutes in all, with points for every clear. Share your grid and see who beats it.",
   },
   {
     q: "Is SPUZL safe for teens?",
@@ -176,9 +180,30 @@ export const siteFaq = (games: number = GAME_COUNT, worlds: number = WORLD_COUNT
     a: `${games} games in ${worlds} worlds: ${names}. Every game can be played any time, as often as you like.`,
   },
   {
+    q: "Can I play with a keyboard or a screen reader?",
+    a: "Yes. Boards, pads and buttons work with the keyboard (arrow keys, Enter and Escape) and show where focus is. Boards name their cells for screen readers, there is a colour-pattern option for colour-blind players, and SPUZL follows your reduced motion setting.",
+  },
+  {
     q: "Does SPUZL work on phones and offline?",
     a: "Yes. SPUZL works in the browser on Android phones, iPhones, tablets and computers. Add it to your home screen and it opens like an app, even with no connection. A puzzle already on your screen can be finished offline, and the clear is sent when you are back online. Duels and Party need a connection.",
   },
+];
+
+/** What SPUZL offers, one line each (llms-full.txt "Features" and the app's structured data featureList). */
+export const FEATURES: readonly string[] = [
+  "Free play: every game any time, with fresh puzzles and levels that get harder.",
+  "Daily Five: five quick games a day, the same for everyone, with a shareable score grid.",
+  "Streaks with Streak Freezes, quests, badges and levels.",
+  "Duel: a live best-of-three race against a friend or a matched player.",
+  `Party rooms: share a code and race up to ${PARTY_MAX} players on puzzles or score games; a big-screen TV view for classrooms.`,
+  "Party games for older players: Draw It with preset words for 16 and over; Draw It and Two Truths party modes for 18 and over.",
+  "Challenges and Ghost Races: send a link to the exact puzzle you cleared and race your time.",
+  "Board Bay: chess, draughts, oware, ludo and Four Up against a friend, live or one move a day, or against the bot.",
+  "Weekly leagues of 30 players, crews, friends and leaderboards.",
+  "Sparks earned by playing, spent in the Shop on hats for Spuz. Nothing is sold for money.",
+  "Accessible: keyboard play, screen reader labels, colour patterns and reduced motion.",
+  "Installable app (PWA) that works offline for puzzles already on screen.",
+  "Feedback form on the Contact page; download or delete your data in Settings.",
 ];
 
 /** The site-wide FAQ with the catalogue count (static text). */

@@ -3,7 +3,7 @@
  * Markdown. Built from the catalog and the SEO copy, so a new or retired game shows up (or drops out) by itself.
  */
 import { playerWorlds, type GameMeta, type GameSwitch } from "@/lib/catalog";
-import { SAFETY, gamesCopy, llmsSummaryFor, siteFaq } from "@/lib/copy/seo";
+import { FEATURES, SAFETY, gamesCopy, llmsSummaryFor, siteFaq } from "@/lib/copy/seo";
 import { aboutCopy } from "@/lib/copy/about";
 import { LIVE_ONLY, gameDescription, gameFacts, publicCounts, publicGames, publicGamesInWorld } from "./games";
 import { absoluteUrl } from "./site";
@@ -86,6 +86,10 @@ export function llmsFullTxt(copy: CopyFn = asIs, lab: GameSwitch = LIVE_ONLY): s
     "",
     ...aboutCopy.steps.map(([t, b]) => `- ${t} ${b}`),
     ...aboutCopy.friends.map(([, t, b]) => `- ${t}: ${b}`),
+    "",
+    "## Features",
+    "",
+    ...FEATURES.map((f) => `- ${f}`),
     "",
     "## Games",
   ];
