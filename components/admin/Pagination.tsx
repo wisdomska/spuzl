@@ -165,7 +165,7 @@ export function Pagination({ pager, total, label = C.label }: { pager: Pager; to
                   aria-label={C.pageAria(n)}
                   aria-current={n === current ? "page" : undefined}
                   onClick={() => setPage(n)}
-                  className={`num inline-flex h-11 min-w-11 items-center justify-center rounded-[12px] px-2 text-[14px] font-semibold ${
+                  className={`admin-press num inline-flex h-11 min-w-11 items-center justify-center rounded-[12px] px-2 text-[14px] font-semibold ${
                     n === current ? "bg-accent text-on-accent" : "text-muted hover:bg-surface-raised hover:text-text"
                   }`}
                 >

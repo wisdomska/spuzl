@@ -1161,4 +1161,86 @@ html.reveal-armed [data-reveal]:not([data-revealed]) {
   :is(.lift:hover, .lift:active) {
     transform: none;
   }
+/* Admin console motion (round 6). A work tool opened many times a day, so only small, fast feedback: a press on
+   buttons, a 150 ms fade when a tab panel or folded section opens, a quick rise for action results, and the menu
+   groups folding (180 ms). Nothing when the change came from the keyboard; reduced motion keeps opacity only. */
+.admin-press {
+  transition: transform 120ms var(--ease-out);
+}
+.admin-press:active:not(:disabled) {
+  transform: scale(0.97);
+}
+@keyframes admin-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes admin-rise {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+.admin-fade {
+  animation: admin-fade 150ms var(--ease-out);
+}
+.admin-live {
+  animation: admin-rise 180ms var(--ease-out);
+}
+.admin details[open] > :not(summary) {
+  animation: admin-rise 160ms var(--ease-out);
+}
+.admin details[open]:has(> summary:focus-visible) > :not(summary) {
+  animation: none;
+}
+.admin-collapse {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition:
+    grid-template-rows 180ms var(--ease-out),
+    opacity 150ms var(--ease-out),
+    visibility 0s;
+}
+.admin-collapse[data-open="false"] {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    grid-template-rows 180ms var(--ease-out),
+    opacity 120ms var(--ease-out),
+    visibility 0s 180ms;
+}
+.admin-collapse > * {
+  min-height: 0;
+  overflow: hidden;
+  /* keeps a link's focus ring visible at the edges where supported */
+  overflow: clip;
+  overflow-clip-margin: 4px;
+}
+.admin-collapse[data-instant] {
+  transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-press:active:not(:disabled) {
+    transform: none;
+  }
+  .admin-live,
+  .admin details[open] > :not(summary) {
+    animation-name: admin-fade;
+  }
+  .admin-collapse,
+  .admin-collapse[data-open="false"] {
+    transition: none;
+  }
+}
+[data-motion="reduce"] .admin-press:active:not(:disabled) {
+  transform: none;
+}
+[data-motion="reduce"] .admin-live,
+[data-motion="reduce"] .admin details[open] > :not(summary) {
+  animation-name: admin-fade;
+}
+[data-motion="reduce"] .admin-collapse,
+[data-motion="reduce"] .admin-collapse[data-open="false"] {
+  transition: none;
 }

@@ -116,7 +116,7 @@ export function SettingsPage({ canWrite }: { canWrite: boolean }) {
                 id={`set-${slug(group)}`}
                 role="tabpanel"
                 aria-labelledby={`tab-${slug(group)}`}
-                className="bg-surface flex flex-col gap-4 rounded-[16px] p-4 sm:p-5"
+                className="admin-fade bg-surface flex flex-col gap-4 rounded-[16px] p-4 sm:p-5"
               >
                 <div className="flex flex-col gap-0.5">
                   <h2 className="font-display text-[17px] font-extrabold">{group}</h2>

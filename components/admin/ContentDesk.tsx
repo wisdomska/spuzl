@@ -108,20 +108,22 @@ export function ContentDesk(props: { canWrite: boolean; canApprove: boolean; can
           ]}
         />
       </div>
-      {tab === "items" ? (
-        <Items {...props} pager={pager} />
-      ) : tab === "drawit" ? (
-        <DrawWordsPanel canWrite={props.canWrite} />
-      ) : (
-        <ReviewQueue
-          canWrite={props.canWrite}
-          canSchedule={props.canSchedule}
-          game={(filters.game || null) as ContentGame | null}
-          show={filters.show as ReviewShow}
-          setFilters={setFilters}
-          pager={pager}
-        />
-      )}
+      <div key={tab} className="admin-fade flex min-w-0 flex-col gap-4">
+        {tab === "items" ? (
+          <Items {...props} pager={pager} />
+        ) : tab === "drawit" ? (
+          <DrawWordsPanel canWrite={props.canWrite} />
+        ) : (
+          <ReviewQueue
+            canWrite={props.canWrite}
+            canSchedule={props.canSchedule}
+            game={(filters.game || null) as ContentGame | null}
+            show={filters.show as ReviewShow}
+            setFilters={setFilters}
+            pager={pager}
+          />
+        )}
+      </div>
     </div>
   );
 }

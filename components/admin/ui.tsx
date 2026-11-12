@@ -37,7 +37,7 @@ export function Btn({
   return (
     <button
       type="button"
-      className={`inline-flex min-w-11 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-50 ${h} ${TONE[tone]} ${className}`}
+      className={`admin-press inline-flex min-w-11 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-50 ${h} ${TONE[tone]} ${className}`}
       {...rest}
     >
       {icon && <Icon name={icon} size={size === "sm" ? 14 : 16} />}
@@ -458,7 +458,7 @@ export function Notice({
   return (
     <div
       role={tone === "danger" ? "alert" : "status"}
-      className="flex items-center gap-2.5 rounded-[12px] px-3.5 py-3 text-[14px] font-medium"
+      className="admin-live flex items-center gap-2.5 rounded-[12px] px-3.5 py-3 text-[14px] font-medium"
       style={{ background: bg, boxShadow: `inset 0 0 0 1px ${ring}` }}
     >
       {icon && <Icon name={icon} size={20} className={fg} />}

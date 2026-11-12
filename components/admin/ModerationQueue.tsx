@@ -111,7 +111,9 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
               items={TABS.map((id) => ({ id, label: C.tabs[id], count: q.data?.counts[id] }))}
             />
           </div>
-          <p className="text-muted text-[13px]">{C.tabHelp[tab]}</p>
+          <p key={tab} className="admin-fade text-muted text-[13px]">
+            {C.tabHelp[tab]}
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {tab === "flagged" ? (
@@ -162,7 +164,7 @@ export function ModerationQueue({ canWrite }: { canWrite: boolean }) {
             </Notice>
           )}
         </div>
-        <div className="bg-surface max-h-[70dvh] overflow-auto rounded-[16px]">
+        <div key={tab} className="admin-fade bg-surface max-h-[70dvh] overflow-auto rounded-[16px]">
           {q.isPending ? (
             <RowsSkeleton />
           ) : q.error ? (

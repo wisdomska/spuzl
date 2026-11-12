@@ -51,9 +51,17 @@ function Table<K extends string = string>({
 }
 const td = "border-line border-t px-3 py-2 align-middle";
 
-function Frame({ q, children }: { q: { isPending: boolean; error: unknown }; children: () => ReactNode }) {
+function Frame({
+  q,
+  children,
+  className = "",
+}: {
+  q: { isPending: boolean; error: unknown };
+  children: () => ReactNode;
+  className?: string;
+}) {
   return (
-    <div className="bg-surface relative overflow-x-auto rounded-[12px]">
+    <div className={`bg-surface relative overflow-x-auto rounded-[12px] ${className}`}>
       {q.isPending ? (
         <RowsSkeleton />
       ) : q.error ? (
@@ -194,7 +202,9 @@ export function ShopPage({
           />
         </Field>
       </div>
-      <p className="text-muted max-w-[760px] text-[13px]">{SHOP.tabIntro[kind]}</p>
+      <p key={kind} className="admin-fade text-muted max-w-[760px] text-[13px]">
+        {SHOP.tabIntro[kind]}
+      </p>
       {!canWrite ? (
         <Notice icon="info">{SHOP.readOnly}</Notice>
       ) : (
@@ -211,7 +221,7 @@ export function ShopPage({
           </Notice>
         ) : null}
       </div>
-      <Frame q={q}>
+      <Frame key={kind} q={q} className="admin-fade">
         {() =>
           !q.data!.rows.length ? (
             <Empty icon="magnifying-glass">{SHOP.empty}</Empty>

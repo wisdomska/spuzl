@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Dialog } from "radix-ui";
-import { useState, useSyncExternalStore, type ReactNode } from "react";
+import { useState, useSyncExternalStore, type MouseEvent, type ReactNode } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { can, ROLE_LABEL, type Permission, type Role } from "@/lib/admin/roles";
 import { useAdminMe, type AdminMe } from "@/lib/client/admin";
@@ -143,7 +143,7 @@ export function AdminShell({ role, email, children }: { role: Role; email: strin
           <Dialog.Trigger asChild>
             <button
               type="button"
-              className="hover:bg-surface-raised flex h-11 items-center gap-2 rounded-[10px] px-3 text-[14px] font-semibold"
+              className="admin-press hover:bg-surface-raised flex h-11 items-center gap-2 rounded-[10px] px-3 text-[14px] font-semibold"
             >
               <Icon name="list" size={20} />
               {S.menu}
@@ -248,7 +248,10 @@ function NavGroups({
         const open = active ? !(shutHere?.path === path && shutHere.id === g.id) : !closed.has(g.id);
         const total = groupTotal(g, counts);
         const listId = `nav-${g.id}`;
-        const toggle = () => {
+        const toggle = (e: MouseEvent<HTMLButtonElement>) => {
+          // Folds in 180 ms for a tap or click; a keyboard press (no pointer, detail 0) is instant.
+          const panel = document.getElementById(listId)?.parentElement;
+          if (panel) panel.toggleAttribute("data-instant", e.detail === 0);
           if (active) setShutHere(open ? { path, id: g.id } : null);
           const next = new Set(closed);
           if (open) next.add(g.id);
@@ -273,11 +276,13 @@ function NavGroups({
               )}
               <Icon name="caret-down" size={14} className={`transition-transform duration-150 ${open ? "" : "-rotate-90"}`} />
             </button>
-            <ul id={listId} hidden={!open} className="flex flex-col gap-0.5 lg:gap-0">
-              {g.items.map((n) => (
-                <NavLink key={n.href} item={n} path={path} counts={counts} onNavigate={onNavigate} />
-              ))}
-            </ul>
+            <div className="admin-collapse" data-open={open} aria-hidden={!open} inert={!open}>
+              <ul id={listId} className="flex flex-col gap-0.5 lg:gap-0">
+                {g.items.map((n) => (
+                  <NavLink key={n.href} item={n} path={path} counts={counts} onNavigate={onNavigate} />
+                ))}
+              </ul>
+            </div>
           </div>
         );
       })}
