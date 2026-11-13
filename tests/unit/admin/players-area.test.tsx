@@ -168,7 +168,7 @@ describe("admin player page", () => {
     render(<PlayerDetail id={ID} role="owner" backHref="/admin/players" />);
     fireEvent.click(screen.getByRole("tab", { name: "Games" }));
     expect(screen.getByText("Against")).toBeTruthy();
-    expect(screen.getByText("Bot · Hard")).toBeTruthy();
+    expect(screen.getByText("Spuzl · Hard")).toBeTruthy();
     expect(screen.getByRole("link", { name: "Kofi" }).getAttribute("href")).toBe(`/admin/players/${THEM}`);
   });
 

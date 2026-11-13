@@ -154,12 +154,12 @@ export function BotScreen({ meta, game, initialLevel }: { meta: GameMeta; game: 
           >
             <Icon name="arrow-left" size={20} />
           </button>
-          <h1 className="font-display text-[24px] font-black">Ludo vs the bot</h1>
+          <h1 className="font-display text-[24px] font-black">Ludo vs Spuzl</h1>
         </div>
         <p className="text-muted text-[15px]">Set up the table before you start.</p>
         <fieldset className="flex flex-col gap-1.5">
-          <legend className="text-muted pb-1 text-[13px] font-semibold">Bot level</legend>
-          <div className="bg-bg flex gap-1 rounded-[16px] p-1" role="radiogroup" aria-label="Bot level">
+          <legend className="text-muted pb-1 text-[13px] font-semibold">Spuzl&apos;s level</legend>
+          <div className="bg-bg flex gap-1 rounded-[16px] p-1" role="radiogroup" aria-label="Spuzl's level">
             {BOT_LEVELS.map((l) => (
               <button
                 key={l}

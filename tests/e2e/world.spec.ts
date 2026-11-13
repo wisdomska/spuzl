@@ -14,7 +14,7 @@ test("world: each game is one card with its own actions", async ({ page }, info)
   await page.screenshot({ path: `docs/qa/screens/after/world-logic-${info.project.name}.png` });
   await page.goto("/world/board");
   const chess = page.locator("main li").first();
-  await expect(chess.getByRole("link", { name: "Play vs bot" })).toBeVisible();
+  await expect(chess.getByRole("link", { name: "Play vs Spuzl" })).toBeVisible();
   // Board Games: find someone to play live, or invite a friend, from the same card.
   await expect(chess.getByRole("link", { name: "Chess: play live against another player" })).toHaveAttribute("href", "/bay?live=chess");
   await expect(chess.getByRole("link", { name: "Chess: challenge a friend" })).toHaveAttribute("href", "/bay?new=chess");

@@ -484,7 +484,7 @@ export function OpponentStrip({
           <div className="flex justify-between text-[14px] font-semibold">
             <span className="flex items-center gap-1.5">
               {them.nickname}
-              {them.bot && <span className="bg-surface-raised text-muted rounded-[6px] px-1.5 text-[12px]">Practice bot</span>}
+              {them.bot && <span className="bg-surface-raised text-muted rounded-[6px] px-1.5 text-[12px]">Spuzl</span>}
               {stale && <Icon name="wifi-slash" size={14} className="text-gold" />}
             </span>
             <span className="flex items-center gap-1 text-[var(--danger)]" aria-label={`${them.mistakes} mistakes`}>
@@ -927,7 +927,7 @@ export function MatchEnd({
               <span className="text-muted text-[13px] font-semibold">Round {n}</span>
               <span className="num text-[16px] font-semibold">You {t(mine)}</span>
               <span className="num text-muted truncate text-[14px] font-medium">
-                {them.bot ? "Bot" : them.nickname} {theirs ? t(theirs) : view.isBot && view.bot ? "" : "DNF"}
+                {them.bot ? "Spuzl" : them.nickname} {theirs ? t(theirs) : view.isBot && view.bot ? "" : "DNF"}
               </span>
             </div>
           );

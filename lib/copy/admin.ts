@@ -1138,7 +1138,7 @@ export const adminCopy = {
     boardGames: "Board games",
     boardHead: ["Game", "Against", "How", "Status", "Result", "House rules", "Started"],
     /** who they played (owner, 12 Nov): the bot with its level, or the people by name */
-    againstBot: (level: string | null) => (level ? `Bot · ${level[0].toUpperCase()}${level.slice(1)}` : "Bot"),
+    againstBot: (level: string | null) => (level ? `Spuzl · ${level[0].toUpperCase()}${level.slice(1)}` : "Spuzl"),
     againstUnknown: "Someone",
     noBoardGames: "No board games yet.",
     /** One table of every game, puzzles and board games (owner, 13 Nov 2026). */
@@ -1183,7 +1183,7 @@ export const adminCopy = {
     standardRules: "Standard",
     ludoRules: { backKick: "Back-kick", sideKick: "Side-kick", homeKick: "Home-kick" } as Record<string, string>,
     rated: "rated",
-    boardModes: { async: "Turn by turn", live: "Live", bot: "Against the computer", local: "Same device" } as Record<string, string>,
+    boardModes: { async: "Turn by turn", live: "Live", bot: "Against Spuzl", local: "Same device" } as Record<string, string>,
     boardStatus: { active: "Playing", waiting: "Waiting", finished: "Finished", abandoned: "Left early" } as Record<string, string>,
     outcomes: { won: "Won", lost: "Lost", draw: "Draw" } as Record<string, string>,
     audit: "Everything the team did here",
@@ -1806,7 +1806,7 @@ export const adminCopy = {
         label: "Board games",
         meaning: "Chess, Ludo, Oware and more, with a move.",
         detail: (people: string, bot: string) => `${people} with other people, ${bot} against the computer`,
-        definition: "Board games created on these days with at least one move. Against the computer = the practice bot.",
+        definition: "Board games created on these days with at least one move. Against the computer = Spuzl, the practice bot.",
       },
       friends: {
         label: "New friendships",
@@ -2320,7 +2320,7 @@ export const adminCopy = {
       crews: { name: "Crews", about: "Teams of players." },
       music: { name: "Music", about: "Background music in the app." },
       maintenance: { name: "Maintenance mode", about: "For planned downtime while the app is being updated." },
-      practice_bot: { name: "Practice against the bot", about: "Board games against the computer." },
+      practice_bot: { name: "Practice against Spuzl", about: "Board games against the computer." },
     },
   },
 

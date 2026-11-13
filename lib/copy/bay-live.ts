@@ -26,9 +26,9 @@ export const bayLive = {
   back: "Back",
   /** after a minute with nobody found */
   timeoutTitle: "Nobody's free right now",
-  timeoutBody: "Invite a friend or play the bot.",
+  timeoutBody: "Invite a friend or play Spuzl.",
   inviteFriend: "Invite a friend",
-  playBot: "Play the bot",
+  playBot: "Play Spuzl",
   searchAgain: "Search again",
   /** errors */
   ageRestricted: "Play live opens at 16. Challenge a friend instead.",

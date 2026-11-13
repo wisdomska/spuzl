@@ -74,10 +74,13 @@ export const GAME_SEO: Record<string, { kind: string; where: string }> = {
   beattap: { kind: "rhythm game", where: "tap on every beat of the pattern, and extra taps cost points" },
   gotcha: { kind: "platformer", where: "reach the exit while floors drop, spikes pop, walls spring up and the door runs away" },
   dash: { kind: "runner game", where: "tap to jump and clear the course" },
-  chess: { kind: "chess puzzle", where: "find the checkmate with White to move, or play a full game against the bot or a friend" },
+  chess: {
+    kind: "chess puzzle",
+    where: "find the checkmate with White to move, or play a full game against Spuzl (the computer) or a friend",
+  },
   draughts: {
     kind: "draughts game",
-    where: "find the winning moves, with compulsory captures, or play a full game against the bot or a friend",
+    where: "find the winning moves, with compulsory captures, or play a full game against Spuzl (the computer) or a friend",
   },
   oware: { kind: "board game", where: "sow seeds anticlockwise and capture the 2s and 3s on your rival's side" },
   ludo: { kind: "ludo game", where: "roll a 6 to bring a piece out, then race all four pieces home" },
@@ -198,7 +201,7 @@ export const FEATURES: readonly string[] = [
   `Party rooms: share a code and race up to ${PARTY_MAX} players on puzzles or score games; a big-screen TV view for parties.`,
   "Party games for older players: Draw It with preset words for 16 and over; Draw It and Two Truths party modes for 18 and over.",
   "Challenges and Ghost Races: send a link to the exact puzzle you cleared and race your time.",
-  "Board Bay: chess, draughts, oware, ludo and Four Up against a friend, live or one move a day, or against the bot.",
+  "Board Bay: chess, draughts, oware, ludo and Four Up against a friend, live or one move a day, or against Spuzl, the computer.",
   "Weekly leagues of 30 players, crews, friends and leaderboards.",
   "Sparks earned by playing, spent in the Shop on hats for Spuz. Nothing is sold for money.",
   "Accessible: keyboard play, screen reader labels, colour patterns and reduced motion.",
@@ -310,13 +313,13 @@ export const gamesCopy = {
   modesTitle: "Ways to play",
   modes: {
     free: (g: GameMeta) =>
-      g.id === "ludo" ? "Free play: a full game of Ludo against the bot." : "Free play: play any time, as often as you like.",
+      g.id === "ludo" ? "Free play: a full game of Ludo against Spuzl." : "Free play: play any time, as often as you like.",
     levelsPool: (n: number) => `Levels: ${n} hand-picked levels that unlock one at a time.`,
     levelsEndless: "Levels: an endless ladder that gets harder in waves, with a boss level every fifth level.",
     duel: "Duel: race a friend live on the same puzzle, best of three.",
     party: `Party: open a room, share the code and race up to ${PARTY_MAX} players at once.`,
     bay: "Challenge a friend: play a full game live, or take turns with up to a day per move.",
-    bot: "Play the bot: a full casual game against the computer at Easy, Medium or Hard.",
+    bot: "Play Spuzl: a full casual game against the computer at Easy, Medium or Hard.",
   },
   faqTitle: (game: string) => `${game} questions`,
   faq: {
@@ -346,7 +349,7 @@ export const gamesCopy = {
     }),
     friendsBay: (g: GameMeta) => ({
       q: `Can I play ${g.name} against a friend?`,
-      a: `Yes. Challenge a friend to a full game of ${g.name}, live or one move at a time. You can also play the bot at Easy, Medium or Hard.`,
+      a: `Yes. Challenge a friend to a full game of ${g.name}, live or one move at a time. You can also play Spuzl, the computer, at Easy, Medium or Hard.`,
     }),
     phone: (g: GameMeta) => ({
       q: `Can I play ${g.name} on my phone?`,

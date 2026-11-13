@@ -317,7 +317,7 @@ export async function viewOf(admin: SupabaseClient, l: Loaded, me: string, rewar
     me,
     players,
     rounds,
-    bot: m.is_bot ? { name: "Practice bot", roundsWon: m.bot_rounds_won, finishMs: m.bot_ms[m.round - 1] ?? null, times: m.bot_ms } : null,
+    bot: m.is_bot ? { name: "Spuzl", roundsWon: m.bot_rounds_won, finishMs: m.bot_ms[m.round - 1] ?? null, times: m.bot_ms } : null,
     puzzle,
     rulesFor,
     myState: mine && puzzle ? mine.state : null,

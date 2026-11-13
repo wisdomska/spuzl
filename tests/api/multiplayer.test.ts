@@ -193,7 +193,7 @@ describe("api: duel", () => {
     expect(bot.status).toBe(200);
     const v = (await a.api(`/api/v1/matches/${bot.data.matchId}`)).data;
     expect(v).toMatchObject({ isBot: true, rated: false });
-    expect(v.bot.name).toBe("Practice bot");
+    expect(v.bot.name).toBe("Spuzl");
   });
 
   it("lets 13 to 15 year olds into Quick Match, in their own pool (round 3, owner decision)", async () => {

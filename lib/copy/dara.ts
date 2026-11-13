@@ -4,8 +4,7 @@ export const dara = {
   blurb: "Line up three, take a stone",
   rule: "Step a stone across or down. Exactly three in a row takes one of their stones.",
   /** rule line for a full game vs the bot */
-  botRule:
-    "Drop 12 stones each (no threes yet), then step them. Make exactly three in a row to take a stone. Leave the bot two and you win.",
+  botRule: "Drop 12 stones each (no threes yet), then step them. Make exactly three in a row to take a stone. Leave Spuzl two and you win.",
   cell: (row: number, col: number) => `row ${row}, column ${col}`,
   dir: { up: "up", down: "down", left: "left", right: "right" },
   /** goal line per puzzle kind */
@@ -45,8 +44,8 @@ export const dara = {
   hintSetUp: (cell: string, dir: string) => `Step the stone at ${cell} ${dir}. They cannot block every three after that.`,
   hintFinish: (cell: string, dir: string) => `Now the stone at ${cell} steps ${dir} to make three.`,
   /** live board (vs bot) */
-  dropPhase: (you: number, them: number) => `Drop phase. In hand: you ${you}, bot ${them}.`,
+  dropPhase: (you: number, them: number) => `Drop phase. In hand: you ${you}, Spuzl ${them}.`,
   movePhase: "Move phase. Step a stone; three in a row takes one.",
   dropRule: "No threes while dropping.",
-  pending: "Three! Tap one of the bot's stones to take it.",
+  pending: "Three! Tap one of Spuzl's stones to take it.",
 } as const;

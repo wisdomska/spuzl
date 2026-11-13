@@ -166,7 +166,7 @@ for (const [vpName, vp] of Object.entries({ "375": VIEWPORTS.phone, "1280": VIEW
       await qm.click();
       await page.waitForTimeout(1500);
       await shot("duel-quickmatch-queue");
-      const bot = page.getByRole("button", { name: /Practice bot|Play the bot|bot/i }).first();
+      const bot = page.getByRole("button", { name: /Spuzl|Practice bot|Play the bot|bot/i }).first();
       await expect(bot).toBeVisible({ timeout: 70_000 });
       await shot("duel-quickmatch-bot-offer");
       const cancel = page.getByRole("button", { name: /Cancel|Back|Stop/ }).first();

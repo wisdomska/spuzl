@@ -183,7 +183,7 @@ function DuelLobby({
       const r = await api<{ matchId: string }>("/api/v1/duel/bot", { json: { game } });
       router.replace(`/duel?m=${r.matchId}`);
     } catch {
-      show("Couldn't start the Practice bot.", "bad");
+      show("Couldn't start a game with Spuzl.", "bad");
     }
   };
   const friends = useFriends(!!friendName);
@@ -361,7 +361,7 @@ function DuelMatch({ id }: { id: string }) {
       view?.isBot
         ? {
             id: BOT_ID,
-            nickname: "Practice bot",
+            nickname: "Spuzl",
             color: "#A2A6C2",
             hat: null,
             rating: 0,

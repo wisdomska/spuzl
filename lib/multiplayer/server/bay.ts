@@ -119,7 +119,7 @@ export async function bayView(admin: SupabaseClient, b: BayRow, me: string): Pro
       const c = cards?.find((x) => x.id === id);
       return {
         id,
-        nickname: id === BOT_PLAYER ? "Practice bot" : (c?.nickname ?? "Spuzler"),
+        nickname: id === BOT_PLAYER ? "Spuzl" : (c?.nickname ?? "Spuzler"),
         color: id === BOT_PLAYER ? "#A2A6C2" : (c?.avatar_color ?? "#B8F23A"),
         hat: id === BOT_PLAYER ? null : ((c?.hat as string | null | undefined) ?? null),
         rating: Math.round(Number(ratings?.find((r) => r.player_id === id)?.rating ?? 1000)),
@@ -569,7 +569,7 @@ export async function inbox(admin: SupabaseClient, me: string) {
     // R4-H: hat:owned_hat is the worn hat only if the player owns it (migration 20261210720101).
     .select("id, nickname, avatar_color, hat:owned_hat")
     .in("id", others.length ? others : [BOT_PLAYER]);
-  const name = (id: string) => (id === BOT_PLAYER ? "Practice bot" : (cards?.find((c) => c.id === id)?.nickname ?? "Spuzler"));
+  const name = (id: string) => (id === BOT_PLAYER ? "Spuzl" : (cards?.find((c) => c.id === id)?.nickname ?? "Spuzler"));
   const color = (id: string) => (id === BOT_PLAYER ? "#A2A6C2" : (cards?.find((c) => c.id === id)?.avatar_color ?? "#B8F23A"));
   const hours = (n: number) => Math.max(0, Math.floor(n / 3_600_000));
   return (

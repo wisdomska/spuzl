@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.60.1 (13 November 2026)
+
+### Everyone
+
+- **The computer you play is called Spuzl:** "Spuzl is thinking…", "Spuzl moved. Your move.", "Play vs Spuzl",
+  "Spuzl won this one" and so on, in Board Games, Duels and Ludo. No more "the bot" or "Practice bot".
+
 ## 1.60.0 (13 November 2026)
 
 ### Admin

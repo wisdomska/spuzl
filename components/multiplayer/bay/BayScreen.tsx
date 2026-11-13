@@ -207,7 +207,7 @@ function NewBaySheet({
         </Cta>
       )}
       <button type="button" onClick={() => create(true)} disabled={busy} className="text-muted min-h-12 text-[16px] font-semibold">
-        Play the Practice bot
+        Play Spuzl
       </button>
     </Modal>
   );
@@ -419,7 +419,7 @@ export function BayMatch({ id }: { id: string }) {
   const botWon = v.status === "finished" && v.bot && !v.winnerId && !DRAWS.includes(v.result ?? "draw");
   const finishedLine =
     v.status === "finished" && botWon
-      ? `The Practice bot won${v.result === "resign" ? ". You resigned." : v.result === "flag" || v.result === "timeout" ? " on time." : "."}`
+      ? `Spuzl won${v.result === "resign" ? ". You resigned." : v.result === "flag" || v.result === "timeout" ? " on time." : "."}`
       : v.status === "finished"
         ? v.winnerId === me.id
           ? `You won. ${v.result === "resign" ? "They resigned." : v.result === "flag" ? "Their flag fell." : v.result === "timeout" ? "They ran out of time." : ""}`
@@ -455,7 +455,7 @@ export function BayMatch({ id }: { id: string }) {
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="flex min-w-0 items-center gap-2 text-[15px] font-semibold">
             <span className="truncate">
-              {mine ? "You" : p.nickname} · <span className="num">{p.id.startsWith("00000000") ? "Bot" : formatNumber(p.rating)}</span>
+              {mine ? "You" : p.nickname} · <span className="num">{p.id.startsWith("00000000") ? "Spuzl" : formatNumber(p.rating)}</span>
             </span>
             {!mine && busy && v.bot && v.status === "active" && (
               <span className="text-muted flex flex-none items-center gap-1.5 text-[13px] font-semibold" role="status">
@@ -784,7 +784,7 @@ export function BayMatch({ id }: { id: string }) {
         </h1>
         <span className="text-muted text-[14px] font-medium whitespace-nowrap">
           {v.mode === "live" ? "Live" : "24 h per move"}
-          {v.bot ? " · Practice bot" : ""}
+          {v.bot ? " · vs Spuzl" : ""}
         </span>
         <TopButton icon="chat-circle-text" label={gameMenuCopy.feedbackTitle} onClick={() => setFeedbackOpen(true)} />
         {!v.bot && alertsSupported() && !alertsOn && v.status !== "finished" && (
