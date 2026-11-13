@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.57.0 (13 November 2026)
+
+### Everyone
+
+- **Hard boards fit small phones:** Market Run's hardest board folds its rules into one "Rules" row (tap to read
+  them; each shows kept, broken or open) and lists items two a row; Tripwire's hardest board shows whole and zooms in
+  on the first tap (drag to move, Zoom to step back), like Light Up; Emoji Hits fits before Start. No scrolling on a
+  320 × 568 or 375 × 667 phone.
+- **The first-slip tip no longer moves the tools:** the slip shows on its own, then a one-line "Slips only lower
+  accuracy." takes its place.
+- **Draw It and Two Truths rooms hold up to 8 by default** (everyone takes a turn, so rounds stay short).
+
+### Admin
+
+- **Live connection this month** on the Overview: an estimate of the live messages used against the free plan's 2
+  million, turning gold at 75% with a reminder to upgrade.
+- **New setting "Most players in Draw It and Two Truths"** (Duels and Parties): 2 to 10, 8 by default, never above
+  the Party limit.
+
+### Behind the scenes
+
+- Test runs delete every test player they create, and test names can't trip the nickname filter.
+- An unused animation library (Rive) is gone.
+
 ## 1.56.0 (13 November 2026)
 
 - **Hover states on desktop:** with a mouse or trackpad, everything you can click now answers the pointer, on the
