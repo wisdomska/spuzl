@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.56.0 (13 November 2026)
+
+- **Hover states on desktop:** with a mouse or trackpad, everything you can click now answers the pointer, on the
+  landing page, in the app, inside every game and in the admin. Buttons and cards brighten, dark rows and chips get
+  a faint wash, text links dim, and board cells and pits show a light inner ring that never moves the board and
+  can't be mistaken for a selected, correct or wrong cell. Clickable things show the hand cursor; disabled ones
+  don't react. Quick (0.12 s) and only on devices that can hover, so nothing stays highlighted after a tap on a
+  phone.
+
 ## 1.55.0 (12 November 2026)
 
 - **Your profile in tabs:** under your name and Spuz, Me has Overview (your numbers, rank per world, latest badges),

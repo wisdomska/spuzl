@@ -69,7 +69,7 @@ export function SettingsPage({ canWrite }: { canWrite: boolean }) {
       {/* Games in testing and practice rounds moved to each game's row on the Games page. */}
       <Notice icon="game-controller">
         {C.gamesMoved}{" "}
-        <Link href="/admin/library" className="hover:text-text font-semibold underline">
+        <Link href="/admin/library" className="font-semibold underline">
           {C.gamesMovedLink}
         </Link>
       </Notice>

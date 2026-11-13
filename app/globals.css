@@ -1484,6 +1484,23 @@ details[open] > summary.disclosure::before {
     ):hover {
     filter: brightness(1.12);
   }
+  /* Dark surfaces barely brighten, so cards, rows, chips and plain buttons also get a faint wash of the text colour
+     (lighter on dark, darker on light). Not on lime toy buttons, board cells, or anything painted with a gradient or
+     an image. */
+  :is(.press, .press-card, button, summary, [role="button"], [role="tab"], [class~="cursor-pointer"]):not(
+      :disabled,
+      [aria-disabled="true"],
+      .toy,
+      [role="gridcell"],
+      [data-cell],
+      [class*="bg-gradient"],
+      [class*="bg-[url"],
+      [class*="bg-linear"],
+      [style*="gradient"],
+      [style*="url("]
+    ):hover {
+    background-image: linear-gradient(color-mix(in srgb, var(--text) 7%, transparent), color-mix(in srgb, var(--text) 7%, transparent));
+  }
   /* In the base layer, so an element's own transition (a card's lift, a caret's turn) always wins. */
   @layer base {
     :is(a[href], button, summary, [role="button"], [role="tab"], [class~="cursor-pointer"]):not(

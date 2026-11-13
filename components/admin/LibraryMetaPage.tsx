@@ -405,7 +405,7 @@ function MetaRow({
         {row.scored && !row.retired && <ScoreScale row={row} canWrite={canWrite} busy={busy} onSave={onSave} />}
         {!row.retired && (
           <details className="group/fold border-line border-t" data-copy-editor>
-            <summary className="hover:text-text flex min-h-11 cursor-pointer list-none items-center gap-2 text-[14px] font-semibold [&::-webkit-details-marker]:hidden">
+            <summary className="text-muted hover:text-text flex min-h-11 cursor-pointer list-none items-center gap-2 text-[14px] font-semibold [&::-webkit-details-marker]:hidden">
               <Icon name="caret-right" size={14} className="text-muted transition-transform duration-150 group-open/fold:rotate-90" />
               {C.copy}
               {(row.ruleOverridden || row.blurbOverridden) && <Pill tone="warn">{C.changed}</Pill>}
@@ -672,7 +672,7 @@ function PracticeBoard({ id }: { id: string }) {
   );
   return (
     <details className="group/fold" data-practice-preview onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}>
-      <summary className="hover:text-text flex min-h-11 cursor-pointer list-none items-center gap-2 text-[14px] font-semibold [&::-webkit-details-marker]:hidden">
+      <summary className="text-muted hover:text-text flex min-h-11 cursor-pointer list-none items-center gap-2 text-[14px] font-semibold [&::-webkit-details-marker]:hidden">
         <Icon name="caret-right" size={14} className="text-muted transition-transform duration-150 group-open/fold:rotate-90" />
         {C.practice}
         {q.data && <Pill tone={q.data.off ? "warn" : "ok"}>{q.data.off ? C.practiceOff : C.practiceOn}</Pill>}
