@@ -10,5 +10,7 @@ export default defineConfig({
     testTimeout: 60_000,
     fileParallelism: false,
     setupFiles: ["tests/api/setup.ts"],
+    // Deletes every guest the run created (tests/api/teardown.ts).
+    globalSetup: ["tests/api/global.ts"],
   },
 });

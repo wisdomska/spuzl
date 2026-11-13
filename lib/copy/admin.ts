@@ -1289,6 +1289,15 @@ export const adminCopy = {
       },
     },
 
+    /** live-message estimate (owner, 13 Nov) */
+    live: {
+      title: "Live connection this month",
+      intro: "Duels, Parties and Board Bay. Free plan limit.",
+      label: (used: string, limit: string) => `${used} of ${limit} messages`,
+      hint: "An estimate: player chat and emotes aren't counted.",
+      warn: "Nearly full. Upgrade the Supabase plan before it runs out.",
+      underOne: "under 1%",
+    },
     today: "Today so far",
     todayIntro: "Since midnight GMT.",
     playingNow: "Playing right now",

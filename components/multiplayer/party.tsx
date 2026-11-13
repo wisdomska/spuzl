@@ -28,12 +28,12 @@ import {
   PARTY_MIN,
   PARTY_PICK_MAX,
   PARTY_PICK_MIN,
-  partyMaxFor,
+  roomLimit,
   type EmoteId,
 } from "@/lib/multiplayer/constants";
 import type { MatchPlayerView, MatchView } from "@/lib/multiplayer/types";
 import { useReduce } from "@/lib/client/multiplayer";
-import type { PartyMode } from "@/lib/party-adult/modes";
+import { isTurnMode, type PartyMode } from "@/lib/party-adult/modes";
 import { ModePicker } from "./adult-party";
 import { Avatar, Cta, EASE_IN_OUT, EASE_OUT, EmoteBar, EmoteBubble, HomeCorner, PODIUM, SPRING_PARTY, TopButton, placeLabel } from "./ui";
 
@@ -365,8 +365,10 @@ export function HostRoom({
   const allowed = picked === "race" || (picked === "drawfam" ? family : adult);
   const mode: PartyMode = allowed ? picked : "race";
   const [difficulty, setDifficulty] = useState<Diff>("medium");
-  // The slider ends at the admin's limit (party.maxPlayers) and starts at 8 (or the limit, when lower).
-  const most = partyMaxFor(useGameSettings()["party.maxPlayers"]);
+  // The slider ends at the admin's limit (party.maxPlayers; party.maxPlayersTurns for Draw It and Two Truths) and
+  // starts at 8 (or the limit, when lower).
+  const gs = useGameSettings();
+  const most = roomLimit(gs["party.maxPlayers"], gs["party.maxPlayersTurns"], isTurnMode(mode));
   const [chosenSize, setSize] = useState<number | null>(null);
   const size = Math.min(chosenSize ?? PARTY_DEFAULT, most);
   const [classroom, setClassroom] = useState(false);

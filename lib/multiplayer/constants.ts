@@ -81,6 +81,23 @@ export function partyMaxFor(n: unknown): number {
   return typeof n === "number" && Number.isInteger(n) && n >= PARTY_MIN && n <= PARTY_MAX ? n : PARTY_MAX;
 }
 
+/** Turn games' default limit (Draw It, Two Truths): the setting party.maxPlayersTurns. */
+export const PARTY_TURNS_DEFAULT = 8;
+
+/**
+ * The largest room a host may open: the Party limit, and for a turn game (Draw It, Two Truths) also its own limit
+ * (a bad value plays its default), never above the Party limit.
+ */
+export function roomLimit(partySetting: unknown, turnsSetting: unknown, turnGame: boolean): number {
+  const party = partyMaxFor(partySetting);
+  if (!turnGame) return party;
+  const turns =
+    typeof turnsSetting === "number" && Number.isInteger(turnsSetting) && turnsSetting >= PARTY_MIN && turnsSetting <= PARTY_MAX
+      ? turnsSetting
+      : PARTY_TURNS_DEFAULT;
+  return Math.min(party, turns);
+}
+
 /** How often one player's progress goes out in a room of `racers`: twice a second, once a second in a big room. */
 export function progressMsFor(racers: number): number {
   return racers > PARTY_BUSY_ABOVE ? TIMING.progressMs * 2 : TIMING.progressMs;

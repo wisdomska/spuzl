@@ -1,5 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import fs from "node:fs";
+import path from "node:path";
+import { nicknameProblem } from "@/lib/validation/nickname";
 
 /** Integration helpers: talk to a running dev server (API_BASE) and local Supabase (.env.local). */
 const env = Object.fromEntries(
@@ -33,6 +35,9 @@ export async function guest(nickname?: string, band: Band = "18+") {
   const sb = createClient(SB_URL, ANON, { auth: { persistSession: false } });
   const { data, error } = await sb.auth.signInAnonymously();
   if (error) throw error;
+  // Logged for the teardown (tests/api/teardown.ts), which deletes every guest a run made, even one whose profile
+  // step failed below.
+  logGuest(data.user!.id);
   const token = data.session!.access_token;
   const api = async (path: string, init: RequestInit & { json?: unknown } = {}) => {
     const res = await fetch(BASE + path, {
@@ -51,5 +56,25 @@ export async function guest(nickname?: string, band: Band = "18+") {
   return { sb, token, userId: data.user!.id, api };
 }
 
-// Digits only: random letters now and then spell a word the nickname filter rightly refuses.
-export const uniq = (p: string) => `${p}${String(Math.floor(Math.random() * 1e6)).padStart(6, "0")}`;
+/**
+ * A unique name: the prefix and six digits, redrawn until the nickname filter accepts it (digits read as letters can
+ * spell a filtered word: "ps_h" + "17..." reads as one).
+ */
+export const uniq = (p: string) => {
+  for (let i = 0; i < 50; i++) {
+    const n = `${p}${String(Math.floor(Math.random() * 1e6)).padStart(6, "0")}`;
+    if (!nicknameProblem(n)) return n;
+  }
+  throw new Error(`uniq: no filter-safe name for "${p}"`);
+};
+
+/** Where this run's guests are listed for the teardown (QA_GUEST_LOG, as the e2e harness uses, else .qa/). */
+export const API_GUEST_LOG = process.env.QA_GUEST_LOG ?? ".qa/guests-api.txt";
+function logGuest(id: string) {
+  try {
+    fs.mkdirSync(path.dirname(API_GUEST_LOG), { recursive: true });
+    fs.appendFileSync(API_GUEST_LOG, id + "\n");
+  } catch {
+    /* logging is best effort */
+  }
+}

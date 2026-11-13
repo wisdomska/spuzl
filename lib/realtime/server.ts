@@ -1,4 +1,5 @@
 import "server-only";
+import { noteBroadcast } from "./usage";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { transportName } from "./transport";
 
@@ -9,6 +10,7 @@ import { transportName } from "./transport";
  * a slow poll, so a lost message only delays the screen.
  */
 export async function serverBroadcast(topic: string, event: string, payload: unknown): Promise<void> {
+  noteBroadcast(topic); // the admin Overview's live-message estimate (lib/realtime/usage.ts)
   try {
     switch (transportName()) {
       case "ably":

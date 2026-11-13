@@ -32,6 +32,7 @@ interface OverviewData {
   push?: { devices: number; reached30d: number; players?: number | null; playersReached30d?: number | null };
   /** R4-02: contact-form messages still marked new (null without the role or the table; absent on older servers). */
   newFeedback?: number | null;
+  live?: { messages: number; limit: number } | null;
   /** Admin overhaul: the rest of today's to-do, each null when the role cannot open that page (absent on older servers). */
   attention?: {
     puzzlesToReview: number | null;
@@ -171,6 +172,8 @@ function Body({ d, role, mod }: { d: OverviewData; role?: Role; mod: boolean }) 
           ))}
         </ul>
       </Section>
+
+      {d.live && <LiveUsage used={d.live.messages} limit={d.live.limit} />}
 
       <Section id="ov-today" title={C.today} description={C.todayIntro}>
         <div className="grid grid-cols-1 gap-2.5 min-[480px]:grid-cols-2 xl:grid-cols-4">
@@ -324,6 +327,35 @@ function TodoTile({ t }: { t: Todo }) {
         </span>
       </Link>
     </li>
+  );
+}
+
+/** The month's live-message estimate against the free plan's allowance: a bar that turns gold at 75%. */
+function LiveUsage({ used, limit }: { used: number; limit: number }) {
+  const share = Math.min(1, used / Math.max(1, limit));
+  const high = share >= 0.75;
+  return (
+    <Section id="ov-live" title={C.live.title} description={C.live.intro}>
+      <div className="flex flex-col gap-2">
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="text-[14px] font-semibold">{C.live.label(fmtNum(used), fmtNum(limit))}</span>
+          <span className={`num text-[14px] font-semibold ${high ? "text-gold" : "text-muted"}`}>
+            {used > 0 && share < 0.01 ? C.live.underOne : fmtPct(share)}
+          </span>
+        </div>
+        <div
+          role="meter"
+          aria-label={C.live.title}
+          aria-valuemin={0}
+          aria-valuemax={limit}
+          aria-valuenow={used}
+          className="bg-line h-2.5 overflow-hidden rounded-full"
+        >
+          <div className="h-full rounded-full" style={{ width: `${share * 100}%`, background: high ? "var(--gold)" : "var(--accent)" }} />
+        </div>
+        <p className={`text-[12px] ${high ? "text-gold font-semibold" : "text-muted"}`}>{high ? C.live.warn : C.live.hint}</p>
+      </div>
+    </Section>
   );
 }
 

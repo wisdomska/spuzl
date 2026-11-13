@@ -1,4 +1,5 @@
 import { handle, ok } from "@/lib/api/server";
+import { realtimeUsageThisMonth } from "@/lib/realtime/usage";
 import { requireAdmin } from "@/lib/admin/auth";
 import { todayIso } from "@/lib/admin/dates";
 import { can } from "@/lib/admin/roles";
@@ -34,7 +35,7 @@ export const GET = handle(async () => {
     const r = await q();
     return r.error ? null : (r.count ?? 0);
   };
-  const [players, kpis, pushOn, pushRecent, pushPlayers, newFeedback, puzzlesToReview, contentToReview, joinToday, joinWaiting] =
+  const [players, kpis, pushOn, pushRecent, pushPlayers, newFeedback, puzzlesToReview, contentToReview, joinToday, joinWaiting, live] =
     await Promise.all([
       ctx.db.rpc("svc_admin_player_overview", { p_today: today }),
       ctx.db.rpc("svc_admin_kpis", { p_today: today }),
@@ -51,6 +52,8 @@ export const GET = handle(async () => {
         ctx.db.from("room_join_requests").select("id", head).gte("created_at", `${today}T00:00:00Z`),
       ),
       countIf(can(ctx.role, "joinlog.read"), () => ctx.db.from("room_join_requests").select("id", head).eq("status", "pending")),
+      // Live-message estimate for the month (owner, 13 Nov): null when the table isn't there yet.
+      realtimeUsageThisMonth().catch(() => null),
     ]);
   if (players.error) throw players.error;
   if (kpis.error) throw kpis.error;
@@ -67,6 +70,7 @@ export const GET = handle(async () => {
       playersReached30d: people?.players_reached ?? null,
     },
     newFeedback,
+    live,
     attention: { puzzlesToReview, contentToReview, joinRequestsToday: joinToday, joinRequestsWaiting: joinWaiting },
   });
 });

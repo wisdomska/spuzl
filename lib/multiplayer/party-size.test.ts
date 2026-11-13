@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PARTY_DEFAULT, PARTY_MAX, PARTY_MIN, TIMING, partyMaxFor, progressMsFor } from "./constants";
+import { PARTY_DEFAULT, PARTY_MAX, PARTY_MIN, TIMING, partyMaxFor, progressMsFor, roomLimit } from "./constants";
 import { RoomCreateInput } from "./roomInput";
 import { DEFAULTS, SETTINGS, validateSetting } from "@/lib/game-settings/schema";
 
@@ -29,5 +29,15 @@ describe("party size", () => {
     expect(progressMsFor(6)).toBe(TIMING.progressMs);
     expect(progressMsFor(7)).toBe(TIMING.progressMs * 2);
     expect(progressMsFor(10)).toBe(1000);
+  });
+
+  it("caps turn games (Draw It, Two Truths) at their own limit, never above the Party limit", () => {
+    expect(DEFAULTS["party.maxPlayersTurns"]).toBe(8);
+    expect(roomLimit(10, 8, false)).toBe(10);
+    expect(roomLimit(10, 8, true)).toBe(8);
+    expect(roomLimit(6, 8, true)).toBe(6);
+    expect(roomLimit(10, 4, true)).toBe(4);
+    expect(roomLimit(10, 99, true)).toBe(8);
+    expect(validateSetting("party.maxPlayersTurns", 11)).toMatch(/between 2 and 10/);
   });
 });

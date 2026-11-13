@@ -413,6 +413,17 @@ export const SETTINGS = {
     max: 10,
     noun: "players",
   },
+  "party.maxPlayersTurns": {
+    kind: "int",
+    group: PARTY,
+    label: "Most players in Draw It and Two Truths",
+    help: "Everyone takes a turn, so smaller rooms keep rounds short.",
+    more: "Never more than the Party limit above. Open rooms keep their size.",
+    default: 8,
+    min: 2,
+    max: 10,
+    noun: "players",
+  },
   "party.scoreRaces": {
     kind: "bool",
     group: PARTY,

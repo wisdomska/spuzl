@@ -5,7 +5,7 @@ import type { CodeTarget } from "../types";
 import { ApiError } from "@/lib/api/server";
 import { serverBroadcast } from "@/lib/realtime/server";
 import { createRng } from "@/lib/rng";
-import { DUEL_ROUNDS, PARTY_GAMES, PARTY_MIN, partyMaxFor } from "../constants";
+import { DUEL_ROUNDS, PARTY_GAMES, PARTY_MIN, roomLimit } from "../constants";
 import { botTimes, firstRoundStart, newToGame, partyRoundStart, rankedPool, rulesBreakMs } from "../duel";
 import { isDuelGame, isPartyGame, pickGames } from "../games";
 import { getGameSettings } from "@/lib/game-settings/server";
@@ -329,7 +329,9 @@ export interface RoomInput {
 
 export async function createRoom(admin: SupabaseClient, playerId: string, raw: RoomInput) {
   // The admin's limit (party.maxPlayers): an older screen asking for more gets the largest room allowed.
-  const most = partyMaxFor((await getGameSettings())["party.maxPlayers"]);
+  // Turn games (Draw It, Two Truths) have their own, smaller limit: everyone takes a turn (owner, 13 Nov).
+  const s = await getGameSettings();
+  const most = roomLimit(s["party.maxPlayers"], s["party.maxPlayersTurns"], isTurnMode(raw.mode));
   const input = { ...raw, maxPlayers: Math.min(raw.maxPlayers, most) };
   if (isTurnMode(input.mode)) {
     // Draw It and Two Truths: no puzzle, no classroom; everyone takes a turn.
