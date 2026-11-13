@@ -9,12 +9,21 @@ import { play } from "@/lib/audio";
 import { sfx } from "@/games/_shared/sfx";
 import { spreadOf } from "./fx";
 import { popClass, shakeClass, waveStyle } from "@/games/_shared/logiclab/fx";
+import { reducedMotion } from "@/games/_shared/fly";
+import { centreOn, clampPan, panToShow, type Pan, type ZoomGeo } from "@/games/_shared/zoom";
+import { TRIPWIRE_COPY as T } from "@/lib/copy/tripwire";
 import { field, FLAG, flood, HIDDEN, neighbours, OPEN, TRIPPED, type TripwirePuzzle, type TripwireState } from "./logic";
 
 const GAP = 3;
 const PAD = 6;
-/** Smallest cell on a short phone (the whole cell is the tap target). */
+/** Smallest tile tapped straight away (the whole tile is the tap target). Smaller tiles zoom on the first tap. */
 const MIN_CELL = 32;
+/** How small the whole-board overview may get (the mega board on a 320 x 568 phone) before it would scroll. */
+const MIN_OVERVIEW = 16;
+/** Tile size (px) in the zoomed view: a full touch target. */
+const ZOOM_TILE = 44;
+/** A finger that moves this far (px) on the zoomed board is dragging it, not tapping a tile. */
+const DRAG_PX = 8;
 const LONG_PRESS_MS = 420;
 /** A flood opens outward from the tapped tile: this much later per step away, capped so big floods stay quick. */
 const SPREAD_MS = 22;
@@ -46,8 +55,28 @@ export default function TripwireBoard({ puzzle, initialState, hint, disabled, mo
   // useFitHeight measures the whole shell (on a wide screen, the board column) and steps the cells down.
   const root = useRef<HTMLDivElement>(null);
   const ideal = useCellSize(w, GAP, PAD * 2, 56, h);
-  const cell = useFitHeight(ideal, Math.min(MIN_CELL, ideal), h, root, "shell");
+  const fitted = useFitHeight(ideal, Math.min(MIN_OVERVIEW, ideal), h, root, "shell");
   const locked = disabled || done;
+  // Tap-to-zoom (like Light Up): tiles that fit under MIN_CELL px show the whole board, and the first tap zooms in
+  // there (ZOOM_TILE px tiles inside the same frame, so nothing else on the screen moves) and reveals nothing. A drag
+  // moves the zoomed board, keyboard focus and hints bring their tile into view, and the Zoom tool zooms back out.
+  const zoomable = fitted < MIN_CELL;
+  const [pan, setPan] = useState<Pan | null>(null);
+  const zoomed = zoomable && pan !== null && !done;
+  const cell = zoomed ? ZOOM_TILE : fitted;
+  const zg: ZoomGeo = {
+    n: w,
+    rows: h,
+    cell: ZOOM_TILE,
+    gap: GAP,
+    pad: PAD,
+    view: w * fitted + (w - 1) * GAP + PAD * 2,
+    viewH: h * fitted + (h - 1) * GAP + PAD * 2,
+  };
+  const drag = useRef<{ id: number; x: number; y: number; from: Pan; moved: boolean } | null>(null);
+  const dragged = useRef(false);
+  const [dragging, setDragging] = useState(false);
+  const [reduce] = useState(() => reducedMotion());
   const opened = cells.filter((v, i) => v === OPEN && f[i] >= 0).length;
   const flags = cells.filter((v) => v === FLAG).length;
   const tripped = cells.filter((v) => v === TRIPPED).length;
@@ -179,34 +208,83 @@ export default function TripwireBoard({ puzzle, initialState, hint, disabled, mo
     });
   }, [api]);
 
+  const zoomTo = useCallback(
+    (i: number) => {
+      setPan(centreOn(Math.floor(i / w), i % w, zg));
+      api.announce(T.zoom.zoomed);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [api, w, h, zg.view, zg.viewH],
+  );
+  const zoomOut = useCallback(() => {
+    setPan(null);
+    api.announce(T.zoom.whole);
+  }, [api]);
+
+  // Keyboard: Space flags, Enter reveals (zoomed or not).
+  const keys = useGridKeys(h, w, toggleFlag, reveal);
+
+  // Zoomed: keyboard focus and a new hint's tile come into view (adjusted during render, no extra effect pass).
+  const hintTarget = typeof hint?.target === "number" ? hint.target : -1;
+  const [seen, setSeen] = useState({ focus: keys.focus, hint: hintTarget });
+  if (seen.focus !== keys.focus || seen.hint !== hintTarget) {
+    setSeen({ focus: keys.focus, hint: hintTarget });
+    const t = seen.hint !== hintTarget && hintTarget >= 0 ? hintTarget : keys.focus;
+    if (zoomed && pan) setPan(panToShow(pan, Math.floor(t / w), t % w, zg));
+  }
+  // A board that stops being zoomable (a bigger window) or is cleared shows whole.
+  if (pan !== null && (!zoomable || done)) setPan(null);
+
   useEffect(() => {
     api.setControls([
       { id: "undo", label: "Undo", icon: "arrow-counter-clockwise", onPress: undo, disabled: !hist.length || done },
+      ...(zoomable && !done
+        ? [
+            {
+              id: "zoom",
+              label: T.zoomLabel,
+              icon: zoomed ? "magnifying-glass-minus" : "magnifying-glass-plus",
+              onPress: () => (zoomed ? zoomOut() : zoomTo(keys.focus)),
+              active: zoomed,
+            },
+          ]
+        : []),
       { id: "flag", label: "Flag", icon: "flag", onPress: () => setFlagTool((t) => !t), active: flagTool },
       { id: "hint", label: "Hint", icon: "lightbulb", onPress: () => {}, tone: "gold" },
     ]);
-  }, [api, undo, hist.length, done, flagTool]);
+  }, [api, undo, hist.length, done, flagTool, zoomable, zoomed, zoomOut, zoomTo, keys.focus]);
 
+  // The opening line; a board that zooms says so until the first tile is open.
   useEffect(() => {
+    if (cellsRef.current.includes(OPEN)) return;
     api.feedback(
-      mode === "tutorial" ? "Tap anywhere to start. The first tap is always safe." : "Tap to reveal, hold to flag. First tap is safe.",
+      mode === "tutorial"
+        ? "Tap anywhere to start. The first tap is always safe."
+        : zoomable
+          ? T.zoom.start
+          : "Tap to reveal, hold to flag. First tap is safe.",
       "info",
       "hand-pointing",
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [zoomable]);
 
-  // Long-press flags; a short tap acts with the current tool.
-  const onPointerDown = (i: number) => () => {
+  // Long-press flags; a short tap acts with the current tool. On the whole board of a zoomable game, a tap zooms in.
+  const onPointerDown = (i: number) => (e: React.PointerEvent) => {
     if (locked) return;
+    const zoomFirst = zoomable && !zoomed;
+    // The zoom changes what lies under the finger: no mouse events after it (they would focus another tile).
+    if (zoomFirst) e.preventDefault();
     press.current = {
       i,
       fired: false,
-      timer: setTimeout(() => {
-        if (press.current?.i !== i) return;
-        press.current.fired = true;
-        toggleFlag(i);
-      }, LONG_PRESS_MS),
+      timer: zoomFirst
+        ? null
+        : setTimeout(() => {
+            if (press.current?.i !== i) return;
+            press.current.fired = true;
+            toggleFlag(i);
+          }, LONG_PRESS_MS),
     };
   };
   const endPress = (i: number, tap: boolean) => {
@@ -214,14 +292,41 @@ export default function TripwireBoard({ puzzle, initialState, hint, disabled, mo
     if (!p) return;
     if (p.timer) clearTimeout(p.timer);
     press.current = null;
-    if (tap && !p.fired && p.i === i) act(i);
+    if (!tap || p.fired || p.i !== i || dragged.current) return;
+    keys.setFocus(i);
+    if (zoomable && !zoomed) zoomTo(i);
+    else act(i);
   };
 
-  // Keyboard: Space flags, Enter reveals.
-  const keys = useGridKeys(h, w, toggleFlag, reveal);
+  // Dragging the zoomed board (the frame); a drag is never a tap or a long press.
+  const onFrameDown = (e: React.PointerEvent) => {
+    dragged.current = false;
+    if (!zoomed || !pan) return;
+    drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, from: pan, moved: false };
+  };
+  const onFrameMove = (e: React.PointerEvent) => {
+    const d = drag.current;
+    if (!d || d.id !== e.pointerId) return;
+    const dx = e.clientX - d.x,
+      dy = e.clientY - d.y;
+    if (!d.moved && Math.hypot(dx, dy) < DRAG_PX) return;
+    if (!d.moved) {
+      d.moved = true;
+      dragged.current = true;
+      if (press.current?.timer) clearTimeout(press.current.timer);
+      press.current = null;
+      setDragging(true);
+      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    }
+    setPan(clampPan({ x: d.from.x - dx, y: d.from.y - dy }, zg));
+  };
+  const endDrag = (e: React.PointerEvent) => {
+    if (drag.current?.id !== e.pointerId) return;
+    drag.current = null;
+    setDragging(false);
+  };
   const lastR = Math.floor(last / w),
     lastC = last % w;
-  const hintTarget = typeof hint?.target === "number" ? hint.target : -1;
 
   return (
     <div ref={root} className={`short:gap-2 flex flex-col items-center gap-3 ${done ? "board-pulse" : ""}`}>
@@ -239,21 +344,45 @@ export default function TripwireBoard({ puzzle, initialState, hint, disabled, mo
           {opened} of {safeTotal}
         </span>
       </div>
-      <div className="overflow-x-auto" style={{ maxWidth: "100%" }}>
+      {/* A zoomable board keeps its whole-board frame; zoomed, the bigger grid moves inside it (clipped, not scrolled,
+          so focusing a tile never scrolls it). */}
+      <div
+        data-zoom={zoomable ? (zoomed ? "in" : "out") : undefined}
+        className={zoomable ? "relative rounded-[16px]" : "overflow-x-auto"}
+        style={
+          zoomable
+            ? {
+                width: zg.view,
+                height: zg.viewH,
+                overflow: "clip",
+                background: "var(--board-bg)",
+                boxShadow: "0 0 0 2px var(--line)",
+                touchAction: zoomed ? "none" : undefined,
+                cursor: zoomed ? "grab" : undefined,
+              }
+            : { maxWidth: "100%" }
+        }
+        onPointerDown={onFrameDown}
+        onPointerMove={onFrameMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+      >
         <div
           role="grid"
           aria-label={`Tripwire board, ${w} by ${h}, ${puzzle.mines.length} mines`}
           aria-rowcount={h}
           aria-colcount={w}
           onKeyDown={keys.onKeyDown}
-          className="grid rounded-[16px] select-none"
+          className="grid w-max rounded-[16px] select-none"
           style={{
             gridTemplateColumns: `repeat(${w}, ${cell}px)`,
             gap: GAP,
             padding: PAD,
-            background: "var(--board-bg)",
-            boxShadow: "0 0 0 2px var(--line)",
+            background: zoomable ? undefined : "var(--board-bg)",
+            boxShadow: zoomable ? undefined : "0 0 0 2px var(--line)",
             perspective: 600,
+            transform: zoomed && pan ? `translate3d(${-pan.x}px, ${-pan.y}px, 0)` : undefined,
+            transition: reduce || dragging ? undefined : "transform 180ms var(--ease-out)",
           }}
         >
           {Array.from({ length: h }, (_, r) => (
@@ -285,12 +414,14 @@ export default function TripwireBoard({ puzzle, initialState, hint, disabled, mo
                       e.preventDefault();
                       if (!press.current?.fired) toggleFlag(i);
                     }}
-                    className={`num relative flex cursor-pointer items-center justify-center rounded-[10px] font-semibold outline-none focus-visible:z-10 ${anim} ${glow ? "hint-ring" : ""}`}
+                    className={`num relative flex cursor-pointer items-center justify-center font-semibold outline-none focus-visible:z-10 ${anim} ${glow ? "hint-ring" : ""}`}
                     style={{
                       width: cell,
                       height: cell,
-                      // the count grows with the cell (big on a wide screen), never under 16 px
-                      fontSize: Math.max(16, Math.round(cell * 0.46)),
+                      borderRadius: Math.min(10, Math.round(cell / 4)),
+                      // the count grows with the cell (big on a wide screen), never under 16 px (a little less on the
+                      // small whole-board view of a zoomable board, which is for looking, not tapping)
+                      fontSize: Math.max(Math.min(16, cell - 6), Math.round(cell * 0.46)),
                       background: trip
                         ? "var(--danger-tint)"
                         : isOpen
@@ -310,7 +441,7 @@ export default function TripwireBoard({ puzzle, initialState, hint, disabled, mo
                     {done && (
                       <span aria-hidden className="absolute inset-0" style={waveStyle(dist, n < 0 ? "var(--gold)" : "var(--world)", 10)} />
                     )}
-                    {trip && <span aria-hidden className="hatch absolute inset-0 rounded-[10px]" />}
+                    {trip && <span aria-hidden className="hatch absolute inset-0 rounded-[inherit]" />}
                     {trip && <Icon name="bomb" size={Math.round(cell * 0.5)} className="relative" />}
                     {v === FLAG && (
                       <Icon
