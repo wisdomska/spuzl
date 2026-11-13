@@ -33,6 +33,9 @@ export const market = {
   board: "Market Run basket",
   list: "Shopping list",
   rules: "The list says",
+  /** short screens: the rules fold behind this toggle (with a mark per rule; screen readers hear how many hold) */
+  rulesToggle: "Rules",
+  rulesKept: (kept: number, n: number) => `${kept} of ${n} kept`,
   cash: (n: number) => `Cash ${cedis(n)}`,
   bringBack: (n: number) => `Bring back ${cedis(n)} change`,
   basket: (n: number) => `Basket ${cedis(n)}`,
