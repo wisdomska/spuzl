@@ -65,6 +65,8 @@ export default function ChessBoard({ puzzle, initialState, hint, disabled, api }
   const [wrongN, setWrongN] = useState(0);
   const [checkN, setCheckN] = useState(0);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  /** A move is on the board but not kept yet (being checked, or a wrong one about to slide back). */
+  const pending = useRef(false);
   const streak = useRef(0);
   const sprites = useSprites();
   // The move line under the board: the squares step down until it fits under the board (laptops, short phones).
@@ -99,6 +101,7 @@ export default function ChessBoard({ puzzle, initialState, hint, disabled, api }
       setSel(null);
       setPromo(null);
       setBusy(true);
+      pending.current = true;
       api.announce(describe(before, m));
       const next = [...moves, uci(m)];
       // Let the move land (180 ms) before the mate search runs.
@@ -110,6 +113,7 @@ export default function ChessBoard({ puzzle, initialState, hint, disabled, api }
           api.ruleBreak(COPY.notMate);
           api.onMove({ moves }, { correctStreak: 0, mistake: true });
           later(() => {
+            pending.current = false;
             setShown(r.pos);
             setLast(null);
             setBusy(false);
@@ -117,6 +121,7 @@ export default function ChessBoard({ puzzle, initialState, hint, disabled, api }
           return;
         }
         streak.current++;
+        pending.current = false;
         setMoves(next);
         const state = { moves: next };
         if (res.mated) {
@@ -190,21 +195,29 @@ export default function ChessBoard({ puzzle, initialState, hint, disabled, api }
     [api, busy, commit, disabled, done, legal, sel, shown],
   );
 
+  // Undo takes back your own last move, at once (owner, 13 Nov 2026): a move still being checked or a wrong one
+  // goes straight away, and a kept move goes with Black's answer to it. Nothing waits for the animations.
   const undo = useCallback(() => {
-    if (!moves.length || busy || done) return;
-    const next = moves.slice(0, -1);
+    if (done || (!moves.length && !pending.current)) return;
+    timers.current.forEach(clearTimeout);
+    timers.current = [];
+    const takeBack = !pending.current;
+    pending.current = false;
+    const next = takeBack ? moves.slice(0, -1) : moves;
     const res = replay(puzzle, next);
     setMoves(next);
     setShown(res.pos);
     setLast(null);
     setSel(null);
-    api.onMove({ moves: next });
+    setPromo(null);
+    setBusy(false);
+    if (takeBack) api.onMove({ moves: next });
     api.feedback(COPY.pick, "info", "hand-pointing");
-  }, [api, busy, done, moves, puzzle]);
+  }, [api, done, moves, puzzle]);
 
   useEffect(() => {
     api.setControls([
-      { id: "undo", label: "Undo", icon: "arrow-counter-clockwise", onPress: undo, disabled: !moves.length || done || busy },
+      { id: "undo", label: "Undo", icon: "arrow-counter-clockwise", onPress: undo, disabled: done || (!moves.length && !busy) },
       { id: "flip", label: "Flip", icon: "arrows-clockwise", onPress: () => setFlipped((f) => !f), active: flipped },
       { id: "hint", label: "Hint", icon: "lightbulb", onPress: () => {}, tone: "gold" },
     ]);

@@ -46,6 +46,8 @@ export default function FourUpBoard({ puzzle, initialState, hint, disabled, api 
   const [preview, setPreview] = useState(-1);
   const [focusCol, setFocusCol] = useState(0);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  /** A drop is on the board but not kept yet (being checked, or a wrong one about to come back out). */
+  const pending = useRef(false);
   const streak = useRef(0);
   const colsEl = useRef<(HTMLButtonElement | null)[]>([]);
   const cell = columnWidth(useViewportWidth(), useViewportHeight()) - GAP * 2;
@@ -68,6 +70,7 @@ export default function FourUpBoard({ puzzle, initialState, hint, disabled, api 
       setShown(g);
       setFresh(at);
       setBusy(true);
+      pending.current = true;
       api.announce(t.dropped(c + 1, ROWS - row));
       const next = [...cols, c];
       later(() => {
@@ -78,6 +81,7 @@ export default function FourUpBoard({ puzzle, initialState, hint, disabled, api 
           api.ruleBreak(COPY.wrong);
           api.onMove({ cols }, { mistake: true });
           later(() => {
+            pending.current = false;
             setShown(r.grid);
             setFresh(-1);
             setBad({ cell: -1, n: 0 });
@@ -86,6 +90,7 @@ export default function FourUpBoard({ puzzle, initialState, hint, disabled, api 
           return;
         }
         streak.current++;
+        pending.current = false;
         setCols(next);
         if (res.won) {
           setBusy(false);
@@ -113,18 +118,26 @@ export default function FourUpBoard({ puzzle, initialState, hint, disabled, api 
     [api, busy, cols, disabled, done, puzzle, r.grid, shown],
   );
 
+  // Undo takes back your own last drop, at once (owner, 13 Nov 2026): a drop still being checked or a wrong one goes
+  // straight away, and a kept drop goes with the answer to it. Nothing waits for the animations.
   const undo = useCallback(() => {
-    if (busy || done || !cols.length) return;
-    const next = cols.slice(0, -1);
+    if (done || (!cols.length && !pending.current)) return;
+    timers.current.forEach(clearTimeout);
+    timers.current = [];
+    const takeBack = !pending.current;
+    pending.current = false;
+    const next = takeBack ? cols.slice(0, -1) : cols;
     setCols(next);
     setShown(replay(puzzle, next).grid);
     setFresh(-1);
-    api.onMove({ cols: next });
-  }, [api, busy, cols, done, puzzle]);
+    setBad({ cell: -1, n: 0 });
+    setBusy(false);
+    if (takeBack) api.onMove({ cols: next });
+  }, [api, cols, done, puzzle]);
 
   useEffect(() => {
     api.setControls([
-      { id: "undo", label: "Undo", icon: "arrow-counter-clockwise", onPress: undo, disabled: busy || done || !cols.length },
+      { id: "undo", label: "Undo", icon: "arrow-counter-clockwise", onPress: undo, disabled: done || (!cols.length && !busy) },
       { id: "hint", label: "Hint", icon: "lightbulb", onPress: () => {}, tone: "gold" },
     ]);
   }, [api, undo, busy, done, cols.length]);

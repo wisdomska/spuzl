@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.59.2 (13 November 2026)
+
+### Everyone
+
+- **Undo takes back your own last move, at once.** Against the bot, chess showed the undone move again; now your
+  move and the bot's answer both go back, even while the bot is still thinking. In the chess and Four Up puzzles,
+  Undo no longer waits for the move to settle: a move still being checked or a wrong one comes straight back off.
+
 ## 1.59.1 (13 November 2026)
 
 ### Everyone

@@ -220,6 +220,15 @@ function ChessLive({ state, seat, legal, disabled, lastMove, onMove, announce, c
   // A move on its way to the server shows on the board at once (for this position only): the piece stays where it
   // was put. If the server refuses it, the parent says why and the piece goes back.
   const [sent, setSent] = useState<{ fen: string; move: string } | null>(null);
+  // Any change of position settles it: the move landed (or Undo went back). Without this, Undo back to the position
+  // a move was sent from showed that move again (owner, 13 Nov 2026).
+  const [at, setAt] = useState(s.fen);
+  if (at !== s.fen) {
+    setAt(s.fen);
+    setSent(null);
+    setPromo(null);
+    setSel(null);
+  }
   const sending = sent?.fen === s.fen ? sent.move : null;
   const pos = useMemo(() => {
     const p = parseFen(s.fen);
