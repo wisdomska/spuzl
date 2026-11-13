@@ -1101,6 +1101,7 @@ export const adminCopy = {
     noInventory: "Nothing owned yet.",
     equipped: "wearing",
     sparksLedger: "Sparks history",
+    sparksHead: ["Sparks", "What for", "When"],
     sparksHint: "Last 25 changes.",
     noLedger: "No Sparks earned or spent yet.",
     sparkSources: {

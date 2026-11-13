@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.60.2 (13 November 2026)
+
+### Admin
+
+- **Every remaining admin table sorts:** press a column heading to sort, again to flip.
+  - Player page: ratings, rank moves, reports about them and by them, league history, and the Sparks history (now a
+    table: Sparks, what for, when).
+  - Daily Five: by day, how picked, can change, or games played.
+  - Daily calendar: by game, or by any day (puzzles needing attention first).
+  - Metrics: each card's breakdown and its day-by-day table.
+
 ## 1.60.1 (13 November 2026)
 
 ### Everyone

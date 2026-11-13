@@ -1,5 +1,8 @@
 "use client";
 
+import { SortHead } from "./SortHeader";
+import { sortBy, useLocalSort } from "./useLocalSort";
+import type { SortSpec } from "@/lib/admin/sorting";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
@@ -33,6 +36,10 @@ const CELL = {
   review: { icon: "hourglass", cls: "bg-[var(--warn-tint)] text-gold", ...C.cell.review },
   missing: { icon: "warning", cls: "bg-[var(--danger-tint)] text-danger", ...C.cell.missing },
 } as const;
+/** A day column sorts the games that need attention first. */
+const STATE_RANK: Record<string, number> = { missing: 0, review: 1, verified: 2 };
+const CAL_SORT: SortSpec<string> = { keys: [], default: "game", dir: "asc" };
+
 const GUIDE: StateWords[] = [
   { ...C.cell.verified, tone: "ok", icon: "check-circle" },
   { ...C.cell.review, tone: "warn", icon: "hourglass" },
@@ -45,6 +52,8 @@ const GUIDE: StateWords[] = [
 export function CalendarView({ canWrite }: { canWrite: boolean }) {
   const [week, setWeek] = useState(() => todayIso());
   const [world, setWorld] = useState("");
+  // Sort by game name, or by a day (puzzles needing attention first) (owner, 13 Nov 2026).
+  const sort = useLocalSort(CAL_SORT);
   const q = useAdminQuery<Calendar>(["calendar", week, world], `/api/admin/calendar?week=${week}${world ? `&world=${world}` : ""}`);
   const fill = useAdminAction<{ days: number }, { made: number; pending: number }>("POST", "/api/admin/dailies/fill");
   const lock = useAdminAction<{ through: string }, { locked: number }>("POST", "/api/admin/dailies/lock");
@@ -167,25 +176,21 @@ export function CalendarView({ canWrite }: { canWrite: boolean }) {
             <colgroup>
               <col className="w-[150px]" />
             </colgroup>
-            <thead>
-              <tr className="bg-surface-raised">
-                <th scope="col" className="num text-muted p-2.5 text-left text-[12px] font-semibold">
-                  {adminCopy.common.game}
-                </th>
-                {q.data.days.map((d) => (
-                  <th
-                    key={d}
-                    scope="col"
-                    className={`num p-2.5 text-left text-[12px] font-semibold ${d === q.data.today ? "text-accent" : "text-muted"}`}
-                  >
-                    {shortDay(d)}
-                    {d === q.data.today && <span className="sr-only"> {C.today}</span>}
-                  </th>
-                ))}
-              </tr>
-            </thead>
+            <SortHead
+              cols={[
+                { label: adminCopy.common.game, sort: "game" },
+                ...q.data.days.map((d) => ({
+                  label: `${shortDay(d)}${d === q.data.today ? ` (${C.today})` : ""}`,
+                  sort: d,
+                  className: d === q.data.today ? "text-accent" : "",
+                })),
+              ]}
+              sort={sort}
+            />
             <tbody>
-              {q.data.rows.map((r) => (
+              {sortBy(q.data.rows, sort, (r, k) =>
+                k === "game" ? r.name : STATE_RANK[r.cells.find((c) => c.date === k)?.state ?? "verified"],
+              ).map((r) => (
                 <tr key={r.game}>
                   <th scope="row" className="border-line border-t px-2.5 py-2 text-left">
                     <span className="flex items-center gap-2">

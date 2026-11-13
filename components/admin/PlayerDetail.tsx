@@ -18,6 +18,9 @@ import { DaysField, STATUS_TONE } from "./PlayersPage";
 import { Card, Fact, Figure, TechDetails, When } from "./people-ui";
 import { Btn, Field, Notice, Pill, RowsSkeleton, Tabs, inputCls, type PillTone } from "./ui";
 import { Paged } from "./Pagination";
+import { SortHead } from "./SortHeader";
+import { sortBy, useLocalSort } from "./useLocalSort";
+import { sortSpec, type SortSpec } from "@/lib/admin/sorting";
 import { PlayerGamesTable } from "./PlayerGamesTable";
 import { allGames } from "@/lib/admin/player-games";
 import { Select } from "@/components/ui/Select";
@@ -37,24 +40,70 @@ const DANGER = new Set<PlayerAction>(["ban", "revoke_ranking", "signout", "delet
 const REPORT_TONE: Record<string, PillTone> = { open: "danger", actioned: "ok", dismissed: "neutral" };
 const ACTIVITY_TONE: Record<string, PillTone> = { now: "ok", today: "ok", week: "ok", month: "neutral", quiet: "warn", never: "neutral" };
 
-function MiniTable({ head, children, min = 480 }: { head: readonly string[]; children: ReactNode; min?: number }) {
-  return (
+/**
+ * A small table any column of which sorts (owner, 13 Nov 2026): press a heading to sort by it, again to flip. Rows
+ * are drawn by the caller; `paged` adds the pager under it.
+ */
+function SortMini<T, K extends string>({
+  items,
+  head,
+  keys,
+  spec,
+  value,
+  min = 480,
+  paged,
+  children,
+}: {
+  items: readonly T[];
+  head: readonly string[];
+  /** the sort key of each column (null: not sortable) */
+  keys: readonly (K | null)[];
+  spec: SortSpec<K>;
+  value: (row: T, key: K) => string | number | null | undefined;
+  min?: number;
+  paged?: string;
+  children: (rows: readonly T[]) => ReactNode;
+}) {
+  const sort = useLocalSort(spec);
+  const rows = sortBy(items, sort, value);
+  const table = (page: readonly T[]) => (
     <div className="relative overflow-x-auto">
       <table className="w-full border-collapse text-[13px]" style={{ minWidth: min }}>
-        <thead>
-          <tr className="text-muted text-left text-[12px]">
-            {head.map((h) => (
-              <th key={h} scope="col" className="px-2 py-1.5 font-semibold">
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>{children}</tbody>
+        <SortHead cols={head.map((label, i) => ({ label, sort: keys[i] ?? undefined }))} sort={sort} />
+        <tbody>{children(page)}</tbody>
       </table>
     </div>
   );
+  return paged ? (
+    <Paged items={rows} label={paged}>
+      {table}
+    </Paged>
+  ) : (
+    table(rows)
+  );
 }
+
+const RATING_SORT = sortSpec({
+  keys: ["skill", "rating", "games", "updated"],
+  default: "rating",
+  dir: "desc",
+  firstDir: { rating: "desc", games: "desc", updated: "desc" },
+});
+const MOVE_SORT = sortSpec({
+  keys: ["round", "skill", "change", "when"],
+  default: "when",
+  dir: "desc",
+  firstDir: { change: "desc", when: "desc" },
+});
+const REPORT_SORT = sortSpec({ keys: ["reason", "about", "outcome", "when"], default: "when", dir: "desc", firstDir: { when: "desc" } });
+const LEAGUE_SORT = sortSpec({
+  keys: ["week", "league", "points", "place", "result"],
+  default: "week",
+  dir: "desc",
+  firstDir: { week: "desc", league: "desc", points: "desc" },
+});
+const SPARK_SORT = sortSpec({ keys: ["amount", "what", "when"], default: "when", dir: "desc", firstDir: { amount: "desc", when: "desc" } });
+
 const td = "border-line border-t px-2 py-2 align-top";
 const none = <p className="text-muted text-[13px]">{C.noReports}</p>;
 
@@ -350,18 +399,27 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
                       {!d.ratings?.length ? (
                         <p className="text-muted text-[13px]">{C.noRatings}</p>
                       ) : (
-                        <MiniTable head={C.ratingsHead} min={300}>
-                          {d.ratings.map((r) => (
-                            <tr key={r.track}>
-                              <td className={`${td} font-semibold`}>{cap(r.track)}</td>
-                              <td className={`${td} num`}>{Math.round(r.rating)}</td>
-                              <td className={`${td} num`}>{fmt(r.games)}</td>
-                              <td className={`${td} text-muted whitespace-nowrap`}>
-                                <When iso={r.updated_at} />
-                              </td>
-                            </tr>
-                          ))}
-                        </MiniTable>
+                        <SortMini
+                          items={d.ratings}
+                          head={C.ratingsHead}
+                          keys={["skill", "rating", "games", "updated"]}
+                          spec={RATING_SORT}
+                          value={(r, k) => (k === "skill" ? r.track : k === "rating" ? r.rating : k === "games" ? r.games : r.updated_at)}
+                          min={300}
+                        >
+                          {(rows) =>
+                            rows.map((r) => (
+                              <tr key={r.track}>
+                                <td className={`${td} font-semibold`}>{cap(r.track)}</td>
+                                <td className={`${td} num`}>{Math.round(r.rating)}</td>
+                                <td className={`${td} num`}>{fmt(r.games)}</td>
+                                <td className={`${td} text-muted whitespace-nowrap`}>
+                                  <When iso={r.updated_at} />
+                                </td>
+                              </tr>
+                            ))
+                          }
+                        </SortMini>
                       )}
                     </div>
                     <div className="flex min-w-0 flex-col gap-1.5">
@@ -369,24 +427,30 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
                       {!d.rankMoves?.length ? (
                         <p className="text-muted text-[13px]">{C.noRankMoves}</p>
                       ) : (
-                        <Paged items={d.rankMoves} label={C.pageLabel(C.rankMoves)}>
-                          {(rows) => (
-                            <MiniTable head={C.rankMovesHead} min={340}>
-                              {rows.map((r) => (
-                                <tr key={`${r.ref}:${r.created_at}`}>
-                                  <td className={`${td} num text-muted`}>{r.ref}</td>
-                                  <td className={td}>{r.track ? cap(r.track) : C.noEmail}</td>
-                                  <td className={`${td} num font-semibold ${(r.delta ?? 0) < 0 ? "text-danger" : "text-accent"}`}>
-                                    {r.delta === null ? C.noEmail : `${r.delta > 0 ? "+" : ""}${r.delta.toFixed(1)}`}
-                                  </td>
-                                  <td className={`${td} text-muted whitespace-nowrap`}>
-                                    <When iso={r.created_at} />
-                                  </td>
-                                </tr>
-                              ))}
-                            </MiniTable>
-                          )}
-                        </Paged>
+                        <SortMini
+                          items={d.rankMoves}
+                          head={C.rankMovesHead}
+                          keys={["round", "skill", "change", "when"]}
+                          spec={MOVE_SORT}
+                          value={(r, k) => (k === "round" ? r.ref : k === "skill" ? r.track : k === "change" ? r.delta : r.created_at)}
+                          min={340}
+                          paged={C.pageLabel(C.rankMoves)}
+                        >
+                          {(rows) =>
+                            rows.map((r) => (
+                              <tr key={`${r.ref}:${r.created_at}`}>
+                                <td className={`${td} num text-muted`}>{r.ref}</td>
+                                <td className={td}>{r.track ? cap(r.track) : C.noEmail}</td>
+                                <td className={`${td} num font-semibold ${(r.delta ?? 0) < 0 ? "text-danger" : "text-accent"}`}>
+                                  {r.delta === null ? C.noEmail : `${r.delta > 0 ? "+" : ""}${r.delta.toFixed(1)}`}
+                                </td>
+                                <td className={`${td} text-muted whitespace-nowrap`}>
+                                  <When iso={r.created_at} />
+                                </td>
+                              </tr>
+                            ))
+                          }
+                        </SortMini>
                       )}
                     </div>
                   </div>
@@ -406,24 +470,38 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
                       {!list.length ? (
                         none
                       ) : (
-                        <Paged items={list} label={C.pageLabel(title)}>
-                          {(rows) => (
-                            <MiniTable head={C.reportsHead} min={340}>
-                              {rows.map((r) => (
-                                <tr key={r.id}>
-                                  <td className={`${td} font-semibold`}>{C.reportReasons[r.reason] ?? cap(r.reason)}</td>
-                                  <td className={`${td} text-muted`}>{C.reportTargets[r.target_type] ?? r.target_type}</td>
-                                  <td className={td}>
-                                    <Pill tone={REPORT_TONE[r.status] ?? "neutral"}>{C.reportStatus[r.status] ?? r.status}</Pill>
-                                  </td>
-                                  <td className={`${td} text-muted whitespace-nowrap`}>
-                                    <When iso={r.created_at} />
-                                  </td>
-                                </tr>
-                              ))}
-                            </MiniTable>
-                          )}
-                        </Paged>
+                        <SortMini
+                          items={list}
+                          head={C.reportsHead}
+                          keys={["reason", "about", "outcome", "when"]}
+                          spec={REPORT_SORT}
+                          value={(r, k) =>
+                            k === "reason"
+                              ? (C.reportReasons[r.reason] ?? r.reason)
+                              : k === "about"
+                                ? (C.reportTargets[r.target_type] ?? r.target_type)
+                                : k === "outcome"
+                                  ? (C.reportStatus[r.status] ?? r.status)
+                                  : r.created_at
+                          }
+                          min={340}
+                          paged={C.pageLabel(title)}
+                        >
+                          {(rows) =>
+                            rows.map((r) => (
+                              <tr key={r.id}>
+                                <td className={`${td} font-semibold`}>{C.reportReasons[r.reason] ?? cap(r.reason)}</td>
+                                <td className={`${td} text-muted`}>{C.reportTargets[r.target_type] ?? r.target_type}</td>
+                                <td className={td}>
+                                  <Pill tone={REPORT_TONE[r.status] ?? "neutral"}>{C.reportStatus[r.status] ?? r.status}</Pill>
+                                </td>
+                                <td className={`${td} text-muted whitespace-nowrap`}>
+                                  <When iso={r.created_at} />
+                                </td>
+                              </tr>
+                            ))
+                          }
+                        </SortMini>
                       )}
                     </Card>
                   ))}
@@ -446,45 +524,71 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
                     {!d.sparks.length ? (
                       <p className="text-muted text-[13px]">{C.noLedger}</p>
                     ) : (
-                      <Paged items={d.sparks} label={C.pageLabel(C.sparksLedger)}>
-                        {(rows) => (
-                          <ul className="flex flex-col text-[13px]">
-                            {rows.map((s) => (
-                              <li key={s.id} className="border-line flex items-center gap-2 border-t py-1.5 first:border-t-0">
-                                <span
-                                  className={`num w-16 shrink-0 text-right font-semibold ${s.amount < 0 ? "text-danger" : "text-accent"}`}
-                                >
-                                  {s.amount > 0 ? "+" : ""}
-                                  {fmt(s.amount)}
-                                </span>
-                                <span className="min-w-0 flex-1 truncate">{C.sparkSources[s.source] ?? C.sparkFallback(s.source)}</span>
-                                <When iso={s.created_at} className="text-muted shrink-0" />
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </Paged>
+                      <SortMini
+                        items={d.sparks}
+                        head={C.sparksHead}
+                        keys={["amount", "what", "when"]}
+                        spec={SPARK_SORT}
+                        value={(s, k) =>
+                          k === "amount" ? s.amount : k === "what" ? (C.sparkSources[s.source] ?? C.sparkFallback(s.source)) : s.created_at
+                        }
+                        min={300}
+                        paged={C.pageLabel(C.sparksLedger)}
+                      >
+                        {(rows) =>
+                          rows.map((s) => (
+                            <tr key={s.id}>
+                              <td className={`${td} num font-semibold ${s.amount < 0 ? "text-danger" : "text-accent"}`}>
+                                {s.amount > 0 ? "+" : ""}
+                                {fmt(s.amount)}
+                              </td>
+                              <td className={td}>{C.sparkSources[s.source] ?? C.sparkFallback(s.source)}</td>
+                              <td className={`${td} text-muted whitespace-nowrap`}>
+                                <When iso={s.created_at} />
+                              </td>
+                            </tr>
+                          ))
+                        }
+                      </SortMini>
                     )}
                   </Card>
                   <Card title={C.league} id="pd-league">
                     {!d.league.length ? (
                       <p className="text-muted text-[13px]">{C.noLeague}</p>
                     ) : (
-                      <Paged items={d.league} label={C.pageLabel(C.league)}>
-                        {(rows) => (
-                          <MiniTable head={C.leagueHead} min={340}>
-                            {rows.map((l) => (
-                              <tr key={l.week_start}>
-                                <td className={`${td} whitespace-nowrap`}>{dayDate(l.week_start)}</td>
-                                <td className={td}>{LEAGUE_TIERS[l.tier] ?? l.tier}</td>
-                                <td className={`${td} num`}>{fmt(l.points)}</td>
-                                <td className={`${td} num`}>{l.rank ?? C.noEmail}</td>
-                                <td className={`${td} text-muted`}>{l.result ? (C.leagueResults[l.result] ?? l.result) : C.noEmail}</td>
-                              </tr>
-                            ))}
-                          </MiniTable>
-                        )}
-                      </Paged>
+                      <SortMini
+                        items={d.league}
+                        head={C.leagueHead}
+                        keys={["week", "league", "points", "place", "result"]}
+                        spec={LEAGUE_SORT}
+                        value={(l, k) =>
+                          k === "week"
+                            ? l.week_start
+                            : k === "league"
+                              ? l.tier
+                              : k === "points"
+                                ? l.points
+                                : k === "place"
+                                  ? l.rank
+                                  : l.result
+                                    ? (C.leagueResults[l.result] ?? l.result)
+                                    : null
+                        }
+                        min={340}
+                        paged={C.pageLabel(C.league)}
+                      >
+                        {(rows) =>
+                          rows.map((l) => (
+                            <tr key={l.week_start}>
+                              <td className={`${td} whitespace-nowrap`}>{dayDate(l.week_start)}</td>
+                              <td className={td}>{LEAGUE_TIERS[l.tier] ?? l.tier}</td>
+                              <td className={`${td} num`}>{fmt(l.points)}</td>
+                              <td className={`${td} num`}>{l.rank ?? C.noEmail}</td>
+                              <td className={`${td} text-muted`}>{l.result ? (C.leagueResults[l.result] ?? l.result) : C.noEmail}</td>
+                            </tr>
+                          ))
+                        }
+                      </SortMini>
                     )}
                   </Card>
                 </div>

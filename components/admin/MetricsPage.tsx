@@ -10,7 +10,7 @@
 import { SortHead } from "./SortHeader";
 import { Select } from "@/components/ui/Select";
 import { sortBy, useLocalSort } from "./useLocalSort";
-import { sortSpec } from "@/lib/admin/sorting";
+import { sortSpec, type SortSpec } from "@/lib/admin/sorting";
 import Link from "next/link";
 import { useId, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
@@ -404,6 +404,15 @@ function Section({ section, data }: { section: InsightSection; data: MetricsData
   );
 }
 
+const PART_SORT: SortSpec<string> = { keys: [], default: "label", dir: "asc" };
+const DAY_SORT: SortSpec<string> = { keys: [], default: "day", dir: "desc" };
+/** A shown number ("1,204", "42%", "1:05") as a number for sorting; text that isn't one sorts as text. */
+const asNumber = (v: string | number | null | undefined) => {
+  if (v === null || v === undefined || typeof v === "number") return v;
+  const m = v.replace(/,/g, "").match(/-?\d+(\.\d+)?/);
+  return m ? Number(m[0]) : v;
+};
+
 const cell = (c: MetricDef["cols"][number], r: MetricRow) => {
   const v = c.value(r);
   if (v === null) return C.notApplicable;
@@ -413,6 +422,9 @@ const cell = (c: MetricDef["cols"][number], r: MetricRow) => {
 /** A detail or app-speed card (folded sections): headline, what it is, a breakdown, and the days. */
 function MetricCard({ def, data }: { def: MetricDef; data: MetricsData }) {
   const headId = `m-${def.id}`;
+  // Both tables sort by any column (owner, 13 Nov 2026): the breakdown by its row label first, the days newest first.
+  const partSort = useLocalSort(PART_SORT);
+  const daySort = useLocalSort(DAY_SORT);
   return (
     <section aria-labelledby={headId} className="bg-surface flex min-w-0 flex-col gap-2 rounded-[16px] p-4">
       <div className="flex items-start gap-2">
@@ -427,17 +439,14 @@ function MetricCard({ def, data }: { def: MetricDef; data: MetricsData }) {
       {def.breakdown && (
         <div className="relative overflow-x-auto">
           <table className="w-full border-collapse text-[13px]">
-            <thead>
-              <tr className="bg-surface-raised num text-muted text-left text-[12px]">
-                {def.breakdown.head.map((h, i) => (
-                  <th key={h} scope="col" className={`px-2 py-2 font-semibold whitespace-nowrap ${i ? "text-right" : ""}`}>
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
+            <SortHead
+              cols={def.breakdown.head.map((label, i) => ({ label, sort: i ? `v${i - 1}` : "label", className: i ? "text-right" : "" }))}
+              sort={partSort}
+            />
             <tbody>
-              {def.breakdown.rows(data.total).map((r) => (
+              {sortBy(def.breakdown.rows(data.total), partSort, (r, k) =>
+                k === "label" ? r.label : asNumber(r.values[Number(k.slice(1))]),
+              ).map((r) => (
                 <tr key={r.key}>
                   <th scope="row" className="border-line border-t px-2 py-1.5 text-left font-medium">
                     {r.label}
@@ -459,20 +468,12 @@ function MetricCard({ def, data }: { def: MetricDef; data: MetricsData }) {
         </summary>
         <div className="max-h-[420px] overflow-auto">
           <table className="w-full border-collapse text-[13px]">
-            <thead className="sticky top-0">
-              <tr className="bg-surface-raised num text-muted text-left text-[12px]">
-                <th scope="col" className="px-2 py-2 font-semibold">
-                  {C.day}
-                </th>
-                {def.cols.map((c) => (
-                  <th key={c.key} scope="col" className="px-2 py-2 text-right font-semibold whitespace-nowrap">
-                    {c.label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
+            <SortHead
+              cols={[{ label: C.day, sort: "day" }, ...def.cols.map((c) => ({ label: c.label, sort: c.key, className: "text-right" }))]}
+              sort={daySort}
+            />
             <tbody>
-              {[...data.rows].reverse().map((r) => (
+              {sortBy(data.rows, daySort, (r, k) => (k === "day" ? r.date : def.cols.find((c) => c.key === k)?.value(r))).map((r) => (
                 <tr key={r.date}>
                   <th scope="row" className="border-line border-t px-2 py-1.5 text-left font-medium whitespace-nowrap">
                     {r.date ? shortDay(r.date) : ""}

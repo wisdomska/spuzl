@@ -5,6 +5,9 @@
  * lock and plays; re-run the auto-pick, pick games by hand, lock a day so the auto-pick never changes it, run the
  * scheduler, and export or import the schedule as JSON. Every action is role-checked and audited on the server.
  */
+import { SortHead } from "./SortHeader";
+import { sortBy, useLocalSort } from "./useLocalSort";
+import { sortSpec } from "@/lib/admin/sorting";
 import Link from "next/link";
 import { useState } from "react";
 import { addDays, dayMonth, todayIso } from "@/lib/admin/dates";
@@ -43,6 +46,9 @@ interface Row {
   locked: boolean;
   difficulty?: string;
 }
+/** Sort the schedule by any column (owner, 13 Nov 2026); by day, soonest first, to begin with. */
+const DAY_SORT = sortSpec({ keys: ["day", "how", "locked", "played"], default: "day", dir: "asc", firstDir: { played: "desc" } });
+
 interface Day {
   date: string;
   rows: Row[];
@@ -84,6 +90,7 @@ function download(filename: string, text: string) {
 
 export function DailyFivePage({ canWrite }: { canWrite: boolean }) {
   const [from, setFrom] = useState(todayIso());
+  const sort = useLocalSort(DAY_SORT);
   const q = useAdminQuery<Data>(["daily-five", from], `/api/admin/daily-five?from=${from}&days=${SPAN}`, { keepPrevious: true });
   const act = useAdminAction<Action, { made?: number; repicked?: number }>("POST", "/api/admin/daily-five");
   const [editing, setEditing] = useState<string | null>(null);
@@ -173,17 +180,18 @@ export function DailyFivePage({ canWrite }: { canWrite: boolean }) {
           </div>
         ) : (
           <table className="w-full min-w-[860px] border-collapse text-[14px]">
-            <thead>
-              <tr className="bg-surface-raised text-muted text-left text-[12px]">
-                {C.head.map((h, i) => (
-                  <th key={i} scope="col" className="px-3 py-2 font-semibold">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
+            <SortHead
+              cols={C.head.map((label, i) => ({
+                label,
+                hidden: !label,
+                sort: (["day", null, "how", "locked", "played", null] as const)[i] ?? undefined,
+              }))}
+              sort={sort}
+            />
             <tbody>
-              {q.data.days.map((d) => (
+              {sortBy(q.data.days, sort, (d, k) =>
+                k === "day" ? d.date : k === "how" ? (d.source ?? "") : k === "locked" ? (d.locked ? 1 : 0) : d.attempts,
+              ).map((d) => (
                 <DayRow
                   key={d.date}
                   day={d}
