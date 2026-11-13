@@ -58,12 +58,21 @@ export async function guest(nickname?: string, band: Band = "18+") {
 
 /**
  * A unique name: the prefix and six digits, redrawn until the nickname filter accepts it (digits read as letters can
- * spell a filtered word: "ps_h" + "17..." reads as one).
+ * spell a filtered word: "ps_h" + "17..." reads as one). Only the word filter counts: uniq also names admins and
+ * crews, which may be longer or carry spaces.
  */
 export const uniq = (p: string) => {
   for (let i = 0; i < 50; i++) {
     const n = `${p}${String(Math.floor(Math.random() * 1e6)).padStart(6, "0")}`;
-    if (!nicknameProblem(n)) return n;
+    if (
+      nicknameProblem(
+        n
+          .replace(/[^A-Za-z0-9_]/g, "")
+          .slice(0, 16)
+          .padEnd(3, "x"),
+      ) === null
+    )
+      return n;
   }
   throw new Error(`uniq: no filter-safe name for "${p}"`);
 };
