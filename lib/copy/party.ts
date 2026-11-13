@@ -18,8 +18,8 @@ export const partyCopy = {
     difficulty: "Difficulty",
     players: "Players",
     playersValue: (n: number) => `Up to ${n}`,
-    classroom: "Classroom mode",
-    classroomHint: "Run the race on a big screen. You don't play.",
+    classroom: "Party mode",
+    classroomHint: "Show the race on a big screen. You host, you don't play.",
     open: "Open room",
     failed: "Couldn't open a room. Try again.",
   },
@@ -59,7 +59,7 @@ export const partyCopy = {
     start: "Start",
     readyCount: (ready: number, of: number) => `${ready} of ${of} ready`,
     shareCode: "Share the code",
-    waitingClass: "Waiting for the class",
+    waitingClass: "Waiting for everyone",
     waitingFor: (names: string[], more: number) => {
       const list = more > 0 ? [...names, `${more} more`] : names;
       const line = list.length <= 1 ? list.join("") : `${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`;

@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 /**
  * GET /api/v1/rooms/:code/tv: the room as the big-screen view shows it (nicknames, progress, places and points;
- * no chat, puzzle, city, level or rating). No player profile needed: a classroom projector or TV joins by code.
+ * no chat, puzzle, city, level or rating). No player profile needed: a TV or projector joins by code.
  * 403 tv_closed while the host keeps the room closed to watchers (and always for a host under 16); 404 for an
  * unknown or 18+ room and while "features.partyTv" is off. Rate limited per user, else per hashed address.
  */

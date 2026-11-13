@@ -7,7 +7,7 @@ export const settingsCopy = {
     title: "Change your nickname",
     description: "What friends and rivals see.",
     label: "Nickname",
-    help: "3 to 16 letters, numbers or _. No real names, no phone numbers.",
+    help: "3 to 16 letters, numbers or _.",
     save: "Save nickname",
     saving: "Saving…",
     taken: "That name is taken. Try another.",

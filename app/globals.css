@@ -676,7 +676,7 @@ select {
   box-shadow: var(--focus-ring);
   border-radius: 14px;
 }
-/* P0 classroom switch: 52 × 32 track, 24 px knob. */
+/* P0 Party mode switch: 52 × 32 track, 24 px knob. */
 .mp-switch {
   appearance: none;
   position: relative;

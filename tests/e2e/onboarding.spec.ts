@@ -36,7 +36,7 @@ test("onboarding: birth month and year first, under 13 keeps nothing", async ({ 
   await page.goto("/welcome");
   await page.getByRole("button", { name: "Play as guest" }).click();
   await expect(page.getByRole("heading", { name: /When were you born\?/ })).toBeVisible();
-  await expect(page.getByText(/It's set once/)).toBeVisible();
+  await expect(page.getByText(/Never shown to anyone/)).toBeVisible();
   // Month and year only: no day picker.
   await expect(page.getByLabel("Day")).toHaveCount(0);
   const chip = await page.getByRole("radiogroup", { name: "Month" }).locator("label").first().boundingBox();

@@ -576,7 +576,7 @@ export function Welcome({ first = "hello" }: { first?: "hello" | "age" }) {
                   </button>
                 </div>
                 <p id="nick-help" className="text-[14px]" style={{ color: problem || error ? "var(--danger)" : "var(--text-muted)" }}>
-                  {problem ?? error ?? "Free and yours. No real names, no phone numbers."}
+                  {problem ?? error ?? "3 to 16 letters, numbers or _."}
                 </p>
               </div>
               <Button size="lg" className="mt-auto w-full text-[17px]" disabled={!nick || !!problem} loading={saving} onClick={enter}>

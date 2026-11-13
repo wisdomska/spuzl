@@ -41,7 +41,7 @@ test.describe("visitors and crawlers (no session)", () => {
     await visit(page, "/");
     const ld = await expectSeo(page, "/", "/", 250);
     expect(types(ld)).toEqual(expect.arrayContaining(["Organization", "WebSite", "WebApplication", "FAQPage"]));
-    await expect(page.getByRole("link", { name: "Play now" }).first()).toHaveAttribute("href", "/welcome/play");
+    await expect(page.getByRole("link", { name: "Play now" }).first()).toHaveAttribute("href", "/intro?next=/welcome/play");
     for (const g of GAMES) await expect(page.locator(`main a[href="/games/${g.id}"]`).first(), g.id).toBeAttached();
     await expect(page.getByRole("heading", { name: "Is SPUZL free?" })).toBeVisible();
   });

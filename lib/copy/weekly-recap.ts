@@ -5,6 +5,9 @@
 export const weeklyRecapCopy = {
   label: "Your week on SPUZL",
   title: "Your week, chale!",
+  /** the one-line row on Home */
+  row: (n: number) => (n === 1 ? "Your week: 1 game cleared" : `Your week: ${n} games cleared`),
+  see: "See it",
   /** "2 Nov to 8 Nov" */
   range: (from: string, to: string) => `${from} to ${to}`,
   cleared: (n: number) => (n === 1 ? "1 game cleared" : `${n} games cleared`),

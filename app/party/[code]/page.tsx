@@ -5,7 +5,7 @@ import { LoadingScreen } from "@/components/multiplayer/ui";
 
 export const metadata: Metadata = { title: "Party room" };
 
-/** Party room: lobby, live race, podium; ?view=tv for TV and classroom mode (Multiplayer P1 to P3, T1). */
+/** Party room: lobby, live race, podium; ?view=tv for the big-screen Party mode (Multiplayer P1 to P3, T1). */
 export default async function Page({ params }: PageProps<"/party/[code]">) {
   const { code } = await params;
   return (

@@ -30,12 +30,12 @@ for (const [w, viewport] of SIZES) {
       // Sign-in is still one tap away on the landing header, at every width.
       const signIn = page.getByRole("banner").getByRole("link", { name: "Sign in" });
       await expect(signIn).toBeVisible();
-      await expect(signIn).toHaveAttribute("href", "/welcome");
+      await expect(signIn).toHaveAttribute("href", "/intro?next=/welcome");
       await page.screenshot({ path: shot("landing", w) });
 
       await page.getByRole("link", { name: "Play now" }).first().click();
-      await page.waitForURL((u) => u.pathname === "/welcome/play");
-      // First screen is the birth step: no intro, no "Ready to play?" choice.
+      await page.waitForURL((u) => u.pathname === "/welcome/play", { timeout: 15_000 });
+      // After the logo intro (owner, 13 Nov 2026), the birth step: no "Ready to play?" choice.
       await expect(page.getByRole("heading", { name: /When were you born\?/ })).toBeVisible();
       await expect(page.getByRole("button", { name: "Play as guest" })).toHaveCount(0);
       await expect(page.getByRole("progressbar", { name: "Step 1 of 4" })).toBeVisible();

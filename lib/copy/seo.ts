@@ -195,7 +195,7 @@ export const FEATURES: readonly string[] = [
   "Daily Five: five quick games a day, the same for everyone, with a shareable score grid.",
   "Streaks with Streak Freezes, quests, badges and levels.",
   "Duel: a live best-of-three race against a friend or a matched player.",
-  `Party rooms: share a code and race up to ${PARTY_MAX} players on puzzles or score games; a big-screen TV view for classrooms.`,
+  `Party rooms: share a code and race up to ${PARTY_MAX} players on puzzles or score games; a big-screen TV view for parties.`,
   "Party games for older players: Draw It with preset words for 16 and over; Draw It and Two Truths party modes for 18 and over.",
   "Challenges and Ghost Races: send a link to the exact puzzle you cleared and race your time.",
   "Board Bay: chess, draughts, oware, ludo and Four Up against a friend, live or one move a day, or against the bot.",

@@ -15,6 +15,15 @@ import { recapWeeks } from "@/lib/recap/weekly";
 const { thisWeek, recapWeek } = recapWeeks(new Date());
 const shot = (page: Page, name: string, w: number) => page.screenshot({ path: `docs/qa/screens/r3/R3-10-${name}-${w}.png` });
 const card = (page: Page) => page.getByTestId("weekly-recap");
+/** The row opens the full week in a dialog (owner, 13 Nov 2026). */
+async function openWeek(page: Page) {
+  await card(page)
+    .getByRole("button", { name: /Your week/ })
+    .click();
+  const d = page.getByRole("dialog", { name: "Your week, chale!" });
+  await expect(d).toBeVisible();
+  return d;
+}
 
 const FIXTURE = {
   thisWeek,
@@ -62,11 +71,13 @@ test("shows last week once, through the prompt queue, and never again this week"
   const calls = await mockRecap(page);
   await onboardGuest(page);
   await expect(card(page)).toBeVisible();
-  await expect(card(page)).toContainText("12 games cleared");
-  await expect(card(page)).toContainText("0:42 in Crownfall");
-  await expect(card(page)).toContainText("12 days");
-  await expect(card(page)).toContainText("Up to Gold Crown");
-  await expect(card(page)).toContainText("+145");
+  await expect(card(page)).toContainText("Your week: 12 games cleared");
+  const week = await openWeek(page);
+  await expect(week).toContainText("0:42 in Crownfall");
+  await expect(week).toContainText("12 days");
+  await expect(week).toContainText("Up to Gold Crown");
+  await expect(week).toContainText("+145");
+  await page.keyboard.press("Escape");
   // One prompt per screen visit: nothing else holds a prompt slot next to it.
   await expect(page.locator("[data-prompt]")).toHaveCount(1);
   expect(await page.evaluate(() => localStorage.getItem("spuzl.weeklyRecap"))).toBe(thisWeek);
@@ -94,7 +105,7 @@ test("closes with the close button", async ({ page }) => {
 test("Share my week opens the share sheet with the card", async ({ page }) => {
   await mockRecap(page);
   await onboardGuest(page);
-  await card(page).getByRole("button", { name: "Share my week" }).click();
+  await (await openWeek(page)).getByRole("button", { name: "Share my week" }).click();
   const sheet = page.getByRole("dialog", { name: "Share your week" });
   await expect(sheet).toBeVisible();
   await expect(sheet.getByRole("img", { name: "Your week on SPUZL card" })).toBeVisible();
@@ -103,7 +114,7 @@ test("Share my week opens the share sheet with the card", async ({ page }) => {
 test("Play today's Daily goes to the Daily Five", async ({ page }) => {
   await mockRecap(page);
   await onboardGuest(page);
-  await card(page).getByRole("link", { name: "Play today's Daily" }).click();
+  await (await openWeek(page)).getByRole("link", { name: "Play today's Daily" }).click();
   await page.waitForURL(/\/daily$/);
 });
 
@@ -123,7 +134,7 @@ for (const [label, size] of Object.entries(VIEWPORTS))
     await onboardGuest(page);
     await expect(card(page)).toBeVisible();
     await shot(page, "home", size.width);
-    await card(page).getByRole("button", { name: "Share my week" }).click();
+    await (await openWeek(page)).getByRole("button", { name: "Share my week" }).click();
     await expect(page.getByRole("dialog", { name: "Share your week" })).toBeVisible();
     await shot(page, "share", size.width);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);

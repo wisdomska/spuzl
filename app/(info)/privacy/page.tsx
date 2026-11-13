@@ -86,8 +86,8 @@ export default function Privacy() {
       <h2>Players under 16</h2>
       <p>
         Under-16 players appear on boards with nickname and avatar only. Friends can only be added with an invite link or QR code. If you
-        are a parent or teacher and want a young player&apos;s account removed, <Link href="/contact">contact us</Link>. Players under 13
-        can&apos;t use SPUZL: if the birth month and year you enter make you under 13, we don&apos;t create an account and keep nothing.
+        look after a young player and want their account removed, <Link href="/contact">contact us</Link>. Players under 13 can&apos;t use
+        SPUZL: if the birth month and year you enter make you under 13, we don&apos;t create an account and keep nothing.
       </p>
 
       <h2>Where your data lives</h2>

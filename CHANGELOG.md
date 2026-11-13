@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.58.0 (13 November 2026)
+
+### Everyone
+
+- **The SPUZL logo intro is back, with its sounds:** it plays when you tap Play now or Sign in on the landing page,
+  and once each time you open the app, before Home. Tap to skip. A reload doesn't replay it, and you won't see it
+  again right after signing up.
+- **A reload keeps you where you are:** the offline helper no longer shows the landing page when a reload is slow.
+- **The weekly roundup is one line on Home** ("Your week: 38 games cleared"); tap it for the full week, sharing
+  and today's Daily.
+- **Party mode** replaces "Classroom mode" (show the race on a big screen while you host). No more school wording.
+- The nickname hint is just "3 to 16 letters, numbers or _."
+
+### Behind the scenes
+
+- Google's own sign-in button is ready, so Google's window can name SPUZL's site instead of the sign-in server. It
+  switches on once its client ID is set.
+
 ## 1.57.0 (13 November 2026)
 
 ### Everyone

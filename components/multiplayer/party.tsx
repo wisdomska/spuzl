@@ -342,7 +342,7 @@ export function PartyStart({
 }
 
 /**
- * Host tab: game (or Random mix), difficulty, players and Classroom mode. Signed-in 18+ players (with the
+ * Host tab: game (or Random mix), difficulty, players and Party mode (big screen). Signed-in 18+ players (with the
  * admin setting "features.adultParty" on) also pick a mode: Puzzle race, Draw It or Two Truths; signed-in players
  * aged 16 and over (with "party.familyDraw" on) can pick Family Draw (R2-P5).
  */
@@ -551,7 +551,7 @@ export function Lobby({
     <div className="flex flex-1 flex-col pb-[max(28px,env(safe-area-inset-bottom))]" data-screen-label="P1 Lobby">
       <div className="flex items-center justify-between px-4 pt-[max(52px,env(safe-area-inset-top))]">
         <TopButton icon="x" label="Leave room" onClick={onLeave} />
-        <h1 className="font-display text-[18px] font-extrabold">{view.classroom ? "Classroom" : "Party room"}</h1>
+        <h1 className="font-display text-[18px] font-extrabold">{view.classroom ? partyCopy.host.classroom : "Party room"}</h1>
         {adult ? (
           <TopButton icon="users" label="Players" onClick={adult.onPlayers} />
         ) : host ? (

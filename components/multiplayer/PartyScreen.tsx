@@ -412,7 +412,7 @@ function Room({ id, code }: { id: string; code: string }) {
   };
   const leaveHome = () => void leave("/");
 
-  // Draw It and Two Truths (18+): their own lobby card, rounds and podium; no TV mode or classroom.
+  // Draw It and Two Truths (18+): their own lobby card, rounds and podium; no TV or big-screen Party mode.
   if (isTurnMode(view.mode))
     return (
       <Screen label={`Party ${view.mode} ${phase}`}>
@@ -450,7 +450,7 @@ function Room({ id, code }: { id: string; code: string }) {
           beats={countdown.beats}
         />
         {me.spectator && host && phase === "lobby" && (
-          // R3-01: the classroom host's Start opens once the class is ready; "Start without them" goes with the ready ones.
+          // R3-01: the big-screen host's Start opens once everyone is ready; "Start without them" goes with the ready ones.
           <div className="fixed right-6 bottom-6 flex items-center gap-3">
             {lobbyReady.canStartWithout && (
               <button

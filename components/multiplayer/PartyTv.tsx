@@ -17,7 +17,7 @@ import { TvFrame, TvMode, rowsOf } from "./party";
 const T = partyCopy.tv;
 
 /**
- * /party/<code>/tv (R2-P5): the big-screen spectator view for a classroom projector or a TV. Joins by room code
+ * /party/<code>/tv (R2-P5): the big-screen spectator view for a TV or projector. Joins by room code
  * with no player profile, read only: the server sends nicknames and scores only, and there is no chat, no emote
  * bar and nothing to tap. It polls every 2 s (TV_POLL_MS) and keeps asking every 10 s while the room is closed,
  * so it fills in on its own when the host turns Big-screen view on.
