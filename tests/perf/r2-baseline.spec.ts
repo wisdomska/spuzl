@@ -245,7 +245,7 @@ for (const profile of PROFILES) {
           if (demo) {
             await page.locator("#nick").fill(`R2d${Date.now() % 1e7}`);
             mark("nickname");
-            await page.getByRole("button", { name: "Save my Spuz and play Crownfall" }).click();
+            await page.getByRole("button", { name: "Play Crownfall" }).click();
             await page.waitForURL((u) => u.pathname === "/play/crownfall", { timeout: 90_000 });
           }
           await page.locator(BOARD).first().waitFor({ state: "visible", timeout: 90_000 });

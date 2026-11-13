@@ -65,7 +65,7 @@ test.beforeAll(async ({ browser }) => {
   }
   await expect(page.getByText("First clear!")).toBeVisible();
   await page.locator("#nick").fill(`Vis${Date.now() % 100000}`);
-  await page.getByRole("button", { name: "Save my Spuz and open the map" }).click();
+  await page.getByRole("button", { name: "Let's play" }).click();
   await page.waitForURL((u) => u.pathname === "/", { timeout: 20_000 });
 });
 

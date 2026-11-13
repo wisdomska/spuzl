@@ -71,7 +71,7 @@ for (const [w, viewport] of SIZES) {
       await expect(page.getByRole("heading", { name: "Now make Spuz yours" })).toBeVisible();
       await page.screenshot({ path: shot("nickname-after-demo", w) });
       await page.locator("#nick").fill(`Qs${Date.now() % 1e7}`);
-      await page.getByRole("button", { name: "Save my Spuz and play Crownfall" }).click();
+      await page.getByRole("button", { name: "Play Crownfall" }).click();
       await page.waitForURL((u) => u.pathname === "/play/crownfall", { timeout: 30_000 });
       await waitForBoard(page);
       // Learned: the real board, not the practice round.
@@ -115,7 +115,7 @@ test("the adult band is unchanged on the shortcut", async ({ browser }) => {
   await pickBirth(page, birthFor("18+"));
   await page.getByRole("button", { name: /Go to the map/ }).click();
   await page.locator("#nick").fill(`Qa${Date.now() % 1e7}`);
-  await page.getByRole("button", { name: /Save my Spuz/ }).click();
+  await page.getByRole("button", { name: /^(Let's play|Play Crownfall|See all games)$/ }).click();
   await page.waitForURL((u) => u.pathname === "/", { timeout: 30_000 });
   await logGuest(page);
   expect((await page.evaluate(() => fetch("/api/v1/me").then((r) => r.json()))).age_band).toBe("18+");

@@ -130,7 +130,7 @@ export async function onboardGuest(
   await pickBirth(page, o.birthYear ? { year: o.birthYear, month: o.birthMonth } : (o.age ?? "18+"));
   await page.getByRole("button", { name: /Jump straight in|Go to the map/ }).click();
   await page.locator("#nick").fill(nickname);
-  await page.getByRole("button", { name: /Enter The Grid|Create my Spuz|Save my Spuz/ }).click();
+  await page.getByRole("button", { name: /^(Enter The Grid|Let's play|Play Crownfall|See all games)$/ }).click();
   await page.waitForURL((u) => u.pathname === "/", { timeout: 30_000 });
   await logGuest(page);
   return nickname;
@@ -456,7 +456,7 @@ export async function duelVsBot(page: Page) {
     .first()
     .click();
   const ready = page.getByRole("button", { name: /I'm ready/ });
-  const bot = page.getByRole("button", { name: /Practice bot/ });
+  const bot = page.getByRole("button", { name: /Play Spuzl now|against Spuzl/ });
   await expect(ready.or(bot).first()).toBeVisible({ timeout: 20_000 });
   if (await ready.isVisible()) await ready.click();
   await bot.first().click();

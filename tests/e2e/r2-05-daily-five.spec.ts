@@ -141,7 +141,7 @@ test.describe("R2-05 Daily Five", () => {
     await pickBirth(page, "18+");
     await page.getByRole("button", { name: /Jump straight in|Go to the map/ }).click();
     await page.locator("#nick").fill(`Qd${Date.now() % 1e7}`);
-    await page.getByRole("button", { name: /Enter The Grid|Create my Spuz|Save my Spuz/ }).click();
+    await page.getByRole("button", { name: /^(Enter The Grid|Let's play|Play Crownfall|See all games)$/ }).click();
     await page.waitForURL((u) => u.pathname === "/daily", { timeout: 30_000 });
     await logGuest(page); // so the cleanup step deletes this guest too
     await expect(page.getByRole("heading", { name: "Daily Five" })).toBeVisible();

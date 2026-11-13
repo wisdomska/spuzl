@@ -292,8 +292,10 @@ function PlayCard({
             style={{ transition: "stroke-dashoffset 400ms cubic-bezier(.23,1,.32,1)" }}
           />
         </svg>
-        <span className="num text-[13px] leading-none font-black">
-          {done}/{total}
+        {/* Stacked so a two-digit total still sits inside the ring (owner, 13 Nov 2026: "13/41" spilled over it). */}
+        <span className="num flex flex-col items-center leading-none">
+          <span className="text-[15px] font-black">{done}</span>
+          <span className="text-[9px] font-bold opacity-75">/{total}</span>
         </span>
       </span>
       <span className="flex min-w-0 flex-1 flex-col">

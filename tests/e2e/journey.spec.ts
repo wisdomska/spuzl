@@ -35,7 +35,7 @@ test("full journey: guest to clears, social and multiplayer, with no Daily anywh
   }
   await expect(page.getByText("First clear!")).toBeVisible();
   await page.locator("#nick").fill(`Jy${Date.now() % 1e7}`);
-  await page.getByRole("button", { name: "Save my Spuz and open the map" }).click();
+  await page.getByRole("button", { name: "Let's play" }).click();
   await page.waitForURL((u) => u.pathname === "/", { timeout: 30_000 });
   await logGuest(page); // so the cleanup step deletes this guest too
 

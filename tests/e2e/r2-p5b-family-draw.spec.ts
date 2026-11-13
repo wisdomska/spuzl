@@ -51,7 +51,7 @@ async function member(browser: Browser, age: Age, viewport: { width: number; hei
   await page.getByRole("button", { name: /^Continue\b/ }).click();
   await page.getByRole("button", { name: /Jump straight in|Go to the map/ }).click();
   await page.locator("#nick").fill(`Fam${Date.now() % 1e6}`);
-  await page.getByRole("button", { name: /Enter The Grid|Create my Spuz|Save my Spuz/ }).click();
+  await page.getByRole("button", { name: /^(Enter The Grid|Let's play|Play Crownfall|See all games)$/ }).click();
   await page.waitForURL((u) => u.pathname === "/", { timeout: 30_000 });
   await logGuest(page);
   return { context, page };

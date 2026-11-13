@@ -6,6 +6,10 @@
 
 - **The computer you play is called Spuzl:** "Spuzl is thinking…", "Spuzl moved. Your move.", "Play vs Spuzl",
   "Spuzl won this one" and so on, in Board Games, Duels and Ludo. No more "the bot" or "Practice bot".
+- **The Play card's ring fits its number:** "13/41" no longer spills over the ring; the count sits on top, the total
+  under it.
+- **Shorter last onboarding button:** "Let's play", "Play Crownfall" or "See all games" instead of "Save my Spuz and
+  …".
 
 ## 1.60.0 (13 November 2026)
 

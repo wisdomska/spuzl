@@ -24,7 +24,7 @@ test("onboarding: lesson, merged celebration, named CTA, counted on Home", async
   await expect(page.getByRole("heading", { name: "Now make Spuz yours" })).toBeVisible();
   await page.screenshot({ path: `docs/qa/screens/after/onboarding-clear-${info.project.name}.png` });
   await page.locator("#nick").fill(`Ob${Date.now() % 1e7}`);
-  await page.getByRole("button", { name: "Save my Spuz and open the map" }).click();
+  await page.getByRole("button", { name: "Let's play" }).click();
   await page.waitForURL((u) => u.pathname === "/", { timeout: 30_000 });
   await logGuest(page); // so the cleanup step deletes this guest too
   await expect(page.getByRole("link", { name: /(Today's Dailies|Games tried): 1 of \d+/ })).toBeVisible();
