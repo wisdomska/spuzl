@@ -301,7 +301,8 @@ export default function EmojiHitsBoard({ puzzle, initialState, hint, disabled, m
     const saved = initialState?.rounds ?? [];
     const slips = saved.reduce((a, r) => a + (Array.isArray(r.tries) ? r.tries.length : 0), 0) + (initialState?.current?.length ?? 0);
     if (!saved.length) {
-      api.feedback(picking ? t.introTutorial : t.intro(total, Math.round(puzzle.limitMs / 1000)), "info", "hand-pointing");
+      // The card says the rules; the feedback line only cues Start (one line, so the screen fits a small phone).
+      api.feedback(picking ? t.introTutorial : t.startCue, "info", "hand-pointing");
       return;
     }
     let cancelled = false;
@@ -334,7 +335,7 @@ export default function EmojiHitsBoard({ puzzle, initialState, hint, disabled, m
 
   return (
     <div
-      className="wide:w-[min(760px,100%)] wide:gap-4 wide:p-5 flex w-[min(358px,calc(100vw-36px))] flex-col gap-3 rounded-[20px] p-3.5"
+      className="wide:w-[min(760px,100%)] wide:gap-4 wide:p-5 short:gap-2 tiny:p-3 flex w-[min(358px,calc(100vw-36px))] flex-col gap-3 rounded-[20px] p-3.5"
       style={{ background: "var(--board-bg)" }}
     >
       <div className="flex items-center gap-2.5">
@@ -389,7 +390,7 @@ export default function EmojiHitsBoard({ puzzle, initialState, hint, disabled, m
       </div>
 
       <div
-        className={`wide:min-h-[260px] flex min-h-[150px] flex-col items-center justify-center gap-2 rounded-[16px] px-3 py-4 text-center ${hinted ? "hint-ring" : ""}`}
+        className={`wide:min-h-[260px] tiny:min-h-[120px] tiny:py-3 flex min-h-[150px] flex-col items-center justify-center gap-2 rounded-[16px] px-3 py-4 text-center ${hinted ? "hint-ring" : ""}`}
         style={{ background: "var(--surface)", boxShadow: hinted ? "inset 0 0 0 3px var(--gold)" : undefined }}
       >
         {phase === "done" ? (
@@ -401,11 +402,11 @@ export default function EmojiHitsBoard({ puzzle, initialState, hint, disabled, m
           </>
         ) : phase === "ready" ? (
           <>
-            <Icon name="smiley" size={36} className="text-[var(--world)]" />
+            <Icon name="smiley" size={36} className="tiny:hidden text-[var(--world)]" />
             <span className="text-[16px] font-semibold">
               {logs.length || tries.length ? t.resumeNext(logs.length + 1, total) : t.intro(total, Math.round(puzzle.limitMs / 1000))}
             </span>
-            {!logs.length && <span className="text-muted text-[14px]">{t.ready}</span>}
+            {!logs.length && <span className="text-muted tiny:hidden text-[14px]">{t.ready}</span>}
           </>
         ) : (
           <>
@@ -434,10 +435,10 @@ export default function EmojiHitsBoard({ puzzle, initialState, hint, disabled, m
       {phase !== "done" && (
         <>
           {/* The one way to answer in this mode, said plainly. */}
-          <p className="m-0 flex items-center gap-1.5 text-[14px] font-bold" data-input-mode={picking ? "pick" : "type"}>
+          <p className="m-0 flex flex-wrap items-center gap-x-1.5 text-[14px] font-bold" data-input-mode={picking ? "pick" : "type"}>
             <Icon name={picking ? "hand-pointing" : "keyboard"} size={16} className="text-[var(--world)]" />
-            {picking ? t.howPick : t.howType}
-            {!picking && <span className="text-muted font-medium">{t.howTypeNote}</span>}
+            <span className="whitespace-nowrap">{picking ? t.howPick : t.howType}</span>
+            {!picking && <span className="text-muted font-medium whitespace-nowrap">{t.howTypeNote}</span>}
           </p>
           {!picking && (
             <form onSubmit={onSubmit} className="flex gap-2">

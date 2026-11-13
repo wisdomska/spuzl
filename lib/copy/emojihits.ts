@@ -17,6 +17,8 @@ export const EMOJI_COPY = {
   guess: "Guess",
   intro: (rounds: number, secs: number) => `${rounds} rounds. Name the song, film or TV show from the emoji. ${secs} seconds each.`,
   introTutorial: "Practice round: press Start, read the emoji, then pick the title from four.",
+  /** the feedback line before Start (the card above already says the rules) */
+  startCue: "Press Start when you're ready.",
   /** the one input this mode uses, said on screen (R2-17) */
   howPick: "Pick the answer",
   howType: "Type the answer",
