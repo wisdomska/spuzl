@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.59.0 (13 November 2026)
+
+### Everyone
+
+- **Notifications:** a bell at the top of Home holds your weekly roundup, new games to try, friend requests and
+  Board Games waiting on your move. A number shows what's new; opening the list clears it. Tap the roundup for your
+  full week, sharing and today's Daily. Remove the roundup or new games with ×.
+- **Home is clearer:** the roundup and new-games rows are gone from it.
+- **Google sign-in** now uses Google's own button, so Google's window names SPUZL's site.
+
 ## 1.58.0 (13 November 2026)
 
 ### Everyone

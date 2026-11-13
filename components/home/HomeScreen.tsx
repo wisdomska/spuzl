@@ -24,14 +24,11 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { formatCountdown, msToReset } from "@/lib/format";
 import { SidePanel } from "./SidePanel";
 import { EventBanner } from "./EventBanner";
-import { WeeklyRecapCard } from "./WeeklyRecapCard";
+import { NotificationBell } from "./NotificationBell";
 import { OfflineBanner } from "@/components/pwa/OfflineBanner";
-import { BannerStack } from "@/components/notify/Banner";
-import { useNotices } from "@/lib/notify/notices";
 import { PLAY_NAV } from "@/lib/analytics/play-nav";
 import dynamic from "next/dynamic";
 import { DailyFiveCard } from "@/components/daily-five/DailyFiveCard";
-import { NewGamesBanner } from "./NewGamesBanner";
 import { BoardThumb } from "./BoardThumb";
 import { isLadderGame } from "@/lib/game/levels";
 import { hostIsUnder16 } from "@/lib/multiplayer/joinRules";
@@ -61,7 +58,6 @@ export function HomeScreen() {
   const today = useToday();
   // The clock is client-only (null on the server pass): the at-risk banner and countdown use local time.
   const [now, setNow] = useState<number | null>(null);
-  const { notices, dismiss } = useNotices({ me: me.data ?? null, today: today.data ?? null });
   // Daily Five (R2-05): its card sits above the map, and a sleepy streak points at it.
   const five = useDailyFive(!!me.data);
   const fiveOpen = !!five.data?.enabled && !five.data.complete && five.data.games.length > 0;
@@ -140,6 +136,7 @@ export function HomeScreen() {
         >
           <LevelRing level={d.level} pct={(d.xpInto / d.xpNeed) * 100} color={d.avatar_color} hat={d.hat} />
           <div className="flex gap-2">
+            <NotificationBell played={d.played ?? []} />
             <StreakChip streak={streak} atRisk={atRisk} />
             <SparksChip sparks={d.sparks} />
           </div>
@@ -149,25 +146,8 @@ export function HomeScreen() {
           <OfflineBanner context="home" />
           {gameSettings["rooms.under16FriendsOnly"] && hostIsUnder16(d) && <HostRequestsCard />}
           <FirstTips order={HOME_TIPS} />
-          <WeeklyRecapCard />
           <EventBanner />
-          {/* Streak at risk has its own designed card below; banners carry new games and league results. */}
-          <BannerStack
-            items={notices
-              // R2-18: new games have their own card (NewGamesBanner, the admin's "new" tag) below Daily Five.
-              .filter((n) => n.kind !== "streak_at_risk" && n.kind !== "new_games")
-              .map((n) => ({
-                id: n.id,
-                icon: n.icon,
-                text: n.text,
-                tone: n.tone,
-                actionLabel: n.actionLabel,
-                onAction: n.href ? () => router.push(n.href!) : undefined,
-                onDismiss: () => dismiss(n.id),
-              }))}
-          />
           <DailyFiveCard />
-          <NewGamesBanner played={d.played ?? []} />
         </div>
         <section aria-label="The Grid" className="relative overflow-y-auto pb-[250px] lg:pb-[200px]">
           <HomeMap progress={progress} current={currentWorld} mood={mood} unit={dailiesOn ? T.islandsToday : T.islandsTried} />

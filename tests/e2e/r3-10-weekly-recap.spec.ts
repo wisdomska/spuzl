@@ -1,11 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
-import { onboardGuest, openGame, runAxe, VIEWPORTS } from "./harness";
+import { onboardGuest, runAxe, VIEWPORTS } from "./harness";
 import { recapWeeks } from "@/lib/recap/weekly";
 
 /**
- * R3-10 weekly recap: on the first Home visit of the GMT week, last week's card (clears, best time and game, streak,
- * league, Sparks) with Share my week and Play today's Daily. Through the prompt queue (one prompt at a time), never
- * on play screens, once a week per device, dismissible.
+ * R3-10 weekly recap, in the notification bell on Home (owner, 13 Nov 2026): "Your week: N games cleared" in the list;
+ * tapping it opens last week's roundup (clears, best time and game, streak, league, Sparks) with Share my week and
+ * Play today's Daily. Nothing covers Home; the bell's number counts what hasn't been seen; the item can be removed.
  *
  * A brand-new guest has no last week, so the recap API is answered with a fixture for most tests (the server side is
  * covered by tests/api/r3-10-weekly-recap.test.ts); the first test uses the real, empty answer. The fixture's card
@@ -14,11 +14,13 @@ import { recapWeeks } from "@/lib/recap/weekly";
  */
 const { thisWeek, recapWeek } = recapWeeks(new Date());
 const shot = (page: Page, name: string, w: number) => page.screenshot({ path: `docs/qa/screens/r3/R3-10-${name}-${w}.png` });
-const card = (page: Page) => page.getByTestId("weekly-recap");
-/** The row opens the full week in a dialog (owner, 13 Nov 2026). */
+const bell = (page: Page) => page.locator("[data-bell]");
+const list = (page: Page) => page.getByRole("dialog", { name: "Notifications" });
+/** The bell, then the roundup in its list. */
 async function openWeek(page: Page) {
-  await card(page)
-    .getByRole("button", { name: /Your week/ })
+  await bell(page).click();
+  await list(page)
+    .getByRole("button", { name: /^Your week/ })
     .click();
   const d = page.getByRole("dialog", { name: "Your week, chale!" });
   await expect(d).toBeVisible();
@@ -60,46 +62,43 @@ async function mockRecap(page: Page) {
   return () => calls;
 }
 
-test("a new player with no last week sees no recap", async ({ page }) => {
+test("a new player with no last week has no roundup in the bell", async ({ page }) => {
   await onboardGuest(page);
-  await expect(page.locator("main a[data-play-nav]").first()).toBeVisible();
-  await page.waitForTimeout(1500); // past the queue's settle time
-  await expect(card(page)).toHaveCount(0);
+  await expect(bell(page)).toBeVisible();
+  await bell(page).click();
+  await expect(list(page)).toBeVisible();
+  await expect(list(page).getByRole("button", { name: /^Your week/ })).toHaveCount(0);
 });
 
-test("shows last week once, through the prompt queue, and never again this week", async ({ page }) => {
-  const calls = await mockRecap(page);
+test("the roundup sits in the bell, nothing covers Home, and the count clears once seen", async ({ page }) => {
+  await mockRecap(page);
   await onboardGuest(page);
-  await expect(card(page)).toBeVisible();
-  await expect(card(page)).toContainText("Your week: 12 games cleared");
+  await expect(bell(page)).toHaveAttribute("aria-label", /Notifications, \d+ new/);
+  await expect(page.getByTestId("weekly-recap")).toHaveCount(0);
   const week = await openWeek(page);
+  await expect(week).toContainText("12 games cleared");
   await expect(week).toContainText("0:42 in Crownfall");
   await expect(week).toContainText("12 days");
   await expect(week).toContainText("Up to Gold Crown");
   await expect(week).toContainText("+145");
-  await page.keyboard.press("Escape");
-  // One prompt per screen visit: nothing else holds a prompt slot next to it.
-  await expect(page.locator("[data-prompt]")).toHaveCount(1);
-  expect(await page.evaluate(() => localStorage.getItem("spuzl.weeklyRecap"))).toBe(thisWeek);
   expect(await runAxe(page, { include: "[data-testid=weekly-recap]" })).toEqual([]);
-
+  await page.keyboard.press("Escape");
+  await expect(bell(page)).toHaveAttribute("aria-label", "Notifications");
   await page.reload();
-  await expect(page.locator("main a[data-play-nav]").first()).toBeVisible();
-  await page.waitForTimeout(1500);
-  await expect(card(page)).toHaveCount(0);
-  // Already shown this week: the recap isn't even fetched again.
-  const after = calls();
-  await page.reload();
-  await page.waitForTimeout(1500);
-  expect(calls()).toBe(after);
+  await expect(bell(page)).toHaveAttribute("aria-label", "Notifications");
 });
 
-test("closes with the close button", async ({ page }) => {
+test("the roundup can be removed from the list", async ({ page }) => {
   await mockRecap(page);
   await onboardGuest(page);
-  await expect(card(page)).toBeVisible();
-  await card(page).getByRole("button", { name: "Close the weekly recap" }).click();
-  await expect(card(page)).toHaveCount(0);
+  await bell(page).click();
+  await list(page)
+    .getByRole("button", { name: /Remove: Your week/ })
+    .click();
+  await expect(list(page).getByRole("button", { name: /^Your week/ })).toHaveCount(0);
+  await page.reload();
+  await bell(page).click();
+  await expect(list(page).getByRole("button", { name: /^Your week/ })).toHaveCount(0);
 });
 
 test("Share my week opens the share sheet with the card", async ({ page }) => {
@@ -118,25 +117,21 @@ test("Play today's Daily goes to the Daily Five", async ({ page }) => {
   await page.waitForURL(/\/daily$/);
 });
 
-test("never on a play screen", async ({ page }) => {
-  await mockRecap(page);
-  await onboardGuest(page);
-  await page.evaluate(() => localStorage.removeItem("spuzl.weeklyRecap"));
-  await openGame(page, "crownfall", "free");
-  await page.waitForTimeout(1500);
-  await expect(card(page)).toHaveCount(0);
-});
-
 for (const [label, size] of Object.entries(VIEWPORTS))
   test(`screens at ${label} (${size.width})`, async ({ page }) => {
     await page.setViewportSize(size);
     await mockRecap(page);
     await onboardGuest(page);
-    await expect(card(page)).toBeVisible();
+    await expect(bell(page)).toBeVisible();
     await shot(page, "home", size.width);
-    await (await openWeek(page)).getByRole("button", { name: "Share my week" }).click();
-    await expect(page.getByRole("dialog", { name: "Share your week" })).toBeVisible();
-    await shot(page, "share", size.width);
+    await bell(page).click();
+    await expect(list(page)).toBeVisible();
+    await shot(page, "bell", size.width);
+    await list(page)
+      .getByRole("button", { name: /^Your week/ })
+      .click();
+    await expect(page.getByRole("dialog", { name: "Your week, chale!" })).toBeVisible();
+    await shot(page, "week", size.width);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
     expect(overflow).toBe(false);
   });
