@@ -7,6 +7,10 @@
  * is the last 7 or 30 full GMT days (today is on Live now). Numbers come from /api/admin/metrics (Postgres); every
  * card downloads its rows as CSV through an audited POST.
  */
+import { SortHead } from "./SortHeader";
+import { Select } from "@/components/ui/Select";
+import { sortBy, useLocalSort } from "./useLocalSort";
+import { sortSpec } from "@/lib/admin/sorting";
 import Link from "next/link";
 import { useId, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
@@ -245,14 +249,31 @@ function InsightCard({ def, data }: { def: InsightDef; data: MetricsData }) {
 }
 
 const TOP = 10;
+const TOP_SORT = sortSpec({
+  keys: ["game", "plays", "players", "change"],
+  default: "plays",
+  dir: "desc",
+  firstDir: { plays: "desc", players: "desc", change: "desc" },
+});
 
 function TopGames({ data }: { data: MetricsData }) {
   const [all, setAll] = useState(false);
   const id = useId();
-  const games = topGames(data.total, data.previous?.total);
-  const worlds = worldPlays(data.total);
-  const shown = all ? games : games.slice(0, TOP);
   const T = C.topGames;
+  // Sort by any column and narrow to one game type (owner, 13 Nov 2026).
+  const sort = useLocalSort(TOP_SORT);
+  const [type, setType] = useState("");
+  const ranked = topGames(data.total, data.previous?.total);
+  const worlds = worldPlays(data.total);
+  const changeOf = (g: (typeof ranked)[number]) =>
+    data.previous ? (g.prevPlays ? (g.plays - g.prevPlays) / g.prevPlays : Number.POSITIVE_INFINITY) : null;
+  const games = sortBy(
+    ranked.filter((g) => !type || g.world === type),
+    sort,
+    (g, k) => (k === "game" ? g.name : k === "plays" ? g.plays : k === "players" ? g.players : changeOf(g)),
+  );
+  const types = [...new Set(ranked.map((g) => g.world).filter(Boolean))] as string[];
+  const shown = all ? games : games.slice(0, TOP);
   return (
     <section aria-labelledby={id} className="bg-surface flex min-w-0 flex-col gap-3 rounded-[16px] p-4 md:col-span-2 xl:col-span-3">
       <div className="flex items-start gap-2">
@@ -262,21 +283,35 @@ function TopGames({ data }: { data: MetricsData }) {
         <CsvButton id="top_games" title={T.title} data={data} />
       </div>
       <p className="text-[14px] leading-[1.4]">{T.meaning}</p>
+      {types.length > 1 && (
+        <label className="flex w-fit flex-col gap-1 text-[12px] font-semibold">
+          <span className="text-muted">{T.typeLabel}</span>
+          <Select
+            aria-label={T.typeLabel}
+            value={type}
+            onValueChange={setType}
+            options={[
+              { value: "", label: T.allTypes },
+              ...types.map((t) => ({ value: t, label: WORLD_BY_ID[t as keyof typeof WORLD_BY_ID]?.name ?? t })),
+            ]}
+            className="h-10 min-w-[180px]"
+          />
+        </label>
+      )}
       {!games.length ? (
         <p className="text-muted text-[14px]">{T.empty}</p>
       ) : (
         <div className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
           <div className="max-h-[480px] overflow-auto">
             <table className="w-full border-collapse text-[14px]">
-              <thead className="bg-surface sticky top-0">
-                <tr className="text-muted text-left text-[12px]">
-                  {T.head.map((h, i) => (
-                    <th key={h} scope="col" className={`px-2 py-2 font-semibold whitespace-nowrap ${i ? "text-right" : ""}`}>
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
+              <SortHead
+                cols={T.head.map((label, i) => ({
+                  label,
+                  sort: (["game", "plays", "players", "change"] as const)[i],
+                  className: i ? "text-right" : "",
+                }))}
+                sort={sort}
+              />
               <tbody>
                 {shown.map((g) => {
                   const ch = data.previous ? change(g.plays, g.prevPlays, "count") : null;

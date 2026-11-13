@@ -111,8 +111,9 @@ export async function playerDetail(ctx: AdminCtx, id: string) {
       .from("attempts")
       .select("id, game_id, mode, status, time_ms, hints, mistakes, started_at, finished_at, flag_reason")
       .eq("player_id", id)
+      .neq("mode", "tutorial")
       .order("started_at", { ascending: false })
-      .limit(20),
+      .limit(150),
     db.from("attempts").select("id", { count: "exact", head: true }).eq("player_id", id),
     db.from("attempts").select("id", { count: "exact", head: true }).eq("player_id", id).eq("status", "cleared"),
     db.from("daily_results").select("date", { count: "exact", head: true }).eq("player_id", id),
@@ -159,14 +160,14 @@ export async function playerDetail(ctx: AdminCtx, id: string) {
       .select("id, game_id, mode, status, result, winner_id, rated, bot, created_at, players, opts:state->opts")
       .contains("players", [id])
       .order("created_at", { ascending: false })
-      .limit(30),
+      .limit(60),
     // Games against the bot from /play/<game>/bot (owner, 12 Nov).
     db
       .from("bot_games")
       .select("id, game_id, level, outcome, duration_ms, created_at")
       .eq("player_id", id)
       .order("created_at", { ascending: false })
-      .limit(30),
+      .limit(60),
     // R2-P5: the sign-in streak shield's once-only ledger ref (svc_signin_shield).
     db.from("sparks_ledger").select("created_at").eq("player_id", id).eq("source", "shield").eq("ref_id", "signin").maybeSingle(),
   ]);
@@ -261,7 +262,7 @@ export async function playerDetail(ctx: AdminCtx, id: string) {
       delta: r.delta === null || r.delta === undefined ? null : Number(r.delta),
       created_at: r.created_at as string,
     })),
-    boardGames: mergeBoardGames(matches, (botGames ?? []) as BotGameRow[], id, names),
+    boardGames: mergeBoardGames(matches, (botGames ?? []) as BotGameRow[], id, names, 120),
   };
 }
 

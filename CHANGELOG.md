@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.60.0 (13 November 2026)
+
+### Admin
+
+- **One Games table on a player's page:** puzzles and board games together (no separate Board games table), newest
+  first. Filter by **Game type**, then **Pick games** opens a sheet to tick particular games of that type (with a
+  search); filter by **Result**; sort by game, type, result, time or start. Shows "12 of 40 games" and clears in
+  one tap. It now holds up to 150 puzzles and 120 board games per player.
+- **Join requests sort** by game, answer, when asked or when answered.
+- **Metrics, Top games:** sort by game, plays, players or change, and filter by game type.
+
 ## 1.59.2 (13 November 2026)
 
 ### Everyone

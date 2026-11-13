@@ -35,14 +35,29 @@ test("player detail shows ratings, rank moves from Duels and Parties, and a Ludo
     .single();
 
   await signedIn(page, "analyst");
-  await page.goto(`/admin/players/${g.userId}`);
+  await page.goto(`/admin/players/${g.userId}?tab=games`);
   await expect(page.getByRole("heading", { name: "Ratings", exact: true })).toBeVisible({ timeout: 20_000 });
   await expect(page.getByRole("cell", { name: "logic" }).first()).toBeVisible();
   await expect(page.getByRole("heading", { name: "Rank from Duels and Parties" })).toBeVisible();
   await expect(page.getByRole("cell", { name: "+8.0" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Board games" })).toBeVisible();
-  await expect(page.locator("[data-house-rules]").first()).toHaveText("Home-kick");
+  // One Games table for puzzles and board games (owner, 13 Nov 2026); house rules sit in the "How" column.
+  await expect(page.getByRole("heading", { name: "Games" })).toBeVisible();
+  await expect(page.locator("[data-player-games] tbody tr").filter({ hasText: "Ludo" }).first()).toContainText("Home-kick");
+  // Filter by game type, then pick one game in the sheet; sort by a column.
+  const games = page.locator("[data-player-games]");
+  await games.getByRole("combobox", { name: "Game type" }).click();
+  await page.getByRole("option", { name: /^Board Games/ }).click();
+  await expect(games.locator("tbody tr").first()).toContainText("Ludo");
+  await games.getByRole("button", { name: "Pick games" }).click();
+  const picker = page.getByRole("dialog", { name: "Pick games" });
+  await picker.getByRole("checkbox", { name: /Ludo/ }).check();
+  await picker.getByRole("button", { name: "Show these" }).click();
+  await expect(games.getByRole("button", { name: "1 game picked" })).toBeVisible();
+  await expect(games.locator("tbody tr")).toHaveCount(1);
+  await games.getByRole("button", { name: /^Game/ }).first().click();
+  await expect(games.locator('th[aria-sort="ascending"]')).toHaveCount(1);
   await page.screenshot({ path: "docs/qa/screens/r2/r2-admin-player-detail-1280.png", fullPage: true });
+  await games.getByRole("button", { name: "Clear filters" }).click();
   await db.from("board_matches").delete().eq("id", m!.id);
 });
 

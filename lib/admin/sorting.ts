@@ -108,6 +108,13 @@ export const AUDIT_SORT = sortSpec({
   dir: "desc",
 });
 
+export const JOIN_SORT = sortSpec({
+  keys: ["created_at", "decided_at", "status", "room_kind"],
+  default: "created_at",
+  dir: "desc",
+  firstDir: { decided_at: "desc" },
+});
+
 export const EVENT_SORT = sortSpec({
   keys: ["starts_at", "ends_at", "name"],
   default: "starts_at",

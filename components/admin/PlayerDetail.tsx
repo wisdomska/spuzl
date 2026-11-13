@@ -5,10 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { ACTION_PERMISSION, SPARKS_LIMIT, playerStatuses, type PlayerAction } from "@/lib/admin/player-filters";
-import { activityOf, dayDate, duration, exactTime, timeAgo, timeUntil } from "@/lib/admin/people-format";
+import { activityOf, dayDate, exactTime, timeAgo, timeUntil } from "@/lib/admin/people-format";
 import type { PlayerDetail as Detail } from "@/lib/admin/players";
 import { can, type Role } from "@/lib/admin/roles";
-import { GAME_BY_ID } from "@/lib/catalog";
 import { errorText, useAdminAction, useAdminQuery } from "@/lib/client/admin";
 import { adminCopy } from "@/lib/copy/admin";
 import { LEAGUE_TIERS } from "@/lib/rewards";
@@ -17,8 +16,10 @@ import { MIN_AGE, ageBandOf, birthProblem, birthYears } from "@/lib/age";
 import { ageCopy } from "@/lib/copy/age";
 import { DaysField, STATUS_TONE } from "./PlayersPage";
 import { Card, Fact, Figure, TechDetails, When } from "./people-ui";
-import { Btn, Empty, Field, Notice, Pill, RowsSkeleton, Tabs, inputCls, type PillTone } from "./ui";
+import { Btn, Field, Notice, Pill, RowsSkeleton, Tabs, inputCls, type PillTone } from "./ui";
 import { Paged } from "./Pagination";
+import { PlayerGamesTable } from "./PlayerGamesTable";
+import { allGames } from "@/lib/admin/player-games";
 import { Select } from "@/components/ui/Select";
 
 const C = adminCopy.players;
@@ -33,13 +34,6 @@ const GROUPS: { id: keyof typeof C.actionGroups; actions: PlayerAction[] }[] = [
   { id: "account", actions: ["birth", "signout", "delete"] },
 ];
 const DANGER = new Set<PlayerAction>(["ban", "revoke_ranking", "signout", "delete"]);
-const ATTEMPT_TONE: Record<string, PillTone> = {
-  cleared: "ok",
-  flagged: "danger",
-  failed: "neutral",
-  abandoned: "neutral",
-  in_progress: "warn",
-};
 const REPORT_TONE: Record<string, PillTone> = { open: "danger", actioned: "ok", dismissed: "neutral" };
 const ACTIVITY_TONE: Record<string, PillTone> = { now: "ok", today: "ok", week: "ok", month: "neutral", quiet: "warn", never: "neutral" };
 
@@ -341,32 +335,13 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
             )}
             {tab === "games" && (
               <>
-                <Card title={C.recent} id="pd-attempts" hint={C.recentHint}>
-                  {!d.attempts.length ? (
-                    <Empty icon="puzzle-piece">{C.noAttempts}</Empty>
-                  ) : (
-                    <Paged items={d.attempts} label={C.pageLabel(C.recent)}>
-                      {(rows) => (
-                        <MiniTable head={C.recentHead}>
-                          {rows.map((a) => (
-                            <tr key={a.id}>
-                              <td className={`${td} font-semibold`}>{GAME_BY_ID[a.game_id]?.name ?? a.game_id}</td>
-                              <td className={`${td} text-muted`}>{C.modes[a.mode] ?? cap(a.mode)}</td>
-                              <td className={`${td} num`}>{a.time_ms !== null ? duration(a.time_ms) : C.noEmail}</td>
-                              <td className={td}>
-                                <Pill tone={ATTEMPT_TONE[a.status] ?? "neutral"}>
-                                  {C.attemptStatus[a.status] ?? adminCopy.common.statusLabel(a.status)}
-                                </Pill>
-                              </td>
-                              <td className={`${td} text-muted whitespace-nowrap`}>
-                                <When iso={a.started_at} />
-                              </td>
-                            </tr>
-                          ))}
-                        </MiniTable>
-                      )}
-                    </Paged>
-                  )}
+                <Card title={C.games.title} id="pd-games" hint={C.games.hint}>
+                  <PlayerGamesTable
+                    rows={allGames(
+                      d.attempts.filter((a) => a.mode !== "tutorial"),
+                      d.boardGames ?? [],
+                    )}
+                  />
                 </Card>
                 <Card title={C.competitive} id="pd-ratings" hint={C.competitiveHint}>
                   <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -415,62 +390,6 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
                       )}
                     </div>
                   </div>
-                </Card>
-                <Card title={C.boardGames} id="pd-board">
-                  {!d.boardGames?.length ? (
-                    <p className="text-muted text-[13px]">{C.noBoardGames}</p>
-                  ) : (
-                    <Paged items={d.boardGames} label={C.pageLabel(C.boardGames)}>
-                      {(rows) => (
-                        <MiniTable head={C.boardHead}>
-                          {rows.map((m) => (
-                            <tr key={m.id}>
-                              <td className={`${td} font-semibold`}>{GAME_BY_ID[m.game_id]?.name ?? m.game_id}</td>
-                              <td className={td}>
-                                {m.against.kind === "bot" ? (
-                                  <span className="text-muted inline-flex items-center gap-1.5 whitespace-nowrap">
-                                    <Icon name="robot" size={14} />
-                                    {C.againstBot(m.against.level)}
-                                  </span>
-                                ) : m.against.players.length ? (
-                                  m.against.players.map((o, i) => (
-                                    <span key={o.id}>
-                                      {i > 0 && ", "}
-                                      <Link href={`/admin/players/${o.id}`} className="font-semibold underline-offset-4 hover:underline">
-                                        {o.nickname}
-                                      </Link>
-                                    </span>
-                                  ))
-                                ) : (
-                                  <span className="text-muted">{C.againstUnknown}</span>
-                                )}
-                              </td>
-                              <td className={`${td} text-muted`}>
-                                {[C.boardModes[m.mode] ?? m.mode, m.rated ? C.rated : null].filter(Boolean).join(" · ")}
-                              </td>
-                              <td className={td}>
-                                <Pill tone="neutral">{C.boardStatus[m.status] ?? adminCopy.common.statusLabel(m.status)}</Pill>
-                              </td>
-                              <td className={`${td} text-muted`}>
-                                {[m.outcome ? (C.outcomes[m.outcome] ?? m.outcome) : null, m.result].filter(Boolean).join(" · ") ||
-                                  C.noEmail}
-                              </td>
-                              <td className={td} data-house-rules>
-                                {m.house === null
-                                  ? C.noEmail
-                                  : m.house.length
-                                    ? m.house.map((k) => C.ludoRules[k] ?? k).join(", ")
-                                    : C.standardRules}
-                              </td>
-                              <td className={`${td} text-muted whitespace-nowrap`}>
-                                <When iso={m.created_at} />
-                              </td>
-                            </tr>
-                          ))}
-                        </MiniTable>
-                      )}
-                    </Paged>
-                  )}
                 </Card>
               </>
             )}

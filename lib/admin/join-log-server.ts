@@ -4,6 +4,10 @@ import { addDays } from "./dates";
 import { fetchPage } from "./paging";
 import type { PageParams } from "./pagination";
 import type { JoinLogFilters, JoinLogRow } from "./join-log";
+import { JOIN_SORT, type SortState } from "./sorting";
+
+type JoinSort = SortState<(typeof JOIN_SORT.keys)[number]>;
+const NEWEST: JoinSort = { sort: JOIN_SORT.default, dir: JOIN_SORT.dir };
 
 type Raw = Omit<JoinLogRow, "requester" | "host">;
 const COLS = "id, created_at, decided_at, status, room_kind, room_code, requester_id, host_id";
@@ -19,10 +23,15 @@ async function idsMatching(db: SupabaseClient, q: string): Promise<string[]> {
   return (data ?? []).map((p) => p.id as string);
 }
 
-async function build(db: SupabaseClient, f: JoinLogFilters) {
+async function build(db: SupabaseClient, f: JoinLogFilters, s: JoinSort = NEWEST) {
   const ids = f.q ? await idsMatching(db, f.q) : [];
   return () => {
-    let q = db.from("room_join_requests").select(COLS, { count: "exact" }).order("created_at", { ascending: false }).order("id");
+    let q = db
+      .from("room_join_requests")
+      .select(COLS, { count: "exact" })
+      .order(s.sort, { ascending: s.dir === "asc", nullsFirst: false })
+      .order("created_at", { ascending: false })
+      .order("id");
     if (f.status) q = q.eq("status", f.status);
     if (f.kind) q = q.eq("room_kind", f.kind);
     if (f.from) q = q.gte("created_at", `${f.from}T00:00:00Z`);
@@ -44,8 +53,8 @@ async function withNames(db: SupabaseClient, rows: Raw[]): Promise<JoinLogRow[]>
 }
 
 /** One page of the join-approval log, newest first. */
-export async function joinLogPage(db: SupabaseClient, f: JoinLogFilters, p: PageParams) {
-  const { rows, total } = await fetchPage(await build(db, f), p);
+export async function joinLogPage(db: SupabaseClient, f: JoinLogFilters, p: PageParams, s: JoinSort = NEWEST) {
+  const { rows, total } = await fetchPage(await build(db, f, s), p);
   return { rows: await withNames(db, rows as Raw[]), total };
 }
 

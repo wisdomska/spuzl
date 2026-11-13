@@ -118,3 +118,132 @@ export function roundRef(ref: string): string {
   if (!match || set === undefined || round === undefined) return ref.slice(0, 16);
   return `${match.slice(0, 8)} · set ${set} · round ${round}`;
 }
+
+/* ---------- One games table (owner, 13 Nov 2026): puzzles and board games together, filtered and sorted. ---------- */
+
+/** How a game ended, from the player's side, for both kinds. */
+export type GameResult = "won" | "lost" | "draw" | "solved" | "not_solved" | "suspicious" | "left" | "playing" | "waiting";
+export const GAME_RESULTS: readonly GameResult[] = [
+  "won",
+  "solved",
+  "lost",
+  "not_solved",
+  "draw",
+  "left",
+  "playing",
+  "waiting",
+  "suspicious",
+];
+
+export interface AttemptRow {
+  id: string;
+  game_id: string;
+  mode: string;
+  status: string;
+  time_ms: number | null;
+  started_at: string;
+}
+
+export interface GameRow {
+  id: string;
+  game_id: string;
+  /** a puzzle attempt or a board game (Board Bay or the bot) */
+  kind: "puzzle" | "board";
+  mode: string;
+  rated: boolean;
+  against: Against | null;
+  house: LudoHouseRule[] | null;
+  result: GameResult;
+  timeMs: number | null;
+  started: string;
+}
+
+const ATTEMPT_RESULT: Record<string, GameResult> = {
+  cleared: "solved",
+  failed: "not_solved",
+  flagged: "suspicious",
+  abandoned: "left",
+  in_progress: "playing",
+};
+const BOARD_RESULT: Record<string, GameResult> = { active: "playing", waiting: "waiting", abandoned: "left", finished: "draw" };
+
+/** Puzzle attempts and board games in one list, newest first. */
+export function allGames(attempts: readonly AttemptRow[], boards: readonly ReturnType<typeof boardGameRow>[]): GameRow[] {
+  const rows: GameRow[] = [
+    ...attempts.map((a) => ({
+      id: a.id,
+      game_id: a.game_id,
+      kind: "puzzle" as const,
+      mode: a.mode,
+      rated: false,
+      against: null,
+      house: null,
+      result: ATTEMPT_RESULT[a.status] ?? "playing",
+      timeMs: a.time_ms,
+      started: a.started_at,
+    })),
+    ...boards.map((b) => ({
+      id: b.id,
+      game_id: b.game_id,
+      kind: "board" as const,
+      mode: b.mode,
+      rated: b.rated,
+      against: b.against,
+      house: b.house,
+      result: ((b.outcome as GameResult | null) ?? BOARD_RESULT[b.status] ?? "playing") as GameResult,
+      timeMs: b.durationMs,
+      started: b.created_at,
+    })),
+  ];
+  return rows.sort((a, b) => b.started.localeCompare(a.started));
+}
+
+export interface GameFilter {
+  /** a game type (world id), or null for all */
+  type: string | null;
+  /** particular games, or null for every game of the type */
+  games: readonly string[] | null;
+  result: GameResult | null;
+}
+export const NO_GAME_FILTER: GameFilter = { type: null, games: null, result: null };
+
+export function filterGames(rows: readonly GameRow[], f: GameFilter, typeOf: (game: string) => string): GameRow[] {
+  return rows.filter(
+    (r) => (!f.type || typeOf(r.game_id) === f.type) && (!f.games || f.games.includes(r.game_id)) && (!f.result || r.result === f.result),
+  );
+}
+
+export type GameSortKey = "game" | "type" | "result" | "time" | "started";
+export const GAME_SORT = {
+  keys: ["game", "type", "result", "time", "started"],
+  default: "started",
+  dir: "desc",
+  firstDir: { time: "asc", started: "desc" },
+} as const;
+
+/** Sorted copy. Ties keep newest first; games with no time sort last either way. */
+export function sortGames(
+  rows: readonly GameRow[],
+  s: { sort: GameSortKey; dir: "asc" | "desc" },
+  nameOf: (game: string) => string,
+  typeOf: (game: string) => string,
+): GameRow[] {
+  const sign = s.dir === "asc" ? 1 : -1;
+  const rank = (r: GameRow) => GAME_RESULTS.indexOf(r.result);
+  const cmp = (a: GameRow, b: GameRow): number => {
+    switch (s.sort) {
+      case "game":
+        return sign * nameOf(a.game_id).localeCompare(nameOf(b.game_id));
+      case "type":
+        return sign * typeOf(a.game_id).localeCompare(typeOf(b.game_id));
+      case "result":
+        return sign * (rank(a) - rank(b));
+      case "time":
+        if (a.timeMs === null || b.timeMs === null) return a.timeMs === b.timeMs ? 0 : a.timeMs === null ? 1 : -1;
+        return sign * (a.timeMs - b.timeMs);
+      default:
+        return sign * a.started.localeCompare(b.started);
+    }
+  };
+  return [...rows].sort((a, b) => cmp(a, b) || b.started.localeCompare(a.started));
+}

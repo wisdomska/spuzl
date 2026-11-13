@@ -13,7 +13,9 @@ import { api } from "@/lib/client/api";
 import { errorText, useAdminQuery, type AdminPage } from "@/lib/client/admin";
 import { adminCopy } from "@/lib/copy/admin";
 import { Pagination, usePager } from "./Pagination";
-import { useDebouncedFilter, useUrlFilters } from "./useUrlFilters";
+import { useDebouncedFilter, useUrlFilters, useUrlSort } from "./useUrlFilters";
+import { SortHead } from "./SortHeader";
+import { JOIN_SORT } from "@/lib/admin/sorting";
 import { PageHead, When } from "./people-ui";
 import { Btn, Empty, Field, Notice, Pill, RowsSkeleton, inputCls, type PillTone } from "./ui";
 import { Select } from "@/components/ui/Select";
@@ -40,10 +42,11 @@ export function JoinRequestsPage() {
   const [f, setFilters] = useUrlFilters(FILTERS, ALLOWED);
   const [qText, setQText] = useDebouncedFilter(f.q, (v) => setFilters({ q: v }, { replace: true }));
   const pager = usePager();
+  const sort = useUrlSort(JOIN_SORT);
   const qs = new URLSearchParams(Object.entries(f).filter(([, v]) => v) as [string, string][]);
   const q = useAdminQuery<AdminPage<JoinLogRow>>(
-    ["join-requests", qs.toString(), pager.query],
-    `/api/admin/join-requests?${qs}${qs.size ? "&" : ""}${pager.query}`,
+    ["join-requests", qs.toString(), sort.query, pager.query],
+    `/api/admin/join-requests?${qs}${qs.size ? "&" : ""}${sort.query}&${pager.query}`,
     { keepPrevious: true },
   );
   const [busy, setBusy] = useState(false);
@@ -153,15 +156,13 @@ export function JoinRequestsPage() {
           <Empty icon="hand-waving">{filtered ? C.emptyFiltered : C.empty}</Empty>
         ) : (
           <table className="w-full border-collapse text-[14px]" style={{ minWidth: 760 }}>
-            <thead>
-              <tr className="text-muted text-left text-[12px]">
-                {C.head.map((h) => (
-                  <th key={h} scope="col" className="bg-surface-raised sticky top-0 z-[1] px-3 py-2.5 font-semibold">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
+            <SortHead
+              cols={C.head.map((label, i) => ({
+                label,
+                sort: ([undefined, undefined, "room_kind", "status", "created_at", "decided_at"] as const)[i],
+              }))}
+              sort={sort}
+            />
             <tbody>
               {q.data.rows.map((r) => (
                 <tr key={r.id} className="hover:bg-surface-raised/50">

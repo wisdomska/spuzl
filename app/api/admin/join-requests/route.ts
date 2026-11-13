@@ -3,11 +3,12 @@ import { ApiError, body, handle, ok } from "@/lib/api/server";
 import { audit, requireAdmin } from "@/lib/admin/auth";
 import { todayIso } from "@/lib/admin/dates";
 import { pageParams } from "@/lib/admin/paging";
+import { JOIN_SORT, parseSortQuery } from "@/lib/admin/sorting";
 import { JOIN_LOG_EXPORT_MAX, joinLogCsv, joinLogFilename, parseJoinLogFilters } from "@/lib/admin/join-log";
 import { joinLogAll, joinLogPage } from "@/lib/admin/join-log-server";
 
 /**
- * GET /api/admin/join-requests?status=&kind=&q=&from=&to=&page=&pageSize=: the join-approval log for under-16
+ * GET /api/admin/join-requests?status=&kind=&q=&from=&to=&sort=&dir=&page=&pageSize=: the join-approval log for under-16
  * hosts' friends-only rooms (R2-13), newest first: who asked, the host, the room, the outcome and when. No chat
  * or other content. Moderators and owners only ("joinlog.read").
  */
@@ -17,7 +18,9 @@ export const GET = handle(async (req: Request) => {
   const p = pageParams(sp);
   const f = parseJoinLogFilters(Object.fromEntries(sp));
   if (!f.ok) throw new ApiError(400, f.error);
-  const { rows, total } = await joinLogPage(ctx.db, f.filters, p);
+  const s = parseSortQuery(sp, JOIN_SORT);
+  if (!s.success) throw new ApiError(400, "bad_sort", s.error);
+  const { rows, total } = await joinLogPage(ctx.db, f.filters, p, s.data);
   return ok({ rows, page: p.page, pageSize: p.pageSize, total });
 });
 
