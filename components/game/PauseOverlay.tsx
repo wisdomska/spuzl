@@ -4,7 +4,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { formatClock } from "@/lib/format";
-import { useSettings } from "@/lib/settings/store";
+import { musicEnabled, useSettings } from "@/lib/settings/store";
 import { pauseCopy as P } from "@/lib/copy/pause";
 import { copy } from "@/lib/copy";
 
@@ -31,6 +31,8 @@ export function PauseOverlay({
   onHelp?: () => void;
 }) {
   const sfx = useSettings((s) => s.sfx);
+  const music = useSettings((s) => musicEnabled(s) && !s.lowData);
+  const lowData = useSettings((s) => s.lowData);
   const relaxed = useSettings((s) => s.relaxed);
   const cb = useSettings((s) => s.cb);
   const textScale = useSettings((s) => s.textScale);
@@ -82,6 +84,18 @@ export function PauseOverlay({
         pressed={sfx}
         onClick={() => set("sfx", !sfx)}
       />
+      {!lowData && (
+        <Row
+          icon="music-notes"
+          label={T.music}
+          value={music ? T.on : T.off}
+          pressed={music}
+          onClick={() => {
+            set("music", !music);
+            set("musicTouched", true);
+          }}
+        />
+      )}
       <Row icon="vibrate" label={T.haptics} value={haptics ? T.on : T.off} pressed={haptics} onClick={() => set("haptics", !haptics)} />
       <Row icon="sign-out" label={P.quit} value={P.quitValue} danger onClick={onQuit} />
       <span className="sr-only">{title}</span>

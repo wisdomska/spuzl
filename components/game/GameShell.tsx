@@ -11,7 +11,7 @@ import { IconButton } from "@/components/ui/IconButton";
 import { Icon } from "@/components/ui/Icon";
 import { GameMenu, type GameMenuEntry } from "./GameMenu";
 import { gameMenuCopy } from "@/lib/copy/game-menu";
-import { prefersReducedMotion, useSettings } from "@/lib/settings/store";
+import { musicEnabled, prefersReducedMotion, useSettings } from "@/lib/settings/store";
 import { useMe } from "@/lib/client/api";
 import { useGameCopy } from "@/lib/games-meta/client";
 import { BOARD_THEMES } from "@/lib/gamification/cosmetics";
@@ -179,6 +179,8 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   // The game's own colour (lib/catalog colourOf): moved games keep the hue they were designed in.
   const relaxed = useSettings((s) => s.relaxed);
   const sfx = useSettings((s) => s.sfx);
+  const music = useSettings((s) => musicEnabled(s) && !s.lowData);
+  const lowData = useSettings((s) => s.lowData);
   // The one-line rule as players see it: the admin Library override, else the catalog's (R2-ADMIN).
   const { rule: ruleText } = useGameCopy(meta);
   const haptics = useSettings((s) => s.haptics);
@@ -519,6 +521,22 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
         checked: sfx,
         onChange: (v) => setSetting("sfx", v),
       },
+      // Music has its own switch (owner, 13 Nov 2026): turning sound effects off left the music playing.
+      ...(lowData
+        ? []
+        : [
+            {
+              kind: "toggle",
+              id: "music",
+              label: M.music,
+              icon: "music-notes",
+              checked: music,
+              onChange: (v: boolean) => {
+                setSetting("music", v);
+                setSetting("musicTouched", true);
+              },
+            } as const,
+          ]),
       { kind: "toggle", id: "haptics", label: M.haptics, icon: "vibrate", checked: haptics, onChange: (v) => setSetting("haptics", v) },
       ...(canPause
         ? [

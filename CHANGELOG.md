@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.59.1 (13 November 2026)
+
+### Everyone
+
+- **Music has its own switch in games:** the game menu and the pause screen now show **Sound effects** and
+  **Music** separately, so you can turn the music off without leaving the game.
+
 ## 1.59.0 (13 November 2026)
 
 ### Everyone
