@@ -1428,9 +1428,10 @@ details[open] > summary.disclosure::before {
 
 /* ---------- Desktop hover (owner, 12 Nov 2026) ----------
    Mouse and trackpad only: phones and tablets never get a hover state that sticks after a tap. Fast (120 ms,
-   ease-out) and quiet: buttons and cards brighten a touch, board cells get a light inner ring that never moves the
-   board and stays distinct from selected, correct and wrong cells (those use fills and thick rings). Focus styles
-   are untouched: hover is not focus. Disabled things never react and show a not-allowed cursor. */
+   ease-out) and quiet: buttons and cards brighten a touch, text links dim a touch, board cells get a light inner ring
+   that never moves the board and stays distinct from selected, correct and wrong cells (those use fills and thick
+   rings). Anything with its own `hover:` style keeps it. Focus styles are untouched: hover is not focus. Disabled
+   things never react and show a not-allowed cursor. */
 @layer base {
   :where(
     button,
@@ -1443,6 +1444,9 @@ details[open] > summary.disclosure::before {
     select,
     label:has(> input:not(:disabled))
   ):not(:disabled, [aria-disabled="true"]) {
+    cursor: pointer;
+  }
+  :where([role="grid"]:not([aria-readonly="true"]) [role="gridcell"]:not([aria-disabled="true"], [aria-readonly="true"])) {
     cursor: pointer;
   }
   :where(button:disabled, [role="button"][aria-disabled="true"], [role="tab"][aria-disabled="true"], .toy-disabled) {
@@ -1463,7 +1467,41 @@ details[open] > summary.disclosure::before {
     transition-duration: var(--dur-instant), var(--dur-instant), 120ms;
     transition-timing-function: var(--spring-press), ease, var(--ease-out);
   }
-  /* Board cells and tiles that take a tap: a light inner ring. */
+  /* Clickable things with no hover of their own: text and logo links dim a touch; buttons, switches, tabs, chips,
+     folding rows and clickable tiles brighten a touch. */
+  a[href]:not(.toy, .press, .press-card, .lift, [class*="hover:"], [role="gridcell"]):hover {
+    opacity: 0.78;
+  }
+  :is(button, summary, [role="button"], [role="tab"], [class~="cursor-pointer"]):not(
+      :disabled,
+      [aria-disabled="true"],
+      .toy,
+      .press,
+      .admin-press,
+      [class*="hover:"],
+      [role="gridcell"],
+      [data-cell]
+    ):hover {
+    filter: brightness(1.12);
+  }
+  /* In the base layer, so an element's own transition (a card's lift, a caret's turn) always wins. */
+  @layer base {
+    :is(a[href], button, summary, [role="button"], [role="tab"], [class~="cursor-pointer"]):not(
+      .toy,
+      .press,
+      .press-card,
+      .admin-press,
+      [role="gridcell"],
+      [data-cell]
+    ) {
+      transition-property: opacity, filter, color, background-color, border-color, box-shadow;
+      transition-duration: 120ms;
+      transition-timing-function: var(--ease-out);
+    }
+  }
+  /* Board cells and tiles that take a tap or a drag: a light inner ring. */
+  [role="grid"]:not([aria-readonly="true"])
+    :is([role="gridcell"], [data-cell]):not(:disabled, [aria-disabled="true"], [aria-readonly="true"]):hover:not(:focus-visible),
   :is([role="gridcell"], [data-cell]):is(button, [tabindex]):not(:disabled, [aria-disabled="true"], [aria-readonly="true"]):hover:not(
       :focus-visible
     ) {
