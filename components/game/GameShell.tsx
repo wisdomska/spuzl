@@ -132,6 +132,8 @@ interface FeedbackState {
 const GUIDED_IDLE_MS = 15_000;
 /** Gap between the board's last placement sound and the clear arpeggio. */
 const CLEAR_GAP_MS = 100;
+/** The first slip's rule stays this long before the one-time slip tip takes its place on the feedback line. */
+const SLIP_TIP_MS = 2400;
 /** Gap between the last slip's buzz and the run-over sound. */
 const FAIL_GAP_MS = 320;
 /** Tool controls that take something back press with the soft tap (lib/audio/press.ts). */
@@ -198,6 +200,18 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   const [hint, setHint] = useState<Hint | null>(null);
   const [controls, setControls] = useState<ControlSpec[]>([]);
   const [feedback, setFeedback] = useState<FeedbackState>({ text: "", tone: "info", n: 0 });
+  // The first-slip tip: its timer, and the line on screen when it fires (it only replaces the slip it follows).
+  const slipTip = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const feedbackNow = useRef(feedback);
+  useEffect(() => {
+    feedbackNow.current = feedback;
+  }, [feedback]);
+  useEffect(
+    () => () => {
+      if (slipTip.current) clearTimeout(slipTip.current);
+    },
+    [],
+  );
   const [live, setLive] = useState("");
   const [confirmHint, setConfirmHint] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -348,16 +362,23 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
       },
       ruleBreak(rule, opts) {
         countMistake();
-        // The first slip ever also says what a slip is (SPZ-15), unless this game's slips are limited (the tip
-        // says they never end the game).
-        let message = rule;
-        if (!opts?.counts && !seenTips().has("slips")) {
-          markTip("slips");
-          message = `${rule} ${tipsCopy.slips}`;
-        }
-        setFeedback((f) => ({ text: message, tone: "danger", icon: "warning", n: f.n + 1 }));
-        setLive(message);
+        setFeedback((f) => ({ text: rule, tone: "danger", icon: "warning", n: f.n + 1 }));
+        setLive(rule);
         play("buzz");
+        // The first slip ever also says what a slip is (SPZ-15), unless this game's slips are limited. The tip takes the
+        // rule's place a moment later instead of adding to it, so the feedback line never grows and the tool bar never
+        // moves on a small phone. If something else is on the line by then, it waits for the next slip.
+        if (!opts?.counts && !seenTips().has("slips")) {
+          if (slipTip.current) clearTimeout(slipTip.current);
+          slipTip.current = setTimeout(() => {
+            slipTip.current = null;
+            const f = feedbackNow.current;
+            if (f.text !== rule || f.tone !== "danger" || seenTips().has("slips")) return;
+            markTip("slips");
+            setFeedback((g) => ({ text: tipsCopy.slips, tone: "info", icon: "info", n: g.n + 1 }));
+            setLive(tipsCopy.slips);
+          }, SLIP_TIP_MS);
+        }
       },
       announce(text) {
         setLive(text);
