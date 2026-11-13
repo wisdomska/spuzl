@@ -28,14 +28,8 @@ and a switched-on lab game has its public page, How to play entry, llms.txt line
 
 - **Graduated (done, 11 Nov 2026):** all twelve are live (migration 20261211300101); GAME_COUNT is 41 and the
   Explorer badges count their clears.
-- **Hard boards on small phones:** Market Run mega (5 items, 5 rules) still scrolls about 200 px at 320 x 568 and
-  375 x 667 (medium: 16 and 5 px); Tripwire mega about 128 / 102 px (its cells stop at 32 px); Killer Sums mega 6 px
-  at 320 x 568. Market could fold its rule list behind a toggle on short screens; Tripwire mega needs pan and zoom
-  like Light Up.
-- **The first-slip tip:** once per device, the shell adds "That's a slip. Slips only lower your accuracy..." to the
-  first rule break. On a 320 x 568 phone that 4-line feedback line pushes the tool bar about 6 px (seen in Market
-  Run). A clamp on the feedback line would cover every game.
-- **Emoji Hits (live)** scrolls 88 px at 320 x 568 before Start. It has its own board, not the quiz board.
+- **Hard boards on small phones:** Killer Sums mega still scrolls 6 px at 320 x 568, and Market Run mega 2 px in the
+  1280 x 800 two-column shell (its rules stay listed there). Market Run and Tripwire are fixed (below).
 - **Copy in code:** Tripwire, Pixl and Pinned keep some player-facing strings inline (cell labels, "World map",
   "km away", the practice line) instead of lib/copy.
 
@@ -80,6 +74,21 @@ and a switched-on lab game has its public page, How to play entry, llms.txt line
   unequipping clears it, so the `equipped` flag isn't checked separately.
 - **Tooling:** Turbopack doesn't follow a `node_modules` symlink outside the project (use `pnpm install --offline` in
   a worktree). The Daily pack's Periodic Background Sync only runs in installed Chrome-based apps.
+
+## Closed: hard boards on small phones (13 Nov)
+
+Measured by tests/e2e/r7-hard-fit.spec.ts (page scroll at 320 x 568 / 375 x 667, before and after):
+
+- **Market Run mega** (211 / 194 px, now 0 / 0; 390 x 844 was 100 px, now 0): on short screens, and with five items on
+  any phone, the rules fold into a "Rules" toggle with a mark per rule beside the change; open, they lie over the
+  shopping list (the pad stays free) and any tap or Escape closes them. Five items go two a row.
+- **Tripwire mega** (128 / 102 px, now 0 / 0): tiles that would come out under 32 px show the whole board, and the
+  first tap zooms in there with 44 px tiles (drag to pan, the Zoom tool to zoom out), like Light Up. The zoom maths
+  is shared (games/_shared/zoom.ts).
+- **Emoji Hits before Start** (88 / 0 px, now 0 / 0): the feedback line cues Start in one line instead of repeating
+  the card's rules, and short screens tighten the card.
+- **The first-slip tip** no longer adds to the slip's line: the slip shows alone, and a moment later the one-line tip
+  ("Slips only lower accuracy.") takes its place, so the tool bar never moves (every game; GameShell).
 
 ## Closed in round 4 (1.45.0, 10 Nov)
 
