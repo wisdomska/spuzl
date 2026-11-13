@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState, type Keyboard
 import type { BoardProps } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
 import { isKeyedInput, useGridKeys, viaKeys } from "@/components/game/useGridKeys";
+import { SHORT_H, useViewportHeight, useWide } from "@/components/game/useBoardSize";
 import { sfx } from "@/games/_shared/sfx";
 import { market as t } from "@/lib/copy/market";
 import { basketCost, clueText, costOf, MAX_Q, MIN_Q, ruleStatus, spendOf, type MarketPuzzle, type MarketState } from "./logic";
@@ -13,12 +14,14 @@ const DIGITS = Array.from({ length: MAX_Q - MIN_Q + 1 }, (_, k) => MIN_Q + k);
 const markOf = (s: boolean | null | undefined) => (s === true ? "check-circle" : s === false ? "x-circle" : "circle");
 const toneOf = (s: boolean | null | undefined) =>
   s === true ? "text-[var(--accent)]" : s === false ? "text-[var(--danger)]" : "text-muted";
-/** Two items a row on short screens (five items): name on top, price and count below, the count box in the corner. */
-const TWO = {
-  row: "short:min-h-11 short:flex-col short:items-stretch short:gap-0 short:px-2.5 short:py-1",
-  name: "short:text-[14px] short:leading-5",
-  price: "short:min-h-7 short:flex-nowrap short:pr-10",
-  count: "short:absolute short:right-2 short:bottom-1 short:h-7 short:w-9 short:rounded-[9px] short:text-[17px]",
+/** The shopping list, one item a row, or (folded, five items) two a row: name on top, price and count below. */
+const ROW = {
+  one: "short:min-h-12 tiny:min-h-11 tiny:py-0 min-h-[56px] items-center gap-3 px-3 py-1.5",
+  two: "min-h-11 flex-col items-stretch gap-0 px-2.5 py-1",
+};
+const COUNT = {
+  one: "relative h-11 w-11 rounded-[12px] text-[22px]",
+  two: "absolute right-2 bottom-1 h-7 w-9 rounded-[9px] text-[17px]",
 };
 
 /**
@@ -26,6 +29,10 @@ const TWO = {
  * shopping list (one row per item: tap it, then a number on the pad) and the rules with a kept / broken / open
  * mark each. The basket is checked when the last item is filled; it clears when the change is exact and every
  * rule holds (the puzzle has one answer).
+ *
+ * Folded (a short screen, or a five-item board on a phone): the rules sit behind a one-line toggle with a mark
+ * each, next to the change; open, they lie over the shopping list (the pad stays free) and any tap or Escape
+ * closes them. Five items then go two a row, each card still the whole tap target.
  */
 export default function MarketBoard({ puzzle, initialState, hint, disabled, mode, api }: BoardProps<MarketPuzzle, MarketState>) {
   const n = puzzle.items.length;
@@ -39,7 +46,11 @@ export default function MarketBoard({ puzzle, initialState, hint, disabled, mode
   const qtyRef = useRef(qty);
   const streak = useRef(0);
   const locked = disabled || done;
-  // Short screens: the rules fold behind a toggle; open, Escape or a tap anywhere closes them.
+  // The fold: short screens (the `short` CSS variant's height), and five items on any phone (the mega board).
+  const vh = useViewportHeight();
+  const wide = useWide();
+  const fold = vh <= SHORT_H || (n >= 5 && !wide);
+  const two = fold && n >= 5;
   const [rulesOpen, setRulesOpen] = useState(false);
   const rulesBtn = useRef<HTMLButtonElement>(null);
   const rulesId = useId();
@@ -196,9 +207,6 @@ export default function MarketBoard({ puzzle, initialState, hint, disabled, mode
 
   const change = puzzle.cash - cost;
   const full = qty.every((q) => q != null);
-  // Five items on a short screen: the list goes two to a row (name over price and count), each card still the
-  // whole tap target, so the mega board fits a 320 x 568 phone.
-  const two = n >= 5;
   const kept = status.filter((s) => s === true).length;
 
   const ruleList = (
@@ -225,41 +233,42 @@ export default function MarketBoard({ puzzle, initialState, hint, disabled, mode
       className={`short:gap-2 tiny:gap-1.5 tiny:px-3 tiny:py-2 flex flex-col gap-3 rounded-[20px] p-4 ${done ? "board-pulse" : ""}`}
       style={{ width: "min(358px, calc(100vw - 36px))", background: "var(--board-bg)", boxShadow: "0 0 0 2px var(--line)" }}
     >
-      {/* Money (and, on short screens, the folded rules: a mark per rule; open, they lie over the shopping list, the
-          pad stays free, and a tap anywhere or Escape closes them) */}
+      {/* Money (and, folded, the rules toggle) */}
       <div className="relative flex items-start justify-between gap-2">
-        <div className="short:hidden flex min-w-0 flex-col">
+        <div className={`min-w-0 flex-col ${fold ? "hidden" : "flex"}`}>
           <span className="num tiny:text-[16px] text-[18px] leading-tight font-semibold whitespace-nowrap">{t.cash(puzzle.cash)}</span>
           <span className="text-muted short:hidden text-[13px] font-medium">{t.bringBack(puzzle.change)}</span>
         </div>
-        <button
-          type="button"
-          aria-expanded={rulesOpen}
-          ref={rulesBtn}
-          aria-controls={rulesId}
-          onClick={() => setRulesOpen((o) => !o)}
-          className="toy short:flex hidden min-h-11 min-w-0 flex-1 items-center gap-1.5 rounded-[14px] px-2.5 text-left text-[14px] font-semibold"
-          style={{ background: "var(--surface-raised)", ["--btn-depth" as string]: "var(--depth)", boxShadow: "0 4px 0 var(--depth)" }}
-        >
-          <span className="whitespace-nowrap">{t.rulesToggle}</span>
-          <span className="sr-only">, {t.rulesKept(kept, rules.length)}</span>
-          <span aria-hidden className="flex min-w-0 flex-1 items-center gap-0.5 overflow-hidden">
-            {status.map((s, k) => (
-              <Icon key={k} name={markOf(s)} size={13} className={`shrink-0 ${toneOf(s)}`} />
-            ))}
-          </span>
-          <Icon name={rulesOpen ? "caret-up" : "caret-down"} size={14} className="text-muted tiny:hidden shrink-0" />
-        </button>
-        {rulesOpen && (
+        {fold && (
+          <button
+            type="button"
+            aria-expanded={rulesOpen}
+            ref={rulesBtn}
+            aria-controls={rulesOpen ? rulesId : undefined}
+            onClick={() => setRulesOpen((o) => !o)}
+            className="toy flex min-h-11 min-w-0 flex-1 items-center gap-1.5 rounded-[14px] px-2.5 text-left text-[14px] font-semibold"
+            style={{ background: "var(--surface-raised)", ["--btn-depth" as string]: "var(--depth)", boxShadow: "0 4px 0 var(--depth)" }}
+          >
+            <span className="whitespace-nowrap">{t.rulesToggle}</span>
+            <span className="sr-only">, {t.rulesKept(kept, rules.length)}</span>
+            <span aria-hidden className="flex min-w-0 flex-1 items-center gap-0.5 overflow-hidden">
+              {status.map((s, k) => (
+                <Icon key={k} name={markOf(s)} size={13} className={`shrink-0 ${toneOf(s)}`} />
+              ))}
+            </span>
+            <Icon name={rulesOpen ? "caret-up" : "caret-down"} size={14} className="text-muted tiny:hidden shrink-0" />
+          </button>
+        )}
+        {fold && rulesOpen && (
           <div
             id={rulesId}
-            className="short:block absolute inset-x-0 top-[calc(100%+6px)] z-20 hidden rounded-[16px] p-3"
+            className="absolute inset-x-0 top-[calc(100%+6px)] z-20 rounded-[16px] p-3"
             style={{ background: "var(--surface-raised)", boxShadow: "0 0 0 2px var(--line), 0 12px 32px rgb(0 0 0 / .35)" }}
           >
             {ruleList}
           </div>
         )}
-        <div className="short:self-center flex flex-col items-end" aria-live="off">
+        <div className={`flex flex-col items-end ${fold ? "self-center" : ""}`} aria-live="off">
           <span className="num short:hidden text-[15px] font-semibold whitespace-nowrap">{t.basket(cost)}</span>
           <span
             className="num short:text-[15px] tiny:text-[13px] flex items-center gap-1 text-[13px] font-semibold whitespace-nowrap"
@@ -284,7 +293,7 @@ export default function MarketBoard({ puzzle, initialState, hint, disabled, mode
         aria-rowcount={n}
         aria-colcount={1}
         onKeyDown={onKeyDown}
-        className={`tiny:gap-1.5 flex flex-col gap-2 ${two ? "short:grid short:grid-cols-2" : ""}`}
+        className={`tiny:gap-1.5 gap-2 ${two ? "grid grid-cols-2" : "flex flex-col"}`}
       >
         {puzzle.items.map((it, i) => {
           const q = qty[i];
@@ -306,7 +315,7 @@ export default function MarketBoard({ puzzle, initialState, hint, disabled, mode
                   if (sel !== i && !locked) sfx.select();
                   setSel(i);
                 }}
-                className={`${two ? TWO.row : "short:min-h-12 tiny:min-h-11 tiny:py-0"} relative flex min-h-[56px] cursor-pointer items-center gap-3 rounded-[14px] px-3 py-1.5 outline-none focus-visible:ring-2 focus-visible:ring-[var(--text)] ${anim} ${hinted ? "hint-ring" : ""}`}
+                className={`${two ? ROW.two : ROW.one} relative flex cursor-pointer rounded-[14px] outline-none focus-visible:ring-2 focus-visible:ring-[var(--text)] ${anim} ${hinted ? "hint-ring" : ""}`}
                 style={{
                   background: "var(--surface-raised)",
                   boxShadow: `0 4px 0 var(--depth)${isBad ? ", inset 0 0 0 2px var(--danger)" : hinted ? ", inset 0 0 0 3px var(--accent)" : isSel ? ", inset 0 0 0 2px var(--world)" : ""}`,
@@ -314,30 +323,26 @@ export default function MarketBoard({ puzzle, initialState, hint, disabled, mode
               >
                 {isBad && <span aria-hidden className="hatch absolute inset-0 rounded-[14px]" />}
                 <div className="relative flex min-w-0 flex-1 flex-col">
-                  <span className={`truncate text-[15px] font-semibold first-letter:uppercase ${two ? TWO.name : ""}`}>
+                  <span className={`truncate font-semibold first-letter:uppercase ${two ? "text-[14px] leading-5" : "text-[15px]"}`}>
                     {t.many(it.key)}
                   </span>
-                  <span className={`text-muted flex flex-wrap items-center gap-x-2 text-[12px] font-medium ${two ? TWO.price : ""}`}>
-                    <span className={`num ${two ? "short:hidden" : ""}`}>{t.each(it.price)}</span>
-                    {two && <span className="num short:inline hidden">{t.cedis(it.price)}</span>}
+                  <span className={`text-muted flex items-center gap-x-2 text-[12px] font-medium ${two ? "min-h-7 pr-10" : "flex-wrap"}`}>
+                    <span className="num">{two ? t.cedis(it.price) : t.each(it.price)}</span>
                     {it.deal && (
                       <span className="flex items-center gap-1 font-semibold whitespace-nowrap text-[var(--gold)]">
                         <Icon name="gift" size={12} />
-                        <span className="short:hidden">{t.deal}</span>
-                        <span className={`hidden ${two ? "" : "short:inline"}`}>{t.dealShort}</span>
+                        {!two && <span className="short:hidden">{t.deal}</span>}
+                        {!two && <span className="short:inline hidden">{t.dealShort}</span>}
                       </span>
                     )}
                   </span>
                 </div>
-                <span
-                  aria-hidden
-                  className={`num text-muted relative w-[52px] text-right text-[13px] font-medium ${two ? "short:hidden" : ""}`}
-                >
+                <span aria-hidden className={`num text-muted relative w-[52px] text-right text-[13px] font-medium ${two ? "hidden" : ""}`}>
                   {q != null ? t.subtotal(costOf(it, q)) : ""}
                 </span>
                 <span
                   aria-hidden
-                  className={`num relative flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] text-[22px] font-semibold ${two ? TWO.count : ""} ${pop?.i === i && !isBad ? (pop.n % 2 ? "cell-pop-a" : "cell-pop-b") : ""}`}
+                  className={`num flex shrink-0 items-center justify-center font-semibold ${two ? COUNT.two : COUNT.one} ${pop?.i === i && !isBad ? (pop.n % 2 ? "cell-pop-a" : "cell-pop-b") : ""}`}
                   style={{
                     background: done ? "var(--world)" : isSel ? "color-mix(in srgb, var(--world) 22%, var(--surface))" : "var(--surface)",
                     color: done ? "var(--on-accent)" : isBad ? "var(--danger)" : "var(--text)",
@@ -352,8 +357,8 @@ export default function MarketBoard({ puzzle, initialState, hint, disabled, mode
         })}
       </div>
 
-      {/* Rules (folded into the top row on short screens) */}
-      <div className="short:hidden flex flex-col gap-1">
+      {/* Rules (unless folded into the top row) */}
+      <div className={`flex-col gap-1 ${fold ? "hidden" : "flex"}`}>
         <span className="text-muted text-[12px] font-semibold tracking-wide uppercase">{t.rules}</span>
         {ruleList}
       </div>
