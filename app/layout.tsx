@@ -1,3 +1,4 @@
+import { openSplashBootScript } from "@/lib/client/open-splash";
 import type { Metadata, Viewport } from "next";
 import { Unbounded, Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
@@ -63,6 +64,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="en" data-theme="dark" suppressHydrationWarning className={`${unbounded.variable} ${geist.variable} ${geistMono.variable}`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: settingsBootScript }} />
+        <script dangerouslySetInnerHTML={{ __html: openSplashBootScript }} />
       </head>
       <body>
         <Providers>{children}</Providers>

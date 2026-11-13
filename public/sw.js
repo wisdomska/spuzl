@@ -14,7 +14,7 @@
  * - Push (lib/push/server.ts): your turn, a nudge, a friend's invite. Shown only when no SPUZL window is on screen
  *   (an open app shows its own card); tapping it focuses SPUZL on that page, or opens it.
  */
-const VERSION = "2026-11-06.1";
+const VERSION = "2026-11-13.1";
 const SHELL = `spuzl-shell-${VERSION}`;
 const STATIC = `spuzl-static-${VERSION}`;
 const DATA = `spuzl-data-${VERSION}`;
@@ -22,7 +22,8 @@ const DAILY_PREFIX = "spuzl-daily-";
 // Music and sound effects (public/music, public/sfx): kept across app updates so they load instantly and work
 // offline. Bump this when a recording is replaced under the same file name.
 const AUDIO = "spuzl-audio-1";
-const SHELL_URLS = ["/", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png", "/icons/apple-touch-icon.png"];
+// "/" is not precached: for a visitor it is the landing page, which must never stand in for a player's Home.
+const SHELL_URLS = ["/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png", "/icons/apple-touch-icon.png"];
 const DATA_PATHS = ["/api/v1/today", "/api/v1/me"];
 const NAV_TIMEOUT_MS = 4000;
 
@@ -151,18 +152,28 @@ function withTimeout(promise, ms) {
 async function navigation(event) {
   const req = event.request;
   const cache = await caches.open(SHELL);
-  try {
-    const res = await withTimeout(fetch(req), NAV_TIMEOUT_MS);
-    if (res.ok && res.type === "basic" && !res.redirected) event.waitUntil(cache.put(req.url, res.clone()));
+  const url = new URL(req.url);
+  const network = fetch(req).then((res) => {
+    // The landing page (sent to visitors with no session, marked by the proxy) is never kept: a reload must not
+    // turn a player's Home into it.
+    if (res.ok && res.type === "basic" && !res.redirected && !res.headers.get("x-spuzl-public")) {
+      event.waitUntil(cache.put(req.url, res.clone()));
+    }
     return res;
+  });
+  network.catch(() => {});
+  try {
+    return await withTimeout(network, NAV_TIMEOUT_MS);
   } catch {
-    const url = new URL(req.url);
-    return (
-      (await cache.match(req.url, { ignoreSearch: false })) ||
-      (await cache.match(url.origin + url.pathname, { ignoreSearch: true })) ||
-      (await cache.match("/")) ||
-      offlinePage()
-    );
+    // Slow, not offline: show this page's own last copy if there is one, else keep waiting for the network. Only a
+    // real failure falls back to Home's copy or the offline page.
+    const own = (await cache.match(req.url)) || (await cache.match(url.origin + url.pathname, { ignoreSearch: true }));
+    if (own) return own;
+    try {
+      return await network;
+    } catch {
+      return (await cache.match(url.origin + "/")) || offlinePage();
+    }
   }
 }
 

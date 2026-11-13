@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { PLAY_HREF } from "@/lib/landing-links";
 import { useMemo, useState, useLayoutEffect, useRef } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import CrownfallBoard from "@/games/crownfall/Board";
@@ -112,7 +113,7 @@ export function TryIt() {
                 <div className="flex flex-1 flex-col">
                   <p className="text-[15px] font-bold">{T.tryIt.solved}</p>
                   <p className="text-muted text-[14px]">{T.tryIt.counted}</p>
-                  <Link href="/welcome/play" className="text-accent flex items-center gap-1 text-[15px] font-bold">
+                  <Link href={PLAY_HREF} className="text-accent flex items-center gap-1 text-[15px] font-bold">
                     {T.tryIt.more}
                     <Icon name="arrow-right" size={16} />
                   </Link>

@@ -9,6 +9,8 @@ import { TryIt } from "@/components/landing/TryIt";
 import { NoMusic } from "@/components/landing/NoMusic";
 import { Reveal } from "@/components/landing/Reveal";
 import { SmoothAnchors } from "@/components/landing/SmoothAnchors";
+import { IntroLinks } from "@/components/landing/IntroLinks";
+import { PLAY_HREF, SIGN_IN_HREF } from "@/lib/landing-links";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { aboutCopy as T } from "@/lib/copy/about";
 import { landingSeoCopy as S, seoMeta, siteFaq } from "@/lib/copy/seo";
@@ -59,6 +61,7 @@ export default async function Landing() {
       <NoMusic />
       <Reveal />
       <SmoothAnchors />
+      <IntroLinks />
       {/* Nav */}
       <header className="sticky top-0 z-20 px-4 pt-3">
         <nav className="bg-surface/85 border-line mx-auto flex h-16 max-w-[1160px] items-center justify-between rounded-full border px-4 backdrop-blur-md sm:px-6">
@@ -79,11 +82,11 @@ export default async function Landing() {
           </div>
           <div className="flex items-center gap-2">
             {/* R2-08: Play goes straight to the birth step as a guest, so Google and email sign-in live here (every width). */}
-            <Link href="/welcome" className="text-text flex h-11 items-center px-2 text-[15px] font-semibold sm:px-3">
+            <Link href={SIGN_IN_HREF} className="text-text flex h-11 items-center px-2 text-[15px] font-semibold sm:px-3">
               {T.nav.signIn}
             </Link>
             <Link
-              href="/welcome/play"
+              href={PLAY_HREF}
               className="press bg-accent text-on-accent flex h-11 items-center rounded-full px-5 text-[15px] font-bold"
             >
               {T.nav.play}
@@ -115,11 +118,11 @@ export default async function Landing() {
               {T.lede}
             </p>
             <div style={{ "--i": 3 } as CSSProperties} className="hero-in flex flex-col gap-3 sm:flex-row">
-              <Link href="/welcome/play" className={PRIMARY}>
+              <Link href={PLAY_HREF} className={PRIMARY}>
                 <Icon name="play" size={20} />
                 {T.play}
               </Link>
-              <Link href="/welcome" className={SECONDARY}>
+              <Link href={SIGN_IN_HREF} className={SECONDARY}>
                 {T.signIn}
               </Link>
             </div>
@@ -288,7 +291,7 @@ export default async function Landing() {
           </h2>
           <p className="text-[17px] font-medium opacity-80">{T.ctaBody}</p>
           <Link
-            href="/welcome/play"
+            href={PLAY_HREF}
             className="press bg-bg text-text flex h-14 items-center gap-2 rounded-full px-8 text-[17px] font-bold shadow-[0_5px_0_var(--depth)]"
           >
             <Icon name="play" size={20} />

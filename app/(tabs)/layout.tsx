@@ -1,5 +1,6 @@
 import { BottomNav, DesktopRail } from "@/components/shell/BottomNav";
 import { LowDataSuggest } from "@/components/shell/LowDataSuggest";
+import { OpenSplash } from "@/components/shell/OpenSplash";
 import { SeedQueries } from "@/components/shell/SeedQueries";
 
 /**
@@ -14,6 +15,7 @@ export default function TabsLayout({ children }: LayoutProps<"/">) {
         {children}
         <BottomNav />
         <LowDataSuggest />
+        <OpenSplash />
       </div>
     </SeedQueries>
   );

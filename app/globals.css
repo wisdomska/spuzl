@@ -1529,3 +1529,8 @@ details[open] > summary.disclosure::before {
 [data-motion="reduce"] :is(.press, .press-card, .admin-press) {
   transition-duration: 0ms;
 }
+
+/* App-open logo intro (components/shell/OpenSplash): hidden before paint once this visit has opened. */
+:root[data-opened="1"] .open-splash {
+  display: none;
+}

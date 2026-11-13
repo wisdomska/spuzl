@@ -70,7 +70,12 @@ export async function proxy(request: NextRequest) {
   // from a player. Every document request counts, whatever its Accept header (crawlers often send */* or none).
   // In-app navigations and prefetches (RSC requests) keep the old flow, so a Home prefetched just before a guest
   // account is created is never cached as the landing page.
-  if (!hasSession && path === "/" && isDocumentRequest(request)) return NextResponse.rewrite(new URL("/about", request.url));
+  if (!hasSession && path === "/" && isDocumentRequest(request)) {
+    const landing = NextResponse.rewrite(new URL("/about", request.url));
+    // The service worker never caches a page marked public (public/sw.js), so the landing page can't stand in for Home.
+    landing.headers.set("x-spuzl-public", "1");
+    return landing;
+  }
   return response;
 }
 
