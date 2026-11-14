@@ -3,14 +3,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BoardProps, Hint } from "@/games/types";
 import { Icon } from "@/components/ui/Icon";
-import { useFitHeight, useViewportWidth } from "@/components/game/useBoardSize";
+import { useFitHeight, useViewportHeight, useViewportWidth, useWide } from "@/components/game/useBoardSize";
 import { play } from "@/lib/audio";
 import { sfx } from "@/games/_shared/sfx";
 import { isKeyedInput } from "@/components/game/useGridKeys";
 import { sendGuess } from "@/games/_shared/guess";
 import { reducedMotion } from "@/games/_shared/fly";
 import { LetterKeyboard, type KeyDecor } from "@/games/_shared/LetterKeyboard";
-import { useWide } from "@/components/game/useBoardSize";
 import { FIVE_COPY as t, MARK_SAY } from "@/lib/copy/five";
 import { HIT, letterMarks, MISS, NEAR, type FiveCheck, type FivePuzzle, type FiveState, type Mark } from "./rules";
 
@@ -41,6 +40,8 @@ const flipMid = (c: number) => c * FLIP_STEP_MS + FLIP_MS / 2;
  */
 const MAX_CELL = 56;
 const MIN_CELL = 26;
+/** Wide screens: everything above, around and under the tile rows (top bar, slot padding, keyboard, key row, gaps). */
+const WIDE_FIVE_CHROME = 316;
 
 function hintTarget(hint: Hint | null | undefined): { pos: number; letter: string } | null {
   const t = hint?.target as { pos?: unknown; letter?: unknown } | undefined;
@@ -75,7 +76,14 @@ export default function FiveBoard({ puzzle, initialState, hint, disabled, mode, 
   // measurement stopped at the first step, since the slot's height doesn't follow the tiles.
   const vw = useViewportWidth();
   const rootRef = useRef<HTMLDivElement>(null);
-  const cell = useFitHeight(Math.min(MAX_CELL, Math.floor((vw - 84) / 5)), MIN_CELL, tries);
+  const vh = useViewportHeight();
+  const wideBox = useWide();
+  // Wide screens (owner, 14 Nov 2026: "keyboard under grid, but make the grid larger"): the tiles take the height
+  // the top bar and a full-width keyboard leave (WIDE_FIVE_CHROME), well past the phone cap.
+  const ideal = wideBox
+    ? Math.max(MAX_CELL, Math.min(96, Math.floor((vh - WIDE_FIVE_CHROME) / tries)))
+    : Math.min(MAX_CELL, Math.floor((vw - 84) / 5));
+  const cell = useFitHeight(ideal, MIN_CELL, tries);
 
   const stateOf = useCallback(
     (list: Row[]): FiveState =>
@@ -274,9 +282,8 @@ export default function FiveBoard({ puzzle, initialState, hint, disabled, mode, 
     // key under the grid (every tile and key carries its mark's icon and spoken name, and the rule names the three marks).
     <div
       ref={rootRef}
-      // Wide screens: the keyboard sits beside the grid instead of under it (owner, 14 Nov 2026), so the pair is
-      // short enough to grow to the screen (components/game/WideZoom).
-      className={`short:gap-1.5 tiny:gap-1 flex w-full ${wide ? "max-w-none flex-row items-center gap-5" : "max-w-[400px] flex-col items-center gap-2"} ${won ? "board-pulse" : ""}`}
+      // Wide screens: the keyboard stays under the grid and spans the board's width (owner, 14 Nov 2026).
+      className={`short:gap-1.5 tiny:gap-1 flex w-full flex-col items-center gap-2 ${wide ? "max-w-[620px]" : "max-w-[400px]"} ${won ? "board-pulse" : ""}`}
     >
       <div
         className="short:gap-1 short:p-2 tiny:p-1.5 flex flex-col gap-1.5 rounded-[20px] p-2.5"
@@ -370,7 +377,7 @@ export default function FiveBoard({ puzzle, initialState, hint, disabled, mode, 
       </div>
 
       {!over && (
-        <div className={wide ? "w-[380px] shrink-0" : "contents"}>
+        <div className={wide ? "flex w-full justify-center [&>div]:max-w-[600px]" : "contents"}>
           <LetterKeyboard
             onLetter={onLetter}
             onBackspace={onBackspace}

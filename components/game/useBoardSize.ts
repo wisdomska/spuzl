@@ -68,7 +68,7 @@ export function wideAside(vw: number): number {
  * together in the middle of the page, so spare width goes to the outer margins, never between board and panel.
  * Square boards are 1; wide boards (a pit row, a running course) are wider.
  */
-export const WIDE_ASPECT: Record<string, number> = { five: 1.6, oware: 2.4, gotcha: 1.8, dash: 1.8, fourup: 1.17, remix: 1.3, quads: 1.3 };
+export const WIDE_ASPECT: Record<string, number> = { five: 0.62, oware: 2.4, gotcha: 1.8, dash: 1.8, fourup: 1.17, remix: 1.3, quads: 1.3 };
 /** A board column is never narrower than this on a wide screen (cards, word games and their keyboards). */
 export const WIDE_COL_MIN = 600;
 
@@ -81,7 +81,8 @@ export function wideColumn(vw: number, vh: number, game: string, panel = true): 
     return Math.min(avail, Math.round(box.h * (WIDE_ASPECT[game] ?? 1))) + SLOT_PAD * 2;
   }
   const shaped = Math.round(Math.min(box.w, box.h) * (WIDE_ASPECT[game] ?? 1));
-  return Math.min(box.w, Math.max(WIDE_COL_MIN, shaped)) + SLOT_PAD * 2;
+  // A game with its own shape (narrow Five, wide Oware) takes exactly that; the rest get at least WIDE_COL_MIN.
+  return Math.min(box.w, game in WIDE_ASPECT ? shaped : Math.max(WIDE_COL_MIN, shaped)) + SLOT_PAD * 2;
 }
 
 /** The space a board has, in px, inside the board slot's padding. */

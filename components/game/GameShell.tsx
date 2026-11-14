@@ -26,6 +26,9 @@ import { copy } from "@/lib/copy";
 import { leaveCopy } from "@/lib/copy/leave";
 import { leavePolicy, type LeaveContext } from "@/lib/game/leave";
 import { WideZoom } from "./WideZoom";
+
+/** Boards that size themselves to the wide screen (no extra zoom): Five fits its tiles to the height left over. */
+const SIZES_ITSELF = new Set(["five"]);
 import {
   useViewportHeight,
   useViewportWidth,
@@ -705,7 +708,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
           </motion.div>
         )}
       </AnimatePresence>
-      <WideZoom on={wide && meta.engine !== "phaser"} column={colW}>
+      <WideZoom on={wide && meta.engine !== "phaser" && !SIZES_ITSELF.has(meta.id)} column={colW}>
         <Board
           {...extra}
           extra={extra}
