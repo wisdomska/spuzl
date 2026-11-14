@@ -136,7 +136,7 @@ describe("twins verify", () => {
   it("tracks progress by pairs", () => {
     const g = generate(createRng("prog"), "easy");
     const pair = clairvoyant(g.puzzle).slice(0, 2);
-    expect(logic.progress(g.puzzle, null, timed(pair))).toBeCloseTo(1 / 6);
+    expect(logic.progress(g.puzzle, null, timed(pair))).toBeCloseTo(1 / 8);
     expect(logic.progress(g.puzzle, null, timed([]))).toBe(0);
     expect(replay(g.puzzle, timed([pair[0]])).open).toBe(pair[0]);
   });

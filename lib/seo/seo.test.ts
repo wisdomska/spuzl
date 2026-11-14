@@ -106,13 +106,13 @@ describe("public pages follow the Games page state", () => {
     "games.off": off,
     "games.noVersus": noVersus,
   });
-  const closed = sw(["pinned"], ["crownfall"]);
+  const closed = sw(["flagged"], ["crownfall"]);
 
   it("never show a game In testing or Off: no page, sitemap entry, llms.txt line or count", () => {
     const urls = sitemap(closed).map((e) => e.url);
     const short = llmsTxt(undefined, closed);
     const full = llmsFullTxt(undefined, closed);
-    for (const id of ["pinned", "crownfall"]) {
+    for (const id of ["flagged", "crownfall"]) {
       const g = GAMES.find((x) => x.id === id)!;
       expect(publicGame(id, closed), id).toBeUndefined();
       expect(urls, id).not.toContain(absoluteUrl(`/games/${id}`));

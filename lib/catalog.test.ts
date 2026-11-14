@@ -79,13 +79,13 @@ const KEEP = [
 /** The eleven R2-P5 brought back from retirement as lab games, then Two Truths and a Lie (R2-P5 part B). */
 const BACK = ["five", "hilo", "penalty", "market", "lightup", "killer", "dara", "pinned", "flagged", "tripwire", "pixl"];
 const GRADUATED = [...BACK, "twotruths"];
-/** Retired by the owner on 14 Nov 2026: Arcade is Gotcha, Echo, Flinch and Dash. */
-const ARCADE_CUT = ["twins", "beattap", "penalty"];
-const LIVE = [...KEEP, ...GRADUATED].filter((id) => !ARCADE_CUT.includes(id));
+/** Retired by the owner on 14 Nov 2026 (Twins was cut the same day and then came back as a growing grid). */
+const CUTS = ["beattap", "penalty", "hilo", "killer", "lightup", "pixl", "market", "pinned"];
+const LIVE = [...KEEP, ...GRADUATED].filter((id) => !CUTS.includes(id));
 
 describe("Graduate: the twelve lab games are live (11 Nov 2026)", () => {
   it("makes all twelve live, none lab, none retired, each in its own world", () => {
-    for (const id of GRADUATED.filter((g) => !ARCADE_CUT.includes(g))) {
+    for (const id of GRADUATED.filter((g) => !CUTS.includes(g))) {
       expect(isLiveGame(id), id).toBe(true);
       expect(isLabGame(id), id).toBe(false);
       expect(isRetired(id), id).toBe(false);
@@ -116,20 +116,20 @@ describe("Graduate: the twelve lab games are live (11 Nov 2026)", () => {
   it("leaves no game in testing", () => {
     expect(LAB_GAMES).toEqual([]);
     expect(ALL_GAMES.filter((g) => g.lab)).toEqual([]);
-    expect(GAME_COUNT).toBe(38);
+    expect(GAME_COUNT).toBe(33);
   });
 });
 
 describe("catalog: retired games", () => {
-  it("keeps the owner-picked and graduated games live, less the three Arcade cuts: 38", () => {
+  it("keeps the owner-picked and graduated games live, less the owner's cuts of 14 Nov 2026: 33", () => {
     expect(GAMES.map((g) => g.id).sort()).toEqual([...LIVE].sort());
-    expect(GAME_COUNT).toBe(38);
+    expect(GAME_COUNT).toBe(33);
     expect(GAMES.every((g) => !g.retired && !g.lab)).toBe(true);
   });
 
-  it("retires 24 games but keeps them in code (21, plus the three Arcade cuts of 14 Nov 2026)", () => {
-    expect(RETIRED_IDS.size).toBe(24);
-    expect(RETIRED_GAMES).toHaveLength(24);
+  it("retires 29 games but keeps them in code (21, plus the owner's eight cuts of 14 Nov 2026)", () => {
+    expect(RETIRED_IDS.size).toBe(29);
+    expect(RETIRED_GAMES).toHaveLength(29);
     // 61 before R2-P5 part B, plus Two Truths and a Lie
     expect(ALL_GAMES).toHaveLength(62);
     for (const id of RETIRED_IDS) {
@@ -171,47 +171,13 @@ describe("catalog: retired games", () => {
 
 describe("catalog: four groups", () => {
   const GROUPS: [WorldId, string, string[]][] = [
-    [
-      "logic",
-      "Puzzles",
-      [
-        "crownfall",
-        "dusk",
-        "sixer",
-        "nine",
-        "killer",
-        "lightup",
-        "pixl",
-        "tripwire",
-        "weave",
-        "flowline",
-        "pairup",
-        "lost",
-        "trotro",
-        "market",
-        "hilo",
-      ],
-    ],
+    ["logic", "Puzzles", ["crownfall", "dusk", "sixer", "nine", "tripwire", "weave", "flowline", "pairup", "lost", "trotro"]],
     [
       "word",
       "Words & Quiz",
-      [
-        "coil",
-        "rungs",
-        "quads",
-        "seven",
-        "minicross",
-        "buried",
-        "remix",
-        "five",
-        "quickfire",
-        "emojihits",
-        "pinned",
-        "flagged",
-        "twotruths",
-      ],
+      ["coil", "rungs", "quads", "seven", "minicross", "buried", "remix", "five", "quickfire", "emojihits", "flagged", "twotruths"],
     ],
-    ["reflex", "Arcade", ["gotcha", "echo", "flinch", "dash"]],
+    ["reflex", "Arcade", ["gotcha", "echo", "flinch", "dash", "twins"]],
     ["board", "Board Games", ["chess", "draughts", "oware", "ludo", "fourup", "dara"]],
   ];
 
@@ -287,12 +253,12 @@ describe("Game state: On, In testing, Off (Games page)", () => {
   });
 
   it("opens a game In testing for admins only, and a game Off for nobody", () => {
-    const s = sw(["pinned"], ["crownfall"]);
-    expect(gameState("pinned", s)).toBe("testing");
+    const s = sw(["flagged"], ["crownfall"]);
+    expect(gameState("flagged", s)).toBe("testing");
     expect(gameState("crownfall", s)).toBe("off");
-    expect(openGame("pinned", s)).toBeUndefined();
-    expect(openGame("pinned", s, { admin: false })).toBeUndefined();
-    expect(openGame("pinned", s, { admin: true })?.id).toBe("pinned");
+    expect(openGame("flagged", s)).toBeUndefined();
+    expect(openGame("flagged", s, { admin: false })).toBeUndefined();
+    expect(openGame("flagged", s, { admin: true })?.id).toBe("flagged");
     expect(openGame("crownfall", s)).toBeUndefined();
     expect(openGame("crownfall", s, { admin: true })).toBeUndefined();
     expect(openGame("dusk", s)?.id).toBe("dusk");
@@ -312,15 +278,15 @@ describe("Game state: On, In testing, Off (Games page)", () => {
   });
 
   it("drops games In testing and Off from every player list and count", () => {
-    const s = sw(["pinned"], ["crownfall"]);
+    const s = sw(["flagged"], ["crownfall"]);
     const ids = playerGames(s).map((g) => g.id);
-    expect(ids).not.toContain("pinned");
+    expect(ids).not.toContain("flagged");
     expect(ids).not.toContain("crownfall");
     expect(ids).toHaveLength(GAME_COUNT - 2);
     expect(playerGamesInWorld("logic", s).map((g) => g.id)).not.toContain("crownfall");
-    expect(playerGamesInWorld("word", s).map((g) => g.id)).not.toContain("pinned");
+    expect(playerGamesInWorld("word", s).map((g) => g.id)).not.toContain("flagged");
     // An admin's view keeps the game in testing, never the one Off.
-    expect(playerGames(s, { admin: true }).map((g) => g.id)).toContain("pinned");
+    expect(playerGames(s, { admin: true }).map((g) => g.id)).toContain("flagged");
     expect(playerGames(s, { admin: true }).map((g) => g.id)).not.toContain("crownfall");
   });
 
@@ -338,11 +304,11 @@ describe("Game state: On, In testing, Off (Games page)", () => {
   });
 
   it("races the graduated time games in Duels and Parties, never Dara (a board game) nor the score games", () => {
-    for (const id of ["five", "market", "lightup", "killer", "tripwire", "pixl"]) {
+    for (const id of ["five", "tripwire"]) {
       expect(isRaceGame(id), id).toBe(true);
       expect(PARTY_GAME_IDS, id).toContain(id);
     }
-    for (const id of ["dara", "hilo", "penalty", "pinned", "flagged", "twotruths"]) {
+    for (const id of ["dara", "flagged", "twotruths"]) {
       expect(isRaceGame(id), id).toBe(false);
       expect(PARTY_GAME_IDS, id).not.toContain(id);
     }

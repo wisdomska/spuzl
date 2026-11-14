@@ -42,13 +42,13 @@ describe("game state: the runtime switch from the games rows", () => {
 
   it("lists the games In testing, Off and kept out of Duels and Parties", () => {
     const s = switchFromRows([
-      { id: "pinned", status: "testing" },
+      { id: "flagged", status: "testing" },
       { id: "crownfall", status: "off" },
       { id: "sixer", status: "live", versus: false },
       { id: "dusk", status: "coming_soon" },
     ]);
     // In catalogue order; the old lab status reads as In testing.
-    expect(s["games.testing"]).toEqual(["dusk", "pinned"]);
+    expect(s["games.testing"]).toEqual(["dusk", "flagged"]);
     expect(s["games.off"]).toEqual(["crownfall"]);
     expect(s["games.noVersus"]).toEqual(["sixer"]);
   });
@@ -67,10 +67,10 @@ describe("game state: the runtime switch from the games rows", () => {
 
 describe("game state: what players lose", () => {
   it("names the games that left players (to In testing or Off), not the ones that came back", () => {
-    expect(closedNow(sw(), sw(["pinned"]))).toEqual(["pinned"]);
+    expect(closedNow(sw(), sw(["flagged"]))).toEqual(["flagged"]);
     expect(closedNow(sw(), sw([], ["crownfall"]))).toEqual(["crownfall"]);
-    expect(closedNow(sw(["pinned"]), sw([], ["pinned"]))).toEqual([]);
-    expect(closedNow(sw(["pinned"]), sw())).toEqual([]);
+    expect(closedNow(sw(["flagged"]), sw([], ["flagged"]))).toEqual([]);
+    expect(closedNow(sw(["flagged"]), sw())).toEqual([]);
     expect(closedNow(sw(), sw([], [], ["sixer"]))).toEqual([]);
   });
 });
@@ -78,7 +78,7 @@ describe("game state: what players lose", () => {
 describe("game state: the Games page filter", () => {
   const rows = [
     { id: "crownfall", state: "on" as const },
-    { id: "pinned", state: "testing" as const },
+    { id: "flagged", state: "testing" as const },
     { id: "dusk", state: "off" as const },
     { id: "sixer" },
     { id: "blackout", retired: true },
@@ -96,7 +96,7 @@ describe("game state: the Games page filter", () => {
   it("filters and counts, zero included", () => {
     expect(byState(rows, "all")).toHaveLength(5);
     expect(byState(rows, "on").map((r) => r.id)).toEqual(["crownfall", "sixer"]);
-    expect(byState(rows, "testing").map((r) => r.id)).toEqual(["pinned"]);
+    expect(byState(rows, "testing").map((r) => r.id)).toEqual(["flagged"]);
     expect(byState(rows, "off").map((r) => r.id)).toEqual(["dusk"]);
     expect(byState(rows, "retired").map((r) => r.id)).toEqual(["blackout"]);
     expect(stateCounts(rows)).toEqual({ all: 5, on: 2, testing: 1, off: 1, retired: 1 });

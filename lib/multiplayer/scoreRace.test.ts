@@ -38,7 +38,7 @@ describe("score race games (R3-08)", () => {
 
   it("races the score games that graduated from the lab, and never Dara or a photosensitive game", () => {
     const ids = SCORE_RACE_GAMES.map((g) => g.id);
-    for (const id of ["hilo", "pinned", "flagged", "twotruths"]) {
+    for (const id of ["flagged", "twotruths"]) {
       expect(ids, id).toContain(id);
       expect(isPartyGame(id, settings()), id).toBe(true);
       expect(isRaceGame(id), id).toBe(false);

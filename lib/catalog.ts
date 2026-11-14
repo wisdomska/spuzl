@@ -543,8 +543,8 @@ const MAIN_GAMES: GameMeta[] = [
     "Three statements, two of them true. Tap the lie before the bar runs out.",
     { content: "curated", scoring: "score", minTimeMs: 8000 },
   ),
-  // Arcade, in the owner's order (14 Nov 2026): Gotcha, Echo, Flinch, Dash. Twins, Beat Tap and Penalty King are
-  // retired (RETIRED_IDS) and sit after them.
+  // Arcade, in the owner's order (14 Nov 2026): Gotcha, Echo, Flinch, Dash, then Twins (back as one 4 × 4 board).
+  // Beat Tap and Penalty King are retired (RETIRED_IDS) and sit after them.
   g(
     "gotcha",
     "Gotcha",
@@ -788,12 +788,18 @@ export const RETIRED_IDS: ReadonlySet<string> = new Set([
   "grapple",
   "ghosted",
   "slip",
-  // Arcade: Gauntlet was ten Gotcha rooms in a row, so Gotcha covers it. Twins (Pair Up does the same), Beat Tap
-  // and Penalty King retired by the owner (14 Nov 2026): Arcade is Gotcha, Echo, Flinch and Dash.
+  // Arcade: Gauntlet was ten Gotcha rooms in a row, so Gotcha covers it. Beat Tap and Penalty King retired by the
+  // owner (14 Nov 2026). Twins came back the same day as one 4 × 4 board.
   "gauntlet",
-  "twins",
   "beattap",
   "penalty",
+  // Puzzles and Words & Quiz, retired by the owner (14 Nov 2026).
+  "hilo",
+  "killer",
+  "lightup",
+  "pixl",
+  "market",
+  "pinned",
   // Board Games (was Board Bay). Dara came back (R2-P5), now live.
   "flip",
 ]);

@@ -38,9 +38,10 @@ export const FACES = [
 ] as const;
 
 export const GRID_FOR: Record<Difficulty, { rows: number; cols: number }> = {
-  easy: { rows: 3, cols: 4 },
-  medium: { rows: 4, cols: 4 },
-  hard: { rows: 5, cols: 4 },
+  // Starts at 4 × 4 and grows with the difficulty the player picks (owner, 14 Nov 2026).
+  easy: { rows: 4, cols: 4 },
+  medium: { rows: 5, cols: 4 },
+  hard: { rows: 6, cols: 4 },
   expert: { rows: 6, cols: 5 },
   mega: { rows: 6, cols: 6 },
 };

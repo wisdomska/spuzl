@@ -54,7 +54,7 @@ beforeEach(() => {
   flips.length = 0;
   data.rows = [
     row("crownfall", { versusEligible: true }),
-    row("pinned", { state: "testing" }),
+    row("flagged", { state: "testing" }),
     row("dusk", { state: "off" }),
     { ...row("blackout"), retired: true, state: undefined },
   ];
@@ -67,7 +67,7 @@ describe("Games page: state", () => {
   it("shows each game's state in its collapsed row", () => {
     render(<LibraryMetaPage canWrite canSwitch />);
     expect(rowOf("crownfall").dataset.state).toBe("on");
-    expect(within(rowOf("pinned")).getAllByText(C.states.testing.label).length).toBeGreaterThan(0);
+    expect(within(rowOf("flagged")).getAllByText(C.states.testing.label).length).toBeGreaterThan(0);
     expect(within(rowOf("dusk")).getAllByText(C.states.off.label).length).toBeGreaterThan(0);
     expect(within(rowOf("blackout")).getAllByText(C.states.retired.label).length).toBeGreaterThan(0);
   });
@@ -82,7 +82,7 @@ describe("Games page: state", () => {
     expect(tab("off").textContent).toContain("1");
     expect(tab("retired").textContent).toContain("1");
     fireEvent.click(tab("testing"));
-    expect(rowOf("pinned")).toBeTruthy();
+    expect(rowOf("flagged")).toBeTruthy();
     expect(rowOf("crownfall")).toBeNull();
   });
 
@@ -110,7 +110,7 @@ describe("Games page: state", () => {
     expect(dialog.textContent).toContain("Only the team can open it");
     fireEvent.click(within(dialog).getByRole("button", { name: C.confirmTesting }));
     expect(flips).toEqual([{ id: "crownfall", state: "testing" }]);
-    expect(rowOf("pinned").querySelector("[data-try-it]")?.getAttribute("href")).toBe("/play/pinned?mode=free");
+    expect(rowOf("flagged").querySelector("[data-try-it]")?.getAttribute("href")).toBe("/play/flagged?mode=free");
   });
 
   it("has the Duels and Parties switch only where the game can be raced, and the practice switch", () => {
@@ -119,9 +119,9 @@ describe("Games page: state", () => {
     expect(versus.getAttribute("aria-checked")).toBe("true");
     fireEvent.click(versus);
     expect(flips).toContainEqual({ id: "crownfall", versus: false });
-    expect(within(rowOf("pinned")).queryByRole("switch", { name: /Duels and Parties/ })).toBeNull();
-    fireEvent.click(within(rowOf("pinned")).getByRole("switch", { name: /practice round/ }));
-    expect(flips).toContainEqual({ id: "pinned", practice: false });
+    expect(within(rowOf("flagged")).queryByRole("switch", { name: /Duels and Parties/ })).toBeNull();
+    fireEvent.click(within(rowOf("flagged")).getByRole("switch", { name: /practice round/ }));
+    expect(flips).toContainEqual({ id: "flagged", practice: false });
   });
 
   it("lets content editors see the switches but not use them, and says why", () => {
