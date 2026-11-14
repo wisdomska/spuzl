@@ -2,7 +2,7 @@
  * Re-curates a course ladder for variety (lib/game/rage-variety.ts) without re-solving any room: every generated
  * room keeps its bot-proved solution, the ladder only drops and reorders.
  *
- * Usage: pnpm tsx scripts/rage-curate.ts <gotcha|runner> [--all] [--cap=N] [--dry]
+ * Usage: pnpm tsx scripts/rage-curate.ts runner [--all] [--cap=N] [--dry]
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
@@ -15,9 +15,10 @@ import { solve } from "./rage-design";
 
 async function main() {
   const arg = process.argv[2];
-  // Dash is an endless runner now (games/dash/levels.ts): only Gotcha has a room ladder to curate.
+  // Gotcha's rooms are hand-made (games/gotcha/rooms.ts) and Dash is an endless runner: nothing to curate.
   const id = arg;
-  if (id !== "gotcha") throw new Error("usage: rage-curate gotcha");
+  if (id !== "legacy-gotcha")
+    throw new Error(`rage-curate: nothing to curate for ${id ?? "any game"} (Gotcha rooms are hand-made; Dash is a runner)`);
   const mod = (await import(`../games/${id}/levels`)) as {
     HAND_LEVELS: LevelDef[];
     SET_PIECES: LevelDef[];

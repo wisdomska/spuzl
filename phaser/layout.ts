@@ -22,3 +22,13 @@ export function stageHeight(width: number, viewport: { w: number; h: number }, t
   const phone = viewport.w < PHONE_MAX_WIDTH && viewport.h > viewport.w;
   return phone ? Math.max(base, Math.ceil(viewport.h * PHONE_MIN_VIEWPORT_SHARE)) : base;
 }
+
+/**
+ * Canvas height for a board that shows one whole room of `cols` x `rows` tiles (Gotcha): the room at the board's
+ * width, plus `chrome` css px for the HUD above it and the edge below, never taller than `stageHeight` would make
+ * it. A phone then gets the room and its controls close together instead of a tall canvas that is mostly sky.
+ */
+export function roomStageHeight(width: number, viewport: { w: number; h: number }, cols: number, rows: number, chrome: number): number {
+  const fit = Math.ceil(chrome + (rows * width) / cols);
+  return Math.max(MIN_STAGE_HEIGHT, Math.min(stageHeight(width, viewport), fit));
+}

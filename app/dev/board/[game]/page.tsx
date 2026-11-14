@@ -6,7 +6,10 @@ import { createRng } from "@/lib/rng";
 import type { Difficulty } from "@/games/types";
 import { DevBoard } from "./DevBoard";
 
-/** Fixture route for visual parity and E2E: /dev/board/crownfall?seed=x&d=easy&state=... */
+/**
+ * Fixture route for visual parity and E2E: /dev/board/crownfall?seed=x&d=easy&state=...
+ * `level=n` shows Levels-mode level n instead, for games with a ladder (e.g. one Gotcha room).
+ */
 export default async function Page({ params, searchParams }: PageProps<"/dev/board/[game]">) {
   devOnly();
   const { game } = await params;
@@ -16,7 +19,8 @@ export default async function Page({ params, searchParams }: PageProps<"/dev/boa
   const logic = await loadLogic(game);
   const seed = typeof sp.seed === "string" ? sp.seed : "dev";
   const d = (typeof sp.d === "string" ? sp.d : "easy") as Difficulty;
-  const g = logic.generate(createRng(seed), d);
+  const level = typeof sp.level === "string" ? Number(sp.level) : 0;
+  const g = (level && logic.level?.(level)) || logic.generate(createRng(seed), d);
   // `mode=tutorial`: the board as a practice round (the guided first play), e.g. Beat Tap's no-penalty rule.
   const mode = sp.mode === "tutorial" ? "tutorial" : "free";
   return <DevBoard id={game} puzzle={g.puzzle} seed={seed} d={d} mode={mode} />;

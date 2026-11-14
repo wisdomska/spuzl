@@ -1017,9 +1017,10 @@ export const LADDER: string[] = ${JSON.stringify(ladder)};
 
 async function main() {
   const arg = process.argv[2];
-  // Dash is an endless runner with seeded runs (phaser/sim/runner.ts, games/dash/levels.ts): no rooms to design.
+  // Dash is an endless runner (games/dash/levels.ts) and Gotcha's rooms are hand-made (games/gotcha/rooms.ts).
   if (arg === "dash" || arg === "runner") throw new Error("Dash has no designed rooms any more: see games/dash/levels.ts");
-  const ids: GameId[] = arg === "all" || !arg ? ["gauntlet", "gotcha"] : [arg as GameId];
+  if (arg === "gotcha") throw new Error("gotcha rooms are hand-made: edit games/gotcha/rooms.ts, then rage-solve gotcha");
+  const ids: GameId[] = arg === "all" || !arg ? ["gauntlet"] : [arg as GameId];
   for (const id of ids) await build(SPECS[id]);
 }
 

@@ -63,6 +63,8 @@ export interface RageGameSpec<S extends SimCore> {
   demoLog?(p: CoursePuzzle): Promise<InputLog>;
   /** taller canvas (Flipside shows floor and ceiling, Slip climbs) */
   tall?: boolean;
+  /** canvas height override for a board width and viewport (Gotcha hugs one whole room); default `stageHeight` */
+  stageHeight?(width: number, viewport: { w: number; h: number }): number;
   /** death copy override: lines (cycled by count) and noun ("Fall" for Wobble) */
   deathLines?: readonly string[];
   deathNoun?: string;
@@ -120,7 +122,7 @@ export function RageBoard<S extends SimCore>({
   const [size, setSize] = useState(() => {
     const w = typeof window === "undefined" ? 354 : Math.max(0, Math.min(window.innerWidth, 560) - 36);
     const vp = typeof window === "undefined" ? { w: 1280, h: 800 } : { w: window.innerWidth, h: window.innerHeight };
-    return { w, h: stageHeight(w, vp, spec.tall), short: vp.h < SHORT_VIEWPORT };
+    return { w, h: spec.stageHeight?.(w, vp) ?? stageHeight(w, vp, spec.tall), short: vp.h < SHORT_VIEWPORT };
   });
   // The canvas gives up height (to MIN_STAGE_HEIGHT) until the controls under it and the shell fit the screen.
   const stageH = useFitHeight(size.h, Math.min(size.h, MIN_STAGE_HEIGHT), 1);
@@ -284,7 +286,8 @@ export function RageBoard<S extends SimCore>({
     if (!el) return;
     const on = () => {
       const w = Math.floor(el.clientWidth);
-      const h = stageHeight(w, { w: window.innerWidth, h: window.innerHeight }, spec.tall);
+      const vp = { w: window.innerWidth, h: window.innerHeight };
+      const h = spec.stageHeight?.(w, vp) ?? stageHeight(w, vp, spec.tall);
       const short = window.innerHeight < SHORT_VIEWPORT;
       setSize((s) => (s.w === w && s.h === h && s.short === short ? s : { w, h, short }));
     };
@@ -296,7 +299,7 @@ export function RageBoard<S extends SimCore>({
       ro.disconnect();
       window.removeEventListener("resize", on);
     };
-  }, [spec.tall]);
+  }, [spec]);
 
   // Lazy Phaser. A stage that boots while the board is covered starts asleep.
   const coveredRef = useRef(!!covered);

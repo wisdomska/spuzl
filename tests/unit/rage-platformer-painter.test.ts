@@ -55,12 +55,15 @@ describe("Rage Ridge platformer painter (R4-21)", () => {
     const xs: number[] = [];
     for (let i = 0; i < 240; i++) {
       sim.step(BTN.RIGHT);
+      // a death respawns the runner at the start and the camera with it: only the run up to it scrolls one way
+      if (sim.deaths) break;
       const f = frameCtx();
       f.ctx.now = 1000 + i * 16;
       painter.draw(f.ctx, sim, null);
       xs.push(f.backdrops[0][0]);
       expect(f.backdrops[0][1]).toBe(0);
     }
+    expect(xs.length).toBeGreaterThan(60);
     // Running right moves the camera right, so the grid shifts left (never right).
     for (let i = 1; i < xs.length; i++) expect(xs[i]).toBeLessThanOrEqual(xs[i - 1] + 1e-9);
   });

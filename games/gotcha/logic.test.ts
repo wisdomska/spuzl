@@ -7,11 +7,14 @@ import { framesToMs } from "@/phaser/sim/fixed";
 import { courseLog } from "@/phaser/sim/scripted";
 import { EV } from "@/phaser/sim/core";
 import logic, { createSim, generate, hint, progress, verify } from "./logic";
-import { CONFIG, DAILY_POOL, HAND_LEVELS, LEVELS, SET_PIECES } from "./levels";
+import { CONFIG, DAILY_POOL, HAND_LEVELS, LEGACY_ROOMS, LEVELS, ROOMS } from "./levels";
+import { ROOM_COLS, ROOM_ROWS } from "./rooms";
 import { ladderSuite } from "@/phaser/sim/ladderkit";
 import SOLUTIONS_JSON from "./solutions.json";
+import LEGACY_JSON from "./legacy-solutions.json";
 
 const SOLUTIONS: Record<string, number[][]> = SOLUTIONS_JSON;
+const LEGACY: Record<string, number[][]> = LEGACY_JSON;
 
 const state = (log: InputLog, deaths: number, frames: number) => ({ log, deaths, timeMs: framesToMs(frames) });
 
@@ -36,7 +39,7 @@ function logWithOneDeath(levels: string[]): { log: InputLog; frames: number } {
 
 describe("gotcha", () => {
   it("has a scripted no-death solution for every level, and each one finishes", () => {
-    expect(LEVELS.length).toBeGreaterThanOrEqual(10);
+    expect(LEVELS.length).toBe(30);
     for (const l of LEVELS) {
       const log = courseLog([l.id], SOLUTIONS, CONFIG.levelPause);
       const r = replay(createSim({ levels: [l.id] }), log);
@@ -45,13 +48,38 @@ describe("gotcha", () => {
     }
   });
 
-  it("every trap room kills a player who just runs right (the lie works the first time)", () => {
-    for (const id of ["trust-fall", "pop-up", "fake-floor", "hop-hop", "cliffhanger"]) {
+  it("every room lies: a player who just runs right never clears it, and most of them die", () => {
+    let died = 0;
+    for (const { id } of LEVELS) {
       const sim = createSim({ levels: [id] });
       // run right and hop only when a wall stops the runner
-      for (let i = 0; i < 1200 && !sim.deaths; i++) sim.step(BTN.RIGHT | (sim.world.body.vx === 0 && i > 5 ? BTN.JUMP : 0));
-      expect(sim.deaths, id).toBeGreaterThan(0);
+      for (let i = 0; i < 1500 && !sim.deaths && !sim.finished; i++)
+        sim.step(BTN.RIGHT | (sim.world.body.vx === 0 && i > 5 ? BTN.JUMP : 0));
+      expect(sim.finished, id).toBe(false);
+      if (sim.deaths) died++;
     }
+    expect(died).toBeGreaterThanOrEqual(LEVELS.length - 4);
+  });
+
+  it("every ladder room is one screen (24 x 14 tiles) with a name, and no id is shared with a legacy room", () => {
+    for (const l of LEVELS) {
+      expect(l.tiles.length, l.id).toBe(ROOM_ROWS);
+      expect(l.tiles[0].length, l.id).toBe(ROOM_COLS);
+    }
+    expect(new Set(ROOMS.map((l) => l.id)).size).toBe(ROOMS.length);
+  });
+
+  it("legacy rooms (courses scheduled before the rebuild) still play, replay their old scripts and verify", () => {
+    expect(Object.keys(LEGACY).sort()).toEqual(LEGACY_ROOMS.map((l) => l.id).sort());
+    for (const l of LEGACY_ROOMS) {
+      const r = replay(createSim({ levels: [l.id] }), courseLog([l.id], LEGACY, CONFIG.levelPause));
+      expect(r.ok, l.id).toBe(true);
+      expect(r.deaths, l.id).toBe(0);
+    }
+    const old = { levels: LEGACY_ROOMS.slice(0, 3).map((l) => l.id) };
+    const log = courseLog(old.levels, LEGACY, CONFIG.levelPause);
+    const r = replay(createSim(old), log);
+    expect(verify(old, { levels: old.levels.slice() }, state(log, r.deaths, log.frames)).ok).toBe(true);
   });
 
   for (const d of ["easy", "medium", "hard", "expert", "mega"] as Difficulty[]) {
@@ -90,7 +118,7 @@ describe("gotcha", () => {
   });
 
   it("counts deaths, scores fewer deaths higher, and rejects forged deaths or time", () => {
-    // The first three ladder rooms: a careless run meets their first trap (free-play courses now draw from the ladder).
+    // The first three ladder rooms: a careless run meets their first trap.
     const levels = LEVELS.slice(0, 3).map((l) => l.id);
     const g = { puzzle: { levels }, solution: { levels: levels.slice() } };
     const clean = courseLog(g.puzzle.levels, SOLUTIONS, CONFIG.levelPause);
@@ -182,6 +210,5 @@ describe("gotcha level ladder", () => {
     sim: createSim,
     solutions: SOLUTIONS,
     pause: CONFIG.levelPause,
-    offLadder: [...HAND_LEVELS, ...SET_PIECES],
   });
 });
