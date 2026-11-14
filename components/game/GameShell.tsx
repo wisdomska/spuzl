@@ -25,7 +25,17 @@ import { track } from "@/lib/analytics/track";
 import { copy } from "@/lib/copy";
 import { leaveCopy } from "@/lib/copy/leave";
 import { leavePolicy, type LeaveContext } from "@/lib/game/leave";
-import { useViewportWidth, useWide, wideAside, SLOT_PAD, WIDE_ASIDE_MAX_H, WIDE_GAP, WIDE_GUTTER, WIDE_MAX } from "./useBoardSize";
+import { WideZoom } from "./WideZoom";
+import {
+  useViewportHeight,
+  useViewportWidth,
+  useWide,
+  wideAside,
+  wideColumn,
+  WIDE_ASIDE_MAX_H,
+  WIDE_GAP,
+  WIDE_GUTTER,
+} from "./useBoardSize";
 import { ShellAsideProvider } from "./ShellAside";
 import { useLeave } from "./useLeave";
 import { LeaveConfirm } from "./LeaveConfirm";
@@ -174,7 +184,10 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   } = props;
   const wide = useWide();
   const vw = useViewportWidth();
+  const vh = useViewportHeight();
   const asideW = wideAside(vw);
+  // The board column's width (useBoardSize `wideColumn`): board and panel then sit together, centred.
+  const colW = wideColumn(vw, vh, meta.id);
   const [aside, setAside] = useState<HTMLElement | null>(null);
   // The game's own colour (lib/catalog colourOf): moved games keep the hue they were designed in.
   const relaxed = useSettings((s) => s.relaxed);
@@ -689,18 +702,20 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
           </motion.div>
         )}
       </AnimatePresence>
-      <Board
-        {...extra}
-        extra={extra}
-        key={puzzleKey}
-        puzzle={puzzle}
-        mode={mode}
-        initialState={initialState}
-        hint={hint}
-        covered={covered}
-        disabled={locked || paused || solved || pausedExternally || menuHold || leaveHold || askRestart !== null}
-        api={api}
-      />
+      <WideZoom on={wide && meta.engine !== "phaser"} column={colW}>
+        <Board
+          {...extra}
+          extra={extra}
+          key={puzzleKey}
+          puzzle={puzzle}
+          mode={mode}
+          initialState={initialState}
+          hint={hint}
+          covered={covered}
+          disabled={locked || paused || solved || pausedExternally || menuHold || leaveHold || askRestart !== null}
+          api={api}
+        />
+      </WideZoom>
     </main>
   );
 
@@ -748,7 +763,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
     <ShellAsideProvider value={{ wide, node: aside }}>
       <div
         className={`bg-bg relative mx-auto flex min-h-dvh w-full flex-col ${wide ? "px-6" : "max-w-[560px]"}`}
-        style={wide ? { ...style, maxWidth: WIDE_GUTTER * 2 + WIDE_MAX + SLOT_PAD * 2 + WIDE_GAP + asideW } : style}
+        style={wide ? { ...style, maxWidth: WIDE_GUTTER * 2 + colW + WIDE_GAP + asideW } : style}
         data-world={meta.world}
         data-shell
         data-wide={wide || undefined}

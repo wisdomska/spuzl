@@ -62,6 +62,23 @@ export function wideAside(vw: number): number {
   return vw >= WIDE_ASIDE_FROM ? WIDE_ASIDE : WIDE_ASIDE_NARROW;
 }
 
+/**
+ * How wide a game's board is for its height, on a wide screen (owner, 14 Nov 2026: "don't squeeze them at one
+ * side"). The board column takes this shape at the height the screen allows, and the board and its side panel sit
+ * together in the middle of the page, so spare width goes to the outer margins, never between board and panel.
+ * Square boards are 1; wide boards (a pit row, a running course) are wider.
+ */
+export const WIDE_ASPECT: Record<string, number> = { five: 1.6, oware: 2.4, gotcha: 1.8, dash: 1.8, fourup: 1.17, remix: 1.3, quads: 1.3 };
+/** A board column is never narrower than this on a wide screen (cards, word games and their keyboards). */
+export const WIDE_COL_MIN = 600;
+
+/** The board column's width on a wide screen for a game: its shape at the available height, within the column. */
+export function wideColumn(vw: number, vh: number, game: string): number {
+  const box = boardBox(vw, vh);
+  const shaped = Math.round(Math.min(box.w, box.h) * (WIDE_ASPECT[game] ?? 1));
+  return Math.min(box.w, Math.max(WIDE_COL_MIN, shaped)) + SLOT_PAD * 2;
+}
+
 /** The space a board has, in px, inside the board slot's padding. */
 export interface BoardBox {
   /** two-column shell */

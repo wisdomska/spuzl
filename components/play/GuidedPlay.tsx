@@ -7,6 +7,8 @@ import { GameShell } from "@/components/game/GameShell";
 import { Button } from "@/components/ui/Button";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { Spuz } from "@/components/brand/Spuz";
+import { Icon } from "@/components/ui/Icon";
+import { HowToSheet } from "./HowToSheet";
 import { BOARDS } from "@/games/board-registry";
 import type { Hint } from "@/games/types";
 import type { GameMeta } from "@/lib/catalog";
@@ -38,6 +40,8 @@ export function GuidedPlay({
   const reduce = useReducedMotion();
   const [puzzle, setPuzzle] = useState<unknown>(null);
   const [solved, setSolved] = useState(false);
+  // Tapping the banner explains the game: its idea, how you win, and that this round is practice (owner, 14 Nov 2026).
+  const [about, setAbout] = useState(false);
   const Board = BOARDS[meta.id];
   // Admin Metrics, practice rounds (R2-ADMIN): one start when the board shows, then a finish or a skip, once each;
   // a start with neither is a drop-off. Anonymous like every first-party metric (the game id only).
@@ -75,11 +79,20 @@ export function GuidedPlay({
       transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
       role="note"
     >
-      <Spuz mood={solved ? "cheer" : "wave"} size={32} decorative still />
-      <p className="m-0 min-w-0 flex-1 truncate text-[14px] leading-5">
-        <span className="font-bold">{solved ? T.doneTitle : T.title(meta.name)}</span>{" "}
-        <span className="text-muted">{solved ? T.doneBody : T.short}</span>
-      </p>
+      <button
+        type="button"
+        onClick={() => setAbout(true)}
+        disabled={solved}
+        aria-label={solved ? undefined : T.aboutAria(meta.name)}
+        className="press flex h-11 min-w-0 flex-1 items-center gap-2 rounded-[12px] text-left disabled:cursor-default"
+      >
+        <Spuz mood={solved ? "cheer" : "wave"} size={32} decorative still />
+        <span className="m-0 min-w-0 flex-1 truncate text-[14px] leading-5">
+          <span className="font-bold">{solved ? T.doneTitle : T.title(meta.name)}</span>{" "}
+          <span className={solved ? "text-muted" : "text-accent font-semibold"}>{solved ? T.doneBody : T.short}</span>
+        </span>
+        {!solved && <Icon name="info" size={18} className="text-accent shrink-0" />}
+      </button>
       {!solved && (
         <button
           type="button"
@@ -97,30 +110,42 @@ export function GuidedPlay({
   );
 
   return (
-    <GameShell
-      key={`guided:${meta.id}`}
-      meta={meta}
-      Board={Board}
-      puzzle={puzzle as never}
-      mode="tutorial"
-      label={T.label}
-      guided
-      hintsLeft={99}
-      requestHint={async (state) => (await api<{ hint: Hint | null }>(`/api/v1/guided/${meta.id}`, { json: { state } })).hint}
-      onSolved={() => {
-        record("practice_finish");
-        setSolved(true);
-      }}
-      onExit={onExit}
-      banner={coach}
-      celebrate={solved}
-      endBar={
-        solved ? (
-          <Button size="lg" className="w-full" icon="play" onClick={() => onDone("done")} autoFocus>
-            {doneLabel ?? (daily ? T.goDaily : T.goFree)}
-          </Button>
-        ) : undefined
-      }
-    />
+    <>
+      <GameShell
+        key={`guided:${meta.id}`}
+        meta={meta}
+        Board={Board}
+        puzzle={puzzle as never}
+        mode="tutorial"
+        label={T.label}
+        guided
+        hintsLeft={99}
+        requestHint={async (state) => (await api<{ hint: Hint | null }>(`/api/v1/guided/${meta.id}`, { json: { state } })).hint}
+        onSolved={() => {
+          record("practice_finish");
+          setSolved(true);
+        }}
+        onExit={onExit}
+        banner={coach}
+        celebrate={solved}
+        endBar={
+          solved ? (
+            <Button size="lg" className="w-full" icon="play" onClick={() => onDone("done")} autoFocus>
+              {doneLabel ?? (daily ? T.goDaily : T.goFree)}
+            </Button>
+          ) : undefined
+        }
+      />
+      <HowToSheet
+        open={about}
+        meta={meta}
+        onClose={() => setAbout(false)}
+        tips={[
+          { icon: "trophy", text: T.win[meta.scoring] },
+          { icon: "lightbulb", text: T.hintTip },
+          { icon: "graduation-cap", text: T.practiceTip },
+        ]}
+      />
+    </>
   );
 }

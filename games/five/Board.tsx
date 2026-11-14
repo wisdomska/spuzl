@@ -10,6 +10,7 @@ import { isKeyedInput } from "@/components/game/useGridKeys";
 import { sendGuess } from "@/games/_shared/guess";
 import { reducedMotion } from "@/games/_shared/fly";
 import { LetterKeyboard, type KeyDecor } from "@/games/_shared/LetterKeyboard";
+import { useWide } from "@/components/game/useBoardSize";
 import { FIVE_COPY as t, MARK_SAY } from "@/lib/copy/five";
 import { HIT, letterMarks, MISS, NEAR, type FiveCheck, type FivePuzzle, type FiveState, type Mark } from "./rules";
 
@@ -265,6 +266,7 @@ export default function FiveBoard({ puzzle, initialState, hint, disabled, mode, 
   );
 
   const won = rows.some((r) => r.marks.every((m) => m === HIT));
+  const wide = useWide();
   const current = rows.length;
 
   return (
@@ -272,7 +274,9 @@ export default function FiveBoard({ puzzle, initialState, hint, disabled, mode, 
     // key under the grid (every tile and key carries its mark's icon and spoken name, and the rule names the three marks).
     <div
       ref={rootRef}
-      className={`short:gap-1.5 tiny:gap-1 flex w-full max-w-[400px] flex-col items-center gap-2 ${won ? "board-pulse" : ""}`}
+      // Wide screens: the keyboard sits beside the grid instead of under it (owner, 14 Nov 2026), so the pair is
+      // short enough to grow to the screen (components/game/WideZoom).
+      className={`short:gap-1.5 tiny:gap-1 flex w-full ${wide ? "max-w-none flex-row items-center gap-5" : "max-w-[400px] flex-col items-center gap-2"} ${won ? "board-pulse" : ""}`}
     >
       <div
         className="short:gap-1 short:p-2 tiny:p-1.5 flex flex-col gap-1.5 rounded-[20px] p-2.5"
@@ -366,15 +370,17 @@ export default function FiveBoard({ puzzle, initialState, hint, disabled, mode, 
       </div>
 
       {!over && (
-        <LetterKeyboard
-          onLetter={onLetter}
-          onBackspace={onBackspace}
-          onEnter={() => void submit()}
-          enterLabel={t.enter}
-          compact
-          disabled={locked}
-          decorate={decorate}
-        />
+        <div className={wide ? "w-[380px] shrink-0" : "contents"}>
+          <LetterKeyboard
+            onLetter={onLetter}
+            onBackspace={onBackspace}
+            onEnter={() => void submit()}
+            enterLabel={t.enter}
+            compact
+            disabled={locked}
+            decorate={decorate}
+          />
+        </div>
       )}
     </div>
   );
