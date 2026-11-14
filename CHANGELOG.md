@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.63.1 (14 November 2026)
+
+### Everyone
+
+- **Music is louder:** it now sits just under the sound effects instead of far below them (still dips during
+  celebrations).
+
 ## 1.63.0 (14 November 2026)
 
 ### Everyone

@@ -22,8 +22,12 @@ import type { MusicPlayer, StyleId } from "./music";
 import { createRecordedPlayer } from "./recorded";
 import { loadSamples, sampleFor, sampleRate, wantSample } from "./samples";
 
-/** Music sits well under the sound effects. */
-const MUSIC_LEVEL = 0.32;
+/**
+ * Music sits a little under the sound effects (owner, 14 Nov 2026: 0.32 was too quiet). The recordings and the
+ * effects are mastered about equally loud, so 0.7 (about −3 dB) keeps the music clearly audible while taps and clears
+ * still read on top; celebrations duck it briefly (duck()).
+ */
+const MUSIC_LEVEL = 0.7;
 
 export { ALIASES, PALETTE, VOICES, resolve, type PaletteEvent, type SfxName } from "./palette";
 
