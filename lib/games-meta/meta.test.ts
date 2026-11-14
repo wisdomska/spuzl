@@ -49,9 +49,9 @@ describe("filterGames (Library and the Duel game picker)", () => {
 });
 
 describe("the new tag (R2-18)", () => {
-  it("defaults to the catalog's isNew games, four today (Quads came back in R2-14)", () => {
+  it("defaults to the catalog's isNew games, three today (Beat Tap retired 14 Nov 2026)", () => {
     const fresh = GAMES.filter((g) => g.isNew).map((g) => g.id);
-    expect([...fresh].sort()).toEqual(["beattap", "emojihits", "quads", "trotro"]);
+    expect([...fresh].sort()).toEqual(["emojihits", "quads", "trotro"]);
     expect(newGameIds(GAMES, DEFAULT_META)).toEqual(fresh);
     expect(validateMeta({ tags: ["new", "quick"] })).toBeNull();
   });

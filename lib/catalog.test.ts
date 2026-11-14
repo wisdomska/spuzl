@@ -79,10 +79,13 @@ const KEEP = [
 /** The eleven R2-P5 brought back from retirement as lab games, then Two Truths and a Lie (R2-P5 part B). */
 const BACK = ["five", "hilo", "penalty", "market", "lightup", "killer", "dara", "pinned", "flagged", "tripwire", "pixl"];
 const GRADUATED = [...BACK, "twotruths"];
+/** Retired by the owner on 14 Nov 2026: Arcade is Gotcha, Echo, Flinch and Dash. */
+const ARCADE_CUT = ["twins", "beattap", "penalty"];
+const LIVE = [...KEEP, ...GRADUATED].filter((id) => !ARCADE_CUT.includes(id));
 
 describe("Graduate: the twelve lab games are live (11 Nov 2026)", () => {
   it("makes all twelve live, none lab, none retired, each in its own world", () => {
-    for (const id of GRADUATED) {
+    for (const id of GRADUATED.filter((g) => !ARCADE_CUT.includes(g))) {
       expect(isLiveGame(id), id).toBe(true);
       expect(isLabGame(id), id).toBe(false);
       expect(isRetired(id), id).toBe(false);
@@ -113,20 +116,20 @@ describe("Graduate: the twelve lab games are live (11 Nov 2026)", () => {
   it("leaves no game in testing", () => {
     expect(LAB_GAMES).toEqual([]);
     expect(ALL_GAMES.filter((g) => g.lab)).toEqual([]);
-    expect(GAME_COUNT).toBe(41);
+    expect(GAME_COUNT).toBe(38);
   });
 });
 
 describe("catalog: retired games", () => {
-  it("keeps the 29 owner-picked games live, plus the twelve that graduated from the lab: 41", () => {
-    expect(GAMES.map((g) => g.id).sort()).toEqual([...KEEP, ...GRADUATED].sort());
-    expect(GAME_COUNT).toBe(41);
+  it("keeps the owner-picked and graduated games live, less the three Arcade cuts: 38", () => {
+    expect(GAMES.map((g) => g.id).sort()).toEqual([...LIVE].sort());
+    expect(GAME_COUNT).toBe(38);
     expect(GAMES.every((g) => !g.retired && !g.lab)).toBe(true);
   });
 
-  it("retires 21 of the others but keeps them in code (32, less the 11 lab games back in R2-P5)", () => {
-    expect(RETIRED_IDS.size).toBe(21);
-    expect(RETIRED_GAMES).toHaveLength(21);
+  it("retires 24 games but keeps them in code (21, plus the three Arcade cuts of 14 Nov 2026)", () => {
+    expect(RETIRED_IDS.size).toBe(24);
+    expect(RETIRED_GAMES).toHaveLength(24);
     // 61 before R2-P5 part B, plus Two Truths and a Lie
     expect(ALL_GAMES).toHaveLength(62);
     for (const id of RETIRED_IDS) {
@@ -139,8 +142,8 @@ describe("catalog: retired games", () => {
     }
   });
 
-  it("promotes Trotro Jam, Emoji Hits and Beat Tap to live", () => {
-    for (const id of ["trotro", "emojihits", "beattap"]) {
+  it("promotes Trotro Jam and Emoji Hits to live (Beat Tap was live, then retired 14 Nov 2026)", () => {
+    for (const id of ["trotro", "emojihits"]) {
       expect(isLiveGame(id), id).toBe(true);
       expect(GAME_BY_ID[id].lab, id).toBeFalsy();
     }
@@ -208,7 +211,7 @@ describe("catalog: four groups", () => {
         "twotruths",
       ],
     ],
-    ["reflex", "Arcade", ["echo", "twins", "flinch", "beattap", "penalty", "gotcha", "dash"]],
+    ["reflex", "Arcade", ["gotcha", "echo", "flinch", "dash"]],
     ["board", "Board Games", ["chess", "draughts", "oware", "ludo", "fourup", "dara"]],
   ];
 

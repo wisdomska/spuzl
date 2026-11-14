@@ -543,7 +543,19 @@ const MAIN_GAMES: GameMeta[] = [
     "Three statements, two of them true. Tap the lie before the bar runs out.",
     { content: "curated", scoring: "score", minTimeMs: 8000 },
   ),
-  // Arcade: memory, rhythm and reflex (the old Reflex Rink)
+  // Arcade, in the owner's order (14 Nov 2026): Gotcha, Echo, Flinch, Dash. Twins, Beat Tap and Penalty King are
+  // retired (RETIRED_IDS) and sit after them.
+  g(
+    "gotcha",
+    "Gotcha",
+    "reflex",
+    "skull",
+    "L",
+    "phaser",
+    "The level is lying to you",
+    "Reach the exit. Floors drop, spikes pop, walls spring up, the door runs.",
+    { scoring: "deaths", minTimeMs: 5000, photosensitive: true },
+  ),
   g(
     "echo",
     "Echo",
@@ -555,10 +567,6 @@ const MAIN_GAMES: GameMeta[] = [
     "Watch the pads, then repeat the sequence. It grows every round.",
     { scoring: "score", minTimeMs: 0, photosensitive: true },
   ),
-  g("twins", "Twins", "reflex", "cards", "M2", "custom", "Find every pair", "Flip cards to find every pair in the fewest flips.", {
-    scoring: "score",
-    minTimeMs: 4000,
-  }),
   g(
     "flinch",
     "Flinch",
@@ -570,6 +578,15 @@ const MAIN_GAMES: GameMeta[] = [
     "Tap the instant the screen changes. Best of 5. Early taps cost you.",
     { scoring: "score", minTimeMs: 0, photosensitive: true },
   ),
+  g("dash", "Dash", "reflex", "person-simple-run", "L", "phaser", "Tap to jump, do not stop", "Tap to jump. Clear today's course.", {
+    scoring: "deaths",
+    minTimeMs: 5000,
+    photosensitive: true,
+  }),
+  g("twins", "Twins", "reflex", "cards", "M2", "custom", "Find every pair", "Flip cards to find every pair in the fewest flips.", {
+    scoring: "score",
+    minTimeMs: 4000,
+  }),
   g(
     "beattap",
     "Beat Tap",
@@ -592,23 +609,6 @@ const MAIN_GAMES: GameMeta[] = [
     "Tap once to aim, again for power. Five kicks: most goals wins, then accuracy.",
     { scoring: "score", minTimeMs: 0 },
   ),
-  // Arcade: action (from Rage Ridge; the rest stays there, retired)
-  g(
-    "gotcha",
-    "Gotcha",
-    "reflex",
-    "skull",
-    "L",
-    "phaser",
-    "The level is lying to you",
-    "Reach the exit. Floors drop, spikes pop, walls spring up, the door runs.",
-    { scoring: "deaths", minTimeMs: 5000, photosensitive: true },
-  ),
-  g("dash", "Dash", "reflex", "person-simple-run", "L", "phaser", "Tap to jump, do not stop", "Tap to jump. Clear today's course.", {
-    scoring: "deaths",
-    minTimeMs: 5000,
-    photosensitive: true,
-  }),
   g(
     "flipside",
     "Flipside",
@@ -788,8 +788,12 @@ export const RETIRED_IDS: ReadonlySet<string> = new Set([
   "grapple",
   "ghosted",
   "slip",
-  // Arcade: Gauntlet was ten Gotcha rooms in a row, so Gotcha covers it. Penalty King came back (R2-P5), now live.
+  // Arcade: Gauntlet was ten Gotcha rooms in a row, so Gotcha covers it. Twins (Pair Up does the same), Beat Tap
+  // and Penalty King retired by the owner (14 Nov 2026): Arcade is Gotcha, Echo, Flinch and Dash.
   "gauntlet",
+  "twins",
+  "beattap",
+  "penalty",
   // Board Games (was Board Bay). Dara came back (R2-P5), now live.
   "flip",
 ]);

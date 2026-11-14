@@ -14,7 +14,7 @@ describe("leavePolicy", () => {
   });
 
   it("asks once before leaving a timed scored run that has started, without a forfeit call", () => {
-    for (const game of ["quickfire", "echo", "flinch", "beattap", "gotcha", "dash"]) {
+    for (const game of ["quickfire", "echo", "flinch", "gotcha", "dash"]) {
       expect(leavePolicy({ context: "solo", game, started: true })).toEqual({ kind: "run", forfeit: false, guard: true });
       // Nothing to lose before the run starts, or once it is over.
       expect(leavePolicy({ context: "solo", game, started: false }).kind).toBe("none");
