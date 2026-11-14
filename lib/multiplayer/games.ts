@@ -7,6 +7,7 @@
 import { GAMES, GAME_BY_ID, openGame, versusAllowed, type GameMeta, type GameSwitch } from "@/lib/catalog";
 import { hasLogic } from "@/games/logic-ids";
 import type { Rng } from "@/lib/rng";
+import { bayGamesFor, type BayGame } from "./bay";
 
 /**
  * Every game that CAN be raced head to head (time races), whatever its state: the eligibility. Who may race it now
@@ -65,6 +66,13 @@ export const partyGames = (s: PartyGameSwitch): GameMeta[] => [...duelGames(s), 
 /** The server's check for a Party game: a time race game, or a score race game, open for Duels and Parties now. */
 export const isPartyGame = (id: string, s: PartyGameSwitch) =>
   isDuelGame(id, s) || (isScoreRaceGame(id) && s["party.scoreRaces"] && versusOpen(id, s));
+
+/**
+ * Board games a Party host can start for `n` players (owner, 14 Nov 2026: "if I select party mode and change the players
+ * to 4, some of the board games can be made available as well"): the Board Bay games that seat exactly that many and
+ * are On now. Picking one opens a live Board Bay game with that many seats and its invite code, not a race room.
+ */
+export const partyBoardGames = (n: number, s: GameSwitch): BayGame[] => bayGamesFor(n).filter((g) => !!openGame(g, s));
 
 /**
  * R4-08: a `?game=<id>` param for the Party Host tab: a time race game, or a score race game open now (the same

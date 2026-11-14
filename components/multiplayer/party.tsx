@@ -15,7 +15,11 @@ import { play } from "@/lib/audio";
 import { formatClock, formatNumber } from "@/lib/format";
 import { GAME_BY_ID, WORLDS, WORLD_BY_ID, type WorldId } from "@/lib/catalog";
 import { useSettings } from "@/lib/settings/store";
-import { isScoreRaceGame, partyGames, roomGamesName } from "@/lib/multiplayer/games";
+import { isScoreRaceGame, partyBoardGames, partyGames, roomGamesName } from "@/lib/multiplayer/games";
+import type { BayGame } from "@/lib/multiplayer/bay";
+import type { BayView } from "@/lib/multiplayer/types";
+import { api } from "@/lib/client/api";
+import { useRouter } from "next/navigation";
 import { useGameSettings } from "@/lib/game-settings/client";
 import { partyCopy } from "@/lib/copy/party";
 import { overtakes, raceOrder, standingOrder } from "@/lib/multiplayer/race";
@@ -132,8 +136,11 @@ export type RoomRequest = {
   adultNotice?: boolean;
 };
 
-/** The host's choice: one game, a hand-picked list (`picks`, 2 to 8 games), or neither for a Random mix. */
-export type GameChoice = { game: string | null; picks: string[] | null };
+/**
+ * The host's choice: one game, a hand-picked list (`picks`, 2 to 8 games), or neither for a Random mix. `board`: a
+ * board game for exactly the room's players instead of a race (opens a live Board Bay game).
+ */
+export type GameChoice = { game: string | null; picks: string[] | null; board?: BayGame | null };
 /** A choice the rooms API accepts: picking mode needs at least PARTY_PICK_MIN games. */
 export const choiceReady = (c: GameChoice) => c.picks === null || c.picks.length >= PARTY_PICK_MIN;
 
@@ -143,14 +150,32 @@ export const choiceReady = (c: GameChoice) => c.picks === null || c.picks.length
  * R3-08: score games join the list (marked "Most points") while "party.scoreRaces" is on; every game only while it is
  * On and allowed in Duels and Parties (Games page); the rooms API checks the same rule (`isPartyGame`).
  */
-export function GamePicker({ value, onChange }: { value: GameChoice; onChange: (c: GameChoice) => void }) {
+export function GamePicker({
+  value,
+  onChange,
+  boards = [],
+  players,
+}: {
+  value: GameChoice;
+  onChange: (c: GameChoice) => void;
+  /** board games for exactly the room's players (Party host only): a "Board games" chip with them */
+  boards?: readonly BayGame[];
+  players?: number;
+}) {
   const settings = useGameSettings();
   const all = useMemo(() => partyGames(settings), [settings]);
-  // Worlds that have at least one Party game, in catalog order: the picker's filter chips.
-  const worlds = useMemo(() => WORLDS.filter((w) => all.some((g) => g.world === w.id)), [all]);
   const picks = value.picks;
+  const showBoards = boards.length > 0 && !picks;
+  // Worlds that have at least one Party game, in catalog order: the picker's filter chips.
+  const worlds = useMemo(
+    () => WORLDS.filter((w) => all.some((g) => g.world === w.id) || (w.id === "board" && showBoards)),
+    [all, showBoards],
+  );
   const first = value.game ?? picks?.[0];
-  const [world, setWorld] = useState<WorldId>(() => all.find((g) => g.id === first)?.world ?? worlds[0].id);
+  const [chosenWorld, setWorld] = useState<WorldId>(() =>
+    value.board ? "board" : (all.find((g) => g.id === first)?.world ?? worlds[0].id),
+  );
+  const world = worlds.some((w) => w.id === chosenWorld) ? chosenWorld : worlds[0].id;
   const games = all.filter((g) => g.world === world);
   const toggle = (id: string) =>
     picks && onChange({ game: null, picks: picks.includes(id) ? picks.filter((x) => x !== id) : [...picks, id] });
@@ -163,7 +188,7 @@ export function GamePicker({ value, onChange }: { value: GameChoice; onChange: (
       <div className="-mx-5 flex gap-1.5 overflow-x-auto px-5 pb-0.5" role="group" aria-label={partyCopy.host.worlds}>
         {worlds.map((w) => {
           const on = w.id === world;
-          const n = all.filter((g) => g.world === w.id).length;
+          const n = w.id === "board" ? boards.length : all.filter((g) => g.world === w.id).length;
           return (
             <button
               key={w.id}
@@ -180,6 +205,60 @@ export function GamePicker({ value, onChange }: { value: GameChoice; onChange: (
           );
         })}
       </div>
+      {world === "board" ? (
+        <div className="flex flex-col gap-2">
+          <p className="text-muted text-[13px]">{partyCopy.host.boardsHint(players ?? 2)}</p>
+          <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label={partyCopy.host.boards}>
+            {boards.map((id) => {
+              const g = GAME_BY_ID[id];
+              const on = value.board === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  onClick={() => onChange({ game: null, picks: null, board: id })}
+                  className="press relative flex h-[84px] min-w-0 flex-col items-center justify-center gap-1.5 rounded-[18px] px-1"
+                  style={tile(on)}
+                  data-party-board={id}
+                >
+                  <span
+                    className="flex size-10 items-center justify-center rounded-[12px] text-[var(--ink-on-bright)]"
+                    style={{ background: WORLD_BY_ID.board.color }}
+                  >
+                    <Icon name={g.icon} size={20} />
+                  </span>
+                  <span className="max-w-full truncate text-[14px] font-semibold">{g.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <PickRace value={value} onChange={onChange} picks={picks} games={games} tile={tile} toggle={toggle} />
+      )}
+    </div>
+  );
+}
+
+function PickRace({
+  value,
+  onChange,
+  picks,
+  games,
+  tile,
+  toggle,
+}: {
+  value: GameChoice;
+  onChange: (c: GameChoice) => void;
+  picks: string[] | null;
+  games: ReturnType<typeof partyGames>;
+  tile: (on: boolean) => React.CSSProperties;
+  toggle: (id: string) => void;
+}) {
+  return (
+    <>
       <button
         type="button"
         aria-pressed={picks !== null}
@@ -205,10 +284,10 @@ export function GamePicker({ value, onChange }: { value: GameChoice; onChange: (
         <button
           type="button"
           role="radio"
-          aria-checked={!picks && value.game === null}
+          aria-checked={!picks && !value.board && value.game === null}
           onClick={() => onChange({ game: null, picks: null })}
           className="press col-span-3 flex min-h-14 items-center gap-3 rounded-[18px] px-3 text-left"
-          style={tile(!picks && value.game === null)}
+          style={tile(!picks && !value.board && value.game === null)}
           hidden={!!picks}
         >
           <span className="bg-accent text-on-accent flex size-10 flex-none items-center justify-center rounded-[12px]">
@@ -253,7 +332,7 @@ export function GamePicker({ value, onChange }: { value: GameChoice; onChange: (
           );
         })}
       </div>
-    </div>
+    </>
   );
 }
 
@@ -373,20 +452,46 @@ export function HostRoom({
   const size = Math.min(chosenSize ?? PARTY_DEFAULT, most);
   const [classroom, setClassroom] = useState(false);
   const race = mode === "race";
+  // Board games for exactly this many players (2: all of them; 3 or 4: Ludo). A pick that no longer fits the count
+  // falls back to the race choice.
+  const boards = useMemo(() => (race ? partyBoardGames(size, gs) : []), [race, size, gs]);
+  const board = choice.board && boards.includes(choice.board) ? choice.board : null;
+  const router = useRouter();
+  const [opening, setOpening] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const openBoard = async (game: BayGame) => {
+    setOpening(true);
+    setFailed(false);
+    try {
+      const v = await api<BayView>("/api/v1/bay", {
+        json: { game, mode: "live", bot: false, ...(game === "ludo" ? { seats: size } : {}) },
+      });
+      router.push(`/bay/${v.id}`);
+    } catch {
+      setOpening(false);
+      setFailed(true);
+    }
+  };
   return (
     <>
       {(adult || family) && <ModePicker value={mode} onChange={setMode} adult={adult} family={family} />}
       {race && (
         <>
           <span className="text-[15px] font-semibold">{partyCopy.host.game}</span>
-          <GamePicker value={choice} onChange={setChoice} />
-          <span className="mt-1 text-[15px] font-semibold">{partyCopy.host.difficulty}</span>
-          <DifficultyPicker value={difficulty} onChange={setDifficulty} />
+          <GamePicker value={{ ...choice, board }} onChange={setChoice} boards={boards} players={size} />
+          {!board && (
+            <>
+              <span className="mt-1 text-[15px] font-semibold">{partyCopy.host.difficulty}</span>
+              <DifficultyPicker value={difficulty} onChange={setDifficulty} />
+            </>
+          )}
         </>
       )}
       <label htmlFor="room-size" className="mt-1 flex items-baseline justify-between text-[15px] font-semibold">
         {partyCopy.host.players}
-        <span className="text-muted text-[14px] font-medium">{partyCopy.host.playersValue(size)}</span>
+        <span className="text-muted text-[14px] font-medium">
+          {board ? partyCopy.host.playersExact(size) : partyCopy.host.playersValue(size)}
+        </span>
       </label>
       <div className="flex items-center gap-3.5 py-1.5">
         <input
@@ -401,7 +506,7 @@ export function HostRoom({
         />
         <span className="num w-10 text-right text-[20px] font-semibold">{size}</span>
       </div>
-      {race && (
+      {race && !board && (
         <label className="bg-surface flex min-h-14 cursor-pointer items-center justify-between gap-3 rounded-[16px] px-4 py-3.5">
           <span className="flex flex-col">
             <span className="text-[16px] font-semibold">{partyCopy.host.classroom}</span>
@@ -419,19 +524,30 @@ export function HostRoom({
           />
         </label>
       )}
-      <Cta
-        className="mt-auto"
-        disabled={busy || (race && !choiceReady(choice))}
-        onClick={() =>
-          onOpen(
-            race
-              ? { game: choice.game, games: choice.picks, difficulty, maxPlayers: size, classroom, mode }
-              : { game: null, games: null, difficulty, maxPlayers: size, classroom: false, mode },
-          )
-        }
-      >
-        {!race || choiceReady(choice) ? partyCopy.host.open : partyCopy.host.pickMore(PARTY_PICK_MIN)}
-      </Cta>
+      {failed && (
+        <p role="alert" className="text-danger text-[14px]">
+          {partyCopy.host.failed}
+        </p>
+      )}
+      {board ? (
+        <Cta className="mt-auto" disabled={busy || opening} onClick={() => void openBoard(board)}>
+          {partyCopy.host.openBoard(GAME_BY_ID[board].name, size)}
+        </Cta>
+      ) : (
+        <Cta
+          className="mt-auto"
+          disabled={busy || (race && !choiceReady(choice))}
+          onClick={() =>
+            onOpen(
+              race
+                ? { game: choice.game, games: choice.picks, difficulty, maxPlayers: size, classroom, mode }
+                : { game: null, games: null, difficulty, maxPlayers: size, classroom: false, mode },
+            )
+          }
+        >
+          {!race || choiceReady(choice) ? partyCopy.host.open : partyCopy.host.pickMore(PARTY_PICK_MIN)}
+        </Cta>
+      )}
     </>
   );
 }

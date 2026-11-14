@@ -20,6 +20,20 @@ export const RETIRED_BAY_GAMES = ["flip"] as const;
 /** Any game a stored Board Bay match can hold: the current list plus the retired ones. */
 export type BayRulesGame = BayGame | (typeof RETIRED_BAY_GAMES)[number];
 
+/**
+ * How many players each Board Bay game seats (mirrors each game's `rules.seats`, kept here so client screens such as
+ * the Party host picker don't load the rules; a unit test checks they match).
+ */
+export const BAY_SEATS: Record<BayGame, { min: number; max: number }> = {
+  chess: { min: 2, max: 2 },
+  draughts: { min: 2, max: 2 },
+  oware: { min: 2, max: 2 },
+  ludo: { min: 2, max: 4 },
+  fourup: { min: 2, max: 2 },
+};
+/** Board Bay games that seat exactly `n` players. */
+export const bayGamesFor = (n: number): BayGame[] => BAY_GAMES.filter((g) => BAY_SEATS[g].min <= n && n <= BAY_SEATS[g].max);
+
 /** Default live clock per player; async has none. */
 export const LIVE_CLOCK_MS = 5 * 60_000;
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.64.0 (14 November 2026)
+
+### Everyone
+
+- **Board games in Party:** set the players to a number a board game seats and a Board Games chip appears in the
+  game picker. At 2 players every board game is there; at 3 or 4, Ludo. Picking one opens a live game for exactly
+  that many, with a code to share.
+
 ## 1.63.6 (14 November 2026)
 
 ### Everyone
