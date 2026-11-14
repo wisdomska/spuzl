@@ -595,11 +595,18 @@ const MAIN_GAMES: GameMeta[] = [
     "Tap the instant the screen changes. Best of 5. Early taps cost you.",
     { scoring: "score", minTimeMs: 0, photosensitive: true },
   ),
-  g("dash", "Dash", "reflex", "person-simple-run", "L", "phaser", "Tap to jump, do not stop", "Tap to jump. Clear today's course.", {
-    scoring: "deaths",
-    minTimeMs: 5000,
-    photosensitive: true,
-  }),
+  // Endless runner: one hit ends the run, score = metres (games/dash/logic.ts). Levels set a distance to reach.
+  g(
+    "dash",
+    "Dash",
+    "reflex",
+    "person-simple-run",
+    "L",
+    "phaser",
+    "Jump, duck, keep running",
+    "Spuz runs on its own and speeds up. Jump the crates and gaps, duck the drones. One hit ends the run. Go far.",
+    { scoring: "score", minTimeMs: 0, photosensitive: true },
+  ),
   g("twins", "Twins", "reflex", "cards", "M2", "custom", "Find every pair", "Flip cards to find every pair in the fewest flips.", {
     scoring: "score",
     minTimeMs: 4000,

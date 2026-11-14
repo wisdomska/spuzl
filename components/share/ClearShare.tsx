@@ -83,8 +83,10 @@ export function useClearShare({
     setOpen(true);
   }, [canStory, mine, attemptId, card, onNotice]);
 
+  // "Beat my time" races the clock; an action run scored on distance (Dash) has the Ghost Race for that instead.
+  const timeRace = !(meta.engine === "phaser" && meta.scoring === "score");
   const beat =
-    challengesOn && cleared && attemptId
+    challengesOn && cleared && attemptId && timeRace
       ? async () => {
           try {
             const url = await createChallengeLink(attemptId);

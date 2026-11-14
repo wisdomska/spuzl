@@ -73,7 +73,7 @@ export const GAME_SEO: Record<string, { kind: string; where: string }> = {
   flinch: { kind: "reaction game", where: "tap the instant the screen changes, best of 5, and early taps cost you" },
   beattap: { kind: "rhythm game", where: "tap on every beat of the pattern, and extra taps cost points" },
   gotcha: { kind: "platformer", where: "reach the exit while floors drop, spikes pop, walls spring up and the door runs away" },
-  dash: { kind: "runner game", where: "tap to jump and clear the course" },
+  dash: { kind: "endless runner", where: "jump and duck to run as far as you can" },
   chess: {
     kind: "chess puzzle",
     where: "find the checkmate with White to move, or play a full game against Spuzl (the computer) or a friend",

@@ -15,8 +15,9 @@ import { solve } from "./rage-design";
 
 async function main() {
   const arg = process.argv[2];
-  const id = arg === "runner" ? "dash" : arg;
-  if (id !== "gotcha" && id !== "dash") throw new Error("usage: rage-curate <gotcha|runner>");
+  // Dash is an endless runner now (games/dash/levels.ts): only Gotcha has a room ladder to curate.
+  const id = arg;
+  if (id !== "gotcha") throw new Error("usage: rage-curate gotcha");
   const mod = (await import(`../games/${id}/levels`)) as {
     HAND_LEVELS: LevelDef[];
     SET_PIECES: LevelDef[];
@@ -28,8 +29,8 @@ async function main() {
   const fixed = new Set([...mod.HAND_LEVELS, ...mod.SET_PIECES].map((l) => l.id));
   // --all: curate every generated room again (in the designer's tier order), not only the current ladder
   const order = process.argv.includes("--all") ? gen.GENERATED.map((l) => l.id) : gen.LADDER;
-  // --cap=N: how many rooms may share a motif (Dash keeps one of each: no look-alike levels)
-  const cap = Number(process.argv.find((x) => x.startsWith("--cap="))?.slice(6) ?? (id === "dash" ? 1 : 2));
+  // --cap=N: how many rooms may share a motif
+  const cap = Number(process.argv.find((x) => x.startsWith("--cap="))?.slice(6) ?? 2);
   const ladder = curate(order, byId, fixed, cap);
   if (process.argv.includes("--dry")) {
     ladder.forEach((x, i) => console.log(i + 1, x, motif(byId.get(x)!)));

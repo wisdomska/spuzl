@@ -20,6 +20,10 @@ export const keyboardCopy = {
   moveDoes: "to move",
   space: "Space",
   actionDoes: (action: string) => `to ${action.toLowerCase()}`,
+  /** Dash: the jump keys and the duck keys */
+  jumpKeys: "Space ↑",
+  duckKeys: "↓",
+  duckDoes: "to duck",
   showControls: "Show controls",
   show: "Show keyboard",
   hide: "Hide keyboard",

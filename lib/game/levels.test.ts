@@ -29,23 +29,20 @@ describe("level ladders", () => {
     for (const n of Object.values(POOL_LADDERS)) expect(n).toBeGreaterThanOrEqual(30);
   });
 
-  it("pool ladders never put two rooms of the same kind in a row; Gotcha uses a kind at most twice, Dash once", async () => {
+  it("pool ladders never put two rooms of the same kind in a row; Gotcha uses a kind at most twice", async () => {
     const { motif } = await import("./rage-variety");
     const { HAND_LEVELS: GH, SET_PIECES: GS } = await import("@/games/gotcha/levels");
-    const { HAND_LEVELS: DH, SET_PIECES: DS } = await import("@/games/dash/levels");
-    for (const [pool, fixed] of [
-      [GOTCHA, [...GH, ...GS]],
-      [DASH, [...DH, ...DS]],
-    ] as const) {
-      const hand = new Set(fixed.map((l) => l.id));
-      const kinds = pool.map(motif);
-      for (let i = 1; i < kinds.length; i++) expect(kinds[i] === kinds[i - 1] && !hand.has(pool[i].id), pool[i].id).toBe(false);
-      const counts = new Map<string, number>();
-      pool.filter((l) => !hand.has(l.id)).forEach((l) => counts.set(motif(l), (counts.get(motif(l)) ?? 0) + 1));
-      for (const [k, n] of counts) expect(n, k).toBeLessThanOrEqual(pool === DASH ? 1 : 2);
-      // Dash: no look-alike levels at all, hand rooms and set pieces included
-      if (pool === DASH) expect(new Set(kinds).size).toBe(kinds.length);
-    }
+    const hand = new Set([...GH, ...GS].map((l) => l.id));
+    const kinds = GOTCHA.map(motif);
+    for (let i = 1; i < kinds.length; i++) expect(kinds[i] === kinds[i - 1] && !hand.has(GOTCHA[i].id), GOTCHA[i].id).toBe(false);
+    const counts = new Map<string, number>();
+    GOTCHA.filter((l) => !hand.has(l.id)).forEach((l) => counts.set(motif(l), (counts.get(motif(l)) ?? 0) + 1));
+    for (const [k, n] of counts) expect(n, k).toBeLessThanOrEqual(2);
+  });
+
+  it("Dash levels are distinct runs whose goals climb inside each block of six", () => {
+    expect(new Set(DASH.map((l) => l.seed)).size).toBe(DASH.length);
+    for (let i = 1; i < DASH.length; i++) if (i % 6) expect(DASH[i].target, DASH[i].id).toBeGreaterThan(DASH[i - 1].target);
   });
 
   it("knows which games have ladders", () => {
