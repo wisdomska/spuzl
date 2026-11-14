@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.62.0 (14 November 2026)
+
+### Everyone
+
+- **Arcade is four games, in this order: Gotcha, Echo, Flinch, Dash.** Twins (Pair Up does the same job), Beat Tap
+  and Penalty King are retired: hidden from players, kept in code.
+
 ## 1.61.0 (14 November 2026)
 
 ### Admin
