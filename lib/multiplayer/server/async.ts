@@ -8,6 +8,7 @@ import { bindPuzzle } from "@/lib/game/guess-token";
 import { getGameSettings, openGameNow } from "@/lib/game-settings/server";
 import { loadServedLogic as loadLogic } from "@/lib/game/served-logic";
 import { playableGame } from "@/lib/catalog";
+import { ghostByDistance } from "@/lib/multiplayer/ghost-rank";
 import { createRng } from "@/lib/rng";
 import { difficultyForDate, type Difficulty } from "@/games/types";
 import { dailyNumber } from "@/lib/format";
@@ -321,17 +322,35 @@ export async function startGhostRace(admin: SupabaseClient, me: string, game: st
         .eq("status", "accepted")
         .or(`player_id.eq.${me},friend_id.eq.${me}`);
       const friends = (fr ?? []).map((f) => (f.player_id === me ? f.friend_id : f.player_id));
+      // Best run first: fewest deaths then fastest, or for an endless runner (Dash) the longest (lib/multiplayer/ghost-rank).
+      const far = ghostByDistance(game);
       const runs = admin.from("ghost_runs").select("id, player_id, inputs, time_ms, deaths, puzzle_id").eq("puzzle_id", puzzleId);
-      if (friends.length) await pick(runs.in("player_id", friends).order("deaths").order("time_ms").limit(1).maybeSingle());
+      if (friends.length)
+        await pick(
+          (far
+            ? runs.in("player_id", friends).order("time_ms", { ascending: false })
+            : runs.in("player_id", friends).order("deaths").order("time_ms")
+          )
+            .limit(1)
+            .maybeSingle(),
+        );
       if (!ghost)
         await pick(
-          admin
-            .from("ghost_runs")
-            .select("id, player_id, inputs, time_ms, deaths, puzzle_id")
-            .eq("puzzle_id", puzzleId)
-            .eq("player_id", me)
-            .order("deaths")
-            .order("time_ms")
+          (far
+            ? admin
+                .from("ghost_runs")
+                .select("id, player_id, inputs, time_ms, deaths, puzzle_id")
+                .eq("puzzle_id", puzzleId)
+                .eq("player_id", me)
+                .order("time_ms", { ascending: false })
+            : admin
+                .from("ghost_runs")
+                .select("id, player_id, inputs, time_ms, deaths, puzzle_id")
+                .eq("puzzle_id", puzzleId)
+                .eq("player_id", me)
+                .order("deaths")
+                .order("time_ms")
+          )
             .limit(1)
             .maybeSingle(),
         );

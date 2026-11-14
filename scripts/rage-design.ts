@@ -1017,8 +1017,9 @@ export const LADDER: string[] = ${JSON.stringify(ladder)};
 
 async function main() {
   const arg = process.argv[2];
-  // "runner" is an alias for Dash (some shells and sandboxes treat a bare "dash" argument as a shell)
-  const ids: GameId[] = arg === "all" || !arg ? ["gauntlet", "gotcha", "dash"] : [arg === "runner" ? "dash" : (arg as GameId)];
+  // Dash is an endless runner with seeded runs (phaser/sim/runner.ts, games/dash/levels.ts): no rooms to design.
+  if (arg === "dash" || arg === "runner") throw new Error("Dash has no designed rooms any more: see games/dash/levels.ts");
+  const ids: GameId[] = arg === "all" || !arg ? ["gauntlet", "gotcha"] : [arg as GameId];
   for (const id of ids) await build(SPECS[id]);
 }
 

@@ -1,5 +1,5 @@
 /**
- * Level variety for the Arcade course ladders (Gotcha, Dash). The designer can draw many rooms that play the same
+ * Level variety for the Arcade course ladder (Gotcha). The designer can draw many rooms that play the same
  * way: the same hazards over the same kind of ground. `motif` sums a room up in those terms, and `curate` keeps
  * the ladder's order but drops a generated room once its motif has been used twice, and moves rooms a few places
  * so two in a row never share one. Hand rooms and set pieces always stay. Used by scripts/rage-design.ts and

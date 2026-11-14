@@ -9,6 +9,7 @@ import { BOARDS } from "@/games/board-registry";
 import { GAME_BY_ID } from "@/lib/catalog";
 import { api, finishAttempt, HttpError } from "@/lib/client/api";
 import { GHOST_GAMES } from "@/lib/client/challenge";
+import { beatsGhost, ghostByDistance } from "@/lib/multiplayer/ghost-rank";
 import { challengeCopy } from "@/lib/copy/challenge";
 import { useProfileGate } from "@/lib/client/multiplayer";
 import { usePracticeFirst } from "@/lib/client/learned";
@@ -42,7 +43,7 @@ export function GhostScreen({ game }: { game: string }) {
   const run = useSearchParams().get("run") ?? undefined;
   const [start, setStart] = useState<Start | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [done, setDone] = useState<{ timeMs: number; deaths: number; runId: string | null } | null>(null);
+  const [done, setDone] = useState<{ timeMs: number; deaths: number; score?: number; runId: string | null } | null>(null);
   const { toast, show } = useToast();
   const meta = GAME_BY_ID[game];
   const Board = BOARDS[game];
@@ -74,7 +75,7 @@ export function GhostScreen({ game }: { game: string }) {
   const onSolved = useCallback(
     async (state: unknown, ms: number, stats: { mistakes: number; boardMs?: number }) => {
       if (!start) return;
-      const st = state as { deaths?: number; timeMs?: number };
+      const st = state as { deaths?: number; timeMs?: number; score?: number };
       try {
         const fin = await finishAttempt(start.attemptId, {
           state,
@@ -85,7 +86,7 @@ export function GhostScreen({ game }: { game: string }) {
         });
         if (!fin.ok) return show("That run didn't verify.", "bad");
         const saved = await api<{ runId: string }>("/api/v1/ghosts", { json: { attemptId: start.attemptId } }).catch(() => null);
-        setDone({ timeMs: st.timeMs ?? ms, deaths: st.deaths ?? 0, runId: saved?.runId ?? null });
+        setDone({ timeMs: st.timeMs ?? ms, deaths: st.deaths ?? 0, score: st.score, runId: saved?.runId ?? null });
       } catch {
         show("Couldn't save your run.", "bad");
       }
@@ -121,10 +122,11 @@ export function GhostScreen({ game }: { game: string }) {
 
   if (done) {
     const g = start.ghost;
-    const beat = g ? done.deaths < g.deaths || (done.deaths === g.deaths && done.timeMs < g.timeMs) : true;
+    const beat = beatsGhost(game, done, g);
     return (
       <GhostResult
         game={meta.name}
+        far={ghostByDistance(game)}
         ghost={g}
         done={done}
         beat={beat}
@@ -170,6 +172,7 @@ export function GhostScreen({ game }: { game: string }) {
 
 function GhostResult({
   game,
+  far,
   ghost,
   done,
   beat,
@@ -177,8 +180,10 @@ function GhostResult({
   onShare,
 }: {
   game: string;
+  /** an endless runner: the longer run wins, and there is one crash per run to report */
+  far: boolean;
   ghost: Ghost | null;
-  done: { timeMs: number; deaths: number; runId: string | null };
+  done: { timeMs: number; deaths: number; score?: number; runId: string | null };
   beat: boolean;
   onAgain: () => void;
   onShare: () => void;
@@ -201,17 +206,36 @@ function GhostResult({
         <h1 className="font-display text-[30px] leading-[1.1] font-black" aria-live="polite">
           {title}
         </h1>
-        <p className="text-muted text-[16px]">
-          {game}. You: <span className="num text-text">{formatTenths(done.timeMs)}</span>, {done.deaths}{" "}
-          {done.deaths === 1 ? "death" : "deaths"}.
-          {ghost && (
-            <>
-              {" "}
-              Ghost: <span className="num text-text">{formatTenths(ghost.timeMs)}</span>, {ghost.deaths}{" "}
-              {ghost.deaths === 1 ? "death" : "deaths"}.
-            </>
-          )}
-        </p>
+        {far ? (
+          <p className="text-muted text-[16px]">
+            {game}. You ran
+            {done.score !== undefined && (
+              <>
+                {" "}
+                <span className="num text-text">{done.score} m</span> in
+              </>
+            )}{" "}
+            <span className="num text-text">{formatTenths(done.timeMs)}</span>.
+            {ghost && (
+              <>
+                {" "}
+                Ghost lasted <span className="num text-text">{formatTenths(ghost.timeMs)}</span>.
+              </>
+            )}
+          </p>
+        ) : (
+          <p className="text-muted text-[16px]">
+            {game}. You: <span className="num text-text">{formatTenths(done.timeMs)}</span>, {done.deaths}{" "}
+            {done.deaths === 1 ? "death" : "deaths"}.
+            {ghost && (
+              <>
+                {" "}
+                Ghost: <span className="num text-text">{formatTenths(ghost.timeMs)}</span>, {ghost.deaths}{" "}
+                {ghost.deaths === 1 ? "death" : "deaths"}.
+              </>
+            )}
+          </p>
+        )}
         <div className="mt-auto grid w-full grid-cols-2 gap-2.5">
           <Cta onClick={onAgain}>Race again</Cta>
           <Cta tone="raised" icon="share-fat" onClick={onShare} disabled={!done.runId}>

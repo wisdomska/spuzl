@@ -93,6 +93,7 @@ export const TYPICAL_SCORE: Record<string, number> = {
   penalty: 3000, // 1000 a goal plus up to 100 accuracy, 5 kicks
   hilo: 6, // right calls out of 10
   pinned: 2500, // 5 pins, up to 1000 each, fading with the distance
+  dash: 400, // metres run before the first hit
 };
 
 /** The highest typical score the admin can set. */

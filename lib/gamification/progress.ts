@@ -102,11 +102,12 @@ async function badgeEarned(b: BadgeDef, c: ClearContext, s: Stats): Promise<bool
       return isSolo(c.mode) && now.getUTCHours() === 23 && now.getUTCMinutes() === 59;
     }
     case "zero_deaths":
-      // The action courses (Gotcha, Dash) count deaths; they moved from Rage Ridge to Arcade in the regroup.
+      // The action courses scored on deaths (Gotcha). Dash is an endless runner scored on distance since 1.62.
       return GAME_BY_ID[c.gameId]?.scoring === "deaths" && c.deaths === 0;
     case "course_deaths":
-      // Rage Survivor: a Daily on one of the action courses. Gauntlet held these until it was retired.
-      return (c.gameId === "gotcha" || c.gameId === "dash") && c.mode === "daily" && c.deaths <= n;
+      // Rage Survivor: a Daily Gotcha. Gauntlet held these until it was retired; Dash until it became an endless
+      // runner (every run there ends on its one crash, so a crash count means nothing).
+      return c.gameId === "gotcha" && c.mode === "daily" && c.deaths <= n;
     default:
       return false; // social, duel and party badges are evaluated where those events happen
   }

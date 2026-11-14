@@ -39,7 +39,8 @@ import { keyboardCopy as KC } from "@/lib/copy/keyboard";
 import { posterStyle } from "./RagePoster";
 import { sameHud, type Hud } from "./hud";
 
-export type ControlsKind = "dpad" | "tap" | "hold" | "lr" | "drag";
+/** "runner": jump and duck (Dash): JUMP and DUCK buttons, tap the upper canvas to jump, the lower part to duck, or swipe. */
+export type ControlsKind = "dpad" | "tap" | "hold" | "lr" | "drag" | "runner";
 
 export interface RageGameSpec<S extends SimCore> {
   name: string;
@@ -48,8 +49,11 @@ export interface RageGameSpec<S extends SimCore> {
   controls: ControlsKind;
   /** label on the big round button */
   action?: string;
-  /** "deaths" (Gotcha), "distance" (Dash), "race" (Ghosted, GR Ghost Race panel), "score" (Ricochet, Stacked) */
-  hud: "deaths" | "distance" | "score" | "race";
+  /**
+   * "deaths" (Gotcha), "distance" (course bar), "race" (Ghosted, GR Ghost Race panel), "score" (Ricochet, Stacked),
+   * "runner" (Dash: the painter draws metres, speed and the ghost in the canvas; the state carries the score)
+   */
+  hud: "deaths" | "distance" | "score" | "race" | "runner";
   /** level name for the caption under the board */
   levelName?(sim: S): string;
   metres?(sim: S): number;
@@ -149,7 +153,7 @@ export function RageBoard<S extends SimCore>({
 
   const stateNow = useCallback((): RageState => {
     const s: RageState = { log: ctl.log(), deaths: ctl.sim.deaths, timeMs: ctl.timeMs(), level: ctl.sim.cleared() };
-    if (spec.hud === "score") s.score = ctl.sim.score();
+    if (spec.hud === "score" || spec.hud === "runner") s.score = ctl.sim.score();
     return s;
   }, [ctl, spec.hud]);
 
@@ -181,7 +185,9 @@ export function RageBoard<S extends SimCore>({
       onEvents: (ev) => {
         const now = performance.now();
         painter.onEvents(ev, ctl.sim, now);
-        if (ev & EV.DEATH) {
+        // A runner's crash that ends the run says so once, in the finish copy.
+        if (ev & EV.DEATH && spec.hud === "runner" && ev & EV.FINISH) play("splat");
+        else if (ev & EV.DEATH) {
           play("splat");
           const n = ctl.sim.deaths;
           const line = deathCopy(n, spec.deathLines, spec.deathNoun);
@@ -400,7 +406,20 @@ export function RageBoard<S extends SimCore>({
   // Canvas touch: tap anywhere to jump (tap and hold games), drag to swing (Slip). The pointer is captured
   // so a finger that slides off the canvas still releases.
   const drag = useRef<{ id: number; x: number } | null>(null);
+  // Runner: where the finger lands picks the move (the lower third ducks); a swipe up or down changes it.
+  const swipe = useRef<{ id: number; y: number } | null>(null);
   const onCanvasDown = (e: RPointerEvent) => {
+    if (spec.controls === "runner") {
+      try {
+        (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+      } catch {
+        /* pointer already gone */
+      }
+      const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      swipe.current = { id: e.pointerId, y: e.clientY };
+      held.pointerDown("canvas", e.pointerId, e.clientY - r.top > r.height * 0.66 ? BTN.DOWN : BTN.JUMP);
+      return;
+    }
     if (spec.controls !== "tap" && spec.controls !== "hold" && spec.controls !== "drag") return;
     try {
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
@@ -413,6 +432,11 @@ export function RageBoard<S extends SimCore>({
     } else held.pointerDown("canvas", e.pointerId, BTN.JUMP);
   };
   const onCanvasMove = (e: RPointerEvent) => {
+    if (spec.controls === "runner" && swipe.current?.id === e.pointerId) {
+      const dy = e.clientY - swipe.current.y;
+      if (Math.abs(dy) > 24) held.pointerSet("canvas", e.pointerId, dy > 0 ? BTN.DOWN : BTN.JUMP);
+      return;
+    }
     if (spec.controls !== "drag" || !drag.current || drag.current.id !== e.pointerId) return;
     const dx = e.clientX - drag.current.x;
     held.pointerSet("canvas", e.pointerId, dx > 12 ? BTN.RIGHT : dx < -12 ? BTN.LEFT : 0);
@@ -420,6 +444,7 @@ export function RageBoard<S extends SimCore>({
   };
   const onCanvasUp = (e: RPointerEvent) => {
     if (drag.current?.id === e.pointerId) drag.current = null;
+    if (swipe.current?.id === e.pointerId) swipe.current = null;
     held.pointerUp("canvas", e.pointerId);
   };
 
@@ -460,10 +485,17 @@ export function RageBoard<S extends SimCore>({
         onPointerCancel={onCanvasUp}
         onLostPointerCapture={onCanvasUp}
       >
-        <div ref={canvasRef} role="img" aria-label={`${spec.name} level. ${hud.deaths} deaths.`} className="absolute inset-0" />
+        <div
+          ref={canvasRef}
+          role="img"
+          aria-label={spec.hud === "runner" ? `${spec.name}. ${hud.metres} metres.` : `${spec.name} level. ${hud.deaths} deaths.`}
+          className="absolute inset-0"
+        />
 
         {/* HUD */}
-        <div className="pointer-events-none absolute top-3 right-3.5 left-3.5 z-[2] flex flex-col gap-2">
+        <div
+          className={`pointer-events-none absolute top-3 right-3.5 left-3.5 z-[2] flex-col gap-2 ${spec.hud === "runner" ? "hidden" : "flex"}`}
+        >
           <div className="flex items-center justify-between gap-2">
             <div className="flex gap-2">
               {(spec.hud === "distance" || spec.hud === "race") && (
@@ -575,8 +607,14 @@ export function RageBoard<S extends SimCore>({
             )}
             {spec.controls !== "lr" && (
               <span className="inline-flex items-center gap-1.5">
-                <Kbd>{KC.space}</Kbd>
+                <Kbd>{spec.controls === "runner" ? KC.jumpKeys : KC.space}</Kbd>
                 <span className="text-muted">{KC.actionDoes(spec.action ?? "Jump")}</span>
+              </span>
+            )}
+            {spec.controls === "runner" && (
+              <span className="inline-flex items-center gap-1.5">
+                <Kbd>{KC.duckKeys}</Kbd>
+                <span className="text-muted">{KC.duckDoes}</span>
               </span>
             )}
           </p>
@@ -603,6 +641,25 @@ export function RageBoard<S extends SimCore>({
               <PadButton label="Move left" icon="caret-left" small={size.short} {...holdProps("pl", BTN.LEFT)} />
               <PadButton label="Move right" icon="caret-right" small={size.short} {...holdProps("pr", BTN.RIGHT)} />
             </div>
+          ) : spec.controls === "runner" ? (
+            <button
+              type="button"
+              aria-label="Duck"
+              className="toy flex flex-none items-center justify-center rounded-[22px]"
+              style={{
+                width: size.short ? 80 : 96,
+                height: size.short ? 56 : 64,
+                background: "var(--surface-raised)",
+                color: "var(--text)",
+                ["--btn-depth" as string]: "var(--depth)",
+                boxShadow: "0 6px 0 var(--depth)",
+                font: "900 15px var(--font-display, Unbounded), sans-serif",
+                touchAction: "none",
+              }}
+              {...holdProps("pd", BTN.DOWN)}
+            >
+              DUCK
+            </button>
           ) : (
             <span className="text-muted text-[14px] font-medium">or tap anywhere</span>
           )}
