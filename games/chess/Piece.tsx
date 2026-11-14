@@ -16,7 +16,7 @@ export const B3D = {
 
 const KEYS = ["K", "Q", "R", "B", "N", "P"].flatMap((t) => ["w" + t, "b" + t]);
 /** Bump with every re-render of the sprites (scripts/prerender-3d.mjs) so browsers drop the old ones. */
-const SPRITE_V = 6;
+const SPRITE_V = 8;
 /** Sprites are one square wide and this many squares tall (tall pieces rise into the square behind). */
 const TALL = 1.4;
 const spriteUrl = (key: string) => `/3d/pieces/${key}.webp?v=${SPRITE_V}`;

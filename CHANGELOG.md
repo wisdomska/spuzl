@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.63.5 (14 November 2026)
+
+### Everyone
+
+- **The new chess pieces actually show:** the piece images' version moved on, so browsers and the installed app fetch
+  the new pawns and warmer light pieces instead of keeping the old ones.
+
 ## 1.63.4 (14 November 2026)
 
 ### Everyone
