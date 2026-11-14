@@ -63,9 +63,9 @@ function snap(C, size, alignBottom) {
 const base = (br) => [[0, 0], [br, 0], [br, .035], [br + .012, .06], [br - .02, .09], [br - .02, .12], [br - .09, .16]];
 const arc = (cy, r, a0, a1, n = 12) => Array.from({ length: n + 1 }, (_, i) => { const a = a0 + (a1 - a0) * i / n; return [Math.max(0, r * Math.cos(a)), cy + r * Math.sin(a)]; });
 const PROFILES = {
-  // Pawn: a wide base, a short thick neck, a broad collar and a big round head (owner, 14 Nov 2026: pawns read as
-  // bishops). Same height as before, so every other piece keeps its scale.
-  P: [...base(.41), [.25, .20], [.18, .29], [.155, .42], [.27, .465], [.28, .505], [.16, .54], ...arc(.70, .19, -1.0, Math.PI / 2)],
+  // Pawn: a wide base, a short thick neck, a slim collar and a big round head (owner, 14 Nov 2026: pawns read as
+  // bishops; a wide collar made the head look flat). Same height as before, so every other piece keeps its scale.
+  P: [...base(.41), [.25, .20], [.18, .29], [.15, .42], [.215, .46], [.22, .495], [.14, .525], ...arc(.69, .18, -1.05, Math.PI / 2)],
   R: [...base(.42), [.27, .22], [.23, .36], [.22, .62], [.30, .66], [.30, .70], [.27, .72], [.29, .78], [.295, .84], [.27, .855], [.2, .85], [.19, .80], [0, .79]],
   N: [...base(.42), [.26, .22], [.28, .26], [0, .27]],
   B: [...base(.40), [.20, .22], [.14, .40], [.12, .60], [.21, .64], [.21, .68], [.11, .71], [.15, .76], [.18, .84], [.18, .92], [.15, 1.0], [.10, 1.06], [.05, 1.10], [.03, 1.11], ...arc(1.15, .05, -1.17, Math.PI / 2, 6)],

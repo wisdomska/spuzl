@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.63.4 (14 November 2026)
+
+### Everyone
+
+- **Google sign-in works again:** the Google window no longer stays blank after you pick an account (the site's
+  security header blocked the pop-up from reporting back).
+- **The Google button fits in:** no white frame around it; it sits in a dark tile the same height as the buttons
+  around it.
+- **Kente is now Spuzdoku** (the 6 × 6 or 9 × 9 number grid).
+- **Pawns:** a slimmer collar under the round head, so the head no longer looks flat.
+
 ## 1.63.3 (14 November 2026)
 
 ### Everyone

@@ -71,7 +71,7 @@ describe("api: retired games are refused like unknown ones", () => {
 
   it("serves only live games to players", async () => {
     const today = await fetch(`${BASE}/api/v1/today`).then((r) => r.json());
-    // A board-size variant (Kente 9 × 9) is played from its game, never listed on its own.
+    // A board-size variant (Spuzdoku 9 × 9) is played from its game, never listed on its own.
     expect(today.games.map((x: { id: string }) => x.id).sort()).toEqual(
       GAMES.filter((x) => !x.variantOf)
         .map((x) => x.id)

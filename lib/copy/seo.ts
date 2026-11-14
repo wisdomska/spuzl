@@ -199,7 +199,7 @@ export const siteFaq = (games: number = GAME_COUNT, worlds: number = WORLD_COUNT
 export const FEATURES: readonly string[] = [
   "Free play: every game any time, with fresh puzzles and levels that get harder.",
   "Arcade: Gotcha, a trap platformer where every room tricks you once; Dash, an endless runner where you jump and duck; plus Echo, Flinch and Twins.",
-  "Kente: number grids at 6 by 6 or 9 by 9, picked before each game.",
+  "Spuzdoku: number grids at 6 by 6 or 9 by 9, picked before each game.",
   "Daily Five: five quick games a day, the same for everyone, with a shareable score grid.",
   "Streaks with Streak Freezes, quests, badges and levels.",
   "Duel: a live best-of-three race against a friend or a matched player.",

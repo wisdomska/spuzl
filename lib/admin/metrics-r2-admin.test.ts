@@ -96,7 +96,7 @@ describe("practice rounds (20261202000501)", () => {
   it("breaks down by game, busiest first, with the game's name", () => {
     expect(METRIC_BY_ID.practice.breakdown!.rows(total)).toEqual([
       { key: "dusk", label: "Dusk", values: [7, 5, 1, 1, 71.4] },
-      { key: "nine", label: "Kente", values: [3, 1, 2, 0, 33.3] },
+      { key: "nine", label: "Spuzdoku", values: [3, 1, 2, 0, 33.3] },
     ]);
   });
   it("exports per day and game, then the range total", () => {

@@ -126,7 +126,7 @@ export function GoogleButton({ next, link = false }: { next: string; link?: bool
           shape: "rectangular",
           text: "continue_with",
           logo_alignment: "center",
-          width: Math.min(400, Math.max(200, Math.round(slot.current.getBoundingClientRect().width))),
+          width: Math.min(400, Math.max(200, Math.round(slot.current.getBoundingClientRect().width) - 16)),
         });
         setGis("ready");
       } catch {
@@ -162,7 +162,10 @@ export function GoogleButton({ next, link = false }: { next: string; link?: bool
         <div
           ref={slot}
           aria-busy={gis === "loading" || busy}
-          className={`flex h-14 w-full items-center justify-center ${busy ? "pointer-events-none opacity-70" : ""}`}
+          // Google's button lives in its own frame: `color-scheme: light` stops the browser painting that frame white on
+          // a dark page, and the 56 px tile around it matches the buttons beside it (Google caps its own at 44 px).
+          className={`flex h-14 w-full items-center justify-center overflow-hidden rounded-[16px] border ${busy ? "pointer-events-none opacity-70" : ""}`}
+          style={{ colorScheme: "light", background: "var(--google-bg)", borderColor: "var(--google-line)" }}
         />
       )}
       {gis === "off" && (

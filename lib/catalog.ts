@@ -67,7 +67,7 @@ export interface GameMeta {
   /** Retired (RETIRED_IDS): kept in code, hidden from players and refused by the server. Set by the catalog. */
   retired?: boolean;
   /**
-   * Another board size of the game named here (owner, 14 Nov 2026: Sixer and Nine are one game, Kente, 6 × 6 or
+   * Another board size of the game named here (owner, 14 Nov 2026: Sixer and Nine are one game, Spuzdoku, 6 × 6 or
    * 9 × 9). Playable, with its own levels and stats, but never listed or counted on its own: players reach it
    * from the size picker (components/play/SizePicker).
    */
@@ -169,11 +169,11 @@ const MAIN_GAMES: GameMeta[] = [
     "Suns and moons. Equal per row and column, never 3 in a line. = means same, × means different.",
     { unique: true, minTimeMs: 8000 },
   ),
-  // Kente (owner, 14 Nov 2026): Sixer and Nine are one game with two board sizes, picked before each game. The ids
+  // Spuzdoku (owner, 14 Nov 2026): Sixer and Nine are one game with two board sizes, picked before each game. The ids
   // stay, so levels, stats and saved games carry on; "nine" is the 9 × 9 size and is never listed on its own.
   g(
     "sixer",
-    "Kente",
+    "Spuzdoku",
     "logic",
     "grid-nine",
     "L",
@@ -184,7 +184,7 @@ const MAIN_GAMES: GameMeta[] = [
   ),
   g(
     "nine",
-    "Kente",
+    "Spuzdoku",
     "logic",
     "number-square-nine",
     "M3+",
@@ -859,7 +859,7 @@ export const WORLDS: World[] = ALL_WORLDS.filter((w) => GAMES.some((x) => x.worl
  * The catalogue count: every game that is not retired. Static text that cannot follow the runtime state (the PWA
  * manifest, the offline page) keeps it; anything rendered per request or revalidated counts `playerGames(s).length`.
  */
-/** Games players see (a board-size variant such as Kente 9 × 9 is not counted on its own). */
+/** Games players see (a board-size variant such as Spuzdoku 9 × 9 is not counted on its own). */
 export const GAME_COUNT = GAMES.filter((g) => !g.variantOf).length;
 export const WORLD_COUNT = WORLDS.length;
 

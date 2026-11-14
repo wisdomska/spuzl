@@ -220,7 +220,7 @@ export function PlayScreen({
     initialMode === "five" ? fiveSlot?.state === "in_progress" : today.data?.games.find((g) => g.id === meta.id)?.state === "in_progress";
   // First try of a game: a short guided practice round before the real one (skippable).
   const [guided, setGuided] = useState(false);
-  // Kente (owner, 14 Nov 2026): a game with two board sizes asks which one first, unless the address already says
+  // Spuzdoku (owner, 14 Nov 2026): a game with two board sizes asks which one first, unless the address already says
   // (?size=1, set by the picker) or the game came from somewhere that fixed it (a Daily, Daily Five, a past Daily).
   const [askSize, setAskSize] = useState(() => !!SIZES[meta.id] && (initialMode === "free" || initialMode === "level") && !sized);
   // New-device speed (owner, 12 Nov): a game this browser hasn't learned starts loading its practice board now,

@@ -4,7 +4,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { Icon } from "@/components/ui/Icon";
 import { sizeCopy as T } from "@/lib/copy/size";
 
-/** Board sizes of a game that has more than one (Kente: Sixer 6 × 6 and Nine 9 × 9). */
+/** Board sizes of a game that has more than one (Spuzdoku: Sixer 6 × 6 and Nine 9 × 9). */
 export const SIZES: Record<string, { id: string; n: number }[]> = {
   sixer: [
     { id: "sixer", n: 6 },

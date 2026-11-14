@@ -6,7 +6,9 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), interest-cohort=()" },
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
-  { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+  // Google's sign-in button opens a pop-up that must report back to this page; plain same-origin cut it off (the pop-up
+  // stayed blank on accounts.google.com/gsi/transform). Pop-ups we open keep their link; other sites still can't.
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
 ];
 
 const nextConfig: NextConfig = {

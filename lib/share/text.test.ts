@@ -76,7 +76,7 @@ describe("share text", () => {
 
   it("matches the design's Duel format", () => {
     const t = duelShareText({ gameId: "sixer", me: "Ama", them: "Tunde", rounds: ["won", "lost", "won"], rating: 1438 });
-    expect(t).toBe(["SPUZL Duel · Kente", "Ama 2 - 1 Tunde", "🟩🟥🟩 · rating 1,438", SHARE_DOMAIN].join("\n"));
+    expect(t).toBe(["SPUZL Duel · Spuzdoku", "Ama 2 - 1 Tunde", "🟩🟥🟩 · rating 1,438", SHARE_DOMAIN].join("\n"));
     expect(duelShareText({ gameId: "?", me: "A", them: "B", rounds: ["won"] }).split("\n")[2]).toBe("🟩");
   });
 

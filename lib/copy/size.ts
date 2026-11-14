@@ -1,4 +1,4 @@
-/** The board-size picker before a game with two sizes (Kente: 6 × 6 or 9 × 9). */
+/** The board-size picker before a game with two sizes (Spuzdoku: 6 × 6 or 9 × 9). */
 export const sizeCopy = {
   title: (game: string) => `${game}: pick a board`,
   intro: "Same rules, two sizes. You pick each time you start a game.",
