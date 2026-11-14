@@ -187,7 +187,10 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   const vh = useViewportHeight();
   const asideW = wideAside(vw);
   // The board column's width (useBoardSize `wideColumn`): board and panel then sit together, centred.
-  const colW = wideColumn(vw, vh, meta.id);
+  // Canvas games (Gotcha, Dash) have no side panel on a wide screen: their feedback and results sit under the board,
+  // and the board is centred at its full shape (owner, 14 Nov 2026: "don't be squeezing them at one side").
+  const panel = meta.engine !== "phaser";
+  const colW = wideColumn(vw, vh, meta.id, panel);
   const [aside, setAside] = useState<HTMLElement | null>(null);
   // The game's own colour (lib/catalog colourOf): moved games keep the hue they were designed in.
   const relaxed = useSettings((s) => s.relaxed);
@@ -763,7 +766,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
     <ShellAsideProvider value={{ wide, node: aside }}>
       <div
         className={`bg-bg relative mx-auto flex min-h-dvh w-full flex-col ${wide ? "px-6" : "max-w-[560px]"}`}
-        style={wide ? { ...style, maxWidth: WIDE_GUTTER * 2 + colW + WIDE_GAP + asideW } : style}
+        style={wide ? { ...style, maxWidth: WIDE_GUTTER * 2 + colW + (panel ? WIDE_GAP + asideW : 0) } : style}
         data-world={meta.world}
         data-shell
         data-wide={wide || undefined}
@@ -779,14 +782,14 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
             rest. Phone: one column (the board column is `display: contents`). The board keeps its place in the
             tree either way, so turning a tablet or resizing a window never restarts the game. */}
         <div className={wide ? "flex flex-1 items-start pb-6" : "flex flex-1 flex-col"} style={wide ? { gap: WIDE_GAP } : undefined}>
-          <div className={wide ? "flex min-w-0 flex-1 justify-center" : "contents"}>
-            {!wide && stripZone}
+          <div className={wide ? `flex min-w-0 flex-1 ${panel ? "justify-center" : "flex-col items-stretch"}` : "contents"}>
+            {(!wide || !panel) && stripZone}
             {rule}
             {slot}
-            {!wide && feedbackZone}
-            {!wide && toolZone}
+            {(!wide || !panel) && feedbackZone}
+            {(!wide || !panel) && toolZone}
           </div>
-          {wide && (
+          {wide && panel && (
             // R3-02: the panel never reaches past the viewport (it used to add a few px of page scroll). Spacing
             // tightens on a short screen; the tools stay pinned at its foot and, as a last resort, the parts above
             // them scroll inside the panel.

@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.63.0 (14 November 2026)
+
+### Everyone
+
+- **Gotcha, rebuilt as a real troll platformer:** 30 new one-screen rooms you learn by dying. Floors that aren't
+  there, ceilings that drop, walls that close in, spikes that slide out of walls, a decoy door, gravity that flips,
+  controls that reverse, a saw on a track, and the door that keeps running. Each room teaches one trick, then later
+  rooms lie about it. The whole room is always on screen, with a smaller Spuz.
+- **Dash, rebuilt as an endless runner:** Spuz runs on his own and speeds up. **Jump** crates, cones, hurdles and
+  gaps; **duck** under drones and balloons (Down, S, the Duck button, or swipe down). One hit ends the run; your
+  score is how far you got. Levels set a distance to reach.
+- **Kente:** Sixer and Nine are one game now. Pick a 6 × 6 or 9 × 9 board before you play; your levels and stats
+  for both sizes carry on.
+- **Twins is back in Arcade** and grows with difficulty: 4 × 4 on Easy up to 6 × 6 on Mega.
+- **Fewer, better games:** Higher or Lower, Killer Sums, Light Up, Pixl, Market Run and Pinned are retired (kept in
+  code). Arcade is Gotcha, Echo, Flinch, Dash and Twins.
+- **Big screens are used properly:** on a laptop or desktop, the board and its panel sit together in the middle,
+  and boards that stayed at phone size (word tiles, cards, quizzes, Five's keyboard) grow to fill the space. Five
+  puts its keyboard beside the grid. Gotcha and Dash use the full width.
+- **The practice banner explains the game:** tap "First time playing…? Tap to see how to win." for the idea, how you
+  win, and that practice doesn't count.
+
 ## 1.62.0 (14 November 2026)
 
 ### Everyone

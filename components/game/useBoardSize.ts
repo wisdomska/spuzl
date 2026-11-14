@@ -73,8 +73,13 @@ export const WIDE_ASPECT: Record<string, number> = { five: 1.6, oware: 2.4, gotc
 export const WIDE_COL_MIN = 600;
 
 /** The board column's width on a wide screen for a game: its shape at the available height, within the column. */
-export function wideColumn(vw: number, vh: number, game: string): number {
+export function wideColumn(vw: number, vh: number, game: string, panel = true): number {
   const box = boardBox(vw, vh);
+  // No side panel (canvas games keep their controls on the canvas): the board may use the whole page width.
+  if (!panel) {
+    const avail = Math.min(vw, WIDE_SHELL_MAX) - WIDE_GUTTER * 2 - SLOT_PAD * 2;
+    return Math.min(avail, Math.round(box.h * (WIDE_ASPECT[game] ?? 1))) + SLOT_PAD * 2;
+  }
   const shaped = Math.round(Math.min(box.w, box.h) * (WIDE_ASPECT[game] ?? 1));
   return Math.min(box.w, Math.max(WIDE_COL_MIN, shaped)) + SLOT_PAD * 2;
 }
