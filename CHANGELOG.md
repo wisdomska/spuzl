@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.65.0 (14 November 2026)
+
+### Everyone
+
+- **Chess premoves:** while the other side is to move, plan up to 3 moves (tap or drag). They play the moment it's
+  your turn if still legal; otherwise they're dropped. Tap an empty square, right-click or press Esc to clear them.
+- **Drag and drop** pieces, as well as tap-tap.
+- **Move list** (1. e4 e5) with buttons and ←/→ to look back through the game, and "Back to the game".
+- **Captured pieces** beside each player, with +N for the side ahead.
+- **Arrows and marks** on a computer: right-click a square, or right-drag for an arrow.
+- **Flip board**, and moves now slide from their square.
+
 ## 1.64.0 (14 November 2026)
 
 ### Everyone
