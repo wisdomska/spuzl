@@ -2,6 +2,8 @@
  * Deterministic tile platformer shared by Gotcha, Dash, Flipside, Ghosted, Gauntlet, Grapple and Slip.
  * AABB tile collision (axis separated), gravity with optional flip, coyote time and jump buffer,
  * moving platforms, rope swing (Grapple holds, Slip climbs), and troll traps fired by triggers.
+ * The troll kinds Gotcha's rooms use (fake ground, moving blocks, sliding spikes, saws, decoy doors, flip and
+ * reverse zones; phaser/sim/level.ts) only run for levels that name them, so the other games step exactly as before.
  * All maths is integer Q8 (see fixed.ts).
  */
 import { approach, clamp, FP, idiv, isqrt, overlaps, TILE, type Rect } from "./fixed";
@@ -66,6 +68,31 @@ const BUFFER = 6;
 export const EXIT_W = 14 * FP;
 export const EXIT_H = 22 * FP;
 export const PLAT_H = 8 * FP;
+/** Saw radius when a level names none, in px. */
+export const SAW_R = 7;
+
+/** Trap indices by troll kind, worked out once per level (read only, shared by clones). */
+interface Trolls {
+  move: number[];
+  slide: number[];
+  saw: number[];
+  decoy: number[];
+  flip: number[];
+  reverse: number[];
+}
+
+function trollsOf(lvl: CompiledLevel): Trolls {
+  const of = (kind: string) => lvl.traps.flatMap((t, k) => (t.kind === kind ? [k] : []));
+  return { move: of("move"), slide: of("slide"), saw: of("saw"), decoy: of("decoy"), flip: of("flip"), reverse: of("reverse") };
+}
+
+/** Kill box of a spike in its tile (Q8, relative to the tile corner) for a direction code (1 up, -1 down, 2 right, -2 left). */
+export function spikeKill(dir: number): Rect {
+  if (dir === 1) return { x: 3 * FP, y: 7 * FP, w: 10 * FP, h: 9 * FP };
+  if (dir === -1) return { x: 3 * FP, y: 0, w: 10 * FP, h: 9 * FP };
+  if (dir === 2) return { x: 0, y: 3 * FP, w: 9 * FP, h: 10 * FP };
+  return { x: 7 * FP, y: 3 * FP, w: 9 * FP, h: 10 * FP };
+}
 
 export interface Body {
   x: number;
@@ -107,10 +134,13 @@ export class PlatformerWorld {
   deathAt = { x: 0, y: 0 };
   /** best x reached across attempts (progress, Q8) */
   bestX = 0;
+  /** troll traps by kind (opt-in level features; empty for older games) */
+  readonly trolls: Trolls;
 
   constructor(lvl: CompiledLevel, cfg: PlatformerConfig) {
     this.lvl = lvl;
     this.cfg = cfg;
+    this.trolls = trollsOf(lvl);
     this.fired = new Int32Array(lvl.traps.length).fill(-1);
     this.triggered = new Uint8Array(lvl.triggers.length);
     this.reset();
@@ -190,6 +220,74 @@ export class PlatformerWorld {
     return false;
   }
 
+  /** Move and slide traps: how far the group has travelled (Q8) at frame `t`. */
+  groupOffset(k: number, t = this.t): { x: number; y: number } {
+    const tr = this.lvl.traps[k];
+    const f = this.fired[k];
+    if (f < 0 || !tr.by || !tr.frames) return { x: 0, y: 0 };
+    let s = Math.max(0, t - f - tr.delay);
+    if (tr.back === undefined || s <= tr.frames) s = Math.min(s, tr.frames);
+    else if (s <= tr.frames + tr.back) s = tr.frames;
+    else s = Math.max(0, 2 * tr.frames + tr.back - s); // the trip home
+    const n = tr.ease === "in" ? s * s : s;
+    const d = tr.ease === "in" ? tr.frames * tr.frames : tr.frames;
+    return { x: idiv(tr.by[0] * TILE * n, d), y: idiv(tr.by[1] * TILE * n, d) };
+  }
+
+  /** The rects of a move trap's blocks where they are at frame `t`. */
+  groupRects(k: number, t = this.t): Rect[] {
+    const tr = this.lvl.traps[k];
+    const o = this.groupOffset(k, t);
+    const w = this.lvl.w;
+    return tr.cells.map((i) => ({ x: (i % w) * TILE + o.x, y: Math.floor(i / w) * TILE + o.y, w: TILE, h: TILE }));
+  }
+
+  /** Saw centre (Q8) while it is out, or null while it hides. */
+  sawPos(k: number): { x: number; y: number } | null {
+    if (!this.active(k)) return null;
+    const tr = this.lvl.traps[k];
+    const P = tr.period!;
+    const tt = (this.t - this.fired[k] - tr.delay + (tr.phase ?? 0)) % P;
+    const half = P / 2;
+    const s = tt <= half ? tt : P - tt;
+    const ax = tr.from![0] * TILE + TILE / 2,
+      ay = tr.from![1] * TILE + TILE / 2;
+    const bx = tr.to![0] * TILE + TILE / 2,
+      by = tr.to![1] * TILE + TILE / 2;
+    return { x: ax + idiv((bx - ax) * s, half), y: ay + idiv((by - ay) * s, half) };
+  }
+
+  /** Where a decoy door stands (Q8, top left), like the exit's. */
+  decoyPos(k: number): { x: number; y: number } {
+    const at = this.lvl.traps[k].at!;
+    return { x: at[0] * TILE + (TILE - EXIT_W) / 2, y: (at[1] + 1) * TILE - EXIT_H };
+  }
+
+  /** True while a flip or reverse trap holds the runner (fired, and the runner's middle is in its zone if it has one). */
+  private holds(k: number): boolean {
+    if (!this.active(k)) return false;
+    const z = this.lvl.traps[k].zone;
+    if (!z) return true;
+    const b = this.body;
+    const cx = b.x + BODY_W / 2,
+      cy = b.y + BODY_H / 2;
+    return cx >= z[0] * TILE && cx < (z[0] + z[2]) * TILE && cy >= z[1] * TILE && cy < (z[1] + z[3]) * TILE;
+  }
+
+  /** Gravity the flip traps ask for: each one holding the runner turns it over once. */
+  flipGravity(): number {
+    let g = 1;
+    for (const k of this.trolls.flip) if (this.holds(k)) g = -g;
+    return g;
+  }
+
+  /** True while the controls are swapped. */
+  reversed(): boolean {
+    let r = false;
+    for (const k of this.trolls.reverse) if (this.holds(k)) r = !r;
+    return r;
+  }
+
   /** Spike kind at a cell: 1 up, -1 down, 0 none. */
   spikeCell(cx: number, cy: number): number {
     const { w, h, cells, trapOf, traps } = this.lvl;
@@ -198,6 +296,8 @@ export class PlatformerWorld {
     const c = cells[i];
     if (c === Cell.SpikeUp) return 1;
     if (c === Cell.SpikeDown) return -1;
+    if (c === Cell.SpikeRight) return 2;
+    if (c === Cell.SpikeLeft) return -2;
     if (c === Cell.Trap) {
       const k = trapOf[i];
       const t = traps[k];
@@ -219,6 +319,7 @@ export class PlatformerWorld {
       const pr = this.platformRect(p);
       if (overlaps(r, pr)) out.push(pr);
     }
+    for (const k of this.trolls.move) for (const mr of this.groupRects(k)) if (overlaps(r, mr)) out.push(mr);
     return out;
   }
 
@@ -315,9 +416,41 @@ export class PlatformerWorld {
       for (let cx = x0; cx <= x1; cx++) {
         const s = this.spikeCell(cx, cy);
         if (!s) continue;
-        const kill: Rect = { x: cx * TILE + 3 * FP, y: cy * TILE + (s > 0 ? 7 * FP : 0), w: 10 * FP, h: 9 * FP };
+        const kill = spikeKill(s);
+        kill.x += cx * TILE;
+        kill.y += cy * TILE;
         if (overlaps(hurt, kill)) return true;
       }
+    return this.trolls.slide.length || this.trolls.saw.length || this.trolls.decoy.length ? this.touchesTroll(hurt) : false;
+  }
+
+  /** Moving spikes, saws and biting doors (only levels that have them pay for the check). */
+  private touchesTroll(hurt: Rect): boolean {
+    const w = this.lvl.w;
+    for (const k of this.trolls.slide) {
+      const tr = this.lvl.traps[k];
+      const o = this.groupOffset(k);
+      for (let j = 0; j < tr.cells.length; j++) {
+        const i = tr.cells[j];
+        const kill = spikeKill(tr.dirs[j]);
+        kill.x += (i % w) * TILE + o.x;
+        kill.y += Math.floor(i / w) * TILE + o.y;
+        if (overlaps(hurt, kill)) return true;
+      }
+    }
+    for (const k of this.trolls.saw) {
+      const c = this.sawPos(k);
+      if (!c) continue;
+      const r = (this.lvl.traps[k].r ?? SAW_R) * FP;
+      const dx = c.x - clamp(c.x, hurt.x, hurt.x + hurt.w),
+        dy = c.y - clamp(c.y, hurt.y, hurt.y + hurt.h);
+      if (dx * dx + dy * dy < r * r) return true;
+    }
+    for (const k of this.trolls.decoy) {
+      if (!this.active(k)) continue;
+      const d = this.decoyPos(k);
+      if (overlaps(hurt, { x: d.x + FP, y: d.y + FP, w: EXIT_W - 2 * FP, h: EXIT_H - FP })) return true;
+    }
     return false;
   }
 
@@ -344,6 +477,26 @@ export class PlatformerWorld {
     return best;
   }
 
+  private shove(k: number) {
+    const a = this.groupOffset(k, this.t - 1),
+      c = this.groupOffset(k);
+    const dx = c.x - a.x,
+      dy = c.y - a.y;
+    if (!dx && !dy) return;
+    const b = this.body;
+    const body = this.bodyRect();
+    const hits = this.groupRects(k).filter((r) => overlaps(body, r));
+    if (!hits.length) return;
+    if (dy < 0) {
+      b.y = Math.min(...hits.map((r) => r.y)) - BODY_H;
+      if (b.vy > 0) b.vy = 0;
+    } else if (dy > 0) {
+      b.y = Math.max(...hits.map((r) => r.y + r.h));
+      if (b.vy < 0) b.vy = 0;
+    } else if (dx > 0) b.x = Math.max(...hits.map((r) => r.x + r.w));
+    else b.x = Math.min(...hits.map((r) => r.x)) - BODY_W;
+  }
+
   /** One fixed step. `prev` is the previous frame's buttons (edge detection). */
   step(buttons: number, prev: number) {
     this.ev = 0;
@@ -361,7 +514,17 @@ export class PlatformerWorld {
     this.t++;
     const pressed = (buttons & BTN.JUMP) !== 0 && (prev & BTN.JUMP) === 0;
     const held = (buttons & BTN.JUMP) !== 0;
-    const dir = (buttons & BTN.RIGHT ? 1 : 0) - (buttons & BTN.LEFT ? 1 : 0);
+    let dir = (buttons & BTN.RIGHT ? 1 : 0) - (buttons & BTN.LEFT ? 1 : 0);
+    if (this.trolls.reverse.length && this.reversed()) dir = -dir;
+    if (this.trolls.flip.length) {
+      const g = this.flipGravity();
+      if (g !== b.g) {
+        b.g = g;
+        b.grounded = false;
+        b.coyote = 0;
+        b.plat = -1;
+      }
+    }
     if (b.regrab > 0) b.regrab--;
 
     // Platforms move first and carry whoever stands on them.
@@ -388,6 +551,8 @@ export class PlatformerWorld {
       } else if (c.x > a.x) b.x = c.x + c.w;
       else if (c.x < a.x) b.x = c.x - BODY_W;
     });
+    // Moving blocks (move traps) shove the runner the way they travel; the crush check below does the rest.
+    for (const k of this.trolls.move) this.shove(k);
     if (this.solidsIn(this.bodyRect()).length) return this.die(); // crushed
 
     const wasGrounded = b.grounded;
@@ -610,6 +775,20 @@ export class PlatformerCourse implements SimCore {
         return "The door runs when you get close. The dotted line shows where it goes.";
       case "block":
         return "A block appears out of nowhere ahead. The outline shows where, so be ready to jump.";
+      case "fake":
+        return "Some ground here is only paint. The dashed outline shows which, so do not stand on it.";
+      case "move":
+        return "Something solid moves when you get close. The arrow shows where it goes, so be somewhere else.";
+      case "slide":
+        return "Spikes ahead go for a walk. The arrow shows where they stop, so outrun them or wait.";
+      case "decoy":
+        return "Not every door is a door. One of them bites, so look for the real one.";
+      case "flip":
+        return "Gravity gets bored here. The arrows show where it turns over, so plan for the ceiling.";
+      case "reverse":
+        return "Left and right swap in the striped zone. Push the other way while you are in it.";
+      case "saw":
+        return "A saw pops out ahead. The dotted line shows its run, so time your pass.";
       default:
         return "This room tells the truth. Just go.";
     }

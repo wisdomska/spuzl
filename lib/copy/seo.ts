@@ -72,7 +72,7 @@ export const GAME_SEO: Record<string, { kind: string; where: string }> = {
   twins: { kind: "memory game", where: "flip cards to find every pair in the fewest flips" },
   flinch: { kind: "reaction game", where: "tap the instant the screen changes, best of 5, and early taps cost you" },
   beattap: { kind: "rhythm game", where: "tap on every beat of the pattern, and extra taps cost points" },
-  gotcha: { kind: "platformer", where: "reach the exit while floors drop, spikes pop, walls spring up and the door runs away" },
+  gotcha: { kind: "platformer", where: "reach the door while floors lie, ceilings fall, gravity flips and the door runs away" },
   dash: { kind: "runner game", where: "tap to jump and clear the course" },
   chess: {
     kind: "chess puzzle",

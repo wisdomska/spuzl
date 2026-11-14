@@ -18,7 +18,19 @@ export function motif(l: LevelDef): string {
   const traps = l.traps ?? {};
   if (Object.keys(traps).length >= 4) {
     const firstX = (id: string) => Math.min(...(l.triggers ?? []).filter((t) => t.fire.includes(id)).map((t) => t.zone[0]));
-    const letter = { drop: "d", spikes: "s", block: "b", exit: "e" } as const;
+    const letter: Record<string, string> = {
+      drop: "d",
+      spikes: "s",
+      block: "b",
+      exit: "e",
+      fake: "f",
+      move: "m",
+      slide: "l",
+      decoy: "o",
+      flip: "g",
+      reverse: "r",
+      saw: "w",
+    };
     return Object.keys(traps)
       .sort((a, b) => firstX(a) - firstX(b))
       .map((id) => letter[traps[id].kind])

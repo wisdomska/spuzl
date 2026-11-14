@@ -3,8 +3,8 @@
  *
  * Two kinds of ladder:
  * - pool: the Arcade course games (Gotcha, Dash). Level n is the n-th room of the game's ladder
- *   (games/<id>/levels.generated.ts LADDER, curated for variety by
- *   scripts/rage-curate.ts), played as a one-room course. Finite.
+ *   (Gotcha: the hand-made rooms in games/gotcha/rooms.ts; Dash: games/dash/levels.generated.ts LADDER, curated
+ *   for variety by scripts/rage-curate.ts), played as a one-room course. Finite.
  * - seeded: generated puzzle games. Level n is `generate(createRng(securedLevelSeed(game, n)), levelDifficulty(n))`
  *   (the `level:<game>:<n>` base keyed with a server secret, lib/game/level-seed.ts),
  *   so it is the same board for everyone. Difficulty climbs in waves with a boss every fifth level (and boards
@@ -16,7 +16,7 @@
 import type { Difficulty } from "@/games/types";
 
 /** Rooms in each pool ladder. A unit test keeps these equal to games/<id>/levels.ts LEVELS.length. */
-export const POOL_LADDERS = { gotcha: 60, dash: 36 } as const;
+export const POOL_LADDERS = { gotcha: 30, dash: 36 } as const;
 
 /** Generated puzzle games with an endless seeded ladder. */
 export const SEEDED_LADDERS = ["crownfall", "dusk", "sixer", "nine", "weave", "flowline", "pairup", "lost", "trotro"] as const;

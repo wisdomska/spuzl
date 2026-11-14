@@ -1,323 +1,36 @@
 /**
- * Gotcha levels: hand-designed troll rooms in the Rage Ridge level format (phaser/sim/level.ts).
- * Each room lies once (a floor drops, spikes pop, the door runs) and every lie is telegraphed after the
- * first death, so the second attempt is always fair. Ordered roughly by difficulty.
+ * Gotcha levels. The ladder (LEVELS) is games/gotcha/rooms.ts: thirty single-screen troll rooms, played one per
+ * level in Levels mode and drawn by seed for Daily and free-play courses.
+ *
+ * LEGACY_ROOMS are the rooms Gotcha used before (short hand rooms, set pieces and the long generated rooms). They
+ * are out of every new course, but courses already scheduled may still name them, so they stay playable and
+ * verifiable with their old scripts (legacy-solutions.json).
  */
 import type { LevelDef } from "@/phaser/sim/level";
 import { BASE_CONFIG, type PlatformerConfig } from "@/phaser/sim/platformer";
-import { GENERATED, LADDER } from "./levels.generated";
+import { GENERATED } from "./levels.generated";
+import { LEGACY_HAND, LEGACY_SET_PIECES } from "./legacy";
+import { GUIDES, ROOMS_LADDER } from "./rooms";
 
-/** Gotcha physics: free run left and right, variable jump. */
+/** Gotcha physics: free run left and right, variable jump (unchanged, so legacy rooms replay as they did). */
 export const CONFIG: PlatformerConfig = { ...BASE_CONFIG };
 
-/** The original hand-designed rooms. Daily and free-play courses draw from these only. */
-export const HAND_LEVELS: LevelDef[] = [
-  {
-    id: "trust-fall",
-    name: "Trust Fall",
-    tiles: [
-      "........................",
-      "........................",
-      "........................",
-      "........................",
-      "........................",
-      "........................",
-      ".S..................E...",
-      "#########111############",
-      "#########111############",
-    ],
-    traps: { "1": { kind: "drop", delay: 3 } },
-    triggers: [{ zone: [9, 4, 3, 3], fire: ["1"] }],
-  },
-  {
-    id: "pop-up",
-    name: "Pop Up",
-    tiles: [
-      "..........................",
-      "..........................",
-      "..........................",
-      "..........................",
-      "..........................",
-      "..........................",
-      ".S......#.11.........E....",
-      "##########################",
-      "##########################",
-    ],
-    traps: { "1": { kind: "spikes", delay: 0 } },
-    triggers: [{ zone: [8, 2, 1, 4], fire: ["1"] }],
-  },
-  {
-    id: "cliffhanger",
-    name: "Cliffhanger",
-    tiles: [
-      "..........................",
-      "..........................",
-      "..........................",
-      ".S........................",
-      "#########.................",
-      "#########.................",
-      "#########11...........E...",
-      "##########################",
-      "##########################",
-    ],
-    traps: { "1": { kind: "spikes", delay: 4 } },
-    triggers: [{ zone: [9, 0, 1, 4], fire: ["1"] }],
-  },
-  {
-    id: "door-dash",
-    name: "Door Dash",
-    tiles: [
-      "........................",
-      "........................",
-      "........................",
-      ".===....................",
-      "........................",
-      ".....==.................",
-      ".S..................E...",
-      "########################",
-      "########################",
-    ],
-    traps: { "1": { kind: "exit", delay: 0, to: [2, 2], frames: 40 } },
-    triggers: [{ zone: [16, 4, 2, 3], fire: ["1"] }],
-  },
-  {
-    id: "crumble-stairs",
-    name: "Crumble Stairs",
-    tiles: [
-      "............................",
-      "............................",
-      "............................",
-      ".......................E....",
-      "............1.##############",
-      ".........##.1.##############",
-      ".S....##.##.1.##############",
-      "############^^##############",
-      "############################",
-    ],
-    traps: { "1": { kind: "drop", delay: 6 } },
-    triggers: [{ zone: [12, 1, 1, 3], fire: ["1"] }],
-  },
-  {
-    id: "fake-floor",
-    name: "Fake Floor",
-    tiles: [
-      "................................",
-      "................................",
-      "................................",
-      "................................",
-      "................................",
-      "........==..==..................",
-      ".S...........................E..",
-      "##########11111#################",
-      "##########11111#################",
-    ],
-    traps: { "1": { kind: "drop", delay: 4 } },
-    triggers: [{ zone: [9, 6, 1, 1], fire: ["1"] }],
-  },
-  {
-    id: "hop-hop",
-    name: "Hop Hop",
-    tiles: [
-      "................................",
-      "................................",
-      "................................",
-      "................................",
-      "................................",
-      "................................",
-      ".S............................E.",
-      "#####111222333##################",
-      "#####111222333##################",
-    ],
-    traps: { "1": { kind: "drop", delay: 12 }, "2": { kind: "drop", delay: 12 }, "3": { kind: "drop", delay: 12 } },
-    triggers: [
-      { zone: [5, 6, 3, 1], fire: ["1"] },
-      { zone: [8, 6, 3, 1], fire: ["2"] },
-      { zone: [11, 6, 3, 1], fire: ["3"] },
-    ],
-  },
-  {
-    id: "runaway-twice",
-    name: "Runaway Twice",
-    tiles: [
-      "..............................",
-      "..............................",
-      "..............................",
-      "..............................",
-      "..............................",
-      "..............................",
-      ".S............E...............",
-      "##################...#########",
-      "##################^^^#########",
-    ],
-    traps: {
-      "1": { kind: "exit", delay: 0, to: [27, 6], frames: 50 },
-      "2": { kind: "exit", delay: 0, to: [19, 3], frames: 40 },
-    },
-    triggers: [
-      { zone: [11, 4, 1, 3], fire: ["1"] },
-      { zone: [24, 4, 2, 3], fire: ["2"] },
-    ],
-  },
-  {
-    id: "moving-day",
-    name: "Moving Day",
-    tiles: [
-      "..........................",
-      "..........................",
-      "..........................",
-      "..........................",
-      "..........................",
-      "..........................",
-      ".S......................E.",
-      "########..........11######",
-      "########^^^^^^^^^^11######",
-    ],
-    traps: { "1": { kind: "drop", delay: 10 } },
-    triggers: [{ zone: [15, 4, 3, 3], fire: ["1"] }],
-    platforms: [{ w: 2, from: [8, 7], to: [16, 7], period: 288 }],
-  },
-  {
-    id: "lift-off",
-    name: "Lift Off",
-    tiles: [
-      "##########################",
-      "......11..................",
-      "..........................",
-      "......................E...",
-      ".........#################",
-      "..........................",
-      ".S........................",
-      "##########################",
-      "##########################",
-    ],
-    traps: { "1": { kind: "spikes", delay: 0 } },
-    triggers: [{ zone: [6, 5, 2, 1], fire: ["1"] }],
-    platforms: [{ w: 2, from: [6, 6], to: [6, 2], period: 200 }],
-  },
-];
+/** The hand-designed ladder, Level 1 first (lib/game/levels.test.ts treats these as hand rooms). */
+export const HAND_LEVELS: LevelDef[] = ROOMS_LADDER;
 
-/** Hand-tuned set pieces that close tiers of the level ladder (solutions found by scripts/rage-design.ts). */
-export const SET_PIECES: LevelDef[] = [
-  {
-    // The floor lies, the spikes pop and the door runs twice: the first rooms in one.
-    id: "encore",
-    name: "Encore",
-    tiles: [
-      "..................................",
-      "..................................",
-      "..................................",
-      "..................................",
-      "..................................",
-      "..........................===.....",
-      ".S..........#.22..............E...",
-      "#####111##########################",
-      "#####111##########################",
-    ],
-    traps: {
-      "1": { kind: "drop", delay: 3 },
-      "2": { kind: "spikes", delay: 0 },
-      "3": { kind: "exit", delay: 0, to: [20, 6], frames: 40 },
-      "4": { kind: "exit", delay: 0, to: [27, 4], frames: 40 },
-    },
-    triggers: [
-      { zone: [5, 0, 3, 7], fire: ["1"] },
-      { zone: [12, 0, 1, 6], fire: ["2"] },
-      { zone: [27, 0, 1, 7], fire: ["3"] },
-      { zone: [22, 0, 1, 7], fire: ["4"] },
-    ],
-  },
-  {
-    // Ride the slab over the spikes. The landing looks solid and is not, so ride on to the far side.
-    id: "ferry-tale",
-    name: "Ferry Tale",
-    tiles: [
-      "........................................",
-      "........................................",
-      "........................................",
-      "........................................",
-      "........................................",
-      "........................................",
-      ".S.....................................E",
-      "######..........11.........#############",
-      "######^^^^^^^^^^11^^^^^^^^^#############",
-    ],
-    traps: { "1": { kind: "drop", delay: 6 } },
-    triggers: [{ zone: [16, 4, 2, 3], fire: ["1"] }],
-    platforms: [{ w: 2, from: [6, 7], to: [24, 7], period: 480 }],
-  },
-  {
-    // A bridge that falls behind you, then a hall whose spikes wake up: keep moving.
-    id: "crumble-run",
-    name: "Crumble Run",
-    tiles: [
-      "..............................................",
-      "..............................................",
-      "..............................................",
-      "..............................................",
-      "..............................................",
-      "..............................................",
-      ".S.................55555555..............E....",
-      "#####111222333444#########...#################",
-      "#####^^^^^^^^^^^^#########^^^#################",
-    ],
-    traps: {
-      "1": { kind: "drop", delay: 12 },
-      "2": { kind: "drop", delay: 12 },
-      "3": { kind: "drop", delay: 12 },
-      "4": { kind: "drop", delay: 12 },
-      "5": { kind: "spikes", delay: 110 },
-    },
-    triggers: [
-      { zone: [5, 6, 3, 1], fire: ["1"] },
-      { zone: [8, 6, 3, 1], fire: ["2"] },
-      { zone: [11, 6, 3, 1], fire: ["3"] },
-      { zone: [14, 6, 3, 1], fire: ["4"] },
-      { zone: [17, 0, 1, 7], fire: ["5"] },
-    ],
-  },
-  {
-    // Everything Gotcha knows, in one long room.
-    id: "grand-finale",
-    name: "Grand Finale",
-    tiles: [
-      "..........................................#########.............",
-      "..........................................#########.............",
-      "..........................................#########.............",
-      "..........................................#########.............",
-      "..........................................666666666.............",
-      ".....................33................................===......",
-      ".S..........#.11..............................^.............E...",
-      "######777############..###444555####..##########################",
-      "######777############^^###^^^^^^####^^##########################",
-    ],
-    traps: {
-      "1": { kind: "spikes", delay: 0 },
-      "2": { kind: "exit", delay: 0, to: [56, 4], frames: 35 },
-      "3": { kind: "block", delay: 0 },
-      "4": { kind: "drop", delay: 10 },
-      "5": { kind: "drop", delay: 10 },
-      "6": { kind: "spikes", delay: 0 },
-      "7": { kind: "drop", delay: 3 },
-    },
-    triggers: [
-      { zone: [6, 0, 3, 7], fire: ["7"] },
-      { zone: [12, 0, 1, 6], fire: ["1"] },
-      { zone: [19, 2, 2, 3], fire: ["3"] },
-      { zone: [26, 6, 3, 1], fire: ["4"] },
-      { zone: [29, 6, 3, 1], fire: ["5"] },
-      { zone: [42, 5, 1, 2], fire: ["6"] },
-      { zone: [58, 0, 1, 7], fire: ["2"] },
-    ],
-  },
-];
+/** No set pieces any more: the last rooms of the ladder are the finales. */
+export const SET_PIECES: LevelDef[] = [];
 
-/** Every room, in the ladder or not: old Daily and free-play courses may name any of them. */
-export const ROOMS: LevelDef[] = [...HAND_LEVELS, ...SET_PIECES, ...GENERATED];
+/** Rooms from before the ladder was rebuilt, kept so old scheduled courses still play and verify. */
+export const LEGACY_ROOMS: LevelDef[] = [...LEGACY_HAND, ...LEGACY_SET_PIECES, ...GENERATED];
 
-const BY_ID = new Map(ROOMS.map((l) => [l.id, l]));
+/** Every room any course may name. */
+export const ROOMS: LevelDef[] = [...ROOMS_LADDER, ...LEGACY_ROOMS];
 
-/** Every level in ladder order (Level 1 first): long generated rooms by difficulty (hand rooms play in Dailies). */
-export const LEVELS: LevelDef[] = LADDER.length ? LADDER.map((id) => BY_ID.get(id)!) : [...HAND_LEVELS, ...SET_PIECES];
+/** Every level in ladder order (Level 1 first). */
+export const LEVELS: LevelDef[] = ROOMS_LADDER;
 
-/** Level ids Daily and free-play courses draw from, in difficulty order (unchanged by the ladder). */
-export const DAILY_POOL: string[] = HAND_LEVELS.map((l) => l.id);
+/** Level ids Daily and free-play courses draw from, in difficulty order. */
+export const DAILY_POOL: string[] = LEVELS.map((l) => l.id);
+
+export { GUIDES };

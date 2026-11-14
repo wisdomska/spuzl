@@ -1018,7 +1018,9 @@ export const LADDER: string[] = ${JSON.stringify(ladder)};
 async function main() {
   const arg = process.argv[2];
   // "runner" is an alias for Dash (some shells and sandboxes treat a bare "dash" argument as a shell)
-  const ids: GameId[] = arg === "all" || !arg ? ["gauntlet", "gotcha", "dash"] : [arg === "runner" ? "dash" : (arg as GameId)];
+  const ids: GameId[] = arg === "all" || !arg ? ["gauntlet", "dash"] : [arg === "runner" ? "dash" : (arg as GameId)];
+  // Gotcha's ladder is hand-made now (games/gotcha/rooms.ts); levels.generated.ts only keeps its legacy rooms.
+  if (ids.includes("gotcha")) throw new Error("gotcha rooms are hand-made: edit games/gotcha/rooms.ts, then rage-solve gotcha");
   for (const id of ids) await build(SPECS[id]);
 }
 
