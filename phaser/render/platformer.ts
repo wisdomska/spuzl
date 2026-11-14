@@ -2,8 +2,10 @@
  * Painter for the tile games (Gotcha, Dash, Flipside, Ghosted, Gauntlet, Grapple, Slip).
  * Reads the sim, never writes it. Death: squish to scaleY .5, pixel burst, then a 300 ms fade in on
  * respawn; reduced motion skips the burst and the fade. Telegraphs pulse at 1 Hz (well under 2 Hz).
- * With `fit` (Gotcha) the camera frames a whole room at a whole number of device px per tile, under the HUD,
- * and the troll traps draw their tells: a dotted path to where a mover or saw goes, outlines for fake ground.
+ * With `fit` (Gotcha) the scale shows a set window of tiles (part of a room) at a whole number of device px per
+ * tile, under the HUD, and a follow camera (dead zone, look-ahead, eased, snapped when motion is reduced) brings
+ * the rest into view as Spuz moves. The troll traps draw their tells: a dotted path to where a mover or saw goes,
+ * outlines for fake ground.
  */
 import { EV } from "../sim/core";
 import { FP, TILE, TILE_PX } from "../sim/fixed";
@@ -26,11 +28,19 @@ export interface PainterOptions {
   /** rows of world on screen (default 7) */
   viewRows?: number;
   /**
-   * Whole-room view (Gotcha): the scale shows a `cols` x `rows` tile room in full, at a whole number of device px
-   * per tile, centred under the HUD. A bigger level scrolls with the runner at that same scale.
+   * Tile window (Gotcha): the scale shows `cols` x `rows` tiles at a whole number of device px per tile, under the
+   * HUD. A level that fits is centred; a bigger one scrolls with the runner (FOLLOW_* below).
    */
   fit?: { cols: number; rows: number };
 }
+
+/** Follow camera (fit mode), in world px: Spuz moves this far from the view's middle before it scrolls ... */
+export const FOLLOW_DEAD_X = 12;
+export const FOLLOW_DEAD_Y = 20;
+/** ... the view leads this far ahead of the way Spuz faces ... */
+export const FOLLOW_LOOK = 28;
+/** ... and closes this share of the gap each frame (an ease-out; reduced motion snaps). */
+export const FOLLOW_EASE = 0.14;
 
 /** Device px per tile for a fitted view of `cols` x `rows` tiles on a `w` x `h` device px canvas. */
 export function fitTile(w: number, h: number, dpr: number, cols: number, rows: number): number {
@@ -168,14 +178,28 @@ export function createPlatformerPainter(opts: PainterOptions = {}): Painter<Plat
         py = (b.y + BODY_H / 2) / FP;
       let tx: number, ty: number;
       if (fit) {
-        // whole room in view: centred in the space under the HUD; a longer room follows the runner
+        // the window under the HUD; a room that fits is centred in it, a bigger one follows Spuz inside a dead
+        // zone, leading the way Spuz faces, clamped so the view never leaves the room
         const top = (FIT_TOP * ctx.dpr) / s,
           edge = (FIT_EDGE * ctx.dpr) / s;
-        tx = lvlW <= viewW - 2 * edge ? (lvlW - viewW) / 2 : Math.max(-edge, Math.min(lvlW - viewW + edge, px - viewW * 0.4));
-        ty =
-          lvlH <= viewH - top - edge
-            ? lvlH / 2 - (top + (viewH - top - edge) / 2)
-            : Math.max(-top, Math.min(lvlH - viewH + edge, py - (top + viewH) / 2));
+        const innerW = viewW - 2 * edge,
+          innerH = viewH - top - edge;
+        const fresh = sim.idx !== lvlIdx || Number.isNaN(camX);
+        if (lvlW <= innerW) tx = (lvlW - viewW) / 2;
+        else {
+          const focus = px + b.facing * FOLLOW_LOOK;
+          let c = fresh ? focus : camX + viewW / 2;
+          if (focus > c + FOLLOW_DEAD_X) c = focus - FOLLOW_DEAD_X;
+          else if (focus < c - FOLLOW_DEAD_X) c = focus + FOLLOW_DEAD_X;
+          tx = Math.max(-edge, Math.min(lvlW - viewW + edge, c - viewW / 2));
+        }
+        if (lvlH <= innerH) ty = lvlH / 2 - (top + innerH / 2);
+        else {
+          let c = fresh ? py : camY + top + innerH / 2;
+          if (py > c + FOLLOW_DEAD_Y) c = py - FOLLOW_DEAD_Y;
+          else if (py < c - FOLLOW_DEAD_Y) c = py + FOLLOW_DEAD_Y;
+          ty = Math.max(-top, Math.min(lvlH - viewH + edge, c - top - innerH / 2));
+        }
       } else {
         tx = lvlW <= viewW ? (lvlW - viewW) / 2 : Math.max(0, Math.min(lvlW - viewW, px - viewW * 0.4));
         ty = lvlH <= viewH ? lvlH - viewH : Math.max(0, Math.min(lvlH - viewH, py - viewH / 2));
@@ -185,8 +209,9 @@ export function createPlatformerPainter(opts: PainterOptions = {}): Painter<Plat
         camY = ty;
         lvlIdx = sim.idx;
       } else {
-        camX += (tx - camX) * 0.18;
-        camY += (ty - camY) * 0.18;
+        const k = fit ? FOLLOW_EASE : 0.18;
+        camX += (tx - camX) * k;
+        camY += (ty - camY) * k;
       }
       if (fit) {
         // tiles land on whole device pixels: crisp edges at any zoom

@@ -77,4 +77,27 @@ describe("Rage Ridge platformer painter (R4-21)", () => {
     painter.draw(b.ctx, sim, null);
     expect([...b.g.calls]).toEqual([...a.g.calls]);
   });
+
+  it("Gotcha's window follows Spuz: part of the room off screen, whole-pixel scrolling, clamped to the room", () => {
+    // a 24-tile room through a 16-tile window: walking right scrolls the view, in whole device pixels
+    const sim = createSim({ levels: [level] });
+    const painter = createPlatformerPainter({ fit: { cols: 16, rows: 10 } });
+    const shifts: number[] = [];
+    for (let i = 0; i < 90; i++) {
+      sim.step(BTN.RIGHT);
+      if (sim.deaths) break;
+      const f = frameCtx();
+      // a 375 px phone at 2x: the board is 339 css px wide
+      f.ctx.w = 678;
+      f.ctx.h = 576;
+      f.ctx.now = 1000 + i * 16;
+      painter.draw(f.ctx, sim, null);
+      const camPx = -f.backdrops[0][0] / 0.3; // the backdrop moves at 0.3 of the camera, in device px
+      expect(Math.abs(camPx - Math.round(camPx)), `frame ${i}`).toBeLessThan(1e-6);
+      shifts.push(camPx);
+    }
+    expect(Math.max(...shifts)).toBeGreaterThan(Math.min(...shifts));
+    // the first frame starts at the room's left edge (never past the wall)
+    expect(shifts[0]).toBeLessThanOrEqual(0);
+  });
 });

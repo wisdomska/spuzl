@@ -39,6 +39,10 @@ export interface PlatformerConfig {
   arm: number;
   pump: number;
   letGo: number;
+  /** frames after leaving a ledge that a jump still counts (default 6) */
+  coyote?: number;
+  /** frames a jump press waits for the ground (default 6) */
+  buffer?: number;
 }
 
 export const BASE_CONFIG: PlatformerConfig = {
@@ -60,6 +64,15 @@ export const BASE_CONFIG: PlatformerConfig = {
   pump: 22,
   letGo: 700,
 };
+
+/**
+ * The human-margin bar for designed rooms (tests and tooling only, never shipped): 10 % less jump and run speed,
+ * and no grace frames (a jump only counts on the frame it is pressed, while standing). A room solved under this,
+ * with inputs held 4 frames or more, needs no pixel-perfect play.
+ */
+export function humanHandicap(cfg: PlatformerConfig): PlatformerConfig {
+  return { ...cfg, jumpVel: Math.round(cfg.jumpVel * 0.9), run: Math.round(cfg.run * 0.9), coyote: 1, buffer: 1 };
+}
 
 export const BODY_W = 12 * FP;
 export const BODY_H = 14 * FP;
@@ -556,8 +569,8 @@ export class PlatformerWorld {
     if (this.solidsIn(this.bodyRect()).length) return this.die(); // crushed
 
     const wasGrounded = b.grounded;
-    b.buffer = pressed ? BUFFER : Math.max(0, b.buffer - 1);
-    b.coyote = b.grounded ? COYOTE : Math.max(0, b.coyote - 1);
+    b.buffer = pressed ? (cfg.buffer ?? BUFFER) : Math.max(0, b.buffer - 1);
+    b.coyote = b.grounded ? (cfg.coyote ?? COYOTE) : Math.max(0, b.coyote - 1);
 
     // Rope: grab, hang, let go.
     if (cfg.rope !== "none" && b.hook < 0 && !b.grounded) {

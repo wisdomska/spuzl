@@ -1,7 +1,11 @@
 /**
  * Finds a no-death scripted solution for every level of a Rage Ridge tile game and writes
- * games/<id>/solutions.json. Usage: pnpm tsx scripts/rage-solve.ts gotcha [levelId|all] [beam]
+ * games/<id>/solutions.json. Usage: pnpm tsx scripts/rage-solve.ts gotcha [levelId|all] [beam] [--human]
  * The tests replay these scripts to prove every level is completable without a forced death.
+ *
+ * --human solves under the human-margin bar instead (humanHandicap: less jump and run, no grace frames) with
+ * inputs held 4 frames at least, and writes games/<id>/human-solutions.json: the proof that no room asks for
+ * pixel-perfect play. The shipped game keeps its own config and solutions.json.
  *
  * A levels module may export GUIDES (level id to waypoints, in tiles): rooms whose way out doubles back (the door
  * ran off behind you, the real door is up top) send the search through each waypoint in turn before the exit. A game
@@ -10,7 +14,7 @@
 import { writeFileSync, readFileSync, existsSync } from "node:fs";
 import path from "node:path";
 import { TILE } from "@/phaser/sim/fixed";
-import { PlatformerCourse, type PlatformerConfig } from "@/phaser/sim/platformer";
+import { humanHandicap, PlatformerCourse, type PlatformerConfig } from "@/phaser/sim/platformer";
 import { solvePlatformer } from "@/phaser/sim/solver";
 import { logFromFrames, scriptFromLog } from "@/phaser/sim/input";
 import type { LevelDef } from "@/phaser/sim/level";
@@ -18,7 +22,7 @@ import type { LevelDef } from "@/phaser/sim/level";
 type Guided = PlatformerCourse & { stage?: number };
 
 /** Search options that walk the waypoints first (the stage rides on the course, so clones carry it). */
-function guided(points: [number, number][]) {
+export function guided(points: [number, number][]) {
   const at = (c: Guided) => {
     const b = c.world.body;
     let st = c.stage ?? 0;
@@ -40,7 +44,10 @@ function guided(points: [number, number][]) {
       const target = st < points.length ? { x: points[st][0] * TILE, y: points[st][1] * TILE } : w.exitPos();
       const dx = Math.abs(target.x - b.x),
         dy = Math.abs(target.y - b.y);
-      return c.idx * 1e9 + st * 1e6 - (dx + dy * 1.5) / TILE - w.t * 0.01;
+      // a door that has run is progress (the room has to make it run), so a state that dodges the trigger to hang
+      // around where the door used to be never outranks one that went on
+      const runs = w.lvl.traps.reduce((n, tr, k) => n + (tr.kind === "exit" && w.fired[k] >= 0 ? 1 : 0), 0);
+      return c.idx * 1e9 + st * 1e6 + runs * 1e5 - (dx + dy * 1.5) / TILE - w.t * 0.01;
     },
     key: (c: Guided) => {
       const w = c.world,
@@ -50,20 +57,23 @@ function guided(points: [number, number][]) {
     },
     bucket: (c: Guided) => {
       const b = c.world.body;
-      return `${c.stage ?? 0}|${b.x >> 12}|${b.y >> 12}`;
+      // the way it is moving too, so runners heading for the exit never crowd out one standing still to wait
+      return `${c.stage ?? 0}|${b.x >> 12}|${b.y >> 12}|${Math.sign(b.vx)}`;
     },
   };
 }
 
 async function main() {
-  const [id, only, beamArg] = process.argv.slice(2);
+  const human = process.argv.includes("--human");
+  const [id, only, beamArg] = process.argv.slice(2).filter((a) => a !== "--human");
   if (!id) throw new Error("usage: rage-solve <game> [levelId] [beam]");
   const levelsMod = (await import(`@/games/${id}/levels`)) as {
     LEVELS: LevelDef[];
     CONFIG: PlatformerConfig;
     GUIDES?: Record<string, [number, number][]>;
   };
-  const file = path.resolve(`games/${id}/solutions.json`);
+  const cfg = human ? humanHandicap(levelsMod.CONFIG) : levelsMod.CONFIG;
+  const file = path.resolve(`games/${id}/${human ? "human-solutions" : "solutions"}.json`);
   const existing: Record<string, [number, number][]> = existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : {};
   const beam = beamArg ? Number(beamArg) : 300;
   let failed = 0;
@@ -72,9 +82,10 @@ async function main() {
     const t0 = Date.now();
     // a game that exports GUIDES searches every room this way (its key keeps time, so waiting out a trap survives)
     const opts = { beam, ...(levelsMod.GUIDES ? guided(levelsMod.GUIDES[lvl.id] ?? []) : {}) };
+    // the human bar never falls back to 2-frame moves: every input is held for 4 frames or more
     const frames =
-      solvePlatformer(new PlatformerCourse([lvl], levelsMod.CONFIG), opts as never) ??
-      solvePlatformer(new PlatformerCourse([lvl], levelsMod.CONFIG), { ...opts, macro: 2 } as never);
+      solvePlatformer(new PlatformerCourse([lvl], cfg), opts as never) ??
+      (human ? null : solvePlatformer(new PlatformerCourse([lvl], cfg), { ...opts, macro: 2 } as never));
     if (!frames) {
       failed++;
       console.log(`${lvl.id}: NO SOLUTION (${Date.now() - t0} ms)`);
@@ -90,4 +101,4 @@ async function main() {
   if (failed) process.exitCode = 1;
 }
 
-void main();
+if (process.argv[1]?.endsWith("rage-solve.ts")) void main();

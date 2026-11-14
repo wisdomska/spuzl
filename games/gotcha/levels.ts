@@ -12,8 +12,15 @@ import { GENERATED } from "./levels.generated";
 import { LEGACY_HAND, LEGACY_SET_PIECES } from "./legacy";
 import { GUIDES, ROOMS_LADDER } from "./rooms";
 
-/** Gotcha physics: free run left and right, variable jump (unchanged, so legacy rooms replay as they did). */
-export const CONFIG: PlatformerConfig = { ...BASE_CONFIG };
+/**
+ * Gotcha physics: free run left and right, variable jump. The jump reaches about 3.2 tiles (the shared base reaches
+ * 2.7), so a 2-tile step asks for about 60 % of it: the rooms trick you, they never ask for a perfect jump
+ * (logic.test.ts holds every room to a handicapped version of this, see humanHandicap).
+ */
+export const CONFIG: PlatformerConfig = { ...BASE_CONFIG, jumpVel: 1420 };
+
+/** The physics the legacy rooms were made and scripted for (courses scheduled before the rebuild). */
+export const LEGACY_CONFIG: PlatformerConfig = { ...BASE_CONFIG };
 
 /** The hand-designed ladder, Level 1 first (lib/game/levels.test.ts treats these as hand rooms). */
 export const HAND_LEVELS: LevelDef[] = ROOMS_LADDER;

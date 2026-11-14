@@ -65,6 +65,8 @@ export interface RageGameSpec<S extends SimCore> {
   tall?: boolean;
   /** canvas height override for a board width and viewport (Gotcha hugs one whole room); default `stageHeight` */
   stageHeight?(width: number, viewport: { w: number; h: number }): number;
+  /** widest the board gets, css px, centred in its column (Gotcha keeps part of a room off screen) */
+  maxWidth?: number;
   /** death copy override: lines (cycled by count) and noun ("Fall" for Wobble) */
   deathLines?: readonly string[];
   deathNoun?: string;
@@ -478,7 +480,7 @@ export function RageBoard<S extends SimCore>({
   const total = puzzle.levels.length;
 
   return (
-    <div ref={wrapRef} className="flex w-full flex-col gap-3.5" style={{ maxWidth: "100%" }}>
+    <div ref={wrapRef} className="mx-auto flex w-full flex-col gap-3.5" style={{ maxWidth: spec.maxWidth ?? "100%" }}>
       <div
         className="relative overflow-hidden rounded-[20px] select-none"
         style={{ ...posterStyle, height: stageH, touchAction: "none", WebkitTouchCallout: "none" }}

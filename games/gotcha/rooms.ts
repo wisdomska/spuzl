@@ -1,15 +1,18 @@
 /**
- * Gotcha's level ladder: thirty hand-made troll rooms, each one screen (24 x 14 tiles, walls included) that you
- * learn by dying. A room tells one or two lies, and every lie is telegraphed after the first death there, so the
+ * Gotcha's level ladder: thirty hand-made troll rooms, each 24 x 14 tiles (walls included), that you learn by
+ * dying. A room tells one or two lies, and every lie is telegraphed after the first death there, so the
  * retry is always fair. The early rooms teach one trick each; later ones combine them, or repeat a room you know
  * and lie about a different part of it. Each room's comment says what it does (spoilers).
  *
- * Every room has a bot-found no-death solution in solutions.json (scripts/rage-solve.ts gotcha). GUIDES are
- * waypoints (tiles) for that search where the way out doubles back.
+ * Every room has a bot-found no-death solution in solutions.json (scripts/rage-solve.ts gotcha), and a second one
+ * in human-solutions.json found under the human handicap with inputs held 4 frames or more (`--human`): no room
+ * asks for a pixel-perfect jump. Design rule: a step up is at most 2 tiles, a gap at most 2 tiles (3 only with a
+ * run-up), so a required jump is about 60 % of Spuz's reach. GUIDES are waypoints (tiles) for that search where
+ * the way out doubles back.
  */
 import type { LevelDef } from "@/phaser/sim/level";
 
-/** Room size the board frames at once (phaser/render/platformer.ts `fit`). */
+/** Room size (the board's camera shows about 16 x 10 tiles of it and follows Spuz). */
 export const ROOM_COLS = 24;
 export const ROOM_ROWS = 14;
 
@@ -98,11 +101,11 @@ export const ROOMS_LADDER: LevelDef[] = [
       "#......................#",
       "#====..................#",
       "#......................#",
-      "#......===.............#",
+      "#.....====.............#",
       "#......................#",
-      "#...........===........#",
+      "#..........====........#",
       "#......................#",
-      "#.................===..#",
+      "#...............====...#",
       "#.S..................E.#",
       "########################",
       "########################",
@@ -122,11 +125,11 @@ export const ROOMS_LADDER: LevelDef[] = [
       "#......................#",
       "#......................#",
       "#.E....................#",
-      "#===...................#",
+      "#====..................#",
       "#......................#",
-      "#.....==...............#",
+      "#.....===..............#",
       "#......................#",
-      "#..........===.........#",
+      "#.........===..........#",
       "#S.....................#",
       "########################",
       "########################",
@@ -370,14 +373,14 @@ export const ROOMS_LADDER: LevelDef[] = [
       "#......................#",
       "#......................#",
       "#......................#",
-      "#=====.................#",
+      "#====..................#",
       "#......................#",
-      "#......===.............#",
+      "#.....====.............#",
       "#......................#",
-      "#...........===........#",
+      "#..........====........#",
       "#......................#",
-      "#.................===..#",
-      "#S........333........E.#",
+      "#...............====...#",
+      "#S.....33............E.#",
       "########################",
       "########################",
     ],
@@ -405,12 +408,12 @@ export const ROOMS_LADDER: LevelDef[] = [
       "#......................#",
       "#.........====.........#",
       "#......................#",
-      "#.....==...............#",
+      "#.....===..............#",
       "#......................#",
-      "#..==..................#",
+      "#.===..................#",
       "#S...................E.#",
-      "###############111######",
-      "###############111######",
+      "################11######",
+      "################11######",
     ],
     traps: { "1": { kind: "fake", delay: 0 }, "2": { kind: "decoy", delay: 0, at: [11, 5] } },
     triggers: [{ zone: [9, 3, 6, 3], fire: ["2"] }],
@@ -511,26 +514,26 @@ export const ROOMS_LADDER: LevelDef[] = [
     name: "Ceiling Walk",
     tiles: [
       "########################",
-      "#.............11.......#",
+      "#.............1........#",
       "#......................#",
-      "#..........##..........#",
-      "#..........##..........#",
-      "#..........##..........#",
-      "#..........##..........#",
-      "#..........##..........#",
-      "#..........##..........#",
-      "#..........##..........#",
-      "#..........##..........#",
-      "#S.........##........E.#",
+      "#........##............#",
+      "#........##............#",
+      "#........##............#",
+      "#........##............#",
+      "#........##............#",
+      "#........##............#",
+      "#........##............#",
+      "#........##............#",
+      "#S.......##..........E.#",
       "########################",
       "########################",
     ],
     traps: { "1": { kind: "spikes", delay: 0 }, "2": { kind: "flip", delay: 0, zone: [5, 1, 13, 11] } },
     triggers: [
       { zone: [5, 1, 1, 11], fire: ["2"] },
-      { zone: [13, 1, 1, 2], fire: ["1"] },
+      { zone: [9, 1, 1, 2], fire: ["1"] },
     ],
-    signs: [{ at: [8, 8], text: "up is the new down" }],
+    signs: [{ at: [7, 8], text: "up is the new down" }],
   },
   // The hall dead-ends and the wall grows spikes. The way up is through the ceiling over the bump.
   {
@@ -734,13 +737,13 @@ export const ROOMS_LADDER: LevelDef[] = [
     triggers: [{ zone: [12, 3, 3, 2], fire: ["1", "2"] }],
     signs: [{ at: [11, 10], text: "the exit is up" }],
   },
-  // Ceiling Walk, plus the controls swap over the wall and the landing past it is paint. Keep your speed.
+  // Ceiling Walk again, but left and right swap over the wall and the landing past it is paint. Keep your speed.
   {
     id: "topsy-turvy",
     name: "Topsy Turvy",
     tiles: [
       "########################",
-      "#......vv..............#",
+      "#......................#",
       "#......................#",
       "#......................#",
       "#..........##..........#",
@@ -751,12 +754,12 @@ export const ROOMS_LADDER: LevelDef[] = [
       "#..........##..........#",
       "#..........##..........#",
       "#S.........##........E.#",
-      "##################33####",
-      "##################33####",
+      "##################3#####",
+      "##################3#####",
     ],
     traps: {
       "1": { kind: "flip", delay: 0, zone: [4, 1, 14, 11] },
-      "2": { kind: "reverse", delay: 0, zone: [9, 1, 6, 4] },
+      "2": { kind: "reverse", delay: 0, zone: [11, 1, 4, 4] },
       "3": { kind: "fake", delay: 0 },
     },
     triggers: [{ zone: [4, 1, 1, 11], fire: ["1", "2"] }],
@@ -836,12 +839,12 @@ export const ROOMS_LADDER: LevelDef[] = [
 export const GUIDES: Record<string, [number, number][]> = {
   "exit-strategy": [
     [21, 11],
-    [19, 9],
+    [18, 9],
     [13, 7],
     [8, 5],
   ],
   mimic: [
-    [12, 9],
+    [11, 9],
     [7, 7],
   ],
   "rush-hour": [
@@ -850,7 +853,7 @@ export const GUIDES: Record<string, [number, number][]> = {
   ],
   "make-up-your-mind": [
     [21, 11],
-    [19, 9],
+    [18, 9],
     [13, 7],
     [8, 5],
     [4, 3],
@@ -874,6 +877,14 @@ export const GUIDES: Record<string, [number, number][]> = {
     [6, 1],
     [12, 1],
     [19, 6],
+  ],
+  "ceiling-walk": [
+    [7, 1],
+    [16, 1],
+  ],
+  "topsy-turvy": [
+    [7, 1],
+    [16, 1],
   ],
   "falling-up": [
     [4, 10],

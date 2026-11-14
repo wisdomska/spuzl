@@ -7,13 +7,14 @@
  */
 import { ladderPick, makeCourseLogic, type CoursePuzzle, type CourseSolution, type RageState } from "@/phaser/sim/course";
 import { PlatformerCourse } from "@/phaser/sim/platformer";
-import { CONFIG, LEGACY_ROOMS, LEVELS, ROOMS } from "./levels";
+import { CONFIG, LEGACY_CONFIG, LEGACY_ROOMS, LEVELS, ROOMS } from "./levels";
 
 export type GotchaPuzzle = CoursePuzzle;
 export type GotchaSolution = CourseSolution;
 export type GotchaState = RageState;
 
 const BY_ID = new Map(ROOMS.map((l) => [l.id, l]));
+const LEGACY_IDS = new Set(LEGACY_ROOMS.map((l) => l.id));
 
 /** Fresh simulation for a course (the Board renders this same object). */
 export function createSim(p: CoursePuzzle): PlatformerCourse {
@@ -23,7 +24,8 @@ export function createSim(p: CoursePuzzle): PlatformerCourse {
       if (!l) throw new Error(`gotcha: unknown level ${id}`);
       return l;
     }),
-    CONFIG,
+    // a course scheduled before the rebuild (legacy rooms only) plays on the physics it was scripted for
+    p.levels.length && p.levels.every((id) => LEGACY_IDS.has(id)) ? LEGACY_CONFIG : CONFIG,
   );
 }
 
