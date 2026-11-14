@@ -50,6 +50,7 @@ function SortMini<T, K extends string>({
   keys,
   spec,
   value,
+  filters = [],
   min = 480,
   paged,
   children,
@@ -60,12 +61,24 @@ function SortMini<T, K extends string>({
   keys: readonly (K | null)[];
   spec: SortSpec<K>;
   value: (row: T, key: K) => string | number | null | undefined;
+  /** dropdown filters over the rows (owner, 14 Nov 2026): each lists the values present, with counts */
+  filters?: readonly { label: string; of: (row: T) => string }[];
   min?: number;
   paged?: string;
   children: (rows: readonly T[]) => ReactNode;
 }) {
   const sort = useLocalSort(spec);
-  const rows = sortBy(items, sort, value);
+  const [picked, setPicked] = useState<Record<number, string>>({});
+  const shown = items.filter((r) => filters.every((f, i) => !picked[i] || f.of(r) === picked[i]));
+  const rows = sortBy(shown, sort, value);
+  const active = Object.values(picked).some(Boolean);
+  const bar = filters
+    .map((f, i) => {
+      const counts = new Map<string, number>();
+      for (const r of items) counts.set(f.of(r), (counts.get(f.of(r)) ?? 0) + 1);
+      return { f, i, counts };
+    })
+    .filter((x) => x.counts.size > 1);
   const table = (page: readonly T[]) => (
     <div className="relative overflow-x-auto">
       <table className="w-full border-collapse text-[13px]" style={{ minWidth: min }}>
@@ -74,12 +87,45 @@ function SortMini<T, K extends string>({
       </table>
     </div>
   );
-  return paged ? (
-    <Paged items={rows} label={paged}>
-      {table}
-    </Paged>
-  ) : (
-    table(rows)
+  return (
+    <div className="flex flex-col gap-2">
+      {bar.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2" role="group" aria-label={C.filterRows}>
+          {bar.map(({ f, i, counts }) => (
+            <Select
+              key={i}
+              aria-label={f.label}
+              value={picked[i] ?? ""}
+              onValueChange={(v) => setPicked((p) => ({ ...p, [i]: v }))}
+              options={[
+                { value: "", label: C.anyOf(f.label) },
+                ...[...counts].sort((a, b) => a[0].localeCompare(b[0])).map(([v, n]) => ({ value: v, label: `${v} (${n})` })),
+              ]}
+              className="h-9 min-w-[150px] text-[13px]"
+            />
+          ))}
+          {active && (
+            <Btn tone="ghost" size="sm" icon="x" onClick={() => setPicked({})}>
+              {C.clearFilters}
+            </Btn>
+          )}
+          {active && (
+            <span className="text-muted num ml-auto text-[12px]" aria-live="polite">
+              {C.shownOf(shown.length, items.length)}
+            </span>
+          )}
+        </div>
+      )}
+      {!rows.length ? (
+        <p className="text-muted text-[13px]">{C.noRowsMatch}</p>
+      ) : paged ? (
+        <Paged items={rows} label={paged}>
+          {table}
+        </Paged>
+      ) : (
+        table(rows)
+      )}
+    </div>
   );
 }
 
@@ -404,6 +450,7 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
                           head={C.ratingsHead}
                           keys={["skill", "rating", "games", "updated"]}
                           spec={RATING_SORT}
+                          filters={[{ label: C.ratingsHead[0], of: (r) => cap(r.track) }]}
                           value={(r, k) => (k === "skill" ? r.track : k === "rating" ? r.rating : k === "games" ? r.games : r.updated_at)}
                           min={300}
                         >
@@ -432,6 +479,10 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
                           head={C.rankMovesHead}
                           keys={["round", "skill", "change", "when"]}
                           spec={MOVE_SORT}
+                          filters={[
+                            { label: C.rankMovesHead[1], of: (r) => (r.track ? cap(r.track) : C.noEmail) },
+                            { label: C.upOrDown, of: (r) => ((r.delta ?? 0) < 0 ? C.down : C.up) },
+                          ]}
                           value={(r, k) => (k === "round" ? r.ref : k === "skill" ? r.track : k === "change" ? r.delta : r.created_at)}
                           min={340}
                           paged={C.pageLabel(C.rankMoves)}
@@ -475,6 +526,11 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
                           head={C.reportsHead}
                           keys={["reason", "about", "outcome", "when"]}
                           spec={REPORT_SORT}
+                          filters={[
+                            { label: C.reportsHead[0], of: (r) => C.reportReasons[r.reason] ?? cap(r.reason) },
+                            { label: C.reportsHead[1], of: (r) => C.reportTargets[r.target_type] ?? r.target_type },
+                            { label: C.reportsHead[2], of: (r) => C.reportStatus[r.status] ?? r.status },
+                          ]}
                           value={(r, k) =>
                             k === "reason"
                               ? (C.reportReasons[r.reason] ?? r.reason)
@@ -529,6 +585,10 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
                         head={C.sparksHead}
                         keys={["amount", "what", "when"]}
                         spec={SPARK_SORT}
+                        filters={[
+                          { label: C.earnedOrSpent, of: (s) => (s.amount < 0 ? C.spent : C.earned) },
+                          { label: C.sparksHead[1], of: (s) => C.sparkSources[s.source] ?? C.sparkFallback(s.source) },
+                        ]}
                         value={(s, k) =>
                           k === "amount" ? s.amount : k === "what" ? (C.sparkSources[s.source] ?? C.sparkFallback(s.source)) : s.created_at
                         }
@@ -561,6 +621,10 @@ export function PlayerDetail({ id, role, backHref }: { id: string; role: Role; b
                         head={C.leagueHead}
                         keys={["week", "league", "points", "place", "result"]}
                         spec={LEAGUE_SORT}
+                        filters={[
+                          { label: C.leagueHead[1], of: (l) => String(LEAGUE_TIERS[l.tier] ?? l.tier) },
+                          { label: C.leagueHead[4], of: (l) => (l.result ? (C.leagueResults[l.result] ?? l.result) : C.noEmail) },
+                        ]}
                         value={(l, k) =>
                           k === "week"
                             ? l.week_start

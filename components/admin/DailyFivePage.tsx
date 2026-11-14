@@ -91,6 +91,11 @@ function download(filename: string, text: string) {
 export function DailyFivePage({ canWrite }: { canWrite: boolean }) {
   const [from, setFrom] = useState(todayIso());
   const sort = useLocalSort(DAY_SORT);
+  // Filter the schedule (owner, 14 Nov 2026): how each day was picked, locked or not, and days with a given game.
+  const [how, setHow] = useState("");
+  const [lock, setLock] = useState("");
+  const [game, setGame] = useState("");
+  const howOf = (d: Day) => (d.preview ? "preview" : (d.source ?? "auto"));
   const q = useAdminQuery<Data>(["daily-five", from], `/api/admin/daily-five?from=${from}&days=${SPAN}`, { keepPrevious: true });
   const act = useAdminAction<Action, { made?: number; repicked?: number }>("POST", "/api/admin/daily-five");
   const [editing, setEditing] = useState<string | null>(null);
@@ -168,6 +173,49 @@ export function DailyFivePage({ canWrite }: { canWrite: boolean }) {
           {C.later}
           <Icon name="caret-right" size={16} />
         </Btn>
+        <Select
+          aria-label={C.howPicked}
+          value={how}
+          onValueChange={setHow}
+          options={[
+            { value: "", label: C.anyHow },
+            ...(["auto", "manual", "preview"] as const).map((k) => ({ value: k, label: SOURCE[k].label })),
+          ]}
+          className="h-11 min-w-[160px]"
+        />
+        <Select
+          aria-label={C.canChange}
+          value={lock}
+          onValueChange={setLock}
+          options={[{ value: "", label: C.anyLock }, ...(["locked", "open"] as const).map((k) => ({ value: k, label: LOCK[k].label }))]}
+          className="h-11 min-w-[150px]"
+        />
+        {q.data && (
+          <Select
+            aria-label={C.hasGame}
+            value={game}
+            onValueChange={setGame}
+            options={[
+              { value: "", label: C.anyGame },
+              ...[...q.data.games].sort((a, b) => a.name.localeCompare(b.name)).map((g) => ({ value: g.id, label: g.name })),
+            ]}
+            className="h-11 min-w-[170px]"
+          />
+        )}
+        {(how || lock || game) && (
+          <Btn
+            size="lg"
+            tone="ghost"
+            icon="x"
+            onClick={() => {
+              setHow("");
+              setLock("");
+              setGame("");
+            }}
+          >
+            {C.clearFilters}
+          </Btn>
+        )}
       </div>
       <div className="bg-surface relative overflow-x-auto rounded-[16px]">
         {q.isPending ? (
@@ -189,8 +237,15 @@ export function DailyFivePage({ canWrite }: { canWrite: boolean }) {
               sort={sort}
             />
             <tbody>
-              {sortBy(q.data.days, sort, (d, k) =>
-                k === "day" ? d.date : k === "how" ? (d.source ?? "") : k === "locked" ? (d.locked ? 1 : 0) : d.attempts,
+              {sortBy(
+                q.data.days.filter(
+                  (d) =>
+                    (!how || howOf(d) === how) &&
+                    (!lock || (d.locked ? "locked" : "open") === lock) &&
+                    (!game || d.rows.some((r) => r.game_id === game)),
+                ),
+                sort,
+                (d, k) => (k === "day" ? d.date : k === "how" ? (d.source ?? "") : k === "locked" ? (d.locked ? 1 : 0) : d.attempts),
               ).map((d) => (
                 <DayRow
                   key={d.date}

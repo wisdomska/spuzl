@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.61.0 (14 November 2026)
+
+### Admin
+
+- **Filters on the player page's tables:** ratings by skill; rank moves by skill and up or down; reports by reason,
+  what they're about and outcome; Sparks history by earned or spent and what for; league history by league and
+  result. Each lists only the values present, with counts, and shows "3 of 12" with Clear filters.
+- **Daily Five filters:** how each day was picked, locked or not, and days that include a given game.
+
+### Behind the scenes
+
+- **Smaller deployments (Vercel deployment storage):** server source maps are off (77 MB of every deployment's
+  142 MB of server output; nothing used them), and the `feat/core-engine` and Dependabot branches no longer make
+  Vercel deployments of their own (they repeated `preview`).
+
 ## 1.60.2 (13 November 2026)
 
 ### Admin

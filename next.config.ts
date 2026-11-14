@@ -12,6 +12,10 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
+  // Server source maps were 77 MB of every deployment's ~140 MB of server output (Vercel deployment storage, owner
+  // 14 Nov 2026). Nothing reads them: Sentry isn't set up to upload maps. Browser maps were already off.
+  productionBrowserSourceMaps: false,
+  experimental: { serverSourceMaps: false },
   turbopack: {
     rules: {
       "*.css": {
