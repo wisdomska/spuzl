@@ -116,14 +116,14 @@ describe("Graduate: the twelve lab games are live (11 Nov 2026)", () => {
   it("leaves no game in testing", () => {
     expect(LAB_GAMES).toEqual([]);
     expect(ALL_GAMES.filter((g) => g.lab)).toEqual([]);
-    expect(GAME_COUNT).toBe(33);
+    expect(GAME_COUNT).toBe(32);
   });
 });
 
 describe("catalog: retired games", () => {
-  it("keeps the owner-picked and graduated games live, less the owner's cuts of 14 Nov 2026: 33", () => {
+  it("keeps the owner-picked and graduated games live, less the owner's cuts of 14 Nov 2026: 32 (Kente's 9 × 9 is not counted on its own)", () => {
     expect(GAMES.map((g) => g.id).sort()).toEqual([...LIVE].sort());
-    expect(GAME_COUNT).toBe(33);
+    expect(GAME_COUNT).toBe(32);
     expect(GAMES.every((g) => !g.retired && !g.lab)).toBe(true);
   });
 
@@ -192,8 +192,8 @@ describe("catalog: four groups", () => {
 
   it("puts every live game in exactly one group", () => {
     const seen = WORLDS.flatMap((w) => gamesInWorld(w.id).map((g) => g.id));
-    expect(seen).toHaveLength(GAME_COUNT);
-    expect(new Set(seen).size).toBe(GAME_COUNT);
+    expect(seen).toHaveLength(GAME_COUNT + 1); // gamesInWorld keeps Kente's 9 × 9 (admin and static paths)
+    expect(new Set(seen).size).toBe(GAME_COUNT + 1);
     expect([...seen].sort()).toEqual(GAMES.map((g) => g.id).sort());
     for (const g of GAMES) expect(isLiveWorld(g.world), g.id).toBe(true);
   });
@@ -247,7 +247,7 @@ describe("Game state: On, In testing, Off (Games page)", () => {
   it("starts every game On (none in testing now that the lab is empty)", () => {
     expect(DEFAULT_SWITCH).toEqual(sw());
     for (const g of GAMES) expect(gameState(g.id, DEFAULT_SWITCH), g.id).toBe("on");
-    expect(playerGames(DEFAULT_SWITCH)).toEqual(GAMES);
+    expect(playerGames(DEFAULT_SWITCH)).toEqual(GAMES.filter((g) => !g.variantOf));
     expect(playerWorlds(DEFAULT_SWITCH)).toEqual(WORLDS);
     expect(WORLD_COUNT).toBe(4);
   });

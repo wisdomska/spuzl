@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { sitemapEntries as sitemap } from "./sitemap";
 import robots from "@/app/robots";
-import { ALL_GAMES, GAMES, LAB_GAMES, MERGED_WORLDS, RETIRED_GAMES, WORLDS } from "@/lib/catalog";
+import { ALL_GAMES, GAME_COUNT, GAMES, LAB_GAMES, MERGED_WORLDS, RETIRED_GAMES, WORLDS } from "@/lib/catalog";
 import { GAME_SEO, SITE_FAQ, seoMeta, siteFaq } from "@/lib/copy/seo";
 import { AI_CRAWLERS, PRIVATE_PATHS } from "./crawlers";
 import { gameDescription, gameFacts, gameModes, gameTitle, publicCounts, publicGame, publicGames, publicGamesInWorld } from "./games";
@@ -20,7 +20,7 @@ describe("sitemap", () => {
   it("lists the home page, the catalogue, every live game and the public pages, all absolute", () => {
     for (const path of ["/", "/games", "/library", "/how-to-play", "/fair-play", "/privacy", "/terms", "/contact"])
       expect(urls, path).toContain(absoluteUrl(path));
-    for (const g of GAMES) expect(urls, g.id).toContain(absoluteUrl(`/games/${g.id}`));
+    for (const g of GAMES.filter((x) => !x.variantOf)) expect(urls, g.id).toContain(absoluteUrl(`/games/${g.id}`));
     for (const u of urls) expect(u.startsWith(`${SITE_URL}/`), u).toBe(true);
     expect(new Set(urls).size).toBe(urls.length);
   });
@@ -81,7 +81,7 @@ describe("llms.txt", () => {
   });
 
   it("links every live game's page, and never a lab or retired game", () => {
-    for (const g of GAMES) {
+    for (const g of GAMES.filter((x) => !x.variantOf)) {
       expect(short, g.id).toContain(`[${g.name}](${absoluteUrl(`/games/${g.id}`)})`);
       expect(full, g.id).toContain(`#### ${g.name}`);
       expect(full, g.id).toContain(g.rule);
@@ -123,11 +123,11 @@ describe("public pages follow the Games page state", () => {
         id,
       ).not.toContain(id);
     }
-    expect(publicGames(closed)).toHaveLength(GAMES.length - 2);
-    expect(short).toContain(`All ${GAMES.length - 2} games`);
-    expect(short).toContain(`with ${GAMES.length - 2} short games`);
-    expect(full).toContain(`- Games: ${GAMES.length - 2} in ${WORLDS.length} worlds`);
-    expect(publicCounts(closed)).toMatchObject({ games: GAMES.length - 2, worlds: WORLDS.length });
+    expect(publicGames(closed)).toHaveLength(GAME_COUNT - 2);
+    expect(short).toContain(`All ${GAME_COUNT - 2} games`);
+    expect(short).toContain(`with ${GAME_COUNT - 2} short games`);
+    expect(full).toContain(`- Games: ${GAME_COUNT - 2} in ${WORLDS.length} worlds`);
+    expect(publicCounts(closed)).toMatchObject({ games: GAME_COUNT - 2, worlds: WORLDS.length });
     for (const g of RETIRED_GAMES) expect(publicGame(g.id, sw()), g.id).toBeUndefined();
   });
 
@@ -148,7 +148,7 @@ describe("public pages follow the Games page state", () => {
 
   it("counts the On games in the FAQ and summaries where a page can follow them", () => {
     expect(siteFaq(3, 2, "A and B")[0].a).toContain("It has 3 short games in 2 worlds: A and B.");
-    expect(SITE_FAQ[0].a).toContain(`${GAMES.length} short games`);
+    expect(SITE_FAQ[0].a).toContain(`${GAME_COUNT} short games`);
     expect(seoMeta.gamesFor(39).title).toBe("All 39 free online puzzle games | SPUZL");
     expect(seoMeta.howToPlayFor(39).description).toContain("all 39 SPUZL games");
   });

@@ -53,5 +53,5 @@ export default async function Play({ params, searchParams }: PageProps<"/play/[g
     typeof sp.difficulty === "string" && ["easy", "medium", "hard", "expert", "mega"].includes(sp.difficulty)
       ? (sp.difficulty as "easy" | "medium" | "hard" | "expert" | "mega")
       : undefined;
-  return <PlayScreen meta={meta} initialMode={mode} date={date} difficulty={difficulty} level={level} />;
+  return <PlayScreen meta={meta} initialMode={mode} date={date} difficulty={difficulty} level={level} sized={sp.size !== undefined} />;
 }

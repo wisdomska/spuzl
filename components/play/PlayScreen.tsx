@@ -40,6 +40,7 @@ import { useClearShare } from "@/components/share/ClearShare";
 import { dailyShareText, freeShareText } from "@/lib/share/text";
 import { GHOST_GAMES, saveGhostRun } from "@/lib/client/challenge";
 import { HowToSheet } from "./HowToSheet";
+import { SIZES, SizePicker, rememberSize } from "./SizePicker";
 import { GuidedPlay } from "./GuidedPlay";
 import { allLearned, learnedGames, needsGuided } from "@/lib/guided";
 import { useLearnedSync, useMarkLearned } from "@/lib/client/learned";
@@ -73,12 +74,15 @@ const FREE_LEVELS = ["easy", "medium", "hard", "expert"] as const;
 
 export function PlayScreen({
   meta,
+  sized = false,
   initialMode,
   date,
   difficulty,
   level,
 }: {
   meta: GameMeta;
+  /** the board size is already chosen (?size= in the address): no size picker */
+  sized?: boolean;
   initialMode: Mode;
   date?: string;
   /** Free play difficulty chosen in Practice; defaults to medium on the server */
@@ -216,6 +220,9 @@ export function PlayScreen({
     initialMode === "five" ? fiveSlot?.state === "in_progress" : today.data?.games.find((g) => g.id === meta.id)?.state === "in_progress";
   // First try of a game: a short guided practice round before the real one (skippable).
   const [guided, setGuided] = useState(false);
+  // Kente (owner, 14 Nov 2026): a game with two board sizes asks which one first, unless the address already says
+  // (?size=1, set by the picker) or the game came from somewhere that fixed it (a Daily, Daily Five, a past Daily).
+  const [askSize, setAskSize] = useState(() => !!SIZES[meta.id] && (initialMode === "free" || initialMode === "level") && !sized);
   // New-device speed (owner, 12 Nov): a game this browser hasn't learned starts loading its practice board now,
   // alongside /me, instead of after it.
   useEffect(() => {
@@ -223,7 +230,7 @@ export function PlayScreen({
   }, [meta.id]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     // Never waits on /today (SPZ-01): its in-progress flag is used only when already cached.
-    if (!playerId) return;
+    if (!playerId || askSize) return;
     const id = setTimeout(() => {
       const first = needsGuided({
         id: meta.id,
@@ -239,7 +246,7 @@ export function PlayScreen({
       else void beginRef.current(initialMode, undefined, level);
     }, 0);
     return () => clearTimeout(id);
-  }, [playerId, meta.id, initialMode]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [playerId, meta.id, initialMode, askSize]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onMove = useCallback(
     (state: unknown, elapsedMs: number) => {
@@ -555,6 +562,23 @@ export function PlayScreen({
       </>
     );
   }
+
+  if (askSize)
+    return (
+      <SizePicker
+        game={meta.id}
+        name={meta.name}
+        onBack={() => router.push(`/world/${meta.world}`)}
+        onPick={(id) => {
+          rememberSize(meta.id, id);
+          if (id === meta.id) return setAskSize(false);
+          const q = new URLSearchParams(window.location.search);
+          q.set("size", "1");
+          if (initialMode === "level") q.delete("level");
+          router.replace(`/play/${id}?${q}`);
+        }}
+      />
+    );
 
   if (guided)
     return (

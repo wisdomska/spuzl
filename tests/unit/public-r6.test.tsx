@@ -22,7 +22,7 @@ describe("public pages, R6", () => {
     for (const w of worlds) expect(html).toContain(`id="panel-${w.id}"`);
     // Before hydration no panel carries `hidden`: crawlers and no-JS visitors get every game.
     expect(html).not.toMatch(/role="tabpanel"[^>]*\shidden/);
-    for (const g of GAMES) expect(html, g.id).toContain(`href="/games/${g.id}"`);
+    for (const g of GAMES.filter((x) => !x.variantOf)) expect(html, g.id).toContain(`href="/games/${g.id}"`);
     // Back to the landing page.
     expect(html).toMatch(/href="\/"[^>]*>.*?Back</);
   });

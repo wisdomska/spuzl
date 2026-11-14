@@ -37,7 +37,7 @@ describe("public page metadata", () => {
       expect((m.openGraph as { url?: string }).url, path).toBe(path);
     }
     // The catalogue's title counts the games that are On (all of them here).
-    expect(title(await gamesMeta())).toBe(`All ${GAMES.length} free online puzzle games | SPUZL`);
+    expect(title(await gamesMeta())).toBe(`All ${GAMES.filter((g) => !g.variantOf).length} free online puzzle games | SPUZL`);
     const titles = pages.map(([, m]) => title(m));
     expect(new Set(titles).size).toBe(titles.length);
   });
@@ -72,6 +72,6 @@ describe("public page content", () => {
   it("links every live game from the catalogue", async () => {
     const html = renderToStaticMarkup(await GamesIndex());
     expect(html.match(/<h1[\s>]/g)).toHaveLength(1);
-    for (const g of GAMES) expect(html, g.id).toContain(`href="/games/${g.id}"`);
+    for (const g of GAMES.filter((x) => !x.variantOf)) expect(html, g.id).toContain(`href="/games/${g.id}"`);
   });
 });

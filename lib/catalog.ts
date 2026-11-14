@@ -67,6 +67,12 @@ export interface GameMeta {
   /** Retired (RETIRED_IDS): kept in code, hidden from players and refused by the server. Set by the catalog. */
   retired?: boolean;
   /**
+   * Another board size of the game named here (owner, 14 Nov 2026: Sixer and Nine are one game, Kente, 6 × 6 or
+   * 9 × 9). Playable, with its own levels and stats, but never listed or counted on its own: players reach it
+   * from the size picker (components/play/SizePicker).
+   */
+  variantOf?: string;
+  /**
    * Recently added or brought back (R2-18's `isNew` option on the game, or R2-14's NEW_IDS): the default for the
    * Library's "new" tag (Home's "N new games" card and the New filter); the admin Library page can add or remove
    * the tag per game (games.tags), which wins over this.
@@ -133,7 +139,9 @@ const g = (
   engine: Engine,
   blurb: string,
   rule: string,
-  opts: Partial<Pick<GameMeta, "unique" | "scoring" | "minTimeMs" | "content" | "photosensitive" | "botPlay" | "lab" | "isNew">> = {},
+  opts: Partial<
+    Pick<GameMeta, "unique" | "scoring" | "minTimeMs" | "content" | "photosensitive" | "botPlay" | "lab" | "isNew" | "variantOf">
+  > = {},
 ): GameMeta => ({ id, name, world, icon, phase, engine, blurb, rule, unique: false, scoring: "time", minTimeMs: 4000, ...opts });
 
 /** Every game the code knows, before retirement is applied. Use GAMES / ALL_GAMES below. */
@@ -161,20 +169,29 @@ const MAIN_GAMES: GameMeta[] = [
     "Suns and moons. Equal per row and column, never 3 in a line. = means same, × means different.",
     { unique: true, minTimeMs: 8000 },
   ),
-  g("sixer", "Sixer", "logic", "grid-nine", "L", "grid", "6 by 6 number grid", "1 to 6 once in every row, column and 2 × 3 box.", {
-    unique: true,
-    minTimeMs: 15000,
-  }),
+  // Kente (owner, 14 Nov 2026): Sixer and Nine are one game with two board sizes, picked before each game. The ids
+  // stay, so levels, stats and saved games carry on; "nine" is the 9 × 9 size and is never listed on its own.
+  g(
+    "sixer",
+    "Kente",
+    "logic",
+    "grid-nine",
+    "L",
+    "grid",
+    "Number grid, 6 × 6 or 9 × 9",
+    "Every number once in each row, column and box. Pick a 6 × 6 or 9 × 9 board.",
+    { unique: true, minTimeMs: 15000 },
+  ),
   g(
     "nine",
-    "Nine",
+    "Kente",
     "logic",
     "number-square-nine",
     "M3+",
     "grid",
-    "Classic 9 by 9 sudoku",
+    "Number grid, 9 × 9",
     "1 to 9 once in every row, column and 3 × 3 box.",
-    { unique: true, minTimeMs: 40000 },
+    { unique: true, minTimeMs: 40000, variantOf: "sixer" },
   ),
   g("killer", killer.title, "logic", "circle-dashed", "M3+", "grid", killer.blurb, killer.rule, {
     unique: true,
@@ -835,7 +852,8 @@ export const WORLDS: World[] = ALL_WORLDS.filter((w) => GAMES.some((x) => x.worl
  * The catalogue count: every game that is not retired. Static text that cannot follow the runtime state (the PWA
  * manifest, the offline page) keeps it; anything rendered per request or revalidated counts `playerGames(s).length`.
  */
-export const GAME_COUNT = GAMES.length;
+/** Games players see (a board-size variant such as Kente 9 × 9 is not counted on its own). */
+export const GAME_COUNT = GAMES.filter((g) => !g.variantOf).length;
 export const WORLD_COUNT = WORLDS.length;
 
 /**
@@ -905,7 +923,8 @@ export const openGame = (id: string | null | undefined, s: GameSwitch, viewer: V
   return st === "on" || (st === "testing" && viewer.admin === true) ? GAME_BY_ID[id!] : undefined;
 };
 /** Every game players can find and play now (On), in catalogue order: Library, worlds, pickers, counts, SEO. */
-export const playerGames = (s: GameSwitch, viewer: Viewer = {}): GameMeta[] => GAMES.filter((g) => !!openGame(g.id, s, viewer));
+export const playerGames = (s: GameSwitch, viewer: Viewer = {}): GameMeta[] =>
+  GAMES.filter((g) => !g.variantOf && !!openGame(g.id, s, viewer));
 /** The On games of one world. */
 export const playerGamesInWorld = (w: WorldId, s: GameSwitch, viewer: Viewer = {}) => playerGames(s, viewer).filter((x) => x.world === w);
 /** Worlds with at least one game that is On. */
