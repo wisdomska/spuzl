@@ -21,6 +21,9 @@ const CSS = `
 .bay-your-turn { animation: bay-your-turn 520ms var(--ease-out); }
 .bay-shake { animation: bay-shake var(--dur-shake) var(--ease-in-out); }
 .bay-flash { animation: bay-flash 1s linear 1; }
+@keyframes chess-slide { from { transform: translate(var(--slide-x), var(--slide-y)); } }
+.chess-slide { animation: chess-slide 190ms var(--ease-out); }
+[data-motion="reduce"] .chess-slide { animation: none; }
 [data-motion="reduce"] .bay-dot, [data-low-data="true"] .bay-dot { animation: none; }
 [data-motion="reduce"] .bay-pop, [data-motion="reduce"] .bay-your-turn { animation: fade-in 80ms linear; }
 `;
