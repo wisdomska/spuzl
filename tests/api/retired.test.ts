@@ -71,7 +71,12 @@ describe("api: retired games are refused like unknown ones", () => {
 
   it("serves only live games to players", async () => {
     const today = await fetch(`${BASE}/api/v1/today`).then((r) => r.json());
-    expect(today.games.map((x: { id: string }) => x.id).sort()).toEqual(GAMES.map((x) => x.id).sort());
+    // A board-size variant (Kente 9 × 9) is played from its game, never listed on its own.
+    expect(today.games.map((x: { id: string }) => x.id).sort()).toEqual(
+      GAMES.filter((x) => !x.variantOf)
+        .map((x) => x.id)
+        .sort(),
+    );
     const meta = await fetch(`${BASE}/api/v1/games/meta`).then((r) => r.json());
     // (Games In testing and Off are covered by tests/api/game-state.test.ts.)
     for (const g of RETIRED_GAMES) expect(meta[g.id], g.id).toBeUndefined();
