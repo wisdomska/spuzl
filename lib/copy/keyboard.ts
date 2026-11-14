@@ -25,6 +25,7 @@ export const keyboardCopy = {
   duckKeys: "↓",
   duckDoes: "to duck",
   showControls: "Show controls",
+  hideControls: "Hide controls",
   show: "Show keyboard",
   hide: "Hide keyboard",
 } as const;

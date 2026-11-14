@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.63.6 (14 November 2026)
+
+### Everyone
+
+- **Full screen really is bigger in Gotcha and Dash:** the board drops its width limit and takes all the height above
+  the controls.
+- **On-screen controls on a computer:** "Show controls" brings the D-pad and Jump; a new hide button next to them
+  takes them away again. Phones and tablets always keep them.
+
 ## 1.63.5 (14 November 2026)
 
 ### Everyone

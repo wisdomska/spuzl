@@ -105,6 +105,11 @@ const mono: CSSProperties = {
   fontVariantNumeric: "tabular-nums",
 };
 
+/** Where the computer's on-screen controls choice is kept (RageBoard). */
+const PAD_KEY = "spuzl.gamePad";
+/** Full screen: the game header (72), the gap and the controls row under the canvas (about 110). */
+const FULLSCREEN_CHROME = 190;
+
 export function RageBoard<S extends SimCore>({
   puzzle,
   initialState,
@@ -130,6 +135,33 @@ export function RageBoard<S extends SimCore>({
   const stageH = useFitHeight(size.h, Math.min(size.h, MIN_STAGE_HEIGHT), 1);
   // A computer plays with the keys: the on-screen pad gives way to a line naming them (useInputMode).
   const keys = useOnScreenKeys();
+  // On-screen controls (owner, 14 Nov 2026): always on a phone or tablet; on a computer hidden until asked for, and
+  // the same button hides them again. Remembered on this device, apart from the word games' keyboard choice.
+  const [padPref, setPadPref] = useState(() => {
+    try {
+      return typeof window !== "undefined" && localStorage.getItem(PAD_KEY) === "show";
+    } catch {
+      return false;
+    }
+  });
+  const showPad = !keys.physical || padPref;
+  const togglePad = () => {
+    const next = !padPref;
+    setPadPref(next);
+    try {
+      localStorage.setItem(PAD_KEY, next ? "show" : "hide");
+    } catch {
+      /* private mode: the choice lasts while the page is open */
+    }
+  };
+  // Full screen (the game header's button): the board drops its width cap and takes the height above the controls.
+  const [fullscreen, setFullscreen] = useState(false);
+  useEffect(() => {
+    const sync = () => setFullscreen(!!document.fullscreenElement);
+    sync();
+    document.addEventListener("fullscreenchange", sync);
+    return () => document.removeEventListener("fullscreenchange", sync);
+  }, []);
   const [bump, setBump] = useState(0);
   const [message, setMessage] = useState("");
   const [notice, setNotice] = useState(() => {
@@ -289,7 +321,9 @@ export function RageBoard<S extends SimCore>({
     const on = () => {
       const w = Math.floor(el.clientWidth);
       const vp = { w: window.innerWidth, h: window.innerHeight };
-      const h = spec.stageHeight?.(w, vp) ?? stageHeight(w, vp, spec.tall);
+      const h = document.fullscreenElement
+        ? Math.max(MIN_STAGE_HEIGHT, vp.h - FULLSCREEN_CHROME)
+        : (spec.stageHeight?.(w, vp) ?? stageHeight(w, vp, spec.tall));
       const short = window.innerHeight < SHORT_VIEWPORT;
       setSize((s) => (s.w === w && s.h === h && s.short === short ? s : { w, h, short }));
     };
@@ -480,7 +514,11 @@ export function RageBoard<S extends SimCore>({
   const total = puzzle.levels.length;
 
   return (
-    <div ref={wrapRef} className="mx-auto flex w-full flex-col gap-3.5" style={{ maxWidth: spec.maxWidth ?? "100%" }}>
+    <div
+      ref={wrapRef}
+      className="mx-auto flex w-full flex-col gap-3.5"
+      style={{ maxWidth: fullscreen ? "100%" : (spec.maxWidth ?? "100%") }}
+    >
       <div
         className="relative overflow-hidden rounded-[20px] select-none"
         style={{ ...posterStyle, height: stageH, touchAction: "none", WebkitTouchCallout: "none" }}
@@ -599,7 +637,7 @@ export function RageBoard<S extends SimCore>({
 
       {/* Controls under the board */}
       {/* A controller, not a form: the game's own sounds (jump, land, flip) answer these, not the button tap. */}
-      {!keys.show ? (
+      {!showPad ? (
         // A computer: the keys that play it, in one slim line, so the canvas keeps the height. "Show controls"
         // brings the pad back (a touch laptop; a touch on the screen does it by itself).
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-[16px] px-3.5 py-1" style={{ background: "var(--surface)" }}>
@@ -632,7 +670,7 @@ export function RageBoard<S extends SimCore>({
           </div>
           <button
             type="button"
-            onClick={keys.toggle}
+            onClick={togglePad}
             className="press text-muted flex h-11 items-center gap-2 rounded-[12px] px-2 text-[14px] font-semibold"
           >
             <Icon name="game-controller" size={18} />
@@ -693,6 +731,18 @@ export function RageBoard<S extends SimCore>({
               {...holdProps("pj", BTN.JUMP)}
             >
               {(spec.action ?? "Jump").toUpperCase()}
+            </button>
+          )}
+          {keys.physical && (
+            // A computer that asked for the pad: the same place hides it again (phones and tablets keep it).
+            <button
+              type="button"
+              onClick={togglePad}
+              aria-label={KC.hideControls}
+              title={KC.hideControls}
+              className="press text-muted flex size-11 flex-none items-center justify-center rounded-[12px]"
+            >
+              <Icon name="eye-slash" size={18} />
             </button>
           )}
         </div>
