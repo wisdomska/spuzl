@@ -41,6 +41,10 @@ import { ChatPanel, ChatPopup } from "../chat";
 import { alertIfAway, alertsAllowed, alertsSupported, askAlerts } from "@/lib/client/alerts";
 import { Avatar, Cta, EmoteBar, EmoteBubble, LoadingScreen, MpToast, NeedProfile, Screen, TopButton, useToast } from "../ui";
 import { LiveBoard } from "./boards";
+import { ShellAsideProvider } from "@/components/game/ShellAside";
+import { capturedPieces } from "@/games/chess/history";
+import { CapturedRow } from "@/games/chess/Captured";
+import { useSprites } from "@/games/chess/Piece";
 import { Modal } from "@/components/ui/Modal";
 
 /* ---------------- /bay: "Your move" inbox (B7) and new games ---------------- */
@@ -215,24 +219,6 @@ function NewBaySheet({
 
 /* ---------------- /bay/[matchId]: the shared board (B3) ---------------- */
 
-const START_MATERIAL: Record<string, number> = { p: 8, n: 2, b: 2, r: 2, q: 1 };
-const GLYPH: Record<string, string> = { p: "♟︎", n: "♞︎", b: "♝︎", r: "♜︎", q: "♛︎" };
-const VALUE: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9 };
-/** Pieces each side has taken, from the FEN (B3 shows them under each name). */
-function captured(fen: string) {
-  const board = fen.split(" ")[0];
-  const count = (ch: string) => [...board].filter((c) => c === ch).length;
-  const takenBy = (white: boolean) =>
-    Object.keys(START_MATERIAL).flatMap((k) => {
-      const lost = START_MATERIAL[k] - count(white ? k : k.toUpperCase());
-      return Array.from({ length: Math.max(0, lost) }, () => k);
-    });
-  const w = takenBy(true),
-    b = takenBy(false);
-  const sum = (l: string[]) => l.reduce((s, k) => s + VALUE[k], 0);
-  return { white: w, black: b, diff: sum(w) - sum(b) };
-}
-
 export function BayMatch({ id }: { id: string }) {
   const gate = useProfileGate();
   const router = useRouter();
@@ -252,6 +238,9 @@ export function BayMatch({ id }: { id: string }) {
   // Chat with the other players (not with the Practice bot), from the moment the game starts.
   const chat = useMatchChat(v && !v.bot && v.mySeat !== null && v.status !== "waiting" ? v.id : null, channel, meId, "bay");
   const wide = useWide();
+  // The side panel's slot for the board's own parts (the chess move list), on a wide screen.
+  const [asideNode, setAsideNode] = useState<HTMLElement | null>(null);
+  const sprites = useSprites();
   // Leaving (lib/game/leave.ts): a live game against a person asks first and resigns, so they win at once;
   // an async game or one against the Practice bot waits in Your move.
   const leaveContext: LeaveContext = !v ? "bay-async" : v.bot ? "bay-bot" : v.mode === "live" ? "bay-live" : "bay-async";
@@ -409,8 +398,7 @@ export function BayMatch({ id }: { id: string }) {
     const run = v.status === "active" && v.turn === s && v.turnStartedAt ? now - v.turnStartedAt : 0;
     return Math.max(0, v.clockMs[s] - run);
   };
-  const chess = v.game === "chess" ? captured((v.state as { fen: string }).fen) : null;
-  const sans = v.game === "chess" ? ((v.state as { sans: string[] }).sans ?? []) : [];
+  const chess = v.game === "chess" ? capturedPieces((v.state as { fen: string }).fen) : null;
   const lastMove = v.moves[v.moves.length - 1]?.move;
   const offerFromThem = (o: number | null) => o !== null && o !== seat;
   // A bot's win is stored without a winner id (the bot isn't a player row), so a finished bot match that isn't a
@@ -432,8 +420,9 @@ export function BayMatch({ id }: { id: string }) {
     if (!p) return null;
     const c = clock(p.seat);
     const active = v.status === "active" && v.turn === p.seat;
-    const taken = chess ? (p.seat === 0 ? chess.black : chess.white) : [];
-    const diff = chess ? (p.seat === 0 ? -chess.diff : chess.diff) : 0;
+    // Seat 0 plays white: what that side has taken, and its material lead.
+    const taken = chess ? (p.seat === 0 ? chess.byWhite : chess.byBlack) : [];
+    const diff = chess ? (p.seat === 0 ? chess.diff : -chess.diff) : 0;
     return (
       <div className="flex items-center gap-2.5 px-3">
         <Avatar name={p.nickname} color={p.color} hat={p.hat} me={mine} size={44} radius={14}>
@@ -473,17 +462,8 @@ export function BayMatch({ id }: { id: string }) {
             )}
           </span>
           {chess && (
-            <span
-              className="flex items-center gap-1 text-[16px] tracking-[1px]"
-              style={{
-                fontFamily: "'Segoe UI Symbol','Noto Sans Symbols 2','DejaVu Sans',serif",
-                color: mine ? "var(--bay-captured-mine)" : "var(--text)",
-              }}
-            >
-              {taken.map((k, i) => (
-                <span key={i}>{GLYPH[k]}</span>
-              ))}
-              {diff > 0 && <span className="num text-muted ml-1 font-sans text-[12px] font-semibold">+{diff}</span>}
+            <span className="flex h-[22px] items-end">
+              <CapturedRow pieces={taken} white={p.seat !== 0} lead={diff} sprites={sprites} />
             </span>
           )}
           {/* Whose move, in words. Chess with a clock says it with the lit clock; without one (async) it needs this too. */}
@@ -555,6 +535,9 @@ export function BayMatch({ id }: { id: string }) {
       lastMove={lastMove}
       onMove={move}
       announce={setLive}
+      // Chess: plan moves while they think; one is sent only once it's your turn, and the server still judges it.
+      premoves={v.status === "active"}
+      note={(text) => show(text)}
       explain={(text) => {
         play("buzz");
         show(text, "bad");
@@ -562,28 +545,6 @@ export function BayMatch({ id }: { id: string }) {
       names={[...v.players].sort((a, b) => a.seat - b.seat).map((p) => p.nickname)}
     />
   );
-  const moves =
-    sans.length > 0 &&
-    (wide ? (
-      <MoveList sans={sans} />
-    ) : (
-      <div
-        className="bg-surface num text-muted mx-4 mt-3 flex items-center gap-2 overflow-hidden rounded-[14px] px-3 py-2 text-[14px] font-medium whitespace-nowrap"
-        aria-label="Moves"
-      >
-        {sans.slice(-6).map((s, i, a) => {
-          const ply = sans.length - a.length + i;
-          return (
-            <span key={ply} className="flex gap-2">
-              {ply % 2 === 0 && <span>{ply / 2 + 1}.</span>}
-              <span className={i === a.length - 1 ? "rounded-[6px] bg-[var(--accent)] px-1.5 text-[var(--square-ink)]" : "text-text"}>
-                {s}
-              </span>
-            </span>
-          );
-        })}
-      </div>
-    ));
   const gap = wide ? "" : "mx-4 mt-3";
   const offer = (offerFromThem(v.drawOffer) || offerFromThem(v.takebackOffer)) && v.status === "active" && (
     <div className={`bg-surface-raised flex items-center gap-2 rounded-[16px] p-3 ${gap}`} role="alert">
@@ -763,148 +724,119 @@ export function BayMatch({ id }: { id: string }) {
   );
 
   return (
-    <Screen label="B3 Bay match" wide={wide} style={{ ["--world" as string]: "var(--accent)", ["--world-ink" as string]: "var(--accent)" }}>
-      <MpToast toast={toast} />
-      <div aria-live="polite" className="sr-only">
-        {live ||
-          (lastSeat !== undefined && lastSeat !== seat
-            ? `${v.players[lastSeat]?.nickname ?? "They"} moved. ${myTurn ? "Your move." : ""}`
-            : "")}
-      </div>
-      <div
-        className={
-          wide
-            ? "flex items-center gap-2 px-9 pt-[max(20px,env(safe-area-inset-top))] pb-2"
-            : "flex items-center gap-2 px-3 pt-[max(12px,env(safe-area-inset-top))]"
-        }
+    <ShellAsideProvider value={{ wide, node: asideNode }}>
+      <Screen
+        label="B3 Bay match"
+        wide={wide}
+        style={{ ["--world" as string]: "var(--accent)", ["--world-ink" as string]: "var(--accent)" }}
       >
-        <TopButton icon="arrow-left" label="Back" onClick={leave.request} />
-        <h1 className="font-display flex-1 text-[22px] font-black text-[var(--accent)] [[data-theme=light]_&]:text-[var(--accent)]">
-          {meta?.name}
-        </h1>
-        <span className="text-muted text-[14px] font-medium whitespace-nowrap">
-          {v.mode === "live" ? "Live" : "24 h per move"}
-          {v.bot ? " · vs Spuzl" : ""}
-        </span>
-        <TopButton icon="chat-circle-text" label={gameMenuCopy.feedbackTitle} onClick={() => setFeedbackOpen(true)} />
-        {!v.bot && alertsSupported() && !alertsOn && v.status !== "finished" && (
-          <TopButton
-            icon="bell"
-            label="Alert me when it's my turn"
-            onClick={async () => {
-              const on = await askAlerts();
-              setAlertsOn(on);
-              show(
-                on ? "We'll let you know when it's your turn." : "Turn alerts are blocked in your browser settings.",
-                on ? undefined : "bad",
-              );
-            }}
-          />
-        )}
-      </div>
-      {v.status === "waiting" ? (
-        <div className="flex flex-1 flex-col gap-4 px-4 pt-4">
-          <p className="text-muted text-[16px]">Send this to a friend. The game starts when they join.</p>
-          <ShareCode code={v.inviteCode ?? ""} url={`/bay/${v.id}?join=${v.inviteCode}`} text={`Play ${meta?.name} with me on SPUZL.`} />
-          <InviteFriends kind="bay" target={v.id} />
-          <Cta tone="raised" onClick={() => action("resign")} className="mt-auto mb-[max(28px,env(safe-area-inset-bottom))]">
-            Cancel invite
-          </Cta>
+        <MpToast toast={toast} />
+        <div aria-live="polite" className="sr-only">
+          {live ||
+            (lastSeat !== undefined && lastSeat !== seat
+              ? `${v.players[lastSeat]?.nickname ?? "They"} moved. ${myTurn ? "Your move." : ""}`
+              : "")}
         </div>
-      ) : (
-        // Phone: one column (both wrappers are `display: contents`). Wide: the board fills the left column and
-        // the players, moves, offers and tools sit in the side panel. The board keeps its place either way.
-        <div className={wide ? "flex flex-1 items-start gap-8 px-6 pb-6" : "contents"}>
-          <div className={wide ? "flex min-w-0 flex-1 justify-center p-3 pb-0" : "contents"}>
-            {!wide && <div className="pt-3">{oppRow}</div>}
-            <div className={wide ? "flex justify-center" : "flex justify-center px-3 py-3"}>{board}</div>
-            {gameOver}
-            {!wide && meRow}
-            {!wide && moves}
-            {!wide && confirm}
-            {!wide && offer}
-            {!wide && myOffer}
-            {!wide && finished}
-            {!wide && addFriends}
-            {!wide && emoteBar}
-            {!wide && toolRow}
-          </div>
-          {wide && (
-            <aside className="flex w-[320px] shrink-0 flex-col gap-3 pt-3 pr-3 min-[1280px]:w-[360px]" aria-label={sidePanel.players}>
-              <div className="bg-surface flex flex-col gap-2 rounded-[18px] py-2.5 [&>div]:px-2.5">
-                {oppRow}
-                {meRow}
-              </div>
-              {moves}
-              {confirm}
-              {offer}
-              {myOffer}
-              {finished}
-              {addFriends}
-              {emoteBar}
-              {toolRow}
-            </aside>
+        <div
+          className={
+            wide
+              ? "flex items-center gap-2 px-9 pt-[max(20px,env(safe-area-inset-top))] pb-2"
+              : "flex items-center gap-2 px-3 pt-[max(12px,env(safe-area-inset-top))]"
+          }
+        >
+          <TopButton icon="arrow-left" label="Back" onClick={leave.request} />
+          <h1 className="font-display flex-1 text-[22px] font-black text-[var(--accent)] [[data-theme=light]_&]:text-[var(--accent)]">
+            {meta?.name}
+          </h1>
+          <span className="text-muted text-[14px] font-medium whitespace-nowrap">
+            {v.mode === "live" ? "Live" : "24 h per move"}
+            {v.bot ? " · vs Spuzl" : ""}
+          </span>
+          <TopButton icon="chat-circle-text" label={gameMenuCopy.feedbackTitle} onClick={() => setFeedbackOpen(true)} />
+          {!v.bot && alertsSupported() && !alertsOn && v.status !== "finished" && (
+            <TopButton
+              icon="bell"
+              label="Alert me when it's my turn"
+              onClick={async () => {
+                const on = await askAlerts();
+                setAlertsOn(on);
+                show(
+                  on ? "We'll let you know when it's your turn." : "Turn alerts are blocked in your browser settings.",
+                  on ? undefined : "bad",
+                );
+              }}
+            />
           )}
         </div>
-      )}
-      <Modal
-        open={feedbackOpen}
-        onOpenChange={setFeedbackOpen}
-        title={gameMenuCopy.feedbackTitle}
-        description={gameMenuCopy.feedbackIntro(meta?.name ?? "this game")}
-      >
-        {feedbackOpen && <FeedbackForm from={window.location.pathname} />}
-      </Modal>
-      {leavePlan.kind !== "none" && (
-        <LeaveConfirm
-          kind={leavePlan.kind}
-          open={leave.asking}
-          busy={leave.busy}
-          onKeep={leave.keep}
-          onLeave={() => void leave.confirm()}
-        />
-      )}
-      {!v.bot && v.mySeat !== null && (
-        <>
-          <ChatPanel chat={chat} me={meId ?? ""} onEmote={(e) => void emotes.send(e)} />
-          <ChatPopup chat={chat} />
-        </>
-      )}
-    </Screen>
-  );
-}
-
-/** The whole move list (wide screens, in the side panel): numbered pairs, the last move marked, newest in view. */
-function MoveList({ sans }: { sans: string[] }) {
-  const box = useRef<HTMLOListElement>(null);
-  useEffect(() => {
-    const el = box.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [sans.length]);
-  const pairs = Array.from({ length: Math.ceil(sans.length / 2) }, (_, k) => [sans[k * 2], sans[k * 2 + 1]] as const);
-  return (
-    <section className="bg-surface flex flex-col gap-1 rounded-[18px] p-2.5" aria-label={sidePanel.moves}>
-      <h2 className="text-muted px-1 text-[13px] font-semibold tracking-[.04em] uppercase">{sidePanel.moves}</h2>
-      <ol ref={box} className="num grid max-h-[30dvh] grid-cols-[2.5rem_1fr_1fr] gap-x-2 gap-y-0.5 overflow-y-auto text-[15px] font-medium">
-        {pairs.map(([w, b], k) => (
-          <li key={k} className="contents">
-            <span className="text-muted px-1 py-1">{k + 1}.</span>
-            {[w, b].map((m, j) =>
-              m === undefined ? (
-                <span key={j} />
-              ) : (
-                <span
-                  key={j}
-                  aria-current={k * 2 + j === sans.length - 1 || undefined}
-                  className={`rounded-[8px] px-1.5 py-1 ${k * 2 + j === sans.length - 1 ? "bg-[var(--accent)] text-[var(--square-ink)]" : ""}`}
-                >
-                  {m}
-                </span>
-              ),
+        {v.status === "waiting" ? (
+          <div className="flex flex-1 flex-col gap-4 px-4 pt-4">
+            <p className="text-muted text-[16px]">Send this to a friend. The game starts when they join.</p>
+            <ShareCode code={v.inviteCode ?? ""} url={`/bay/${v.id}?join=${v.inviteCode}`} text={`Play ${meta?.name} with me on SPUZL.`} />
+            <InviteFriends kind="bay" target={v.id} />
+            <Cta tone="raised" onClick={() => action("resign")} className="mt-auto mb-[max(28px,env(safe-area-inset-bottom))]">
+              Cancel invite
+            </Cta>
+          </div>
+        ) : (
+          // Phone: one column (both wrappers are `display: contents`). Wide: the board fills the left column and
+          // the players, moves, offers and tools sit in the side panel. The board keeps its place either way.
+          <div className={wide ? "flex flex-1 items-start gap-8 px-6 pb-6" : "contents"}>
+            <div className={wide ? "flex min-w-0 flex-1 justify-center p-3 pb-0" : "contents"}>
+              {!wide && <div className="pt-3">{oppRow}</div>}
+              <div className={wide ? "flex justify-center" : "flex justify-center px-3 py-3"}>{board}</div>
+              {gameOver}
+              {!wide && meRow}
+              {!wide && confirm}
+              {!wide && offer}
+              {!wide && myOffer}
+              {!wide && finished}
+              {!wide && addFriends}
+              {!wide && emoteBar}
+              {!wide && toolRow}
+            </div>
+            {wide && (
+              <aside className="flex w-[320px] shrink-0 flex-col gap-3 pt-3 pr-3 min-[1280px]:w-[360px]" aria-label={sidePanel.players}>
+                <div className="bg-surface flex flex-col gap-2 rounded-[18px] py-2.5 [&>div]:px-2.5">
+                  {oppRow}
+                  {meRow}
+                </div>
+                {/* The chess board's move list (with review) lands here, through ShellAside. */}
+                <div ref={setAsideNode} className="flex flex-col gap-3 empty:hidden" />
+                {confirm}
+                {offer}
+                {myOffer}
+                {finished}
+                {addFriends}
+                {emoteBar}
+                {toolRow}
+              </aside>
             )}
-          </li>
-        ))}
-      </ol>
-    </section>
+          </div>
+        )}
+        <Modal
+          open={feedbackOpen}
+          onOpenChange={setFeedbackOpen}
+          title={gameMenuCopy.feedbackTitle}
+          description={gameMenuCopy.feedbackIntro(meta?.name ?? "this game")}
+        >
+          {feedbackOpen && <FeedbackForm from={window.location.pathname} />}
+        </Modal>
+        {leavePlan.kind !== "none" && (
+          <LeaveConfirm
+            kind={leavePlan.kind}
+            open={leave.asking}
+            busy={leave.busy}
+            onKeep={leave.keep}
+            onLeave={() => void leave.confirm()}
+          />
+        )}
+        {!v.bot && v.mySeat !== null && (
+          <>
+            <ChatPanel chat={chat} me={meId ?? ""} onEmote={(e) => void emotes.send(e)} />
+            <ChatPopup chat={chat} />
+          </>
+        )}
+      </Screen>
+    </ShellAsideProvider>
   );
 }

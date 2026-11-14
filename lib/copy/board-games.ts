@@ -17,6 +17,29 @@ export const boardGames = {
     /** Escape on the board, or a tap off the piece */
     putDown: "Piece put down.",
     lastMove: "last move",
+    /** Premoves: planned while the other side is to move, played the moment your turn comes */
+    premovePicked: (piece: string, sq: string) => `${piece} ${sq} picked up for a premove.`,
+    premoveQueued: (from: string, to: string) => `Premove ${from} to ${to} queued.`,
+    premoveLabel: (from: string, to: string) => `premove ${from} to ${to} queued`,
+    premovePlayed: (from: string, to: string) => `Premove ${from} to ${to} played.`,
+    premoveDropped: "Premove dropped: it isn't legal now.",
+    premovesCleared: "Premoves cleared.",
+    premoveFull: "Three premoves queued. Play them out or clear them first.",
+    /** Review: stepping through the game without changing it */
+    moves: "Moves",
+    noMoves: "No moves yet.",
+    start: "Start of the game",
+    back: "Previous move",
+    forward: "Next move",
+    latest: "Latest move",
+    live: "Back to the game",
+    liveShort: "Live",
+    reviewing: (ply: number, total: number) => `Reviewing move ${ply} of ${total}. Moves are paused.`,
+    backToLive: "Back to the game.",
+    flip: "Flip board",
+    flipped: "Board flipped.",
+    /** captured pieces under each name */
+    captured: (list: string, lead: number) => `Captured: ${list || "nothing"}${lead > 0 ? `, ahead by ${lead}` : ""}`,
   },
   /** Live draughts board: why a tap on your own man did nothing, and the last move's squares */
   draughts: {

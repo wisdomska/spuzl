@@ -10,6 +10,9 @@ import { play } from "@/lib/audio";
 import { boardGames } from "@/lib/copy/board-games";
 import { Button } from "@/components/ui/Button";
 import type { LudoOpts } from "@/games/ludo/engine";
+import { capturedPieces } from "@/games/chess/history";
+import { CapturedRow } from "@/games/chess/Captured";
+import { useSprites } from "@/games/chess/Piece";
 
 const t = boardGames.bot;
 
@@ -169,6 +172,14 @@ export default function BotBoard({ puzzle, disabled, api, extra }: BoardProps<Bo
     [api],
   );
 
+  // A quiet line (a premove dropped because it wasn't legal after Spuzl's reply).
+  const note = useCallback(
+    (text: string) => {
+      api.feedback(text, "info", "info");
+    },
+    [api],
+  );
+
   const undo = useCallback(() => {
     if (!history.length || over) return;
     setState(history[history.length - 1]);
@@ -238,6 +249,9 @@ export default function BotBoard({ puzzle, disabled, api, extra }: BoardProps<Bo
           onMove={move}
           announce={api.announce}
           explain={explain}
+          note={note}
+          // Chess: plan moves while Spuzl thinks (premoves), played the moment it's your turn.
+          premoves={!over}
           coords
         />
       ) : (
@@ -253,6 +267,9 @@ const isRoll = (m: unknown) => !!m && typeof m === "object" && (m as { kind?: st
 
 /** Whose turn it is (not by colour alone: the active side is bold, outlined and says so), plus disc counts in Flip and stones left in Dara. */
 function Seats({ game, state, turn, thinking, seats }: { game: BotGame; state: unknown; turn: number; thinking: boolean; seats: number }) {
+  const sprites = useSprites();
+  // Chess: what each side has taken, lowest value first, and "+3" on the side ahead (you are white).
+  const taken = game === "chess" && state ? capturedPieces((state as { fen: string }).fen) : null;
   const count = (who: number) =>
     !state
       ? null
@@ -267,7 +284,7 @@ function Seats({ game, state, turn, thinking, seats }: { game: BotGame; state: u
     return (
       <span
         key={s}
-        className="flex h-9 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[12px] text-[14px]"
+        className="flex h-9 min-w-0 flex-1 items-center justify-center gap-1.5 overflow-hidden rounded-[12px] px-2 text-[14px]"
         style={{
           background: active ? "color-mix(in srgb, var(--world) 18%, var(--surface))" : "var(--surface)",
           boxShadow: active ? "inset 0 0 0 2px var(--world)" : undefined,
@@ -275,8 +292,17 @@ function Seats({ game, state, turn, thinking, seats }: { game: BotGame; state: u
           color: active ? "var(--text)" : "var(--text-muted)",
         }}
       >
-        {name}
+        <span className="flex-none">{name}</span>
         {n !== null && <span className="num">{n}</span>}
+        {taken && (
+          <CapturedRow
+            pieces={s === ME ? taken.byWhite : taken.byBlack}
+            white={s !== ME}
+            lead={s === ME ? taken.diff : -taken.diff}
+            sprites={sprites}
+            size={20}
+          />
+        )}
       </span>
     );
   };
