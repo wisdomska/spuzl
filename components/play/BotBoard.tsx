@@ -98,7 +98,8 @@ export default function BotBoard({ puzzle, disabled, api, extra }: BoardProps<Bo
       const m = bot.choose(state, turn, puzzle.level, r);
       const next = bot.rules.apply(state, turn, m, r);
       plies.current++;
-      play(isRoll(m) ? "tick" : "clack");
+      // Chess sounds its own moves (capture, check, placement: bay/boards.tsx ChessLive).
+      if (puzzle.game !== "chess") play(isRoll(m) ? "tick" : "clack");
       setLast(m);
       setState(next);
       const st = bot.rules.status(next);
@@ -113,7 +114,7 @@ export default function BotBoard({ puzzle, disabled, api, extra }: BoardProps<Bo
       }
     }, BOT_DELAY_MS);
     return () => clearTimeout(id);
-  }, [bot, state, over, turn, disabled, puzzle.level, api, ludo]);
+  }, [bot, state, over, turn, disabled, puzzle.level, puzzle.game, api, ludo]);
 
   const thinking = !!bot && !!state && !over && turn !== ME && !disabled;
   // Restart confirm (Restart is in the game menu); a game with a move in it is worth asking about.
@@ -131,7 +132,7 @@ export default function BotBoard({ puzzle, disabled, api, extra }: BoardProps<Bo
       const next = rules.apply(state, ME, m, rng.current);
       plies.current++;
       setMoved(true);
-      play(isRoll(m) ? "tick" : "clack");
+      if (puzzle.game !== "chess") play(isRoll(m) ? "tick" : "clack");
       // Undo goes back to the start of the player's move (Ludo has dice, so no undo there).
       if (!ludo && !isRoll(m)) setHistory((h) => [...h, state]);
       setLast(m);
@@ -155,7 +156,7 @@ export default function BotBoard({ puzzle, disabled, api, extra }: BoardProps<Bo
         api.announce(t.passed);
       }
     },
-    [rules, state, disabled, over, turn, ludo, api],
+    [rules, state, disabled, over, turn, ludo, api, puzzle.game],
   );
 
   // A tap the rules refuse (a compulsory capture, an empty pit): the reason in the feedback line, with the slip

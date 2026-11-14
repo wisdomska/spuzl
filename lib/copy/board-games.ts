@@ -59,7 +59,7 @@ export const boardGames = {
     withdraw: "Withdraw",
     drawWithdrawn: "Draw offer withdrawn.",
     /** Takeback before you have moved */
-    noTakeback: "No move of yours to take back yet.",
+    noTakeback: "No move of yours to undo yet.",
   },
   bot: {
     /** entry under the game card (World view, Play anytime) */

@@ -71,7 +71,7 @@ export default function ChessBoard({ puzzle, initialState, hint, disabled, api }
   const sprites = useSprites();
   // The move line under the board: the squares step down until it fits under the board (laptops, short phones).
   const rootRef = useRef<HTMLDivElement>(null);
-  const cell = useFitHeight(useCellSize(8, 0, 0, 48), 36, 8, rootRef, "shell");
+  const cell = useFitHeight(useCellSize(8, 0, 0, 48, 8.6), 36, 8, rootRef, "shell");
   const done = r.mated;
   const rows = toRows(shown.b);
 

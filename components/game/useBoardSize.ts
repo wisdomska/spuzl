@@ -68,7 +68,16 @@ export function wideAside(vw: number): number {
  * together in the middle of the page, so spare width goes to the outer margins, never between board and panel.
  * Square boards are 1; wide boards (a pit row, a running course) are wider.
  */
-export const WIDE_ASPECT: Record<string, number> = { five: 0.62, oware: 2.4, gotcha: 1.8, dash: 1.8, fourup: 1.17, remix: 1.3, quads: 1.3 };
+export const WIDE_ASPECT: Record<string, number> = {
+  chess: 0.93,
+  five: 0.62,
+  oware: 2.4,
+  gotcha: 1.8,
+  dash: 1.8,
+  fourup: 1.17,
+  remix: 1.3,
+  quads: 1.3,
+};
 /** A board column is never narrower than this on a wide screen (cards, word games and their keyboards). */
 export const WIDE_COL_MIN = 600;
 

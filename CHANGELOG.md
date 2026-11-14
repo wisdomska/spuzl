@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.63.3 (14 November 2026)
+
+### Everyone
+
+- **Board games fit the screen again:** the big-screen scaling no longer touches boards that size themselves (chess
+  and the other board games, the grids), so a board can't grow off the screen; chess leaves room for its tall
+  pieces.
+- **Full screen:** a button in every game's top bar fills the whole screen; tap it again (or press Esc) to leave.
+  Not shown where the browser can't do it (Safari on iPhone).
+- **Chess sounds like chess:** a capture knocks, a check rings, other moves place, for your moves and Spuzl's or your
+  opponent's.
+- **Chess pieces:** pawns have a big round head on a broad collar (no more mistaking them for bishops), and the light
+  pieces are a warmer boxwood brown.
+- **"Takeback" is "Undo"** in Board Bay.
+- **Your profile's top-right button is a settings gear.**
+
+### Behind the scenes
+
+- SEO and AI summaries describe the current app: Gotcha, Dash, Kente, the Arcade line-up, full screen, notifications.
+
 ## 1.63.2 (14 November 2026)
 
 ### Everyone

@@ -52,7 +52,10 @@ export const GAME_SEO: Record<string, { kind: string; where: string }> = {
     kind: "logic puzzle",
     where: "fill the grid with suns and moons, an equal number in every row and column and never three in a line",
   },
-  sixer: { kind: "6x6 sudoku", where: "place the numbers 1 to 6 once in every row, every column and every 2 by 3 box" },
+  sixer: {
+    kind: "number grid (sudoku style)",
+    where: "pick a 6 by 6 or 9 by 9 board, then place every number once in each row, column and box",
+  },
   nine: { kind: "sudoku", where: "place the numbers 1 to 9 once in every row, every column and every 3 by 3 box" },
   weave: { kind: "path puzzle", where: "draw one path through the numbers in order that fills every cell of the grid" },
   flowline: { kind: "pipe puzzle", where: "rotate the pipes until water reaches every plant" },
@@ -195,6 +198,8 @@ export const siteFaq = (games: number = GAME_COUNT, worlds: number = WORLD_COUNT
 /** What SPUZL offers, one line each (llms-full.txt "Features" and the app's structured data featureList). */
 export const FEATURES: readonly string[] = [
   "Free play: every game any time, with fresh puzzles and levels that get harder.",
+  "Arcade: Gotcha, a trap platformer where every room tricks you once; Dash, an endless runner where you jump and duck; plus Echo, Flinch and Twins.",
+  "Kente: number grids at 6 by 6 or 9 by 9, picked before each game.",
   "Daily Five: five quick games a day, the same for everyone, with a shareable score grid.",
   "Streaks with Streak Freezes, quests, badges and levels.",
   "Duel: a live best-of-three race against a friend or a matched player.",
@@ -206,6 +211,8 @@ export const FEATURES: readonly string[] = [
   "Sparks earned by playing, spent in the Shop on hats for Spuz. Nothing is sold for money.",
   "Accessible: keyboard play, screen reader labels, colour patterns and reduced motion.",
   "Installable app (PWA) that works offline for puzzles already on screen.",
+  "Made for phones, tablets and computers: boards grow to fill big screens, and every game has a full-screen button.",
+  "Notifications on Home: your weekly roundup, new games, friend requests and Board Games waiting on your move.",
   "Feedback form on the Contact page; download or delete your data in Settings.",
 ];
 

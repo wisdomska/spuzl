@@ -9,7 +9,7 @@ test("settings: back to Me, and change the nickname", async ({ page }, info) => 
   await guest(taken);
   await onboardGuest(page);
   await page.goto("/me");
-  await page.getByRole("link", { name: "Edit profile and settings" }).click();
+  await page.getByRole("link", { name: "Settings", exact: true }).first().click();
   await page.waitForURL(/\/settings/);
   await page.getByRole("button", { name: "Back" }).click();
   await page.waitForURL((u) => u.pathname === "/me");

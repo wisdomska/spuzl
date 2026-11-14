@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { play } from "@/lib/audio";
 import { gridMove, gridMoveRC } from "@/lib/multiplayer/grid-nav";
 import { Icon } from "@/components/ui/Icon";
 import { boardGames } from "@/lib/copy/board-games";
@@ -210,7 +211,9 @@ const tc = boardGames.chess;
 
 function ChessLive({ state, seat, legal, disabled, lastMove, onMove, announce, coords }: LiveBoardProps) {
   const s = state as ChessMatch;
-  const cell = useCellSize(8, 0, 10, 48);
+  // 8.6 rows of height: the back-rank pieces stand 0.4 of a square above the board (3D sprites), and the file letters
+  // sit under it, so a wide screen keeps the whole board in view (owner, 14 Nov 2026).
+  const cell = useCellSize(8, 0, 10, 48, 8.6);
   const sprites = useSprites();
   const [sel, setSel] = useState<string | null>(null);
   /** a pawn move to the last rank waiting for the player's choice of piece (uci from+to), for this position only */
@@ -230,6 +233,19 @@ function ChessLive({ state, seat, legal, disabled, lastMove, onMove, announce, c
     setSel(null);
   }
   const sending = sent?.fen === s.fen ? sent.move : null;
+  // Every move, by either side, sounds like what it did (owner, 14 Nov 2026): a capture knocks, a check rings, the
+  // rest is a plain placement. An undo (pieces come back) stays quiet.
+  const lastFen = useRef(s.fen);
+  useEffect(() => {
+    const before = lastFen.current;
+    lastFen.current = s.fen;
+    if (before === s.fen) return;
+    const count = (fen: string) => fen.split(" ")[0].replace(/[^a-zA-Z]/g, "").length;
+    const was = count(before);
+    const now = count(s.fen);
+    if (now > was) return;
+    play(now < was ? "pieceCapture" : inCheck(parseFen(s.fen)) ? "pieceCheck" : "piecePlace");
+  }, [s.fen]);
   const pos = useMemo(() => {
     const p = parseFen(s.fen);
     const m = sending ? fromUci(p, sending) : null;

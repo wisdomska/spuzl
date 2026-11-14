@@ -525,10 +525,10 @@ export function BayMatch({ id }: { id: string }) {
   const tools = [
     v.game !== "ludo" && !v.rated
       ? {
-          l: "Takeback",
+          l: "Undo",
           i: "arrow-u-up-left",
           c: "var(--text-muted)",
-          on: () => action("takeback_request", v.bot ? undefined : "Takeback asked."),
+          on: () => action("takeback_request", v.bot ? undefined : "Asked to undo."),
           // Nothing of yours to take back yet: off, and it says why (the server refuses it too).
           off: takebackPlies(v.moves, seat) === 0 ? boardGames.match.noTakeback : undefined,
         }
@@ -588,7 +588,7 @@ export function BayMatch({ id }: { id: string }) {
   const offer = (offerFromThem(v.drawOffer) || offerFromThem(v.takebackOffer)) && v.status === "active" && (
     <div className={`bg-surface-raised flex items-center gap-2 rounded-[16px] p-3 ${gap}`} role="alert">
       <span className="flex-1 text-[15px] font-medium">
-        {offerFromThem(v.drawOffer) ? `${opp?.nickname} offers a draw.` : `${opp?.nickname} asks for a takeback.`}
+        {offerFromThem(v.drawOffer) ? `${opp?.nickname} offers a draw.` : `${opp?.nickname} asks to undo their last move.`}
       </span>
       <button
         type="button"

@@ -26,9 +26,14 @@ import { copy } from "@/lib/copy";
 import { leaveCopy } from "@/lib/copy/leave";
 import { leavePolicy, type LeaveContext } from "@/lib/game/leave";
 import { WideZoom } from "./WideZoom";
+import { FullscreenButton } from "./FullscreenButton";
 
-/** Boards that size themselves to the wide screen (no extra zoom): Five fits its tiles to the height left over. */
-const SIZES_ITSELF = new Set(["five"]);
+/**
+ * Boards that stay at their phone size on a wide screen and are safe to scale up as a whole (components/game/WideZoom).
+ * Opt-in only (owner, 14 Nov 2026): boards that size themselves from their container (chess and the other board
+ * games, the grids) are never zoomed, or the two would feed each other and the board would grow off the screen.
+ */
+const ZOOMED = new Set(["quads", "remix", "quickfire", "flagged", "twotruths", "emojihits", "echo", "flinch", "seven", "rungs", "oware"]);
 import {
   useViewportHeight,
   useViewportWidth,
@@ -645,6 +650,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
       {wide && !banner && (
         <div className="flex max-w-[640px] min-w-0 flex-[2] items-center justify-center">{foldingRule("min-w-0", true)}</div>
       )}
+      <FullscreenButton />
       {/* R2-15: the one header timer. Never in a practice round; before the first move it holds its place with the
           clock icon only (never "00:00"), and the digits appear once it runs. A resumed game shows its time. */}
       {!relaxed && !guided && (
@@ -708,7 +714,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
           </motion.div>
         )}
       </AnimatePresence>
-      <WideZoom on={wide && meta.engine !== "phaser" && !SIZES_ITSELF.has(meta.id)} column={colW}>
+      <WideZoom on={wide && ZOOMED.has(meta.id)} column={colW}>
         <Board
           {...extra}
           extra={extra}

@@ -1,6 +1,8 @@
 /** The game shell's "⋯" menu and its slim top bar (everything that is not needed while playing). */
 export const gameMenuCopy = {
   trigger: "Game menu",
+  fullscreen: "Full screen",
+  fullscreenExit: "Exit full screen",
   /** the side panel next to the board on a wide screen */
   panel: "Game panel",
   paused: "Paused while this menu is open.",

@@ -102,10 +102,11 @@ export default function MePage() {
             </div>
             <Link
               href="/settings"
-              aria-label="Edit profile and settings"
+              aria-label="Settings"
+              title="Settings"
               className="press bg-surface-raised flex size-11 shrink-0 items-center justify-center rounded-[14px]"
             >
-              <Icon name="pencil-simple" size={20} />
+              <Icon name="gear-six" size={20} />
             </Link>
           </header>
 
