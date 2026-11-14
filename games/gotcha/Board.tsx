@@ -7,17 +7,22 @@ import { roomStageHeight } from "@/phaser/layout";
 import type { CoursePuzzle, RageState } from "@/phaser/sim/course";
 import type { PlatformerCourse } from "@/phaser/sim/platformer";
 import { createSim } from "./logic";
-import { ROOM_COLS, ROOM_ROWS } from "./rooms";
 
-/** Whole-room view: a 24 x 14 room fits the canvas at once, so every trap reads before it bites. */
-const painter = () => createPlatformerPainter({ fit: { cols: ROOM_COLS, rows: ROOM_ROWS } });
+/**
+ * The camera shows a 16 x 10 tile window of a 24 x 14 room and follows Spuz, so the door and the traps come into
+ * view as you go. Tiles stay small (a whole number of device px each).
+ */
+const VIEW = { cols: 16, rows: 10 };
+const painter = () => createPlatformerPainter({ fit: VIEW });
 
 /** Gotcha board (Game Boards: Gotcha): one-screen troll rooms, D-pad and JUMP under the canvas. */
 const SPEC: RageGameSpec<PlatformerCourse> = {
   name: "Gotcha",
   createSim,
   painter,
-  stageHeight: (w, vp) => roomStageHeight(w, vp, ROOM_COLS, ROOM_ROWS, FIT_TOP + 3 * FIT_EDGE),
+  stageHeight: (w, vp) => roomStageHeight(w, vp, VIEW.cols, VIEW.rows, FIT_TOP + 3 * FIT_EDGE),
+  // on a wide screen the window keeps its shape (about 16 x 10 tiles) instead of stretching to show the whole room
+  maxWidth: 780,
   controls: "dpad",
   hud: "deaths",
   startHint: "Move or jump to start. Trust nothing.",

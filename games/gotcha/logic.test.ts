@@ -12,9 +12,12 @@ import { ROOM_COLS, ROOM_ROWS } from "./rooms";
 import { ladderSuite } from "@/phaser/sim/ladderkit";
 import SOLUTIONS_JSON from "./solutions.json";
 import LEGACY_JSON from "./legacy-solutions.json";
+import HUMAN_JSON from "./human-solutions.json";
+import { humanHandicap, PlatformerCourse } from "@/phaser/sim/platformer";
 
 const SOLUTIONS: Record<string, number[][]> = SOLUTIONS_JSON;
 const LEGACY: Record<string, number[][]> = LEGACY_JSON;
+const HUMAN: Record<string, number[][]> = HUMAN_JSON;
 
 const state = (log: InputLog, deaths: number, frames: number) => ({ log, deaths, timeMs: framesToMs(frames) });
 
@@ -59,6 +62,22 @@ describe("gotcha", () => {
       if (sim.deaths) died++;
     }
     expect(died).toBeGreaterThanOrEqual(LEVELS.length - 4);
+  });
+
+  it("no room needs pixel-perfect play: each is cleared under the human handicap, every input held 4+ frames", () => {
+    // humanHandicap: 10 % less jump and run, no coyote or buffer frames. The scripts come from
+    // `rage-solve gotcha all 300 --human`, which only ever holds a button for whole 4-frame steps.
+    const cfg = humanHandicap(CONFIG);
+    expect(cfg.jumpVel).toBeLessThan(CONFIG.jumpVel);
+    expect(Object.keys(HUMAN).sort()).toEqual(LEVELS.map((l) => l.id).sort());
+    for (const l of LEVELS) {
+      const script = HUMAN[l.id];
+      // the last step may stop early (the door was reached mid-step); every other held input is whole 4-frame steps
+      for (const [, n] of script.slice(0, -1)) expect(n % 4, l.id).toBe(0);
+      const r = replay(new PlatformerCourse([l], cfg), courseLog([l.id], HUMAN, CONFIG.levelPause));
+      expect(r.ok, l.id).toBe(true);
+      expect(r.deaths, l.id).toBe(0);
+    }
   });
 
   it("every ladder room is one screen (24 x 14 tiles) with a name, and no id is shared with a legacy room", () => {
