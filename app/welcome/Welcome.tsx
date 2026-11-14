@@ -120,7 +120,7 @@ export function Welcome({ first = "hello" }: { first?: "hello" | "age" }) {
   // A deep link (e.g. /daily) sends visitors here with ?return=: onboarding ends there instead of the Grid.
   useEffect(() => rememberReturn(new URLSearchParams(window.location.search).get("return")), []);
   // Signing up is this visit's opening: Home right after it doesn't replay the logo intro.
-  useEffect(() => markOpened("intro"), []);
+  useEffect(() => markOpened(), []);
   // The landing's "Play now" skips the logo intro: later first-run redirects (Home with no profile) skip it too.
   useEffect(() => {
     if (first === "age") writeOnboarding({ introSeen: true });

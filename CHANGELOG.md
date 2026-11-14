@@ -6,6 +6,11 @@
 
 - **Music is louder:** it now sits just under the sound effects instead of far below them (still dips during
   celebrations).
+- **The logo intro plays once each time you open SPUZL** in the browser (a new tab or window), never on a reload and
+  never when you come back to the Grid from a game.
+- **Dash: things to duck under look like it.** Head-height obstacles are now striped beams hanging on cables, with
+  clear space underneath and a shadow on the ground; standing still hits them, ducking clears them with room to spare.
+  On computers Dash is drawn bigger (Spuz was tiny on a wide screen).
 
 ## 1.63.0 (14 November 2026)
 

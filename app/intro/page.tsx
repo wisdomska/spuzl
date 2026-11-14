@@ -21,7 +21,7 @@ export default function Intro() {
 
   const done = useCallback(() => {
     writeOnboarding({ introSeen: true });
-    markOpened("intro");
+    markOpened();
     router.replace(nextPath());
   }, [router]);
 

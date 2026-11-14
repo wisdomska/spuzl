@@ -92,7 +92,9 @@ export const SHAPE: Record<Kind, { w: number; y: number; h: number }> = {
   [KIND.STACK]: { w: 14, y: 0, h: 26 },
   [KIND.GAP]: { w: 32, y: 0, h: 0 },
   [KIND.DRONE_LOW]: { w: 16, y: 3, h: 9 },
-  [KIND.DRONE_HEAD]: { w: 16, y: 12, h: 9 },
+  // An overhead beam on cables (owner, 14 Nov 2026: it must look duckable): its hit box starts 14 px up, over a ducking
+  // Spuz (9) with room to spare, under a standing one (16).
+  [KIND.DRONE_HEAD]: { w: 22, y: 13, h: 7 },
   [KIND.BALLOON]: { w: 14, y: 30, h: 12 },
 };
 

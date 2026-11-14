@@ -1,7 +1,7 @@
 /**
  * Painter for Dash (phaser/sim/runner.ts). A small Spuz on a long ground line, with as much track ahead as the
- * canvas allows: the world scale follows the canvas width (1 to 1.5 css px per world px), so a phone shows about
- * 250 px of track ahead and a computer more. Sky, a far skyline and a near row of round trees scroll at 0.12 and
+ * canvas allows: the world scale follows the canvas width (1 to 2.4 css px per world px), so a phone shows about
+ * 250 px of track ahead and a computer about 480 px, at a size that reads. Sky, a far skyline and a near row of round trees scroll at 0.12 and
  * 0.35 of the ground's speed; the sky moves from evening to dusk (light theme: day to sunset) as the run speeds
  * up. The HUD (metres, best or goal, speed pips, ghost) is drawn in the canvas. Reduced motion: no parallax, no
  * squash and stretch, no shake, no rotor blur; only the track itself scrolls.
@@ -133,7 +133,8 @@ export function createRunnerPainter(o: RunnerPainterOptions = {}): Painter<Runne
       const light = typeof document !== "undefined" && document.documentElement.dataset.theme === "light";
       const T = light ? LIGHT : DARK;
       const cssW = w / dpr;
-      const S = dpr * Math.max(1, Math.min(1.5, cssW / 300));
+      // About 480 world px across (a phone shows its own width at 1:1); big screens zoom in instead of showing a tiny Spuz.
+      const S = dpr * Math.max(1, Math.min(2.4, cssW / 480));
       const rx = Math.max(28, cssW * 0.12) * dpr;
       const groundY = Math.round(h * (h > w ? 0.7 : 0.74));
       const dist = sim.dist / FP;
@@ -330,9 +331,26 @@ function drawObstacle(g: Gfx, ob: Obstacle, x: number, groundY: number, S: numbe
       g.fillRect(x + ow, groundY - 1 * S, 2 * S, 8 * S);
       break;
     }
-    case KIND.DRONE_LOW:
     case KIND.DRONE_HEAD: {
-      const col = ob.k === KIND.DRONE_HEAD ? C.droneHead : C.droneLow;
+      // An overhead beam hanging on two cables from the sky, a clear opening under it and a soft shadow on the
+      // ground there: it reads as "go under" at a glance.
+      const sway = reduced ? 0 : Math.sin(now * 0.003 + ob.x) * 0.6 * S;
+      g.fillStyle(SCENE.ink, 0.28);
+      g.fillRoundedRect(x + ow * 0.05, groundY - 1.5 * S, ow * 0.9, 2.5 * S, 1.2 * S);
+      g.lineStyle(Math.max(1, 1 * S), 0xa2a6c2, 0.85);
+      for (const cx of [x + 3 * S, x + ow - 3 * S]) g.lineBetween(cx + sway, 0, cx, topY);
+      g.fillStyle(C.droneHead, 1);
+      g.fillRoundedRect(x, topY, ow, oh, 2 * S);
+      // warning stripes
+      g.fillStyle(0xffc83d, 1);
+      for (let sx = x + 2 * S; sx < x + ow - 3 * S; sx += 6 * S)
+        g.fillTriangle(sx, topY + oh - 1 * S, sx + 3 * S, topY + 1 * S, sx + 5 * S, topY + 1 * S);
+      g.lineStyle(Math.max(1, 1 * S), SCENE.ink, 0.55);
+      g.strokeRoundedRect(x, topY, ow, oh, 2 * S);
+      break;
+    }
+    case KIND.DRONE_LOW: {
+      const col = C.droneLow;
       // rotors: a short blur that breathes (static with reduced motion)
       const spin = reduced ? 1 : 0.55 + 0.45 * Math.abs(Math.sin(now * 0.04 + ob.x));
       g.lineStyle(Math.max(1, 1.2 * S), 0xf4f5fb, 0.75);
