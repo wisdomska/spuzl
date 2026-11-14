@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.63.2 (14 November 2026)
+
+### Everyone
+
+- **Gotcha is fair to humans:** every room must now be beatable with a weaker jump, a slower run, no grace frames
+  and inputs held for at least 4 frames (a test replays all 30 that way). Rooms that failed got wider ledges and
+  shorter gaps (the "not an exit" ledge room among them), and Spuz jumps a little higher (about 3.2 tiles).
+- **Gotcha's camera follows Spuz** and shows part of the room (about 16 × 10 of 24 × 14 tiles), so traps and the door
+  come into view as you go. Tiles are about 20 px on a phone and 44 px on a laptop.
+- **Five on computers:** the keyboard is back under the grid, the tiles grow to fill the height, and the board sits
+  right next to its panel.
+
 ## 1.63.1 (14 November 2026)
 
 ### Everyone
