@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.66.0 (15 November 2026)
+
+### Everyone
+
+- **Guides and game lists:** 16 new pages under /guides and /topics, among them free puzzle games in your browser,
+  how to play oware online, Made in Ghana, oware vs mancala, sudoku 6x6 vs 9x9, ludo with 4 players, and lists of
+  logic, word, quiz, arcade, two-player, party and vs-computer games. Each opens with a short answer, lists the games
+  that are on, and has questions and answers.
+- Search and AI tools get the same facts: structured data on every page, the pages in the sitemap and llms.txt, and
+  links to them from the landing page, the games list and each game page.
+
 ## 1.65.0 (14 November 2026)
 
 ### Everyone
