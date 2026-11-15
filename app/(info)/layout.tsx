@@ -6,6 +6,7 @@ import { BackLink } from "@/components/seo/BackLink";
 const LINKS = [
   ["/games", "All games"],
   ["/how-to-play", "How to play"],
+  ["/guides", "Guides"],
   ["/fair-play", "Fair play"],
   ["/privacy", "Privacy"],
   ["/terms", "Terms"],

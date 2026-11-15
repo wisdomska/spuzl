@@ -42,8 +42,10 @@ export const WORLD_GENRES: Record<WorldId, string[]> = {
 /**
  * Per game: `kind` (what people search for, used in the title) and `where` (the rest of the definition sentence
  * "<Game> is a free online <kind> where you ..."), both read straight from the game's rule in lib/catalog.ts.
+ * `title` and `description` (optional) replace the generated ones where a search phrase clearly fits the game
+ * ("play oware online"); titles stay under 60 characters and descriptions under 155 (lib/seo/seo.test.ts).
  */
-export const GAME_SEO: Record<string, { kind: string; where: string }> = {
+export const GAME_SEO: Record<string, { kind: string; where: string; title?: string; description?: string }> = {
   crownfall: {
     kind: "logic puzzle",
     where: "place one crown in each row, column and coloured region, with no two crowns touching, not even at corners",
@@ -55,6 +57,9 @@ export const GAME_SEO: Record<string, { kind: string; where: string }> = {
   sixer: {
     kind: "number grid (sudoku style)",
     where: "pick a 6 by 6 or 9 by 9 board, then place every number once in each row, column and box",
+    title: "Spuzdoku: free sudoku online, 6x6 or 9x9 | SPUZL",
+    description:
+      "Play sudoku online free: Spuzdoku has 6x6 and 9x9 grids at Easy to Expert, with hints and endless levels. In your browser, no download.",
   },
   nine: { kind: "sudoku", where: "place the numbers 1 to 9 once in every row, every column and every 3 by 3 box" },
   weave: { kind: "path puzzle", where: "draw one path through the numbers in order that fills every cell of the grid" },
@@ -85,8 +90,20 @@ export const GAME_SEO: Record<string, { kind: string; where: string }> = {
     kind: "draughts game",
     where: "find the winning moves, with compulsory captures, or play a full game against Spuzl (the computer) or a friend",
   },
-  oware: { kind: "board game", where: "sow seeds anticlockwise and capture the 2s and 3s on your rival's side" },
-  ludo: { kind: "ludo game", where: "roll a 6 to bring a piece out, then race all four pieces home" },
+  oware: {
+    kind: "mancala board game",
+    where: "sow seeds anticlockwise and capture the 2s and 3s on your rival's side",
+    title: "Play Oware online free, vs computer or friends | SPUZL",
+    description:
+      "Play oware online free: the Ghanaian mancala game, Abapa rules. Sow seeds, capture 2s and 3s, and play the computer or a friend in your browser.",
+  },
+  ludo: {
+    kind: "ludo game",
+    where: "roll a 6 to bring a piece out, then race all four pieces home",
+    title: "Ludo online: play free with 2 to 4 players | SPUZL",
+    description:
+      "Play ludo online free with 2 to 4 players: invite friends live or one move a day, or play the computer. Roll a 6 to come out, race all four home.",
+  },
   fourup: { kind: "four in a row game", where: "drop discs and win by lining up four in any direction" },
   // The twelve that graduated from the lab (11 Nov 2026).
   five: { kind: "word game", where: "guess the hidden 5-letter word in 6 tries, with tiles showing which letters fit where" },

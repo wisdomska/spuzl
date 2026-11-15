@@ -15,6 +15,9 @@ import { publicMetadata } from "@/lib/seo/site";
 import { servedCopy } from "@/lib/games-meta/server";
 import { servedGameSwitch } from "@/lib/game-settings/server";
 import { breadcrumbs, faqPage, graph, videoGame } from "@/lib/seo/jsonld";
+import { TopicPills } from "@/components/seo/TopicPills";
+import { topicsCopy } from "@/lib/copy/topics";
+import { topicsForGame } from "@/lib/seo/topics";
 
 /**
  * One static page per game that is On (Games page state; one In testing or Off is a 404, rebuilt at once when the admin
@@ -54,6 +57,8 @@ export default async function GamePage({ params }: PageProps<"/games/[id]">) {
   const facts0 = gameFacts(g, lab);
   const f = { ...facts0, related: facts0.related.map(copy) };
   const world = WORLD_BY_ID[g.world];
+  // The guides and game lists that include this game (the oware guide on Oware, sudoku on Spuzdoku...).
+  const guides = topicsForGame(g.id, lab);
   const crumbs = [
     ["SPUZL", "/"],
     [T.allGames, "/games"],
@@ -164,6 +169,14 @@ export default async function GamePage({ params }: PageProps<"/games/[id]">) {
               </h2>
               <FaqAccordion items={f.faq} />
             </section>
+            {guides.length > 0 && (
+              <section aria-labelledby="guides" data-reveal className="flex flex-col gap-3">
+                <h2 id="guides" className={H2}>
+                  {topicsCopy.onGamePage}
+                </h2>
+                <TopicPills pages={guides} />
+              </section>
+            )}
           </div>
           <aside className="flex min-w-0 flex-col gap-6 lg:sticky lg:top-24">
             <section aria-labelledby="facts" className="flex flex-col gap-3">

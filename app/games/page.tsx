@@ -12,6 +12,9 @@ import { servedCopy } from "@/lib/games-meta/server";
 import { servedGameSwitch } from "@/lib/game-settings/server";
 import { publicCounts, publicGames, publicGamesInWorld } from "@/lib/seo/games";
 import { breadcrumbs, gameList, graph } from "@/lib/seo/jsonld";
+import { TopicPills } from "@/components/seo/TopicPills";
+import { topicsCopy } from "@/lib/copy/topics";
+import { publicTopics } from "@/lib/seo/topics";
 
 /** The title counts the games that are On (Games page state); rebuilt with the page. */
 export async function generateMetadata() {
@@ -97,6 +100,13 @@ export default async function GamesIndex() {
             };
           })}
         />
+      </section>
+      {/* Keyword pages by type of game and guides (lib/seo/topics.ts), the ones served now */}
+      <section aria-labelledby="by-type" className="mt-12 flex flex-col gap-3">
+        <h2 id="by-type" className="font-display text-[24px] leading-tight font-black tracking-[-0.02em] sm:text-[28px]">
+          {topicsCopy.browseByType}
+        </h2>
+        <TopicPills pages={publicTopics(lab)} />
       </section>
     </PublicShell>
   );

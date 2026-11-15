@@ -31,6 +31,8 @@ export const organization = (): Thing => ({
   logo: { "@type": "ImageObject", url: absoluteUrl("/icon.png"), width: 192, height: 192 },
   sameAs: [aboutCopy.creditUrl],
   founder: MAKER_REF,
+  // Designed and developed in Ghana (aboutCopy.made, the about page and llms.txt). Played everywhere, so no areaServed.
+  foundingLocation: { "@type": "Place", name: "Ghana", address: { "@type": "PostalAddress", addressCountry: "GH" } },
 });
 
 export const website = (): Thing => ({
@@ -115,6 +117,50 @@ export const gameList = (name: string, games: readonly GameMeta[]): Thing => ({
   name,
   numberOfItems: games.length,
   itemListElement: games.map((g, i) => ({ "@type": "ListItem", position: i + 1, name: g.name, url: absoluteUrl(`/games/${g.id}`) })),
+});
+
+/** A guide or list page (/guides/<slug>, /topics/<slug>): an Article for guides, a CollectionPage for lists. */
+export function topicPageNode(p: {
+  path: string;
+  kind: "topic" | "guide";
+  title: string;
+  h1: string;
+  description: string;
+  about?: GameMeta;
+}): Thing {
+  const url = absoluteUrl(p.path);
+  const about = p.about
+    ? { about: { "@type": "VideoGame", "@id": `${absoluteUrl(`/games/${p.about.id}`)}#game`, name: p.about.name } }
+    : {};
+  const base = {
+    "@id": `${url}#page`,
+    url,
+    name: p.title,
+    description: p.description,
+    inLanguage: "en",
+    isPartOf: { "@type": "WebSite", "@id": SITE_ID, name: "SPUZL" },
+    publisher: { "@type": "Organization", "@id": ORG_ID, name: "SPUZL", url: absoluteUrl("/") },
+    ...about,
+  };
+  return p.kind === "guide"
+    ? { "@type": "Article", ...base, headline: p.h1, author: MAKER_REF, image: absoluteUrl("/opengraph-image") }
+    : { "@type": "CollectionPage", ...base };
+}
+
+/** Numbered steps (the oware guide): HowTo with one HowToStep per [name, text]. */
+export const howTo = (name: string, steps: readonly (readonly [string, string])[], description?: string): Thing => ({
+  "@type": "HowTo",
+  name,
+  ...(description ? { description } : {}),
+  step: steps.map(([n, text], i) => ({ "@type": "HowToStep", position: i + 1, name: n, text })),
+});
+
+/** A list of pages by [name, path] (the /guides index). */
+export const pageList = (name: string, pages: readonly (readonly [string, string])[]): Thing => ({
+  "@type": "ItemList",
+  name,
+  numberOfItems: pages.length,
+  itemListElement: pages.map(([n, path], i) => ({ "@type": "ListItem", position: i + 1, name: n, url: absoluteUrl(path) })),
 });
 
 /** One JSON-LD document holding several nodes. */

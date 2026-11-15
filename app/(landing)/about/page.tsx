@@ -19,6 +19,9 @@ import { faqPage, gameList, graph, organization, webApplication, website } from 
 import { servedGameSwitch } from "@/lib/game-settings/server";
 import { publicCounts, publicGames, publicGamesInWorld } from "@/lib/seo/games";
 import { playerWorlds } from "@/lib/catalog";
+import { TopicPills } from "@/components/seo/TopicPills";
+import { topicsCopy } from "@/lib/copy/topics";
+import { publicTopics } from "@/lib/seo/topics";
 
 /**
  * Served at "/" to visitors (proxy rewrite) and kept at /about, so both name "/" as the canonical address. The search
@@ -222,6 +225,13 @@ export default async function Landing() {
             {S.catalogueMore}
             <Icon name="arrow-right" size={18} />
           </Link>
+          {/* Guides and game lists (lib/seo/topics.ts), only the ones served now */}
+          <nav aria-labelledby="guides-title" data-reveal className="mt-10 flex flex-col gap-3">
+            <h3 id="guides-title" className="font-display text-[20px] font-black">
+              {topicsCopy.footerTitle}
+            </h3>
+            <TopicPills pages={publicTopics(sw)} />
+          </nav>
         </section>
 
         {/* Friends */}
@@ -315,7 +325,12 @@ export default async function Landing() {
                 <Icon name="arrow-square-out" size={14} />
               </a>
             </div>
-            <span className="text-muted text-[13px]">{T.made}</span>
+            <Link
+              href="/guides/made-in-ghana"
+              className="text-muted hover:text-text flex min-h-11 w-fit items-center text-[13px] underline-offset-4 hover:underline"
+            >
+              {T.made}
+            </Link>
             {/* Google's OAuth branding review: the home page says what Google sign-in shares and links the policy. */}
             <span className="text-muted text-[13px]">
               {T.googleData}{" "}
@@ -325,7 +340,7 @@ export default async function Landing() {
             </span>
           </div>
           <nav aria-label="Footer" className="flex flex-wrap gap-x-5 gap-y-1">
-            {T.footer.map(([href, label]) => (
+            {[...T.footer, [topicsCopy.indexPath, topicsCopy.nav] as const].map(([href, label]) => (
               <Link key={href} href={href} className="text-muted hover:text-text flex h-11 items-center text-[14px] font-medium">
                 {label}
               </Link>

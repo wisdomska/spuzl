@@ -19,7 +19,7 @@ import { durationLabel, defaultMetaFor } from "@/lib/games-meta";
 import { SEEDED_LADDERS, isLadderGame, levelCount } from "@/lib/game/levels";
 import { isRaceGame } from "@/lib/multiplayer/games";
 import { isBayGame } from "@/lib/multiplayer/bay";
-import { CONTROLS, SCORING, definitionOf, gamesCopy as T, kindOf, worldNamesOf, type QA } from "@/lib/copy/seo";
+import { CONTROLS, GAME_SEO, SCORING, definitionOf, gamesCopy as T, kindOf, worldNamesOf, type QA } from "@/lib/copy/seo";
 
 export type GameMode = "free" | "levels" | "duel" | "party" | "bay" | "bot";
 
@@ -97,17 +97,28 @@ export function gameFacts(g: GameMeta, lab: GameSwitch = LIVE_ONLY): GameFacts {
 
 const capitalise = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
-/** "<Game>: free online <kind> | SPUZL", kept under 60 characters (drops "online", then the kind, if needed). */
+/**
+ * "<Game>: free online <kind> | SPUZL", kept under 60 characters (drops "online", then the kind, if needed). A game
+ * with its own search title (GAME_SEO `title`, e.g. "Play Oware online free ...") uses that.
+ */
 export function gameTitle(g: GameMeta): string {
   const kind = kindOf(g);
-  const tries = [`${g.name}: free online ${kind} | SPUZL`, `${g.name}: free ${kind} | SPUZL`, `${g.name}: play free online | SPUZL`];
+  const own = GAME_SEO[g.id]?.title;
+  const tries = [
+    ...(own ? [own] : []),
+    `${g.name}: free online ${kind} | SPUZL`,
+    `${g.name}: free ${kind} | SPUZL`,
+    `${g.name}: play free online | SPUZL`,
+  ];
   return tries.find((t) => t.length < 60) ?? `${g.name} | SPUZL`;
 }
 
 /** Search description under 155 characters: the definition when it fits, else a shorter one from the card copy. */
 export function gameDescription(g: GameMeta): string {
   const kind = kindOf(g);
+  const own = GAME_SEO[g.id]?.description;
   const tries = [
+    ...(own ? [own] : []),
     `${definitionOf(g)} Free in your browser.`,
     definitionOf(g),
     `${g.name} is a free online ${kind}. ${g.rule} Play in your browser, no download.`,

@@ -7,6 +7,7 @@ import { FEATURES, SAFETY, gamesCopy, llmsSummaryFor, siteFaq } from "@/lib/copy
 import { aboutCopy } from "@/lib/copy/about";
 import { LIVE_ONLY, gameDescription, gameFacts, publicCounts, publicGames, publicGamesInWorld } from "./games";
 import { absoluteUrl } from "./site";
+import { publicTopics } from "./topics";
 
 const PAGES: [string, string, string][] = [
   ["/how-to-play", "How to play", "the rules of every game, free play, hints, streaks and weekly leagues"],
@@ -52,6 +53,8 @@ export function llmsTxt(copy: CopyFn = asIs, lab: GameSwitch = LIVE_ONLY): strin
     out.push("", `### ${w.name}`, "", `${w.tagline}.`, "");
     for (const g of publicGamesInWorld(w.id, lab).map(copy)) out.push(link(`/games/${g.id}`, g.name, gameDescription(g)));
   }
+  out.push("", "## Guides and game lists", "", link("/guides", "All guides", "every guide and game list below"));
+  for (const p of publicTopics(lab)) out.push(link(p.path, p.label, p.answer));
   out.push("", "## Guides and policies", "");
   for (const [path, name, note] of PAGES) out.push(link(path, name, note));
   out.push(
@@ -116,10 +119,17 @@ export function llmsFullTxt(copy: CopyFn = asIs, lab: GameSwitch = LIVE_ONLY): s
       );
     }
   }
-  out.push("", "## Frequently asked questions", "");
+  out.push("", "## Guides and game lists", "");
+  for (const p of publicTopics(lab)) {
+    out.push(`### ${p.h1}`, "", p.answer, "", `- Page: ${absoluteUrl(p.path)}`);
+    if (p.games.length) out.push(`- Games: ${p.games.map((g) => g.name).join(", ")}`);
+    if (p.howTo) out.push("", ...p.howTo.steps.map(([n, t], i) => `${i + 1}. ${n}: ${t}`));
+    out.push("", ...p.faq.flatMap((qa) => [`**${qa.q}** ${qa.a}`, ""]));
+  }
+  out.push("## Frequently asked questions", "");
   for (const qa of faqFor(lab)) out.push(`### ${qa.q}`, "", qa.a, ...(qa.points ?? []).map((p) => `- ${p}`), "");
   out.push("## Safety for players aged 13 to 15", "", SAFETY.minAge, "", ...SAFETY.teen.map((t) => `- ${t}`), "");
-  out.push("## Links", "", link("/games", "All games"));
+  out.push("## Links", "", link("/games", "All games"), link("/guides", "Guides and game lists"));
   for (const [path, name] of PAGES) out.push(link(path, name));
   return `${out.join("\n")}\n`;
 }

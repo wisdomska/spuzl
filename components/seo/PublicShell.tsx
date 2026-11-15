@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Wordmark } from "@/components/brand/Wordmark";
 import { aboutCopy } from "@/lib/copy/about";
 import { gamesCopy as T } from "@/lib/copy/seo";
+import { topicsCopy } from "@/lib/copy/topics";
 import { MakerCredit } from "@/components/seo/MakerCredit";
 import { BackLink } from "@/components/seo/BackLink";
 import { Reveal } from "@/components/landing/Reveal";
@@ -31,6 +32,9 @@ export function PublicShell({ children, back }: { children: ReactNode; back?: st
             <Link href="/how-to-play" className="hover:text-text flex h-11 items-center">
               {T.nav.how}
             </Link>
+            <Link href={topicsCopy.indexPath} className="hover:text-text flex h-11 items-center">
+              {topicsCopy.nav}
+            </Link>
           </div>
           <div className="flex items-center gap-2">
             <Link href="/welcome" className="text-text flex h-11 items-center px-2 text-[15px] font-semibold sm:px-3">
@@ -56,7 +60,12 @@ export function PublicShell({ children, back }: { children: ReactNode; back?: st
               <Wordmark size={22} />
               <MakerCredit />
             </div>
-            <span className="text-muted text-[13px]">{aboutCopy.made}</span>
+            <Link
+              href="/guides/made-in-ghana"
+              className="text-muted hover:text-text flex min-h-11 w-fit items-center text-[13px] underline-offset-4 hover:underline"
+            >
+              {aboutCopy.made}
+            </Link>
           </div>
           <nav aria-label={T.nav.footer} className="flex flex-wrap gap-x-5 gap-y-1">
             <Link href="/games" className="text-muted hover:text-text flex h-11 items-center text-[14px] font-medium">
@@ -69,6 +78,13 @@ export function PublicShell({ children, back }: { children: ReactNode; back?: st
             ))}
           </nav>
         </div>
+        <nav aria-label={topicsCopy.footerTitle} className="mx-auto mt-2 flex max-w-[1160px] flex-wrap gap-x-5 gap-y-1">
+          {topicsCopy.footer.map(([href, label]) => (
+            <Link key={href} href={href} className="text-muted hover:text-text flex h-11 items-center text-[14px] font-medium">
+              {label}
+            </Link>
+          ))}
+        </nav>
       </footer>
     </div>
   );
