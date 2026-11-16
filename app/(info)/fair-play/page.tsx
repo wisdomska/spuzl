@@ -22,7 +22,7 @@ export default function FairPlay() {
       <h2>No paid advantages</h2>
       <ul>
         <li>Sparks are earned by playing. They can&apos;t be bought, sold or swapped for money.</li>
-        <li>Sparks buy looks, board themes, Streak Freezes and practice hints. Nothing in the Shop helps you win.</li>
+        <li>Sparks buy looks, board themes, Streak Freezes and free play hint packs. Nothing in the Shop helps you win.</li>
         <li>No loot boxes. No gambling of any kind.</li>
       </ul>
 

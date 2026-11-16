@@ -5,6 +5,7 @@ import { DEFAULT_SWITCH, gameState, openGame, type GameMeta, type GameSwitch } f
 import { switchFromRows, type GameStateRow } from "@/lib/game-state";
 import { checkAdmin } from "@/lib/admin/auth";
 import { DEFAULTS, mergeSettings, type GameSettings } from "./schema";
+import { PUBLIC_FLAG_KEYS, type PublicSwitch } from "@/lib/seo/facts";
 
 let cache: { at: number; value: GameSettings } | null = null;
 // 30 s in production; no cache in development and tests (SETTINGS_CACHE_MS overrides), so a change applies at once.
@@ -89,11 +90,18 @@ export async function openGameNow(id: string | null | undefined): Promise<GameMe
 /**
  * The games' runtime switch, for the static public pages (game pages, games index, How to play, llms.txt, sitemap)
  * that are rebuilt hourly and at once after an admin changes a game's state (lib/seo/revalidate). Unlike
- * `getGameSettings` it does not make the page render per request. Public pages always show the player view.
+ * `getGameSettings` it does not make the page render per request. Public pages always show the player view. It also
+ * carries the feature switches public copy depends on (lib/seo/facts.ts PUBLIC_FLAG_KEYS: Daily Five, score races,
+ * the Party TV view, challenges, Draw It and Two Truths), so the pages never claim a feature that is switched off.
  */
-export async function servedGameSwitch(): Promise<GameSwitch> {
+export async function servedGameSwitch(): Promise<PublicSwitch> {
   const s = await readSettings();
-  return { "games.testing": s["games.testing"], "games.off": s["games.off"], "games.noVersus": s["games.noVersus"] };
+  return {
+    "games.testing": s["games.testing"],
+    "games.off": s["games.off"],
+    "games.noVersus": s["games.noVersus"],
+    ...Object.fromEntries(PUBLIC_FLAG_KEYS.map((k) => [k, s[k]])),
+  };
 }
 
 /** Drops the cache after an admin change so this instance serves the new value at once. */

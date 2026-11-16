@@ -8,6 +8,7 @@ import { bindPuzzle } from "@/lib/game/guess-token";
 import { getGameSettings, openGameNow } from "@/lib/game-settings/server";
 import { loadServedLogic as loadLogic } from "@/lib/game/served-logic";
 import { playableGame } from "@/lib/catalog";
+import { GHOST_TRACKS } from "@/lib/multiplayer/games";
 import { ghostByDistance } from "@/lib/multiplayer/ghost-rank";
 import { createRng } from "@/lib/rng";
 import { difficultyForDate, type Difficulty } from "@/games/types";
@@ -230,7 +231,7 @@ export async function challengeResult(admin: SupabaseClient, me: string, code: s
 /* ---------------- Ghost Race (Overlays GR) ---------------- */
 
 /** Every Ghost Race track in code; retired ones (Flipside, Ghosted) are left out by `isGhostGame` and LIVE_GHOST_GAMES. */
-export const GHOST_GAMES = ["dash", "flipside", "ghosted"] as const;
+export const GHOST_GAMES = GHOST_TRACKS;
 export const isGhostGame = (g: string) => (GHOST_GAMES as readonly string[]).includes(g) && !!playableGame(g);
 export const LIVE_GHOST_GAMES: string[] = GHOST_GAMES.filter((g) => isGhostGame(g));
 

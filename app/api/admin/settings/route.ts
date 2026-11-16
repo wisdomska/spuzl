@@ -3,6 +3,8 @@ import { ApiError, body, handle, ok } from "@/lib/api/server";
 import { audit, requireAdmin } from "@/lib/admin/auth";
 import { DEFAULTS, SETTINGS, SETTING_LIST_MAX, mergeSettings, sameSetting, validateSetting } from "@/lib/game-settings/schema";
 import { invalidateGameSettings } from "@/lib/game-settings/server";
+import { revalidatePublicCopy } from "@/lib/seo/revalidate";
+import { PUBLIC_FLAG_KEYS } from "@/lib/seo/facts";
 
 /**
  * GET /api/admin/settings: every tunable with its definition, current value and last change. Settings edited on the
@@ -44,6 +46,8 @@ export const PUT = handle(async (req: Request) => {
     .upsert({ key, value, updated_by: ctx.user.id, updated_at: new Date().toISOString() }, { onConflict: "key" });
   if (error) throw error;
   invalidateGameSettings();
+  // A switch the public pages describe (Daily Five, score races, Party TV, challenges, Draw It) rebuilds them now.
+  if ((PUBLIC_FLAG_KEYS as readonly string[]).includes(key)) revalidatePublicCopy();
   await audit(ctx, "setting.update", `setting:${key}`, { before: before?.value ?? null, after: value });
   return ok({ key, value });
 });

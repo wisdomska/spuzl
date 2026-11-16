@@ -1,5 +1,6 @@
 import { GAME_COUNT, WORLD_COUNT } from "@/lib/catalog";
 import { PARTY_MAX } from "@/lib/multiplayer/constants";
+import { LEAGUE_SIZE, PROMOTE } from "@/lib/leagues";
 
 /** "Eight" for 8: the worlds headline spells small counts out; larger ones stay digits. */
 const SPELLED = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"];
@@ -67,9 +68,9 @@ export const aboutCopy = {
   friendsEyebrow: "With friends",
   friendsTitle: "Better with your people.",
   friends: [
-    ["sword", "Duel", "Race a friend live on the same puzzle."],
+    ["sword", "Duel", "Race a friend live on the same puzzle, best of three."],
     ["users-three", "Party", `Share a code. Race up to ${PARTY_MAX} phones at once.`],
-    ["trophy", "Leagues", "A new league of 30 every Monday. Top 7 move up."],
+    ["trophy", "Leagues", `A new league of up to ${LEAGUE_SIZE} every Monday. Top ${PROMOTE} move up.`],
   ] as const,
   /** Footer line for Google's OAuth branding review (what Google sign-in shares), next to the policy link. */
   googleData: "Google sign-in uses only your name, email and photo.",

@@ -4,8 +4,8 @@
  * XSS guard the Next.js JSON-LD guide asks for).
  */
 import { GAME_COUNT, WORLD_BY_ID, type GameMeta } from "@/lib/catalog";
-import { FEATURES, WORLD_GENRES, qaText, type QA } from "@/lib/copy/seo";
-import { PARTY_MAX } from "@/lib/multiplayer/constants";
+import { WORLD_GENRES, featuresFor, qaText, type QA } from "@/lib/copy/seo";
+import { siteFacts, type SiteFacts } from "./facts";
 import { siteCopy } from "@/lib/copy/site";
 import { aboutCopy } from "@/lib/copy/about";
 import { SITE_URL, absoluteUrl } from "./site";
@@ -48,7 +48,7 @@ export const website = (): Thing => ({
 const FREE_OFFER = { "@type": "Offer", price: "0", priceCurrency: "USD", availability: "https://schema.org/InStock" };
 
 /** The app: a free browser game app that runs anywhere. */
-export const webApplication = (): Thing => ({
+export const webApplication = (facts: SiteFacts = siteFacts()): Thing => ({
   "@type": "WebApplication",
   "@id": `${SITE_URL}/#app`,
   name: "SPUZL",
@@ -60,7 +60,7 @@ export const webApplication = (): Thing => ({
   inLanguage: "en",
   isAccessibleForFree: true,
   offers: FREE_OFFER,
-  featureList: [...FEATURES],
+  featureList: featuresFor(facts),
   accessibilityFeature: ["keyboardNavigation", "colorPatterns", "reducedMotion", "screenReaderLabels"],
   publisher: { "@id": ORG_ID },
   creator: MAKER_REF,
@@ -82,13 +82,9 @@ export function videoGame(f: GameFacts): Thing {
     gamePlatform: "Web browser",
     applicationCategory: "Game",
     operatingSystem: "Any",
-    playMode: f.modes.some((m) => m === "duel" || m === "party" || m === "bay") ? ["SinglePlayer", "MultiPlayer"] : "SinglePlayer",
-    // Party races hold up to PARTY_MAX players; Duel and Board Bay are two.
-    ...(f.modes.includes("party")
-      ? { numberOfPlayers: { "@type": "QuantitativeValue", minValue: 1, maxValue: PARTY_MAX } }
-      : f.modes.some((m) => m === "duel" || m === "bay")
-        ? { numberOfPlayers: { "@type": "QuantitativeValue", minValue: 1, maxValue: 2 } }
-        : {}),
+    playMode: f.maxPlayers ? ["SinglePlayer", "MultiPlayer"] : "SinglePlayer",
+    // Party races hold up to PARTY_MAX players, a Duel two, a board game its seats (Ludo 4): GameFacts.maxPlayers.
+    ...(f.maxPlayers ? { numberOfPlayers: { "@type": "QuantitativeValue", minValue: 1, maxValue: f.maxPlayers } } : {}),
     inLanguage: "en",
     isAccessibleForFree: true,
     offers: { ...FREE_OFFER, url },

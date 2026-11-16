@@ -2,6 +2,7 @@
 
 import { api } from "@/lib/client/api";
 import { isRetired } from "@/lib/catalog";
+import { GHOST_TRACKS } from "@/lib/multiplayer/games";
 import { challengePath } from "@/lib/share/challenge-card";
 
 /**
@@ -14,7 +15,7 @@ export async function createChallengeLink(attemptId: string, timeline?: { ms: nu
 }
 
 /** Rage Ridge games whose runs are kept as ghosts (the server list in lib/multiplayer/server/async.ts), live only. */
-export const GHOST_GAMES = ["dash", "flipside", "ghosted"].filter((g) => !isRetired(g));
+export const GHOST_GAMES: string[] = GHOST_TRACKS.filter((g) => !isRetired(g));
 
 export async function saveGhostRun(attemptId: string): Promise<string> {
   const { runId } = await api<{ runId: string }>("/api/v1/ghosts", { json: { attemptId } });

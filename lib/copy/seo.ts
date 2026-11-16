@@ -1,6 +1,9 @@
-import { GAME_COUNT, WORLDS, WORLD_COUNT, type GameMeta, type WorldId } from "@/lib/catalog";
+import { GAME_BY_ID, GAME_COUNT, WORLDS, WORLD_COUNT, type GameMeta, type WorldId } from "@/lib/catalog";
 import { PARTY_MAX } from "@/lib/multiplayer/constants";
+import { POOL_LADDERS } from "@/lib/game/levels";
+import { DEMOTE, LEAGUE_SIZE, PROMOTE } from "@/lib/leagues";
 import { aboutCopy } from "@/lib/copy/about";
+import { siteFacts, type PartyBoards, type SiteFacts } from "@/lib/seo/facts";
 
 /**
  * Public, search-facing copy (SEO and GEO): the game pages (/games, /games/<id>), the visitor landing page's
@@ -10,6 +13,22 @@ import { aboutCopy } from "@/lib/copy/about";
  */
 
 const list = (xs: readonly string[]) => (xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs.at(-1)}`);
+const orList = (xs: readonly string[]) => (xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} or ${xs.at(-1)}`);
+/** "2 players", "3 or 4 players", "3 to 6 players" */
+const playersText = (ns: readonly number[]) =>
+  ns.length === 1 ? `${ns[0]} players` : ns.length === 2 ? `${ns[0]} or ${ns[1]} players` : `${ns[0]} to ${ns.at(-1)} players`;
+/** "Chess, Draughts, Oware, Ludo or Four Up with 2 players, Ludo with 3 or 4 players" */
+export const partyBoardsText = (groups: readonly PartyBoards[]) =>
+  groups.map((p) => `${orList(p.games)} with ${playersText(p.players)}`).join("; ");
+
+/** Free hints a puzzle before hint packs are spent (lib/game/service.ts FREE_HINTS; a unit test keeps them equal). */
+export const FREE_HINTS_COPY = 3;
+/** Hints, the same wherever they are described (lib/copy/index.ts hintConfirmFree). */
+export const HINTS_LINE = `${FREE_HINTS_COPY} free hints a puzzle, each one a safe next step. Hint packs from the Shop give more in free play.`;
+/** Weekly leagues (lib/leagues: groups of up to LEAGUE_SIZE, top PROMOTE up, bottom DEMOTE down, from Monday 00:00 GMT). */
+export const LEAGUES_LINE = `A new league of up to ${LEAGUE_SIZE} every Monday. Your week's XP is your score. Top ${PROMOTE} move up, bottom ${DEMOTE} down.`;
+/** What Sparks buy in the Shop (lib/gamification/cosmetics.ts item types). */
+export const SPARKS_BUY = "looks and hats for Spuz, board themes, Streak Freezes and hint packs";
 /** "Puzzles, Words & Quiz, Arcade and Board Games" */
 export const worldNames = list(WORLDS.map((w) => w.name));
 
@@ -79,12 +98,11 @@ export const GAME_SEO: Record<string, { kind: string; where: string; title?: str
   echo: { kind: "memory game", where: "watch the pads light up, then repeat the sequence, and it grows every round" },
   twins: { kind: "memory game", where: "flip cards to find every pair in the fewest flips" },
   flinch: { kind: "reaction game", where: "tap the instant the screen changes, best of 5, and early taps cost you" },
-  beattap: { kind: "rhythm game", where: "tap on every beat of the pattern, and extra taps cost points" },
   gotcha: { kind: "platformer", where: "reach the door while floors lie, ceilings fall, gravity flips and the door runs away" },
   dash: { kind: "endless runner", where: "jump and duck to run as far as you can" },
   chess: {
     kind: "chess puzzle",
-    where: "find the checkmate with White to move, or play a full game against Spuzl (the computer) or a friend",
+    where: "find a mate in 1 to 3 moves with White to move, or play a full game against Spuzl (the computer) or a friend",
   },
   draughts: {
     kind: "draughts game",
@@ -105,22 +123,14 @@ export const GAME_SEO: Record<string, { kind: string; where: string; title?: str
       "Play ludo online free with 2 to 4 players: invite friends live or one move a day, or play the computer. Roll a 6 to come out, race all four home.",
   },
   fourup: { kind: "four in a row game", where: "drop discs and win by lining up four in any direction" },
-  // The twelve that graduated from the lab (11 Nov 2026).
+  // Graduated from the lab (11 Nov 2026) and still live.
   five: { kind: "word game", where: "guess the hidden 5-letter word in 6 tries, with tiles showing which letters fit where" },
-  hilo: { kind: "maths card game", where: "call whether each next card is higher or lower, ten calls with three slips allowed" },
-  penalty: { kind: "football game", where: "take five penalty kicks, tapping once to aim and again to set your power, to beat the keeper" },
-  market: { kind: "maths puzzle", where: "buy items at a Makola stall so you bring back the exact change and every rule holds" },
-  lightup: { kind: "logic puzzle", where: "place lamps to light every white cell, with no lamp shining on another" },
-  killer: {
-    kind: "killer sudoku",
-    where: "place each number once in every row, column and box, with every dotted cage adding up to its total",
-  },
   dara: { kind: "board game", where: "step your stones across the board and take a rival stone each time you line up exactly three" },
-  pinned: { kind: "geography game", where: "drop a pin on the map where each landmark is, and the closer you get the more you score" },
   flagged: { kind: "geography quiz", where: "name flags, capitals and currencies in 10 fast rounds of 10 seconds each" },
   tripwire: { kind: "minesweeper", where: "reveal every safe tile without guessing, from numbers that count the mines touching each tile" },
-  pixl: { kind: "nonogram", where: "fill cells so every row and column matches its number clues, and a picture appears" },
   twotruths: { kind: "trivia game", where: "spot the lie among three statements, two of them true, before the bar runs out" },
+  // Retired games (RETIRED_IDS: Beat Tap, Higher or Lower, Penalty King, Market Run, Light Up, Killer Sums, Pinned,
+  // Pixl) have no entry: no public page shows them. One that comes back needs its line here (lib/seo/seo.test.ts).
 };
 
 export const kindOf = (g: GameMeta) => GAME_SEO[g.id]?.kind ?? WORLD_KIND[g.world];
@@ -139,12 +149,33 @@ export const CONTROLS: Record<GameMeta["engine"], string> = {
   custom: "Follow the buttons on screen. Everything also works with a keyboard.",
 };
 
+/**
+ * Games that move their own way rather than by their engine's line: each board game, and chess with drag and drop,
+ * premoves, the move list and arrows (1.65.0: components/multiplayer/bay/boards.tsx ChessLive, live and vs Spuzl).
+ */
+export const GAME_CONTROLS: Record<string, string> = {
+  chess:
+    "Tap a piece, then tap where it goes, or drag it. Legal moves light up; arrow keys and Enter work too. In full games, plan premoves while your rival thinks, look back through the move list, and right-click to draw arrows on a computer.",
+  draughts: "Tap a piece, then tap where it goes. Legal moves light up; arrow keys and Enter work too.",
+  oware: "Tap one of your pits to sow its seeds. Arrow keys and Enter work too.",
+  fourup: "Tap a column to drop your disc. Arrow keys and Enter work too.",
+  ludo: "Roll the die, then tap the piece you want to move.",
+  dara: "Tap a stone, then tap where it goes. Arrow keys and Enter work too.",
+};
+/** How a game is controlled: its own line, else its engine's. */
+export const controlsOf = (g: GameMeta) => GAME_CONTROLS[g.id] ?? CONTROLS[g.engine];
+
 /** How each kind of game is ranked (also on How to play). */
 export const SCORING: Record<GameMeta["scoring"], string> = {
   time: "Fastest clear wins. Fewer hints, then fewer mistakes, break ties.",
   score: "Highest score wins. Time breaks ties.",
   deaths: "Fewest deaths wins, then time.",
 };
+/** Games whose free play is a full game against Spuzl (app/play/[game]/page.tsx sends Ludo's free play there). */
+export const BOT_FREE_PLAY: readonly string[] = ["ludo"];
+/** How a game is ranked: games against Spuzl are casual. */
+export const scoringOf = (g: GameMeta) =>
+  BOT_FREE_PLAY.includes(g.id) ? "Games against Spuzl are casual: nothing is ranked." : SCORING[g.scoring];
 
 export const PHOTOSENSITIVE = "Has fast flashing visuals, kept under 3 flashes a second. You'll see a notice before you start.";
 
@@ -170,16 +201,22 @@ export const qaText = ({ a, points }: QA) => (points?.length ? `${a} ${points.jo
 
 /**
  * The site-wide FAQ (landing page, How to play, llms-full.txt), counting `games` in `worlds` (the games that are On
- * now, where the page can follow them; SITE_FAQ is the catalogue count).
+ * now, where the page can follow them; SITE_FAQ is the catalogue count). `facts` (lib/seo/facts.ts) says which
+ * switchable features are on and which board games are On; without it, the defaults apply.
  */
-export const siteFaq = (games: number = GAME_COUNT, worlds: number = WORLD_COUNT, names: string = worldNames): QA[] => [
+export const siteFaq = (
+  games: number = GAME_COUNT,
+  worlds: number = WORLD_COUNT,
+  names: string = worldNames,
+  facts: SiteFacts = siteFacts(),
+): QA[] => [
   {
     q: "What is SPUZL?",
     a: `SPUZL is a free puzzle games app that runs in your web browser. It has ${games} short games in ${worlds} worlds: ${names}. Logic grids, word games, quick arcade runs and classic board games like oware and draughts, made in Ghana for puzzle lovers everywhere.`,
   },
   {
     q: "Is SPUZL free?",
-    a: "Yes. Every game is free to play, there is nothing to download and nothing to buy with money. There are no ads. You earn Sparks by playing and spend them on hats for Spuz, and nobody can pay to win.",
+    a: `Yes. Every game is free to play, there is nothing to download and nothing to buy with money. There are no ads. You earn Sparks by playing and spend them in the Shop on ${SPARKS_BUY}, and nobody can pay to win.`,
   },
   {
     q: "Do I need an account to play?",
@@ -187,12 +224,23 @@ export const siteFaq = (games: number = GAME_COUNT, worlds: number = WORLD_COUNT
   },
   {
     q: "Can I play with friends?",
-    a: `Yes. Duel a friend live on the same puzzle, best of three. Open a Party room, share the code and race up to ${PARTY_MAX} players at once, on puzzles or on score games like Quickfire. Send a challenge link to any puzzle you cleared, or play chess, draughts, oware, ludo and Four Up live or one move a day in Board Bay. Every Monday you also join a weekly league of 30 players.`,
+    a: [
+      "Yes. Duel a friend live on the same puzzle, best of three.",
+      `Open a Party room, share the code and race up to ${PARTY_MAX} players at once, on puzzles${facts.flags.scoreRaces ? " or on score games like Quickfire" : ""}.`,
+      ...(facts.partyBoards.length ? [`A Party room can also start a live board game: ${partyBoardsText(facts.partyBoards)}.`] : []),
+      ...(facts.flags.challenges ? ["Send a challenge link to any puzzle you cleared."] : []),
+      ...(facts.bay.length ? [`In Board Bay, play ${list(facts.bay)} live or one move a day.`] : []),
+      `Every Monday you also join a weekly league of up to ${LEAGUE_SIZE} players.`,
+    ].join(" "),
   },
-  {
-    q: "What is the Daily Five?",
-    a: "Five quick games picked fresh every day, the same five for everyone. One go each, about 5 minutes in all, with points for every clear. Share your grid and see who beats it.",
-  },
+  ...(facts.flags.dailyFive
+    ? [
+        {
+          q: "What is the Daily Five?",
+          a: "Five quick games picked fresh every day, the same five for everyone. One go each, about 5 minutes in all, with points for every clear. Share your grid and see who beats it.",
+        },
+      ]
+    : []),
   {
     q: "Is SPUZL safe for teens?",
     a: `${SAFETY.minAge} For players aged 13 to 15:`,
@@ -212,26 +260,62 @@ export const siteFaq = (games: number = GAME_COUNT, worlds: number = WORLD_COUNT
   },
 ];
 
-/** What SPUZL offers, one line each (llms-full.txt "Features" and the app's structured data featureList). */
-export const FEATURES: readonly string[] = [
-  "Free play: every game any time, with fresh puzzles and levels that get harder.",
-  "Arcade: Gotcha, a trap platformer where every room tricks you once; Dash, an endless runner where you jump and duck; plus Echo, Flinch and Twins.",
-  "Spuzdoku: number grids at 6 by 6 or 9 by 9, picked before each game.",
-  "Daily Five: five quick games a day, the same for everyone, with a shareable score grid.",
-  "Streaks with Streak Freezes, quests, badges and levels.",
-  "Duel: a live best-of-three race against a friend or a matched player.",
-  `Party rooms: share a code and race up to ${PARTY_MAX} players on puzzles or score games; a big-screen TV view for parties.`,
-  "Party games for older players: Draw It with preset words for 16 and over; Draw It and Two Truths party modes for 18 and over.",
-  "Challenges and Ghost Races: send a link to the exact puzzle you cleared and race your time.",
-  "Board Bay: chess, draughts, oware, ludo and Four Up against a friend, live or one move a day, or against Spuzl, the computer.",
-  "Weekly leagues of 30 players, crews, friends and leaderboards.",
-  "Sparks earned by playing, spent in the Shop on hats for Spuz. Nothing is sold for money.",
-  "Accessible: keyboard play, screen reader labels, colour patterns and reduced motion.",
-  "Installable app (PWA) that works offline for puzzles already on screen.",
-  "Made for phones, tablets and computers: boards grow to fill big screens, and every game has a full-screen button.",
-  "Notifications on Home: your weekly roundup, new games, friend requests and Board Games waiting on your move.",
-  "Feedback form on the Contact page; download or delete your data in Settings.",
-];
+/** "30 levels each in Gotcha and Dash" (lib/game/levels.ts POOL_LADDERS) */
+const poolLevels = () => {
+  const byCount = new Map<number, string[]>();
+  for (const [id, n] of Object.entries(POOL_LADDERS)) byCount.set(n, [...(byCount.get(n) ?? []), GAME_BY_ID[id]?.name ?? id]);
+  return list([...byCount].map(([n, gs]) => `${n} level${n === 1 ? "" : "s"}${gs.length > 1 ? " each" : ""} in ${list(gs)}`));
+};
+
+/**
+ * What SPUZL offers, one line each (llms-full.txt "Features" and the app's structured data featureList), for the
+ * switches and games in `facts` (lib/seo/facts.ts). FEATURES is the same with the defaults.
+ */
+export const featuresFor = (facts: SiteFacts = siteFacts()): string[] => {
+  const f = facts.flags;
+  const party = [
+    `Party rooms: share a code and race up to ${PARTY_MAX} players on puzzles${f.scoreRaces ? " or score games" : ""}`,
+    ...(facts.partyBoards.length ? [`or start a live board game (${partyBoardsText(facts.partyBoards)})`] : []),
+  ].join(", ");
+  const older = [
+    ...(f.familyDraw ? ["Draw It with preset words for 16 and over"] : []),
+    ...(f.adultParty ? ["Draw It and Two Truths party modes for 18 and over"] : []),
+  ];
+  const races = [
+    ...(f.challenges ? ["Challenges: send a link to the exact puzzle you cleared and race your time"] : []),
+    ...(facts.ghost.length ? [`Ghost Races in ${list(facts.ghost)}: race a friend's run`] : []),
+  ];
+  return [
+    "Free play: every game any time, as often as you like, at Easy, Medium, Hard or Expert.",
+    `Levels: endless ladders on the logic puzzles that get harder in waves, with a boss level every fifth; ${poolLevels()}.`,
+    "Arcade: Gotcha, a trap platformer where every room tricks you once; Dash, an endless runner where you jump and duck; plus Echo, Flinch and Twins.",
+    "Spuzdoku: number grids at 6 by 6 or 9 by 9, picked before each game.",
+    ...(f.dailyFive ? ["Daily Five: five quick games a day, the same for everyone, with a shareable score grid."] : []),
+    "A short practice round with free hints the first time you play a game.",
+    "Streaks with Streak Freezes, quests, badges and levels.",
+    "Duel: a live best-of-three race against a friend or a matched player.",
+    `${party}${f.partyTv ? "; a big-screen TV view for parties" : ""}.`,
+    ...(older.length ? [`Party games for older players: ${older.join("; ")}.`] : []),
+    ...(races.length ? [`${races.join(". ")}.`] : []),
+    ...(facts.bay.length
+      ? [
+          `Board Bay: ${list(facts.bay)} against a friend, live with a clock or one move a day, or against Spuzl, the computer.`,
+          ...(facts.bay.includes(GAME_BY_ID.chess.name)
+            ? ["Chess: drag and drop, premoves, a move list to look back through, and arrows on a computer."]
+            : []),
+        ]
+      : []),
+    `Weekly leagues of up to ${LEAGUE_SIZE} players, crews, friends and leaderboards.`,
+    `Sparks earned by playing, spent in the Shop on ${SPARKS_BUY}. Nothing is sold for money.`,
+    "Accessible: keyboard play, screen reader labels, colour patterns and reduced motion.",
+    "Installable app (PWA) that works offline for puzzles already on screen.",
+    "Made for phones, tablets and computers: boards grow to fill big screens, and every game has a full-screen button.",
+    "Sound effects and music, each with its own switch.",
+    "Notifications on Home: your weekly roundup, new games, friend requests and Board Games waiting on your move.",
+    "Feedback form on the Contact page; download or delete your data in Settings.",
+  ];
+};
+export const FEATURES: readonly string[] = featuresFor();
 
 /** The site-wide FAQ with the catalogue count (static text). */
 export const SITE_FAQ: QA[] = siteFaq();
@@ -312,11 +396,11 @@ export const gamesCopy = {
   howTitle: (game: string) => `How to play ${game}`,
   howSteps: (g: GameMeta) => [
     `Open ${g.name} on SPUZL in any browser. No download.`,
-    "First time? A short practice round with free hints shows you how.",
+    ...(BOT_FREE_PLAY.includes(g.id) ? [] : ["First time? A short practice round with free hints shows you how."]),
     g.rule,
-    CONTROLS[g.engine],
-    ...(g.engine === "grid" ? ["Stuck? Up to 3 hints a puzzle, each one safe next step."] : []),
-    SCORING[g.scoring],
+    controlsOf(g),
+    ...(g.engine === "grid" ? [`Stuck? ${HINTS_LINE}`] : []),
+    scoringOf(g),
   ],
   factsTitle: "Quick facts",
   facts: {
@@ -342,7 +426,13 @@ export const gamesCopy = {
     levelsEndless: "Levels: an endless ladder that gets harder in waves, with a boss level every fifth level.",
     duel: "Duel: race a friend live on the same puzzle, best of three.",
     party: `Party: open a room, share the code and race up to ${PARTY_MAX} players at once.`,
+    /** a score game in a Party (party.scoreRaces) */
+    scoreParty: `Party: open a room, share the code and race up to ${PARTY_MAX} players on the same round. Most points wins.`,
+    /** a Ghost Race track (lib/multiplayer/games GHOST_TRACKS) */
+    ghost: "Ghost Race: race a friend's run on the same track, shown as a ghost beside you.",
     bay: "Challenge a friend: play a full game live, or take turns with up to a day per move.",
+    /** a board game a Party room can open for `players` ("2 players", "2 to 4 players") */
+    partyBoard: (g: GameMeta, players: string) => `Party: with ${players} in a Party room, the host can start a live game of ${g.name}.`,
     bot: "Play Spuzl: a full casual game against the computer at Easy, Medium or Hard.",
   },
   faqTitle: (game: string) => `${game} questions`,
@@ -370,6 +460,14 @@ export const gamesCopy = {
     friendsRace: (g: GameMeta) => ({
       q: `Can I play ${g.name} with friends?`,
       a: `Yes. Duel a friend live on the same ${g.name} puzzle, best of three, or open a Party room and race up to ${PARTY_MAX} players at once.`,
+    }),
+    friendsParty: (g: GameMeta) => ({
+      q: `Can I play ${g.name} with friends?`,
+      a: `Yes. Open a Party room, share the code and race up to ${PARTY_MAX} players on the same ${g.name} round. The most points wins.`,
+    }),
+    friendsGhost: (g: GameMeta) => ({
+      q: `Can I play ${g.name} with friends?`,
+      a: `Yes. Clear a run and send it: your friend races your ${g.name} run, shown as a ghost beside them.`,
     }),
     friendsBay: (g: GameMeta) => ({
       q: `Can I play ${g.name} against a friend?`,
