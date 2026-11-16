@@ -55,7 +55,7 @@ jobs:
       - name: Server log on failure
         if: failure()
         run: tail -200 server.log || true
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: playwright-report
