@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.68.0 (16 November 2026)
+
+### Everyone
+
+- **Public pages match the app:** game pages, guides, How to play, the landing page, privacy and the AI summaries
+  were checked against the app and corrected (hints, leagues "up to 30", what Sparks buy, each board game's own
+  controls, chess drag and premoves, Party score games and board games, Ludo for 4, retired games removed).
+- Claims about features an admin can switch off (Daily Five, score races, the TV view, Draw It, Two Truths) now
+  appear only while they are on, and the public pages refresh as soon as a setting changes.
+
 ## 1.67.0 (16 November 2026)
 
 ### Everyone
