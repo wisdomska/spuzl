@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 import { admin, guest, uniq } from "../../api/helpers";
 import { login, loginCode, signedIn } from "./helpers";
 import { pickOption } from "../pick";
+import { GAME_BY_ID } from "@/lib/catalog";
 
 /**
  * Admin console flows (FR-AD-01 to FR-AD-08). Desktop first, so the phone projects skip.
@@ -77,11 +78,14 @@ test("calendar to preview: real board, solve-check, play test and approve", asyn
   await expect(page.getByRole("heading", { name: "Daily calendar" })).toBeVisible();
   await expect(page.getByText("Ready", { exact: true }).first()).toBeVisible();
   await page.getByRole("button", { name: "Next week" }).click();
+  // Spuzdoku (sixer) and its 9 × 9 board (nine) share the name: pick the sixer row by its link.
+  const spuzdoku = GAME_BY_ID.sixer.name;
   await page
-    .getByLabel(/^Sixer .*: /)
+    .getByRole("link", { name: new RegExp(`^${spuzdoku} .*: `) })
+    .and(page.locator('a[href^="/admin/calendar/sixer/"]'))
     .first()
     .click();
-  await expect(page.getByRole("heading", { name: /Sixer · / })).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByRole("heading", { name: new RegExp(`${spuzdoku} · `) })).toBeVisible({ timeout: 30_000 });
   await expect(page.getByRole("grid")).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText("Only one correct answer")).toBeVisible({ timeout: 30_000 });
   await expect(page.getByText("Our answer checker accepts the answer")).toBeVisible();
@@ -128,7 +132,11 @@ test("moderation: clear a flagged score and rename a reported nickname", async (
   await db.from("reports").insert({ reporter_id: reporter.userId, target_type: "nickname", target_id: target.userId, reason: "nickname" });
 
   await signedIn(page, "moderator");
-  await page.getByRole("link", { name: "Reports" }).click();
+  // The side menu's Reports (the Overview also has a "Player reports to look at" card linking there).
+  await page
+    .getByRole("navigation")
+    .getByRole("link", { name: /^Reports\b/ })
+    .click();
   await page.getByRole("tab", { name: "Suspicious scores" }).click();
   await page
     .getByRole("button", { name: /Dusk 0:01/ })

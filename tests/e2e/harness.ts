@@ -161,6 +161,16 @@ export async function waitForBoard(page: Page, timeout = 30_000) {
   return board;
 }
 
+/**
+ * Spuzdoku (sixer, and its 9 × 9 size nine) asks for a board size before a free or level game (components/play/
+ * SizePicker.tsx): taps the n × n choice and waits for the picker to go.
+ */
+export async function pickSize(page: Page, n: 6 | 9) {
+  const choice = page.getByRole("group", { name: "Board size" }).locator(`[data-size="${n}"]`);
+  await choice.click();
+  await expect(page.getByRole("group", { name: "Board size" })).toHaveCount(0);
+}
+
 export async function openGame(page: Page, slug: string, mode: "daily" | "free" = "free") {
   await page.goto(`/play/${slug}?mode=${mode}`);
   return waitForBoard(page);

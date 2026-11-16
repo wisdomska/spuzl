@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { GAME_BY_ID, GAME_COUNT } from "@/lib/catalog";
+import { GAME_BY_ID, GAME_COUNT, RETIRED_IDS } from "@/lib/catalog";
 import { admin } from "../api/helpers";
 import {
   expectOneTimer,
@@ -19,6 +19,9 @@ import {
  * games and on their worlds, open, run their practice round (played through by the harness solver where there is
  * one, skipped otherwise) and play in the shell (one timer, the rule line). A value stored before the graduation
  * (naming the twelve) changes nothing. Every one's seeded /dev/board renders, and the ones with a solver clear it.
+ * Seven of the twelve were retired again on 14 Nov 2026 (Higher or Lower, Penalty King, Market Run, Light Up, Killer
+ * Sums, Pinned, Pixl; RETIRED_IDS): the live checks cover the other five, and the retired ones stay a 404 whatever
+ * the setting holds (tests/e2e/retired-games.spec.ts covers them in full).
  *
  * Sets the setting straight in game_settings, as tests/api/setup.ts setSetting does, and puts the old value back.
  * Needs a server with a database and dev routes, reading settings without a cache (development, or
@@ -27,7 +30,7 @@ import {
  */
 const KEY = "features.labGames";
 const ALL = ["five", "hilo", "penalty", "market", "lightup", "killer", "dara", "pinned", "flagged", "tripwire", "pixl", "twotruths"];
-const GRADUATED = ALL.map((id) => GAME_BY_ID[id]);
+const GRADUATED = ALL.filter((id) => !RETIRED_IDS.has(id)).map((id) => GAME_BY_ID[id]);
 const NOT_FOUND = "This page could not be found.";
 const shot = (page: Page, name: string, w: number) => page.screenshot({ path: `docs/qa/screens/r2/r2-p5-${name}-${w}.png` });
 
@@ -57,18 +60,21 @@ test("graduated: live with the setting empty, and a stale stored value changes n
     await expect(page.getByText(`${GAME_COUNT} games`)).toBeVisible();
     await page.getByRole("searchbox").fill("five");
     await expect(page.getByRole("link", { name: /^Five / })).toHaveCount(1);
-    for (const path of ["/play/five?mode=free", "/play/dara/bot", "/play/pixl?mode=free"]) {
+    for (const path of ["/play/five?mode=free", "/play/dara/bot", "/play/tripwire?mode=free"]) {
       await page.goto(path);
       await page.waitForLoadState("networkidle");
       await expect(page.getByRole("heading", { name: NOT_FOUND }), path).toHaveCount(0);
     }
+    // Retired again since: the stored value can't bring it back.
+    await page.goto("/play/pixl?mode=free");
+    await expect(page.getByRole("heading", { name: NOT_FOUND })).toHaveCount(1);
     const status = await page.evaluate(async () => {
       const start = await fetch("/api/v1/attempts", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ game: "five", mode: "free" }),
       });
-      const guided = await fetch("/api/v1/guided/hilo");
+      const guided = await fetch("/api/v1/guided/tripwire");
       return [start.status, guided.status];
     });
     expect(status).toEqual([200, 200]);
@@ -148,11 +154,11 @@ for (const [label, vp] of Object.entries(VIEWPORTS)) {
     await page.goto("/world/board");
     await expect(page.locator("main li").filter({ hasText: "Dara" })).toHaveCount(1);
     await shot(page, "world-board", vp.width);
-    await page.goto("/play/hilo?mode=free");
+    await page.goto("/play/tripwire?mode=free");
     await waitForBoard(page, 45_000);
     await expectOneTimer(page);
-    await shot(page, "hilo", vp.width);
-    await openTestBoard(page, "killer", "qa");
-    await shot(page, "killer-board", vp.width);
+    await shot(page, "tripwire", vp.width);
+    await openTestBoard(page, "flagged", "qa");
+    await shot(page, "flagged-board", vp.width);
   });
 }

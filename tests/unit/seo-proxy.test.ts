@@ -36,6 +36,10 @@ describe("visitor landing page at /", () => {
     expect(rewrite(await go({ rsc: "1" }))).toBeNull();
     expect(rewrite(await go({ "next-router-prefetch": "1", rsc: "1" }))).toBeNull();
     expect(rewrite(await go({}, "/?_rsc=abc"))).toBeNull();
+    // What the proxy really sees for a router fetch: Next.js strips rsc and _rsc first, the browser's fetch() keeps
+    // Sec-Fetch-Dest: empty.
+    expect(rewrite(await go({ "sec-fetch-dest": "empty", "sec-fetch-mode": "cors" }))).toBeNull();
+    expect(rewrite(await go({ "sec-fetch-dest": "document", "sec-fetch-mode": "navigate" }))).toBe("http://localhost/about");
     expect(rewrite(await go({}, "/library"))).toBeNull();
   });
 });
@@ -71,5 +75,7 @@ describe("request helpers", () => {
     expect(isDocumentRequest(req("POST"))).toBe(false);
     expect(isDocumentRequest(req("GET", { rsc: "1" }))).toBe(false);
     expect(isDocumentRequest(req("GET", {}, "?_rsc=1"))).toBe(false);
+    expect(isDocumentRequest(req("GET", { "sec-fetch-dest": "empty" }))).toBe(false);
+    expect(isDocumentRequest(req("GET", { "sec-fetch-dest": "document" }))).toBe(true);
   });
 });

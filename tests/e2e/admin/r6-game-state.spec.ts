@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { admin } from "../../api/helpers";
 import { onboardGuest, waitForBoard } from "../harness";
 import { signedIn } from "./helpers";
+import { GAME_BY_ID } from "@/lib/catalog";
 
 /**
  * Game state (owner request, 11 Nov 2026): the owner switches a game On, In testing or Off on the admin Games page.
@@ -16,7 +17,8 @@ test.skip(({ viewport }) => (viewport?.width ?? 0) < 800, "the admin console is 
 test.describe.configure({ mode: "serial" });
 
 const GAME = "sixer";
-const NAME = "Sixer";
+/** Spuzdoku since 1.63 (Sixer and Nine are one game, its two board sizes). */
+const NAME = GAME_BY_ID[GAME].name;
 
 const row = (page: Page, id: string) => page.locator(`[data-meta-row="${id}"]`);
 async function openRow(page: Page, id: string) {
@@ -52,7 +54,8 @@ async function guestSees(guest: Page, visible: boolean) {
 }
 
 async function opens(p: Page, yes: boolean) {
-  await p.goto(`/play/${GAME}?mode=free`);
+  // size=1: the board-size picker is already answered, so an open game goes straight to its board.
+  await p.goto(`/play/${GAME}?mode=free&size=1`);
   if (yes) await waitForBoard(p, 45_000);
   else await expect(p.getByRole("heading", { name: "This page could not be found." })).toBeVisible({ timeout: 30_000 });
 }

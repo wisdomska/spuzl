@@ -4,7 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { ApiError } from "@/lib/api/server";
 import { serverBroadcast } from "@/lib/realtime/server";
 import { TIMING, countdownMsFor } from "../constants";
-import { BOT_ID, matchState, newToGame, nextRoundStart, resolveRound, rulesBreakMs, type Finisher } from "../duel";
+import { BOT_ID, matchState, newToGame, nextRoundStart, playedEarlierInMatch, resolveRound, rulesBreakMs, type Finisher } from "../duel";
 import { placeRace, raceOver, nextHost, type Placed, type Racer } from "../race";
 import { placeScoreRace, scoreRaceOver, scoreRun, type ScoreRacer } from "../scoreRace";
 import { isScoreRaceGame } from "../games";
@@ -229,7 +229,15 @@ export async function viewOf(admin: SupabaseClient, l: Loaded, me: string, rewar
   const countdownMs = await liveCountdownMs();
   // Before a ranked round's countdown: who is new to its game (their rules card shows; the rival waits).
   let rulesFor: string[] | null = null;
-  if (!adult && rulesRound(m) && game && m.status === "playing" && start !== null && now < start - countdownMs) {
+  if (
+    !adult &&
+    rulesRound(m) &&
+    game &&
+    !playedEarlierInMatch(m.games, m.round) &&
+    m.status === "playing" &&
+    start !== null &&
+    now < start - countdownMs
+  ) {
     const ids = l.players.filter((p) => !p.spectator).map((p) => p.player_id);
     rulesFor = newToGame(game, ids, await knownGames(admin, ids, [game]));
   }
@@ -578,10 +586,13 @@ async function resolveDuel(admin: SupabaseClient, l: Loaded): Promise<boolean> {
   if (m.is_bot) score[BOT_ID] = m.bot_rounds_won;
   if (outcome.winner) score[outcome.winner] = (score[outcome.winner] ?? 0) + 1;
   const state = matchState(score, m.round);
-  // A ranked next round of a game new to either player starts after a rules break.
+  // A ranked next round of a game new to either player starts after a rules break, unless this match already played
+  // that game (its rules were read before that round).
   const ids = humans.map((p) => p.player_id);
   const rulesMs =
-    !state.over && rulesRound(m) ? rulesBreakMs(newToGame(m.games[m.round], ids, await knownGames(admin, ids, [m.games[m.round]]))) : 0;
+    !state.over && rulesRound(m) && !playedEarlierInMatch(m.games, m.round + 1)
+      ? rulesBreakMs(newToGame(m.games[m.round], ids, await knownGames(admin, ids, [m.games[m.round]])))
+      : 0;
   const rounds = humans.map((p) => {
     const f = finishers.find((x) => x.id === p.player_id);
     return {

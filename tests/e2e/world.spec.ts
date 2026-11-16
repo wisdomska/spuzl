@@ -21,6 +21,9 @@ test("world: each game is one card with its own actions", async ({ page }, info)
   await page.screenshot({ path: `docs/qa/screens/after/world-board-${info.project.name}.png` });
 });
 
+/** One entry per game a player sees: Spuzdoku's 9 × 9 board (nine, `variantOf: "sixer"`) is part of Spuzdoku. */
+const listed = (w: Parameters<typeof gamesInWorld>[0]) => gamesInWorld(w).filter((g) => !g.variantOf);
+
 /** The 2026-11 regroup: 4 islands on Home, each group's page lists its games, old world links redirect. */
 test("world: the Home map shows the 4 groups and every group page works", async ({ page }, info) => {
   test.setTimeout(120_000);
@@ -33,7 +36,7 @@ test("world: the Home map shows the 4 groups and every group page works", async 
     const island = islands.nth(i);
     await expect(island).toHaveAttribute("data-world", w.id);
     await expect(island).toContainText(w.name);
-    await expect(island).toContainText(`/${gamesInWorld(w.id).length}`);
+    await expect(island).toContainText(`/${listed(w.id).length}`);
   }
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
   expect(overflow, "Home scrolls sideways").toBe(false);
@@ -43,7 +46,7 @@ test("world: the Home map shows the 4 groups and every group page works", async 
     await page.goto(`/world/${w.id}`);
     await expect(page.getByRole("heading", { level: 1, name: w.name })).toBeVisible();
     await expect(page.getByText(w.tagline, { exact: false })).toBeVisible();
-    const games = gamesInWorld(w.id);
+    const games = listed(w.id);
     await expect(page.locator("main > ul > li")).toHaveCount(games.length);
     for (const g of games) await expect(page.locator("main > ul > li").filter({ hasText: g.name }).first(), g.id).toBeVisible();
     const sideways = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);

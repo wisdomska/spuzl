@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { onboardGuest } from "./harness";
+import { GAME_BY_ID } from "@/lib/catalog";
 
 /**
  * R4-08: score games (Quickfire, Emoji Hits, Beat Tap, ...) race in Party (R3-08), so their Library card and their
@@ -40,7 +41,7 @@ test("Quickfire's Challenge sheet on its world page offers only Host a party", a
 test("a time game's card keeps all three ways to race", async ({ page }) => {
   await onboardGuest(page);
   await page.goto("/library");
-  await page.getByRole("link", { name: /^Sixer\b/ }).click();
+  await page.getByRole("link", { name: new RegExp(`^${GAME_BY_ID.sixer.name}\\b`) }).click();
   const card = page.getByRole("dialog");
   for (const name of ["Quick Match", "Duel a friend", "Host a party"])
     await expect(card.getByRole("button", { name, exact: true })).toBeVisible();

@@ -41,8 +41,22 @@ async function movedOne(page: Page) {
 }
 const vehicle = (page: Page) => page.locator(`[data-vehicle="${M.v}"]`);
 
+/** A cell's centre once the layout holds still (after the first move the rule line folds away and the board slides up). */
 async function centre(page: Page, r: number, c: number) {
-  const b = (await cellAt(page, r, c).boundingBox())!;
+  const cell = cellAt(page, r, c);
+  let last = await cell.boundingBox();
+  await expect
+    .poll(
+      async () => {
+        const now = await cell.boundingBox();
+        const still = !!now && !!last && now.x === last.x && now.y === last.y;
+        last = now;
+        return still;
+      },
+      { intervals: [100] },
+    )
+    .toBe(true);
+  const b = last!;
   return { x: b.x + b.width / 2, y: b.y + b.height / 2, w: b.width };
 }
 
@@ -127,6 +141,9 @@ test.describe("R2-11 Trotro Jam", () => {
       // the swiped vehicle is selected, and a plain tap on it right after still registers (it lets go)
       await expect(vehicle(page)).toHaveAttribute("data-selected", "true");
       const b = await centre(page, ahead()[0], ahead()[1]);
+      // Chromium's touch gesture detector sends no click for a tap that starts within ~100 ms of the last touch
+      // ending (seen with desktop touch emulation: pointerdown and pointerup, no click), so let the swipe's gesture end.
+      await page.waitForTimeout(350);
       await page.touchscreen.tap(b.x, b.y);
       await expect(vehicle(page)).not.toHaveAttribute("data-selected", "true");
       await ctx.close();

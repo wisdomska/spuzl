@@ -97,6 +97,14 @@ export function newToGame(game: string | null | undefined, players: readonly str
 export const rulesBreakMs = (newTo: readonly string[]): number => (newTo.length ? TIMING.rulesMs : 0);
 
 /**
+ * Whether round `round` (1-based) plays a game an earlier round of the same match already played. Its rules were read
+ * then, so it gets no second rules break (a Crownfall best of 3 reads the rule once, before round 1), even though a
+ * Duel round doesn't make the game "known" to the player (`newToGame`).
+ */
+export const playedEarlierInMatch = (games: readonly string[], round: number): boolean =>
+  round > 1 && games.slice(0, round - 1).includes(games[round - 1]);
+
+/**
  * Before a round with a rules break: the round's rules card takes the last `rulesMs` before the countdown,
  * after the versus intro or the round end card. `msToStart` is the time to the round's start.
  */

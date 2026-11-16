@@ -10,6 +10,7 @@ import {
   rankedPool,
   roundOutcomes,
   rulesBreakMs,
+  playedEarlierInMatch,
 } from "./duel";
 
 describe("ranked mix and rules breaks", () => {
@@ -89,5 +90,15 @@ describe("one Duel clock, the server round time (R4-18)", () => {
   it("stops at the official time once this player finishes", () => {
     expect(duelClockMs("playing", 15_000, 12_345)).toBe(12_345);
     expect(duelClockMs("round_end", 30_000, 12_345)).toBe(12_345);
+  });
+});
+
+describe("playedEarlierInMatch", () => {
+  it("is true only for a round whose game an earlier round of the match already played", () => {
+    expect(playedEarlierInMatch(["crownfall", "crownfall", "crownfall"], 1)).toBe(false);
+    expect(playedEarlierInMatch(["crownfall", "crownfall", "crownfall"], 2)).toBe(true);
+    expect(playedEarlierInMatch(["crownfall", "dusk", "crownfall"], 2)).toBe(false);
+    expect(playedEarlierInMatch(["crownfall", "dusk", "crownfall"], 3)).toBe(true);
+    expect(playedEarlierInMatch(["crownfall", "dusk", "weave"], 3)).toBe(false);
   });
 });

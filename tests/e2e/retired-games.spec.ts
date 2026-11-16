@@ -5,8 +5,8 @@ import { GAME_COUNT, WORLD_COUNT, WORLD_BY_ID } from "@/lib/catalog";
 /**
  * The 2026-11 catalogue change: 29 live games (28 once Gauntlet went, 29 again with Quads back in R2-14, 41 once the twelve lab
  * games graduated on 11 Nov 2026), since regrouped into 4 worlds. Retired games and the emptied Number
- * Den are gone from every list and their pages are not found; Trotro Jam, Emoji Hits and Beat Tap play like any live game, with no
- * admin setting needed. (Eleven retired games came back as lab games in R2-P5 and are live now:
+ * Den are gone from every list and their pages are not found; Trotro Jam, Emoji Hits and Twins play like any live game, with no
+ * admin setting needed. (Beat Tap was promoted too, then retired by the owner on 14 Nov 2026; Twins came back that day.) (Eleven retired games came back as lab games in R2-P5 and are live now:
  * tests/e2e/r2-p5-lab-games.spec.ts. The examples here are games that are still retired.)
  */
 const NOT_FOUND = "This page could not be found.";
@@ -30,7 +30,7 @@ test("retired games are hidden and refused; the promoted games play", async ({ p
   await expect(page.locator('[data-world="number"]')).toHaveCount(0);
 
   // Not found: a retired game's play and bot pages, the empty world, a retired ghost track.
-  for (const path of ["/play/hunch?mode=free", "/play/flip/bot", "/world/number", "/ghost/flipside"]) {
+  for (const path of ["/play/hunch?mode=free", "/play/beattap?mode=free", "/play/flip/bot", "/world/number", "/ghost/flipside"]) {
     await page.goto(path);
     await expect(page.getByRole("heading", { name: NOT_FOUND }), path).toBeVisible();
     await expect(page.getByRole("timer")).toHaveCount(0);
@@ -53,7 +53,7 @@ test("retired games are hidden and refused; the promoted games play", async ({ p
   await expect(page.getByRole("heading", { name: WORLD_BY_ID.logic.name })).toBeVisible();
   await expect(page.locator("main li").filter({ hasText: "Trotro Jam" })).toHaveCount(1);
 
-  for (const id of ["trotro", "emojihits", "beattap"]) {
+  for (const id of ["trotro", "emojihits", "twins"]) {
     await page.goto(`/play/${id}?mode=free`);
     await waitForBoard(page, 45_000);
     await expect(page.getByRole("timer"), id).toHaveCount(1);

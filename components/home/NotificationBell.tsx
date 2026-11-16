@@ -11,6 +11,7 @@ import { ShareSheet } from "@/components/share/ShareSheet";
 import type { InboxGame } from "@/components/board/YourMoveInbox";
 import { api } from "@/lib/client/api";
 import { useFriends } from "@/lib/client/social";
+import { useQuiet } from "@/lib/perf/quiet";
 import { playerGames } from "@/lib/catalog";
 import { useGamesMeta } from "@/lib/games-meta/client";
 import { newGameIds } from "@/lib/games-meta";
@@ -82,10 +83,14 @@ export function NotificationBell({ played }: { played: readonly string[] }) {
     staleTime: 30 * 60_000,
     retry: false,
   });
-  const friends = useFriends();
+  // R3-03: friend requests and Board Games moves wait until Home is quiet (or the list is opened), so a phone's first
+  // seconds on Home go to the Continue card and the map.
+  const quiet = useQuiet();
+  const friends = useFriends(quiet || open);
   const bay = useQuery({
     queryKey: ["bay-inbox"],
     queryFn: () => api<{ games: InboxGame[] }>("/api/v1/bay"),
+    enabled: quiet || open,
     staleTime: 60_000,
     refetchInterval: 120_000,
     retry: false,

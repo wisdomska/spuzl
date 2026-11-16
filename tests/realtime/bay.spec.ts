@@ -13,7 +13,9 @@ test("bay: live chess on two devices, illegal moves rejected by the server", asy
   // A opens a live game from the inbox sheet and gets an invite link.
   await a.page.goto("/bay");
   await a.page.getByRole("button", { name: "New game with a friend" }).click();
-  await a.page.getByRole("radio", { name: "Live, 5 min clocks" }).click();
+  // Live games pick their clock (3 to 30 minutes per player); 5 is chess's default.
+  await a.page.getByRole("radio", { name: "Live, timed" }).click();
+  await a.page.getByRole("radiogroup", { name: "Time per player" }).getByRole("radio", { name: "5 minutes", exact: true }).click();
   await a.page.getByRole("button", { name: "Invite a friend" }).click();
   await a.page.waitForURL(/\/bay\/[0-9a-f-]{36}$/);
   const id = a.page.url().split("/").pop()!;
@@ -50,8 +52,12 @@ test("bay: live chess on two devices, illegal moves rejected by the server", asy
   await expect(b.page.getByText(/offers a draw/)).toBeVisible({ timeout: 15_000 });
   await b.page.getByRole("button", { name: "Decline" }).click();
   await a.page.getByRole("button", { name: "Resign" }).click();
+  // Resign asks first ("Resign this game? … wins."), with Keep playing as the default.
+  const confirm = a.page.locator('[data-bay-confirm="resign"]');
+  await expect(confirm).toContainText("Resign this game?");
+  await confirm.getByRole("button", { name: "Resign" }).click();
   await expect(b.page.getByText(/You won\. They resigned\./)).toBeVisible({ timeout: 15_000 });
-  await expect(a.page.getByRole("button", { name: "Rematch" })).toBeVisible();
+  await expect(a.page.getByRole("alertdialog").getByRole("button", { name: "Rematch" })).toBeVisible();
 
   await a.context.close();
   await b.context.close();
@@ -70,9 +76,12 @@ test("bay: play live finds an opponent and the first move arrives in real time",
 
   await a.page.goto("/world/board");
   await a.page.getByRole("link", { name: "Chess: play live against another player" }).click();
+  // Play live asks for the time per player first (5 minutes is chess's default), then searches.
+  await a.page.getByRole("button", { name: "Find an opponent, 5 min" }).click();
   await expect(a.page.getByRole("heading", { name: "Finding an opponent" })).toBeVisible();
 
   await b.page.goto("/bay?live=chess");
+  await b.page.getByRole("button", { name: "Find an opponent, 5 min" }).click();
   await b.page.waitForURL(/\/bay\/[0-9a-f-]{36}$/, { timeout: 20_000 });
   await a.page.waitForURL(/\/bay\/[0-9a-f-]{36}$/, { timeout: 20_000 });
   const id = a.page.url().split("/").pop()!;
