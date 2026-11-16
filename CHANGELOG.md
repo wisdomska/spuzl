@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.67.0 (16 November 2026)
+
+### Everyone
+
+- **Party rooms hold up to 8 players** (was 10). Every page that mentions Party size now says 8.
+
+### Admin
+
+- "Most players in a Party" and "Most players in Draw It and Two Truths" go up to 8. Rooms already open keep their size.
+
 ## 1.66.0 (15 November 2026)
 
 ### Everyone

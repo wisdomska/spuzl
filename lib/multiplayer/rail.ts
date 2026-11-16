@@ -1,4 +1,4 @@
-/** The race rail shows at most this many rows until the player asks for all of them (rooms of up to 10). */
+/** The race rail shows at most this many rows until the player asks for all of them (rooms of up to 8). */
 export const RAIL_ROWS = 5;
 
 /**

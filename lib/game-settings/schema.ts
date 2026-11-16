@@ -407,10 +407,10 @@ export const SETTINGS = {
     group: PARTY,
     label: "Most players in a Party",
     help: "Biggest Party room. Hosts pick any size up to this.",
-    more: "10 is the most the live connection handles smoothly. Open rooms keep their size.",
-    default: 10,
+    more: "8 is the most. Open rooms keep their size.",
+    default: 8,
     min: 2,
-    max: 10,
+    max: 8,
     noun: "players",
   },
   "party.maxPlayersTurns": {
@@ -421,7 +421,7 @@ export const SETTINGS = {
     more: "Never more than the Party limit above. Open rooms keep their size.",
     default: 8,
     min: 2,
-    max: 10,
+    max: 8,
     noun: "players",
   },
   "party.scoreRaces": {

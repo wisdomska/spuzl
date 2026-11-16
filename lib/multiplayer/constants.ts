@@ -67,10 +67,11 @@ export const PARTY_GAMES = 3;
 export const PARTY_PICK_MIN = 2;
 export const PARTY_PICK_MAX = 8;
 /**
- * The hard ceiling for a Party room (the database check allows 2 to 10). The live limit is the admin setting
- * party.maxPlayers (default 10): `partyMaxFor(setting)`. Hosts start at PARTY_DEFAULT and can go up to the limit.
+ * The hard ceiling for a Party room (owner, 16 Nov 2026: "make the max party size be 8"; the database check still
+ * allows up to 10 so older rooms stay valid). The live limit is the admin setting party.maxPlayers (default 8):
+ * `partyMaxFor(setting)`. Hosts start at PARTY_DEFAULT and can go up to the limit.
  */
-export const PARTY_MAX = 10;
+export const PARTY_MAX = 8;
 export const PARTY_DEFAULT = 8;
 export const PARTY_MIN = 2;
 /** Rooms with more racers than this send progress at half the rate (TIMING.progressMs doubled), to stay inside the Realtime budget. */
