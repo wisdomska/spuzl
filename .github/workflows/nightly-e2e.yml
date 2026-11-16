@@ -1,13 +1,22 @@
 name: Nightly E2E
 
+# The full browser suite against a throwaway copy of SPUZL: a local Supabase (migrations + seed) and a production
+# build of the app with the test-only dev routes, both inside this job. Nothing touches the preview or production
+# databases, so no test players are left anywhere (the database is discarded with the runner).
+
 on:
   schedule:
     - cron: "23 3 * * *"
   workflow_dispatch:
 
+concurrency:
+  group: nightly-e2e
+  cancel-in-progress: true
+
 jobs:
   e2e:
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -16,12 +25,39 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install --with-deps chromium webkit firefox
-      - run: pnpm test:e2e
+      - run: pnpm exec playwright install --with-deps chromium
+      # Same as CI: the default registry rate-limits anonymous pulls, so retry and fall back to the Docker Hub mirror.
+      - name: Start Supabase
+        run: |
+          for i in 1 2 3 4; do
+            if [ "$i" -gt 2 ]; then export SUPABASE_INTERNAL_IMAGE_REGISTRY=docker.io; fi
+            pnpm supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor && exit 0
+            pnpm supabase stop --no-backup || true
+            echo "supabase start failed (attempt $i), retrying in $((i * 30)) s"
+            sleep $((i * 30))
+          done
+          exit 1
+      - name: Build and start the app
+        run: |
+          pnpm supabase status -o env | sed -n 's/^API_URL=/NEXT_PUBLIC_SUPABASE_URL=/p; s/^ANON_KEY=/NEXT_PUBLIC_SUPABASE_ANON_KEY=/p; s/^SERVICE_ROLE_KEY=/SUPABASE_SERVICE_ROLE_KEY=/p' | tr -d '"' > .env.local
+          echo "ENABLE_DEV_ROUTES=1" >> .env.local
+          echo "CRON_SECRET=ci-cron-secret" >> .env.local
+          echo "INITIAL_OWNER_EMAIL=owner@ci.spuzl.test" >> .env.local
+          (set -a; . ./.env.local; set +a; pnpm gen:puzzles --days 14)
+          pnpm build
+          (SETTINGS_CACHE_MS=0 pnpm start -p 3000 > server.log 2>&1 &) && npx wait-on http://localhost:3000/api/health -t 90000
+      - name: Browser tests
+        run: pnpm test:e2e --trace off
         env:
-          E2E_BASE_URL: https://spuzl-preview.vercel.app
+          PW_BASE_URL: http://localhost:3000
+          API_BASE: http://localhost:3000
+          QA_GUEST_LOG: .qa/guests.txt
+      - name: Server log on failure
+        if: failure()
+        run: tail -200 server.log || true
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: playwright-report
           path: playwright-report
+          retention-days: 7
