@@ -63,7 +63,11 @@ for (const [label, vp] of Object.entries(VIEWPORTS)) {
       const card = page.getByRole("dialog");
       await expect(card.getByRole("heading", { name: "Dusk" })).toBeVisible();
       const starts = countStarts(page);
-      await card.getByRole("button", { name: "Play", exact: true }).click();
+      // Dusk has a level ladder, so the card's primary is the next level by name (R2-12).
+      await card
+        .getByRole("button", { name: /^Play( Level \d+)?$/ })
+        .first()
+        .click();
       await expect(practice(page, "Dusk")).toBeVisible({ timeout: 30_000 });
       expect(starts.starts).toBe(0);
       await shot(page, "library", vp.width);
