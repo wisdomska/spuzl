@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.68.1 (16 November 2026)
+
+### Everyone
+
+- **New players land on Home after setup:** in rare cases a new player was sent to the welcome page instead of Home
+  right after choosing a name. Fixed.
+- **Ranked duels:** a best of 3 that repeats a game no longer shows the rules card again over the round result.
+- **Home loads lighter on phones:** the bell fetches friend requests and Board Games moves once Home is quiet, or
+  when you open it.
+
+### Behind the scenes
+
+- The nightly browser tests run the whole suite against a fresh copy of SPUZL and match today's app.
+
 ## 1.68.0 (16 November 2026)
 
 ### Everyone
