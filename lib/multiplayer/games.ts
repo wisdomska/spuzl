@@ -39,6 +39,13 @@ export const SCORE_RACE_GAMES: GameMeta[] = GAMES.filter(
 const SCORE_IDS = new Set(SCORE_RACE_GAMES.map((g) => g.id));
 export const isScoreRaceGame = (id: string | null | undefined) => !!id && SCORE_IDS.has(id);
 
+/**
+ * Ghost Race tracks: action games whose cleared runs are kept as ghosts a friend can race (Overlays GR). Shared by the
+ * server (lib/multiplayer/server/async.ts), the play screen (lib/client/challenge.ts) and the public pages. Retired
+ * ones (Flipside, Ghosted) stay listed and are left out wherever the list is read (`playableGame` / `isRetired`).
+ */
+export const GHOST_TRACKS = ["dash", "flipside", "ghosted"] as const;
+
 /** Games the Games page offers "Can be played in Duels and Parties" for: time races and score races. */
 export const isVersusEligible = (id: string) => isRaceGame(id) || isScoreRaceGame(id);
 

@@ -1,5 +1,6 @@
 import type { GameMeta } from "@/lib/catalog";
-import type { QA } from "@/lib/copy/seo";
+import { HINTS_LINE, SPARKS_BUY, partyBoardsText, type QA } from "@/lib/copy/seo";
+import type { PartyBoards, SiteFlags } from "@/lib/seo/facts";
 
 /**
  * Guides and game lists (/topics/<slug>, /guides/<slug>, /guides): keyword pages for search and AI answers. Every
@@ -110,7 +111,7 @@ const BROWSER_POINTS = [
 
 const freeQa = (what: string): QA => ({
   q: `Are these ${what} free?`,
-  a: "Yes. Every game on SPUZL is free, with no ads and nothing to buy with money. You earn Sparks by playing and spend them on hats for Spuz.",
+  a: `Yes. Every game on SPUZL is free, with no ads and nothing to buy with money. You earn Sparks by playing and spend them in the Shop on ${SPARKS_BUY}.`,
 });
 const accountQa: QA = {
   q: "Do I need an account?",
@@ -186,7 +187,7 @@ export const logicCopy: TypeCopy = {
       points: [
         "Free play deals a fresh board every time, as often as you like.",
         "Most puzzles have Easy, Medium, Hard and Expert boards, and levels that get harder in waves.",
-        "Stuck? Up to 3 hints a puzzle, each one a safe next step.",
+        `Stuck? ${HINTS_LINE}`,
         "Race a friend on the same board in a Duel, or a whole group in a Party room.",
       ],
     },
@@ -227,7 +228,7 @@ export const sudokuCopy = {
   features: (sixMin: string, nineMin: string) => [
     "Free play at Easy, Medium, Hard or Expert, as often as you like.",
     "Levels for each size that never run out, harder in waves, with a boss level every fifth.",
-    "Up to 3 hints a puzzle, each one a safe next step.",
+    HINTS_LINE,
     `A 6 × 6 grid takes ${sixMin.toLowerCase()}; a 9 × 9 takes ${nineMin.toLowerCase()}.`,
   ],
   friendsLine: "Race a friend on the same grid in a Duel, best of three, or a whole group in a Party room.",
@@ -314,7 +315,7 @@ export const arcadeCopy: TypeCopy = {
   h1: "Free arcade games in your browser",
   eyebrow: "Arcade",
   answer: (gs) =>
-    `SPUZL has ${free(gs.length, "arcade game", "arcade games")} that run in your browser: ${names(gs)}. Quick runs for memory, rhythm and reflexes.`,
+    `SPUZL has ${free(gs.length, "arcade game", "arcade games")} that run in your browser: ${names(gs)}. Quick runs for memory, reflexes and action.`,
   sections: () => [
     {
       id: "what",
@@ -346,6 +347,12 @@ export interface VersusFacts {
   partyMax: number;
   /** live clock choices per player, "3, 5, 10 or 15" */
   clocks: string;
+  /** every game a Party can race now: the time races, then score games while score races are on */
+  partyGames: readonly GameMeta[];
+  /** board games a Party room can open, by player count (lib/seo/facts.ts) */
+  partyBoards: readonly PartyBoards[];
+  /** the switches the pages describe (lib/seo/facts.ts) */
+  flags: SiteFlags;
 }
 
 export const boardFriendsCopy = {
@@ -367,6 +374,7 @@ export const boardFriendsCopy = {
     "One move a day: take turns with up to a day per move. A nudge is allowed once your friend has had 12 hours.",
     "Play live: get paired with another player near your level (players 16 and over).",
     ...(f.bayFour.length ? [`${names(f.bayFour)} seats 2 to 4 players.`] : []),
+    ...(f.partyBoards.length ? [`From a Party room, the host can start a live game: ${partyBoardsText(f.partyBoards)}.`] : []),
     "No friend around? Play a full game against Spuzl, the computer, at Easy, Medium or Hard.",
   ],
   faq: (f: VersusFacts): QA[] => [
@@ -411,26 +419,30 @@ export const twoPlayerCopy = {
 
 export const partyCopy = {
   title: (max: number) => `Online party games for groups, up to ${max} players | SPUZL`,
-  description: (max: number) =>
-    `Free online party games for groups: open a room, share the code and race up to ${max} players on the same puzzle. Plus a big-screen TV view.`,
+  description: (max: number, tv: boolean) =>
+    `Free online party games for groups: open a room, share the code and race up to ${max} players on the same puzzle.${tv ? " Plus a big-screen TV view." : " No download."}`,
   h1: "Online party games for groups",
   eyebrow: "Party",
   answer: (max: number) =>
     `SPUZL Party rooms let a group race on the same puzzles for free: the host opens a room, shares a code, and up to ${max} players race from their own phones. No download.`,
   howTitle: "How a Party works",
-  how: (max: number) => [
-    "The host opens a Party room and picks a game or a random mix.",
+  how: (max: number, f: VersusFacts) => [
+    "The host opens a Party room and picks one game, a hand-picked list or a random mix.",
     `Friends join with the room code on their own phones, up to ${max} players.`,
-    "Everyone gets the same puzzle at the same moment and races to clear it.",
+    f.flags.scoreRaces
+      ? "Everyone gets the same puzzle at the same moment and races to clear it. In score games, the most points wins."
+      : "Everyone gets the same puzzle at the same moment and races to clear it.",
     "After the last round, see who won and play again.",
   ],
   extrasTitle: "Good to know",
   extras: (f: VersusFacts) => [
-    "Put the room on a TV or laptop with the big-screen view, for parties in one room.",
-    ...(f.bayFour.length ? [`With 3 or 4 players, the host can start a live game of ${names(f.bayFour)} instead.`] : []),
+    ...(f.flags.partyTv ? ["Put the room on a TV or laptop with the big-screen view, for parties in one room."] : []),
+    ...(f.partyBoards.length
+      ? [`Board games too: the host can start a live game for exactly the players in the room: ${partyBoardsText(f.partyBoards)}.`]
+      : []),
     "Rooms with players under 16 use preset chat phrases only.",
   ],
-  faq: (max: number): QA[] => [
+  faq: (max: number, f: VersusFacts): QA[] => [
     {
       q: "How many players can join a Party?",
       a: `Up to ${max} players in one room, each on their own phone.`,
@@ -440,10 +452,14 @@ export const partyCopy = {
       a: "No. They open the link or type the code in their browser and play as a guest.",
     },
     freeQa("party games"),
-    {
-      q: "Can I put the game on a TV?",
-      a: "Yes. Party rooms have a big-screen view you can open on a TV or laptop while everyone plays on their phones.",
-    },
+    ...(f.flags.partyTv
+      ? [
+          {
+            q: "Can I put the game on a TV?",
+            a: "Yes. Party rooms have a big-screen view you can open on a TV or laptop while everyone plays on their phones.",
+          },
+        ]
+      : []),
   ],
 } as const;
 
@@ -655,7 +671,7 @@ export const ludoCopy = {
   ways: (clocks: string) => [
     "Challenge friends: pick 2, 3 or 4 players, then live or one move a day, and share the link.",
     `Live games give each player a clock (${clocks} minutes).`,
-    "Party room: with 3 or 4 players in the room, the host can start a live ludo game and share its code.",
+    "Party room: with 2, 3 or 4 players in the room, the host can start a live ludo game for exactly them.",
     "Against Spuzl, the computer: pick 2 to 4 players and Spuzl plays the other colours, at Easy, Medium or Hard.",
     "Play live pairs you with one other player near your level (players 16 and over).",
   ],
@@ -670,7 +686,7 @@ export const ludoCopy = {
   faq: [
     {
       q: "Can 4 people play ludo online together?",
-      a: "Yes. SPUZL's ludo seats 2 to 4 players. Invite friends with a link, or start it from a Party room with 3 or 4 players.",
+      a: "Yes. SPUZL's ludo seats 2 to 4 players. Invite friends with a link, or start it from a Party room with 2 to 4 players in it.",
     },
     {
       q: "Do you need a 6 to start in ludo?",
@@ -693,18 +709,26 @@ export const shortBreaksCopy = {
   answer: (n: number) =>
     `SPUZL has ${games(n)} that take about two minutes or less, free in your browser: a quick logic grid, a word puzzle, a trivia round or an arcade run. Open, play, done.`,
   whyTitle: "Made for short breaks",
-  why: [
+  /** `dailyFive`: the Daily Five is on (dailyFive.enabled) */
+  why: (dailyFive: boolean) => [
     "No download, nothing to install.",
     "Pick up where you like: free play never runs out.",
-    "Daily Five: five quick games a day, about 5 minutes in all, the same for everyone.",
+    ...(dailyFive ? ["Daily Five: five quick games a day, about 5 minutes in all, the same for everyone."] : []),
     "Grow a streak with one clear a day, with Streak Freezes for busy days.",
   ],
-  faq: (n: number): QA[] => [
+  faq: (n: number, dailyFive: boolean): QA[] => [
     {
       q: "What games can I play in two minutes?",
       a: `${games(n)} on SPUZL take about two minutes or less, from logic grids to quizzes and arcade runs.`,
     },
-    { q: "What is the Daily Five?", a: "Five quick games picked fresh every day, the same five for everyone, about 5 minutes in all." },
+    ...(dailyFive
+      ? [
+          {
+            q: "What is the Daily Five?",
+            a: "Five quick games picked fresh every day, the same five for everyone, about 5 minutes in all.",
+          },
+        ]
+      : []),
     freeQa("quick games"),
     phoneQa("quick games"),
   ],

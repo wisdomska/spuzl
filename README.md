@@ -1,6 +1,6 @@
 # SPUZL
 
-29 puzzle, skill and classic board games across 4 worlds (Puzzles, Words & Quiz, Arcade, Board Games) ("The Grid"; the live list is `GAMES` in `lib/catalog.ts`, retired games keep their code), with Spuz the mascot, daily puzzles, endless free play, live Duels, Party Races, leagues and crews.
+32 puzzle, word, arcade and classic board games across 4 worlds (Puzzles, Words & Quiz, Arcade, Board Games) ("The Grid"; the live list is `GAMES` in `lib/catalog.ts`, retired games keep their code, and `lib/catalog.test.ts` keeps this count in step), with Spuz the mascot, endless free play and Levels, the Daily Five, live Duels, Party rooms, Board Bay (chess, draughts, oware, ludo and Four Up with friends or against Spuzl), leagues and crews.
 
 Production: https://spuzl.vercel.app · Admin: https://spuzl.vercel.app/admin
 
@@ -8,7 +8,7 @@ Production: https://spuzl.vercel.app · Admin: https://spuzl.vercel.app/admin
 
 - Next.js 16 (App Router), React 19, TypeScript strict
 - Tailwind v4 with the SPUZL design tokens (`styles/spuzl-tokens.css`, `styles/tailwind-theme.css`, used unchanged)
-- Motion, Radix primitives, Phosphor Bold icons, Phaser 3 for Rage Ridge (lazy-loaded per game)
+- Motion, Radix primitives, Phosphor Bold icons, Phaser 3 for the Arcade action games, Gotcha and Dash (lazy-loaded per game)
 - Supabase: Postgres with RLS, Auth, Realtime, Storage
 - TanStack Query, Zustand, Zod
 - Vitest, Playwright, pgTAP, k6

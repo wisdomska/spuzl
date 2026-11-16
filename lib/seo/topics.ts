@@ -4,10 +4,10 @@
  * is retired, In testing or Off never appears, and a page whose games are all gone is not served (404, out of the
  * sitemap and llms.txt). Wording lives in lib/copy/topics.ts.
  */
-import { WORLD_BY_ID, versusAllowed, type GameMeta, type GameSwitch } from "@/lib/catalog";
+import { WORLD_BY_ID, versusAllowed, type GameMeta } from "@/lib/catalog";
 import type { QA } from "@/lib/copy/seo";
 import { durationLabel, defaultMetaFor } from "@/lib/games-meta";
-import { isRaceGame } from "@/lib/multiplayer/games";
+import { isRaceGame, isScoreRaceGame } from "@/lib/multiplayer/games";
 import { BAY_GAMES, BAY_SEATS, CLOCK_MINUTES, isBayGame } from "@/lib/multiplayer/bay";
 import { PARTY_MAX } from "@/lib/multiplayer/constants";
 import {
@@ -37,6 +37,7 @@ import {
 } from "@/lib/copy/topics";
 import { gamesCopy } from "@/lib/copy/seo";
 import { LIVE_ONLY, publicGame, publicGames } from "./games";
+import { siteFacts, type PublicSwitch } from "./facts";
 
 export type TopicKind = "topic" | "guide";
 
@@ -93,7 +94,7 @@ const kindOfSlug = (slug: string): TopicKind | undefined =>
 export const slugPath = (slug: string) => topicPath(kindOfSlug(slug)!, slug);
 
 /** The game groups the pages are built from (only games that are On). */
-export function topicGroups(s: GameSwitch = LIVE_ONLY) {
+export function topicGroups(s: PublicSwitch = LIVE_ONLY) {
   const all = publicGames(s);
   const inWorld = (w: GameMeta["world"]) => all.filter((g) => g.world === w);
   const bay = all.filter((g) => isBayGame(g.id));
@@ -106,6 +107,8 @@ export function topicGroups(s: GameSwitch = LIVE_ONLY) {
     board: inWorld("board"),
     bay,
     races: all.filter((g) => isRaceGame(g.id) && versusAllowed(g.id, s)),
+    /** score games a Party can race while score races are on (lib/multiplayer/games scoreRaceGames) */
+    scoreRaces: siteFacts(s).flags.scoreRaces ? all.filter((g) => isScoreRaceGame(g.id) && versusAllowed(g.id, s)) : [],
     bots: inWorld("board").filter((g) => g.botPlay),
     bayFour: bay.filter((g) => BAY_SEATS[g.id as (typeof BAY_GAMES)[number]].max >= 4),
     quick: all.filter((g) => defaultMetaFor(g.id).typicalSec <= 120),
@@ -119,7 +122,7 @@ const timeOf = (id: string) => gamesCopy.facts.timeValue(durationLabel(defaultMe
 const playCta = (g: GameMeta) => ({ label: gamesCopy.cta(g.name), href: `/play/${g.id}` });
 const HUB_CTA = { label: "Play now", href: "/welcome/play" };
 
-type Builder = (s: GameSwitch) => Omit<TopicPage, "slug" | "kind" | "path" | "label"> | undefined;
+type Builder = (s: PublicSwitch) => Omit<TopicPage, "slug" | "kind" | "path" | "label"> | undefined;
 
 function typePage(c: TypeCopy, gs: GameMeta[], related: string[]): ReturnType<Builder> {
   if (!gs.length) return undefined;
@@ -137,9 +140,20 @@ function typePage(c: TypeCopy, gs: GameMeta[], related: string[]): ReturnType<Bu
   };
 }
 
-const versusFacts = (s: GameSwitch): VersusFacts => {
+const versusFacts = (s: PublicSwitch): VersusFacts => {
   const t = topicGroups(s);
-  return { bay: t.bay, races: t.races, bots: t.bots, bayFour: t.bayFour, partyMax: PARTY_MAX, clocks: clocksOf(t.bay) };
+  const facts = siteFacts(s);
+  return {
+    bay: t.bay,
+    races: t.races,
+    bots: t.bots,
+    bayFour: t.bayFour,
+    partyMax: PARTY_MAX,
+    clocks: clocksOf(t.bay),
+    partyGames: [...t.races, ...t.scoreRaces],
+    partyBoards: facts.partyBoards,
+    flags: facts.flags,
+  };
 };
 
 const BUILDERS: Record<string, Builder> = {
@@ -253,17 +267,17 @@ const BUILDERS: Record<string, Builder> = {
     if (!f.races.length) return undefined;
     return {
       title: partyCopy.title(PARTY_MAX),
-      description: partyCopy.description(PARTY_MAX),
+      description: partyCopy.description(PARTY_MAX, f.flags.partyTv),
       h1: partyCopy.h1,
       eyebrow: partyCopy.eyebrow,
       answer: partyCopy.answer(PARTY_MAX),
       sections: [
-        { id: "how", title: partyCopy.howTitle, steps: partyCopy.how(PARTY_MAX) },
-        { id: "games", title: topicsCopy.gamesTitle(f.races.length), games: [...f.races] },
+        { id: "how", title: partyCopy.howTitle, steps: partyCopy.how(PARTY_MAX, f) },
+        { id: "games", title: topicsCopy.gamesTitle(f.partyGames.length), games: [...f.partyGames] },
         { id: "extras", title: partyCopy.extrasTitle, points: partyCopy.extras(f) },
       ],
-      games: [...f.races],
-      faq: partyCopy.faq(PARTY_MAX),
+      games: [...f.partyGames],
+      faq: partyCopy.faq(PARTY_MAX, f),
       cta: { label: "Open a Party room", href: "/party" },
       related: ["two-player-games", "ludo-online-4-players", "trivia-quiz-games"],
     };
@@ -427,6 +441,7 @@ const BUILDERS: Record<string, Builder> = {
     const gs = topicGroups(s).quick;
     if (!gs.length) return undefined;
     const c = shortBreaksCopy;
+    const daily = siteFacts(s).flags.dailyFive;
     return {
       title: c.title,
       description: c.description(gs.length),
@@ -435,10 +450,10 @@ const BUILDERS: Record<string, Builder> = {
       answer: c.answer(gs.length),
       sections: [
         { id: "games", title: topicsCopy.gamesTitle(gs.length), games: gs },
-        { id: "why", title: c.whyTitle, points: c.why },
+        { id: "why", title: c.whyTitle, points: c.why(daily) },
       ],
       games: gs,
-      faq: c.faq(gs.length),
+      faq: c.faq(gs.length, daily),
       cta: HUB_CTA,
       related: ["free-puzzle-games-in-browser", "arcade-games", "trivia-quiz-games"],
     };
@@ -446,7 +461,7 @@ const BUILDERS: Record<string, Builder> = {
 };
 
 /** One guide or list page, with the games that are On; undefined for an unknown slug or a page with no game left. */
-export function topicPage(slug: string, s: GameSwitch = LIVE_ONLY): TopicPage | undefined {
+export function topicPage(slug: string, s: PublicSwitch = LIVE_ONLY): TopicPage | undefined {
   const kind = kindOfSlug(slug);
   const b = kind && BUILDERS[slug]?.(s);
   if (!kind || !b) return undefined;
@@ -456,14 +471,14 @@ export function topicPage(slug: string, s: GameSwitch = LIVE_ONLY): TopicPage | 
 }
 
 /** Every page served now, list pages first. */
-export const publicTopics = (s: GameSwitch = LIVE_ONLY, kind?: TopicKind): TopicPage[] =>
+export const publicTopics = (s: PublicSwitch = LIVE_ONLY, kind?: TopicKind): TopicPage[] =>
   [...TOPIC_SLUGS, ...GUIDE_SLUGS].flatMap((slug) => {
     const p = topicPage(slug, s);
     return p && (!kind || p.kind === kind) ? [p] : [];
   });
 
 /** The guides and lists that include a game (its game page links them); the dedicated guide first. */
-export function topicsForGame(id: string, s: GameSwitch = LIVE_ONLY): TopicPage[] {
+export function topicsForGame(id: string, s: PublicSwitch = LIVE_ONLY): TopicPage[] {
   const pages = publicTopics(s).filter((p) => p.slug !== "free-puzzle-games-in-browser" && p.games.some((g) => g.id === id));
   return pages.sort((a, b) => Number(b.about?.id === id) - Number(a.about?.id === id));
 }

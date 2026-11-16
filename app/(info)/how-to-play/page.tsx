@@ -8,10 +8,11 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { freePlayCopy } from "@/lib/copy/free-play";
 import { PLAY_NAV } from "@/lib/analytics/play-nav";
 import { siteCopy } from "@/lib/copy/site";
-import { CONTROLS, PHOTOSENSITIVE, SCORING, howToPlaySeoCopy as S, seoMeta, siteFaq } from "@/lib/copy/seo";
+import { HINTS_LINE, LEAGUES_LINE, PHOTOSENSITIVE, controlsOf, howToPlaySeoCopy as S, scoringOf, seoMeta, siteFaq } from "@/lib/copy/seo";
 import { publicMetadata } from "@/lib/seo/site";
 import { servedCopy } from "@/lib/games-meta/server";
 import { servedGameSwitch } from "@/lib/game-settings/server";
+import { siteFacts } from "@/lib/seo/facts";
 import { publicCounts, publicGamesInWorld } from "@/lib/seo/games";
 import { breadcrumbs, faqPage, graph } from "@/lib/seo/jsonld";
 
@@ -31,7 +32,7 @@ export default async function HowToPlay() {
   const copy = await servedCopy();
   const lab = await servedGameSwitch();
   const counts = publicCounts(lab);
-  const faq = siteFaq(counts.games, counts.worlds, counts.names);
+  const faq = siteFaq(counts.games, counts.worlds, counts.names, siteFacts(lab));
   return (
     <>
       <JsonLd
@@ -57,16 +58,14 @@ export default async function HowToPlay() {
             hints. Skip it if you like.
           </li>
           <li className="bg-surface rounded-[18px] p-4 text-[15px] leading-relaxed">
-            <strong className="font-display mb-1 block text-[16px] font-extrabold">Hints.</strong> Up to 3 a puzzle, each one safe next
-            step. Half XP with hints.
+            <strong className="font-display mb-1 block text-[16px] font-extrabold">Hints.</strong> {HINTS_LINE}
           </li>
           <li className="bg-surface rounded-[18px] p-4 text-[15px] leading-relaxed">
             <strong className="font-display mb-1 block text-[16px] font-extrabold">Streaks.</strong> Clear one game a day. A Streak Freeze
             covers a missed day; hold up to 2.
           </li>
           <li className="bg-surface rounded-[18px] p-4 text-[15px] leading-relaxed">
-            <strong className="font-display mb-1 block text-[16px] font-extrabold">Leagues.</strong> A new league of 30 every Monday. Your
-            week&apos;s XP is your score. Top 7 move up, bottom 5 down.
+            <strong className="font-display mb-1 block text-[16px] font-extrabold">Leagues.</strong> {LEAGUES_LINE}
           </li>
           <li className="bg-surface rounded-[18px] p-4 text-[15px] leading-relaxed">
             <strong className="font-display mb-1 block text-[16px] font-extrabold">Relaxed mode.</strong> Hide timers while you play, in{" "}
@@ -100,8 +99,8 @@ export default async function HowToPlay() {
                     {g.name}
                   </h3>
                   <p>{g.rule}</p>
-                  <p className="text-muted text-[14px]">{CONTROLS[g.engine]}</p>
-                  <p className="text-muted text-[14px]">{SCORING[g.scoring]}</p>
+                  <p className="text-muted text-[14px]">{controlsOf(g)}</p>
+                  <p className="text-muted text-[14px]">{scoringOf(g)}</p>
                   {g.photosensitive && <p className="text-gold text-[14px]">{PHOTOSENSITIVE}</p>}
                   <div className="mt-auto flex flex-wrap gap-x-5 pt-1">
                     <Link href={`/play/${g.id}`} className="text-[15px]" {...PLAY_NAV}>

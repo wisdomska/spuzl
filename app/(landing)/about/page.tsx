@@ -17,6 +17,7 @@ import { landingSeoCopy as S, seoMeta, siteFaq } from "@/lib/copy/seo";
 import { publicMetadata } from "@/lib/seo/site";
 import { faqPage, gameList, graph, organization, webApplication, website } from "@/lib/seo/jsonld";
 import { servedGameSwitch } from "@/lib/game-settings/server";
+import { siteFacts } from "@/lib/seo/facts";
 import { publicCounts, publicGames, publicGamesInWorld } from "@/lib/seo/games";
 import { playerWorlds } from "@/lib/catalog";
 import { TopicPills } from "@/components/seo/TopicPills";
@@ -48,7 +49,8 @@ export default async function Landing() {
   const sw = await servedGameSwitch();
   const counts = publicCounts(sw);
   const C = T.counted(counts.games, counts.worlds);
-  const faq = siteFaq(counts.games, counts.worlds, counts.names);
+  const facts = siteFacts(sw);
+  const faq = siteFaq(counts.games, counts.worlds, counts.names, facts);
   return (
     // R6: same-page links glide (data-smooth-scroll), the hero rises in once, sections reveal on scroll (Reveal).
     <div data-smooth-scroll className="safe-top min-h-dvh overflow-x-clip">
@@ -56,7 +58,7 @@ export default async function Landing() {
         data={graph(
           organization(),
           website(),
-          webApplication(),
+          webApplication(facts),
           gameList(S.catalogueTitleFor(counts.games), publicGames(sw)),
           faqPage(faq),
         )}

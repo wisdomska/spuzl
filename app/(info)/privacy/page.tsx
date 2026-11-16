@@ -12,7 +12,7 @@ export default function Privacy() {
     <>
       <h1>Privacy</h1>
       <p className="lede">
-        Last updated 9 November 2026. SPUZL is a free puzzle game for players aged 13 and up. We collect as little as we can.
+        Last updated 16 November 2026. SPUZL is a free puzzle game for players aged 13 and up. We collect as little as we can.
       </p>
 
       <h2>What we collect</h2>
@@ -46,6 +46,10 @@ export default function Privacy() {
           <strong>Social activity.</strong> Friends, requests, blocks, reactions and reports you send.
         </li>
         <li>
+          <strong>Room chat.</strong> The quick phrases you send in Duel, Party and board game rooms, and, in rooms where everyone is 16 or
+          older, the short lines you type there (filtered for abuse, contact details and links).
+        </li>
+        <li>
           <strong>Feedback you send</strong> from the <Link href="/contact">contact form</Link>, with the page you sent it from, your age
           group and, only if you add it, your email. We keep it to answer and act on it, and delete it with your account.
         </li>
@@ -57,7 +61,7 @@ export default function Privacy() {
       <h2>What we never do</h2>
       <ul>
         <li>We don&apos;t sell your data or show ads, and there is no third-party ad tracking.</li>
-        <li>We don&apos;t run open chat, so there are no private messages to store.</li>
+        <li>We don&apos;t have private messages: chat happens only inside game rooms.</li>
         <li>We don&apos;t collect precise location, contacts, photos or the day you were born.</li>
       </ul>
 

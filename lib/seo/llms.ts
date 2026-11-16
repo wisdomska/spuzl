@@ -2,10 +2,11 @@
  * /llms.txt and /llms-full.txt (llmstxt.org): what SPUZL is, for AI assistants and answer engines, in plain
  * Markdown. Built from the catalog and the SEO copy, so a new or retired game shows up (or drops out) by itself.
  */
-import { playerWorlds, type GameMeta, type GameSwitch } from "@/lib/catalog";
-import { FEATURES, SAFETY, gamesCopy, llmsSummaryFor, siteFaq } from "@/lib/copy/seo";
+import { playerWorlds, type GameMeta } from "@/lib/catalog";
+import { SAFETY, featuresFor, gamesCopy, llmsSummaryFor, siteFaq } from "@/lib/copy/seo";
 import { aboutCopy } from "@/lib/copy/about";
 import { LIVE_ONLY, gameDescription, gameFacts, publicCounts, publicGames, publicGamesInWorld } from "./games";
+import { siteFacts, type PublicSwitch } from "./facts";
 import { absoluteUrl } from "./site";
 import { publicTopics } from "./topics";
 
@@ -23,19 +24,19 @@ export type CopyFn = <T extends GameMeta>(g: T) => T;
 const asIs: CopyFn = (g) => g;
 
 /** The summary and the FAQ, counting the games that are On (llms.txt follows the Games page state). */
-const summary = (s: GameSwitch) => {
+const summary = (s: PublicSwitch) => {
   const c = publicCounts(s);
   return llmsSummaryFor(c.games, c.worlds, c.names);
 };
-const faqFor = (s: GameSwitch) => {
+const faqFor = (s: PublicSwitch) => {
   const c = publicCounts(s);
-  return siteFaq(c.games, c.worlds, c.names);
+  return siteFaq(c.games, c.worlds, c.names, siteFacts(s));
 };
 
 const link = (path: string, name: string, note?: string) => `- [${name}](${absoluteUrl(path)})${note ? `: ${note}` : ""}`;
 
 /** The short index: H1, summary blockquote, then sections of links (llmstxt.org). */
-export function llmsTxt(copy: CopyFn = asIs, lab: GameSwitch = LIVE_ONLY): string {
+export function llmsTxt(copy: CopyFn = asIs, lab: PublicSwitch = LIVE_ONLY): string {
   const out: string[] = [
     "# SPUZL",
     "",
@@ -67,7 +68,7 @@ export function llmsTxt(copy: CopyFn = asIs, lab: GameSwitch = LIVE_ONLY): strin
 }
 
 /** Everything in one plain-text file: what SPUZL is, every game in full, the FAQ, safety for 13 to 15, links. */
-export function llmsFullTxt(copy: CopyFn = asIs, lab: GameSwitch = LIVE_ONLY): string {
+export function llmsFullTxt(copy: CopyFn = asIs, lab: PublicSwitch = LIVE_ONLY): string {
   const out: string[] = [
     "# SPUZL",
     "",
@@ -92,7 +93,7 @@ export function llmsFullTxt(copy: CopyFn = asIs, lab: GameSwitch = LIVE_ONLY): s
     "",
     "## Features",
     "",
-    ...FEATURES.map((f) => `- ${f}`),
+    ...featuresFor(siteFacts(lab)).map((f) => `- ${f}`),
     "",
     "## Games",
   ];

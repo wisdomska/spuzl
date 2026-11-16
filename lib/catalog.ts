@@ -111,7 +111,8 @@ export const ALL_WORLDS: World[] = [
     name: "Arcade",
     color: "var(--w-rage)",
     ink: "var(--w-rage-ink)",
-    tagline: "Memory, rhythm, reflex and action",
+    // No rhythm game since Beat Tap retired (14 Nov 2026): Echo and Twins are memory, Flinch reflex, Gotcha and Dash action.
+    tagline: "Memory, reflex and action",
     icon: "game-controller",
   },
   { id: "board", name: "Board Games", color: "var(--w-board)", ink: "var(--w-board-ink)", tagline: "Classic board games", icon: "horse" },
