@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { crownfallRound, inPage, player, type Player } from "./helpers";
+import { RAIL_ROWS } from "../../lib/multiplayer/rail";
 
 /**
  * Party Race with 8 browser contexts: room code join (lowercase), lobby presence and ready states,
@@ -49,7 +50,13 @@ test("party: 8 devices race, host leaves, everyone sees the same podium", async 
   ).data;
   expect(v.games[0]).toBe("crownfall");
   await newHost.page.waitForTimeout(Math.max(0, v.roundStartedAt - v.serverNow) + 300);
-  for (const g of guests) await expect(g.page.getByRole("list", { name: "Race standings" }).getByRole("listitem")).toHaveCount(7);
+  // Big rooms keep the board in view: the rail shows RAIL_ROWS racers (top three, you, the one ahead) until Show all.
+  for (const g of guests) {
+    await expect(g.page.getByRole("list", { name: "Race standings" }).getByRole("listitem")).toHaveCount(RAIL_ROWS);
+    await expect(g.page.getByRole("button", { name: "Show all 7" })).toBeVisible();
+  }
+  await guests[5].page.getByRole("button", { name: "Show all 7" }).click();
+  await expect(guests[5].page.getByRole("list", { name: "Race standings" }).getByRole("listitem")).toHaveCount(7);
 
   // One racer plays through the board; the others' rails show that progress live.
   const r = crownfallRound(matchId, v.setNo, 1, v.difficulty);
@@ -78,7 +85,7 @@ test("party: 8 devices race, host leaves, everyone sees the same podium", async 
   }
   expect(titles.size).toBe(1);
   await expect(newHost.page.getByRole("button", { name: "Next game" })).toBeVisible();
-  await expect(guests[2].page.getByText(/Waiting for .* to start the next game/)).toBeVisible();
+  await expect(guests[2].page.getByText(/Waiting for .* to start game 2 of 3/)).toBeVisible();
 
   // TV mode shows the same room on a 1280 x 720 screen.
   const tv = await browser.newContext({ viewport: { width: 1280, height: 720 }, storageState: await newHost.context.storageState() });

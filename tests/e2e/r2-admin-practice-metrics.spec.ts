@@ -1,8 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
+import { GAME_BY_ID } from "@/lib/catalog";
 import { keepFocus, onboardGuest, VIEWPORTS, waitForBoard } from "./harness";
 
 /**
- * R2-ADMIN: practice rounds report to the admin Metrics page. A fresh guest opens Sixer (its practice round shows:
+ * R2-ADMIN: practice rounds report to the admin Metrics page. A fresh guest opens Spuzdoku (sixer; its practice round shows:
  * practice_start), skips it (practice_skip), and the real board follows; nothing else is sent for that round.
  * Needs a server with a database and 20261202000501 applied (the lead runs it).
  */
@@ -22,10 +23,11 @@ test("a practice round sends start, then skip, to the first-party metrics", asyn
   await keepFocus(page);
   await onboardGuest(page, { guided: true });
   const sent = metrics(page);
-  await page.goto("/play/sixer?mode=free");
-  await expect(page.getByText("First time playing Sixer?")).toBeVisible({ timeout: 30_000 });
+  // size=1: the board size is already picked (Spuzdoku's 6 × 6), straight to the practice round.
+  await page.goto("/play/sixer?mode=free&size=1");
+  await expect(page.getByText(`First time playing ${GAME_BY_ID.sixer.name}?`)).toBeVisible({ timeout: 30_000 });
   await expect.poll(() => sent.filter((m) => m.name === "practice_start").map((m) => m.game)).toEqual(["sixer"]);
-  await page.getByRole("button", { name: "Skip the Sixer practice round" }).click();
+  await page.getByRole("button", { name: `Skip the ${GAME_BY_ID.sixer.name} practice round` }).click();
   await waitForBoard(page);
   await expect
     .poll(() => sent.filter((m) => m.name.startsWith("practice_")).map((m) => m.name))

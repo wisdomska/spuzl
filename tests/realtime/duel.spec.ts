@@ -39,9 +39,12 @@ test("duel: two devices play a best of 3 in real time", async ({ browser }) => {
   // 3-2-1-SPUZL! unlocks the board. The strip never shows their board.
   await expect(a.page.getByText("Their board stays hidden")).toBeVisible({ timeout: 40_000 });
   await expect(b.page.getByText("Their board stays hidden")).toBeVisible();
-  const view = (await inPage<{ difficulty: string; setNo: number }>(a.page, `/api/v1/matches/${id}`)).data;
+  const view = (
+    await inPage<{ difficulty: string; setNo: number; roundStartedAt: number; serverNow: number }>(a.page, `/api/v1/matches/${id}`)
+  ).data;
   const r1 = crownfallRound(id, view.setNo, 1, view.difficulty);
-  await a.page.waitForTimeout(500);
+  // The server's round start (after the rules break and the countdown) unlocks the board: taps before it are ignored.
+  await a.page.waitForTimeout(Math.max(0, view.roundStartedAt - view.serverNow) + 500);
   // A places one crown: B's strip shows A's progress, computed by the server.
   await a.page.getByRole("button", { name: "Crown" }).click();
   await a.page.locator('[role="gridcell"]').nth(r1.crowns[0]).click();

@@ -3,8 +3,11 @@ import { seededBoardUrl } from "./harness";
 
 /**
  * Gotcha and Dash on a computer (owner, 14 Nov 2026): the on-screen controls can be shown and hidden again, and full
- * screen makes the board bigger (no width cap, the height above the controls).
+ * screen makes the board bigger (no width cap, the height above the controls). A computer: mouse, no touch (phones
+ * and tablets always keep the controls, so the mobile project runs it as a desktop too).
  */
+test.use({ isMobile: false, hasTouch: false });
+
 test("controls show and hide again; full screen grows the board", async ({ page }) => {
   await page.setViewportSize({ width: 1554, height: 732 });
   await page.goto(seededBoardUrl("gotcha", "qa", "medium"));

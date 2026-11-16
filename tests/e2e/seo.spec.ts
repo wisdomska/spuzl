@@ -33,6 +33,12 @@ async function expectSeo(page: Page, path: string, canonical: string, minWords =
   return ld.map((s) => JSON.parse(s) as Record<string, unknown>);
 }
 
+/**
+ * The games the public pages list: every live game, once. Spuzdoku's 9 × 9 board (nine, `variantOf: "sixer"`) is part
+ * of Spuzdoku's page (/games/sixer), not a page or list entry of its own.
+ */
+const LISTED = GAMES.filter((g) => !g.variantOf);
+
 const types = (docs: Record<string, unknown>[]) =>
   docs.flatMap((d) => ((d["@graph"] as Record<string, unknown>[] | undefined) ?? [d]).map((n) => n["@type"] as string));
 
@@ -42,7 +48,7 @@ test.describe("visitors and crawlers (no session)", () => {
     const ld = await expectSeo(page, "/", "/", 250);
     expect(types(ld)).toEqual(expect.arrayContaining(["Organization", "WebSite", "WebApplication", "FAQPage"]));
     await expect(page.getByRole("link", { name: "Play now" }).first()).toHaveAttribute("href", "/intro?next=/welcome/play");
-    for (const g of GAMES) await expect(page.locator(`main a[href="/games/${g.id}"]`).first(), g.id).toBeAttached();
+    for (const g of LISTED) await expect(page.locator(`main a[href="/games/${g.id}"]`).first(), g.id).toBeAttached();
     await expect(page.getByRole("heading", { name: "Is SPUZL free?" })).toBeVisible();
   });
 
@@ -72,7 +78,7 @@ test.describe("visitors and crawlers (no session)", () => {
   test("/games lists every live game (the graduated lab games too); an unknown or retired game is a 404", async ({ page }) => {
     await visit(page, "/games");
     await expectSeo(page, "/games", "/games");
-    for (const g of GAMES) await expect(page.locator(`main a[href="/games/${g.id}"]`).first(), g.id).toBeAttached();
+    for (const g of LISTED) await expect(page.locator(`main a[href="/games/${g.id}"]`).first(), g.id).toBeAttached();
     expect((await page.request.get("/games/nope")).status()).toBe(404);
     expect((await page.request.get("/games/five")).status()).toBe(200);
     expect((await page.request.get("/games/blackout")).status()).toBe(404);
@@ -83,7 +89,7 @@ test.describe("visitors and crawlers (no session)", () => {
     await expectSeo(page, "/world/word", "/world/word");
     await expect(page.getByRole("heading", { level: 1, name: WORLD_BY_ID.word.name })).toBeVisible();
     await expect(page.locator('meta[name="robots"][content*="noindex"]')).toHaveCount(0);
-    for (const g of GAMES.filter((x) => x.world === "word"))
+    for (const g of LISTED.filter((x) => x.world === "word"))
       await expect(page.locator(`main a[href="/games/${g.id}"]`).first()).toBeAttached();
     expect((await page.request.get("/world/puzzles")).status()).toBe(404);
     const folded = await page.request.get("/world/rage", { maxRedirects: 0 });
@@ -102,7 +108,7 @@ test.describe("visitors and crawlers (no session)", () => {
     expect(res.headers()["content-type"]).toContain("text/plain");
     const text = await res.text();
     expect(text.startsWith("# SPUZL\n")).toBe(true);
-    for (const g of GAMES) expect(text, g.id).toContain(`/games/${g.id})`);
+    for (const g of LISTED) expect(text, g.id).toContain(`/games/${g.id})`);
     expect((await request.get("/llms-full.txt")).status()).toBe(200);
   });
 
@@ -111,7 +117,7 @@ test.describe("visitors and crawlers (no session)", () => {
     for (const bot of ["GPTBot", "ClaudeBot", "PerplexityBot", "Google-Extended"]) expect(robots).toContain(`User-Agent: ${bot}`);
     expect(robots).toContain("Disallow: /admin");
     const sitemap = await (await request.get("/sitemap.xml")).text();
-    for (const g of GAMES) expect(sitemap, g.id).toContain(`/games/${g.id}</loc>`);
+    for (const g of LISTED) expect(sitemap, g.id).toContain(`/games/${g.id}</loc>`);
     expect(sitemap).not.toContain("/world/rage<");
   });
 });

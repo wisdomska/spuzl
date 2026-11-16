@@ -18,7 +18,8 @@ test.use({ viewport: VIEWPORTS.phone });
 for (const id of GAMES) {
   test(`${id}: the first hint before any move is a real move, not the rule`, async ({ page }) => {
     await onboardGuest(page, "18+", undefined, { guided: true });
-    await page.goto(`/play/${id}?mode=free`);
+    // size=1: Spuzdoku's board size (nine is its 9 × 9) is already picked, so the practice round opens at once.
+    await page.goto(`/play/${id}?mode=free&size=1`);
     await expect(page.getByText(`First time playing ${GAME_BY_ID[id].name}?`)).toBeVisible({ timeout: 30_000 });
     // Merge holds its board behind a Start button; the hint is for the board as dealt.
     const start = page.getByRole("button", { name: /^Start\b/ });

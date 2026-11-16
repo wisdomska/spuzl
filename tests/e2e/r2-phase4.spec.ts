@@ -46,7 +46,8 @@ for (const [vpName, vp] of Object.entries({ "375": VIEWPORTS.phone, "1280": VIEW
     test("every game opens and fits", async () => {
       const bad: string[] = [];
       for (const g of GAMES) {
-        await page.goto(`/play/${g.id}?mode=free`);
+        // size=1: Spuzdoku's board-size picker (sixer, nine) is already answered by the address.
+        await page.goto(`/play/${g.id}?mode=free&size=1`);
         try {
           await waitForBoard(page, 45_000);
         } catch {
@@ -133,7 +134,9 @@ for (const [vpName, vp] of Object.entries({ "375": VIEWPORTS.phone, "1280": VIEW
       expect(overflow).toBeLessThanOrEqual(2);
     });
 
-    test("Gotcha: no black first frame, playfield at least 60% of the viewport height", async () => {
+    // 1.63.2: on a phone Gotcha's camera shows a 16 × 10 tile window (about 20 px tiles), so the playfield is as wide
+    // as the screen rather than 60% of its height; on a computer it still takes 60% of the height.
+    test("Gotcha: no black first frame, playfield fills the phone's width or 60% of a computer's height", async () => {
       await page.goto("/play/gotcha?mode=free");
       const canvas = page.locator("canvas").first();
       await canvas.waitFor({ timeout: 45_000 });
@@ -150,13 +153,14 @@ for (const [vpName, vp] of Object.entries({ "375": VIEWPORTS.phone, "1280": VIEW
         }
       });
       await shot("gotcha-first-frame");
-      const h = (await canvas.boundingBox())!.height;
+      const { width: w, height: h } = (await canvas.boundingBox())!;
       test.info().annotations.push({
         type: "gotcha",
         description: `canvas ${Math.round(h)}px of ${vp.height}; dark first frame: ${firstFrameDark}`,
       });
       expect(firstFrameDark).not.toBe(true);
-      expect(h / vp.height).toBeGreaterThanOrEqual(0.6);
+      if (vp.width < 900) expect(w / vp.width).toBeGreaterThanOrEqual(0.9);
+      else expect(h / vp.height).toBeGreaterThanOrEqual(0.6);
     });
 
     test("adult Quick Match: live queue copy, then the bot offer", async () => {

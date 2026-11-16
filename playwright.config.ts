@@ -9,7 +9,9 @@ const baseURL = process.env.PW_BASE_URL ?? "http://localhost:3000";
 export default defineConfig({
   testDir: "tests",
   testMatch: "**/*.spec.ts",
-  testIgnore: process.env.PERF ? [] : ["tests/perf/**"],
+  // The realtime multiplayer specs have their own config (tests/realtime/playwright.config.ts: one desktop browser,
+  // several contexts, long timeouts); they never run under these phone and desktop projects.
+  testIgnore: process.env.PERF ? ["tests/realtime/**"] : ["tests/perf/**", "tests/realtime/**"],
   timeout: 60_000,
   expect: { timeout: 10_000 },
   fullyParallel: false,

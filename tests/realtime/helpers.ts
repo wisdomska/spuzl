@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { createServerClient } from "@supabase/ssr";
 import type { Browser, BrowserContext, Page } from "@playwright/test";
@@ -17,6 +18,8 @@ const env = Object.fromEntries(
     : [],
 );
 export const BASE = process.env.E2E_BASE ?? "http://localhost:3201";
+/** Where every guest a run creates is listed (same file and default as tests/e2e/harness.ts). */
+const GUEST_LOG = process.env.QA_GUEST_LOG ?? ".qa/guests.txt";
 const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? env.NEXT_PUBLIC_SUPABASE_URL;
 const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY ?? env.SUPABASE_SERVICE_ROLE_KEY;
@@ -40,6 +43,9 @@ export async function player(
   const sb = createClient(SB_URL, ANON, { auth: { persistSession: false } });
   const { data, error } = await sb.auth.signInAnonymously();
   if (error) throw error;
+  // Listed for scripts/qa/delete-test-guests.mjs, like the e2e harness's guests (test players are always deleted).
+  fs.mkdirSync(path.dirname(GUEST_LOG), { recursive: true });
+  fs.appendFileSync(GUEST_LOG, `${data.user!.id}\n`);
   const nickname = uniq(prefix);
   const res = await fetch(`${BASE}/api/v1/profile`, {
     method: "POST",

@@ -46,11 +46,26 @@ jobs:
           (set -a; . ./.env.local; set +a; pnpm gen:puzzles --days 14)
           pnpm build
           (SETTINGS_CACHE_MS=0 pnpm start -p 3000 > server.log 2>&1 &) && npx wait-on http://localhost:3000/api/health -t 90000
+      # The specs that write to the database (Sparks, hats, settings) read the Supabase URL and service role from the
+      # environment, so the test process gets the same .env.local as the app. PROD_STATIC: this is a production build,
+      # so static pages keep the old file until revalidated (tests/e2e/r4-10-admin-copy.spec.ts).
       - name: Browser tests
-        run: pnpm test:e2e --trace off
+        run: |
+          set -a; . ./.env.local; set +a
+          pnpm test:e2e --trace off
         env:
           PW_BASE_URL: http://localhost:3000
           API_BASE: http://localhost:3000
+          QA_GUEST_LOG: .qa/guests.txt
+          PROD_STATIC: "1"
+      # Realtime multiplayer (Party, Duel, Board Bay across several browser contexts) has its own config.
+      - name: Realtime tests
+        if: ${{ !cancelled() }}
+        run: |
+          set -a; . ./.env.local; set +a
+          pnpm exec playwright test -c tests/realtime/playwright.config.ts
+        env:
+          E2E_BASE: http://localhost:3000
           QA_GUEST_LOG: .qa/guests.txt
       - name: Server log on failure
         if: failure()

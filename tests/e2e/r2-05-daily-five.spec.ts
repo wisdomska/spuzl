@@ -69,9 +69,14 @@ test.describe("R2-05 Daily Five", () => {
     await expect(card).toContainText("0/5");
     await expect(card).toHaveAccessibleName(/Daily Five: 0 of 5 played, 0 points/);
     const map = page.getByRole("region", { name: "The Grid" });
-    const c = (await card.boundingBox())!;
-    const m = (await map.boundingBox())!;
-    expect(c.y + c.height).toBeLessThanOrEqual(m.y + 1);
+    // Home's rows rise in (a few px of translate): measure once they've settled.
+    await expect
+      .poll(async () => {
+        const c = (await card.boundingBox())!;
+        const m = (await map.boundingBox())!;
+        return c.y + c.height - m.y;
+      })
+      .toBeLessThanOrEqual(1);
     const five = await fiveOf(page);
     await card.click();
     await page.waitForURL(new RegExp(`/play/${five.games[0].game}\\?mode=five`));

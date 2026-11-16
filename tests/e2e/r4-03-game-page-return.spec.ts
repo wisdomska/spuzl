@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { logGuest, pickBirth } from "./harness";
+import { GAME_BY_ID } from "@/lib/catalog";
 
 /**
  * R4-03: a signed-out visitor who taps Play on /games/<id> goes through onboarding and lands on that game, not on
@@ -23,7 +24,7 @@ async function finishOnboarding(page: Page) {
 test("Play on a game's page returns to that game after onboarding", async ({ page }) => {
   await page.goto("/games/sixer");
   await page
-    .getByRole("link", { name: /^Play Sixer free$/ })
+    .getByRole("link", { name: `Play ${GAME_BY_ID.sixer.name} free`, exact: true })
     .first()
     .click();
   await expect(page).toHaveURL(/[?&]return=game(%3A|:)sixer/, { timeout: 15_000 });

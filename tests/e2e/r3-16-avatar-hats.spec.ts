@@ -1,16 +1,28 @@
-import { execSync } from "node:child_process";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { guestContext, VIEWPORTS } from "./harness";
+import { admin } from "../api/helpers";
 import { LAUNCH_IDS } from "@/lib/catalog";
 
 /**
  * R3-16 (owner: "the Spuz avatar customizations should reflect everywhere"): list avatars are small still Spuz
  * chips wearing each player's Shop look. A friend's Shades show on their Friends row and their leaderboard row,
  * and on their Party lobby seat; the chips keep the old avatar box, so no row grows or scrolls sideways.
- * Needs the app with the local database (it sets Sparks and a Daily result with psql, like r3-15-spuz-wear).
+ * Needs the app with a database: it sets Sparks and a Daily result through the service role (local or hosted).
+ * The leaderboard is a Daily-only screen: while Dailies are off (admin "features.dailies", off in production) it
+ * redirects to Home, so its checks run only when Dailies are on.
  */
 
-const psql = (sql: string) => execSync(`PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -qc "${sql}"`);
+const must = async (q: PromiseLike<{ error: unknown }>) => {
+  const { error } = await q;
+  if (error) throw error;
+};
+
+/** Whether the Daily leaderboards are on (they answer dailies_off otherwise). */
+async function dailiesOn(page: Page) {
+  const res = await page.request.get("/api/v1/leaderboards/crownfall?scope=friends");
+  if (!res.ok()) expect(await res.text()).toContain("dailies_off");
+  return res.ok();
+}
 
 async function myId(page: Page) {
   return (await (await page.request.get("/api/v1/me")).json()).id as string;
@@ -18,7 +30,7 @@ async function myId(page: Page) {
 
 /** Buys and wears Shades through the real Shop API. */
 async function wearShades(page: Page, nickname: string) {
-  psql(`update players set sparks = 1000 where nickname = '${nickname}'`);
+  await must(admin().from("players").update({ sparks: 1000 }).eq("nickname", nickname));
   const buy = await page.request.post("/api/v1/shop/buy", { data: { itemId: "hat-shades", requestId: crypto.randomUUID() } });
   expect(buy.ok(), await buy.text()).toBe(true);
   const equip = await page.request.post("/api/v1/shop/equip", { data: { itemId: "hat-shades", equip: true } });
@@ -39,8 +51,13 @@ async function friendsWithShades(browser: Browser, viewport: { width: number; he
     [await myId(a.page), 70_000],
     [await myId(b.page), 50_000],
   ] as const)
-    psql(
-      `insert into daily_results (date, game_id, player_id, time_ms, finished_at) values ('${day}', '${game}', '${id}', ${ms}, now()) on conflict do nothing`,
+    await must(
+      admin()
+        .from("daily_results")
+        .upsert(
+          { date: day, game_id: game, player_id: id, time_ms: ms, finished_at: new Date().toISOString() },
+          { onConflict: "date,game_id,player_id", ignoreDuplicates: true },
+        ),
     );
   return { a, b };
 }
@@ -55,7 +72,14 @@ test("a friend's Shades show on their Friends row and leaderboard row; no hat sh
   const friends = a.page.getByRole("region", { name: "Your friends" });
   await expect(friends.getByText(b.nickname)).toBeVisible({ timeout: 15_000 });
   await expect(friends.locator('[data-avatar="spuz"] [data-hat="shades"]')).toHaveCount(1);
+  await noOverflow(a.page);
 
+  if (!(await dailiesOn(a.page))) {
+    test.info().annotations.push({ type: "leaderboard", description: "Dailies are off: leaderboard checks skipped" });
+    await a.ctx.close();
+    await b.ctx.close();
+    return;
+  }
   await a.page.goto("/leaderboards");
   const theirRow = a.page.locator(`a[href="/u/${b.nickname}"]`);
   await expect(theirRow.locator('[data-hat="shades"]').first()).toBeVisible({ timeout: 15_000 });
@@ -106,10 +130,12 @@ for (const [label, size] of Object.entries(VIEWPORTS))
   test(`R3-16 screens at ${label} (${size.width})`, async ({ browser }) => {
     const { a, b } = await friendsWithShades(browser, size);
 
-    await a.page.goto("/leaderboards");
-    await expect(a.page.locator(`a[href="/u/${b.nickname}"] [data-hat="shades"]`).first()).toBeVisible({ timeout: 15_000 });
-    await a.page.screenshot({ path: `docs/qa/screens/r3/R3-16-leaderboard-${size.width}.png` });
-    await noOverflow(a.page);
+    if (await dailiesOn(a.page)) {
+      await a.page.goto("/leaderboards");
+      await expect(a.page.locator(`a[href="/u/${b.nickname}"] [data-hat="shades"]`).first()).toBeVisible({ timeout: 15_000 });
+      await a.page.screenshot({ path: `docs/qa/screens/r3/R3-16-leaderboard-${size.width}.png` });
+      await noOverflow(a.page);
+    }
 
     await a.page.goto("/friends");
     await expect(a.page.getByRole("region", { name: "Your friends" }).locator('[data-hat="shades"]')).toBeVisible({ timeout: 15_000 });

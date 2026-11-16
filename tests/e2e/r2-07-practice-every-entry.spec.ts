@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { GAME_BY_ID } from "@/lib/catalog";
-import { keepFocus, onboardGuest, partyRoom, VIEWPORTS, waitForBoard } from "./harness";
+import { keepFocus, onboardGuest, partyRoom, pickSize, VIEWPORTS, waitForBoard } from "./harness";
 
 /**
  * R2-07 Practice round on the first open of a game, from any entry. A fresh guest (practice rounds kept: `guided`)
@@ -78,8 +78,10 @@ test.describe("other entries", () => {
     test.setTimeout(120_000);
     await keepFocus(page);
     await onboardGuest(page, { guided: true });
+    // Spuzdoku asks for a board size first (6 × 6 or 9 × 9), then the practice round.
     await page.goto("/play/sixer?mode=level");
-    await expect(practice(page, "Sixer")).toBeVisible({ timeout: 30_000 });
+    await pickSize(page, 6);
+    await expect(practice(page, GAME_BY_ID.sixer.name)).toBeVisible({ timeout: 30_000 });
     await page.goto("/play/fourup/bot");
     await expect(practice(page, GAME_BY_ID.fourup.name)).toBeVisible({ timeout: 30_000 });
     await shot(page, "bot", 375);
