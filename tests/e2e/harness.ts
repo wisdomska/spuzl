@@ -28,7 +28,7 @@
 import { expect, type Browser, type Locator, type Page } from "@playwright/test";
 import { pickMonth } from "./pick";
 export { pickMonth, pickOption } from "./pick";
-import { GAMES, LAB_GAMES } from "@/lib/catalog";
+import { GAME_BY_ID, GAMES, LAB_GAMES } from "@/lib/catalog";
 import { createRng } from "@/lib/rng";
 import type { Difficulty } from "@/games/types";
 // Static imports: Playwright's loader resolves the "@/" alias only for these, not for runtime import()
@@ -471,18 +471,28 @@ export const ALL_SLUGS = [...GAMES, ...LAB_GAMES].map((g) => g.id);
 
 export async function duelVsBot(page: Page) {
   // no game is picked by default any more: come in with one chosen
+  // The search screen is real, but the queue is not: parallel tests in the real queue get matched with each other (two
+  // test players met and one dropped out) instead of the bot. The rules card always shows (a game never cleared,
+  // SPZ-12), then the player waits alone. Real matchmaking is covered by tests/realtime.
+  await page.route("**/api/v1/duel/queue", (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    const { rulesSeen } = (route.request().postDataJSON() ?? {}) as { rulesSeen?: boolean };
+    return rulesSeen
+      ? route.fulfill({ json: { status: "waiting", searching: 0 } })
+      : route.fulfill({ status: 409, json: { error: "needs_rules", message: GAME_BY_ID.sixer.rule } });
+  });
   await page.goto("/duel?game=sixer");
-  // Quick Match, past the rules card for a game never cleared (SPZ-12), then the Practice bot (offered at once).
+  // Quick Match, past the rules card, then the Practice bot (offered at once).
   await page
     .getByRole("button", { name: /Quick Match/ })
     .first()
     .click();
   const ready = page.getByRole("button", { name: /I'm ready/ });
   const bot = page.getByRole("button", { name: /Play Spuzl now|against Spuzl/ });
-  await expect(ready.or(bot).first()).toBeVisible({ timeout: 20_000 });
-  if (await ready.isVisible()) await ready.click();
+  await ready.click({ timeout: 20_000 });
   await bot.first().click();
   await page.waitForURL(/\/duel\?m=/, { timeout: 30_000 });
+  await page.unroute("**/api/v1/duel/queue");
   return waitForBoard(page, 45_000);
 }
 
