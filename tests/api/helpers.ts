@@ -79,7 +79,7 @@ export const uniq = (p: string) => {
 
 /** Where this run's guests are listed for the teardown (QA_GUEST_LOG, as the e2e harness uses, else .qa/). */
 export const API_GUEST_LOG = process.env.QA_GUEST_LOG ?? ".qa/guests-api.txt";
-function logGuest(id: string) {
+export function logGuest(id: string) {
   try {
     fs.mkdirSync(path.dirname(API_GUEST_LOG), { recursive: true });
     fs.appendFileSync(API_GUEST_LOG, id + "\n");

@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 /**
- * Deletes the guest accounts a QA or perf run created (one user id per line in the file given), through Supabase
+ * Deletes the test accounts a QA or perf run created (one user id per line in the file given), through Supabase
  * Auth's admin API, the same path as the app's own account deletion (everything about the player cascades).
- * Safety: a user is deleted only if it is anonymous and has no email; anyone else is skipped and reported.
+ * Safety: a user is deleted only if it is an anonymous guest with no email, or its email is on the reserved .test
+ * domain (test admins and email users, `@admin.test`); anyone else is skipped and reported.
  *
  *   SUPABASE_URL=https://<ref>.supabase.co SUPABASE_SERVICE_ROLE_KEY=… node scripts/qa/delete-test-guests.mjs test-results/r2-guests.txt
  */
 import { readFileSync } from "node:fs";
+import { isTestAccount } from "./test-account.mjs";
 
 const [file] = process.argv.slice(2);
 const url = process.env.SUPABASE_URL;
@@ -33,8 +35,8 @@ for (const id of ids) {
     continue;
   }
   const u = await r.json();
-  if (!u.is_anonymous || u.email) {
-    console.warn(`skipped ${id}: not an anonymous guest`);
+  if (!isTestAccount(u)) {
+    console.warn(`skipped ${id}: not a test account`);
     skipped++;
     continue;
   }

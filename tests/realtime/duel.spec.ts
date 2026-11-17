@@ -12,12 +12,12 @@ test("duel: two devices play a best of 3 in real time", async ({ browser }) => {
 
   // Game-first entry (SPZ-13): Crownfall preselected; the Duel page (SPZ-25); new players read the rules card
   // first (SPZ-12), then Quick Match.
+  // The screen shows "Finding a rival" as soon as Quick Match is tapped; the server's answer may then ask for the
+  // rules card first (409 needs_rules). So wait for that answer before deciding whether to tap I'm ready.
   const quick = async (p: typeof a) => {
+    const joined = p.page.waitForResponse((r) => r.request().method() === "POST" && new URL(r.url()).pathname === "/api/v1/duel/queue");
     await p.page.getByRole("button", { name: /Quick Match/ }).click();
-    const ready = p.page.getByRole("button", { name: /I'm ready/ });
-    const searching = p.page.getByRole("heading", { name: "Finding a rival" });
-    await expect(ready.or(searching).first()).toBeVisible();
-    if (await ready.isVisible()) await ready.click();
+    if ((await joined).status() === 409) await p.page.getByRole("button", { name: /I'm ready/ }).click();
   };
   for (const p of [a, b]) {
     await p.page.goto("/duel?game=crownfall");

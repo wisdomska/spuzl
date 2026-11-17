@@ -7,11 +7,27 @@ import type { LeavePolicy } from "@/lib/game/leave";
 const GUARD = "spuzlLeaveGuard";
 /** The leave or resign call gets this long before the player goes anyway (offline must never trap anyone). */
 const FORFEIT_WAIT_MS = 2500;
+/** Taking the guard entry off waits this long for the browser's popstate before exiting anyway. */
+const POP_WAIT_MS = 1000;
 /** The guard owned by the mounted game; a remount (StrictMode, a new puzzle) adopts the entry already there. */
 let owner = 0;
 let seq = 0;
 
 const onGuard = () => typeof window !== "undefined" && !!(window.history.state as Record<string, unknown> | null)?.[GUARD];
+
+/** Steps back off the guard entry and resolves once the browser is there (or after POP_WAIT_MS). */
+function popGuard(): Promise<void> {
+  return new Promise((resolve) => {
+    const done = () => {
+      window.removeEventListener("popstate", done);
+      clearTimeout(t);
+      resolve();
+    };
+    const t = setTimeout(done, POP_WAIT_MS);
+    window.addEventListener("popstate", done);
+    window.history.back();
+  });
+}
 
 /**
  * One way out of a game, whatever the route: the Back button, the menu's Leave game, Escape (no dialog open)
@@ -46,8 +62,7 @@ export function useLeave({
   });
   // The confirm was opened by a back gesture (the guard entry is gone): another back leaves.
   const fromGesture = useRef(false);
-  // Leaving from the confirm with the guard entry still on top: exit once the entry is off.
-  const exitAfterPop = useRef(false);
+  // Set once the player leaves: from then on only `leave` moves through history (exactly one step back, then exit).
   const done = useRef(false);
 
   const runForfeit = useCallback(async (keepalive: boolean) => {
@@ -62,10 +77,11 @@ export function useLeave({
     setBusy(true);
     await runForfeit(false);
     setAsking(false);
-    if (onGuard()) {
-      exitAfterPop.current = true;
-      window.history.back();
-    } else live.current.exit();
+    // The leave call usually ends the match first, which lifts the guard; its clean-up leaves the entry to us, so the
+    // player takes one step back off it and then exits. Two steps took a player who opened the match from a shared
+    // link (nothing before it in the tab) off the site.
+    if (onGuard()) await popGuard();
+    live.current.exit();
   }, [runForfeit]);
 
   /** Where focus goes back to when the player keeps playing (the button that asked, if it is still there). */
@@ -105,11 +121,6 @@ export function useLeave({
     owner = id;
     if (!onGuard()) window.history.pushState({ ...(window.history.state ?? {}), [GUARD]: true }, "");
     const onPop = () => {
-      if (exitAfterPop.current) {
-        exitAfterPop.current = false;
-        live.current.exit();
-        return;
-      }
       if (onGuard() || done.current) return;
       if (fromGesture.current) {
         // Second back: the browser is already leaving. Tell the server on the way out.
@@ -125,8 +136,9 @@ export function useLeave({
       window.removeEventListener("popstate", onPop);
       if (owner === id) owner = 0;
       // No longer guarded (the run ended) and still on our entry: take it off after any remount had its chance.
+      // Not while the player is leaving: `leave` takes it off itself.
       setTimeout(() => {
-        if (owner === 0 && onGuard() && !exitAfterPop.current) window.history.back();
+        if (owner === 0 && onGuard() && !done.current) window.history.back();
       }, 0);
     };
   }, [guard, runForfeit]);

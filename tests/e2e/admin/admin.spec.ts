@@ -195,6 +195,9 @@ test("content editor: draft with schema validation, second person approves", asy
   await expect(owner.getByLabel("Players get it on")).toBeVisible();
   await editorCtx.close();
   await ownerCtx.close();
+  // Test content never stays in a game's pool (approved, it would reach players on a shared database).
+  const { error } = await admin().from("content_items").delete().eq("payload->>q", `Things in an e2e test ${id}`);
+  expect(error).toBeNull();
 });
 
 test("roles: the UI hides what a role cannot do and the server refuses the page", async ({ page }) => {

@@ -68,6 +68,7 @@ export default function Privacy() {
       <h2>How long we keep it</h2>
       <ul>
         <li>Your profile (including your birth month and year), results and progress: for as long as you have an account.</li>
+        <li>Room chat: 24 hours, then it is deleted.</li>
         <li>Move-by-move logs: 90 days, unless a result was flagged for review.</li>
         <li>Anonymous usage stats: up to 12 months.</li>
       </ul>

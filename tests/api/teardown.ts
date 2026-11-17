@@ -1,10 +1,12 @@
 import fs from "node:fs";
 import { createClient } from "@supabase/supabase-js";
+import { isTestAccount } from "../../scripts/qa/test-account.mjs";
 
 /**
- * Vitest global teardown for the API tests: deletes every anonymous guest the run created (listed by
- * tests/api/helpers.ts guest()), so a run against a shared database leaves no test players behind. Accounts with an
- * email are never touched. Best effort: a failure here never fails the run.
+ * Vitest global teardown for the API tests: deletes every test account the run created (guests from
+ * tests/api/helpers.ts guest(), admins and email users from admin-helpers.ts adminSession()), so a run against a
+ * shared database leaves no test accounts behind. Only anonymous guests and addresses on the reserved .test domain
+ * are deleted; a real account is never touched. Best effort: a failure here never fails the run.
  */
 export default async function teardown() {
   const file = process.env.QA_GUEST_LOG ?? ".qa/guests-api.txt";
@@ -34,12 +36,12 @@ export default async function teardown() {
   for (const id of ids) {
     try {
       const { data } = await db.auth.admin.getUserById(id);
-      if (!data.user || !data.user.is_anonymous || data.user.email) continue;
+      if (!data.user || !isTestAccount(data.user)) continue;
       if (!(await db.auth.admin.deleteUser(id)).error) deleted++;
     } catch {
       /* next one */
     }
   }
   fs.writeFileSync(file, "");
-  console.log(`[api teardown] deleted ${deleted} of ${ids.length} test guests`);
+  console.log(`[api teardown] deleted ${deleted} of ${ids.length} test accounts`);
 }

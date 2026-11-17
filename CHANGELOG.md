@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.69.0 (17 November 2026)
+
+### Everyone
+
+- **Room chat is kept 24 hours:** chat in Duel, Party and board game rooms is deleted 24 hours after it is sent
+  (was 7 days). The privacy page says so.
+- **Leaving a Duel or Party takes you to the lobby:** a match opened from a shared link no longer sends you to a
+  blank page when you leave it.
+
+### Admin
+
+- Any account can now be deleted, admins too. The activity log keeps every entry as written.
+
+### Behind the scenes
+
+- Test accounts, admins as well as players, are deleted after every test run, and test questions never stay in a
+  game.
+
 ## 1.68.2 (17 November 2026)
 
 ### Everyone

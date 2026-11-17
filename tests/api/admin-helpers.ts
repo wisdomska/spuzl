@@ -1,6 +1,6 @@
 import { createHmac, randomBytes } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
-import { ANON, BASE, SB_URL, admin, uniq } from "./helpers";
+import { ANON, BASE, SB_URL, admin, logGuest, uniq } from "./helpers";
 
 /** RFC 6238 TOTP (SHA-1, 30 s, 6 digits) from a base32 secret, as an authenticator app computes it. */
 export function totp(secret: string, at = Date.now()): string {
@@ -56,6 +56,8 @@ export async function adminSession(role: Role | null): Promise<AdminSession> {
   const { data: created, error } = await db.auth.admin.createUser({ email, password, email_confirm: true });
   if (error) throw error;
   const userId = created.user.id;
+  // Test accounts are always deleted after use, admins too (the teardown and scripts/qa/delete-test-guests.mjs).
+  logGuest(userId);
   if (role) {
     const { error: e2 } = await db.from("admins").insert({ user_id: userId, role, email });
     if (e2) throw e2;

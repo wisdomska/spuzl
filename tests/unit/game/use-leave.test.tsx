@@ -109,6 +109,28 @@ describe("useLeave", () => {
     expect(exit).toHaveBeenCalledTimes(1);
   });
 
+  it("leaving a live match takes one step back, even when the match ends while the leave call runs", async () => {
+    // The Duel was the first page in the tab (opened from a shared link): two steps back left the site. A browser
+    // moves through history after back() returns, so the traversal lands a moment later.
+    const back = vi.spyOn(window.history, "back").mockImplementation(() => void setTimeout(goBack, 2));
+    const exit = vi.fn();
+    const out: { api?: Api } = {};
+    const ended = <Harness input={{ context: "duel", over: true }} exit={exit} onApi={(a) => (out.api = a)} />;
+    const mounted: { view?: ReturnType<typeof render> } = {};
+    const forfeit = vi.fn(async () => {
+      // The server ends the match and the screen re-renders before the call returns: the guard is lifted.
+      mounted.view!.rerender(ended);
+      await new Promise((r) => setTimeout(r, 5));
+    });
+    mounted.view = render(<Harness input={{ context: "duel" }} exit={exit} forfeit={forfeit} onApi={(a) => (out.api = a)} />);
+    act(() => out.api!.request());
+    await act(async () => out.api!.confirm());
+    await act(async () => void (await new Promise((r) => setTimeout(r, 10))));
+    expect(forfeit).toHaveBeenCalledTimes(1);
+    expect(back).toHaveBeenCalledTimes(1);
+    expect(exit).toHaveBeenCalledTimes(1);
+  });
+
   it("Escape asks to leave when no dialog or menu is open, and is left alone otherwise", () => {
     const { out } = setup({ context: "duel" });
     const dialog = document.createElement("div");
