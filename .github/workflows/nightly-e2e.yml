@@ -59,7 +59,9 @@ jobs:
           echo "INITIAL_OWNER_EMAIL=owner@ci.spuzl.test" >> .env.local
           (set -a; . ./.env.local; set +a; pnpm gen:puzzles --days 14)
           pnpm build
-          (SETTINGS_CACHE_MS=0 pnpm start -p 3000 > server.log 2>&1 &) && npx wait-on http://localhost:3000/api/health -t 90000
+          # Idle connections stay open 70 s (Node's default is 5 s): the test clients reuse them, and one reused just as
+          # the server closed it failed a request with ECONNRESET (r4-h owned hats, 17 Nov 2026).
+          (SETTINGS_CACHE_MS=0 pnpm start -p 3000 --keepAliveTimeout 70000 > server.log 2>&1 &) && npx wait-on http://localhost:3000/api/health -t 90000
       # The specs that write to the database (Sparks, hats, settings) read the Supabase URL and service role from the
       # environment, so the test process gets the same .env.local as the app. PROD_STATIC: this is a production build,
       # so static pages keep the old file until revalidated (tests/e2e/r4-10-admin-copy.spec.ts).
@@ -67,7 +69,8 @@ jobs:
         if: ${{ !inputs.realtime_only }}
         run: |
           set -a; . ./.env.local; set +a
-          if [ "${REPEAT:-1}" -gt 1 ]; then extra="--repeat-each $REPEAT --retries 0"; else extra=""; fi
+          # Owner, 17 Nov 2026: "i want consistency, always". A test that only passes on a retry fails the run.
+          if [ "${REPEAT:-1}" -gt 1 ]; then extra="--repeat-each $REPEAT --retries 0"; else extra="--fail-on-flaky-tests"; fi
           # SPECS is split into separate arguments on purpose (one per spec).
           pnpm test:e2e --trace off $extra $SPECS
         env:
@@ -82,7 +85,7 @@ jobs:
         if: ${{ !cancelled() && inputs.specs == '' }}
         run: |
           set -a; . ./.env.local; set +a
-          pnpm exec playwright test -c tests/realtime/playwright.config.ts
+          pnpm exec playwright test -c tests/realtime/playwright.config.ts --fail-on-flaky-tests
         env:
           E2E_BASE: http://localhost:3000
           QA_GUEST_LOG: .qa/guests.txt

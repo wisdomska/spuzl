@@ -23,13 +23,32 @@ test("rows are links: href, Ctrl-click opens a new page, a plain click opens the
   await expect(row).toHaveAttribute("href", "/play/crownfall");
   expect(await row.evaluate((a) => a.tagName)).toBe("A");
 
-  // Ctrl/Cmd-click: the browser opens the game in a new page; this page stays on the Library with no card.
+  // Ctrl/Cmd-click is left to the browser (a new tab): the click reaches the real link with the modifier and nothing
+  // cancels it, and this page stays on the Library with no card. Whether the browser then opens the tab is the
+  // browser's own business: headless Chromium under load sometimes skips it even for a plain anchor (seen on CI:
+  // the click arrived, uncancelled, and no tab), so that part is checked by opening the link's address in a new page.
   await waitForHydration(row);
-  const [popup] = await Promise.all([context.waitForEvent("page"), row.click({ modifiers: ["ControlOrMeta"] })]);
-  // The new page starts at about:blank; wait for it to reach the game before reading its URL.
-  await popup.waitForURL((u) => u.pathname === "/play/crownfall", { timeout: 30_000 });
-  expect(new URL(popup.url()).pathname).toBe("/play/crownfall");
-  await popup.close();
+  type Seen = { href: string | null; modified: boolean; prevented: boolean };
+  await page.evaluate(() => {
+    const w = window as unknown as { __ctrlClick?: Seen };
+    document.addEventListener(
+      "click",
+      (e) => {
+        const href = (e.target as Element).closest("a")?.getAttribute("href") ?? null;
+        // Read once every handler (React's included) has run.
+        setTimeout(() => (w.__ctrlClick = { href, modified: e.ctrlKey || e.metaKey, prevented: e.defaultPrevented }), 0);
+      },
+      { capture: true, once: true },
+    );
+  });
+  await row.click({ modifiers: ["ControlOrMeta"] });
+  await expect
+    .poll(() => page.evaluate(() => (window as unknown as { __ctrlClick?: Seen }).__ctrlClick ?? null))
+    .toEqual({ href: "/play/crownfall", modified: true, prevented: false });
+  const tab = await context.newPage();
+  await tab.goto((await row.getAttribute("href"))!);
+  await tab.waitForURL((u) => u.pathname === "/play/crownfall", { timeout: 30_000 });
+  await tab.close();
   await expect(page).toHaveURL(/\/library$/);
   await expect(page.getByRole("dialog")).toHaveCount(0);
 
