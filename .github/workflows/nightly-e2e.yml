@@ -13,9 +13,18 @@ on:
         description: "Run only the realtime multiplayer tests (skips the browser suite)"
         type: boolean
         default: false
+      specs:
+        description: "Only these browser specs (paths or file names, space-separated); skips the realtime tests"
+        type: string
+        default: ""
+      repeat:
+        description: "Run each browser test this many times, with no retries (proves a flaky test is fixed)"
+        type: number
+        default: 1
 
 concurrency:
-  group: nightly-e2e
+  # A focused run (some specs, or realtime only) never cancels the full nightly.
+  group: nightly-e2e-${{ (inputs.specs != '' || inputs.realtime_only) && github.run_id || 'full' }}
   cancel-in-progress: true
 
 jobs:
@@ -58,15 +67,19 @@ jobs:
         if: ${{ !inputs.realtime_only }}
         run: |
           set -a; . ./.env.local; set +a
-          pnpm test:e2e --trace off
+          if [ "${REPEAT:-1}" -gt 1 ]; then extra="--repeat-each $REPEAT --retries 0"; else extra=""; fi
+          # SPECS is split into separate arguments on purpose (one per spec).
+          pnpm test:e2e --trace off $extra $SPECS
         env:
           PW_BASE_URL: http://localhost:3000
           API_BASE: http://localhost:3000
           QA_GUEST_LOG: .qa/guests.txt
           PROD_STATIC: "1"
+          SPECS: ${{ inputs.specs }}
+          REPEAT: ${{ inputs.repeat }}
       # Realtime multiplayer (Party, Duel, Board Bay across several browser contexts) has its own config.
       - name: Realtime tests
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && inputs.specs == '' }}
         run: |
           set -a; . ./.env.local; set +a
           pnpm exec playwright test -c tests/realtime/playwright.config.ts

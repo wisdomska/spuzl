@@ -69,7 +69,16 @@ test.describe("R4 board keys", () => {
     const name = (await pits.nth(8).getAttribute("aria-label"))!;
     expect(name).toMatch(/, 4 seeds, sow/);
     const pit = name.match(/^Pit (\d+)/)![1];
+    // Enter sends the focused pit as the move (its index: "Pit 9" is pit 8) and the server accepts it.
+    const sent = page.waitForResponse(
+      (r) => r.request().method() === "POST" && /\/api\/v1\/bay\/[^/]+\/move$/.test(new URL(r.url()).pathname),
+    );
     await page.keyboard.press("Enter");
-    await expect(grid.getByRole("gridcell", { name: new RegExp(`^Pit ${pit}, 0 seeds`) })).toHaveCount(1, { timeout: 10_000 });
+    const res = await sent;
+    expect(res.ok(), await res.text()).toBe(true);
+    expect((res.request().postDataJSON() as { move: unknown }).move).toBe(Number(pit) - 1);
+    // The pit is emptied. The bot answers in the same request, and its sowing (a few seeds this early) can drop one
+    // seed back into it, so the board shows 0 or 1 there, never the 4 it had.
+    await expect(grid.getByRole("gridcell", { name: new RegExp(`^Pit ${pit}, [01] seeds`) })).toHaveCount(1, { timeout: 10_000 });
   });
 });

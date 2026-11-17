@@ -25,7 +25,7 @@
  * Seeded puzzles come from the game's own generator (same code as the server), so tests never depend on
  * today's Daily. The /dev routes exist only when ENABLE_DEV_ROUTES=1 or outside production.
  */
-import { expect, type Browser, type Page } from "@playwright/test";
+import { expect, type Browser, type Locator, type Page } from "@playwright/test";
 import { pickMonth } from "./pick";
 export { pickMonth, pickOption } from "./pick";
 import { GAMES, LAB_GAMES } from "@/lib/catalog";
@@ -75,6 +75,17 @@ export async function logGuest(page: Page) {
   mkdirSync(dirname(GUEST_LOG), { recursive: true });
   appendFileSync(GUEST_LOG, `${id}\n`);
   return id;
+}
+
+/**
+ * Waits until React has hydrated the element (it attaches its fiber to the DOM node). A click that lands on
+ * server-rendered markup before that can be held and replayed by React, and the browser's own action for it (a
+ * Ctrl-click opening a new tab) is lost: click only once the page is interactive.
+ */
+export async function waitForHydration(target: Locator) {
+  await expect
+    .poll(() => target.evaluate((el) => Object.keys(el).some((k) => k.startsWith("__reactFiber$"))), { timeout: 30_000 })
+    .toBe(true);
 }
 
 /** The onboarding step "When were you born?": picks a birth month and year (a band, or exact values) and continues. */

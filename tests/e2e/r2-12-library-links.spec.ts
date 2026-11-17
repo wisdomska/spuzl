@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { onboardGuest, VIEWPORTS } from "./harness";
+import { onboardGuest, VIEWPORTS, waitForHydration } from "./harness";
 import { GAME_COUNT } from "@/lib/catalog";
 
 /**
@@ -24,6 +24,7 @@ test("rows are links: href, Ctrl-click opens a new page, a plain click opens the
   expect(await row.evaluate((a) => a.tagName)).toBe("A");
 
   // Ctrl/Cmd-click: the browser opens the game in a new page; this page stays on the Library with no card.
+  await waitForHydration(row);
   const [popup] = await Promise.all([context.waitForEvent("page"), row.click({ modifiers: ["ControlOrMeta"] })]);
   // The new page starts at about:blank; wait for it to reach the game before reading its URL.
   await popup.waitForURL((u) => u.pathname === "/play/crownfall", { timeout: 30_000 });
