@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.68.2 (17 November 2026)
+
+### Everyone
+
+- **Smoother first load:** Home, the world pages and leaderboards no longer redraw themselves right after opening
+  when your account or a game setting loads faster than the page.
+- **Games on computers:** boards that scale up on wide screens no longer show one frame too big (a brief scroll bar)
+  while they load.
+
 ## 1.68.1 (16 November 2026)
 
 ### Everyone
