@@ -50,10 +50,16 @@ const gameName = (g: string | null) => (g ? (GAME_BY_ID[g]?.name ?? "a game") : 
  * its own turn alert, so no card for that.
  */
 export function Inbox() {
-  const me = useMe();
   // R3-03: the live inbox connection (and the push refresh) waits until the screen is quiet (Home and other screens:
   // a few seconds after load; Play: after the board is up), so neither competes with the first paint on a phone.
   const quiet = useQuiet();
+  // So do the account and the notification ask (with its game settings). The Inbox sits outside the route's loading
+  // boundary, so it hydrates first, while the route is still streaming in or loading its code; React Query hands a
+  // hydrating component whatever the cache holds by then, so anything fetched from here earlier would make the route
+  // hydrate with other data than the server drew it with: React error #418 in production (the server's seed of the
+  // game settings against a newer copy fetched in the browser after an admin change; the account on a page the
+  // server drew without it). Screens that need the account fetch it themselves, after they hydrate.
+  const me = useMe(quiet);
   const id = quiet ? (me.data?.id ?? null) : null;
   const { channel } = useChannel(id ? `user:${id}` : null);
   const pathname = usePathname();
@@ -134,7 +140,7 @@ export function Inbox() {
 
   return (
     <>
-      <AlertsAsk me={me.data ?? null} pathname={pathname} />
+      {quiet && <AlertsAsk me={me.data ?? null} pathname={pathname} />}
       <AnimatePresence>
         {card && (
           <motion.div

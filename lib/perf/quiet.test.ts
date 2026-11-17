@@ -26,6 +26,25 @@ describe("whenQuiet (R2-01)", () => {
     expect(done()).toBe(true);
   });
 
+  it("waits for the document to finish loading (the route still streaming in)", async () => {
+    const state = vi.spyOn(document, "readyState", "get").mockReturnValue("interactive");
+    const done = await settled(whenQuiet());
+    await vi.advanceTimersByTimeAsync(6000);
+    expect(done()).toBe(false);
+    state.mockReturnValue("complete");
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(done()).toBe(true);
+    state.mockRestore();
+  });
+
+  it("never waits forever for a document that never finishes loading", async () => {
+    const state = vi.spyOn(document, "readyState", "get").mockReturnValue("loading");
+    const done = await settled(whenQuiet());
+    await vi.advanceTimersByTimeAsync(16_500);
+    expect(done()).toBe(true);
+    state.mockRestore();
+  });
+
   it("after a Play tap: waits for that board, then a short pause", async () => {
     await vi.advanceTimersByTimeAsync(5000); // Home has been up a while
     markPlayTap();

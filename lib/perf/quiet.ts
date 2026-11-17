@@ -10,6 +10,9 @@ import { useEffect, useState } from "react";
  *   idle period.
  * - Elsewhere (Home, Library): after `IDLE_AFTER_LOAD_MS` of the page being up, plus an idle callback.
  * - A tap on a Play link resets the wait: anything not started yet waits for that board.
+ * - Always: not before the document itself has loaded. The route streams in after the app shell and hydrates later
+ *   (its loading boundary), so app-wide parts that wait for quiet (the Inbox's account) must not fetch what the route
+ *   then reads while hydrating: data the server didn't draw with is React error #418 (a slow server, a cold start).
  */
 
 const IDLE_AFTER_LOAD_MS = 4000;
@@ -52,6 +55,7 @@ export function whenQuiet(): Promise<void> {
       const now = performance.now(); // ms since this document started
       const waitingForBoard = (onPlay() || tapAt > 0) && boardReadyAt === 0 && now - Math.max(started, tapAt) < MAX_WAIT_MS;
       if (waitingForBoard) return false;
+      if (document.readyState !== "complete" && now - started < MAX_WAIT_MS) return false;
       const ok = boardReadyAt ? now - boardReadyAt >= AFTER_BOARD_MS : now >= IDLE_AFTER_LOAD_MS;
       if (!ok) return false;
       done = true;
