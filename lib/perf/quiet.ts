@@ -55,7 +55,9 @@ export function whenQuiet(): Promise<void> {
       const now = performance.now(); // ms since this document started
       const waitingForBoard = (onPlay() || tapAt > 0) && boardReadyAt === 0 && now - Math.max(started, tapAt) < MAX_WAIT_MS;
       if (waitingForBoard) return false;
-      if (document.readyState !== "complete" && now - started < MAX_WAIT_MS) return false;
+      // No document (a worker, or a test that stubs only `window`) counts as loaded.
+      const loading = typeof document !== "undefined" && document.readyState !== "complete";
+      if (loading && now - started < MAX_WAIT_MS) return false;
       const ok = boardReadyAt ? now - boardReadyAt >= AFTER_BOARD_MS : now >= IDLE_AFTER_LOAD_MS;
       if (!ok) return false;
       done = true;

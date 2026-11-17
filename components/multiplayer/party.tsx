@@ -15,7 +15,8 @@ import { play } from "@/lib/audio";
 import { formatClock, formatNumber } from "@/lib/format";
 import { GAME_BY_ID, WORLDS, WORLD_BY_ID, type WorldId } from "@/lib/catalog";
 import { useSettings } from "@/lib/settings/store";
-import { isScoreRaceGame, partyBoardGames, partyGames, roomGamesName } from "@/lib/multiplayer/games";
+import { countGames, isScoreRaceGame, partyBoardGames, partyGames, roomGamesName } from "@/lib/multiplayer/games";
+import { sizedName } from "@/lib/sizes";
 import type { BayGame } from "@/lib/multiplayer/bay";
 import type { BayView } from "@/lib/multiplayer/types";
 import { api } from "@/lib/client/api";
@@ -188,7 +189,7 @@ export function GamePicker({
       <div className="-mx-5 flex gap-1.5 overflow-x-auto px-5 pb-0.5" role="group" aria-label={partyCopy.host.worlds}>
         {worlds.map((w) => {
           const on = w.id === world;
-          const n = w.id === "board" ? boards.length : all.filter((g) => g.world === w.id).length;
+          const n = w.id === "board" ? boards.length : countGames(all.filter((g) => g.world === w.id));
           return (
             <button
               key={w.id}
@@ -307,7 +308,7 @@ function PickRace({
               type="button"
               role={picks ? "checkbox" : "radio"}
               aria-checked={on}
-              aria-label={scored ? partyCopy.scoreRace.tileLabel(g.name) : undefined}
+              aria-label={scored ? partyCopy.scoreRace.tileLabel(sizedName(g)) : undefined}
               disabled={!!picks && !on && picks.length >= PARTY_PICK_MAX}
               onClick={() => (picks ? toggle(g.id) : onChange({ game: g.id, picks: null }))}
               className="press relative flex h-[84px] min-w-0 flex-col items-center justify-center gap-1.5 rounded-[18px] px-1"
@@ -327,7 +328,7 @@ function PickRace({
               >
                 <Icon name={g.icon} size={20} />
               </span>
-              <span className="max-w-full truncate text-[14px] font-semibold">{g.name}</span>
+              <span className="max-w-full truncate text-[14px] font-semibold">{sizedName(g)}</span>
             </button>
           );
         })}

@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SWITCH, GAMES } from "@/lib/catalog";
+import { DEFAULT_SWITCH, GAMES, playerGames } from "@/lib/catalog";
+import { boardSize, sizedName } from "@/lib/sizes";
 import {
   PARTY_GAME_IDS,
   RACE_GAMES,
   SCORE_RACE_GAMES,
   challengeLinks,
+  countGames,
   duelGames,
   isDuelGame,
+  isPartyGame,
   isRaceGame,
   isVersusEligible,
   partyGames,
@@ -143,5 +146,50 @@ describe("Party game picker (SPZ-13)", () => {
     expect(roomGamesName(null, [a.id, b.id])).toBe(`${a.name}, ${b.name}`);
     expect(roomGamesName(a.id, [])).toBe(a.name);
     expect(roomGamesName(null, [])).toBe("Random mix");
+  });
+});
+
+describe("Spuzdoku's two board sizes in the race pickers and the admin calendar (1.63)", () => {
+  const s = { ...DEFAULT_SWITCH, "party.scoreRaces": true };
+  const lists = { party: partyGames(s), duel: duelGames(s), calendar: GAMES };
+
+  it("names each board size, so no list holds two entries with the same name", () => {
+    expect(sizedName({ id: "sixer", name: "Spuzdoku" })).toBe("Spuzdoku 6\u00a0×\u00a06");
+    expect(sizedName({ id: "nine", name: "Spuzdoku" })).toBe("Spuzdoku 9\u00a0×\u00a09");
+    expect(boardSize("tango")).toBeNull();
+    for (const [list, games] of Object.entries(lists)) {
+      const names = games.map(sizedName);
+      expect(new Set(names).size, list).toBe(names.length);
+    }
+  });
+
+  it("still lets players race both sizes: the rooms and matches APIs accept what the pickers send", () => {
+    for (const id of ["sixer", "nine"]) {
+      expect(
+        lists.party.some((g) => g.id === id),
+        id,
+      ).toBe(true);
+      expect(
+        lists.duel.some((g) => g.id === id),
+        id,
+      ).toBe(true);
+      expect(isPartyGame(id, s), id).toBe(true);
+      expect(isDuelGame(id, s), id).toBe(true);
+    }
+  });
+
+  it("counts a world's games once each, matching the world's game count", () => {
+    for (const g of new Set(lists.party.map((x) => x.world))) {
+      const inWorld = lists.party.filter((x) => x.world === g);
+      const players = playerGames(s).filter((x) => x.world === g && inWorld.some((y) => y.id === x.id));
+      expect(countGames(inWorld), g).toBe(players.length);
+    }
+    const sixer = GAMES.find((g) => g.id === "sixer")!;
+    const nine = GAMES.find((g) => g.id === "nine")!;
+    expect(countGames([sixer, nine])).toBe(1);
+    // The Spuzdoku world chip: its two entries count once, so the chip says the world's own number of games.
+    const world = lists.party.filter((g) => g.world === sixer.world);
+    expect(world.length).toBe(countGames(world) + 1);
+    expect(countGames(world)).toBe(playerGames(s).filter((g) => g.world === sixer.world).length);
   });
 });

@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.68.3 (17 November 2026)
+
+### Everyone
+
+- **Spuzdoku in Duels and Parties:** the game pickers name each board, "Spuzdoku 6 × 6" and "Spuzdoku 9 × 9",
+  instead of listing "Spuzdoku" twice, and the Puzzles chip counts 9 games again.
+
+### Admins
+
+- **Daily calendar:** Spuzdoku's two rows say which board they are (6 × 6 or 9 × 9).
+
 ## 1.68.2 (17 November 2026)
 
 ### Everyone
