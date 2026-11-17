@@ -82,7 +82,8 @@ test("calendar to preview: real board, solve-check, play test and approve", asyn
   // Spuzdoku's rows name their board size ("Spuzdoku 6 × 6", "Spuzdoku 9 × 9"): pick the 6 × 6 row by its name.
   const spuzdoku = GAME_BY_ID.sixer.name;
   await page
-    .getByRole("link", { name: new RegExp(`^${sizedName(GAME_BY_ID.sixer)} .*: `) })
+    // Accessible names have their whitespace normalised (the no-break spaces in "6 × 6" become plain spaces).
+    .getByRole("link", { name: new RegExp(`^${sizedName(GAME_BY_ID.sixer).replace(/\s/g, "\\s")} .*: `) })
     .first()
     .click();
   await expect(page).toHaveURL(/\/admin\/calendar\/sixer\//);
