@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { logGuest, pickBirth } from "./harness";
 import { GAME_BY_ID } from "@/lib/catalog";
+import { uniq } from "../api/helpers";
 
 /**
  * R4-03: a signed-out visitor who taps Play on /games/<id> goes through onboarding and lands on that game, not on
@@ -17,7 +18,7 @@ async function finishOnboarding(page: Page) {
   await expect(born).toBeVisible();
   await pickBirth(page, "18+");
   await page.getByRole("button", { name: /Jump straight in|Go to the map/ }).click();
-  await page.locator("#nick").fill(`Qa${Date.now() % 1e7}`);
+  await page.locator("#nick").fill(uniq("Qa"));
   await page.getByRole("button", { name: /^(Enter The Grid|Let's play|Play Crownfall|See all games)$/ }).click();
 }
 

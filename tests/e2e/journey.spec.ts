@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { duelVsBot, logGuest, openPartyRoom, pickBirth, tapCell, waitForBoard } from "./harness";
 import { solve, type CrownfallPuzzle } from "@/games/crownfall/logic";
+import { uniq } from "../api/helpers";
 
 /**
  * Full player journey with Dailies off (the product today): first run, lesson, Home, guided first play, Library,
@@ -34,7 +35,7 @@ test("full journey: guest to clears, social and multiplayer, with no Daily anywh
     await cell.click();
   }
   await expect(page.getByText("First clear!")).toBeVisible();
-  await page.locator("#nick").fill(`Jy${Date.now() % 1e7}`);
+  await page.locator("#nick").fill(uniq("Jy"));
   await page.getByRole("button", { name: "Let's play" }).click();
   await page.waitForURL((u) => u.pathname === "/", { timeout: 30_000 });
   await logGuest(page); // so the cleanup step deletes this guest too

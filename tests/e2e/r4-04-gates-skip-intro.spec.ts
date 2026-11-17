@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { logGuest, pickBirth } from "./harness";
+import { uniq } from "../api/helpers";
 
 /**
  * R4-04: first-run gates (lib/auth/gate.ts), invite links (/i/<code>) and the /daily deep link go straight to the
@@ -19,7 +20,7 @@ test("/daily goes straight to the age step and returns to the Daily Five", async
   expect(seen).not.toContain("/intro");
   await pickBirth(page, "18+");
   await page.getByRole("button", { name: /Jump straight in|Go to the map/ }).click();
-  await page.locator("#nick").fill(`Qg${Date.now() % 1e7}`);
+  await page.locator("#nick").fill(uniq("Qg"));
   await page.getByRole("button", { name: /^(Enter The Grid|Let's play|Play Crownfall|See all games)$/ }).click();
   await page.waitForURL((u) => u.pathname === "/daily", { timeout: 30_000 });
   await logGuest(page);

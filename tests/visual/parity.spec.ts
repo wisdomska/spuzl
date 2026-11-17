@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { logGuest, pickBirth } from "../e2e/harness";
+import { uniq } from "../api/helpers";
 
 /**
  * Visual parity against the design handoff (tests/visual/reference, 390 × 844 frames).
@@ -64,7 +65,7 @@ test.beforeAll(async ({ browser }) => {
     await cell.click();
   }
   await expect(page.getByText("First clear!")).toBeVisible();
-  await page.locator("#nick").fill(`Vis${Date.now() % 100000}`);
+  await page.locator("#nick").fill(uniq("Vis"));
   await page.getByRole("button", { name: "Let's play" }).click();
   await page.waitForURL((u) => u.pathname === "/", { timeout: 20_000 });
   await logGuest(page); // listed for the guest teardown (QA_GUEST_LOG)

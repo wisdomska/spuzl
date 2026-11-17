@@ -57,13 +57,16 @@ export async function guest(nickname?: string, band: Band = "18+") {
 }
 
 /**
- * A unique name: the prefix and six digits, redrawn until the nickname filter accepts it (digits read as letters can
- * spell a filtered word: "ps_h" + "17..." reads as one). Only the word filter counts: uniq also names admins and
- * crews, which may be longer or carry spaces.
+ * A unique name: the prefix and random digits up to a nickname's 16 characters (6 at least, 9 at most), redrawn until
+ * the nickname filter accepts it (digits read as letters can spell a filtered word: "ps_h" + "17..." reads as one).
+ * Random, never the clock: two tests in parallel signed up in the same millisecond and the second got "That name is
+ * taken" (17 Nov 2026). Only the word filter counts: uniq also names admins and crews, which may be longer or carry
+ * spaces.
  */
 export const uniq = (p: string) => {
+  const digits = Math.max(6, Math.min(9, 16 - p.replace(/[^A-Za-z0-9_]/g, "").length));
   for (let i = 0; i < 50; i++) {
-    const n = `${p}${String(Math.floor(Math.random() * 1e6)).padStart(6, "0")}`;
+    const n = `${p}${String(Math.floor(Math.random() * 10 ** digits)).padStart(digits, "0")}`;
     if (
       nicknameProblem(
         n

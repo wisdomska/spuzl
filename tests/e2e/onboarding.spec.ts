@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { GAME_COUNT } from "@/lib/catalog";
 import { logGuest, pickBirth, pickMonth } from "./harness";
+import { uniq } from "../api/helpers";
 
 /** SPZ-15 + SPZ-05: plain start choices, lesson flows into "Make Spuz yours", CTA names the destination, lesson counts today. */
 test("onboarding: lesson, merged celebration, named CTA, counted on Home", async ({ page }, info) => {
@@ -23,7 +24,7 @@ test("onboarding: lesson, merged celebration, named CTA, counted on Home", async
   await expect(page.getByText("First clear!")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Now make Spuz yours" })).toBeVisible();
   await page.screenshot({ path: `docs/qa/screens/after/onboarding-clear-${info.project.name}.png` });
-  await page.locator("#nick").fill(`Ob${Date.now() % 1e7}`);
+  await page.locator("#nick").fill(uniq("Ob"));
   await page.getByRole("button", { name: "Let's play" }).click();
   await page.waitForURL((u) => u.pathname === "/", { timeout: 30_000 });
   await logGuest(page); // so the cleanup step deletes this guest too

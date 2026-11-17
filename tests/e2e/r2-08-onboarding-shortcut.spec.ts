@@ -1,5 +1,6 @@
 import { expect, test, type Browser } from "@playwright/test";
 import { birthFor, keepFocus, logGuest, pickBirth, solveLandingDemo, VIEWPORTS, waitForBoard } from "./harness";
+import { uniq } from "../api/helpers";
 
 /**
  * R2-08 onboarding shortcut: the landing page's "Play now" goes straight to "When were you born?" as a guest (no
@@ -70,7 +71,7 @@ for (const [w, viewport] of SIZES) {
       await expect(page.getByText("First clear!")).toBeVisible();
       await expect(page.getByRole("heading", { name: "Now make Spuz yours" })).toBeVisible();
       await page.screenshot({ path: shot("nickname-after-demo", w) });
-      await page.locator("#nick").fill(`Qs${Date.now() % 1e7}`);
+      await page.locator("#nick").fill(uniq("Qs"));
       await page.getByRole("button", { name: "Play Crownfall" }).click();
       await page.waitForURL((u) => u.pathname === "/play/crownfall", { timeout: 30_000 });
       await waitForBoard(page);
@@ -114,7 +115,7 @@ test("the adult band is unchanged on the shortcut", async ({ browser }) => {
   await page.getByRole("link", { name: "Play now" }).first().click();
   await pickBirth(page, birthFor("18+"));
   await page.getByRole("button", { name: /Go to the map/ }).click();
-  await page.locator("#nick").fill(`Qa${Date.now() % 1e7}`);
+  await page.locator("#nick").fill(uniq("Qa"));
   await page.getByRole("button", { name: /^(Let's play|Play Crownfall|See all games)$/ }).click();
   await page.waitForURL((u) => u.pathname === "/", { timeout: 30_000 });
   await logGuest(page);

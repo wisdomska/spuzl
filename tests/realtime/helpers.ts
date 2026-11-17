@@ -25,7 +25,11 @@ const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? env.NEXT_PUBLIC_SUPABA
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY ?? env.SUPABASE_SERVICE_ROLE_KEY;
 export const admin = () => createClient(SB_URL, SERVICE, { auth: { persistSession: false } });
 
-export const uniq = (p: string) => `${p}${String(Math.floor(Math.random() * 1e5)).padStart(5, "0")}`;
+/** The prefix and random digits up to a nickname's 16 characters (6 to 9), so parallel players never share a name. */
+export const uniq = (p: string) => {
+  const digits = Math.max(6, Math.min(9, 16 - p.length));
+  return `${p}${String(Math.floor(Math.random() * 10 ** digits)).padStart(digits, "0")}`;
+};
 
 export interface Player {
   id: string;

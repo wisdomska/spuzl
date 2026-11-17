@@ -51,6 +51,7 @@ import * as tripwire from "@/games/tripwire/logic";
 import * as pixl from "@/games/pixl/logic";
 import { REVEAL_MAX_MS as TRUTHS_REVEAL_MAX_MS } from "@/games/twotruths/rules";
 import { READ_FLOOR_MS } from "@/games/_shared/cluecave";
+import { uniq } from "../api/helpers";
 
 export type Age = "13-15" | "16-17" | "18+";
 /** A birth month and year in each band today (December births are the youngest of their year). */
@@ -124,7 +125,7 @@ export function ageOf(year: number, month = 12, today = new Date()) {
 export async function onboardGuest(
   page: Page,
   ageOrOpts: Age | GuestOpts = "18+",
-  nickname = `Qa${Date.now() % 1e7}`,
+  nickname = uniq("Qa"),
   legacy: { guided?: boolean } = {},
 ) {
   const o: GuestOpts = typeof ageOrOpts === "string" ? { age: ageOrOpts, nickname, ...legacy } : { nickname, ...ageOrOpts };

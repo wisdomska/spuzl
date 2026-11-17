@@ -11,6 +11,7 @@ import { writeFileSync, mkdirSync } from "node:fs";
 import { test, type Page } from "@playwright/test";
 import { pickBirth } from "../e2e/harness";
 import { onboardGuest, throttle, waitForBoard, VIEWPORTS, tapCell } from "../e2e/harness";
+import { uniq } from "../api/helpers";
 
 const RUNS = Number(process.env.RUNS ?? 10);
 const LABEL = process.env.PERF_LABEL ?? "run";
@@ -90,7 +91,7 @@ for (const profile of ["desktop", "4g-phone"] as const) {
         await page.getByRole("button", { name: "Play as guest" }).click();
         await pickBirth(page);
         await page.getByRole("button", { name: /Jump straight in|Go to the map/ }).click();
-        await page.locator("#nick").fill(`Pf${Date.now() % 1e7}`);
+        await page.locator("#nick").fill(uniq("Pf"));
         await measure(
           `${profile}:enter-grid`,
           page,

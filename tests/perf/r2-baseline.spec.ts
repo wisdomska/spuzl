@@ -20,6 +20,7 @@ import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { test, type BrowserContext, type Page } from "@playwright/test";
 import { solve, type CrownfallPuzzle } from "@/games/crownfall/logic";
 import { keepFocus, onboardGuest, pickBirth, solveLandingDemo, tapCell, throttle, VIEWPORTS, waitForBoard } from "../e2e/harness";
+import { uniq } from "../api/helpers";
 
 const RUNS = Number(process.env.RUNS ?? 10);
 const LABEL = process.env.PERF_LABEL ?? "r2-baseline";
@@ -144,7 +145,7 @@ async function guestState(browser: import("@playwright/test").Browser, profile: 
   const ctx = await browser.newContext({ viewport: profile === "desktop" ? VIEWPORTS.desktop : VIEWPORTS.phone });
   const page = await ctx.newPage();
   await keepFocus(page);
-  await onboardGuest(page, { nickname: `R2b${Date.now() % 1e7}` });
+  await onboardGuest(page, { nickname: uniq("R2b") });
   await logGuest(ctx);
   await ctx.storageState({ path: file });
   await ctx.close();
@@ -243,7 +244,7 @@ for (const profile of PROFILES) {
           mark("start-choice");
           await choice.click();
           if (demo) {
-            await page.locator("#nick").fill(`R2d${Date.now() % 1e7}`);
+            await page.locator("#nick").fill(uniq("R2d"));
             mark("nickname");
             await page.getByRole("button", { name: "Play Crownfall" }).click();
             await page.waitForURL((u) => u.pathname === "/play/crownfall", { timeout: 90_000 });

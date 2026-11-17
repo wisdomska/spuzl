@@ -28,7 +28,7 @@ test("settings: back to Me, and change the nickname", async ({ page }, info) => 
   await input.fill(taken);
   await sheet.getByRole("button", { name: "Save nickname" }).click();
   await expect(sheet.getByText("That name is taken. Try another.")).toBeVisible();
-  const fresh = `Nn${Date.now() % 1e7}`;
+  const fresh = uniq("Nn");
   await input.fill(fresh);
   await sheet.getByRole("button", { name: "Save nickname" }).click();
   await expect(page.getByText(`You're now ${fresh}.`)).toBeVisible();

@@ -1,6 +1,7 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { admin } from "../api/helpers";
 import { birthFor, keepFocus, logGuest, onboardGuest, pickMonth, testSignIn, VIEWPORTS, type Age } from "./harness";
+import { uniq } from "../api/helpers";
 
 /**
  * R2-P5 part B: Family Draw, Draw It for signed-in players aged 16 and over (party mode "drawfam", setting
@@ -50,7 +51,7 @@ async function member(browser: Browser, age: Age, viewport: { width: number; hei
   await page.getByLabel("Year", { exact: true }).fill(String(b.year));
   await page.getByRole("button", { name: /^Continue\b/ }).click();
   await page.getByRole("button", { name: /Jump straight in|Go to the map/ }).click();
-  await page.locator("#nick").fill(`Fam${Date.now() % 1e6}`);
+  await page.locator("#nick").fill(uniq("Fam"));
   await page.getByRole("button", { name: /^(Enter The Grid|Let's play|Play Crownfall|See all games)$/ }).click();
   await page.waitForURL((u) => u.pathname === "/", { timeout: 30_000 });
   await logGuest(page);
