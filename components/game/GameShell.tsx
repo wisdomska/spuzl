@@ -37,6 +37,7 @@ const ZOOMED = new Set(["quads", "remix", "quickfire", "flagged", "twotruths", "
 import {
   useViewportHeight,
   useViewportWidth,
+  useSideways,
   useWide,
   wideAside,
   wideColumn,
@@ -198,6 +199,10 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   // Canvas games (Gotcha, Dash) have no side panel on a wide screen: their feedback and results sit under the board,
   // and the board is centred at its full shape (owner, 14 Nov 2026: "don't be squeezing them at one side").
   const panel = meta.engine !== "phaser";
+  // A phone held sideways (useBoardSize `isSideways`): the canvas games take the whole width, the rule goes into the
+  // top bar's middle (as on a wide screen) and the board keeps the height under it.
+  const sidewaysScreen = useSideways();
+  const sideways = !panel && !wide && sidewaysScreen;
   const colW = wideColumn(vw, vh, meta.id, panel);
   const [aside, setAside] = useState<HTMLElement | null>(null);
   // The game's own colour (lib/catalog colourOf): moved games keep the hue they were designed in.
@@ -642,15 +647,15 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
         </div>
       </div>
       {/* Wide: the banner (or else the rule) sits inline in the top bar's empty middle, so the board keeps the whole height. */}
-      {wide && banner && (
+      {(wide || sideways) && banner && (
         <div className="flex max-w-[640px] min-w-0 flex-[2] justify-center" data-shell-banner>
           {banner}
         </div>
       )}
-      {wide && !banner && (
+      {(wide || sideways) && !banner && (
         <div className="flex max-w-[640px] min-w-0 flex-[2] items-center justify-center">{foldingRule("min-w-0", true)}</div>
       )}
-      <FullscreenButton />
+      <FullscreenButton landscape={!panel} />
       {/* R2-15: the one header timer. Never in a practice round; before the first move it holds its place with the
           clock icon only (never "00:00"), and the digits appear once it runs. A resumed game shows its time. */}
       {!relaxed && !guided && (
@@ -687,7 +692,7 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   // so the height fit (shellContentBottom) measures the board, not the column.
   const slot = (
     <main
-      className={`relative z-0 flex justify-center ${wide ? "w-full self-start p-3 pb-0" : "short:py-1 px-3 py-2"} ${theme ? "rounded-[26px]" : ""} ${celebrate || solved ? "shell-solved" : ""}`}
+      className={`relative z-0 flex justify-center ${wide ? "w-full self-start p-3 pb-0" : sideways ? "px-2 pt-0 pb-1" : "short:py-1 px-3 py-2"} ${theme ? "rounded-[26px]" : ""} ${celebrate || solved ? "shell-solved" : ""}`}
       style={theme ? { background: theme.bg, boxShadow: `inset 0 0 0 2px ${theme.mark}` } : undefined}
       data-board-theme={theme ? boardTheme! : undefined}
       data-shell-slot
@@ -774,15 +779,15 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   return (
     <ShellAsideProvider value={{ wide, node: aside }}>
       <div
-        className={`bg-bg relative mx-auto flex min-h-dvh w-full flex-col ${wide ? "px-6" : "max-w-[560px]"}`}
+        className={`bg-bg relative mx-auto flex min-h-dvh w-full flex-col ${wide ? "px-6" : sideways ? "" : "max-w-[560px]"}`}
         style={wide ? { ...style, maxWidth: WIDE_GUTTER * 2 + colW + (panel ? WIDE_GAP + asideW : 0) } : style}
         data-world={meta.world}
         data-shell
         data-wide={wide || undefined}
       >
         {header}
-        {!wide && foldingRule("relative z-10 overflow-hidden px-4")}
-        {banner && !wide && (
+        {!wide && !sideways && foldingRule("relative z-10 overflow-hidden px-4")}
+        {banner && !wide && !sideways && (
           <div className="relative z-20 px-3 pb-1" data-shell-banner>
             {banner}
           </div>

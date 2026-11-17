@@ -32,7 +32,7 @@ import { cssColor, type Painter } from "./render/types";
 import type { Stage } from "./scene";
 import { HeldInput } from "./held";
 import { MIN_STAGE_HEIGHT, SHORT_VIEWPORT, stageHeight } from "./layout";
-import { useFitHeight } from "@/components/game/useBoardSize";
+import { useFitHeight, useSideways } from "@/components/game/useBoardSize";
 import { useOnScreenKeys } from "@/components/game/useInputMode";
 import { Kbd } from "@/games/_shared/LetterKeyboard";
 import { keyboardCopy as KC } from "@/lib/copy/keyboard";
@@ -109,6 +109,8 @@ const mono: CSSProperties = {
 const PAD_KEY = "spuzl.gamePad";
 /** Full screen: the game header (72), the gap and the controls row under the canvas (about 110). */
 const FULLSCREEN_CHROME = 190;
+/** A phone held sideways: the game header (about 60) and the slot's padding under it; the controls sit beside. */
+const SIDEWAYS_CHROME = 72;
 
 export function RageBoard<S extends SimCore>({
   puzzle,
@@ -121,6 +123,7 @@ export function RageBoard<S extends SimCore>({
   hint,
 }: BoardProps<CoursePuzzle, RageState> & { spec: RageGameSpec<S>; ghost?: GhostSpec | null }) {
   const wrapRef = useRef<HTMLDivElement>(null);
+  const stageBoxRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const settings = useSettings();
   const reduced = prefersReducedMotion(settings);
@@ -145,6 +148,10 @@ export function RageBoard<S extends SimCore>({
     }
   });
   const showPad = !keys.physical || padPref;
+  // A phone held sideways (owner, 17 Nov 2026): the board takes the width between the controls, left thumb on the
+  // move or duck buttons, right thumb on the jump, and the height under the game header.
+  const sidewaysScreen = useSideways();
+  const sideways = sidewaysScreen && showPad;
   const togglePad = () => {
     const next = !padPref;
     setPadPref(next);
@@ -319,23 +326,27 @@ export function RageBoard<S extends SimCore>({
     const el = wrapRef.current;
     if (!el) return;
     const on = () => {
-      const w = Math.floor(el.clientWidth);
+      // Sideways the board is the space between the two control columns; otherwise the whole row.
+      const w = Math.floor((sideways ? stageBoxRef.current : el)?.clientWidth ?? el.clientWidth);
       const vp = { w: window.innerWidth, h: window.innerHeight };
-      const h = document.fullscreenElement
-        ? Math.max(MIN_STAGE_HEIGHT, vp.h - FULLSCREEN_CHROME)
-        : (spec.stageHeight?.(w, vp) ?? stageHeight(w, vp, spec.tall));
+      const h = sideways
+        ? Math.max(MIN_STAGE_HEIGHT, vp.h - SIDEWAYS_CHROME)
+        : document.fullscreenElement
+          ? Math.max(MIN_STAGE_HEIGHT, vp.h - FULLSCREEN_CHROME)
+          : (spec.stageHeight?.(w, vp) ?? stageHeight(w, vp, spec.tall));
       const short = window.innerHeight < SHORT_VIEWPORT;
       setSize((s) => (s.w === w && s.h === h && s.short === short ? s : { w, h, short }));
     };
     on();
     const ro = new ResizeObserver(on);
     ro.observe(el);
+    if (stageBoxRef.current) ro.observe(stageBoxRef.current);
     window.addEventListener("resize", on);
     return () => {
       ro.disconnect();
       window.removeEventListener("resize", on);
     };
-  }, [spec]);
+  }, [spec, sideways]);
 
   // Lazy Phaser. A stage that boots while the board is covered starts asleep.
   const coveredRef = useRef(!!covered);
@@ -513,127 +524,227 @@ export function RageBoard<S extends SimCore>({
   const ghostOn = !!ctl.ghost;
   const total = puzzle.levels.length;
 
+  // The controls, in a row under the board, or either side of it on a phone held sideways.
+  const moveCtl =
+    spec.controls === "dpad" || spec.controls === "lr" || spec.controls === "drag" ? (
+      <div className="flex flex-none gap-2">
+        <PadButton label="Move left" icon="caret-left" small={size.short} {...holdProps("pl", BTN.LEFT)} />
+        <PadButton label="Move right" icon="caret-right" small={size.short} {...holdProps("pr", BTN.RIGHT)} />
+      </div>
+    ) : spec.controls === "runner" ? (
+      <button
+        type="button"
+        aria-label="Duck"
+        className="toy flex flex-none items-center justify-center rounded-[22px]"
+        style={{
+          width: size.short ? 80 : 96,
+          height: size.short ? 56 : 64,
+          background: "var(--surface-raised)",
+          color: "var(--text)",
+          ["--btn-depth" as string]: "var(--depth)",
+          boxShadow: "0 6px 0 var(--depth)",
+          font: "900 15px var(--font-display, Unbounded), sans-serif",
+          touchAction: "none",
+        }}
+        {...holdProps("pd", BTN.DOWN)}
+      >
+        DUCK
+      </button>
+    ) : (
+      <span className="text-muted text-[14px] font-medium">or tap anywhere</span>
+    );
+  const levelInfo = (
+    <div className="text-muted min-w-0 flex-1 text-center text-[14px] leading-[1.4] font-medium" aria-live="off">
+      {total > 1 && (
+        <div className="num font-semibold text-balance text-[var(--text)]">{`Level ${Math.min(total, hud.cleared + 1)} of ${total}`}</div>
+      )}
+      {hud.level && <div className="truncate">{hud.level}</div>}
+    </div>
+  );
+  const actionCtl = spec.controls !== "lr" && (
+    <button
+      type="button"
+      aria-label={spec.action ?? "Jump"}
+      className="toy flex flex-none items-center justify-center rounded-full"
+      style={{
+        // 80 px on short screens (still well over 44), so the canvas keeps more of its height.
+        width: size.short ? 80 : 96,
+        height: size.short ? 80 : 96,
+        background: "var(--w-rage)",
+        color: "#0E0F1A",
+        ["--btn-depth" as string]: "#8A1E1E",
+        boxShadow: "0 7px 0 #8A1E1E",
+        font: "900 16px var(--font-display, Unbounded), sans-serif",
+        touchAction: "none",
+      }}
+      {...holdProps("pj", BTN.JUMP)}
+    >
+      {(spec.action ?? "Jump").toUpperCase()}
+    </button>
+  );
+  const hideCtl = keys.physical && (
+    // A computer that asked for the pad: the same place hides it again (phones and tablets keep it).
+    <button
+      type="button"
+      onClick={togglePad}
+      aria-label={KC.hideControls}
+      title={KC.hideControls}
+      className="press text-muted flex size-11 flex-none items-center justify-center rounded-[12px]"
+    >
+      <Icon name="eye-slash" size={18} />
+    </button>
+  );
+
   return (
     <div
       ref={wrapRef}
-      className="mx-auto flex w-full flex-col gap-3.5"
-      style={{ maxWidth: fullscreen ? "100%" : (spec.maxWidth ?? "100%") }}
+      className={sideways ? "flex w-full items-center gap-3" : "mx-auto flex w-full flex-col gap-3.5"}
+      style={{ maxWidth: fullscreen || sideways ? "100%" : (spec.maxWidth ?? "100%") }}
     >
-      <div
-        className="relative overflow-hidden rounded-[20px] select-none"
-        style={{ ...posterStyle, height: stageH, touchAction: "none", WebkitTouchCallout: "none" }}
-        onPointerDown={onCanvasDown}
-        onPointerMove={onCanvasMove}
-        onPointerUp={onCanvasUp}
-        onPointerCancel={onCanvasUp}
-        onLostPointerCapture={onCanvasUp}
-      >
+      {sideways && (
+        // Left thumb: move (or duck), with the level under it.
         <div
-          ref={canvasRef}
-          role="img"
-          aria-label={spec.hud === "runner" ? `${spec.name}. ${hud.metres} metres.` : `${spec.name} level. ${hud.deaths} deaths.`}
-          className="absolute inset-0"
-        />
-
-        {/* HUD */}
-        <div
-          className={`pointer-events-none absolute top-3 right-3.5 left-3.5 z-[2] flex-col gap-2 ${spec.hud === "runner" ? "hidden" : "flex"}`}
+          className="flex w-[128px] flex-none flex-col items-center gap-3 select-none"
+          style={{ WebkitTouchCallout: "none" }}
+          data-no-tick
+          data-sideways-left
         >
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex gap-2">
-              {(spec.hud === "distance" || spec.hud === "race") && (
-                <div style={{ ...chip, ...mono }} aria-label={`${hud.metres} metres`}>
-                  {hud.metres} m
-                </div>
-              )}
-              {spec.hud === "score" ? (
-                <div style={{ ...chip, ...mono }} aria-label={`Score ${hud.score}`}>
-                  <Icon name="star" size={18} style={{ color: "var(--gold)" }} />
-                  {hud.score}
+          {moveCtl}
+          {levelInfo}
+        </div>
+      )}
+      {/* The board's own box: only a box when sideways (it is measured for the canvas width), else layout-free. */}
+      <div ref={stageBoxRef} className={sideways ? "min-w-0 flex-1" : "contents"}>
+        <div
+          className="relative overflow-hidden rounded-[20px] select-none"
+          style={{ ...posterStyle, height: stageH, touchAction: "none", WebkitTouchCallout: "none" }}
+          onPointerDown={onCanvasDown}
+          onPointerMove={onCanvasMove}
+          onPointerUp={onCanvasUp}
+          onPointerCancel={onCanvasUp}
+          onLostPointerCapture={onCanvasUp}
+        >
+          <div
+            ref={canvasRef}
+            role="img"
+            aria-label={spec.hud === "runner" ? `${spec.name}. ${hud.metres} metres.` : `${spec.name} level. ${hud.deaths} deaths.`}
+            className="absolute inset-0"
+          />
+
+          {/* HUD */}
+          <div
+            className={`pointer-events-none absolute top-3 right-3.5 left-3.5 z-[2] flex-col gap-2 ${spec.hud === "runner" ? "hidden" : "flex"}`}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex gap-2">
+                {(spec.hud === "distance" || spec.hud === "race") && (
+                  <div style={{ ...chip, ...mono }} aria-label={`${hud.metres} metres`}>
+                    {hud.metres} m
+                  </div>
+                )}
+                {spec.hud === "score" ? (
+                  <div style={{ ...chip, ...mono }} aria-label={`Score ${hud.score}`}>
+                    <Icon name="star" size={18} style={{ color: "var(--gold)" }} />
+                    {hud.score}
+                  </div>
+                ) : (
+                  <div
+                    key={bump}
+                    className={bump ? (bump % 2 ? "cell-pop-a" : "cell-pop-b") : ""}
+                    style={{ ...chip, ...mono }}
+                    aria-label={`${hud.deaths} deaths`}
+                  >
+                    <Icon name="skull" size={18} style={{ color: "var(--w-rage)" }} />
+                    {hud.deaths}
+                  </div>
+                )}
+              </div>
+              {spec.hud !== "race" && ghostOn && hud.delta !== null ? (
+                <div style={{ ...chip, fontSize: 15, fontWeight: 600, whiteSpace: "nowrap" }}>
+                  <Icon name="ghost" size={16} style={{ color: "#A2A6C2" }} />
+                  {Math.abs(hud.delta) < 0.05 ? (
+                    `Level with ${ctl.ghost!.name}`
+                  ) : (
+                    <>
+                      {ctl.ghost!.name} is
+                      <span style={{ ...mono, fontSize: 15, color: "#B8F23A" }}>{Math.abs(hud.delta).toFixed(1)} s</span>
+                      {hud.delta > 0 ? "ahead" : "behind"}
+                    </>
+                  )}
                 </div>
               ) : (
-                <div
-                  key={bump}
-                  className={bump ? (bump % 2 ? "cell-pop-a" : "cell-pop-b") : ""}
-                  style={{ ...chip, ...mono }}
-                  aria-label={`${hud.deaths} deaths`}
-                >
-                  <Icon name="skull" size={18} style={{ color: "var(--w-rage)" }} />
-                  {hud.deaths}
-                </div>
+                wide &&
+                message && (
+                  <div style={{ ...chip, padding: "0 14px", fontSize: 14, fontWeight: 500 }} role="status">
+                    {message}
+                  </div>
+                )
               )}
             </div>
-            {spec.hud !== "race" && ghostOn && hud.delta !== null ? (
-              <div style={{ ...chip, fontSize: 15, fontWeight: 600, whiteSpace: "nowrap" }}>
-                <Icon name="ghost" size={16} style={{ color: "#A2A6C2" }} />
-                {Math.abs(hud.delta) < 0.05 ? (
-                  `Level with ${ctl.ghost!.name}`
-                ) : (
-                  <>
-                    {ctl.ghost!.name} is
-                    <span style={{ ...mono, fontSize: 15, color: "#B8F23A" }}>{Math.abs(hud.delta).toFixed(1)} s</span>
-                    {hud.delta > 0 ? "ahead" : "behind"}
-                  </>
-                )}
-              </div>
-            ) : (
-              wide &&
-              message && (
-                <div style={{ ...chip, padding: "0 14px", fontSize: 14, fontWeight: 500 }} role="status">
-                  {message}
+            {spec.hud === "distance" && <RaceBar progress={hud.progress} ghost={ghostOn ? hud.ghostProgress : null} />}
+            {spec.hud === "race" && (
+              <div className="flex flex-col gap-2.5 rounded-[16px] p-3" style={{ background: "#0E0F1A", color: "#F4F5FB" }}>
+                <div className="flex items-center justify-between text-[14px] font-semibold">
+                  <span className="flex items-center gap-1.5">
+                    <Icon name="ghost" size={16} />
+                    {ghostOn
+                      ? `vs ${ctl.ghost!.name}'s best, ${formatClock(framesToMs(ctl.ghost!.log.frames))}`
+                      : "Your best run becomes the ghost"}
+                  </span>
+                  {ghostOn && hud.delta !== null && hud.started && (
+                    <span
+                      style={{ ...mono, fontSize: 14, color: hud.delta > 0 ? "var(--w-rage)" : "#B8F23A" }}
+                      aria-label={
+                        hud.delta > 0
+                          ? `${Math.abs(hud.delta).toFixed(1)} seconds behind`
+                          : `${Math.abs(hud.delta).toFixed(1)} seconds ahead`
+                      }
+                    >
+                      {hud.delta > 0 ? "+" : "\u2212"}
+                      {Math.abs(hud.delta).toFixed(1)} s
+                    </span>
+                  )}
                 </div>
-              )
+                <RaceBar progress={hud.progress} ghost={ghostOn ? hud.ghostProgress : null} />
+              </div>
             )}
           </div>
-          {spec.hud === "distance" && <RaceBar progress={hud.progress} ghost={ghostOn ? hud.ghostProgress : null} />}
-          {spec.hud === "race" && (
-            <div className="flex flex-col gap-2.5 rounded-[16px] p-3" style={{ background: "#0E0F1A", color: "#F4F5FB" }}>
-              <div className="flex items-center justify-between text-[14px] font-semibold">
-                <span className="flex items-center gap-1.5">
-                  <Icon name="ghost" size={16} />
-                  {ghostOn
-                    ? `vs ${ctl.ghost!.name}'s best, ${formatClock(framesToMs(ctl.ghost!.log.frames))}`
-                    : "Your best run becomes the ghost"}
-                </span>
-                {ghostOn && hud.delta !== null && hud.started && (
-                  <span
-                    style={{ ...mono, fontSize: 14, color: hud.delta > 0 ? "var(--w-rage)" : "#B8F23A" }}
-                    aria-label={
-                      hud.delta > 0 ? `${Math.abs(hud.delta).toFixed(1)} seconds behind` : `${Math.abs(hud.delta).toFixed(1)} seconds ahead`
-                    }
-                  >
-                    {hud.delta > 0 ? "+" : "\u2212"}
-                    {Math.abs(hud.delta).toFixed(1)} s
-                  </span>
-                )}
-              </div>
-              <RaceBar progress={hud.progress} ghost={ghostOn ? hud.ghostProgress : null} />
+
+          {(!hud.started || notice) && !hud.finished && (
+            <div className="pointer-events-none absolute inset-x-4 top-[38%] z-[3] flex flex-col items-center gap-2 text-center">
+              {notice && (
+                <div
+                  style={{
+                    ...chip,
+                    height: "auto",
+                    padding: "8px 12px",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    background: "#20233A",
+                    whiteSpace: "normal",
+                  }}
+                >
+                  <Icon name="warning-circle" size={16} style={{ color: "#FFC93C", flex: "none" }} />
+                  Fast motion and quick flashes ahead. Take a break whenever you like.
+                </div>
+              )}
+              {!hud.started && <div style={{ ...chip, fontSize: 14, fontWeight: 600 }}>{spec.startHint}</div>}
             </div>
           )}
         </div>
-
-        {(!hud.started || notice) && !hud.finished && (
-          <div className="pointer-events-none absolute inset-x-4 top-[38%] z-[3] flex flex-col items-center gap-2 text-center">
-            {notice && (
-              <div
-                style={{
-                  ...chip,
-                  height: "auto",
-                  padding: "8px 12px",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  background: "#20233A",
-                  whiteSpace: "normal",
-                }}
-              >
-                <Icon name="warning-circle" size={16} style={{ color: "#FFC93C", flex: "none" }} />
-                Fast motion and quick flashes ahead. Take a break whenever you like.
-              </div>
-            )}
-            {!hud.started && <div style={{ ...chip, fontSize: 14, fontWeight: 600 }}>{spec.startHint}</div>}
-          </div>
-        )}
       </div>
+      {sideways && (
+        // Right thumb: jump.
+        <div
+          className="flex w-[128px] flex-none flex-col items-center gap-3 select-none"
+          style={{ WebkitTouchCallout: "none" }}
+          data-no-tick
+          data-sideways-right
+        >
+          {actionCtl}
+          {hideCtl}
+        </div>
+      )}
 
       {/* Controls under the board */}
       {/* A controller, not a form: the game's own sounds (jump, land, flip) answer these, not the button tap. */}
@@ -678,74 +789,14 @@ export function RageBoard<S extends SimCore>({
           </button>
         </div>
       ) : (
-        <div className="flex items-center justify-between gap-2 select-none" style={{ WebkitTouchCallout: "none" }} data-no-tick>
-          {spec.controls === "dpad" || spec.controls === "lr" || spec.controls === "drag" ? (
-            <div className="flex flex-none gap-2">
-              <PadButton label="Move left" icon="caret-left" small={size.short} {...holdProps("pl", BTN.LEFT)} />
-              <PadButton label="Move right" icon="caret-right" small={size.short} {...holdProps("pr", BTN.RIGHT)} />
-            </div>
-          ) : spec.controls === "runner" ? (
-            <button
-              type="button"
-              aria-label="Duck"
-              className="toy flex flex-none items-center justify-center rounded-[22px]"
-              style={{
-                width: size.short ? 80 : 96,
-                height: size.short ? 56 : 64,
-                background: "var(--surface-raised)",
-                color: "var(--text)",
-                ["--btn-depth" as string]: "var(--depth)",
-                boxShadow: "0 6px 0 var(--depth)",
-                font: "900 15px var(--font-display, Unbounded), sans-serif",
-                touchAction: "none",
-              }}
-              {...holdProps("pd", BTN.DOWN)}
-            >
-              DUCK
-            </button>
-          ) : (
-            <span className="text-muted text-[14px] font-medium">or tap anywhere</span>
-          )}
-          <div className="text-muted min-w-0 flex-1 text-center text-[14px] leading-[1.4] font-medium" aria-live="off">
-            {total > 1 && (
-              <div className="num font-semibold text-balance text-[var(--text)]">{`Level ${Math.min(total, hud.cleared + 1)} of ${total}`}</div>
-            )}
-            {hud.level && <div className="truncate">{hud.level}</div>}
+        !sideways && (
+          <div className="flex items-center justify-between gap-2 select-none" style={{ WebkitTouchCallout: "none" }} data-no-tick>
+            {moveCtl}
+            {levelInfo}
+            {actionCtl}
+            {hideCtl}
           </div>
-          {spec.controls !== "lr" && (
-            <button
-              type="button"
-              aria-label={spec.action ?? "Jump"}
-              className="toy flex flex-none items-center justify-center rounded-full"
-              style={{
-                // 80 px on short screens (still well over 44), so the canvas keeps more of its height.
-                width: size.short ? 80 : 96,
-                height: size.short ? 80 : 96,
-                background: "var(--w-rage)",
-                color: "#0E0F1A",
-                ["--btn-depth" as string]: "#8A1E1E",
-                boxShadow: "0 7px 0 #8A1E1E",
-                font: "900 16px var(--font-display, Unbounded), sans-serif",
-                touchAction: "none",
-              }}
-              {...holdProps("pj", BTN.JUMP)}
-            >
-              {(spec.action ?? "Jump").toUpperCase()}
-            </button>
-          )}
-          {keys.physical && (
-            // A computer that asked for the pad: the same place hides it again (phones and tablets keep it).
-            <button
-              type="button"
-              onClick={togglePad}
-              aria-label={KC.hideControls}
-              title={KC.hideControls}
-              className="press text-muted flex size-11 flex-none items-center justify-center rounded-[12px]"
-            >
-              <Icon name="eye-slash" size={18} />
-            </button>
-          )}
-        </div>
+        )
       )}
     </div>
   );

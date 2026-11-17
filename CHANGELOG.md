@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.70.0 (17 November 2026)
+
+### Everyone
+
+- **Gotcha and Dash play sideways:** turn your phone on its side and the board takes the whole width, with the move
+  (or duck) buttons under your left thumb and Jump under your right. Nothing scrolls.
+- **Full screen turns the phone sideways** in Gotcha and Dash (on Android; iPhone browsers have no full screen, so
+  turn the phone yourself). Leaving full screen, or the game, lets the phone turn freely again.
+
 ## 1.69.0 (17 November 2026)
 
 ### Everyone

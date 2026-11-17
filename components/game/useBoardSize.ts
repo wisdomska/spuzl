@@ -57,6 +57,18 @@ export function isWide(vw: number, vh: number): boolean {
   return vw >= WIDE_MIN_W && vh >= WIDE_MIN_H;
 }
 
+/** Narrowest viewport, in px, that counts as a phone held sideways (an iPhone SE turned is 568 × 320). */
+export const SIDEWAYS_MIN_W = 560;
+
+/**
+ * A phone held sideways (owner, 17 Nov 2026: action games play better in landscape): wider than tall, at least
+ * SIDEWAYS_MIN_W across, and too short for the two-column shell. The canvas games (Gotcha, Dash) then take the
+ * whole width, with their controls either side of the board.
+ */
+export function isSideways(vw: number, vh: number): boolean {
+  return vw > vh && vw >= SIDEWAYS_MIN_W && vh < WIDE_MIN_H;
+}
+
 /** The side panel's width for this viewport width (wide shell only). */
 export function wideAside(vw: number): number {
   return vw >= WIDE_ASIDE_FROM ? WIDE_ASIDE : WIDE_ASIDE_NARROW;
@@ -138,6 +150,11 @@ export function useBoardBox(): BoardBox {
 /** Is the shell in its two-column layout? */
 export function useWide(): boolean {
   return isWide(useViewportWidth(), useViewportHeight());
+}
+
+/** Is this a phone held sideways (`isSideways`)? */
+export function useSideways(): boolean {
+  return isSideways(useViewportWidth(), useViewportHeight());
 }
 
 /**
