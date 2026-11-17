@@ -8,6 +8,11 @@ on:
   schedule:
     - cron: "23 3 * * *"
   workflow_dispatch:
+    inputs:
+      realtime_only:
+        description: "Run only the realtime multiplayer tests (skips the browser suite)"
+        type: boolean
+        default: false
 
 concurrency:
   group: nightly-e2e
@@ -50,6 +55,7 @@ jobs:
       # environment, so the test process gets the same .env.local as the app. PROD_STATIC: this is a production build,
       # so static pages keep the old file until revalidated (tests/e2e/r4-10-admin-copy.spec.ts).
       - name: Browser tests
+        if: ${{ !inputs.realtime_only }}
         run: |
           set -a; . ./.env.local; set +a
           pnpm test:e2e --trace off

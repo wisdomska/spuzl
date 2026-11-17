@@ -75,6 +75,9 @@ export async function player(
     }
   });
   const page = await context.newPage();
+  // A failure on one device is often an error on the other: print both devices' page errors into the CI log.
+  page.on("pageerror", (e) => console.log(`[${nickname}] page error: ${e.stack ?? e.message}`));
+  page.on("console", (m) => m.type() === "error" && console.log(`[${nickname}] console error: ${m.text().slice(0, 2000)}`));
   return { id: data.user!.id, nickname, context, page };
 }
 
