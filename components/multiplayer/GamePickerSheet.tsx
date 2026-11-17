@@ -8,7 +8,8 @@ import { GameIcon3D } from "@/components/world/GameIcon3D";
 import { GameFilterChips, GameSearchField } from "@/components/library/GameFilters";
 import { useGamesMeta } from "@/lib/games-meta/client";
 import { durationLabel, filterGames, newGameIds, type GameFilter } from "@/lib/games-meta";
-import { duelGames } from "@/lib/multiplayer/games";
+import { countGames, duelGames } from "@/lib/multiplayer/games";
+import { sizedName } from "@/lib/sizes";
 import { useGameSettings } from "@/lib/game-settings/client";
 import { duelCopy } from "@/lib/copy/duel";
 import { useSheetSound } from "@/lib/audio/useSheetSound";
@@ -83,10 +84,10 @@ export function GamePickerSheet({
               </div>
               <ModalClose />
             </div>
-            <GameSearchField ref={search} value={q} onChange={setQ} placeholder={C.searchPlaceholder(raceGames.length)} />
+            <GameSearchField ref={search} value={q} onChange={setQ} placeholder={C.searchPlaceholder(countGames(raceGames))} />
             <GameFilterChips value={filter} onChange={setFilter} worlds={raceWorlds} showNew={newGameIds(raceGames, meta).length > 0} />
             <p className="text-muted text-[13px] font-medium" aria-live="polite">
-              {C.count(list.length)}
+              {C.count(countGames(list))}
             </p>
           </div>
           <ul
@@ -103,7 +104,7 @@ export function GamePickerSheet({
                 <PickRow
                   selected={value === g.id}
                   onClick={() => pick(g.id)}
-                  title={g.name}
+                  title={sizedName(g)}
                   sub={WORLD_BY_ID[g.world].name}
                   dot={WORLD_BY_ID[g.world].color}
                   time={durationLabel(meta[g.id]?.typicalSec ?? 180)}

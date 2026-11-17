@@ -22,6 +22,7 @@ import { TIMING, type EmoteId } from "@/lib/multiplayer/constants";
 import type { MatchPlayerView, MatchView } from "@/lib/multiplayer/types";
 import { useReduce } from "@/lib/client/multiplayer";
 import { useViewportHeight } from "@/components/game/useBoardSize";
+import { sizedName } from "@/lib/sizes";
 import {
   Avatar,
   CountdownNumber,
@@ -116,7 +117,8 @@ export function DuelEntrySheet({
 }) {
   const reduce = useReduce();
   const [picking, setPicking] = useState(false);
-  const named = game ? gameName(game) : duelCopy.anyGame;
+  // The picker names each Spuzdoku board size ("Spuzdoku 9 × 9"), so the row says which one was picked.
+  const named = game ? sizedName({ id: game, name: gameName(game) }) : duelCopy.anyGame;
   const quickFirst = live === true && !friendName;
   const friendTitle = friendName ? duelCopy.friendNamed(friendName) : duelCopy.friend;
   // A page, not a modal: /duel is often opened straight from a shared link or the home screen, so

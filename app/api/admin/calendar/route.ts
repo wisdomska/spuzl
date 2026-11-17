@@ -2,6 +2,7 @@ import { handle, ok, ApiError } from "@/lib/api/server";
 import { requireAdmin } from "@/lib/admin/auth";
 import { GAMES, WORLDS } from "@/lib/catalog";
 import { hasLogic } from "@/games/logic-registry";
+import { sizedName } from "@/lib/sizes";
 import { addDays, ISO_DATE, mondayOf, todayIso } from "@/lib/admin/dates";
 
 /**
@@ -31,7 +32,8 @@ export const GET = handle(async (req: Request) => {
   const byKey = new Map((data ?? []).map((r) => [`${r.game_id}|${r.date}`, r]));
   const rows = games.map((g) => ({
     game: g.id,
-    name: g.name,
+    // Spuzdoku's two board sizes are two rows (each has its own Dailies): "Spuzdoku 6 × 6", "Spuzdoku 9 × 9".
+    name: sizedName(g),
     world: g.world,
     cells: days.map((date) => {
       const r = byKey.get(`${g.id}|${date}`);

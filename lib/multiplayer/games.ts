@@ -67,6 +67,13 @@ export type PartyGameSwitch = GameSwitch & { readonly "party.scoreRaces": boolea
 export const scoreRaceGames = (s: PartyGameSwitch): GameMeta[] =>
   s["party.scoreRaces"] ? SCORE_RACE_GAMES.filter((g) => versusOpen(g.id, s)) : [];
 
+/**
+ * How many games a picker list holds, counting each game once: Spuzdoku's two board sizes (sixer, and nine with
+ * `variantOf: "sixer"`) are two entries of one game, so a world chip or a "Search 9 games" matches the world's count.
+ */
+export const countGames = (games: readonly Pick<GameMeta, "id" | "variantOf">[]): number =>
+  new Set(games.map((g) => g.variantOf ?? g.id)).size;
+
 /** Every game a host may pick for a Party now (time races, then score races), in catalogue order within each. */
 export const partyGames = (s: PartyGameSwitch): GameMeta[] => [...duelGames(s), ...scoreRaceGames(s)];
 
