@@ -27,6 +27,14 @@ export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
   if (!url || !key) return response;
   const hasSession = hasSessionCookie(request.cookies);
+  // The admin console signs in with its own cookie (lib/admin/session.ts).
+  const adminPath = path.startsWith("/admin") || path.startsWith("/api/admin");
+  const adminSession = adminPath && request.cookies.getAll().some((c) => c.name.startsWith(ADMIN_COOKIE));
+  // No session cookie (a first visit, a search or AI crawler): nothing to refresh, so no call to Supabase Auth.
+  if (!hasSession && !adminSession) {
+    if (path === "/" && isDocumentRequest(request)) return landingPage(request);
+    return response;
+  }
   const sb = createServerClient(url, key, {
     cookies: {
       getAll: () => request.cookies.getAll(),
@@ -39,16 +47,16 @@ export async function proxy(request: NextRequest) {
   });
   // Link prefetches skip the refresh: their responses (and any rotated token they carry) are often thrown away, and
   // the old refresh token used later would then count as reused, which ends the whole session. Real navigations and
-  // the browser client keep the session fresh.
+  // the browser client keep the session fresh. getClaims checks the token locally (ES256 keys, cached) and only goes
+  // to Supabase Auth when it has expired and needs refreshing, where getUser asked Auth on every navigation.
   const prefetch =
     request.headers.get("next-router-prefetch") === "1" ||
     request.headers.get("purpose") === "prefetch" ||
     request.headers.get("sec-purpose")?.includes("prefetch");
-  if (!prefetch) await sb.auth.getUser();
+  if (!prefetch && hasSession) await sb.auth.getClaims();
   // The admin console signs in with its own cookie (lib/admin/session.ts): keep that session fresh the same way on
   // admin pages and admin API calls, so a page render never has to refresh it without being able to save it.
-  const adminPath = request.nextUrl.pathname.startsWith("/admin") || request.nextUrl.pathname.startsWith("/api/admin");
-  if (!prefetch && adminPath && request.cookies.getAll().some((c) => c.name.startsWith(ADMIN_COOKIE))) {
+  if (!prefetch && adminSession) {
     const admin = createServerClient(url, key, {
       cookieOptions: { name: ADMIN_COOKIE },
       cookies: {
@@ -64,23 +72,29 @@ export async function proxy(request: NextRequest) {
     });
     await admin.auth.getUser();
   }
-  // Visitors with no session cookie at all (first visit, search and AI crawlers, Google's OAuth branding review) get
-  // the public landing page at "/", not a redirect into the intro: the homepage must name the app and say what it
-  // does without a login. Keyed on the cookie, not on getUser(), so a slow or failed token refresh never hides Home
-  // from a player. Every document request counts, whatever its Accept header (crawlers often send */* or none).
-  // In-app navigations and prefetches (RSC requests) keep the old flow, so a Home prefetched just before a guest
-  // account is created is never cached as the landing page.
-  if (!hasSession && path === "/" && isDocumentRequest(request)) {
-    const landing = NextResponse.rewrite(new URL("/about", request.url));
-    // The service worker never caches a page marked public (public/sw.js), so the landing page can't stand in for Home.
-    landing.headers.set("x-spuzl-public", "1");
-    return landing;
-  }
   return response;
+}
+
+/**
+ * Visitors with no session cookie at all (first visit, search and AI crawlers, Google's OAuth branding review) get
+ * the public landing page at "/", not a redirect into the intro: the homepage must name the app and say what it
+ * does without a login. Keyed on the cookie, not on getUser(), so a slow or failed token refresh never hides Home
+ * from a player. Every document request counts, whatever its Accept header (crawlers often send "any type" or none).
+ * In-app navigations and prefetches (RSC requests) keep the old flow, so a Home prefetched just before a guest
+ * account is created is never cached as the landing page.
+ */
+function landingPage(request: NextRequest) {
+  const landing = NextResponse.rewrite(new URL("/about", request.url));
+  // The service worker never caches a page marked public (public/sw.js), so the landing page can't stand in for Home.
+  landing.headers.set("x-spuzl-public", "1");
+  return landing;
 }
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|3d/|icons/|api/health|api/og|robots.txt|sitemap.xml|llms.txt|llms-full.txt|.*opengraph-image|.*\\.(?:png|webp|svg|ico|riv|woff2)$).*)",
+    // The player API (api/v1, api/games, api/cron, api/dev) is left out: its routes read the session themselves and
+    // write a refreshed cookie back (lib/supabase/server.ts), so the proxy only added a second function call and an
+    // Auth round trip to every API request. Admin API calls keep it (the admin session cookie, lib/admin/session.ts).
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|3d/|icons/|api/health|api/og|api/v1/|api/games/|api/cron/|api/dev/|robots.txt|sitemap.xml|llms.txt|llms-full.txt|.*opengraph-image|.*\\.(?:png|webp|svg|ico|riv|woff2)$).*)",
   ],
 };

@@ -5,9 +5,9 @@ name: Streak nudge
 # per GMT day) and sends only to players whose local hour is the admin send hour, so a late or repeated run is safe.
 # Needs the repository secret CRON_SECRET (the same value as the Vercel CRON_SECRET). On a Vercel plan with hourly
 # crons, add {"path": "/api/cron/streak-nudge", "schedule": "7 * * * *"} to vercel.json and drop this workflow.
+# The production database's pg_cron job (spuzl-streak-nudge) makes the hourly call; this stays as a manual fallback
+# (it also ran hourly, so every hour paid for two calls).
 on:
-  schedule:
-    - cron: "7 * * * *"
   workflow_dispatch:
 
 jobs:

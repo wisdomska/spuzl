@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.70.1 (18 November 2026)
+
+### Behind the scenes
+
+- **Leaner on server time:** API calls no longer pass through the proxy first (one function call instead of two,
+  and no extra round trip to Supabase Auth), so they answer sooner. Visitors with no session (crawlers, first
+  visits) skip the session check altogether, and pages check the session locally, asking Supabase Auth only when it
+  needs refreshing.
+- The hourly streak reminder was triggered twice an hour (the database and a GitHub workflow); the workflow is now a
+  manual fallback.
+
 ## 1.70.0 (17 November 2026)
 
 ### Everyone
