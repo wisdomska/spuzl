@@ -44,6 +44,8 @@ import {
   WIDE_ASIDE_MAX_H,
   WIDE_GAP,
   WIDE_GUTTER,
+  SLOT_PAD,
+  WideBoard,
 } from "./useBoardSize";
 import { ShellAsideProvider } from "./ShellAside";
 import { useLeave } from "./useLeave";
@@ -203,7 +205,10 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   // top bar's middle (as on a wide screen) and the board keeps the height under it.
   const sidewaysScreen = useSideways();
   const sideways = !panel && !wide && sidewaysScreen;
-  const colW = wideColumn(vw, vh, meta.id, panel);
+  // The board's shape (columns over rows, reported by its cell sizing, `WideBoard`) shapes the wide column.
+  const [boardAspect, setBoardAspect] = useState(1);
+  const colW = wideColumn(vw, vh, meta.id, panel, boardAspect);
+  const wideBoard = useMemo(() => ({ inner: colW - SLOT_PAD * 2, setAspect: setBoardAspect }), [colW]);
   const [aside, setAside] = useState<HTMLElement | null>(null);
   // The game's own colour (lib/catalog colourOf): moved games keep the hue they were designed in.
   const relaxed = useSettings((s) => s.relaxed);
@@ -777,125 +782,127 @@ export function GameShell<P, St>(props: GameShellProps<P, St>) {
   );
 
   return (
-    <ShellAsideProvider value={{ wide, node: aside }}>
-      <div
-        className={`bg-bg relative mx-auto flex min-h-dvh w-full flex-col ${wide ? "px-6" : sideways ? "" : "max-w-[560px]"}`}
-        style={wide ? { ...style, maxWidth: WIDE_GUTTER * 2 + colW + (panel ? WIDE_GAP + asideW : 0) } : style}
-        data-world={meta.world}
-        data-shell
-        data-wide={wide || undefined}
-      >
-        {header}
-        {!wide && !sideways && foldingRule("relative z-10 overflow-hidden px-4")}
-        {banner && !wide && !sideways && (
-          <div className="relative z-20 px-3 pb-1" data-shell-banner>
-            {banner}
-          </div>
-        )}
-        {/* Wide: two columns (useBoardSize `boardBox`), the board filling the left and the side panel holding the
+    <WideBoard.Provider value={wide ? wideBoard : null}>
+      <ShellAsideProvider value={{ wide, node: aside }}>
+        <div
+          className={`bg-bg relative mx-auto flex min-h-dvh w-full flex-col ${wide ? "px-6" : sideways ? "" : "max-w-[560px]"}`}
+          style={wide ? { ...style, maxWidth: WIDE_GUTTER * 2 + colW + (panel ? WIDE_GAP + asideW : 0) } : style}
+          data-world={meta.world}
+          data-shell
+          data-wide={wide || undefined}
+        >
+          {header}
+          {!wide && !sideways && foldingRule("relative z-10 overflow-hidden px-4")}
+          {banner && !wide && !sideways && (
+            <div className="relative z-20 px-3 pb-1" data-shell-banner>
+              {banner}
+            </div>
+          )}
+          {/* Wide: two columns (useBoardSize `boardBox`), the board filling the left and the side panel holding the
             rest. Phone: one column (the board column is `display: contents`). The board keeps its place in the
             tree either way, so turning a tablet or resizing a window never restarts the game. */}
-        <div className={wide ? "flex flex-1 items-start pb-6" : "flex flex-1 flex-col"} style={wide ? { gap: WIDE_GAP } : undefined}>
-          <div className={wide ? `flex min-w-0 flex-1 ${panel ? "justify-center" : "flex-col items-stretch"}` : "contents"}>
-            {(!wide || !panel) && stripZone}
-            {rule}
-            {slot}
-            {(!wide || !panel) && feedbackZone}
-            {(!wide || !panel) && toolZone}
+          <div className={wide ? "flex flex-1 items-start pb-6" : "flex flex-1 flex-col"} style={wide ? { gap: WIDE_GAP } : undefined}>
+            <div className={wide ? `flex min-w-0 flex-1 ${panel ? "justify-center" : "flex-col items-stretch"}` : "contents"}>
+              {(!wide || !panel) && stripZone}
+              {rule}
+              {slot}
+              {(!wide || !panel) && feedbackZone}
+              {(!wide || !panel) && toolZone}
+            </div>
+            {wide && panel && (
+              // R3-02: the panel never reaches past the viewport (it used to add a few px of page scroll). Spacing
+              // tightens on a short screen; the tools stay pinned at its foot and, as a last resort, the parts above
+              // them scroll inside the panel.
+              <aside
+                className="short:gap-2 flex min-h-0 shrink-0 flex-col gap-3 pt-3 pr-3"
+                style={{ width: asideW, maxHeight: WIDE_ASIDE_MAX_H }}
+                aria-label={M.panel}
+                data-shell-aside
+              >
+                <div className="short:gap-2 -mx-1 flex min-h-0 flex-col gap-3 overflow-y-auto overscroll-contain px-1 pb-1">
+                  {banner && foldingRule("shrink-0 overflow-hidden")}
+                  {stripZone}
+                  {/* The board's side-panel parts (clue lists and the like) hide with it while held (R2-16). */}
+                  <div
+                    ref={setAside}
+                    className={`flex flex-col gap-3 empty:hidden ${covered ? "invisible" : ""}`}
+                    data-aside-hidden={covered || undefined}
+                  />
+                  {feedbackZone}
+                  {/* After a clear the end bar (the result sheet) can be tall: it scrolls with the rest. */}
+                  {endBar && toolZone}
+                </div>
+                {!endBar && toolZone && <div className="shrink-0">{toolZone}</div>}
+              </aside>
+            )}
           </div>
-          {wide && panel && (
-            // R3-02: the panel never reaches past the viewport (it used to add a few px of page scroll). Spacing
-            // tightens on a short screen; the tools stay pinned at its foot and, as a last resort, the parts above
-            // them scroll inside the panel.
-            <aside
-              className="short:gap-2 flex min-h-0 shrink-0 flex-col gap-3 pt-3 pr-3"
-              style={{ width: asideW, maxHeight: WIDE_ASIDE_MAX_H }}
-              aria-label={M.panel}
-              data-shell-aside
-            >
-              <div className="short:gap-2 -mx-1 flex min-h-0 flex-col gap-3 overflow-y-auto overscroll-contain px-1 pb-1">
-                {banner && foldingRule("shrink-0 overflow-hidden")}
-                {stripZone}
-                {/* The board's side-panel parts (clue lists and the like) hide with it while held (R2-16). */}
-                <div
-                  ref={setAside}
-                  className={`flex flex-col gap-3 empty:hidden ${covered ? "invisible" : ""}`}
-                  data-aside-hidden={covered || undefined}
-                />
-                {feedbackZone}
-                {/* After a clear the end bar (the result sheet) can be tall: it scrolls with the rest. */}
-                {endBar && toolZone}
-              </div>
-              {!endBar && toolZone && <div className="shrink-0">{toolZone}</div>}
-            </aside>
-          )}
-        </div>
 
-        <div aria-live="polite" className="sr-only">
-          {live}
-        </div>
+          <div aria-live="polite" className="sr-only">
+            {live}
+          </div>
 
-        <PauseOverlay
-          open={paused}
-          title={meta.name}
-          elapsed={clockShown ? shownMs : null}
-          onResume={() => setPaused(false)}
-          onRestart={undefined}
-          onQuit={() => {
-            setPaused(false);
-            requestLeave();
-          }}
-          onHelp={
-            onHelp
-              ? () => {
-                  setPaused(false);
-                  onHelp();
-                }
-              : undefined
-          }
-        />
-        <Modal open={feedbackOpen} onOpenChange={setFeedbackOpen} title={M.feedbackTitle} description={M.feedbackIntro(meta.name)}>
-          {feedbackOpen && <FeedbackForm from={window.location.pathname} />}
-        </Modal>
-        <HintConfirm
-          open={confirmHint}
-          daily={mode === "daily"}
-          onCancel={() => setConfirmHint(false)}
-          onConfirm={() => {
-            track("hint_use", { game: meta.id, mode, kind: "confirm" });
-            rememberHintConfirmed(meta.id);
-            setConfirmHint(false);
-            void spendHint();
-          }}
-        />
-        <RestartConfirm
-          open={askRestart !== null}
-          onKeep={() => setAskRestart(null)}
-          onRestart={() => {
-            const run = askRestart;
-            setAskRestart(null);
-            run?.();
-          }}
-          onCloseAutoFocus={(e) => {
-            e.preventDefault();
-            menuButton.current?.focus();
-          }}
-        />
-        {policy.kind !== "none" && (
-          <LeaveConfirm
-            kind={policy.kind}
-            open={leave.asking}
-            busy={leave.busy}
-            onKeep={leave.keep}
-            onLeave={() => void leave.confirm()}
-            onCloseAutoFocus={(e) => {
-              e.preventDefault();
-              leave.restoreFocus(menuButton.current);
+          <PauseOverlay
+            open={paused}
+            title={meta.name}
+            elapsed={clockShown ? shownMs : null}
+            onResume={() => setPaused(false)}
+            onRestart={undefined}
+            onQuit={() => {
+              setPaused(false);
+              requestLeave();
+            }}
+            onHelp={
+              onHelp
+                ? () => {
+                    setPaused(false);
+                    onHelp();
+                  }
+                : undefined
+            }
+          />
+          <Modal open={feedbackOpen} onOpenChange={setFeedbackOpen} title={M.feedbackTitle} description={M.feedbackIntro(meta.name)}>
+            {feedbackOpen && <FeedbackForm from={window.location.pathname} />}
+          </Modal>
+          <HintConfirm
+            open={confirmHint}
+            daily={mode === "daily"}
+            onCancel={() => setConfirmHint(false)}
+            onConfirm={() => {
+              track("hint_use", { game: meta.id, mode, kind: "confirm" });
+              rememberHintConfirmed(meta.id);
+              setConfirmHint(false);
+              void spendHint();
             }}
           />
-        )}
-      </div>
-    </ShellAsideProvider>
+          <RestartConfirm
+            open={askRestart !== null}
+            onKeep={() => setAskRestart(null)}
+            onRestart={() => {
+              const run = askRestart;
+              setAskRestart(null);
+              run?.();
+            }}
+            onCloseAutoFocus={(e) => {
+              e.preventDefault();
+              menuButton.current?.focus();
+            }}
+          />
+          {policy.kind !== "none" && (
+            <LeaveConfirm
+              kind={policy.kind}
+              open={leave.asking}
+              busy={leave.busy}
+              onKeep={leave.keep}
+              onLeave={() => void leave.confirm()}
+              onCloseAutoFocus={(e) => {
+                e.preventDefault();
+                leave.restoreFocus(menuButton.current);
+              }}
+            />
+          )}
+        </div>
+      </ShellAsideProvider>
+    </WideBoard.Provider>
   );
 }
 

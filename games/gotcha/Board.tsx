@@ -21,8 +21,8 @@ const SPEC: RageGameSpec<PlatformerCourse> = {
   createSim,
   painter,
   stageHeight: (w, vp) => roomStageHeight(w, vp, VIEW.cols, VIEW.rows, FIT_TOP + 3 * FIT_EDGE),
-  // on a wide screen the window keeps its shape (about 16 x 10 tiles) instead of stretching to show the whole room
-  maxWidth: 780,
+  // A wide screen gets the full width, as Dash does (owner, 19 Nov 2026): the tiles grow to the height and the
+  // window shows a few more columns, so the room still scrolls and its traps still come into view as you go.
   controls: "dpad",
   hud: "deaths",
   startHint: "Move or jump to start. Trust nothing.",

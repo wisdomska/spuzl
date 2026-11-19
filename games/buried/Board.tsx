@@ -42,7 +42,7 @@ export default function BuriedBoard({ puzzle, initialState, hint, disabled, mode
   const reduce = useReducedMotion();
   // Short phones: the grid steps down (to 36 px cells) until the shell, down to its tools, fits the screen.
   const rootRef = useRef<HTMLDivElement>(null);
-  const cell = useFitHeight(useCellSize(vCols, GAP, PAD, 52, vRows), 36, vRows, rootRef, "shell");
+  const cell = useFitHeight(useCellSize(vCols, GAP, PAD * 2, 52, vRows), 36, vRows, rootRef, "shell");
   const [found, setFound] = useState<number[][]>(() => initialState?.found?.map((p) => p.slice()) ?? []);
   // bonus paths are saved in reading order, so the word is just their letters
   const [bonus, setBonus] = useState<{ word: string; path: number[] }[]>(() =>

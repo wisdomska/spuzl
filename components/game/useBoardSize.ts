@@ -1,6 +1,7 @@
 "use client";
 
-import { useContext, createContext, useLayoutEffect, useRef, useState, useSyncExternalStore, type RefObject } from "react";
+import { viewportSize } from "./turned";
+import { useContext, createContext, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type RefObject } from "react";
 
 /** The game shell's board slot pads the board by this much on each side (GameShell's board `main`, px-3). */
 export const SLOT_PAD = 12;
@@ -94,17 +95,27 @@ export const WIDE_ASPECT: Record<string, number> = {
 export const WIDE_COL_MIN = 600;
 
 /** The board column's width on a wide screen for a game: its shape at the available height, within the column. */
-export function wideColumn(vw: number, vh: number, game: string, panel = true): number {
+export function wideColumn(vw: number, vh: number, game: string, panel = true, aspect = 1): number {
   const box = boardBox(vw, vh);
+  // A game's set shape wins; otherwise the shape its board reported (`WideBoard`: a 6 x 5 Flowline is wider than
+  // tall, so its column is too, and the grid is never cut off at the column's edge).
+  const shape = WIDE_ASPECT[game] ?? aspect;
   // No side panel (canvas games keep their controls on the canvas): the board may use the whole page width.
   if (!panel) {
     const avail = Math.min(vw, WIDE_SHELL_MAX) - WIDE_GUTTER * 2 - SLOT_PAD * 2;
-    return Math.min(avail, Math.round(box.h * (WIDE_ASPECT[game] ?? 1))) + SLOT_PAD * 2;
+    return Math.min(avail, Math.round(box.h * shape)) + SLOT_PAD * 2;
   }
-  const shaped = Math.round(Math.min(box.w, box.h) * (WIDE_ASPECT[game] ?? 1));
+  const shaped = Math.round(Math.min(box.w, box.h) * shape);
   // A game with its own shape (narrow Five, wide Oware) takes exactly that; the rest get at least WIDE_COL_MIN.
   return Math.min(box.w, game in WIDE_ASPECT ? shaped : Math.max(WIDE_COL_MIN, shaped)) + SLOT_PAD * 2;
 }
+
+/**
+ * The wide shell's board column (GameShell): its width inside the slot padding, and where a board reports its
+ * shape (columns over rows), so the column takes that shape. Boards size their cells to `inner`, the real column,
+ * never to a guess of it.
+ */
+export const WideBoard = createContext<{ inner: number; setAspect: (aspect: number) => void } | null>(null);
 
 /** The space a board has, in px, inside the board slot's padding. */
 export interface BoardBox {
@@ -147,6 +158,13 @@ export function useBoardBox(): BoardBox {
   return boardBox(useViewportWidth(), useViewportHeight());
 }
 
+/** The width a board has: the wide shell's real column when there is one, else the slot (`useBoardBox`). */
+export function useBoardWidth(): number {
+  const box = useBoardBox();
+  const column = useContext(WideBoard);
+  return box.wide && column ? Math.min(box.w, column.inner) : box.w;
+}
+
 /** Is the shell in its two-column layout? */
 export function useWide(): boolean {
   return isWide(useViewportWidth(), useViewportHeight());
@@ -174,15 +192,31 @@ export const EmbeddedBoard = createContext<{ width: number } | null>(null);
 
 export function useCellSize(cols: number, gap: number, padding = 6, max = 64, rows = cols): number {
   const embedded = useContext(EmbeddedBoard);
+  const column = useContext(WideBoard);
   const vw = useViewportWidth();
   const vh = useViewportHeight();
+  // Tell the wide shell this board's shape (a grid wider than tall gets a wider column).
+  const setAspect = column?.setAspect;
+  useEffect(() => {
+    if (!embedded) setAspect?.(cols / rows);
+  }, [setAspect, embedded, cols, rows]);
   if (embedded) return Math.max(24, Math.floor((embedded.width - (gap * (cols - 1) + padding)) / cols));
-  return cellSize(vw, vh, cols, gap, padding, max, rows);
+  return cellSize(vw, vh, cols, gap, padding, max, rows, column?.inner);
 }
 
 /** The pure rule behind `useCellSize`. */
-export function cellSize(vw: number, vh: number, cols: number, gap: number, padding: number, max: number, rows = cols): number {
-  if (isWide(vw, vh)) return wideCell(vw, vh, cols, gap * (cols - 1) + padding, max, rows, gap * (rows - 1) + padding);
+export function cellSize(
+  vw: number,
+  vh: number,
+  cols: number,
+  gap: number,
+  padding: number,
+  max: number,
+  rows = cols,
+  /** the wide board column's real width (`WideBoard`), when known */
+  inner?: number,
+): number {
+  if (isWide(vw, vh)) return wideCell(vw, vh, cols, gap * (cols - 1) + padding, max, rows, gap * (rows - 1) + padding, inner);
   const overhead = gap * (cols - 1) + padding;
   const across = (w: number) => Math.floor((w - SLOT_PAD * 2 - overhead) / cols);
   const phone = across(Math.min(vw, 420));
@@ -204,7 +238,7 @@ const onResize = (cb: () => void) => {
 export function useViewportWidth(): number {
   return useSyncExternalStore(
     onResize,
-    () => window.innerWidth,
+    () => viewportSize().w,
     () => 390,
   );
 }
@@ -213,7 +247,7 @@ export function useViewportWidth(): number {
 export function useViewportHeight(): number {
   return useSyncExternalStore(
     onResize,
-    () => window.innerHeight,
+    () => viewportSize().h,
     () => 844,
   );
 }
@@ -238,9 +272,19 @@ export function fitCell(vw: number, cols: number, overhead: number, floor: numbe
  * (`overW` and `overH` are the px across and down that are not cells), capped at WIDE_GROW × `max`, never
  * under 24 px.
  */
-export function wideCell(vw: number, vh: number, cols: number, overW: number, max: number, rows = cols, overH = overW): number {
+export function wideCell(
+  vw: number,
+  vh: number,
+  cols: number,
+  overW: number,
+  max: number,
+  rows = cols,
+  overH = overW,
+  inner?: number,
+): number {
   const box = boardBox(vw, vh);
-  const across = Math.floor((box.w - overW) / cols);
+  // Across the real column when the shell says how wide it is, else across the widest column there could be.
+  const across = Math.floor((Math.min(box.w, inner ?? box.w) - overW) / cols);
   const down = Math.floor((Math.min(box.h, Math.floor(vh * WIDE_HEIGHT)) - overH) / rows);
   return Math.max(24, Math.min(Math.round(max * WIDE_GROW), across, down));
 }

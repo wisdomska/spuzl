@@ -1,6 +1,6 @@
 {
   "name": "spuzl",
-  "version": "1.70.1",
+  "version": "1.71.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -32,7 +32,7 @@
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "motion": "^14.9.0",
-    "next": "16.4.3",
+    "next": "16.4.5",
     "phaser": "^4.2.1",
     "posthog-js": "^1.444.0",
     "qrcode": "^1.5.4",
@@ -58,7 +58,7 @@
     "@vitejs/plugin-react": "^6.1.2",
     "@vitest/coverage-v8": "^5.0.5",
     "eslint": "^9",
-    "eslint-config-next": "16.4.3",
+    "eslint-config-next": "16.4.5",
     "fake-indexeddb": "^6.2.7",
     "husky": "^9.1.7",
     "jsdom": "^30.1.3",

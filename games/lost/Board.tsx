@@ -211,7 +211,8 @@ export default function LostBoard({ puzzle, initialState, hint, disabled, mode, 
         className="relative touch-none overflow-hidden rounded-[16px] outline-none select-none focus-visible:shadow-[var(--focus-ring)]"
         style={{ width: span + PAD * 2, height: span + PAD * 2, padding: PAD, background: "var(--board-bg)" }}
       >
-        <div className="relative overflow-hidden rounded-[10px]" style={{ width: span, height: span }}>
+        {/* The window onto the maze: the map past it is meant to be out of sight (data-board-window). */}
+        <div className="relative overflow-hidden rounded-[10px]" style={{ width: span, height: span }} data-board-window>
           <div
             className="ll-cam absolute top-0 left-0"
             style={{ width: cols * cs, height: rows * cs, transform: `translate(${-camX}px, ${-camY}px)`, perspective: 600 }}

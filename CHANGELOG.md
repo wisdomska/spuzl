@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.71.0 (19 November 2026)
+
+### Everyone
+
+- **No more cut-off boards on big screens:** a board wider than it is tall (Flowline, Twins, Tripwire, Coil, Buried)
+  lost its last column on some laptop and monitor sizes. The board's column now takes the board's own shape, so it
+  is shown whole and bigger. Buried also lost a few pixels on a 1024 px screen; fixed.
+- **Gotcha uses the whole screen on a computer,** as Dash does: bigger rooms, and you see more of each.
+- **Full screen turns Gotcha and Dash sideways on every phone:** where the browser won't turn the screen (iPhone,
+  iPad, Firefox, Samsung Internet, some installed apps), the game turns itself, top to the left. On an iPhone, the
+  full screen button now shows for these two games too. Leaving full screen, or turning the phone, puts it back.
+- Held sideways, the board fits exactly between the top bar and the bottom, whatever the length of the rule.
+
+### Behind the scenes
+
+- Next.js 16.4.5 (security fixes for 16.4.3).
+- A new test opens every live game at eight screen sizes (small phone to 1080p, phones sideways) and fails if any
+  board is cut off or the page scrolls sideways.
+
 ## 1.70.1 (18 November 2026)
 
 ### Behind the scenes

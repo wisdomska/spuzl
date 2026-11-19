@@ -1,7 +1,7 @@
 "use client";
 
 import type { RefObject } from "react";
-import { SLOT_PAD, useBoardBox, useCellSize, useFitHeight } from "@/components/game/useBoardSize";
+import { SLOT_PAD, useBoardWidth, useCellSize, useFitHeight } from "@/components/game/useBoardSize";
 
 /**
  * Cell size for Line Lane boards, plus a bleed. Drag-to-draw boards cannot pan (a horizontal drag
@@ -13,7 +13,7 @@ export function useFitCell(cols: number, gap: number, pad: number): { cs: number
   const cs = useCellSize(cols, gap, pad * 2 + 4);
   const board = cols * cs + (cols - 1) * gap + pad * 2;
   // The board slot's width inside its padding (the board column on a wide screen).
-  const avail = useBoardBox().w;
+  const avail = useBoardWidth();
   const bleed = board > avail ? Math.min(SLOT_PAD, Math.ceil((board - avail) / 2)) : 0;
   return { cs, bleed };
 }
@@ -34,7 +34,7 @@ export function useFitCellHeight(
   const ideal = useCellSize(cols, gap, pad * 2 + 4, 64, rows);
   const cs = useFitHeight(ideal, Math.min(min, ideal), rows, target, "shell");
   const board = cols * cs + (cols - 1) * gap + pad * 2;
-  const avail = useBoardBox().w;
+  const avail = useBoardWidth();
   const bleed = board > avail ? Math.min(SLOT_PAD, Math.ceil((board - avail) / 2)) : 0;
   return { cs, bleed };
 }

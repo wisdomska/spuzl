@@ -32,6 +32,7 @@ import { cssColor, type Painter } from "./render/types";
 import type { Stage } from "./scene";
 import { HeldInput } from "./held";
 import { MIN_STAGE_HEIGHT, SHORT_VIEWPORT, stageHeight } from "./layout";
+import { layoutPoint, layoutTopOf, viewportSize } from "@/components/game/turned";
 import { useFitHeight, useSideways } from "@/components/game/useBoardSize";
 import { useOnScreenKeys } from "@/components/game/useInputMode";
 import { Kbd } from "@/games/_shared/LetterKeyboard";
@@ -109,8 +110,15 @@ const mono: CSSProperties = {
 const PAD_KEY = "spuzl.gamePad";
 /** Full screen: the game header (72), the gap and the controls row under the canvas (about 110). */
 const FULLSCREEN_CHROME = 190;
-/** A phone held sideways: the game header (about 60) and the slot's padding under it; the controls sit beside. */
-const SIDEWAYS_CHROME = 72;
+/** A phone held sideways: room kept under the board (the slot's padding); the controls sit beside it. */
+const SIDEWAYS_BOTTOM = 8;
+
+/** An element's top in the page's own layout (offsets, so a turned page reads the same as an upright one). */
+function layoutTop(el: HTMLElement): number {
+  let y = 0;
+  for (let n: HTMLElement | null = el; n; n = n.offsetParent as HTMLElement | null) y += n.offsetTop;
+  return y;
+}
 
 export function RageBoard<S extends SimCore>({
   puzzle,
@@ -130,12 +138,15 @@ export function RageBoard<S extends SimCore>({
   const reducedRef = useRef(reduced);
   // First render already uses the phone height (boards are client-only), so the poster never jumps.
   const [size, setSize] = useState(() => {
-    const w = typeof window === "undefined" ? 354 : Math.max(0, Math.min(window.innerWidth, 560) - 36);
-    const vp = typeof window === "undefined" ? { w: 1280, h: 800 } : { w: window.innerWidth, h: window.innerHeight };
+    const vp = typeof window === "undefined" ? { w: 1280, h: 800 } : viewportSize();
+    const w = typeof window === "undefined" ? 354 : Math.max(0, Math.min(vp.w, 560) - 36);
     return { w, h: spec.stageHeight?.(w, vp) ?? stageHeight(w, vp, spec.tall), short: vp.h < SHORT_VIEWPORT };
   });
+  // A phone held sideways (or the page turned for it, components/game/turned.ts): the height is worked out exactly
+  // below, so the fit never shrinks it (and a turned page's measurements would be sideways anyway).
+  const sidewaysScreen = useSideways();
   // The canvas gives up height (to MIN_STAGE_HEIGHT) until the controls under it and the shell fit the screen.
-  const stageH = useFitHeight(size.h, Math.min(size.h, MIN_STAGE_HEIGHT), 1);
+  const stageH = useFitHeight(size.h, sidewaysScreen ? size.h : Math.min(size.h, MIN_STAGE_HEIGHT), 1);
   // A computer plays with the keys: the on-screen pad gives way to a line naming them (useInputMode).
   const keys = useOnScreenKeys();
   // On-screen controls (owner, 14 Nov 2026): always on a phone or tablet; on a computer hidden until asked for, and
@@ -150,7 +161,6 @@ export function RageBoard<S extends SimCore>({
   const showPad = !keys.physical || padPref;
   // A phone held sideways (owner, 17 Nov 2026): the board takes the width between the controls, left thumb on the
   // move or duck buttons, right thumb on the jump, and the height under the game header.
-  const sidewaysScreen = useSideways();
   const sideways = sidewaysScreen && showPad;
   const togglePad = () => {
     const next = !padPref;
@@ -328,19 +338,26 @@ export function RageBoard<S extends SimCore>({
     const on = () => {
       // Sideways the board is the space between the two control columns; otherwise the whole row.
       const w = Math.floor((sideways ? stageBoxRef.current : el)?.clientWidth ?? el.clientWidth);
-      const vp = { w: window.innerWidth, h: window.innerHeight };
+      const vp = viewportSize();
+      // Sideways: the height between the game header (its height varies: a rule on two lines, then folded away) and
+      // the shell's rows under the board (feedback, tools), all read from the layout, so a turned page measures alike.
+      const tails = [...(el.closest("[data-shell]")?.querySelectorAll<HTMLElement>("[data-shell-tail]") ?? [])];
+      const below = tails.reduce((sum, t) => sum + t.offsetHeight, 0);
       const h = sideways
-        ? Math.max(MIN_STAGE_HEIGHT, vp.h - SIDEWAYS_CHROME)
+        ? Math.max(MIN_STAGE_HEIGHT, vp.h - layoutTop(el) - below - SIDEWAYS_BOTTOM)
         : document.fullscreenElement
           ? Math.max(MIN_STAGE_HEIGHT, vp.h - FULLSCREEN_CHROME)
           : (spec.stageHeight?.(w, vp) ?? stageHeight(w, vp, spec.tall));
-      const short = window.innerHeight < SHORT_VIEWPORT;
+      const short = vp.h < SHORT_VIEWPORT;
       setSize((s) => (s.w === w && s.h === h && s.short === short ? s : { w, h, short }));
     };
     on();
     const ro = new ResizeObserver(on);
     ro.observe(el);
     if (stageBoxRef.current) ro.observe(stageBoxRef.current);
+    // The header above can change height (the rule folds away once play starts): measure again when it does.
+    const header = el.closest("[data-shell]")?.querySelector("header");
+    if (header) ro.observe(header);
     window.addEventListener("resize", on);
     return () => {
       ro.disconnect();
@@ -465,9 +482,13 @@ export function RageBoard<S extends SimCore>({
       } catch {
         /* pointer already gone */
       }
-      const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-      swipe.current = { id: e.pointerId, y: e.clientY };
-      held.pointerDown("canvas", e.pointerId, e.clientY - r.top > r.height * 0.66 ? BTN.DOWN : BTN.JUMP);
+      // In the board's own coordinates, so a turned page (turned.ts) reads "down" the way the player sees it.
+      const el = e.currentTarget as HTMLElement;
+      const at = layoutPoint(e.clientX, e.clientY);
+      const r = el.getBoundingClientRect();
+      const top = layoutTopOf(r); // the board's top edge (the screen's left edge when turned)
+      swipe.current = { id: e.pointerId, y: at.y };
+      held.pointerDown("canvas", e.pointerId, at.y - top > el.clientHeight * 0.66 ? BTN.DOWN : BTN.JUMP);
       return;
     }
     if (spec.controls !== "tap" && spec.controls !== "hold" && spec.controls !== "drag") return;
@@ -477,20 +498,21 @@ export function RageBoard<S extends SimCore>({
       /* pointer already gone */
     }
     if (spec.controls === "drag") {
-      drag.current = { id: e.pointerId, x: e.clientX };
+      drag.current = { id: e.pointerId, x: layoutPoint(e.clientX, e.clientY).x };
       held.pointerDown("canvas", e.pointerId, 0);
     } else held.pointerDown("canvas", e.pointerId, BTN.JUMP);
   };
   const onCanvasMove = (e: RPointerEvent) => {
     if (spec.controls === "runner" && swipe.current?.id === e.pointerId) {
-      const dy = e.clientY - swipe.current.y;
+      const dy = layoutPoint(e.clientX, e.clientY).y - swipe.current.y;
       if (Math.abs(dy) > 24) held.pointerSet("canvas", e.pointerId, dy > 0 ? BTN.DOWN : BTN.JUMP);
       return;
     }
     if (spec.controls !== "drag" || !drag.current || drag.current.id !== e.pointerId) return;
-    const dx = e.clientX - drag.current.x;
+    const x = layoutPoint(e.clientX, e.clientY).x;
+    const dx = x - drag.current.x;
     held.pointerSet("canvas", e.pointerId, dx > 12 ? BTN.RIGHT : dx < -12 ? BTN.LEFT : 0);
-    if (Math.abs(dx) > 48) drag.current.x = e.clientX - Math.sign(dx) * 48;
+    if (Math.abs(dx) > 48) drag.current.x = x - Math.sign(dx) * 48;
   };
   const onCanvasUp = (e: RPointerEvent) => {
     if (drag.current?.id === e.pointerId) drag.current = null;
