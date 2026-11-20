@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.71.1 (20 November 2026)
+
+### Behind the scenes
+
+- **Search:** the site and its publisher now also carry the names "Spuzl", "SPUZL games" and "Spuzl puzzle games"
+  (structured data), so search engines tie a search for "spuzl" to this site. All 61 public pages were sent to
+  Bing, Yandex, Seznam and Naver through IndexNow.
+
 ## 1.71.0 (19 November 2026)
 
 ### Everyone

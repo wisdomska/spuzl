@@ -305,3 +305,13 @@ describe("IndexNow key file", () => {
 it("knows every game in code (sanity for the lists above)", () => {
   expect(GAMES.length + hidden.length).toBe(ALL_GAMES.length);
 });
+
+describe("site name for search (owner, 20 Nov 2026)", () => {
+  it("names the site and its publisher SPUZL, with Spuzl as an alternate name", async () => {
+    const { website, organization } = await import("./jsonld");
+    for (const t of [website(), organization()]) {
+      expect(t.name).toBe("SPUZL");
+      expect(t.alternateName).toContain("Spuzl");
+    }
+  });
+});

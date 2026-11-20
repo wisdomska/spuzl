@@ -18,6 +18,12 @@ const ORG_ID = `${SITE_URL}/#organization`;
 const SITE_ID = `${SITE_URL}/#website`;
 const MAKER_ID = `${SITE_URL}/#maker`;
 
+/**
+ * Other names people search for (owner, 20 Nov 2026: "Spuzl still isn't identifiable when I search"): Google reads
+ * `alternateName` for the site name it shows, and a search for "spuzl" should land here, not on look-alikes.
+ */
+export const ALT_NAMES = ["Spuzl", "SPUZL games", "Spuzl puzzle games"] as const;
+
 /** The maker: Senya, credited on every page and linked to their own site (owner, 9 Nov). */
 export const maker = (): Thing => ({ "@type": "Person", "@id": MAKER_ID, name: "Senya", url: aboutCopy.creditUrl });
 const MAKER_REF = { "@type": "Person", "@id": MAKER_ID, name: "Senya", url: aboutCopy.creditUrl };
@@ -27,6 +33,7 @@ export const organization = (): Thing => ({
   "@type": "Organization",
   "@id": ORG_ID,
   name: "SPUZL",
+  alternateName: [...ALT_NAMES],
   url: absoluteUrl("/"),
   logo: { "@type": "ImageObject", url: absoluteUrl("/icon.png"), width: 192, height: 192 },
   sameAs: [aboutCopy.creditUrl],
@@ -39,6 +46,7 @@ export const website = (): Thing => ({
   "@type": "WebSite",
   "@id": SITE_ID,
   name: "SPUZL",
+  alternateName: [...ALT_NAMES],
   url: absoluteUrl("/"),
   description: siteCopy.description,
   inLanguage: "en",
