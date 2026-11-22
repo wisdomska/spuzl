@@ -17,7 +17,14 @@ const nextConfig: NextConfig = {
   // Server source maps were 77 MB of every deployment's ~140 MB of server output (Vercel deployment storage, owner
   // 14 Nov 2026). Nothing reads them: Sentry isn't set up to upload maps. Browser maps were already off.
   productionBrowserSourceMaps: false,
-  experimental: { serverSourceMaps: false },
+  experimental: {
+    serverSourceMaps: false,
+    // Turbopack's file-system cache (on by default since 16.3) served a stale app/globals.css: a CSS-only change through
+    // the Tailwind loader was not rebuilt, locally and on Vercel (1.72.0 shipped the previous turned-page rotation,
+    // 22 Nov 2026). Off for builds and dev, so every build is the source as it is; a build takes a few seconds longer.
+    turbopackFileSystemCacheForBuild: false,
+    turbopackFileSystemCacheForDev: false,
+  },
   turbopack: {
     rules: {
       "*.css": {
