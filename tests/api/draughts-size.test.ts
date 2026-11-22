@@ -40,7 +40,7 @@ describe("api: draughts board size", () => {
     const j = await b.api(`/api/v1/bay/${m.data.id}/join`, { json: { code: m.data.inviteCode } });
     expect(j.data.status).toBe("active");
     // seat 0 moves first: whoever holds it plays a legal opening move
-    const mover = (j.data.players as string[])[0] === a.userId ? a : b;
+    const mover = j.data.mySeat === 0 ? b : a;
     const other = mover === a ? b : a;
     const move = legalMoves(j.data.state.board, 0)[0].path;
     expect((await mover.api(`/api/v1/bay/${m.data.id}/move`, { json: { ply: 0, move } })).status).toBe(200);
