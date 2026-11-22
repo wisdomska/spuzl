@@ -12,14 +12,15 @@ const Join = z.object({
   minutes: z.number().int().min(1).max(60).optional(),
   seats: z.number().int().min(2).max(4).optional(),
   ludo: z.object({ backKick: z.boolean().optional(), sideKick: z.boolean().optional(), homeKick: z.boolean().optional() }).optional(),
+  draughts: z.object({ size: z.union([z.literal(8), z.literal(10)]) }).optional(),
 });
 
 /** POST /api/v1/bay/queue: Play live. Joins the queue for one board game and time control (minutes per player) and tries to pair at once. */
 export const POST = handle(async (req: Request) => {
   const { admin, player } = await requirePlayer();
   await rateLimit(admin, `bay-queue:${player.id}`, 30, 60);
-  const { game, minutes, ludo, seats } = await body(req, Join);
-  return ok(await joinBayQueue(admin, player, game, minutes, ludo, seats));
+  const { game, minutes, ludo, seats, draughts } = await body(req, Join);
+  return ok(await joinBayQueue(admin, player, game, minutes, ludo, seats, draughts?.size));
 });
 
 /** GET /api/v1/bay/queue: poll while searching (about once a second). Pairs as soon as someone fits. 16+ only, like joining. */

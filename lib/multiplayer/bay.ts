@@ -78,6 +78,25 @@ export async function loadRules(game: BayRulesGame): Promise<AnyRules> {
 
 export const initialState = (rules: AnyRules, seats: number, seed: string) => rules.initial(seats, createRng(`${seed}:init`));
 
+/** Draughts board sizes a match can be made with (10 International is the default). */
+export type BoardSize = 8 | 10;
+
+/**
+ * A match's opening position. Draughts keeps its board: `size` 8 starts an English 8 × 8 game, anything else the
+ * default International 10 × 10. Every other game ignores it.
+ */
+export async function openingState(rules: AnyRules, game: string, seats: number, seed: string, size?: number | null) {
+  if (game === "draughts" && size === 8) return (await import("@/games/draughts/rules")).newDraughts(8);
+  return initialState(rules, seats, seed);
+}
+
+/** The board size a running draughts match was made with (from its board), else null. */
+export function boardSizeOf(game: string, state: unknown): BoardSize | null {
+  if (game !== "draughts") return null;
+  const b = (state as { board?: unknown[] } | null)?.board;
+  return Array.isArray(b) && b.length === 64 ? 8 : 10;
+}
+
 export interface MoveVerdict {
   ok: boolean;
   reason?: "not_your_turn" | "illegal" | "game_over" | "malformed";
@@ -112,8 +131,16 @@ export function validateMove(rules: AnyRules, state: unknown, seat: number, move
 }
 
 /** Rebuilds the state after the first `upTo` moves of the log. */
-export function replayMoves(rules: AnyRules, seats: number, seed: string, moves: { seat: number; move: unknown }[], upTo = moves.length) {
-  let s = initialState(rules, seats, seed);
+export function replayMoves(
+  rules: AnyRules,
+  seats: number,
+  seed: string,
+  moves: { seat: number; move: unknown }[],
+  upTo = moves.length,
+  /** the match's opening position, when it isn't the game's default one (an 8 × 8 draughts match) */
+  start?: unknown,
+) {
+  let s = start ?? initialState(rules, seats, seed);
   for (let i = 0; i < upTo; i++) s = rules.apply(s, moves[i].seat, moves[i].move, createRng(`${seed}:${i}`));
   return s;
 }

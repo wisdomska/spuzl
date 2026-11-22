@@ -32,7 +32,7 @@ import { cssColor, type Painter } from "./render/types";
 import type { Stage } from "./scene";
 import { HeldInput } from "./held";
 import { MIN_STAGE_HEIGHT, SHORT_VIEWPORT, stageHeight } from "./layout";
-import { layoutPoint, layoutTopOf, viewportSize } from "@/components/game/turned";
+import { layoutPoint, layoutTopOf, turnedInsets, viewportSize } from "@/components/game/turned";
 import { useFitHeight, useSideways } from "@/components/game/useBoardSize";
 import { useOnScreenKeys } from "@/components/game/useInputMode";
 import { Kbd } from "@/games/_shared/LetterKeyboard";
@@ -344,7 +344,7 @@ export function RageBoard<S extends SimCore>({
       const tails = [...(el.closest("[data-shell]")?.querySelectorAll<HTMLElement>("[data-shell-tail]") ?? [])];
       const below = tails.reduce((sum, t) => sum + t.offsetHeight, 0);
       const h = sideways
-        ? Math.max(MIN_STAGE_HEIGHT, vp.h - layoutTop(el) - below - SIDEWAYS_BOTTOM)
+        ? Math.max(MIN_STAGE_HEIGHT, vp.h - layoutTop(el) - below - SIDEWAYS_BOTTOM - turnedInsets())
         : document.fullscreenElement
           ? Math.max(MIN_STAGE_HEIGHT, vp.h - FULLSCREEN_CHROME)
           : (spec.stageHeight?.(w, vp) ?? stageHeight(w, vp, spec.tall));
@@ -486,7 +486,7 @@ export function RageBoard<S extends SimCore>({
       const el = e.currentTarget as HTMLElement;
       const at = layoutPoint(e.clientX, e.clientY);
       const r = el.getBoundingClientRect();
-      const top = layoutTopOf(r); // the board's top edge (the screen's left edge when turned)
+      const top = layoutTopOf(r); // the board's top edge (the screen's right edge when turned)
       swipe.current = { id: e.pointerId, y: at.y };
       held.pointerDown("canvas", e.pointerId, at.y - top > el.clientHeight * 0.66 ? BTN.DOWN : BTN.JUMP);
       return;
@@ -626,7 +626,7 @@ export function RageBoard<S extends SimCore>({
       {sideways && (
         // Left thumb: move (or duck), with the level under it.
         <div
-          className="flex w-[128px] flex-none flex-col items-center gap-3 select-none"
+          className="flex min-w-24 flex-none flex-col items-center gap-3 select-none"
           style={{ WebkitTouchCallout: "none" }}
           data-no-tick
           data-sideways-left
@@ -758,7 +758,7 @@ export function RageBoard<S extends SimCore>({
       {sideways && (
         // Right thumb: jump.
         <div
-          className="flex w-[128px] flex-none flex-col items-center gap-3 select-none"
+          className="flex min-w-24 flex-none flex-col items-center gap-3 select-none"
           style={{ WebkitTouchCallout: "none" }}
           data-no-tick
           data-sideways-right

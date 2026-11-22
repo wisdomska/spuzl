@@ -23,19 +23,19 @@ describe("turned page (full screen on Gotcha or Dash when the phone won't turn)"
     expect(viewportSize()).toEqual({ w: 390, h: 844 });
   });
 
-  it("maps touches into the turned layout: the screen's left edge is the top, its bottom edge the left", () => {
+  it("maps touches into the turned layout: the screen's right edge is the top, its top edge the left", () => {
     upright();
     setTurned(true);
-    // The screen's bottom-left corner is the layout's top-left.
-    expect(layoutPoint(0, 844)).toEqual({ x: 0, y: 0 });
-    // A finger moving right across the upright screen moves down the turned page (Dash: swipe down to duck).
-    const a = layoutPoint(100, 400),
-      b = layoutPoint(160, 400);
+    // The screen's top-right corner is the layout's top-left.
+    expect(layoutPoint(390, 0)).toEqual({ x: 0, y: 0 });
+    // A finger moving left across the upright screen moves down the turned page (Dash: swipe down to duck).
+    const a = layoutPoint(200, 400),
+      b = layoutPoint(140, 400);
     expect(b.y - a.y).toBe(60);
     expect(b.x).toBe(a.x);
-    // Up the upright screen is right along the turned page.
-    expect(layoutPoint(100, 300).x - layoutPoint(100, 400).x).toBe(100);
-    expect(layoutTopOf({ left: 20, top: 500 } as DOMRect)).toBe(20);
+    // Down the upright screen is right along the turned page.
+    expect(layoutPoint(100, 500).x - layoutPoint(100, 400).x).toBe(100);
+    expect(layoutTopOf({ right: 370, top: 500 } as DOMRect)).toBe(20);
   });
 
   it("does nothing once the phone is really sideways (the CSS only turns an upright screen)", () => {

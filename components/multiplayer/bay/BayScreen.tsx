@@ -32,6 +32,7 @@ import { playBayMove } from "@/lib/audio/boardMoves";
 import { useSettings } from "@/lib/settings/store";
 import { BaySearch } from "./BaySearch";
 import { LudoSetup, NO_KICKS, kicksFromParam, kicksToParam, type LudoKicks } from "./LudoSetup";
+import { DraughtsSizePicker, useDraughtsSize } from "./DraughtsSize";
 import { TimePicker, useMinutes } from "./TimePicker";
 import type { BayView } from "@/lib/multiplayer/types";
 import { ShareCode } from "../party";
@@ -139,11 +140,20 @@ function NewBaySheet({
   const [kicks, setKicks] = useState<LudoKicks>(NO_KICKS);
   // Ludo seats 2 to 4: with the bot the other seats are bots; with friends the game starts when that many joined
   const [seats, setSeats] = useState(2);
+  // Draughts board: 10 × 10 International by default, or 8 × 8 English (remembered, and used by Play live too)
+  const [boardSize, setBoardSize] = useDraughtsSize();
   const create = async (bot: boolean) => {
     setBusy(true);
     try {
       const v = await api<BayView>("/api/v1/bay", {
-        json: { game, mode, bot, ...(mode === "live" ? { minutes } : {}), ...(game === "ludo" ? { ludo: kicks, seats } : {}) },
+        json: {
+          game,
+          mode,
+          bot,
+          ...(mode === "live" ? { minutes } : {}),
+          ...(game === "ludo" ? { ludo: kicks, seats } : {}),
+          ...(game === "draughts" ? { draughts: { size: boardSize } } : {}),
+        },
       });
       onCreated(v.id);
     } catch {
@@ -195,6 +205,7 @@ function NewBaySheet({
       </div>
       {mode === "live" && <TimePicker game={game} value={minutes} onChange={setMinutes} />}
       {game === "ludo" && <LudoSetup kicks={kicks} onKicks={setKicks} seats={seats} onSeats={setSeats} />}
+      {game === "draughts" && <DraughtsSizePicker value={boardSize} onChange={setBoardSize} />}
       <Cta onClick={() => create(false)} disabled={busy} icon="user-plus">
         Invite a friend
       </Cta>

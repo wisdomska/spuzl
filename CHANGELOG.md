@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.72.0 (22 November 2026)
+
+### Everyone
+
+- **Draughts on the 10 × 10 board:** International draughts is the new default for full games (with friends, Play
+  live and against Spuzl): 20 pieces each, kings fly along the diagonals, men capture backward too, and you must take
+  the most pieces. English 8 × 8 is still there: pick the board before the game (remembered for next time). Play
+  live pairs you only with someone who picked the same board. Games already running keep their board. The daily
+  draughts puzzles stay on 8 × 8.
+- **The installed app turns sideways:** turn your phone and Gotcha and Dash fill it, no full screen needed. Every
+  screen fits sideways too.
+- **Full screen on an iPhone:** the game turns the right way up for a phone held with its top to the left, and keeps
+  clear of the notch and the home bar.
+
+### Behind the scenes
+
+- A new test opens every main screen (Home, All games, Duel, Party, Board games, Leagues, Friends, Shop, Me,
+  Settings, Quests and the info pages) at eight sizes, phones and tablets both ways, and fails on anything cut off.
+
 ## 1.71.1 (20 November 2026)
 
 ### Behind the scenes

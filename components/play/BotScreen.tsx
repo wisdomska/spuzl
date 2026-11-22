@@ -18,6 +18,7 @@ import { liveHref } from "@/components/world/LiveEntry";
 import { HowToSheet, type HowToTip } from "./HowToSheet";
 import { Icon } from "@/components/ui/Icon";
 import { LudoSetup, NO_KICKS, type LudoKicks } from "@/components/multiplayer/bay/LudoSetup";
+import { DraughtsSizePicker, useDraughtsSize } from "@/components/multiplayer/bay/DraughtsSize";
 import type { BotExtra, BotPuzzle } from "./BotBoard";
 import { GuidedPlay } from "./GuidedPlay";
 import { api, useMe } from "@/lib/client/api";
@@ -46,12 +47,19 @@ export function BotScreen({ meta, game, initialLevel }: { meta: GameMeta; game: 
   // The puzzle rule under the title would be wrong here: show how a full game is played instead.
   const botMeta = useMemo(() => ({ ...meta, rule: t.rules[game] }), [meta, game]);
   // Ludo: set the table up before the game starts (players and house rules; the bots play by them too)
-  const [setup, setSetup] = useState(game === "ludo");
+  // Draughts: pick the board first (10 × 10 International by default, or 8 × 8 English; remembered)
+  const [setup, setSetup] = useState(game === "ludo" || game === "draughts");
+  const [boardSize, setBoardSize] = useDraughtsSize();
   const [kicks, setKicks] = useState<LudoKicks>(NO_KICKS);
   const [seats, setSeats] = useState(2);
   const puzzle = useMemo<BotPuzzle>(
-    () => (game === "ludo" ? { game, level, seats, opts: { ...kicks } } : { game, level }),
-    [game, level, seats, kicks],
+    () =>
+      game === "ludo"
+        ? { game, level, seats, opts: { ...kicks } }
+        : game === "draughts"
+          ? { game, level, size: boardSize }
+          : { game, level },
+    [game, level, seats, kicks, boardSize],
   );
   // Help for a game vs the bot: no Dailies, hints or XP here. Ludo has dice, so no Undo.
   const tips = useMemo<HowToTip[]>(
@@ -154,9 +162,11 @@ export function BotScreen({ meta, game, initialLevel }: { meta: GameMeta; game: 
           >
             <Icon name="arrow-left" size={20} />
           </button>
-          <h1 className="font-display text-[24px] font-black">Ludo vs Spuzl</h1>
+          <h1 className="font-display text-[24px] font-black">{meta.name} vs Spuzl</h1>
         </div>
-        <p className="text-muted text-[15px]">Set up the table before you start.</p>
+        <p className="text-muted text-[15px]">
+          {game === "draughts" ? "Pick the board before you start." : "Set up the table before you start."}
+        </p>
         <fieldset className="flex flex-col gap-1.5">
           <legend className="text-muted pb-1 text-[13px] font-semibold">Spuzl&apos;s level</legend>
           <div className="bg-bg flex gap-1 rounded-[16px] p-1" role="radiogroup" aria-label="Spuzl's level">
@@ -175,7 +185,11 @@ export function BotScreen({ meta, game, initialLevel }: { meta: GameMeta; game: 
             ))}
           </div>
         </fieldset>
-        <LudoSetup kicks={kicks} onKicks={setKicks} seats={seats} onSeats={setSeats} />
+        {game === "draughts" ? (
+          <DraughtsSizePicker value={boardSize} onChange={setBoardSize} />
+        ) : (
+          <LudoSetup kicks={kicks} onKicks={setKicks} seats={seats} onSeats={setSeats} />
+        )}
         <div className="mt-auto pt-2">
           <Button size="lg" icon="play" className="w-full" onClick={() => setSetup(false)}>
             Start game

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/ui/Icon";
 import { Spuz } from "@/components/brand/Spuz";
@@ -15,6 +15,7 @@ import { BAY_QUEUE } from "@/lib/multiplayer/bayMatchmaking";
 import { CLOCK_MINUTES, type BayGame } from "@/lib/multiplayer/bay";
 import { TimePicker, useMinutes } from "./TimePicker";
 import { LudoSetup, NO_KICKS, type LudoKicks } from "./LudoSetup";
+import { DraughtsSizePicker, useDraughtsSize } from "./DraughtsSize";
 import type { BayView } from "@/lib/multiplayer/types";
 import { Cta, MpToast, Screen, TopButton, useToast } from "../ui";
 
@@ -62,7 +63,12 @@ export function BaySearch({
   const [phase, setPhase] = useState<Phase>(preset && game !== "ludo" ? { kind: "searching" } : { kind: "pick" });
   const [seats, setSeats] = useState(Math.max(2, Math.min(4, askedSeats ?? 2)));
   const ludo = game === "ludo" ? kicks : undefined;
-  const extra = ludo ? { ludo, seats } : {};
+  // Draughts: the board picked here or on the new-game sheet (remembered); only the same board is paired
+  const [boardSize, setBoardSize] = useDraughtsSize();
+  const extra = useMemo(
+    () => (ludo ? { ludo, seats } : game === "draughts" ? { draughts: { size: boardSize } } : {}),
+    [ludo, seats, game, boardSize],
+  );
   const [waited, setWaited] = useState(0);
   const [others, setOthers] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -91,10 +97,10 @@ export function BaySearch({
         setOthers(r.searching);
       } else if (r.status === "idle") {
         // The entry went missing (a late cancel from an earlier visit, another tab): rejoin, keeping the screen.
-        void api<QueueReply>(QUEUE, { json: { game, minutes: chosen, ...(ludo ? { ludo, seats } : {}) } }).catch(() => {});
+        void api<QueueReply>(QUEUE, { json: { game, minutes: chosen, ...extra } }).catch(() => {});
       }
     },
-    [open, game, chosen, ludo, seats],
+    [open, game, chosen, extra],
   );
 
   // Join, then poll. A new attempt ("Search again") rejoins.
@@ -197,6 +203,11 @@ export function BaySearch({
             <div className="mt-6 w-full max-w-[528px]">
               <TimePicker game={game} value={minutes} onChange={setMinutes} />
             </div>
+            {game === "draughts" && (
+              <div className="mt-5 w-full max-w-[528px]">
+                <DraughtsSizePicker value={boardSize} onChange={setBoardSize} />
+              </div>
+            )}
             {game === "ludo" && (
               <div className="mt-5 w-full max-w-[528px]">
                 <LudoSetup kicks={kicks} onKicks={setKicks} seats={seats} onSeats={setSeats} />

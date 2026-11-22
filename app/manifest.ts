@@ -12,7 +12,9 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: "/",
     display: "standalone",
     display_override: ["standalone", "minimal-ui"],
-    orientation: "portrait",
+    // Any way up (owner, 22 Nov 2026): an installed app that turns sideways lets Gotcha and Dash fill a turned phone
+    // without full screen; every screen has a sideways layout (tests/e2e/r5-screens-fit.spec.ts checks they fit).
+    orientation: "any",
     background_color: "#0E0F1A",
     theme_color: "#0E0F1A",
     categories: ["games", "education", "entertainment"],

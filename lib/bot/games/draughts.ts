@@ -1,5 +1,5 @@
-import draughtsRules, { QUIET_LIMIT, type DraughtsMatch, type DraughtsMove } from "@/games/draughts/rules";
-import { applyMove, isKing, legalMoves, seatOf, type Board, type DMove, type Seat } from "@/games/draughts/engine";
+import draughtsRules, { nextQuiet, quietLimit, type DraughtsMatch, type DraughtsMove } from "@/games/draughts/rules";
+import { applyMove, isKing, legalMoves, seatOf, sizeOf, type Board, type DMove, type Seat } from "@/games/draughts/engine";
 import type { SearchGame } from "../search";
 import { makeBot } from "../types";
 
@@ -9,23 +9,27 @@ interface P {
   quiet: number;
 }
 
-/** Men 100, kings 160, a little for advancing men and for keeping the back row. */
+/**
+ * Men 100, kings 160 (250 on 10 × 10, where kings fly), a little for advancing men and for keeping the back row.
+ */
 export function evaluateDraughts(b: Board, seat: number): number {
+  const n = sizeOf(b);
+  const kingValue = n === 10 ? 250 : 160;
   let s = 0;
-  for (let sq = 0; sq < 64; sq++) {
+  for (let sq = 0; sq < b.length; sq++) {
     const p = b[sq];
     if (!p) continue;
     const owner = seatOf(p);
     let v: number;
-    if (isKing(p)) v = 160;
+    if (isKing(p)) v = kingValue;
     else {
-      const r = sq >> 3;
-      const advance = owner === 0 ? 7 - r : r;
+      const r = Math.floor(sq / n);
+      const advance = owner === 0 ? n - 1 - r : r;
       v = 100 + advance * 4 + (advance === 0 ? 8 : 0);
     }
     // the centre is worth a little
-    const c = sq & 7;
-    if (c >= 2 && c <= 5) v += 3;
+    const c = sq % n;
+    if (c >= 2 && c <= n - 3) v += 3;
     s += owner === seat ? v : -v;
   }
   return s;
@@ -35,11 +39,11 @@ const caps = (m: DMove) => m.caps.length;
 
 export const draughtsSearch: SearchGame<P, DMove> = {
   toMove: (p) => p.turn,
-  terminal: (p) => (p.quiet >= QUIET_LIMIT ? { winner: null } : null),
+  terminal: (p) => (p.quiet >= quietLimit(p.b) ? { winner: null } : null),
   moves: (p) => legalMoves(p.b, p.turn).sort((a, b) => caps(b) - caps(a) || Number(b.crowns) - Number(a.crowns)),
   // no legal move loses
   stuck: (p) => ({ winner: 1 - p.turn }),
-  play: (p, m) => ({ b: applyMove(p.b, m), turn: (1 - p.turn) as Seat, quiet: m.caps.length || m.crowns ? 0 : p.quiet + 1 }),
+  play: (p, m) => ({ b: applyMove(p.b, m), turn: (1 - p.turn) as Seat, quiet: nextQuiet(p.b, m, p.quiet) }),
   evaluate: (p, seat) => evaluateDraughts(p.b, seat),
   // captures are compulsory, so a position with a capture on is never quiet
   tactical(p) {

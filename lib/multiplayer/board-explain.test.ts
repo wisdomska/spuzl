@@ -67,7 +67,7 @@ describe("draughtsTapReason", () => {
     b[33] = 3;
     b[46] = 1; // a free man far from the action
     const paths = legalMoves(b, 0).map((m) => m.path);
-    expect(paths.every(isCapturePath)).toBe(true);
+    expect(paths.every((p) => isCapturePath(p))).toBe(true);
     expect(draughtsTapReason(b, paths, 46, 0)).toBe("capture");
   });
 });

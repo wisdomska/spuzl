@@ -13,6 +13,7 @@ const Create = z.object({
   minutes: z.number().int().min(1).max(60).optional(),
   /** Ludo house rules (ignored for other games) */
   ludo: z.object({ backKick: z.boolean().optional(), sideKick: z.boolean().optional(), homeKick: z.boolean().optional() }).optional(),
+  draughts: z.object({ size: z.union([z.literal(8), z.literal(10)]) }).optional(),
 });
 
 /** GET /api/v1/bay: the "Your move" inbox. */

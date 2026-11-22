@@ -39,6 +39,7 @@ import { TOP_ROW, BOTTOM_ROW } from "@/games/oware/engine";
 import { COLS as FU_COLS, ROWS as FU_ROWS } from "@/games/fourup/engine";
 import { flipsFor } from "@/games/flip/engine";
 import type { ChessMatch } from "@/games/chess/rules";
+import { isDark, sizeOf, squareNumber } from "@/games/draughts/engine";
 import type { DraughtsMatch } from "@/games/draughts/rules";
 import type { OwareMatch } from "@/games/oware/rules";
 import type { FourUpMatch } from "@/games/fourup/rules";
@@ -130,6 +131,8 @@ function useOwarePit() {
 
 const FILES = "abcdefgh";
 const sqName = (sq: number) => FILES[sq & 7] + String(8 - (sq >> 3));
+/** A light square's name on an n × n board (files a.., ranks from the bottom). */
+const sqNameN = (sq: number, n: number) => "abcdefghij"[sq % n] + String(n - Math.floor(sq / n));
 
 /** What Grid8 hands each square: its place in the Tab order and its visual index (for roving focus). */
 export interface CellProps {
@@ -144,6 +147,7 @@ export interface CellProps {
  * Enter or Space presses the focused square; Escape clears a selection (`onEscape` returns true when it did).
  */
 function Grid8({
+  n = 8,
   flipped,
   cell,
   render,
@@ -156,6 +160,8 @@ function Grid8({
   className = "",
   onNavKey,
 }: {
+  /** squares per side: 8, or 10 for International draughts */
+  n?: number;
   flipped: boolean;
   cell: number;
   render: (sq: number, cellProps: CellProps) => ReactNode;
@@ -175,7 +181,7 @@ function Grid8({
   onNavKey?: (e: KeyboardEvent<HTMLDivElement>) => boolean;
 }) {
   const [focus, setFocus] = useState(0);
-  const toSq = (vi: number) => (flipped ? 63 - vi : vi);
+  const toSq = (vi: number) => (flipped ? n * n - 1 - vi : vi);
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Escape") {
       // Only when there was something to clear; otherwise Escape stays the screen's (leave the game).
@@ -185,7 +191,7 @@ function Grid8({
     if (onNavKey?.(e)) return;
     const vi = Number((e.target as HTMLElement).dataset?.vi);
     if (!Number.isInteger(vi)) return;
-    const next = gridMove(vi, e.key);
+    const next = gridMove(vi, e.key, n);
     if (next === null) return;
     e.preventDefault();
     setFocus(next);
@@ -196,21 +202,21 @@ function Grid8({
       ref={gridRef}
       role="grid"
       aria-label={label}
-      aria-rowcount={8}
-      aria-colcount={8}
+      aria-rowcount={n}
+      aria-colcount={n}
       onKeyDown={onKeyDown}
       {...pointer}
       onFocus={(e) => {
         const vi = Number((e.target as HTMLElement).dataset?.vi);
         if (Number.isInteger(vi) && vi !== focus) setFocus(vi);
       }}
-      className={`relative grid rounded-[14px] ${className} shadow-[0_8px_0_var(--bay-depth),0_14px_24px_rgba(0,0,0,.45)] [&>:first-child>:first-child]:rounded-tl-[14px] [&>:first-child>:last-child]:rounded-tr-[14px] [&>:nth-child(8)>:first-child]:rounded-bl-[14px] [&>:nth-child(8)>:last-child]:rounded-br-[14px]`}
-      style={{ gridTemplateColumns: `repeat(8, ${cell}px)`, gridTemplateRows: `repeat(8, ${cell}px)`, marginTop: headroom }}
+      className={`relative grid rounded-[14px] ${className} shadow-[0_8px_0_var(--bay-depth),0_14px_24px_rgba(0,0,0,.45)] [&>:first-child>:first-child]:rounded-tl-[14px] [&>:first-child>:last-child]:rounded-tr-[14px] ${n === 10 ? "[&>:nth-child(10)>:first-child]:rounded-bl-[14px] [&>:nth-child(10)>:last-child]:rounded-br-[14px]" : "[&>:nth-child(8)>:first-child]:rounded-bl-[14px] [&>:nth-child(8)>:last-child]:rounded-br-[14px]"}`}
+      style={{ gridTemplateColumns: `repeat(${n}, ${cell}px)`, gridTemplateRows: `repeat(${n}, ${cell}px)`, marginTop: headroom }}
     >
-      {Array.from({ length: 8 }, (_, vr) => (
+      {Array.from({ length: n }, (_, vr) => (
         <div key={vr} role="row" className="contents">
-          {Array.from({ length: 8 }, (_, vc) => {
-            const vi = vr * 8 + vc;
+          {Array.from({ length: n }, (_, vc) => {
+            const vi = vr * n + vc;
             return render(toSq(vi), { tabIndex: vi === focus ? 0 : -1, "data-vi": vi });
           })}
         </div>
@@ -910,7 +916,9 @@ const tdr = boardGames.draughts;
 
 function DraughtsLive({ state, seat, legal, disabled, lastMove, onMove, announce, explain }: LiveBoardProps) {
   const s = state as DraughtsMatch;
-  const cell = useCellSize(8, 0, 10, 48);
+  // 10 × 10 International (the default since 22 Nov 2026) or 8 × 8 English, from the match's own board.
+  const n = sizeOf(s.board);
+  const cell = useCellSize(n, 0, 10, 48);
   const [sel, setSel] = useState<number | null>(null);
   /** Two or more capture paths end on the chosen square: the landings picked so far and that end square. */
   const [routeAt, setRoute] = useState<{ prefix: number[]; end: number } | null>(null);
@@ -951,9 +959,10 @@ function DraughtsLive({ state, seat, legal, disabled, lastMove, onMove, announce
   };
   return (
     <Grid8
+      n={n}
       flipped={seat === 1}
       cell={cell}
-      label="Draughts board, live"
+      label={n === 10 ? "Draughts board, 10 by 10, live" : "Draughts board, live"}
       onEscape={() => {
         if (sel === null) return false;
         setSel(null);
@@ -962,7 +971,7 @@ function DraughtsLive({ state, seat, legal, disabled, lastMove, onMove, announce
         return true;
       }}
       render={(sq, cellProps) => {
-        const dark = ((sq >> 3) + (sq & 7)) % 2 === 1;
+        const dark = isDark(sq, n);
         const p = s.board[sq];
         const mine = p && (p >= 3 ? 1 : 0) === 0;
         const king = p === 2 || p === 4;
@@ -975,7 +984,7 @@ function DraughtsLive({ state, seat, legal, disabled, lastMove, onMove, announce
             role="gridcell"
             aria-selected={sel === sq}
             onClick={() => tap(sq)}
-            aria-label={`${sqName(sq)}${p ? `, ${mine ? "light" : "dark"} ${king ? "king" : "man"}` : ""}${hops.includes(sq) ? `, ${tdr.nextHop}` : ends.includes(sq) ? ", legal move" : ""}${lastPath.includes(sq) ? `, ${tdr.lastMove}` : ""}`}
+            aria-label={`${dark ? `square ${squareNumber(sq, n)}` : sqNameN(sq, n)}${p ? `, ${mine ? "light" : "dark"} ${king ? "king" : "man"}` : ""}${hops.includes(sq) ? `, ${tdr.nextHop}` : ends.includes(sq) ? ", legal move" : ""}${lastPath.includes(sq) ? `, ${tdr.lastMove}` : ""}`}
             className="relative flex items-center justify-center"
             style={{
               background: dark ? (lastPath.includes(sq) ? SQUARE.lastDark : SQUARE.draughtsDark) : SQUARE.light,

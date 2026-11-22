@@ -26,10 +26,12 @@ html {
   text-rendering: optimizeLegibility;
 }
 /* Turned (components/game/turned.ts): full screen on Gotcha or Dash with the screen still upright (a browser that
-   won't lock the orientation). The body turns a quarter turn anticlockwise (its top to the screen's left edge: the
-   phone turned the usual way, top to the left) and takes the screen sideways; dialogs and
-   sheets inside it turn with it (a transformed body holds its fixed children). Upright screens only, so turning
-   the phone for real undoes it. */
+   won't lock the orientation). The body turns a quarter turn clockwise, its top to the screen's right edge, so a
+   phone turned the usual way (its top to the left, as for a video) shows it upright; dialogs and sheets inside it
+   turn with it (a transformed body holds its fixed children). Upright screens only, so turning the phone for real
+   undoes it.
+   Safe areas follow the turn: held that way, the notch (the screen's top) is on the player's left, the home bar
+   (the screen's bottom) on their right. The shell's own top and bottom insets give way to these. */
 @media (orientation: portrait) {
   html[data-turned] {
     overflow: hidden;
@@ -38,15 +40,23 @@ html {
     position: fixed;
     top: 0;
     left: 0;
+    box-sizing: border-box;
     width: 100dvh;
     height: 100dvw;
     min-height: 0;
+    padding: env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left) env(safe-area-inset-top);
     overflow: hidden;
     transform-origin: top left;
-    transform: translateY(100dvh) rotate(-90deg);
+    transform: translateX(100dvw) rotate(90deg);
   }
   html[data-turned] [data-shell] {
-    min-height: 100dvw;
+    min-height: 100%;
+  }
+  html[data-turned] .safe-top {
+    padding-top: 12px;
+  }
+  html[data-turned] .safe-bottom {
+    padding-bottom: 12px;
   }
 }
 body {

@@ -36,15 +36,22 @@ export function viewportSize(): { w: number; h: number } {
 
 /**
  * A point on the page in the turned layout's own coordinates, from a pointer's screen position: the body is
- * rotated 90° anticlockwise, so its top edge is the screen's left edge and its left edge the screen's bottom.
+ * rotated 90° clockwise, so its top edge is the screen's right edge and its left edge the screen's top.
  */
 export function layoutPoint(clientX: number, clientY: number): { x: number; y: number } {
-  return turnedNow() ? { x: window.innerHeight - clientY, y: clientX } : { x: clientX, y: clientY };
+  return turnedNow() ? { x: clientY, y: window.innerWidth - clientX } : { x: clientX, y: clientY };
 }
 
 /** The top of a box (a screen rect) in the turned layout's own coordinates. */
 export function layoutTopOf(r: DOMRect): number {
-  return turnedNow() ? r.left : r.top;
+  return turnedNow() ? window.innerWidth - r.right : r.top;
+}
+
+/** The body's padding above and below the page while turned (the safe areas, app/globals.css), else 0. */
+export function turnedInsets(): number {
+  if (!turnedNow()) return 0;
+  const cs = getComputedStyle(document.body);
+  return (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
 }
 
 const subscribe = (f: () => void) => {

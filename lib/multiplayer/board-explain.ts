@@ -6,8 +6,22 @@
 /** Draughts men and kings by seat: 1 and 2 are seat 0's, 3 and 4 are seat 1's (games/draughts/engine). */
 const ownsMan = (piece: number, seat: number) => (seat === 0 ? piece === 1 || piece === 2 : piece === 3 || piece === 4);
 
-/** A path whose first step jumps two rows is a capture. */
-export const isCapturePath = (path: readonly number[]) => path.length > 1 && Math.abs((path[1] >> 3) - (path[0] >> 3)) === 2;
+/**
+ * Is this legal path a capture? On 8 × 8 a capture's first step jumps two rows. On 10 × 10 a flying king's plain
+ * move can cross many rows, so ask the board: a capture lands past an enemy piece on the way.
+ */
+export function isCapturePath(path: readonly number[], board?: readonly number[]): boolean {
+  if (path.length < 2) return false;
+  if (path.length > 2) return true;
+  const n = board && board.length === 100 ? 10 : 8;
+  const [a, b] = path;
+  const dr = Math.sign(Math.floor(b / n) - Math.floor(a / n)),
+    dc = Math.sign((b % n) - (a % n));
+  const steps = Math.abs(Math.floor(b / n) - Math.floor(a / n));
+  if (!board) return steps === 2;
+  for (let k = 1; k < steps; k++) if (board[(Math.floor(a / n) + k * dr) * n + (a % n) + k * dc]) return true;
+  return false;
+}
 
 /**
  * Draughts: a tap on your own man that has no legal path, on your turn. "capture" when the moves you do have are
@@ -20,7 +34,7 @@ export function draughtsTapReason(
   seat: number,
 ): "capture" | "blocked" | null {
   if (!paths.length || !ownsMan(board[sq] ?? 0, seat) || paths.some((p) => p[0] === sq)) return null;
-  return paths.some(isCapturePath) ? "capture" : "blocked";
+  return paths.some((p) => isCapturePath(p, board)) ? "capture" : "blocked";
 }
 
 /**

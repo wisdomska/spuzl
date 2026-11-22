@@ -13,6 +13,7 @@ import type { LudoOpts } from "@/games/ludo/engine";
 import { capturedPieces } from "@/games/chess/history";
 import { CapturedRow } from "@/games/chess/Captured";
 import { useSprites } from "@/games/chess/Piece";
+import { newDraughts } from "@/games/draughts/rules";
 
 const t = boardGames.bot;
 
@@ -22,6 +23,8 @@ export interface BotPuzzle {
   /** Ludo: 2 to 4 at the table (you and bots), and the house rules chosen before the game */
   seats?: number;
   opts?: LudoOpts;
+  /** Draughts: 10 × 10 International (the default) or 8 × 8 English */
+  size?: 8 | 10;
 }
 /** Not saved anywhere: a casual game lives only on this screen. */
 export interface BotState {
@@ -60,7 +63,7 @@ export default function BotBoard({ puzzle, disabled, api, extra }: BoardProps<Bo
       // A fresh game every time (Ludo dice included); casual games are never replayed or checked.
       rng.current = createRng(`${Date.now()}:${Math.random()}`);
       setBot(b);
-      const first = b.rules.initial(puzzle.seats ?? 2, rng.current);
+      const first = puzzle.game === "draughts" && puzzle.size === 8 ? newDraughts(8) : b.rules.initial(puzzle.seats ?? 2, rng.current);
       // Ludo house rules ride in the state, so the bots play by them too
       const opts = puzzle.opts && Object.values(puzzle.opts).some(Boolean) ? puzzle.opts : null;
       setState(opts ? { ...(first as object), opts } : first);
@@ -68,7 +71,7 @@ export default function BotBoard({ puzzle, disabled, api, extra }: BoardProps<Bo
     return () => {
       live = false;
     };
-  }, [puzzle.game, puzzle.seats, puzzle.opts]);
+  }, [puzzle.game, puzzle.seats, puzzle.opts, puzzle.size]);
 
   const rules = bot?.rules;
   const status = useMemo(() => (rules && state ? rules.status(state) : null), [rules, state]);

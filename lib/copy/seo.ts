@@ -107,6 +107,9 @@ export const GAME_SEO: Record<string, { kind: string; where: string; title?: str
   draughts: {
     kind: "draughts game",
     where: "find the winning moves, with compulsory captures, or play a full game against Spuzl (the computer) or a friend",
+    title: "Draughts online free: 10 × 10 or 8 × 8 | SPUZL",
+    description:
+      "Play draughts online free: International 10 × 10 with flying kings, or English 8 × 8. Play the computer or a friend in your browser, live or one move a day.",
   },
   oware: {
     kind: "mancala board game",

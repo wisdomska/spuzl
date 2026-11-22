@@ -93,17 +93,18 @@ test.describe("upright phone, the lock refused", () => {
       await page.getByRole("button", { name: "Full screen" }).click();
       await expect(page.locator("html")).toHaveAttribute("data-turned", "");
       // Sideways layout inside the turned page: move buttons on one side of the board, Jump on the other. The page
-      // turns anticlockwise (its top to the screen's left), so on the upright screen "left of" becomes "below".
+      // turns clockwise (its top to the screen's right, upright once the phone's top goes left), so on the upright
+      // screen "left of" becomes "above".
       const canvas = page.locator("canvas").first();
       const move = page.getByRole("button", { name: "Move left", exact: true });
       const jump = page.getByRole("button", { name: "Jump", exact: true });
       await expect(page.locator("[data-sideways-left]")).toBeVisible();
       const [m, c, j] = await Promise.all([move.boundingBox(), canvas.boundingBox(), jump.boundingBox()]);
-      expect(m!.y).toBeGreaterThanOrEqual(c!.y + c!.height - 1);
-      expect(j!.y + j!.height).toBeLessThanOrEqual(c!.y + 1);
-      // The top bar sits along the screen's left edge.
+      expect(m!.y + m!.height).toBeLessThanOrEqual(c!.y + 1);
+      expect(j!.y).toBeGreaterThanOrEqual(c!.y + c!.height - 1);
+      // The top bar runs along the screen's right edge.
       const back = await page.getByRole("button", { name: "Back" }).boundingBox();
-      expect(back!.x).toBeLessThan(c!.x);
+      expect(back!.x).toBeGreaterThan(c!.x + c!.width - 1);
       // The board fills the screen's long side between the controls, and its short side under the top bar, as a
       // phone held sideways does (the 844 x 390 tests above).
       expect(c!.height).toBeGreaterThan(480);
@@ -120,6 +121,36 @@ test.describe("upright phone, the lock refused", () => {
       await expect(page.getByRole("button", { name: "Full screen" })).toBeVisible();
     });
   }
+});
+
+test.describe("an iPhone with a notch and a home bar", () => {
+  test.use({ viewport: { width: 393, height: 659 } });
+  test("the turned game keeps clear of the notch (the player's left) and the home bar (their right)", async ({ page }) => {
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send("Emulation.setSafeAreaInsetsOverride" as never, { insets: { top: 59, bottom: 34, left: 0, right: 0 } } as never);
+    await page.addInitScript(() => {
+      const o = screen.orientation as unknown as Record<string, unknown>;
+      Object.defineProperty(o, "lock", { configurable: true, value: () => Promise.reject(new Error("NotSupportedError")) });
+      Object.defineProperty(o, "unlock", { configurable: true, value: () => {} });
+      Object.defineProperty(Document.prototype, "fullscreenEnabled", { configurable: true, get: () => false });
+    });
+    await page.goto(seededBoardUrl("gotcha", "qa", "easy"));
+    const got = page.getByRole("button", { name: "Got it" });
+    await expect(got.or(page.locator("[data-rage]")).first()).toBeVisible({ timeout: 45_000 });
+    if (await got.isVisible()) await got.click();
+    await page.getByRole("button", { name: "Full screen" }).click();
+    await expect(page.locator("html")).toHaveAttribute("data-turned", "");
+    await page.waitForTimeout(600);
+    // On the upright screen the notch is the top 59 px and the home bar the bottom 34 px.
+    for (const name of ["Back", "Move left", "Move right", "Jump", "Exit full screen"]) {
+      const b = (await page.getByRole("button", { name, exact: true }).boundingBox())!;
+      expect(b.y, name).toBeGreaterThanOrEqual(59);
+      expect(b.y + b.height, name).toBeLessThanOrEqual(659 - 34);
+    }
+    const c = (await page.locator("canvas").first().boundingBox())!;
+    expect(c.y).toBeGreaterThanOrEqual(59);
+    expect(c.y + c.height).toBeLessThanOrEqual(659 - 34);
+  });
 });
 
 test.describe("a large screen", () => {

@@ -4,7 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { ApiError } from "@/lib/api/server";
 import { serverBroadcast } from "@/lib/realtime/server";
 import { bayLive } from "@/lib/copy/bay-live";
-import { clockMinutes, initialState, isBayGame, loadRules, type BayGame } from "../bay";
+import { clockMinutes, openingState, isBayGame, loadRules, type BayGame } from "../bay";
 import { BAY_QUEUE, blockedPair, isLive, pickBayOpponent, searchTimedOut, seatOrder, type BayQueueEntry } from "../bayMatchmaking";
 import { readRating } from "./rewards";
 import { requireLivePlay } from "./liveGate";
@@ -28,7 +28,10 @@ interface QueueRow {
   enqueued_at: string;
   seen_at: string;
   match_id: string | null;
-  /** Ludo house rules picked before searching ("back,side"; "" for standard): only the same rules are paired */
+  /**
+   * Rules picked before searching, so only the same rules are paired: Ludo house rules ("back,side"; "" standard),
+   * draughts board ("8x8"; "" for the default 10 × 10)
+   */
   rules: string;
   /** seats searched for: 2, or 3 to 4 for Ludo */
   seats: number;
@@ -36,12 +39,16 @@ interface QueueRow {
 
 type Kicks = { backKick?: boolean; sideKick?: boolean; homeKick?: boolean };
 const KICKS = ["backKick", "sideKick", "homeKick"] as const;
-const rulesKey = (game: string, k?: Kicks) =>
+/** The 8 × 8 draughts board's key; the default 10 × 10 is "" (so searches made before it pair as 10 × 10). */
+const DRAUGHTS_8 = "8x8";
+const rulesKey = (game: string, k?: Kicks, draughtsSize?: number) =>
   game === "ludo" && k
     ? KICKS.filter((x) => k[x])
         .map((x) => x.replace("Kick", ""))
         .join(",")
-    : "";
+    : game === "draughts" && draughtsSize === 8
+      ? DRAUGHTS_8
+      : "";
 const rulesOpts = (key: string) => {
   const on = new Set(key.split(",").filter(Boolean));
   return on.size ? Object.fromEntries(KICKS.filter((x) => on.has(x.replace("Kick", ""))).map((x) => [x, true])) : null;
@@ -74,12 +81,13 @@ export async function joinBayQueue(
   minutes?: number,
   ludo?: Kicks,
   wantSeats?: number,
+  draughtsSize?: number,
 ) {
   requireLivePlay(player, bayLive.ageRestricted);
   if (!isBayGame(game)) throw new ApiError(400, "not_board_game");
   await requireBayOpen(game);
   const clock = clockMinutes(game, minutes) * 60_000;
-  const rules = rulesKey(game, ludo);
+  const rules = rulesKey(game, ludo, draughtsSize);
   const seats = game === "ludo" ? Math.max(2, Math.min(4, wantSeats ?? 2)) : 2;
   // One queue entry per player across modes: joining here ends a Duel Quick Match search.
   await admin.from("matchmaking_queue").delete().eq("player_id", player.id).is("match_id", null);
@@ -200,7 +208,8 @@ async function createMatched(admin: SupabaseClient, group: string[], game: BayGa
   const rules = await loadRules(game);
   const seed = crypto.randomUUID();
   const n = group.length;
-  const base = initialState(rules, n, seed);
+  // Draughts: the board both players picked (8 × 8 when their key says so, else 10 × 10)
+  const base = await openingState(rules, game, n, seed, game === "draughts" && house === DRAUGHTS_8 ? 8 : null);
   // Ludo house rules both players chose ride in the match state, like a friend game
   const opts = game === "ludo" ? rulesOpts(house) : null;
   const state = opts ? { ...(base as object), opts } : base;

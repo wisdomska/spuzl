@@ -12,10 +12,11 @@ import {
   clockMsFor,
   asyncDeadline,
   canNudge,
+  boardSizeOf,
   flagFallen,
-  initialState,
   isBayGame,
   loadRules,
+  openingState,
   replayMoves,
   spendClock,
   takebackPlies,
@@ -164,6 +165,8 @@ export async function createBay(
     minutes?: number;
     /** Ludo house rules chosen before the match */
     ludo?: { backKick?: boolean; sideKick?: boolean; homeKick?: boolean };
+    /** Draughts board: 10 International (the default) or 8 English */
+    draughts?: { size?: number };
   },
 ) {
   if (!isBayGame(input.game)) throw new ApiError(400, "not_board_game");
@@ -172,7 +175,7 @@ export async function createBay(
   const seats = Math.max(rules.seats.min, Math.min(rules.seats.max, input.seats ?? rules.seats.min));
   if (input.bot && !rules.botMove) throw new ApiError(400, "no_bot");
   const seed = crypto.randomUUID();
-  const base = initialState(rules, seats, seed);
+  const base = await openingState(rules, input.game, seats, seed, input.draughts?.size);
   // Ludo house rules ride in the match state, so every move is checked against them on the server
   const opts = input.game === "ludo" && input.ludo ? Object.fromEntries(Object.entries(input.ludo).filter(([, v]) => v)) : null;
   const state = opts && Object.keys(opts).length ? { ...(base as object), opts } : base;
@@ -488,7 +491,9 @@ async function takeback(admin: SupabaseClient, b: BayRow, requester: number) {
   if (!n) throw new ApiError(409, "nothing_to_take_back");
   const rules = await loadRules(b.game_id);
   const to = moves.length - n;
-  const state = replayMoves(rules, b.seats, b.seed, moves, to);
+  // an 8 × 8 draughts match replays from its own opening, not the default 10 × 10 one
+  const start = boardSizeOf(b.game_id, b.state) === 8 ? await openingState(rules, b.game_id, b.seats, b.seed, 8) : undefined;
+  const state = replayMoves(rules, b.seats, b.seed, moves, to, start);
   const { data: ok } = await admin.rpc("svc_bay_rewind", {
     p_match: b.id,
     p_from_ply: b.ply,
@@ -508,8 +513,8 @@ async function rematchBay(admin: SupabaseClient, me: string, b: BayRow) {
   await requireBayOpen(b.game_id);
   const rules = await loadRules(b.game_id);
   const seed = crypto.randomUUID();
-  const fresh = initialState(rules, b.seats, seed);
-  // a rematch keeps the house rules the players chose (Ludo)
+  // a rematch keeps the board (draughts 8 × 8 or 10 × 10) and the house rules (Ludo) the players chose
+  const fresh = await openingState(rules, b.game_id, b.seats, seed, boardSizeOf(b.game_id, b.state));
   const kept = (b.state as { opts?: object } | null)?.opts;
   const state = kept ? { ...(fresh as object), opts: kept } : fresh;
   // Seats rotate so the other side moves first.

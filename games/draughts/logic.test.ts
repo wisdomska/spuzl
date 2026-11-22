@@ -178,7 +178,9 @@ describe("draughts match rules", () => {
     expect(() => draughtsRules.apply(s, 0, [0, 9], rng)).toThrow();
     const s2 = draughtsRules.apply(s, 0, mv, rng);
     expect(s2.turn).toBe(1);
-    expect(s2.quiet).toBe(1);
+    // A new match is International 10 × 10, where only king moves count towards the draw.
+    expect(s.board).toHaveLength(100);
+    expect(s2.quiet).toBe(0);
 
     const b = empty();
     b[sq(6, 1)] = MAN0;
