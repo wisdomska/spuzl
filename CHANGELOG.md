@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.74.1 (23 November 2026)
+
+### Everyone
+
+- **Search listings mention the 10 × 10 draughts puzzles:** the draughts page's description (Google, link previews
+  and the AI-assistant summary in /llms.txt) now says the puzzles clear the board in one turn on 10 × 10.
+
 ## 1.74.0 (23 November 2026)
 
 ### Everyone
