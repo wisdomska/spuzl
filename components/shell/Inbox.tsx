@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { Icon } from "@/components/ui/Icon";
 import { useMe } from "@/lib/client/api";
 import { useChannel } from "@/lib/client/multiplayer";
-import { alertIfAway, enablePush } from "@/lib/client/alerts";
+import { alertIfAway, claimPushFor } from "@/lib/client/alerts";
 import { GAME_BY_ID } from "@/lib/catalog";
 import { play } from "@/lib/audio";
 import { noteAlertsTrigger } from "@/lib/prompts/alerts";
@@ -70,9 +70,11 @@ export function Inbox() {
   const router = useRouter();
   const [card, setCard] = useState<Card | null>(null);
   // Alerts already allowed on this device: make sure its push subscription is saved for this player (a new
-  // sign-in, a renewed subscription). Quiet; does nothing without permission.
+  // sign-in, a renewed subscription), so with several accounts on one phone alerts follow the one signed in.
+  // Quiet; does nothing without permission. Once saved for this player on this device it isn't sent again on every
+  // page load, only when the account (or the subscription) changes.
   useEffect(() => {
-    if (id) void enablePush();
+    if (id) void claimPushFor(id);
   }, [id]);
 
   useEffect(() => {

@@ -4,6 +4,7 @@ import { MakerCredit } from "@/components/seo/MakerCredit";
 import { MUSIC_ON } from "@/components/shell/MusicDirector";
 
 import { alertsSupported, askAlerts, disablePush, pushOn } from "@/lib/client/alerts";
+import { promptInstall, useInstallState } from "@/lib/pwa/install";
 
 import Link from "next/link";
 import { Suspense, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
@@ -156,6 +157,7 @@ function SettingsScreen() {
         </Row>
       </Group>
       <Group title="Data and account">
+        <InstallRow />
         <Row icon="cell-signal-low" label="Low-data mode" hint="No music, lighter animations">
           <Switch checked={s.lowData} onChange={(v) => save("lowData", v)} label="Low-data mode" />
         </Row>
@@ -244,6 +246,37 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
  * Alerts on this device: your turn in a board game, a nudge, a friend's invite, as a notification even when SPUZL
  * is closed (where the browser supports push). Turning it on asks the browser once.
  */
+/**
+ * SPUZL on the home screen (owner, 23 Nov 2026, from Clink): installed, a one-tap Install where the browser allows it
+ * (Chrome, Edge, Android), or a link to the steps (iPhone Safari, Firefox).
+ */
+function InstallRow() {
+  const state = useInstallState();
+  return (
+    <Row
+      icon={state === "installed" ? "check-circle" : "device-mobile"}
+      label={state === "installed" ? "On your home screen" : "Add to your home screen"}
+      hint={state === "installed" ? "Opens like an app, with alerts" : "Opens like an app, full screen"}
+    >
+      {state === "prompt" && (
+        <button
+          type="button"
+          onClick={() => void promptInstall()}
+          className="press bg-accent text-on-accent flex h-11 shrink-0 items-center rounded-full px-4 text-[15px] font-semibold"
+        >
+          Install
+        </button>
+      )}
+      {state === "manual" && (
+        <Link href="/install" className="press text-accent flex h-11 shrink-0 items-center gap-1 px-2 text-[15px] font-semibold">
+          How to
+          <Icon name="caret-right" size={16} />
+        </Link>
+      )}
+    </Row>
+  );
+}
+
 function AlertsRow({ me }: { me: boolean }) {
   const [on, setOn] = useState<boolean | null>(null);
   const [blocked, setBlocked] = useState(false);

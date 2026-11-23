@@ -74,6 +74,39 @@ export async function enablePush(): Promise<boolean> {
   }
 }
 
+/** Where the account this device last saved its push subscription for is kept (with the subscription's address). */
+const PUSH_OWNER_KEY = "spuzl.pushOwner";
+
+/**
+ * Push follows the account in use (owner, 23 Nov 2026, from Clink): a device has one push subscription, so with
+ * several accounts on a phone it belongs to whichever is signed in. Saves it for `playerId` only when this device
+ * last saved it for someone else (or the subscription changed), so it isn't sent to the server on every page load.
+ */
+export async function claimPushFor(playerId: string): Promise<boolean> {
+  try {
+    if (!pushSupported() || !alertsAllowed()) return false;
+    const sub = await (await navigator.serviceWorker.ready).pushManager.getSubscription();
+    const owner = `${playerId} ${sub?.endpoint ?? ""}`;
+    try {
+      if (sub && localStorage.getItem(PUSH_OWNER_KEY) === owner) return true;
+    } catch {
+      /* no storage: save it */
+    }
+    const ok = await enablePush();
+    if (ok) {
+      const now = await (await navigator.serviceWorker.ready).pushManager.getSubscription();
+      try {
+        localStorage.setItem(PUSH_OWNER_KEY, `${playerId} ${now?.endpoint ?? ""}`);
+      } catch {
+        /* the next page load saves it again, no harm */
+      }
+    }
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
 /** Stops push on this device (Settings). */
 export async function disablePush(): Promise<void> {
   try {
@@ -87,6 +120,11 @@ export async function disablePush(): Promise<void> {
       body: JSON.stringify({ endpoint: sub.endpoint }),
     });
     await sub.unsubscribe();
+    try {
+      localStorage.removeItem(PUSH_OWNER_KEY);
+    } catch {
+      /* nothing kept */
+    }
   } catch {
     // nothing to undo
   }

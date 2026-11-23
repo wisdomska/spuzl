@@ -7,6 +7,7 @@ import { Spuz } from "@/components/brand/Spuz";
 import { Wordmark } from "@/components/brand/Wordmark";
 import { TryIt } from "@/components/landing/TryIt";
 import { NoMusic } from "@/components/landing/NoMusic";
+import { InstalledRedirect } from "@/components/pwa/InstalledRedirect";
 import { Reveal } from "@/components/landing/Reveal";
 import { SmoothAnchors } from "@/components/landing/SmoothAnchors";
 import { IntroLinks } from "@/components/landing/IntroLinks";
@@ -64,6 +65,7 @@ export default async function Landing() {
         )}
       />
       <NoMusic />
+      <InstalledRedirect />
       <Reveal />
       <SmoothAnchors />
       <IntroLinks />

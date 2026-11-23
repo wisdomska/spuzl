@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { syncAppBadge } from "@/lib/pwa/install";
 import { useQuery } from "@tanstack/react-query";
 import { Icon } from "@/components/ui/Icon";
 import { Button } from "@/components/ui/Button";
@@ -114,6 +115,12 @@ export function NotificationBell({ played }: { played: readonly string[] }) {
     [recapOn, r, newIds, played, friends.data, bay.data, removed],
   );
   const fresh = unseenCount(items, seen);
+  // The same count on the installed app's icon (owner, 23 Nov 2026, from Clink); cleared once it's all seen. Only once
+  // the lists have loaded, so a badge set by an alert isn't wiped by an empty first count.
+  const loaded = friends.isFetched && bay.isFetched;
+  useEffect(() => {
+    if (loaded) syncAppBadge(fresh);
+  }, [loaded, fresh]);
 
   const show = (v: boolean) => {
     setOpen(v);

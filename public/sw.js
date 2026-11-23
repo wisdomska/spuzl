@@ -14,7 +14,7 @@
  * - Push (lib/push/server.ts): your turn, a nudge, a friend's invite. Shown only when no SPUZL window is on screen
  *   (an open app shows its own card); tapping it focuses SPUZL on that page, or opens it.
  */
-const VERSION = "2026-11-13.1";
+const VERSION = "2026-11-23.1";
 const SHELL = `spuzl-shell-${VERSION}`;
 const STATIC = `spuzl-static-${VERSION}`;
 const DATA = `spuzl-data-${VERSION}`;
@@ -49,6 +49,9 @@ self.addEventListener("activate", (event) => {
       for (const name of await caches.keys()) {
         if (name.startsWith("spuzl-") && !keep.has(name)) await caches.delete(name);
       }
+      // Navigation preload (owner, 23 Nov 2026, from Clink): the browser starts a page's request while this worker is
+      // still waking up, instead of after; navigation() uses that response.
+      if (self.registration.navigationPreload) await self.registration.navigationPreload.enable().catch(() => undefined);
       await self.clients.claim();
     })(),
   );
@@ -153,14 +156,17 @@ async function navigation(event) {
   const req = event.request;
   const cache = await caches.open(SHELL);
   const url = new URL(req.url);
-  const network = fetch(req).then((res) => {
-    // The landing page (sent to visitors with no session, marked by the proxy) is never kept: a reload must not
-    // turn a player's Home into it.
-    if (res.ok && res.type === "basic" && !res.redirected && !res.headers.get("x-spuzl-public")) {
-      event.waitUntil(cache.put(req.url, res.clone()));
-    }
-    return res;
-  });
+  // The request the browser started while the worker woke up (navigation preload), else a fresh one.
+  const network = Promise.resolve(event.preloadResponse)
+    .then((pre) => pre || fetch(req))
+    .then((res) => {
+      // The landing page (sent to visitors with no session, marked by the proxy) is never kept: a reload must not
+      // turn a player's Home into it.
+      if (res.ok && res.type === "basic" && !res.redirected && !res.headers.get("x-spuzl-public")) {
+        event.waitUntil(cache.put(req.url, res.clone()));
+      }
+      return res;
+    });
   network.catch(() => {});
   try {
     return await withTimeout(network, NAV_TIMEOUT_MS);
@@ -292,6 +298,10 @@ self.addEventListener("push", (event) => {
     msg = null;
   }
   if (!msg || !msg.title) return;
+  // A count (or a dot) on the installed app's icon: the number when the alert carries one, else a plain dot; the
+  // app sets the exact count when it opens (components/home/NotificationBell.tsx).
+  const nav = self.navigator;
+  if (nav.setAppBadge) event.waitUntil((typeof msg.badge === "number" ? nav.setAppBadge(msg.badge) : nav.setAppBadge()).catch(() => undefined));
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((wins) => {
       // SPUZL open and on screen: the in-app card already says it
@@ -301,7 +311,8 @@ self.addEventListener("push", (event) => {
         tag: msg.tag || undefined,
         renotify: !!msg.tag,
         icon: "/icons/icon-192.png",
-        badge: "/icons/icon-192.png",
+        // Android's status bar shows this as a single-colour mark (a full-colour icon becomes a white blob there).
+        badge: "/icons/badge-96.png",
         data: { url: msg.url || "/" },
       });
     }),

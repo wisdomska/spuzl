@@ -16,6 +16,8 @@ import {
 } from "@/lib/offline/register";
 import { startOfflineSync } from "@/lib/offline/queue";
 import { afterLoadIdle } from "@/lib/perf/idle";
+import { installCapture, platform } from "@/lib/pwa/install";
+import { followUpdates, reloadOnChunkError } from "@/lib/pwa/updates";
 
 const safe = (fn: () => unknown) => {
   try {
@@ -33,7 +35,12 @@ safe(initAnalytics);
 safe(() => track("app_open", { standalone: window.matchMedia("(display-mode: standalone)").matches }));
 safe(startOfflineSync);
 safe(installTapStamp);
-safe(() => window.addEventListener("appinstalled", () => track("pwa_installed")));
+safe(() => window.addEventListener("appinstalled", () => track("pwa_installed", { platform: platform() })));
+// The browser's one-time install offer, kept for the Install buttons (lib/pwa/install.ts): listened for first thing,
+// because it can fire before the page is interactive.
+safe(installCapture);
+// A tab left open across a release that asks for code the new release dropped: reload once.
+safe(reloadOnChunkError);
 
 if (swEnabled()) {
   const idle = (fn: () => void) =>
@@ -51,7 +58,9 @@ if (swEnabled()) {
   };
   afterLoad(() =>
     safe(async () => {
-      await registerServiceWorker();
+      const reg = await registerServiceWorker();
+      // New versions: switch over unseen (hidden, or on the way back), never mid-game; check every 15 minutes.
+      safe(() => followUpdates(reg));
       // The first visit is not controlled until the worker claims the page.
       if (navigator.serviceWorker.controller) prefetch();
       else navigator.serviceWorker.addEventListener("controllerchange", prefetch, { once: true });

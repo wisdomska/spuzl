@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.73.0 (23 November 2026)
+
+### Everyone
+
+- **Install SPUZL in one tap:** where the browser offers it (Chrome, Edge, Samsung Internet), an Install button puts
+  SPUZL on your home screen. A new page, /install, shows the steps for your device: iPhone (Share, then Add to
+  Home Screen), Android or computer, and once it's installed, asks to turn on alerts.
+- **Settings shows it too:** "Add to your home screen" with Install or How to, or "On your home screen" once it is.
+- **The home screen app opens on the app:** with no account yet, it goes straight to the welcome screen instead of
+  the website's landing page.
+- **A count on the app icon:** the number of new things waiting on Home (friend requests, your move in a board
+  game, new games) shows on the installed app's icon; an alert puts a dot there.
+- **Updates without interruptions:** a new version switches over while SPUZL is in the background or when you come
+  back to it, never in the middle of a game, and SPUZL checks for one every 15 minutes. A tab left open across a
+  release reloads once instead of breaking.
+- **Alerts** show a proper SPUZL mark in Android's status bar, and on a shared phone they follow the account that's
+  signed in.
+- **Pages open a little faster** from the installed app: the page starts loading while the app wakes up.
+
 ## 1.72.0 (22 November 2026)
 
 ### Everyone
