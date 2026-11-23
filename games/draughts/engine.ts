@@ -152,12 +152,21 @@ export function simpleFrom(b: Board, from: number): DMove[] {
 }
 
 /**
+ * Every capturing line for `seat`, before International's take-the-most rule. The puzzles plan from these: on
+ * 10 × 10 only the most-capturing line is legal, and finding it among the others is the puzzle.
+ */
+export function captureLines(b: Board, seat: Seat): DMove[] {
+  const caps: DMove[] = [];
+  for (let sq = 0; sq < b.length; sq++) if (b[sq] && seatOf(b[sq]) === seat) caps.push(...capturesFrom(b, sq));
+  return caps;
+}
+
+/**
  * Legal moves for `seat`: captures if there are any (compulsory), else plain moves. International keeps only the
  * lines that capture the most pieces.
  */
 export function legalMoves(b: Board, seat: Seat): DMove[] {
-  let caps: DMove[] = [];
-  for (let sq = 0; sq < b.length; sq++) if (b[sq] && seatOf(b[sq]) === seat) caps.push(...capturesFrom(b, sq));
+  let caps = captureLines(b, seat);
   if (caps.length) {
     if (isInternational(b)) {
       const most = Math.max(...caps.map((m) => m.caps.length));

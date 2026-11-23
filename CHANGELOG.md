@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.74.0 (23 November 2026)
+
+### Everyone
+
+- **Draughts puzzles on the 10 × 10 board:** the daily and free-play puzzles now use the International board, the
+  same one full games start on. Clear the board in one turn, under International rules: men capture backwards too,
+  and only the line that takes the most pieces is legal, so the shorter lines on the board are there to tempt you.
+  Every level is one jump longer than on 8 × 8, and there are more lines to choose from. Puzzles you already played
+  on 8 × 8 still open as they were.
+- **Admins can delete their account:** an admin who had approved a question couldn't before. The question stays in
+  the game and still names who approved it.
+
+### Behind the scenes
+
+- Updated libraries: Next.js 16.4.6, React 19.3.1, TypeScript 6, Sentry, Supabase, Motion, PostHog, Tailwind,
+  Vitest, Playwright and others, the Supabase command-line tool 3.0, and the GitHub build steps. No known security
+  advisories remain.
+- A sweep script clears old test accounts from the preview database (it refuses production, where guests are real
+  players).
+- The launch copy lists the 32 games that are live.
+
 ## 1.73.0 (23 November 2026)
 
 ### Everyone

@@ -14,7 +14,7 @@
  * - Push (lib/push/server.ts): your turn, a nudge, a friend's invite. Shown only when no SPUZL window is on screen
  *   (an open app shows its own card); tapping it focuses SPUZL on that page, or opens it.
  */
-const VERSION = "2026-11-23.1";
+const VERSION = "2026-11-23.2";
 const SHELL = `spuzl-shell-${VERSION}`;
 const STATIC = `spuzl-static-${VERSION}`;
 const DATA = `spuzl-data-${VERSION}`;

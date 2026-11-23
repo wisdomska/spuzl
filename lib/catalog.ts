@@ -784,7 +784,7 @@ const LAB_LIST: GameMeta[] = [];
 
 /**
  * Retired by the owner (2026-11, 61 to 29 games; Quads came back in R2-14, and eleven came back as lab games in
- * R2-P5, live since 11 Nov 2026: 41 games). Code, boards and tests stay; players never see these and the server answers 404 unknown_game. The admin
+ * R2-P5, live since 11 Nov 2026: 41 games; 1.63.0 on 14 Nov 2026 retired more and joined Sixer and Nine: 32 games now, see GAME_COUNT). Code, boards and tests stay; players never see these and the server answers 404 unknown_game. The admin
  * console lists them, marked retired, read-only for scheduling.
  */
 export const RETIRED_IDS: ReadonlySet<string> = new Set([

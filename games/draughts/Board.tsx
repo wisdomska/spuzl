@@ -7,8 +7,8 @@ import { useCellSize } from "@/components/game/useBoardSize";
 import { useGridKeys } from "@/components/game/useGridKeys";
 import { play } from "@/lib/audio";
 import { BayStyles, SQUARE, draughtsDisc } from "@/games/_shared/BayStyles";
-import { count, isKing, legalMoves, samePath, seatOf, squareNumber } from "./engine";
-import { COPY, type DraughtsPuzzle, type DraughtsState } from "./logic";
+import { captureLines, count, isKing, samePath, seatOf, sizeOf, squareNumber } from "./engine";
+import { COPY, ruleFor, type DraughtsPuzzle, type DraughtsState } from "./logic";
 
 const HOP_MS = 200;
 
@@ -16,18 +16,21 @@ const HOP_MS = 200;
  * Draughts Daily board (Board Games B4). Tap your piece, then tap each landing square to plan the
  * chain; numbered badges show the plan and planned captures dim. "Play chain" hops the piece
  * (180 ms ease-in-out per jump), fading each captured piece (scale .8). Non-captures are refused:
- * captures are compulsory.
+ * captures are compulsory. The board sizes from the puzzle: 10 × 10 (the default) or 8 × 8 (older puzzles). The plan
+ * is drawn from every capture line, so on 10 × 10 the shorter lines are there to be tried: only the one that takes
+ * every piece clears the board.
  */
 export default function DraughtsBoard({ puzzle, initialState, hint, disabled, api }: BoardProps<DraughtsPuzzle, DraughtsState>) {
   const board = puzzle.board;
-  const moves = useMemo(() => legalMoves(board, 0), [board]);
+  const n = sizeOf(board);
+  const moves = useMemo(() => captureLines(board, 0), [board]);
   const rivals = useMemo(() => count(board, 1), [board]);
   const [plan, setPlan] = useState<number[]>(() => initialState?.path?.slice() ?? []);
   const [hop, setHop] = useState(-1); // index into plan while the chain plays
   const [done, setDone] = useState(false);
   const [shake, setShake] = useState<{ sq: number; n: number }>({ sq: -1, n: 0 });
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const cell = useCellSize(8, 0, 8, 48);
+  const cell = useCellSize(n, 0, 8, 48);
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
   const prefixMoves = useMemo(() => moves.filter((m) => plan.every((s, i) => m.path[i] === s)), [moves, plan]);
@@ -44,7 +47,9 @@ export default function DraughtsBoard({ puzzle, initialState, hint, disabled, ap
   }, [prefixMoves, plan]);
   const busy = hop >= 0 || done || !!disabled;
 
-  const sqLabel = (sq: number) => `square ${squareNumber(sq)}, row ${(sq >> 3) + 1}, column ${(sq & 7) + 1}`;
+  const rowOf = (sq: number) => Math.floor(sq / n);
+  const colOf = (sq: number) => sq % n;
+  const sqLabel = (sq: number) => `square ${squareNumber(sq, n)}, row ${rowOf(sq) + 1}, column ${colOf(sq) + 1}`;
 
   const refuse = (sq: number, msg: string) => {
     setShake((s) => ({ sq, n: s.n + 1 }));
@@ -74,7 +79,7 @@ export default function DraughtsBoard({ puzzle, initialState, hint, disabled, ap
       }
       if (!nextSquares.has(sq)) {
         const last = plan[plan.length - 1];
-        const step = Math.abs((sq >> 3) - (last >> 3)) === 1 && Math.abs((sq & 7) - (last & 7)) === 1;
+        const step = Math.abs(rowOf(sq) - rowOf(last)) === 1 && Math.abs(colOf(sq) - colOf(last)) === 1;
         return refuse(sq, step ? COPY.compulsory : COPY.notOpen);
       }
       const next = [...plan, sq];
@@ -100,8 +105,8 @@ export default function DraughtsBoard({ puzzle, initialState, hint, disabled, ap
     const next = plan.slice(0, -1);
     setPlan(next);
     api.onMove({ path: next });
-    api.feedback(next.length > 1 ? `${next.length - 1} jumps planned.` : COPY.rule, "info", "path");
-  }, [api, busy, plan]);
+    api.feedback(next.length > 1 ? `${next.length - 1} jumps planned.` : ruleFor(puzzle), "info", "path");
+  }, [api, busy, plan, puzzle]);
 
   const playChain = useCallback(() => {
     if (busy || !complete) return;
@@ -147,11 +152,11 @@ export default function DraughtsBoard({ puzzle, initialState, hint, disabled, ap
   }, [api, undo, playChain, busy, plan.length, complete]);
 
   useEffect(() => {
-    api.feedback(COPY.rule, "info", "hand-pointing");
+    api.feedback(ruleFor(puzzle), "info", "hand-pointing");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const keys = useGridKeys(8, 8, tap);
+  const keys = useGridKeys(n, n, tap);
   const hintSq = typeof hint?.target === "number" ? hint.target : -1;
 
   // What the board shows: the original layout, or the chain mid-play / after the clear.
@@ -160,7 +165,8 @@ export default function DraughtsBoard({ puzzle, initialState, hint, disabled, ap
     const path = complete?.path ?? plan;
     const k = done ? path.length - 1 : hop;
     if (sq === path[0] && k > 0) return 0;
-    if (sq === path[k]) return board[path[0]] === 1 && sq >> 3 === 0 ? 2 : board[path[0]];
+    // crowned where the line ends on the far row (complete.crowns knows each size's rule)
+    if (sq === path[k]) return k === path.length - 1 && complete?.crowns ? 2 : board[path[0]];
     return board[sq];
   };
   const goneAt = (sq: number) => {
@@ -177,20 +183,20 @@ export default function DraughtsBoard({ puzzle, initialState, hint, disabled, ap
       <div
         role="grid"
         aria-label="Draughts board, your pieces move up"
-        aria-rowcount={8}
-        aria-colcount={8}
+        aria-rowcount={n}
+        aria-colcount={n}
         onKeyDown={keys.onKeyDown}
         className={`grid overflow-hidden rounded-[14px] ${done ? "board-pulse" : ""}`}
         style={{
-          gridTemplateColumns: `repeat(8, ${cell}px)`,
-          gridTemplateRows: `repeat(8, ${cell}px)`,
+          gridTemplateColumns: `repeat(${n}, ${cell}px)`,
+          gridTemplateRows: `repeat(${n}, ${cell}px)`,
           boxShadow: "0 0 0 4px var(--surface-raised)",
         }}
       >
-        {Array.from({ length: 8 }, (_, r) => (
+        {Array.from({ length: n }, (_, r) => (
           <div role="row" key={r} className="contents">
-            {Array.from({ length: 8 }, (_, c) => {
-              const sq = r * 8 + c;
+            {Array.from({ length: n }, (_, c) => {
+              const sq = r * n + c;
               const dark = (r + c) % 2 === 1;
               const p = shownAt(sq);
               const gone = goneAt(sq);
@@ -226,7 +232,7 @@ export default function DraughtsBoard({ puzzle, initialState, hint, disabled, ap
                           ? "inset 0 0 0 3px var(--danger)"
                           : undefined,
                     transition: done
-                      ? `background 300ms var(--ease-out) ${(Math.abs(r - ((complete?.path.at(-1) ?? 0) >> 3)) + Math.abs(c - ((complete?.path.at(-1) ?? 0) & 7))) * 70}ms`
+                      ? `background 300ms var(--ease-out) ${(Math.abs(r - rowOf(complete?.path.at(-1) ?? 0)) + Math.abs(c - colOf(complete?.path.at(-1) ?? 0))) * 70}ms`
                       : undefined,
                   }}
                 >

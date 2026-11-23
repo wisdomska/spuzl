@@ -1,6 +1,6 @@
 # Get SPUZL indexed and listed
 
-You're helping me, Senya, launch my web app SPUZL: https://spuzl.vercel.app. It's 41 free puzzle games in
+You're helping me, Senya, launch my web app SPUZL: https://spuzl.vercel.app. It's 32 free puzzle games in
 four worlds (Puzzles, Words & Quiz, Arcade, Board Games) that run in the browser.
 
 The site's SEO is already done and live:

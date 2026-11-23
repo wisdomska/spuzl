@@ -17,7 +17,13 @@ export default defineConfig({
   fullyParallel: false,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [["html", { open: "never" }], ["list"]] : "list",
-  use: { baseURL, trace: "retain-on-failure", colorScheme: "dark" },
+  use: {
+    baseURL,
+    trace: "retain-on-failure",
+    colorScheme: "dark",
+    // PW_CHROMIUM: a Chrome already on the machine (a container whose browser build differs from this Playwright's).
+    ...(process.env.PW_CHROMIUM ? { launchOptions: { executablePath: process.env.PW_CHROMIUM } } : {}),
+  },
   projects: [
     { name: "mobile-dark", use: { ...devices["Pixel 7"], viewport: { width: 390, height: 844 }, colorScheme: "dark" } },
     { name: "desktop-dark", use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 }, colorScheme: "dark" } },

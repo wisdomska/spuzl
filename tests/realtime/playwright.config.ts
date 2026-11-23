@@ -18,5 +18,6 @@ export default defineConfig({
     baseURL: process.env.E2E_BASE ?? "http://localhost:3201",
     trace: "retain-on-failure",
     actionTimeout: 15_000,
+    ...(process.env.PW_CHROMIUM ? { launchOptions: { executablePath: process.env.PW_CHROMIUM } } : {}),
   },
 });

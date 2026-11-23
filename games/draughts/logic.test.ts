@@ -8,6 +8,7 @@ import {
   MAN0,
   MAN1,
   applyMove,
+  captureLines,
   capturesFrom,
   count,
   findMove,
@@ -18,7 +19,19 @@ import {
   squareNumber,
   type Board,
 } from "./engine";
-import logic, { JUMPS_FOR, countSolutions, generate, grade, hint, verify, winningMoves } from "./logic";
+import logic, {
+  COPY,
+  JUMPS_FOR,
+  JUMPS_FOR_10,
+  countSolutions,
+  generate,
+  generateSized,
+  grade,
+  hint,
+  ruleFor,
+  verify,
+  winningMoves,
+} from "./logic";
 import draughtsRules, { QUIET_LIMIT, type DraughtsMatch } from "./rules";
 
 const sq = (r: number, c: number) => r * 8 + c;
@@ -102,66 +115,102 @@ describe("draughts engine (English rules)", () => {
   });
 });
 
-describe("draughts puzzles", { timeout: 60_000 }, () => {
-  for (const d of ["easy", "medium", "hard", "expert", "mega"] as Difficulty[]) {
-    it(`generates a deterministic, unique ${d} chain of ${JUMPS_FOR[d]}`, () => {
-      const a = generate(createRng(`daily:2026-11-02:${d}`), d);
-      expect(generate(createRng(`daily:2026-11-02:${d}`), d)).toEqual(a);
-      expect(countSolutions(a.puzzle, 3)).toBe(1);
-      expect(a.solution.path).toHaveLength(JUMPS_FOR[d] + 1);
-      expect(count(a.puzzle.board, 1)).toBe(JUMPS_FOR[d]);
+for (const n of [10, 8] as const)
+  describe(`draughts puzzles, ${n} × ${n}`, { timeout: 60_000 }, () => {
+    const gen = (rng: ReturnType<typeof createRng>, d: Difficulty) => generateSized(rng, d, n);
+    const JUMPS = n === 10 ? JUMPS_FOR_10 : JUMPS_FOR;
+    for (const d of ["easy", "medium", "hard", "expert", "mega"] as Difficulty[]) {
+      it(`generates a deterministic, unique ${d} chain of ${JUMPS[d]}`, () => {
+        const a = gen(createRng(`daily:2026-11-02:${d}`), d);
+        expect(gen(createRng(`daily:2026-11-02:${d}`), d)).toEqual(a);
+        expect(countSolutions(a.puzzle, 3)).toBe(1);
+        expect(a.solution.path).toHaveLength(JUMPS[d] + 1);
+        expect(count(a.puzzle.board, 1)).toBe(JUMPS[d]);
+      });
+    }
+
+    it("generates unique puzzles over 25 seeds", () => {
+      for (let i = 0; i < 25; i++) {
+        const g = gen(createRng(`free:${i}`), (["easy", "medium", "hard"] as const)[i % 3]);
+        expect(countSolutions(g.puzzle, 2)).toBe(1);
+        expect(winningMoves(g.puzzle)[0].path).toEqual(g.solution.path);
+        expect(verify(g.puzzle, g.solution, { path: g.solution.path }).ok).toBe(true);
+      }
     });
-  }
 
-  it("generates unique puzzles over 25 seeds", () => {
-    for (let i = 0; i < 25; i++) {
-      const g = generate(createRng(`free:${i}`), (["easy", "medium", "hard"] as const)[i % 3]);
-      expect(countSolutions(g.puzzle, 2)).toBe(1);
-      expect(winningMoves(g.puzzle)[0].path).toEqual(g.solution.path);
-      expect(verify(g.puzzle, g.solution, { path: g.solution.path }).ok).toBe(true);
+    it("verifies the solution and rejects near misses and malformed input", () => {
+      const g = gen(createRng("verify"), "hard");
+      expect(verify(g.puzzle, g.solution, { path: g.solution.path })).toEqual({ ok: true, progress: 1 });
+      expect(verify(g.puzzle, g.solution, { path: g.solution.path.slice(0, -1) }).ok).toBe(false);
+      const other = legalMoves(g.puzzle.board, 0).find((m) => m.path.join() !== g.solution.path.join());
+      if (other) expect(verify(g.puzzle, g.solution, { path: other.path }).reason).toBe("rival pieces left");
+      expect(verify(g.puzzle, g.solution, { path: [1, "a"] } as never).ok).toBe(false);
+      expect(verify(g.puzzle, g.solution, null as never).ok).toBe(false);
+      // a valid clearing chain that is not the scheduled one means tampered data
+      expect(verify(g.puzzle, { path: [...g.solution.path].reverse() }, { path: g.solution.path }).ok).toBe(false);
+    });
+
+    it("reports progress as matched landings only", () => {
+      const g = gen(createRng("progress"), "medium");
+      const p = g.solution.path;
+      expect(logic.progress(g.puzzle, g.solution, { path: [] })).toBe(0);
+      expect(logic.progress(g.puzzle, g.solution, { path: p.slice(0, 2) })).toBeCloseTo(1 / (p.length - 1));
+      expect(logic.progress(g.puzzle, g.solution, { path: p })).toBe(1);
+      expect(logic.progress(g.puzzle, g.solution, 3 as never)).toBe(0);
+    });
+
+    it("hints are safe: following them builds the solution", () => {
+      const g = gen(createRng("hints"), "expert");
+      const path: number[] = [];
+      for (;;) {
+        const h = hint(g.puzzle, g.solution, { path });
+        if (!h) break;
+        path.push(h.target as number);
+      }
+      expect(verify(g.puzzle, g.solution, { path }).ok).toBe(true);
+      const wrong = [g.solution.path[0], (g.solution.path[1] + 2) % (n * n)];
+      expect(hint(g.puzzle, g.solution, { path: wrong })?.target).toBe(g.solution.path[0]);
+      expect(hint(g.puzzle, g.solution, "x" as never)?.target).toBe(g.solution.path[0]);
+    });
+
+    it("grades longer chains higher", () => {
+      const avg = (d: Difficulty) => [0, 1, 2].reduce((s, i) => s + gen(createRng(`g${i}`), d).grade, 0) / 3;
+      const xs = (["easy", "medium", "hard", "expert", "mega"] as Difficulty[]).map(avg);
+      for (let i = 1; i < xs.length; i++) expect(xs[i]).toBeGreaterThan(xs[i - 1]);
+      expect(grade(gen(createRng("one"), "easy").puzzle)).toBeLessThan(n === 10 ? 60 : 50);
+    });
+  });
+
+describe("10 × 10 puzzles (International rules)", () => {
+  it("Daily and Free play deal the 10 × 10 board", () => {
+    const g = generate(createRng("daily:2026-11-24:hard"), "hard");
+    expect(g.puzzle.board).toHaveLength(100);
+    expect(ruleFor(g.puzzle)).toBe("Clear the board in one turn. You must take the most pieces.");
+  });
+
+  it("the clearing line is the only legal one; the shorter lines are there to try, and fail", () => {
+    let backward = 0;
+    for (let i = 0; i < 30; i++) {
+      const g = generate(createRng(`intl:${i}`), (["medium", "hard", "expert", "mega"] as const)[i % 4]);
+      const b = g.puzzle.board;
+      // the piece that moves is a man: one landing square per jump, so one answer
+      expect(b[g.solution.path[0]]).toBe(MAN0);
+      expect(legalMoves(b, 0).map((m) => m.path)).toEqual([g.solution.path]);
+      const shorter = captureLines(b, 0).filter((m) => m.caps.length < count(b, 1));
+      expect(shorter.length).toBeGreaterThan(0);
+      for (const m of shorter) expect(verify(g.puzzle, g.solution, { path: m.path }).ok).toBe(false);
+      // men capture backwards on 10 × 10 (a landing lower down the board than the square before)
+      if (g.solution.path.some((sq, k) => k > 0 && Math.floor(sq / 10) > Math.floor(g.solution.path[k - 1] / 10))) backward++;
     }
+    expect(backward).toBeGreaterThan(0);
   });
 
-  it("verifies the solution and rejects near misses and malformed input", () => {
-    const g = generate(createRng("verify"), "hard");
-    expect(verify(g.puzzle, g.solution, { path: g.solution.path })).toEqual({ ok: true, progress: 1 });
-    expect(verify(g.puzzle, g.solution, { path: g.solution.path.slice(0, -1) }).ok).toBe(false);
-    const other = legalMoves(g.puzzle.board, 0).find((m) => m.path.join() !== g.solution.path.join());
-    if (other) expect(verify(g.puzzle, g.solution, { path: other.path }).reason).toBe("rival pieces left");
-    expect(verify(g.puzzle, g.solution, { path: [1, "a"] } as never).ok).toBe(false);
-    expect(verify(g.puzzle, g.solution, null as never).ok).toBe(false);
-    // a valid clearing chain that is not the scheduled one means tampered data
-    expect(verify(g.puzzle, { path: [...g.solution.path].reverse() }, { path: g.solution.path }).ok).toBe(false);
-  });
-
-  it("reports progress as matched landings only", () => {
-    const g = generate(createRng("progress"), "medium");
-    const p = g.solution.path;
-    expect(logic.progress(g.puzzle, g.solution, { path: [] })).toBe(0);
-    expect(logic.progress(g.puzzle, g.solution, { path: p.slice(0, 2) })).toBeCloseTo(1 / (p.length - 1));
-    expect(logic.progress(g.puzzle, g.solution, { path: p })).toBe(1);
-    expect(logic.progress(g.puzzle, g.solution, 3 as never)).toBe(0);
-  });
-
-  it("hints are safe: following them builds the solution", () => {
-    const g = generate(createRng("hints"), "expert");
-    const path: number[] = [];
-    for (;;) {
-      const h = hint(g.puzzle, g.solution, { path });
-      if (!h) break;
-      path.push(h.target as number);
-    }
-    expect(verify(g.puzzle, g.solution, { path }).ok).toBe(true);
-    const wrong = [g.solution.path[0], (g.solution.path[1] + 2) % 64];
-    expect(hint(g.puzzle, g.solution, { path: wrong })?.target).toBe(g.solution.path[0]);
-    expect(hint(g.puzzle, g.solution, "x" as never)?.target).toBe(g.solution.path[0]);
-  });
-
-  it("grades longer chains higher", () => {
-    const avg = (d: Difficulty) => [0, 1, 2].reduce((s, i) => s + generate(createRng(`g${i}`), d).grade, 0) / 3;
-    const xs = (["easy", "medium", "hard", "expert", "mega"] as Difficulty[]).map(avg);
-    for (let i = 1; i < xs.length; i++) expect(xs[i]).toBeGreaterThan(xs[i - 1]);
-    expect(grade(generate(createRng("one"), "easy").puzzle)).toBeLessThan(50);
+  it("puzzles made before, on 8 × 8, still verify and hint", () => {
+    const old = generateSized(createRng("daily:2026-11-20:medium"), "medium", 8);
+    expect(old.puzzle.board).toHaveLength(64);
+    expect(ruleFor(old.puzzle)).toBe(COPY.rule);
+    expect(verify(old.puzzle, old.solution, { path: old.solution.path }).ok).toBe(true);
+    expect(hint(old.puzzle, old.solution, { path: [] })?.target).toBe(old.solution.path[0]);
   });
 });
 
