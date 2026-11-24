@@ -113,6 +113,14 @@ describe("18+ party: who may create, see and join", () => {
   });
 });
 
+/** Every string value in a JSON tree (keys left out). */
+function stringValues(v: unknown): string[] {
+  if (typeof v === "string") return [v];
+  if (Array.isArray(v)) return v.flatMap(stringValues);
+  if (v && typeof v === "object") return Object.values(v).flatMap(stringValues);
+  return [];
+}
+
 describe("18+ party: Draw It round, text filter, reports and moderation", () => {
   it("plays a round, filters guesses, snapshots reports and blocks a reported player once actioned", async () => {
     const host = await member("18+");
@@ -133,7 +141,8 @@ describe("18+ party: Draw It round, text filter, reports and moderation", () => 
     const word = hv.data.party.word as string;
     expect(word).toBeTruthy();
     expect(gv.data.party.word).toBeNull();
-    expect(JSON.stringify(gv.data)).not.toContain(`"${word}"`);
+    // No value anywhere in the guesser's view is the word (values only: a key like a player's "hat" is not a leak).
+    expect(stringValues(gv.data)).not.toContain(word);
 
     // Strokes only, from the drawer only.
     const stroke = { c: 0, w: 1, p: [100, 100, 500, 500, 900, 100] };
